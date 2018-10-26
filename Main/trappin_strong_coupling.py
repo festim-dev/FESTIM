@@ -7,9 +7,9 @@ import sys
 import os
 import argparse
 
-implantation_time=400.0
-resting_time=50
-TDS_time=50
+implantation_time=100.0
+resting_time=0
+TDS_time=0
 Time =implantation_time+resting_time+TDS_time # final time
 num_steps = 8*int(implantation_time+resting_time+TDS_time) # number of time steps
 k = Time / num_steps # time step size
@@ -28,7 +28,7 @@ print('Defining boundary conditions')
 def boundary(x, on_boundary):
     return on_boundary and (near(x[0],0) or near(x[0],size))
 ##Tritium concentration
-inside_bc_c=Expression(('0','0','0', '0'), t=0, degree=1) 
+inside_bc_c=Expression(('0','0','0','0'), t=0, degree=1) 
 bci_c = DirichletBC(V,inside_bc_c,boundary)
 bcs = [bci_c]
 
@@ -45,21 +45,22 @@ u_1, u_2, u_3, u_4 = split(u)
 print('Defining initial values')
 ini = Expression(("x[0]<1e-6 ? 0 : 0","0","0", "0"), degree=1)
 u_n = interpolate(ini, V)
-u_n1, u_n2, u_n3 = split(u_n)
+u_n1, u_n2, u_n3, u_n4 = split(u_n)
 
 print('Defining source terms')
 #f = Expression("x[0]<10e-9 ? 1 : 0", degree=1)
-f = Expression('t<implantation_time ? (x[0]<e/100 ? 2.5e19/1e23*(1-100*x[0]/e): 0 ): 0',implantation_time=implantation_time,e=size,t=0,degree=2)#  This is the tritium volumetric source term   -1/(1/3*e*pow(2*3.14,0.5))*exp(-0.5*(x[0]/pow(1/3*e,2)))
+f = Expression('t<implantation_time ? 2e16/(6.3e28) * 1/(2.5e-9*2*3.14) *exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2)): 0',implantation_time=implantation_time,e=size,t=0,degree=2)#  This is the tritium volumetric source term   -1/(1/3*e*pow(2*3.14,0.5))*exp(-0.5*(x[0]/pow(1/3*e,2)))
 
 # Define expressions used in variational forms
 print('Defining variational problem')
 
-n_trap_1 = 1e-3 #trap 1 density
-n_trap_2 = 0.5e-3 #trap 2 density
-E1=0.87 #in eV trap 1 activation energy
-E2=1.0 #in eV activation energy
-alpha = Constant(1.1e-10)#lattice constant ()
-beta = Constant(6) #number of solute sites per atom (6 for W)
+density = 6.3e28
+n_trap_1 = 1e-3 # trap 1 density
+n_trap_2 = 4e-4 # trap 2 density
+E1=0.87 # in eV trap 1 activation energy
+E2=1.0 # in eV activation energy
+alpha = Constant(1.1e-10) # lattice constant ()
+beta = Constant(6) # number of solute sites per atom (6 for W)
 v_0=1e13 #frequency factor s-1
 #n_trap = Constant(n_trap)
 k_B = 8.6e-5
@@ -107,7 +108,7 @@ for n in range(num_steps):
     solve(F == 0, u, bcs, solver_parameters={"newton_solver":{"absolute_tolerance":1e-19}})
 
 
-    _u_1, _u_2, _u_3 = u.split()
+    _u_1, _u_2, _u_3, _u_4 = u.split()
     #print("Sol",_u_1(0.5e-9))
     #print("Trap1",_u_2(0.5e-9))
     #print("Trap2",_u_3(0.5e-9))
@@ -120,12 +121,12 @@ for n in range(num_steps):
     vtkfile_u_2 << (_u_2, t)
     vtkfile_u_3 << (_u_3, t)
 
-    total_trap1=assemble(_u_2*dx)
-    total_trap2=assemble(_u_3*dx)
+    total_trap1=assemble(_u_2*density*dx)
+    total_trap2=assemble(_u_3*density*dx)
     total_trap=total_trap1+total_trap2
-    total_sol=assemble(_u_1*dx)
+    total_sol=assemble(_u_1*density*dx)
     total=total_sol+total_trap
-    desorption_rate=[-(total-total_n)/k,T_var(t-k)]
+    desorption_rate=[-(total-total_n)/k,T_var(t-k),t]
     total_n=total
   
     if t>implantation_time+resting_time:
@@ -136,11 +137,11 @@ for n in range(num_steps):
         #print("Total of D = "+str(total))
         #print("Desorption rate = " + str(desorption_rate))
 
-    # Update previous solution
+    # Update previous solutions
     u_n.assign(u)
 
 with open(filedesorption, "w+") as output:
     writer = csv.writer(output, lineterminator='\n')
-    writer.writerows(['dT'])
+    writer.writerows(['dTt'])
     for val in desorption:
         writer.writerows([val])
