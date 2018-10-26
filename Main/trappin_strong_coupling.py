@@ -1,5 +1,4 @@
 from fenics import *
-from fenics import *
 from dolfin import *
 import numpy as np
 import csv
@@ -7,16 +6,17 @@ import sys
 import os
 import argparse
 
-implantation_time=100.0
-resting_time=0
-TDS_time=0
+implantation_time=400.0
+resting_time=50
+TDS_time=50
 Time =implantation_time+resting_time+TDS_time # final time
-num_steps = 8*int(implantation_time+resting_time+TDS_time) # number of time steps
+num_steps = 1*int(implantation_time+resting_time+TDS_time) # number of time steps
 k = Time / num_steps # time step size
 dt = Constant(k)
 t=0 #Initialising time to 0s
 size=5e-6
-mesh = IntervalMesh(6000, 0, size)
+mesh = IntervalMesh(1500, 0, size)
+flux = 2.5e19
 
 # Define function space for system of concentrations
 P1 = FiniteElement('P', interval, 1)
@@ -30,7 +30,7 @@ def boundary(x, on_boundary):
 ##Tritium concentration
 inside_bc_c=Expression(('0','0','0','0'), t=0, degree=1) 
 bci_c = DirichletBC(V,inside_bc_c,boundary)
-bcs = [bci_c]
+bcs =[bci_c]
 
 
 # Define test functions
@@ -49,7 +49,7 @@ u_n1, u_n2, u_n3, u_n4 = split(u_n)
 
 print('Defining source terms')
 #f = Expression("x[0]<10e-9 ? 1 : 0", degree=1)
-f = Expression('t<implantation_time ? 2e16/(6.3e28) * 1/(2.5e-9*2*3.14) *exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2)): 0',implantation_time=implantation_time,e=size,t=0,degree=2)#  This is the tritium volumetric source term   -1/(1/3*e*pow(2*3.14,0.5))*exp(-0.5*(x[0]/pow(1/3*e,2)))
+f = Expression('t<implantation_time ? flux/(6.3e28) * 1/(2.5e-9*2*3.14) *exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2)): 0',flux=flux, implantation_time=implantation_time,e=size,t=0,degree=2)#  This is the tritium volumetric source term   -1/(1/3*e*pow(2*3.14,0.5))*exp(-0.5*(x[0]/pow(1/3*e,2)))
 
 # Define expressions used in variational forms
 print('Defining variational problem')
@@ -81,7 +81,7 @@ D = calculate_D(T_var(0), 0)
 
 
 # Define variational problem
-F = ((u_1 - u_n1) / dt)*v_1*dx + D*dot(grad(u_1), grad(v_1))*dx  + ((u_2 - u_n2) / dt)*v_1*dx - f*v_1*dx\
+F = ((u_1 - u_n1) / dt)*v_1*dx + D*dot(grad(u_1), grad(v_1))*dx  + ((u_2 - u_n2) / dt)*v_1*dx + ((u_3 - u_n3) / dt)*v_1*dx - f*v_1*dx\
     + ((u_2 - u_n2) / dt)*v_2*dx - D/alpha/alpha/beta*u_1*(n_trap_1 - u_2)*v_2*dx + v_0*exp(-E1/k_B/temp)*u_2*v_2*dx \
     + ((u_3 - u_n3) / dt)*v_3*dx - D/alpha/alpha/beta*u_1*(n_trap_2 - u_3)*v_3*dx + v_0*exp(-E2/k_B/temp)*u_3*v_3*dx
 
@@ -100,6 +100,7 @@ for n in range(num_steps):
     # Update current time
     t += k
     temp.t += k
+    f.t += k
     D=calculate_D(T_var(t),0)
     print(round(t/Time*100,5), "%")
     print(round(t,4), "s")
@@ -125,7 +126,7 @@ for n in range(num_steps):
     total_trap2=assemble(_u_3*density*dx)
     total_trap=total_trap1+total_trap2
     total_sol=assemble(_u_1*density*dx)
-    total=total_sol+total_trap
+    total=total_trap+total_sol
     desorption_rate=[-(total-total_n)/k,T_var(t-k),t]
     total_n=total
   
@@ -134,8 +135,8 @@ for n in range(num_steps):
         #print('Total of D soluble = ' + str(total_sol))
         #print('Total of D traped 1= ' + str(total_trap1))
         #print('Total of D traped 2= ' + str(total_trap2))
-        #print("Total of D = "+str(total))
-        #print("Desorption rate = " + str(desorption_rate))
+        print("Total of D = "+str(total))
+        print("Desorption rate = " + str(desorption_rate))
 
     # Update previous solutions
     u_n.assign(u)
