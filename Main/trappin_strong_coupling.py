@@ -10,6 +10,7 @@ implantation_time = 400.0
 resting_time = 50
 ramp = 0.5
 delta_TDS = 300
+flux = 2.5e19
 TDS_time = int(delta_TDS / ramp)
 # final time
 Time = implantation_time+resting_time+TDS_time
@@ -18,9 +19,17 @@ num_steps = 1*int(implantation_time+resting_time+TDS_time)
 k = Time / num_steps  # time step size
 dt = Constant(k)
 t = 0  # Initialising time to 0s
-size = 5e-6
+size = 500e-6
 mesh = IntervalMesh(1500, 0, size)
-flux = 2.5e19
+
+cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
+cell_markers.set_all(False)
+for cell in cells(mesh):
+    if cell.midpoint() < 3e-6:
+        cell_markers[cell] = True
+    # set cell_markers[cell] = True if the cell's error
+    # indicator is greater than some criterion.
+mesh = refine(mesh, cell_markers)
 
 # Define function space for system of concentrations
 P1 = FiniteElement('P', interval, 1)
