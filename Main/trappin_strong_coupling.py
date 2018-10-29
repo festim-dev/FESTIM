@@ -52,27 +52,38 @@ def export_TDS(filedesorption):
 implantation_time = 400.0
 resting_time = 50
 ramp = 8
-delta_TDS = 320
+delta_TDS = 350
+r = 0
 flux = 2.5e19
+density = 6.3e28
+n_trap_1 = 1e-3  # trap 1 density
+n_trap_2 = 4e-4  # trap 2 density
+E1 = 0.87  # in eV trap 1 activation energy
+E2 = 1.0  # in eV activation energy
+alpha = Constant(1.1e-10)  # lattice constant ()
+beta = Constant(6)  # number of solute sites per atom (6 for W)
+v_0 = 1e13  # frequency factor s-1
+k_B = 8.6e-5
+
 TDS_time = int(delta_TDS / ramp) + 1
 # final time
 Time = implantation_time+resting_time+TDS_time
 # number of time steps
-num_steps = 1*int(implantation_time+resting_time+TDS_time)
+num_steps = 2*int(implantation_time+resting_time+TDS_time)
 k = Time / num_steps  # time step size
 dt = Constant(k)
 t = 0  # Initialising time to 0s
 size = 500e-6
-nb_cells_in = 100
+nb_cells_in = 1000
 mesh = IntervalMesh(nb_cells_in, 0, size)
 nb_cells_ref = 2000
-refinement_point = 5e-6
+refinement_point = 3e-6
 print("Mesh size before local refinement is " + str(len(mesh.cells())))
 while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
     cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
     cell_markers.set_all(False)
     for cell in cells(mesh):
-        if cell.midpoint().x() <= refinement_point:
+        if cell.midpoint().x() < refinement_point:
             cell_markers[cell] = True
     mesh = refine(mesh, cell_markers)
 print("Mesh size after local refinement is " + str(len(mesh.cells())))
@@ -115,26 +126,18 @@ u_n1, u_n2, u_n3, u_n4 = split(u_n)
 
 print('Defining source terms')
 f = Expression('t<implantation_time ?  \
-               flux/(6.3e28) * 1/(2.5e-9*2*3.14)* \
+               (1-r)*flux/(6.3e28) * 1/(2.5e-9*pow(2*3.14,0.5))*  \
                exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2)): 0',
-               flux=flux,
+               flux=flux, r=r,
                implantation_time=implantation_time,
                e=size,
                t=0,
-               degree=2)  # This is the tritium volumetric source term
+               degree=2)  # This is the tritium volumetric source term 
 
 # Define expressions used in variational forms
 print('Defining variational problem')
 
-density = 6.3e28
-n_trap_1 = 1e-3  # trap 1 density
-n_trap_2 = 0 # trap 2 density
-E1 = 0.87  # in eV trap 1 activation energy
-E2 = 1.0  # in eV activation energy
-alpha = Constant(1.1e-10)  # lattice constant ()
-beta = Constant(6)  # number of solute sites per atom (6 for W)
-v_0 = 1e13  # frequency factor s-1
-k_B = 8.6e-5
+
 temp = Expression('t < (implantation_time+resting_time) ? \
                   300 : 300+ramp*(t-(implantation_time+resting_time))',
                   implantation_time=implantation_time,
@@ -153,7 +156,7 @@ def T_var(t):
 
 
 def calculate_D(T, subdomain):
-    return 1.38e-7*exp(-0.2/(k_B*T))
+    return 4.1e-7*exp(-0.39/(k_B*T))
 D = calculate_D(T_var(0), 0)
 
 # Define variational problem
@@ -170,20 +173,20 @@ source_sol = - f*v_1*dx
 trapping1_sol = ((u_2 - u_n2) / dt)*v_1*dx
 trapping2_sol = ((u_3 - u_n3) / dt)*v_1*dx
 
-F = transient_sol + diff_sol + source_sol
+F = transient_sol + source_sol + diff_sol
 F += trapping1_sol + trapping2_sol
 F += transient_trap1 + trapping_trap1 + detrapping_trap1
 F += transient_trap2 + trapping_trap2 + detrapping_trap2
 
 
-F = ((u_1 - u_n1) / dt)*v_1*dx + D*dot(grad(u_1), grad(v_1))*dx - f*v_1*dx \
-    + ((u_2 - u_n2) / dt)*v_1*dx + ((u_3 - u_n3) / dt)*v_1*dx \
-    + ((u_2 - u_n2) / dt)*v_2*dx \
-    - D/alpha/alpha/beta*u_1*(n_trap_1 - u_2)*v_2*dx \
-    + v_0*exp(-E1/k_B/temp)*u_2*v_2*dx \
-    + ((u_3 - u_n3) / dt)*v_3*dx\
-    - D/alpha/alpha/beta*u_1*(n_trap_2 - u_3)*v_3*dx \
-    + v_0*exp(-E2/k_B/temp)*u_3*v_3*dx
+#F = ((u_1 - u_n1) / dt)*v_1*dx + D*dot(grad(u_1), grad(v_1))*dx - f*v_1*dx \
+#    + ((u_2 - u_n2) / dt)*v_1*dx + ((u_3 - u_n3) / dt)*v_1*dx \
+#    + ((u_2 - u_n2) / dt)*v_2*dx \
+#    - D/alpha/alpha/beta*u_1*(n_trap_1 - u_2)*v_2*dx \
+#    + v_0*exp(-E1/k_B/temp)*u_2*v_2*dx \
+#    + ((u_3 - u_n3) / dt)*v_3*dx\
+#    - D/alpha/alpha/beta*u_1*(n_trap_2 - u_3)*v_3*dx \
+#    + v_0*exp(-E2/k_B/temp)*u_3*v_3*dx
 
 vtkfile_u_1 = File('Solution/c_sol.pvd')
 vtkfile_u_2 = File('Solution/c_trap1.pvd')
