@@ -6,6 +6,49 @@ import sys
 import os
 import argparse
 
+
+def save_as():
+    valid = False
+    while valid is False:
+        print("Save as (.csv):")
+        filedesorption = input()
+        if filedesorption == '':
+            filedesorption = "desorption.csv"
+        if filedesorption.endswith('.csv'):
+            valid = True
+            try:
+                with open(filedesorption, 'r') as f:
+                    print('This file already exists.'
+                          ' Do you want to replace it ? (y/n)')
+                choice = input()
+                if choice == "n" or choice == "N":
+                    valid = False
+                elif choice != "y" and choice != "Y":
+                    valid = False
+            except:
+                valid = True
+        else:
+            print("Please enter a file ending with the extension .csv")
+            valid = False
+    return filedesorption
+
+
+def export_TDS(filedesorption):
+    busy = True
+    while busy is True:
+        try:
+            with open(filedesorption, "w+") as output:
+                busy = False
+                writer = csv.writer(output, lineterminator='\n')
+                writer.writerows(['dTt'])
+                for val in desorption:
+                    writer.writerows([val])
+        except:
+            print("The file " + filedesorption + " is currently busy."
+                  "Please close the application then press any key")
+            input()
+    return
+
 implantation_time = 400.0
 resting_time = 50
 ramp = 8
@@ -78,14 +121,14 @@ f = Expression('t<implantation_time ?  \
                implantation_time=implantation_time,
                e=size,
                t=0,
-               degree=2)  # This is the tritium volumetric source term   -1/(1/3*e*pow(2*3.14,0.5))*exp(-0.5*(x[0]/pow(1/3*e,2)))
+               degree=2)  # This is the tritium volumetric source term
 
 # Define expressions used in variational forms
 print('Defining variational problem')
 
 density = 6.3e28
 n_trap_1 = 1e-3  # trap 1 density
-n_trap_2 = 4e-4  # trap 2 density
+n_trap_2 = 0 # trap 2 density
 E1 = 0.87  # in eV trap 1 activation energy
 E2 = 1.0  # in eV activation energy
 alpha = Constant(1.1e-10)  # lattice constant ()
@@ -145,9 +188,10 @@ F = ((u_1 - u_n1) / dt)*v_1*dx + D*dot(grad(u_1), grad(v_1))*dx - f*v_1*dx \
 vtkfile_u_1 = File('Solution/c_sol.pvd')
 vtkfile_u_2 = File('Solution/c_trap1.pvd')
 vtkfile_u_3 = File('Solution/c_trap2.pvd')
-filedesorption = "desorption.csv"
+filedesorption = save_as()
+
+#  Time-stepping
 print('Time stepping')
-# Time-stepping
 t = 0
 desorption = list()
 total_n = 0
@@ -165,7 +209,7 @@ for n in range(num_steps):
 
     _u_1, _u_2, _u_3, _u_4 = u.split()
 
-    # Save solution to file (VTK)
+    # Save solution to file (.vtu)
     vtkfile_u_1 << (_u_1, t)
     vtkfile_u_2 << (_u_2, t)
     vtkfile_u_3 << (_u_3, t)
@@ -186,8 +230,4 @@ for n in range(num_steps):
     # Update previous solutions
     u_n.assign(u)
 
-with open(filedesorption, "w+") as output:
-    writer = csv.writer(output, lineterminator='\n')
-    writer.writerows(['dTt'])
-    for val in desorption:
-        writer.writerows([val])
+export_TDS(filedesorption)
