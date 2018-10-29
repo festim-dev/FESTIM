@@ -8,9 +8,10 @@ import argparse
 
 implantation_time = 400.0
 resting_time = 50
-ramp = 0.5
-delta_TDS = 300
-TDS_time = int(delta_TDS / ramp)
+ramp = 8
+delta_TDS = 320
+flux = 2.5e19
+TDS_time = int(delta_TDS / ramp) + 1
 # final time
 Time = implantation_time+resting_time+TDS_time
 # number of time steps
@@ -18,9 +19,20 @@ num_steps = 1*int(implantation_time+resting_time+TDS_time)
 k = Time / num_steps  # time step size
 dt = Constant(k)
 t = 0  # Initialising time to 0s
-size = 5e-6
-mesh = IntervalMesh(1500, 0, size)
-flux = 2.5e19
+size = 500e-6
+nb_cells_in = 100
+mesh = IntervalMesh(nb_cells_in, 0, size)
+nb_cells_ref = 2000
+refinement_point = 5e-6
+print("Mesh size before local refinement is " + str(len(mesh.cells())))
+while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
+    cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
+    cell_markers.set_all(False)
+    for cell in cells(mesh):
+        if cell.midpoint().x() <= refinement_point:
+            cell_markers[cell] = True
+    mesh = refine(mesh, cell_markers)
+print("Mesh size after local refinement is " + str(len(mesh.cells())))
 
 # Define function space for system of concentrations
 P1 = FiniteElement('P', interval, 1)
@@ -41,7 +53,7 @@ def outside(x, on_boundary):
 inside_bc_c = Expression(('0', '0', '0', '0'), t=0, degree=1)
 bci_c = DirichletBC(V, inside_bc_c, inside)
 bco_c = DirichletBC(V, inside_bc_c, outside)
-bcs = [bci_c]
+bcs = [bci_c, bco_c]
 
 
 # Define test functions
@@ -62,7 +74,7 @@ print('Defining source terms')
 f = Expression('t<implantation_time ?  \
                flux/(6.3e28) * 1/(2.5e-9*2*3.14)* \
                exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2)): 0',
-               flux=flux, 
+               flux=flux,
                implantation_time=implantation_time,
                e=size,
                t=0,
@@ -81,9 +93,10 @@ beta = Constant(6)  # number of solute sites per atom (6 for W)
 v_0 = 1e13  # frequency factor s-1
 k_B = 8.6e-5
 temp = Expression('t < (implantation_time+resting_time) ? \
-                  300 : 300+8*(t-(implantation_time+resting_time))',
+                  300 : 300+ramp*(t-(implantation_time+resting_time))',
                   implantation_time=implantation_time,
                   resting_time=resting_time,
+                  ramp=ramp,
                   t=0, degree=2)
 
 
@@ -93,7 +106,7 @@ def T_var(t):
     elif t < implantation_time+resting_time:
         return 300
     else:
-        return 300+8*(t-(implantation_time+resting_time))
+        return 300+ramp*(t-(implantation_time+resting_time))
 
 
 def calculate_D(T, subdomain):
