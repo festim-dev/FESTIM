@@ -52,14 +52,21 @@ def export_TDS(filedesorption):
 implantation_time = 400.0
 resting_time = 50
 ramp = 8
-delta_TDS = 350
+delta_TDS = 500
 r = 0
 flux = 2.5e19
 density = 6.3e28
 n_trap_1 = 1e-3  # trap 1 density
 n_trap_2 = 4e-4  # trap 2 density
+n_trap_3a_max = 1e-1
+n_trap_3b_max = 1e-2
+rate_3a = 6e-4
+rate_3b = 2e-4
+xp = 1e-6
+
 E1 = 0.87  # in eV trap 1 activation energy
 E2 = 1.0  # in eV activation energy
+E3 = 1.5  # in eV activation energy
 alpha = Constant(1.1e-10)  # lattice constant ()
 beta = Constant(6)  # number of solute sites per atom (6 for W)
 v_0 = 1e13  # frequency factor s-1
@@ -73,10 +80,10 @@ num_steps = 2*int(implantation_time+resting_time+TDS_time)
 k = Time / num_steps  # time step size
 dt = Constant(k)
 t = 0  # Initialising time to 0s
-size = 500e-6
-nb_cells_in = 1000
+size = 20e-6
+nb_cells_in = 20
 mesh = IntervalMesh(nb_cells_in, 0, size)
-nb_cells_ref = 2000
+nb_cells_ref = 1000
 refinement_point = 3e-6
 print("Mesh size before local refinement is " + str(len(mesh.cells())))
 while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
@@ -87,12 +94,25 @@ while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
             cell_markers[cell] = True
     mesh = refine(mesh, cell_markers)
 print("Mesh size after local refinement is " + str(len(mesh.cells())))
+nb_cells_in = len(mesh.cells())
+nb_cells_ref = 100
+refinement_point = 10e-9
+print("Mesh size before local refinement is " + str(len(mesh.cells())))
+while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
+    cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
+    cell_markers.set_all(False)
+    for cell in cells(mesh):
+        if cell.midpoint().x() < refinement_point:
+            cell_markers[cell] = True
+    mesh = refine(mesh, cell_markers)
+print("Mesh size after local refinement is " + str(len(mesh.cells())))
+
 
 # Define function space for system of concentrations
 P1 = FiniteElement('P', interval, 1)
 element = MixedElement([P1, P1, P1, P1])
 V = FunctionSpace(mesh, element)
-
+W = FunctionSpace(mesh, 'P', 1)
 # BCs
 print('Defining boundary conditions')
 
@@ -112,33 +132,37 @@ bcs = [bci_c, bco_c]
 
 # Define test functions
 v_1, v_2, v_3, v_4 = TestFunctions(V)
+v_trap_3 = TestFunction(W)
 
 u = Function(V)
 u_n = Function(V)
+n_trap_3 = TrialFunction(W)  # trap 3 density
 
 # Split system functions to access components
 u_1, u_2, u_3, u_4 = split(u)
 
 print('Defining initial values')
-ini = Expression(("x[0]<1e-6 ? 0 : 0", "0", "0", "0"), degree=1)
-u_n = interpolate(ini, V)
+ini_u = Expression(("x[0]<1e-6 ? 0 : 0", "0", "0", "0"), degree=1)
+u_n = interpolate(ini_u, V)
 u_n1, u_n2, u_n3, u_n4 = split(u_n)
 
+ini_n_trap_3 = Expression("0", degree=1)
+n_trap_3_n = interpolate(ini_n_trap_3, W)
+n_trap_3_ = Function(W)
 print('Defining source terms')
-f = Expression('t<implantation_time ?  \
-               (1-r)*flux/(6.3e28) * 1/(2.5e-9*pow(2*3.14,0.5))*  \
-               exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2)): 0',
-               flux=flux, r=r,
-               implantation_time=implantation_time,
-               e=size,
-               t=0,
-               degree=2)  # This is the tritium volumetric source term 
-
+f = Expression('1/(2.5e-9*pow(2*3.14,0.5))*  \
+               exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2))',
+               degree=2)  # This is the tritium volumetric source term
+teta = Expression('x[0] < xp ? 1/xp : 0',
+                  xp=xp, degree=1)
+flux_ = Expression('t <= implantation_time ? flux/density : 0',
+                   t=0, implantation_time=implantation_time,
+                   flux=flux, density=density, degree=1)
 # Define expressions used in variational forms
 print('Defining variational problem')
 
 
-temp = Expression('t < (implantation_time+resting_time) ? \
+temp = Expression('t <= (implantation_time+resting_time) ? \
                   300 : 300+ramp*(t-(implantation_time+resting_time))',
                   implantation_time=implantation_time,
                   resting_time=resting_time,
@@ -166,31 +190,31 @@ detrapping_trap1 = v_0*exp(-E1/k_B/temp)*u_2*v_2*dx
 transient_trap2 = ((u_3 - u_n3) / dt)*v_3*dx
 trapping_trap2 = - D/alpha/alpha/beta*u_1*(n_trap_2 - u_3)*v_3*dx
 detrapping_trap2 = v_0*exp(-E2/k_B/temp)*u_3*v_3*dx
+transient_trap3 = ((u_4 - u_n4) / dt)*v_4*dx
+trapping_trap3 = - D/alpha/alpha/beta*u_1*(n_trap_3_ - u_4)*v_4*dx
+detrapping_trap3 = v_0*exp(-E3/k_B/temp)*u_4*v_4*dx
 
 transient_sol = ((u_1 - u_n1) / dt)*v_1*dx
 diff_sol = D*dot(grad(u_1), grad(v_1))*dx
-source_sol = - f*v_1*dx
+source_sol = - (1-r)*flux_*f*v_1*dx
 trapping1_sol = ((u_2 - u_n2) / dt)*v_1*dx
 trapping2_sol = ((u_3 - u_n3) / dt)*v_1*dx
-
+trapping3_sol = ((u_4 - u_n4) / dt)*v_1*dx
 F = transient_sol + source_sol + diff_sol
-F += trapping1_sol + trapping2_sol
+F += trapping1_sol + trapping2_sol + trapping3_sol
 F += transient_trap1 + trapping_trap1 + detrapping_trap1
 F += transient_trap2 + trapping_trap2 + detrapping_trap2
+F += transient_trap3 + trapping_trap3 + detrapping_trap3
 
 
-#F = ((u_1 - u_n1) / dt)*v_1*dx + D*dot(grad(u_1), grad(v_1))*dx - f*v_1*dx \
-#    + ((u_2 - u_n2) / dt)*v_1*dx + ((u_3 - u_n3) / dt)*v_1*dx \
-#    + ((u_2 - u_n2) / dt)*v_2*dx \
-#    - D/alpha/alpha/beta*u_1*(n_trap_1 - u_2)*v_2*dx \
-#    + v_0*exp(-E1/k_B/temp)*u_2*v_2*dx \
-#    + ((u_3 - u_n3) / dt)*v_3*dx\
-#    - D/alpha/alpha/beta*u_1*(n_trap_2 - u_3)*v_3*dx \
-#    + v_0*exp(-E2/k_B/temp)*u_3*v_3*dx
+F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
+F_n3 += -(1-r)*flux_*((1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f + (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta)*v_trap_3 * dx
+
 
 vtkfile_u_1 = File('Solution/c_sol.pvd')
 vtkfile_u_2 = File('Solution/c_trap1.pvd')
 vtkfile_u_3 = File('Solution/c_trap2.pvd')
+vtkfile_u_4 = File('Solution/c_trap3.pvd')
 filedesorption = save_as()
 
 #  Time-stepping
@@ -198,11 +222,12 @@ print('Time stepping')
 t = 0
 desorption = list()
 total_n = 0
+
 for n in range(num_steps):
     # Update current time
     t += k
     temp.t += k
-    f.t += k
+    flux_.t += k
     D = calculate_D(T_var(t), 0)
     print(round(t/Time*100, 5), "%")
     print(round(t, 4), "s")
@@ -210,16 +235,19 @@ for n in range(num_steps):
     solve(F == 0, u, bcs,
           solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}})
 
+    solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
     _u_1, _u_2, _u_3, _u_4 = u.split()
 
     # Save solution to file (.vtu)
     vtkfile_u_1 << (_u_1, t)
     vtkfile_u_2 << (_u_2, t)
     vtkfile_u_3 << (_u_3, t)
+    vtkfile_u_4 << (_u_4, t)
 
     total_trap1 = assemble(_u_2*density*dx)
     total_trap2 = assemble(_u_3*density*dx)
-    total_trap = total_trap1+total_trap2
+    total_trap3 = assemble(_u_4*density*dx)
+    total_trap = total_trap1 + total_trap2 + total_trap3
     total_sol = assemble(_u_1*density*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/k, T_var(t-k), t]
@@ -232,5 +260,6 @@ for n in range(num_steps):
 
     # Update previous solutions
     u_n.assign(u)
+    n_trap_3_n.assign(n_trap_3_)
 
 export_TDS(filedesorption)
