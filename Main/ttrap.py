@@ -177,7 +177,6 @@ def T_var(t):
         return 300
     else:
         return 300+ramp*(t-(implantation_time+resting_time))
-T = T_var(t)
 
 
 def calculate_D(T, subdomain):
@@ -230,7 +229,7 @@ set_log_level(30)  # Set the log level to WARNING
 for n in range(num_steps):
     # Update current time
     t += k
-    T = T_var(t)
+    temp.t += k
     flux_.t += k
     D = calculate_D(T_var(t), 0)
     print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s',
