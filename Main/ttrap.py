@@ -49,6 +49,18 @@ def export_TDS(filedesorption):
             input()
     return
 
+
+def calculate_D(T, subdomain):
+    return 4.1e-7*exp(-0.39/(k_B*T))
+
+
+def update_D(mesh, volume_markers, T):
+    D = Function(V0)
+    for cell in cells(mesh):
+        volume_id = volume_markers.array()[cell.index()]
+        D.vector()[cell.index()] = calculate_D(T, volume_id)
+    return D
+
 implantation_time = 400.0
 resting_time = 50
 ramp = 8
@@ -83,6 +95,8 @@ t = 0  # Initialising time to 0s
 size = 20e-6
 nb_cells_in = 20
 mesh = IntervalMesh(nb_cells_in, 0, size)
+
+
 nb_cells_ref = 1000
 refinement_point = 3e-6
 print("Mesh size before local refinement is " + str(len(mesh.cells())))
@@ -108,11 +122,15 @@ while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
 print("Mesh size after local refinement is " + str(len(mesh.cells())))
 
 
-# Define function space for system of concentrations
+# Define function space for system of concentrations and properties
 P1 = FiniteElement('P', interval, 1)
 element = MixedElement([P1, P1, P1, P1])
 V = FunctionSpace(mesh, element)
 W = FunctionSpace(mesh, 'P', 1)
+V0 = FunctionSpace(mesh, 'DG', 0)
+
+# Define subdomains
+volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
 # BCs
 print('Defining boundary conditions')
 
@@ -170,18 +188,7 @@ temp = Expression('t <= (implantation_time+resting_time) ? \
                   t=0, degree=2)
 
 
-def T_var(t):
-    if t < implantation_time:
-        return 300
-    elif t < implantation_time+resting_time:
-        return 300
-    else:
-        return 300+ramp*(t-(implantation_time+resting_time))
-
-
-def calculate_D(T, subdomain):
-    return 4.1e-7*exp(-0.39/(k_B*T))
-D = calculate_D(T_var(0), 0)
+D = update_D(mesh, volume_markers, temp(size/2))
 
 # Define variational problem
 transient_trap1 = ((u_2 - u_n2) / dt)*v_2*dx
@@ -231,10 +238,10 @@ for n in range(num_steps):
     t += k
     temp.t += k
     flux_.t += k
-    D = calculate_D(T_var(t), 0)
+    if t > implantation_time:
+        D = update_D(mesh, volume_markers, temp(size/2))
     print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s',
           end="\r")
-    # Solve variational problem for time step
     solve(F == 0, u, bcs,
           solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}})
 
@@ -253,13 +260,10 @@ for n in range(num_steps):
     total_trap = total_trap1 + total_trap2 + total_trap3
     total_sol = assemble(_u_1*density*dx)
     total = total_trap + total_sol
-    desorption_rate = [-(total-total_n)/k, T_var(t-k), t]
-    total_n = total
-
     if t > implantation_time+resting_time:
+        desorption_rate = [-(total-total_n)/k, temp(size/2), t]
+        total_n = total
         desorption.append(desorption_rate)
-        print("Total of D = "+str(total))
-        print("Desorption rate = " + str(desorption_rate))
 
     # Update previous solutions
     u_n.assign(u)
