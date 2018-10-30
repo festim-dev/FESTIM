@@ -56,7 +56,7 @@ delta_TDS = 500
 r = 0
 flux = 2.5e19
 density = 6.3e28
-n_trap_1 = 1e-3  # trap 1 density
+n_trap_1 = 1.3e-3  # trap 1 density
 n_trap_2 = 4e-4  # trap 2 density
 n_trap_3a_max = 1e-1
 n_trap_3b_max = 1e-2
@@ -177,6 +177,7 @@ def T_var(t):
         return 300
     else:
         return 300+ramp*(t-(implantation_time+resting_time))
+T = T_var(t)
 
 
 def calculate_D(T, subdomain):
@@ -218,19 +219,22 @@ vtkfile_u_4 = File('Solution/c_trap3.pvd')
 filedesorption = save_as()
 
 #  Time-stepping
-print('Time stepping')
-t = 0
+print('Time stepping...')
+
 desorption = list()
 total_n = 0
+
+set_log_level(30)  # Set the log level to WARNING
+# set_log_level(20) # Set the log level to INFO
 
 for n in range(num_steps):
     # Update current time
     t += k
-    temp.t += k
+    T = T_var(t)
     flux_.t += k
     D = calculate_D(T_var(t), 0)
-    print(round(t/Time*100, 5), "%")
-    print(round(t, 4), "s")
+    print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s',
+          end="\r")
     # Solve variational problem for time step
     solve(F == 0, u, bcs,
           solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}})
