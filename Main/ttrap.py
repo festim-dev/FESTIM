@@ -8,6 +8,10 @@ import argparse
 
 
 def save_as():
+    '''
+    - parameters : none
+    - returns filedescription : string of the saving path
+    '''
     valid = False
     while valid is False:
         print("Save as (.csv):")
@@ -34,6 +38,9 @@ def save_as():
 
 
 def export_TDS(filedesorption):
+    '''
+    - filedesorption : string, the path of the csv file.
+    '''
     busy = True
     while busy is True:
         try:
@@ -51,15 +58,61 @@ def export_TDS(filedesorption):
 
 
 def calculate_D(T, subdomain):
+    '''
+    Calculate the diffusion coeff at a certain temperature
+    and for a specific material (subdomain)
+    Arguments:
+    - T : float, temperature
+    - subdomain : int, the subdomain
+    Returns : float, the diffusion coefficient
+    '''
+
     return 4.1e-7*exp(-0.39/(k_B*T))
 
 
 def update_D(mesh, volume_markers, T):
+    '''
+    Iterates through the mesh and compute the value of D
+    Arguments:
+    - mesh : the mesh
+    - volume_markers : MeshFunction that contains the subdomains
+    - T : float, the temperature
+    Returns : the Function D
+    '''
     D = Function(V0)
     for cell in cells(mesh):
         volume_id = volume_markers.array()[cell.index()]
         D.vector()[cell.index()] = calculate_D(T, volume_id)
     return D
+
+
+def formulation(traps):
+    ''' formulation takes traps as argument (list).
+    -parameter: traps : [densities, energies, [subdomain(s)],
+    solution field, test function, previous solution field].
+    - F : variational formulation
+    '''
+    transient_sol = ((u_1 - u_n1) / dt)*v_1*dx
+    diff_sol = D*dot(grad(u_1), grad(v_1))*dx
+    source_sol = - (1-r)*flux_*f*v_1*dx
+
+    F = 0
+    F += transient_sol + source_sol + diff_sol
+
+    for trap in traps:
+        density = trap[0]
+        energy = trap[1]
+        F += ((trap[3] - trap[5]) / dt)*trap[4]*dx
+        if type(trap[2]) is list:
+            for subdomain in trap[2]:
+                F += - D/alpha/alpha/beta*u_1*(density - trap[3])*trap[4]*dx(subdomain)
+                F += v_0*exp(-energy/k_B/temp)*trap[3]*trap[4]*dx(subdomain)
+        else:
+            subdomain = trap[2]
+            F += - D/alpha/alpha/beta*u_1*(density - trap[3])*trap[4]*dx(subdomain)
+            F += v_0*exp(-energy/k_B/temp)*trap[3]*trap[4]*dx(subdomain)
+        F += ((trap[3] - trap[5]) / dt)*v_1*dx
+    return F
 
 implantation_time = 400.0
 resting_time = 50
@@ -97,7 +150,7 @@ nb_cells_in = 20
 mesh = IntervalMesh(nb_cells_in, 0, size)
 
 
-nb_cells_ref = 1000
+nb_cells_ref = 1500
 refinement_point = 3e-6
 print("Mesh size before local refinement is " + str(len(mesh.cells())))
 while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
@@ -108,6 +161,7 @@ while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
             cell_markers[cell] = True
     mesh = refine(mesh, cell_markers)
 print("Mesh size after local refinement is " + str(len(mesh.cells())))
+
 nb_cells_in = len(mesh.cells())
 nb_cells_ref = 100
 refinement_point = 10e-9
@@ -129,8 +183,25 @@ V = FunctionSpace(mesh, element)
 W = FunctionSpace(mesh, 'P', 1)
 V0 = FunctionSpace(mesh, 'DG', 0)
 
-# Define subdomains
+# Define and mark subdomains
+
+
+class Omega_1(SubDomain):
+    def inside(self, x, on_boundary):
+        return x[0] <= 0.25e-6 + DOLFIN_EPS
+
+
+class Omega_2(SubDomain):
+    def inside(self, x, on_boundary):
+        return x[0] > 0.25e-6 + DOLFIN_EPS
+
 volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
+subdomain1 = Omega_1()
+subdomain2 = Omega_2()
+subdomain1.mark(volume_markers, 1)
+subdomain2.mark(volume_markers, 2)
+dx = dx(subdomain_data=volume_markers)
+
 # BCs
 print('Defining boundary conditions')
 
@@ -153,14 +224,13 @@ v_1, v_2, v_3, v_4 = TestFunctions(V)
 v_trap_3 = TestFunction(W)
 
 u = Function(V)
-u_n = Function(V)
 n_trap_3 = TrialFunction(W)  # trap 3 density
 
 # Split system functions to access components
 u_1, u_2, u_3, u_4 = split(u)
 
 print('Defining initial values')
-ini_u = Expression(("x[0]<1e-6 ? 0 : 0", "0", "0", "0"), degree=1)
+ini_u = Expression(("0", "0", "0", "0"), degree=1)
 u_n = interpolate(ini_u, V)
 u_n1, u_n2, u_n3, u_n4 = split(u_n)
 
@@ -191,47 +261,29 @@ temp = Expression('t <= (implantation_time+resting_time) ? \
 D = update_D(mesh, volume_markers, temp(size/2))
 
 # Define variational problem
-transient_trap1 = ((u_2 - u_n2) / dt)*v_2*dx
-trapping_trap1 = - D/alpha/alpha/beta*u_1*(n_trap_1 - u_2)*v_2*dx
-detrapping_trap1 = v_0*exp(-E1/k_B/temp)*u_2*v_2*dx
-transient_trap2 = ((u_3 - u_n3) / dt)*v_3*dx
-trapping_trap2 = - D/alpha/alpha/beta*u_1*(n_trap_2 - u_3)*v_3*dx
-detrapping_trap2 = v_0*exp(-E2/k_B/temp)*u_3*v_3*dx
-transient_trap3 = ((u_4 - u_n4) / dt)*v_4*dx
-trapping_trap3 = - D/alpha/alpha/beta*u_1*(n_trap_3_ - u_4)*v_4*dx
-detrapping_trap3 = v_0*exp(-E3/k_B/temp)*u_4*v_4*dx
 
-transient_sol = ((u_1 - u_n1) / dt)*v_1*dx
-diff_sol = D*dot(grad(u_1), grad(v_1))*dx
-source_sol = - (1-r)*flux_*f*v_1*dx
-trapping1_sol = ((u_2 - u_n2) / dt)*v_1*dx
-trapping2_sol = ((u_3 - u_n3) / dt)*v_1*dx
-trapping3_sol = ((u_4 - u_n4) / dt)*v_1*dx
-F = transient_sol + source_sol + diff_sol
-F += trapping1_sol + trapping2_sol + trapping3_sol
-F += transient_trap1 + trapping_trap1 + detrapping_trap1
-F += transient_trap2 + trapping_trap2 + detrapping_trap2
-F += transient_trap3 + trapping_trap3 + detrapping_trap3
-
-
+traps = [[n_trap_1, E1, [1, 2], u_2, v_2, u_n2],
+         [n_trap_2, E2, [1, 2], u_3, v_3, u_n3],
+         [n_trap_3_, E3, [1, 2], u_4, v_4, u_n4]]
+F = formulation(traps)
 F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
 F_n3 += -(1-r)*flux_*((1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f + (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta)*v_trap_3 * dx
 
 
-vtkfile_u_1 = File('Solution/c_sol.pvd')
-vtkfile_u_2 = File('Solution/c_trap1.pvd')
-vtkfile_u_3 = File('Solution/c_trap2.pvd')
-vtkfile_u_4 = File('Solution/c_trap3.pvd')
+xdmf_u_1 = XDMFFile('Solution/c_sol.xdmf')
+xdmf_u_2 = XDMFFile('Solution/c_trap1.xdmf')
+xdmf_u_3 = XDMFFile('Solution/c_trap2.xdmf')
+xdmf_u_4 = XDMFFile('Solution/c_trap3.xdmf')
 filedesorption = save_as()
 
 #  Time-stepping
 print('Time stepping...')
 
 desorption = list()
-total_n = 0
 
 set_log_level(30)  # Set the log level to WARNING
-# set_log_level(20) # Set the log level to INFO
+#set_log_level(20) # Set the log level to INFO
+
 
 for n in range(num_steps):
     # Update current time
@@ -248,21 +300,25 @@ for n in range(num_steps):
     solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
     _u_1, _u_2, _u_3, _u_4 = u.split()
 
-    # Save solution to file (.vtu)
-    vtkfile_u_1 << (_u_1, t)
-    vtkfile_u_2 << (_u_2, t)
-    vtkfile_u_3 << (_u_3, t)
-    vtkfile_u_4 << (_u_4, t)
-
+    # Save solution to file (.xdmf)
+    _u_1.rename("solute", "label")
+    _u_2.rename("trap_1", "label")
+    _u_3.rename("trap_2", "label")
+    _u_4.rename("trap_3", "label")
+    xdmf_u_1.write(_u_1, t)
+    xdmf_u_2.write(_u_2, t)
+    xdmf_u_3.write(_u_3, t)
+    xdmf_u_4.write(_u_4, t)
+    
     total_trap1 = assemble(_u_2*density*dx)
     total_trap2 = assemble(_u_3*density*dx)
     total_trap3 = assemble(_u_4*density*dx)
     total_trap = total_trap1 + total_trap2 + total_trap3
     total_sol = assemble(_u_1*density*dx)
     total = total_trap + total_sol
+    desorption_rate = [-(total-total_n)/k, temp(size/2), t]
+    total_n = total
     if t > implantation_time+resting_time:
-        desorption_rate = [-(total-total_n)/k, temp(size/2), t]
-        total_n = total
         desorption.append(desorption_rate)
 
     # Update previous solutions
