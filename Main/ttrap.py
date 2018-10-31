@@ -66,8 +66,15 @@ def calculate_D(T, subdomain):
     - subdomain : int, the subdomain
     Returns : float, the diffusion coefficient
     '''
+    if subdomain == 1:
+        coefficient = 4.1e-7*exp(-0.39/(k_B*T))
+    elif subdomain == 2:
+        coefficient = 4.1e-7*exp(-0.39/(k_B*T))
+    else:
+        print("Subdomain", subdomain)
+        coefficient = 0
 
-    return 4.1e-7*exp(-0.39/(k_B*T))
+    return coefficient
 
 
 def update_D(mesh, volume_markers, T):
@@ -114,6 +121,33 @@ def formulation(traps):
         F += ((trap[3] - trap[5]) / dt)*v_1*dx
     return F
 
+
+def subdomains(mesh, domains):
+    '''
+    Iterates through the mesh and mark them
+    based on their position in the domain
+    Arguments:
+    - mesh : the mesh
+    - domains : list, contains the borders of the domains
+    Returns :
+    - volume_markers : MeshFunction that contains the subdomains
+        (0 if no domain was found)
+    - measurement : the measurement dx based on volume_markers
+    '''
+    volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
+    domains = sorted(domains)
+    for cell in cells(mesh):
+        i = 1
+        for point in range(len(domains)):
+            if cell.midpoint().x() >= domains[point] \
+             and cell.midpoint().x() <= domains[point+1]:
+                volume_markers[cell] = i
+            i += 1
+
+    measurement = dx(subdomain_data=volume_markers)
+    return volume_markers, measurement
+
+
 implantation_time = 400.0
 resting_time = 50
 ramp = 8
@@ -138,17 +172,17 @@ v_0 = 1e13  # frequency factor s-1
 k_B = 8.6e-5
 
 TDS_time = int(delta_TDS / ramp) + 1
-# final time
 Time = implantation_time+resting_time+TDS_time
-# number of time steps
 num_steps = 2*int(implantation_time+resting_time+TDS_time)
 k = Time / num_steps  # time step size
 dt = Constant(k)
 t = 0  # Initialising time to 0s
 size = 20e-6
+domains = [0, 0.25e-6, size]
+
+
 nb_cells_in = 20
 mesh = IntervalMesh(nb_cells_in, 0, size)
-
 
 nb_cells_ref = 1500
 refinement_point = 3e-6
@@ -186,22 +220,7 @@ V0 = FunctionSpace(mesh, 'DG', 0)
 # Define and mark subdomains
 
 
-class Omega_1(SubDomain):
-    def inside(self, x, on_boundary):
-        return x[0] <= 0.25e-6 + DOLFIN_EPS
-
-
-class Omega_2(SubDomain):
-    def inside(self, x, on_boundary):
-        return x[0] > 0.25e-6 + DOLFIN_EPS
-
-volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
-subdomain1 = Omega_1()
-subdomain2 = Omega_2()
-subdomain1.mark(volume_markers, 1)
-subdomain2.mark(volume_markers, 2)
-dx = dx(subdomain_data=volume_markers)
-
+volume_markers, dx = subdomains(mesh, domains)
 # BCs
 print('Defining boundary conditions')
 
@@ -278,7 +297,7 @@ filedesorption = save_as()
 
 #  Time-stepping
 print('Time stepping...')
-
+total_n = 0
 desorption = list()
 
 set_log_level(30)  # Set the log level to WARNING
