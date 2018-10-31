@@ -57,27 +57,22 @@ def export_TDS(filedesorption):
     return
 
 
-def calculate_D(T, subdomain):
+def calculate_D(T, E, D_0):
     '''
     Calculate the diffusion coeff at a certain temperature
     and for a specific material (subdomain)
     Arguments:
     - T : float, temperature
-    - subdomain : int, the subdomain
+    - E : float, diffusion energy
+    - D_0 : float, diffusion pre-exponential factor
     Returns : float, the diffusion coefficient
     '''
-    if subdomain == 1:
-        coefficient = 4.1e-7*exp(-0.39/(k_B*T))
-    elif subdomain == 2:
-        coefficient = 4.1e-7*exp(-0.39/(k_B*T))
-    else:
-        print("Subdomain", subdomain)
-        coefficient = 0
+    coefficient = D_0 * exp(-E/k_B/T)
 
     return coefficient
 
 
-def update_D(mesh, volume_markers, T):
+def update_D(mesh, volume_markers, materials, T):
     '''
     Iterates through the mesh and compute the value of D
     Arguments:
@@ -88,15 +83,77 @@ def update_D(mesh, volume_markers, T):
     '''
     D = Function(V0)
     for cell in cells(mesh):
-        volume_id = volume_markers.array()[cell.index()]
-        D.vector()[cell.index()] = calculate_D(T, volume_id)
+        volume_id = volume_markers[cell]
+        found = False
+        for material in materials:
+            if volume_id == material["id"]:
+                found = True
+                D.vector()[cell.index()] = \
+                    calculate_D(T, material['E_diff'], material['D_0'])
+                break
+        if found is False:
+            print('Computing D: Volume ID not found')
     return D
 
 
-def formulation(traps):
+def update_alpha(mesh, volume_markers, materials):
+    '''
+    Iterates through the mesh and compute the value of D
+    Arguments:
+    - mesh : the mesh
+    - volume_markers : MeshFunction that contains the subdomains
+    - materials : list, contains all the materials dictionaries
+
+    Returns : the Function alpha
+    '''
+    alpha = Function(V0)
+    for cell in cells(mesh):
+        volume_id = volume_markers[cell]
+        found = False
+        for material in materials:
+            if volume_id == material["id"]:
+                found = True
+                alpha.vector()[cell.index()] = material['alpha']
+                break
+        if found is False:
+            print('Computing alpha: Volume ID not found')
+    return alpha
+
+
+def update_beta(mesh, volume_markers, materials):
+    '''
+    Iterates through the mesh and compute the value of D
+    Arguments:
+    - mesh : the mesh
+    - volume_markers : MeshFunction that contains the subdomains
+    - materials : list, contains all the materials dictionaries
+
+    Returns : the Function beta
+    '''
+    beta = Function(V0)
+    for cell in cells(mesh):
+        volume_id = volume_markers[cell]
+        found = False
+        for material in materials:
+            if volume_id == material["id"]:
+                found = True
+                beta.vector()[cell.index()] = material['beta']
+                break
+        if found is False:
+            print('Computing beta: Volume ID not found')
+    return beta
+
+
+def formulation(traps, solutions, testfunctions, previous_solutions):
     ''' formulation takes traps as argument (list).
-    -parameter: traps : [densities, energies, [subdomain(s)],
-    solution field, test function, previous solution field].
+    Parameters:
+    - traps : dict, contains the energy, density and domains
+    of the traps
+    - solutions : list, contains the solution fields
+    - testfunctions : list, contains the testfunctions
+    - previous_solutions : list, contains the previous solution fields
+
+    Returns:
     - F : variational formulation
     '''
     transient_sol = ((u_1 - u_n1) / dt)*v_1*dx
@@ -105,71 +162,126 @@ def formulation(traps):
 
     F = 0
     F += transient_sol + source_sol + diff_sol
-
+    i = 1
     for trap in traps:
-        density = trap[0]
-        energy = trap[1]
-        F += ((trap[3] - trap[5]) / dt)*trap[4]*dx
-        if type(trap[2]) is list:
-            for subdomain in trap[2]:
-                F += - D/alpha/alpha/beta*u_1*(density - trap[3])*trap[4]*dx(subdomain)
-                F += v_0*exp(-energy/k_B/temp)*trap[3]*trap[4]*dx(subdomain)
+        trap_density = trap['density']
+        energy = trap['energy']
+        F += ((solutions[i] - previous_solutions[i]) / dt)*testfunctions[i]*dx
+        if type(trap['materials']) is list:
+            for subdomain in trap['materials']:
+                F += - D/alpha/alpha/beta*u_1*(trap_density - solutions[i])*testfunctions[i]*dx(subdomain)
+                F += v_0*exp(-energy/k_B/temp)*solutions[i]*testfunctions[i]*dx(subdomain)
         else:
-            subdomain = trap[2]
-            F += - D/alpha/alpha/beta*u_1*(density - trap[3])*trap[4]*dx(subdomain)
-            F += v_0*exp(-energy/k_B/temp)*trap[3]*trap[4]*dx(subdomain)
-        F += ((trap[3] - trap[5]) / dt)*v_1*dx
+            subdomain = trap['materials']
+            F += - D/alpha/alpha/beta*u_1*(trap_density - solutions[i])*testfunctions[i]*dx(subdomain)
+            F += v_0*exp(-energy/k_B/temp)*solutions[i]*testfunctions[i]*dx(subdomain)
+        F += ((solutions[i] - previous_solutions[i]) / dt)*v_1*dx
+        i += 1
     return F
 
 
-def subdomains(mesh, domains):
+def subdomains(mesh, materials):
     '''
     Iterates through the mesh and mark them
     based on their position in the domain
     Arguments:
     - mesh : the mesh
-    - domains : list, contains the borders of the domains
+    - materials : list, contains the dictionaries of the materials
     Returns :
     - volume_markers : MeshFunction that contains the subdomains
         (0 if no domain was found)
     - measurement : the measurement dx based on volume_markers
     '''
     volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
-    domains = sorted(domains)
     for cell in cells(mesh):
-        i = 1
-        for point in range(len(domains)):
-            if cell.midpoint().x() >= domains[point] \
-             and cell.midpoint().x() <= domains[point+1]:
-                volume_markers[cell] = i
-            i += 1
+        for material in materials:
+            if cell.midpoint().x() >= material['borders'][0] \
+             and cell.midpoint().x() <= material['borders'][1]:
+                volume_markers[cell] = material['id']
 
     measurement = dx(subdomain_data=volume_markers)
     return volume_markers, measurement
 
 
+def define_materials():
+    '''
+    Create a list of dicts corresponding to the different materials
+    and containing properties.
+    Returns:
+    -materials : list of dicts corresponding to the different materials
+    and containing properties.
+    '''
+    materials = []
+    material1 = {
+        "alpha": Constant(1.1e-10),  # lattice constant ()
+        "beta": Constant(6),  # number of solute sites per atom (6 for W)
+        "density": 6.3e28,
+        "borders": [0, 0.25e-6],
+        "E_diff": 0.39,
+        "D_0": 4.1e-7,
+        "id": 1
+    }
+    material2 = {
+        "alpha": Constant(1.1e-10),
+        "beta": Constant(6),
+        "density": 6.3e28,
+        "borders": [0.25e-6, size],
+        "E_diff": 0.39,
+        "D_0": 4.1e-7,
+        "id": 2
+    }
+    materials = [material1, material2]
+    return materials
+
+
+def define_traps(n_trap_3_n):
+    '''
+    Create a list of dicts corresponding to the different traps
+    and containing properties.
+    Arguments:
+    - n_trap_3_n : Function(W), only required if extrinsic trap is
+    simulated.
+    Returns:
+    -materials : list of dicts corresponding to the different traps
+    and containing properties.
+    '''
+    trap_1 = {
+        "energy": 0.87,
+        "density": 1.3e-3,
+        "materials": [1, 2]
+    }
+    trap_2 = {
+        "energy": 1.0,
+        "density": 4e-4,
+        "materials": [1, 2]
+    }
+    trap_3 = {
+        "energy": 1.5,
+        "density": n_trap_3_,
+        "materials": [1, 2]
+    }
+
+    traps = [trap_1, trap_2, trap_3]
+    return traps
+
+# Declaration of variables
 implantation_time = 400.0
 resting_time = 50
 ramp = 8
 delta_TDS = 500
 r = 0
 flux = 2.5e19
-density = 6.3e28
-n_trap_1 = 1.3e-3  # trap 1 density
-n_trap_2 = 4e-4  # trap 2 density
 n_trap_3a_max = 1e-1
 n_trap_3b_max = 1e-2
 rate_3a = 6e-4
 rate_3b = 2e-4
 xp = 1e-6
+size = 20e-6
 
-E1 = 0.87  # in eV trap 1 activation energy
-E2 = 1.0  # in eV activation energy
-E3 = 1.5  # in eV activation energy
-alpha = Constant(1.1e-10)  # lattice constant ()
-beta = Constant(6)  # number of solute sites per atom (6 for W)
 v_0 = 1e13  # frequency factor s-1
-k_B = 8.6e-5
+k_B = 8.6e-5  # Boltzmann constant
+
+materials = define_materials()
 
 TDS_time = int(delta_TDS / ramp) + 1
 Time = implantation_time+resting_time+TDS_time
@@ -177,10 +289,10 @@ num_steps = 2*int(implantation_time+resting_time+TDS_time)
 k = Time / num_steps  # time step size
 dt = Constant(k)
 t = 0  # Initialising time to 0s
-size = 20e-6
-domains = [0, 0.25e-6, size]
 
 
+
+# Meshing and refinement
 nb_cells_in = 20
 mesh = IntervalMesh(nb_cells_in, 0, size)
 
@@ -218,9 +330,8 @@ W = FunctionSpace(mesh, 'P', 1)
 V0 = FunctionSpace(mesh, 'DG', 0)
 
 # Define and mark subdomains
+volume_markers, dx = subdomains(mesh, materials)
 
-
-volume_markers, dx = subdomains(mesh, domains)
 # BCs
 print('Defining boundary conditions')
 
@@ -240,6 +351,7 @@ bcs = [bci_c, bco_c]
 
 # Define test functions
 v_1, v_2, v_3, v_4 = TestFunctions(V)
+testfunctions = [v_1, v_2, v_3, v_4]
 v_trap_3 = TestFunction(W)
 
 u = Function(V)
@@ -247,15 +359,20 @@ n_trap_3 = TrialFunction(W)  # trap 3 density
 
 # Split system functions to access components
 u_1, u_2, u_3, u_4 = split(u)
+solutions = [u_1, u_2, u_3, u_4]
 
 print('Defining initial values')
 ini_u = Expression(("0", "0", "0", "0"), degree=1)
 u_n = interpolate(ini_u, V)
 u_n1, u_n2, u_n3, u_n4 = split(u_n)
+previous_solutions = [u_n1, u_n2, u_n3, u_n4]
 
 ini_n_trap_3 = Expression("0", degree=1)
 n_trap_3_n = interpolate(ini_n_trap_3, W)
 n_trap_3_ = Function(W)
+
+density = 6.3e28
+# Define expressions used in variational forms
 print('Defining source terms')
 f = Expression('1/(2.5e-9*pow(2*3.14,0.5))*  \
                exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2))',
@@ -265,30 +382,28 @@ teta = Expression('x[0] < xp ? 1/xp : 0',
 flux_ = Expression('t <= implantation_time ? flux/density : 0',
                    t=0, implantation_time=implantation_time,
                    flux=flux, density=density, degree=1)
-# Define expressions used in variational forms
+
 print('Defining variational problem')
-
-
 temp = Expression('t <= (implantation_time+resting_time) ? \
                   300 : 300+ramp*(t-(implantation_time+resting_time))',
                   implantation_time=implantation_time,
                   resting_time=resting_time,
                   ramp=ramp,
                   t=0, degree=2)
+D = update_D(mesh, volume_markers, materials, temp(size/2))
+alpha = update_alpha(mesh, volume_markers, materials)
+beta = update_beta(mesh, volume_markers, materials)
 
-
-D = update_D(mesh, volume_markers, temp(size/2))
+traps = define_traps(n_trap_3_)
 
 # Define variational problem
 
-traps = [[n_trap_1, E1, [1, 2], u_2, v_2, u_n2],
-         [n_trap_2, E2, [1, 2], u_3, v_3, u_n3],
-         [n_trap_3_, E3, [1, 2], u_4, v_4, u_n4]]
-F = formulation(traps)
+F = formulation(traps, solutions, testfunctions, previous_solutions)
+
 F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
 F_n3 += -(1-r)*flux_*((1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f + (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta)*v_trap_3 * dx
 
-
+# Solution files
 xdmf_u_1 = XDMFFile('Solution/c_sol.xdmf')
 xdmf_u_2 = XDMFFile('Solution/c_trap1.xdmf')
 xdmf_u_3 = XDMFFile('Solution/c_trap2.xdmf')
@@ -310,7 +425,7 @@ for n in range(num_steps):
     temp.t += k
     flux_.t += k
     if t > implantation_time:
-        D = update_D(mesh, volume_markers, temp(size/2))
+        D = update_D(mesh, volume_markers, materials, temp(size/2))
     print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s',
           end="\r")
     solve(F == 0, u, bcs,
