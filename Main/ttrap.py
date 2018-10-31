@@ -309,7 +309,7 @@ for n in range(num_steps):
     xdmf_u_2.write(_u_2, t)
     xdmf_u_3.write(_u_3, t)
     xdmf_u_4.write(_u_4, t)
-    
+
     total_trap1 = assemble(_u_2*density*dx)
     total_trap2 = assemble(_u_3*density*dx)
     total_trap3 = assemble(_u_4*density*dx)
