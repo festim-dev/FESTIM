@@ -214,7 +214,7 @@ def define_materials():
     materials = []
     material1 = {
         "alpha": Constant(1.1e-10),  # lattice constant ()
-        "beta": Constant(6),  # number of solute sites per atom (6 for W)
+        "beta": Constant(6*6.3e28),  # number of solute sites per atom (6 for W)
         "density": 6.3e28,
         "borders": [0, 0.25e-6],
         "E_diff": 0.39,
@@ -223,7 +223,7 @@ def define_materials():
     }
     material2 = {
         "alpha": Constant(1.1e-10),
-        "beta": Constant(6),
+        "beta": Constant(6*6.3e28),
         "density": 6.3e28,
         "borders": [0.25e-6, size],
         "E_diff": 0.39,
@@ -247,12 +247,12 @@ def define_traps(n_trap_3_n):
     '''
     trap_1 = {
         "energy": 0.87,
-        "density": 1.3e-3,
+        "density":  1.3e-3*6.3e28,
         "materials": [1, 2]
     }
     trap_2 = {
         "energy": 1.0,
-        "density": 4e-4,
+        "density": 4e-4*6.3e28,
         "materials": [1, 2]
     }
     trap_3 = {
@@ -270,9 +270,9 @@ resting_time = 50
 ramp = 8
 delta_TDS = 500
 r = 0
-flux = 2.5e19
-n_trap_3a_max = 1e-1
-n_trap_3b_max = 1e-2
+flux = 2.5e19#/6.3e28
+n_trap_3a_max = 1e-1*Constant(6.3e28)
+n_trap_3b_max = 1e-2*Constant(6.3e28)
 rate_3a = 6e-4
 rate_3b = 2e-4
 xp = 1e-6
@@ -371,7 +371,6 @@ ini_n_trap_3 = Expression("0", degree=1)
 n_trap_3_n = interpolate(ini_n_trap_3, W)
 n_trap_3_ = Function(W)
 
-density = 6.3e28
 # Define expressions used in variational forms
 print('Defining source terms')
 f = Expression('1/(2.5e-9*pow(2*3.14,0.5))*  \
@@ -379,9 +378,9 @@ f = Expression('1/(2.5e-9*pow(2*3.14,0.5))*  \
                degree=2)  # This is the tritium volumetric source term
 teta = Expression('x[0] < xp ? 1/xp : 0',
                   xp=xp, degree=1)
-flux_ = Expression('t <= implantation_time ? flux/density : 0',
+flux_ = Expression('t <= implantation_time ? flux : 0',
                    t=0, implantation_time=implantation_time,
-                   flux=flux, density=density, degree=1)
+                   flux=flux, degree=1)
 
 print('Defining variational problem')
 temp = Expression('t <= (implantation_time+resting_time) ? \
@@ -444,11 +443,11 @@ for n in range(num_steps):
     xdmf_u_3.write(_u_3, t)
     xdmf_u_4.write(_u_4, t)
 
-    total_trap1 = assemble(_u_2*density*dx)
-    total_trap2 = assemble(_u_3*density*dx)
-    total_trap3 = assemble(_u_4*density*dx)
+    total_trap1 = assemble(_u_2*dx)
+    total_trap2 = assemble(_u_3*dx)
+    total_trap3 = assemble(_u_4*dx)
     total_trap = total_trap1 + total_trap2 + total_trap3
-    total_sol = assemble(_u_1*density*dx)
+    total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/k, temp(size/2), t]
     total_n = total
