@@ -264,23 +264,74 @@ def define_traps(n_trap_3_n):
     traps = [trap_1, trap_2, trap_3]
     return traps
 
+
+def mesh_and_refine(mesh_parameters):
+    '''
+    Mesh and refine iteratively until meeting the refinement
+    conditions.
+    Arguments:
+    - mesh_parameters : dict, contains initial number of cells, size,
+    and refinements (number of cells and position)
+    Returns:
+    - mesh : the refined mesh.
+    '''
+    print('Meshing ...')
+    initial_number_of_cells = mesh_parameters["initial_number_of_cells"]
+    size = mesh_parameters["size"]
+    mesh = IntervalMesh(initial_number_of_cells, 0, size)
+    if "refinements" in mesh_parameters:
+        for refinement in mesh_parameters["refinements"]:
+            nb_cells_ref = refinement["cells"]
+            refinement_point = refinement["x"]
+            print("Mesh size before local refinement is " + str(len(mesh.cells())))
+            while len(mesh.cells()) < initial_number_of_cells + nb_cells_ref:
+                cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
+                cell_markers.set_all(False)
+                for cell in cells(mesh):
+                    if cell.midpoint().x() < refinement_point:
+                        cell_markers[cell] = True
+                mesh = refine(mesh, cell_markers)
+            print("Mesh size after local refinement is " + str(len(mesh.cells())))
+            initial_number_of_cells = len(mesh.cells())
+    else:
+        print('No refinement parameters found')
+
+    return mesh
+
+
 # Declaration of variables
+
+mesh_parameters = {
+    "initial_number_of_cells": 20,
+    "size": 20e-6,
+    "refinements": [
+        {
+            "cells": 1500,
+            "x": 3e-6
+        },
+        {
+            "cells": 100,
+            "x": 10e-9
+        }
+    ],
+    }
 implantation_time = 400.0
 resting_time = 50
 ramp = 8
 delta_TDS = 500
 r = 0
-flux = 2.5e19#/6.3e28
+flux = 2.5e19  # /6.3e28
 n_trap_3a_max = 1e-1*Constant(6.3e28)
 n_trap_3b_max = 1e-2*Constant(6.3e28)
 rate_3a = 6e-4
 rate_3b = 2e-4
 xp = 1e-6
-size = 20e-6
+size = mesh_parameters["size"]
 
 v_0 = 1e13  # frequency factor s-1
 k_B = 8.6e-5  # Boltzmann constant
 
+# Mesh and refinement
 materials = define_materials()
 
 TDS_time = int(delta_TDS / ramp) + 1
@@ -290,38 +341,7 @@ k = Time / num_steps  # time step size
 dt = Constant(k)
 t = 0  # Initialising time to 0s
 
-
-
-# Meshing and refinement
-nb_cells_in = 20
-mesh = IntervalMesh(nb_cells_in, 0, size)
-
-nb_cells_ref = 1500
-refinement_point = 3e-6
-print("Mesh size before local refinement is " + str(len(mesh.cells())))
-while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
-    cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
-    cell_markers.set_all(False)
-    for cell in cells(mesh):
-        if cell.midpoint().x() < refinement_point:
-            cell_markers[cell] = True
-    mesh = refine(mesh, cell_markers)
-print("Mesh size after local refinement is " + str(len(mesh.cells())))
-
-nb_cells_in = len(mesh.cells())
-nb_cells_ref = 100
-refinement_point = 10e-9
-print("Mesh size before local refinement is " + str(len(mesh.cells())))
-while len(mesh.cells()) < nb_cells_in + nb_cells_ref:
-    cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
-    cell_markers.set_all(False)
-    for cell in cells(mesh):
-        if cell.midpoint().x() < refinement_point:
-            cell_markers[cell] = True
-    mesh = refine(mesh, cell_markers)
-print("Mesh size after local refinement is " + str(len(mesh.cells())))
-
-
+mesh = mesh_and_refine(mesh_parameters)
 # Define function space for system of concentrations and properties
 P1 = FiniteElement('P', interval, 1)
 element = MixedElement([P1, P1, P1, P1])
