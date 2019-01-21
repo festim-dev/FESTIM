@@ -213,23 +213,24 @@ class Ttrap():
             {
                 "energy": 0.87,
                 "density": 1.3e-3*6.3e28,
-                "materials": [2]
+                "materials": [1]
             },
             {
                 "energy": 1.0,
                 "density": 4e-4*6.3e28,
-                "materials": [2]
+                "materials": [1]
             },
             {
                 "energy": 1.5,
                 "density": n_trap_3_,
-                "materials": [2]
-            },
-            {
-                "energy": 2,
-                "density": 1.3e-3*6.3e28,
                 "materials": [1]
             }
+            #,
+            #{
+            #    "energy": 2,
+            #    "density": 1.3e-3*6.3e28,
+            #    "materials": [1]
+            #}
         ]
         return traps
 
@@ -283,7 +284,7 @@ class myclass(Ttrap):
                 "alpha": Constant(1.1e-10),  # lattice constant ()
                 "beta": Constant(6*6.3e28),  # number of solute sites per atom (6 for W)
                 "density": 6.3e28,
-                "borders": [0, 20e-9],
+                "borders": [0, 20e-6],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
@@ -297,7 +298,7 @@ class myclass(Ttrap):
                 "D_0": 4.1e-7,
                 "id": 2
             }
-            materials = [material1, material2]
+            materials = [material1]
             return materials
 
         self.__mesh_parameters = {
@@ -310,7 +311,7 @@ class myclass(Ttrap):
                 },
                 {
                     "cells": 150,
-                    "x": 30e-9
+                    "x": 20e-9
                 }
             ],
             }
@@ -341,7 +342,7 @@ class myclass(Ttrap):
     k_B = 8.6e-5  # Boltzmann constant
     TDS_time = int(delta_TDS / ramp) + 1
     Time = implantation_time+resting_time+TDS_time
-    num_steps = 6*int(implantation_time+resting_time+TDS_time)
+    num_steps = 2*int(implantation_time+resting_time+TDS_time)
     k = Time / num_steps  # time step size
     dt = Constant(k)
     t = 0  # Initialising time to 0s
@@ -371,10 +372,6 @@ t = ttrap.t  # Initialising time to 0s
 
 
 size = ttrap.getMeshParameters()["size"]
-
-
-
-
 
 # Mesh and refinement
 materials = ttrap.getMaterials()
@@ -431,12 +428,12 @@ n_trap_3_ = Function(W)
 
 # Define expressions used in variational forms
 print('Defining source terms')
-center = 20e-9 + 4.5e-9
+center = 4.5e-9 #+ 20e-9
 width = 2.5e-9
 f = Expression('1/(width*pow(2*3.14,0.5))*  \
                exp(-0.5*pow(((x[0]-center)/width), 2))',
                degree=2, center=center, width=width)  # This is the tritium volumetric source term
-teta = Expression('(x[0] < xp + 20e-9 && x[0] > 20e-9 )? 1/xp : 0',
+teta = Expression('(x[0] < xp + 0 && x[0] > 0 )? 1/xp : 0',
                   xp=xp, degree=1)
 flux_ = Expression('t <= implantation_time ? flux : 0',
                    t=0, implantation_time=implantation_time,
@@ -492,6 +489,8 @@ for n in range(num_steps):
 
     solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
     _u_1, _u_2, _u_3, _u_4, _u_5 = u.split()
+    res = [_u_1, _u_2, _u_3, _u_4, _u_5]
+
     # Save solution to file (.xdmf)
     _u_1.rename("solute", "label")
     _u_2.rename("trap_1", "label")
@@ -504,11 +503,13 @@ for n in range(num_steps):
     xdmf_u_4.write(_u_4, t)
     xdmf_u_5.write(_u_5, t)
 
-    total_trap1 = assemble(_u_2*dx)
-    total_trap2 = assemble(_u_3*dx)
-    total_trap3 = assemble(_u_4*dx)
-    total_trap4 = assemble(_u_5*dx)
-    total_trap = total_trap1 + total_trap2 + total_trap3 + total_trap4
+    i = 1
+    total_trap = 0
+    for trap in traps:
+        sol = res[i]
+        total_trap += assemble(sol*dx)
+        i += 1
+
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/k, temp(size/2), t]
