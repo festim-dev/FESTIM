@@ -160,6 +160,7 @@ class Ttrap():
         F += transient_sol + source_sol + diff_sol
         i = 1
         for trap in traps:
+            #print(i)
             trap_density = trap['density']
             energy = trap['energy']
             F += ((solutions[i] - previous_solutions[i]) / dt)*testfunctions[i]*dx
@@ -211,18 +212,23 @@ class Ttrap():
         traps = [
             {
                 "energy": 0.87,
-                "density":  1.3e-3*6.3e28,
-                "materials": [1, 2]
+                "density": 1.3e-3*6.3e28,
+                "materials": [2]
             },
             {
                 "energy": 1.0,
                 "density": 4e-4*6.3e28,
-                "materials": [1, 2]
+                "materials": [2]
             },
             {
                 "energy": 1.5,
                 "density": n_trap_3_,
-                "materials": [1, 2]
+                "materials": [2]
+            },
+            {
+                "energy": 2,
+                "density": 1.3e-3*6.3e28,
+                "materials": [1]
             }
         ]
         return traps
@@ -277,7 +283,7 @@ class myclass(Ttrap):
                 "alpha": Constant(1.1e-10),  # lattice constant ()
                 "beta": Constant(6*6.3e28),  # number of solute sites per atom (6 for W)
                 "density": 6.3e28,
-                "borders": [0, 0.25e-6],
+                "borders": [0, 20e-9],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
@@ -286,7 +292,7 @@ class myclass(Ttrap):
                 "alpha": Constant(1.1e-10),
                 "beta": Constant(6*6.3e28),
                 "density": 6.3e28,
-                "borders": [0.25e-6, 20e-6],
+                "borders": [20e-9, 20e-6],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 2
@@ -299,12 +305,12 @@ class myclass(Ttrap):
             "size": 20e-6,
             "refinements": [
                 {
-                    "cells": 1500,
+                    "cells": 2000,
                     "x": 3e-6
                 },
                 {
-                    "cells": 100,
-                    "x": 10e-9
+                    "cells": 150,
+                    "x": 30e-9
                 }
             ],
             }
@@ -335,7 +341,7 @@ class myclass(Ttrap):
     k_B = 8.6e-5  # Boltzmann constant
     TDS_time = int(delta_TDS / ramp) + 1
     Time = implantation_time+resting_time+TDS_time
-    num_steps = 2*int(implantation_time+resting_time+TDS_time)
+    num_steps = 6*int(implantation_time+resting_time+TDS_time)
     k = Time / num_steps  # time step size
     dt = Constant(k)
     t = 0  # Initialising time to 0s
@@ -376,7 +382,7 @@ mesh = ttrap.getMesh()
 
 # Define function space for system of concentrations and properties
 P1 = FiniteElement('P', interval, 1)
-element = MixedElement([P1, P1, P1, P1])
+element = MixedElement([P1, P1, P1, P1, P1])
 V = FunctionSpace(mesh, element)
 W = FunctionSpace(mesh, 'P', 1)
 V0 = FunctionSpace(mesh, 'DG', 0)
@@ -395,29 +401,29 @@ def inside(x, on_boundary):
 def outside(x, on_boundary):
     return on_boundary and (near(x[0], size))
 # #Tritium concentration
-inside_bc_c = Expression(('0', '0', '0', '0'), t=0, degree=1)
+inside_bc_c = Expression(('0', '0', '0', '0', '0'), t=0, degree=1)
 bci_c = DirichletBC(V, inside_bc_c, inside)
 bco_c = DirichletBC(V, inside_bc_c, outside)
 bcs = [bci_c, bco_c]
 
 
 # Define test functions
-v_1, v_2, v_3, v_4 = TestFunctions(V)
-testfunctions = [v_1, v_2, v_3, v_4]
+v_1, v_2, v_3, v_4, v_5 = TestFunctions(V)
+testfunctions = [v_1, v_2, v_3, v_4, v_5]
 v_trap_3 = TestFunction(W)
 
 u = Function(V)
 n_trap_3 = TrialFunction(W)  # trap 3 density
 
 # Split system functions to access components
-u_1, u_2, u_3, u_4 = split(u)
-solutions = [u_1, u_2, u_3, u_4]
+u_1, u_2, u_3, u_4, u_5 = split(u)
+solutions = [u_1, u_2, u_3, u_4, u_5]
 
 print('Defining initial values')
-ini_u = Expression(("0", "0", "0", "0"), degree=1)
+ini_u = Expression(("0", "0", "0", "0", "0"), degree=1)
 u_n = interpolate(ini_u, V)
-u_n1, u_n2, u_n3, u_n4 = split(u_n)
-previous_solutions = [u_n1, u_n2, u_n3, u_n4]
+u_n1, u_n2, u_n3, u_n4, u_n5 = split(u_n)
+previous_solutions = [u_n1, u_n2, u_n3, u_n4, u_n5]
 
 ini_n_trap_3 = Expression("0", degree=1)
 n_trap_3_n = interpolate(ini_n_trap_3, W)
@@ -425,10 +431,12 @@ n_trap_3_ = Function(W)
 
 # Define expressions used in variational forms
 print('Defining source terms')
-f = Expression('1/(2.5e-9*pow(2*3.14,0.5))*  \
-               exp(-0.5*pow(((x[0]-4.5e-9)/2.5e-9), 2))',
-               degree=2)  # This is the tritium volumetric source term
-teta = Expression('x[0] < xp ? 1/xp : 0',
+center = 20e-9 + 4.5e-9
+width = 2.5e-9
+f = Expression('1/(width*pow(2*3.14,0.5))*  \
+               exp(-0.5*pow(((x[0]-center)/width), 2))',
+               degree=2, center=center, width=width)  # This is the tritium volumetric source term
+teta = Expression('(x[0] < xp + 20e-9 && x[0] > 20e-9 )? 1/xp : 0',
                   xp=xp, degree=1)
 flux_ = Expression('t <= implantation_time ? flux : 0',
                    t=0, implantation_time=implantation_time,
@@ -458,6 +466,7 @@ xdmf_u_1 = XDMFFile('Solution/c_sol.xdmf')
 xdmf_u_2 = XDMFFile('Solution/c_trap1.xdmf')
 xdmf_u_3 = XDMFFile('Solution/c_trap2.xdmf')
 xdmf_u_4 = XDMFFile('Solution/c_trap3.xdmf')
+xdmf_u_5 = XDMFFile('Solution/c_trap4.xdmf')
 filedesorption = ttrap.save_as()
 
 #  Time-stepping
@@ -482,22 +491,24 @@ for n in range(num_steps):
           solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}})
 
     solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
-    _u_1, _u_2, _u_3, _u_4 = u.split()
-
+    _u_1, _u_2, _u_3, _u_4, _u_5 = u.split()
     # Save solution to file (.xdmf)
     _u_1.rename("solute", "label")
     _u_2.rename("trap_1", "label")
     _u_3.rename("trap_2", "label")
     _u_4.rename("trap_3", "label")
+    _u_5.rename("trap_4", "label")
     xdmf_u_1.write(_u_1, t)
     xdmf_u_2.write(_u_2, t)
     xdmf_u_3.write(_u_3, t)
     xdmf_u_4.write(_u_4, t)
+    xdmf_u_5.write(_u_5, t)
 
     total_trap1 = assemble(_u_2*dx)
     total_trap2 = assemble(_u_3*dx)
     total_trap3 = assemble(_u_4*dx)
-    total_trap = total_trap1 + total_trap2 + total_trap3
+    total_trap4 = assemble(_u_5*dx)
+    total_trap = total_trap1 + total_trap2 + total_trap3 + total_trap4
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/k, temp(size/2), t]
