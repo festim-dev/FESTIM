@@ -261,7 +261,6 @@ class Ttrap():
 
 
 class myclass(Ttrap):
-    
     def __init__(self):
         ttrap = Ttrap()
 
@@ -320,33 +319,56 @@ class myclass(Ttrap):
 
     def getMeshParameters(self):
         return self.__mesh_parameters
+    # Declaration of variables
+    implantation_time = 400.0
+    resting_time = 50
+    ramp = 8
+    delta_TDS = 500
+    r = 0
+    flux = 2.5e19  # /6.3e28
+    n_trap_3a_max = 1e-1*Constant(6.3e28)
+    n_trap_3b_max = 1e-2*Constant(6.3e28)
+    rate_3a = 6e-4
+    rate_3b = 2e-4
+    xp = 1e-6
+    v_0 = 1e13  # frequency factor s-1
+    k_B = 8.6e-5  # Boltzmann constant
+    TDS_time = int(delta_TDS / ramp) + 1
+    Time = implantation_time+resting_time+TDS_time
+    num_steps = 2*int(implantation_time+resting_time+TDS_time)
+    k = Time / num_steps  # time step size
+    dt = Constant(k)
+    t = 0  # Initialising time to 0s
 
 
 ttrap = myclass()
-# Declaration of variables
 
-implantation_time = 400.0
-resting_time = 50
-ramp = 8
-delta_TDS = 500
-r = 0
-flux = 2.5e19  # /6.3e28
-n_trap_3a_max = 1e-1*Constant(6.3e28)
-n_trap_3b_max = 1e-2*Constant(6.3e28)
-rate_3a = 6e-4
-rate_3b = 2e-4
-xp = 1e-6
+implantation_time = ttrap.implantation_time
+resting_time = ttrap.resting_time
+ramp = ttrap.ramp
+delta_TDS = ttrap.delta_TDS
+r = ttrap.r
+flux = ttrap.flux  # /6.3e28
+n_trap_3a_max = ttrap.n_trap_3a_max
+n_trap_3b_max = ttrap.n_trap_3b_max
+rate_3a = ttrap.rate_3a
+rate_3b = ttrap.rate_3b
+xp = ttrap.xp
+v_0 = ttrap.v_0  # frequency factor s-1
+k_B = ttrap.k_B  # Boltzmann constant
+TDS_time = ttrap.TDS_time
+Time = ttrap.Time
+num_steps = ttrap.num_steps
+k = ttrap.k # time step size
+dt = ttrap.dt
+t = ttrap.t  # Initialising time to 0s
+
+
 size = ttrap.getMeshParameters()["size"]
 
-v_0 = 1e13  # frequency factor s-1
-k_B = 8.6e-5  # Boltzmann constant
 
-TDS_time = int(delta_TDS / ramp) + 1
-Time = implantation_time+resting_time+TDS_time
-num_steps = 2*int(implantation_time+resting_time+TDS_time)
-k = Time / num_steps  # time step size
-dt = Constant(k)
-t = 0  # Initialising time to 0s
+
+
 
 # Mesh and refinement
 materials = ttrap.getMaterials()
