@@ -213,17 +213,17 @@ class Ttrap():
             {
                 "energy": 0.87,
                 "density": 1.3e-3*6.3e28,
-                "materials": [1]
+                "materials": [1, 2]
             },
             {
                 "energy": 1.0,
                 "density": 4e-4*6.3e28,
-                "materials": [1]
+                "materials": [1, 2]
             },
             {
                 "energy": 1.5,
                 "density": n_trap_3_,
-                "materials": [1]
+                "materials": [1, 2]
             }
             #,
             #{
@@ -284,7 +284,7 @@ class myclass(Ttrap):
                 "alpha": Constant(1.1e-10),  # lattice constant ()
                 "beta": Constant(6*6.3e28),  # number of solute sites per atom (6 for W)
                 "density": 6.3e28,
-                "borders": [0, 20e-6],
+                "borders": [0, 20e-9],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
@@ -298,20 +298,20 @@ class myclass(Ttrap):
                 "D_0": 4.1e-7,
                 "id": 2
             }
-            materials = [material1]
+            materials = [material1, material2]
             return materials
 
         self.__mesh_parameters = {
-            "initial_number_of_cells": 20,
+            "initial_number_of_cells": 50,
             "size": 20e-6,
             "refinements": [
                 {
-                    "cells": 2000,
+                    "cells": 1000,
                     "x": 3e-6
                 },
                 {
-                    "cells": 150,
-                    "x": 20e-9
+                    "cells": 100,
+                    "x": 25e-9
                 }
             ],
             }
@@ -330,7 +330,7 @@ class myclass(Ttrap):
     implantation_time = 400.0
     resting_time = 50
     ramp = 8
-    delta_TDS = 500
+    delta_TDS = 600
     r = 0
     flux = 2.5e19  # /6.3e28
     n_trap_3a_max = 1e-1*Constant(6.3e28)
@@ -412,6 +412,7 @@ v_trap_3 = TestFunction(W)
 u = Function(V)
 n_trap_3 = TrialFunction(W)  # trap 3 density
 
+
 # Split system functions to access components
 u_1, u_2, u_3, u_4, u_5 = split(u)
 solutions = [u_1, u_2, u_3, u_4, u_5]
@@ -433,7 +434,7 @@ width = 2.5e-9
 f = Expression('1/(width*pow(2*3.14,0.5))*  \
                exp(-0.5*pow(((x[0]-center)/width), 2))',
                degree=2, center=center, width=width)  # This is the tritium volumetric source term
-teta = Expression('(x[0] < xp + 0 && x[0] > 0 )? 1/xp : 0',
+teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
                   xp=xp, degree=1)
 flux_ = Expression('t <= implantation_time ? flux : 0',
                    t=0, implantation_time=implantation_time,
@@ -464,6 +465,7 @@ xdmf_u_2 = XDMFFile('Solution/c_trap1.xdmf')
 xdmf_u_3 = XDMFFile('Solution/c_trap2.xdmf')
 xdmf_u_4 = XDMFFile('Solution/c_trap3.xdmf')
 xdmf_u_5 = XDMFFile('Solution/c_trap4.xdmf')
+xdmf_retention = XDMFFile('Solution/retention.xdmf')
 filedesorption = ttrap.save_as()
 
 #  Time-stepping
@@ -503,12 +505,18 @@ for n in range(num_steps):
     xdmf_u_4.write(_u_4, t)
     xdmf_u_5.write(_u_5, t)
 
+    retention = Function(W)
+    retention = project(_u_1)
+
     i = 1
     total_trap = 0
     for trap in traps:
         sol = res[i]
         total_trap += assemble(sol*dx)
+        retention = project(retention + res[i], W)
         i += 1
+    retention.rename("retention", "label")
+    xdmf_retention.write(retention, t)
 
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
