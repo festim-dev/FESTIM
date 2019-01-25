@@ -442,7 +442,7 @@ center = 4.5e-9 + 20e-9
 width = 2.5e-9
 f = Expression('1/(width*pow(2*3.14,0.5))*  \
                exp(-0.5*pow(((x[0]-center)/width), 2))',
-               degree=2, center=center, width=width)  # This is the tritium volumetric source term
+               degree=2, center=center, width=width)
 teta = Expression('(x[0] < xp + 20e-9 && x[0] > 0+ 20e-9)? 1/xp : 0',
                   xp=xp, degree=1)
 flux_ = Expression('t <= implantation_time ? flux : 0',
@@ -486,7 +486,7 @@ desorption = list()
 set_log_level(30)  # Set the log level to WARNING
 #set_log_level(20) # Set the log level to INFO
 
-
+timer = Timer()  # start timer
 for n in range(num_steps):
     # Update current time
     t += k
@@ -494,15 +494,16 @@ for n in range(num_steps):
     flux_.t += k
     if t > implantation_time:
         D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
-    print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s',
+
+    print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s' +
+          "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
           end="\r")
+    
     solve(F == 0, u, bcs,
           solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}})
-
     solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
     _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
     res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
-
     # Save solution to file (.xdmf)
     _u_1.rename("solute", "label")
     _u_2.rename("trap_1", "label")
@@ -516,10 +517,8 @@ for n in range(num_steps):
     xdmf_u_4.write(_u_4, t)
     xdmf_u_5.write(_u_5, t)
     xdmf_u_6.write(_u_6, t)
-
     retention = Function(W)
     retention = project(_u_1)
-
     i = 1
     total_trap = 0
     for trap in traps:
@@ -529,14 +528,12 @@ for n in range(num_steps):
         i += 1
     retention.rename("retention", "label")
     xdmf_retention.write(retention, t)
-
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/k, temp(size/2), t]
     total_n = total
     if t > implantation_time+resting_time:
         desorption.append(desorption_rate)
-
     # Update previous solutions
     u_n.assign(u)
     n_trap_3_n.assign(n_trap_3_)
