@@ -220,7 +220,8 @@ class Ttrap():
                 "energy": 1.0,
                 "density": 4e-4*6.3e28,
                 "materials": [2]
-            },
+            }
+            ,
             {
                 "energy": 1.5,
                 "density": n_trap_3_,
@@ -229,13 +230,13 @@ class Ttrap():
             ,
             {
                 "energy": 0.98,
-                "density": 2e-2*6.3e28,
+                "density":0,
                 "materials": [1]
             }
             ,
             {
                 "energy": 1.4,
-                "density": 4e-4*6.3e28,
+                "density": 0,
                 "materials": [1]
             }
         ]
@@ -273,25 +274,36 @@ class Ttrap():
             print('No refinement parameters found')
         return mesh
 
-    def adaptative_timestep(self, converged, nb_it, dt, stepsize_change_ratio):
+    def adaptative_timestep(self, converged, nb_it, dt, stepsize_change_ratio,
+                            t, t_stop, stepsize_stop_max):
         '''
-        Adapts the stepsize as function of the number of iterations of the solver.
+        Adapts the stepsize as function of the number of iterations of the
+        solver.
         Arguments:
         - converged : bool, determines if the time step has converged.
         - nb_it : int, number of iterations
         - dt : Constant(), fenics object
         - stepsize_change_ration : float, stepsize change ratio
+        - t : float, time
+        - t_stop : float, time where adaptative time step stops
+        - stepsize_stop_max : float, maximum stepsize after stop
         Returns:
         - dt : Constant(), fenics object
         '''
         while converged is False:
             dt.assign(float(dt)/stepsize_change_ratio)
+            print(float(dt))
             nb_it, converged = solver.solve()
+        if t > t_stop:
+            if float(dt) > stepsize_stop_max:
+                dt.assign(stepsize_stop_max)
 
-        if nb_it < 5:
-            dt.assign(float(dt)*stepsize_change_ratio)
         else:
-            dt.assign(float(dt)/stepsize_change_ratio)
+            if nb_it < 5:
+                dt.assign(float(dt)*stepsize_change_ratio)
+            else:
+                dt.assign(float(dt)/stepsize_change_ratio)
+        
         return dt
 
 
@@ -321,12 +333,12 @@ class myclass(Ttrap):
                 "alpha": Constant(1.1e-10),
                 "beta": Constant(6*6.3e28),
                 "density": 6.3e28,
-                "borders": [20e-9, 20e-6],
+                "borders": [0, 20e-6],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 2
             }
-            materials = [material1, material2]
+            materials = [material2]
             return materials
 
         self.__mesh_parameters = {
@@ -373,7 +385,9 @@ class myclass(Ttrap):
     num_steps = 3*int(implantation_time+resting_time+TDS_time)
     dT = Time / num_steps  # time step size
     t = 0  # Initialising time to 0s
-    stepsize_change_ratio = 3
+    stepsize_change_ratio = 1.25
+    t_stop = implantation_time + resting_time - 20
+    stepsize_stop_max = 0.5
 
 
 ttrap = myclass()
@@ -398,7 +412,8 @@ dt = Constant(ttrap.dT) # time step size
 dT = ttrap.dT
 t = ttrap.t  # Initialising time to 0s
 stepsize_change_ratio = ttrap.stepsize_change_ratio
-
+t_stop = ttrap.t_stop
+stepsize_stop_max = ttrap.stepsize_stop_max
 size = ttrap.getMeshParameters()["size"]
 
 # Mesh and refinement
@@ -461,12 +476,12 @@ n_trap_3_ = Function(W)
 
 # Define expressions used in variational forms
 print('Defining source terms')
-center = 4.5e-9 + 20e-9
+center = 4.5e-9 #+ 20e-9
 width = 2.5e-9
 f = Expression('1/(width*pow(2*3.14,0.5))*  \
                exp(-0.5*pow(((x[0]-center)/width), 2))',
                degree=2, center=center, width=width)
-teta = Expression('(x[0] < xp + 20e-9 && x[0] > 0+ 20e-9)? 1/xp : 0',
+teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
                   xp=xp, degree=1)
 flux_ = Expression('t <= implantation_time ? flux : 0',
                    t=0, implantation_time=implantation_time,
@@ -527,7 +542,9 @@ while t < Time:
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
     nb_it, converged = solver.solve()
-    dt = ttrap.adaptative_timestep(converged, nb_it, dt, stepsize_change_ratio)
+    dt = ttrap.adaptative_timestep(converged, nb_it, dt, stepsize_change_ratio,
+                                   t=t, t_stop=t_stop,
+                                   stepsize_stop_max=stepsize_stop_max)
     
     #print("nb_ité", nb_it)
     #print("Converged", converged)
