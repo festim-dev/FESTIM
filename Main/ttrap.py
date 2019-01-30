@@ -274,8 +274,9 @@ class Ttrap():
             print('No refinement parameters found')
         return mesh
 
-    def adaptative_timestep(self, converged, nb_it, dt, stepsize_change_ratio,
-                            t, t_stop, stepsize_stop_max):
+    def adaptative_timestep(self, converged, nb_it, dt, dt_min,
+                            stepsize_change_ratio, t, t_stop,
+                            stepsize_stop_max):
         '''
         Adapts the stepsize as function of the number of iterations of the
         solver.
@@ -283,6 +284,7 @@ class Ttrap():
         - converged : bool, determines if the time step has converged.
         - nb_it : int, number of iterations
         - dt : Constant(), fenics object
+        - dt_min : float, stepsize minimum value
         - stepsize_change_ration : float, stepsize change ratio
         - t : float, time
         - t_stop : float, time where adaptative time step stops
@@ -292,8 +294,10 @@ class Ttrap():
         '''
         while converged is False:
             dt.assign(float(dt)/stepsize_change_ratio)
-            print(float(dt))
+            #print(float(dt))
             nb_it, converged = solver.solve()
+            if float(dt) < dt_min:
+                sys.exit('Error: stepsize reached minimal value')
         if t > t_stop:
             if float(dt) > stepsize_stop_max:
                 dt.assign(stepsize_stop_max)
@@ -388,7 +392,7 @@ class myclass(Ttrap):
     stepsize_change_ratio = 1.25
     t_stop = implantation_time + resting_time - 20
     stepsize_stop_max = 0.5
-
+    dt_min = 1e-5
 
 ttrap = myclass()
 
@@ -415,6 +419,7 @@ stepsize_change_ratio = ttrap.stepsize_change_ratio
 t_stop = ttrap.t_stop
 stepsize_stop_max = ttrap.stepsize_stop_max
 size = ttrap.getMeshParameters()["size"]
+dt_min = ttrap.dt_min
 
 # Mesh and refinement
 materials = ttrap.getMaterials()
@@ -467,8 +472,6 @@ ini_u = Expression(("0", "0", "0", "0", "0", "0"), degree=1)
 u_n = interpolate(ini_u, V)
 u_n1, u_n2, u_n3, u_n4, u_n5, u_n6 = split(u_n)
 previous_solutions = [u_n1, u_n2, u_n3, u_n4, u_n5, u_n6]
-
-
 
 ini_n_trap_3 = Expression("0", degree=1)
 n_trap_3_n = interpolate(ini_n_trap_3, W)
@@ -542,8 +545,9 @@ while t < Time:
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
     nb_it, converged = solver.solve()
-    dt = ttrap.adaptative_timestep(converged, nb_it, dt, stepsize_change_ratio,
-                                   t=t, t_stop=t_stop,
+    dt = ttrap.adaptative_timestep(converged=converged, nb_it=nb_it, dt=dt,
+                                   stepsize_change_ratio=stepsize_change_ratio,
+                                   dt_min=dt_min, t=t, t_stop=t_stop,
                                    stepsize_stop_max=stepsize_stop_max)
     
     #print("nb_ité", nb_it)
