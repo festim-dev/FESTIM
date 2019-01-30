@@ -273,6 +273,27 @@ class Ttrap():
             print('No refinement parameters found')
         return mesh
 
+    def adaptative_timestep(self, converged, nb_it, dt, stepsize_change_ratio):
+        '''
+        Adapts the stepsize as function of the number of iterations of the solver.
+        Arguments:
+        - converged : bool, determines if the time step has converged.
+        - nb_it : int, number of iterations
+        - dt : Constant(), fenics object
+        - stepsize_change_ration : float, stepsize change ratio
+        Returns:
+        - dt : Constant(), fenics object
+        '''
+        while converged is False:
+            dt.assign(float(dt)/stepsize_change_ratio)
+            nb_it, converged = solver.solve()
+
+        if nb_it < 5:
+            dt.assign(float(dt)*stepsize_change_ratio)
+        else:
+            dt.assign(float(dt)/stepsize_change_ratio)
+        return dt
+
 
 class myclass(Ttrap):
     def __init__(self):
@@ -317,7 +338,7 @@ class myclass(Ttrap):
                     "x": 2e-6
                 },
                 {
-                    "cells": 50,
+                    "cells": 100,
                     "x": 25e-9
                 }
             ],
@@ -350,9 +371,9 @@ class myclass(Ttrap):
     TDS_time = int(delta_TDS / ramp) + 1
     Time = implantation_time+resting_time+TDS_time
     num_steps = 3*int(implantation_time+resting_time+TDS_time)
-    k = Time / num_steps  # time step size
-    dt = Constant(k)
+    dT = Time / num_steps  # time step size
     t = 0  # Initialising time to 0s
+    stepsize_change_ratio = 3
 
 
 ttrap = myclass()
@@ -373,10 +394,10 @@ k_B = ttrap.k_B  # Boltzmann constant
 TDS_time = ttrap.TDS_time
 Time = ttrap.Time
 num_steps = ttrap.num_steps
-k = ttrap.k # time step size
-dt = ttrap.dt
+dt = Constant(ttrap.dT) # time step size
+dT = ttrap.dT
 t = ttrap.t  # Initialising time to 0s
-
+stepsize_change_ratio = ttrap.stepsize_change_ratio
 
 size = ttrap.getMeshParameters()["size"]
 
@@ -416,7 +437,9 @@ v_1, v_2, v_3, v_4, v_5, v_6 = TestFunctions(V)
 testfunctions = [v_1, v_2, v_3, v_4, v_5, v_6]
 v_trap_3 = TestFunction(W)
 
+
 u = Function(V)
+du = TrialFunction(V)
 n_trap_3 = TrialFunction(W)  # trap 3 density
 
 
@@ -487,11 +510,11 @@ set_log_level(30)  # Set the log level to WARNING
 #set_log_level(20) # Set the log level to INFO
 
 timer = Timer()  # start timer
-for n in range(num_steps):
+while t < Time:
     # Update current time
-    t += k
-    temp.t += k
-    flux_.t += k
+    t += float(dt)
+    temp.t += float(dt)
+    flux_.t += float(dt)
     if t > implantation_time:
         D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
 
@@ -499,8 +522,18 @@ for n in range(num_steps):
           "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
           end="\r")
     
-    solve(F == 0, u, bcs,
-          solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}})
+    J = derivative(F, u, du)  # Define the Jacobian
+    problem = NonlinearVariationalProblem(F, u, bcs, J)
+    solver = NonlinearVariationalSolver(problem)
+    solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
+    nb_it, converged = solver.solve()
+    dt = ttrap.adaptative_timestep(converged, nb_it, dt, stepsize_change_ratio)
+    
+    #print("nb_ité", nb_it)
+    #print("Converged", converged)
+    #print("dt", float(dt))
+    #print(solve(F == 0, u, bcs,
+    #            solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}}))
     solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
     _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
     res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
@@ -530,7 +563,7 @@ for n in range(num_steps):
     xdmf_retention.write(retention, t)
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
-    desorption_rate = [-(total-total_n)/k, temp(size/2), t]
+    desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
     total_n = total
     if t > implantation_time+resting_time:
         desorption.append(desorption_rate)
@@ -539,3 +572,4 @@ for n in range(num_steps):
     n_trap_3_n.assign(n_trap_3_)
 
 ttrap.export_TDS(filedesorption)
+print('\007s')
