@@ -38,9 +38,10 @@ class Ttrap():
                 valid = False
         return filedesorption
 
-    def export_TDS(self, filedesorption):
+    def export_TDS(self, filedesorption, desorption):
         '''
         - filedesorption : string, the path of the csv file.
+        - desorption : list, values to be exported.
         '''
         busy = True
         while busy is True:
@@ -212,26 +213,26 @@ class Ttrap():
         '''
         traps = [
             {
-                "energy": 0.87,
-                "density": 1.3e-3*6.3e28,
-                "materials": [2]
+                "energy": 0.9,
+                "density": 1e-2*6.3e28,
+                "materials": [1]
             },
             {
-                "energy": 1.0,
-                "density": 4e-4*6.3e28,
-                "materials": [2]
-            }
-            ,
-            {
-                "energy": 1.5,
-                "density": n_trap_3_,
-                "materials": [2]
-            }
-            ,
-            {
-                "energy": 0.98,
-                "density":0,
+                "energy": 1.4,
+                "density": 1e-2*6.3e28,
                 "materials": [1]
+            }
+            ,
+            {
+                "energy": 0.9,
+                "density": 2e-4*6.3e28,#0*n_trap_3_,
+                "materials": [2]
+            }
+            ,
+            {
+                "energy": 1.4,
+                "density":2e-4*6.3e28,
+                "materials": [2]
             }
             ,
             {
@@ -273,6 +274,12 @@ class Ttrap():
         else:
             print('No refinement parameters found')
         return mesh
+
+    def solubility(self, S_0, E_S, k_B, T):
+        return S_0*exp(-E_S/k_B/T)
+    
+    def solubility_BC(self, P, S):
+        return P**0.5*S
 
     def adaptative_timestep(self, converged, nb_it, dt, dt_min,
                             stepsize_change_ratio, t, t_stop,
@@ -327,8 +334,8 @@ class myclass(Ttrap):
             material1 = {
                 "alpha": Constant(1.1e-10),  # lattice constant ()
                 "beta": Constant(6*6.3e28),  # number of solute sites per atom (6 for W)
-                "density": 7.5e28,
-                "borders": [0, 20e-9],
+                "density": 6.3e28,
+                "borders": [0, 10e-9],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
@@ -337,25 +344,25 @@ class myclass(Ttrap):
                 "alpha": Constant(1.1e-10),
                 "beta": Constant(6*6.3e28),
                 "density": 6.3e28,
-                "borders": [0, 20e-6],
+                "borders": [10e-9, 75e-9],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 2
             }
-            materials = [material2]
+            materials = [material1, material2]
             return materials
 
         self.__mesh_parameters = {
-            "initial_number_of_cells": 100,
-            "size": 20e-6,
+            "initial_number_of_cells": 3000,
+            "size": 75e-9,
             "refinements": [
                 {
-                    "cells": 500,
-                    "x": 2e-6
+                    "cells": 100,
+                    "x": 50e-9
                 },
                 {
-                    "cells": 100,
-                    "x": 25e-9
+                    "cells": 120,
+                    "x": 12e-9
                 }
             ],
             }
@@ -371,25 +378,28 @@ class myclass(Ttrap):
     def getMeshParameters(self):
         return self.__mesh_parameters
     # Declaration of variables
-    implantation_time = 400.0
+    implantation_time = 1e6
     resting_time = 50
     ramp = 8
-    delta_TDS = 500
+    delta_TDS = 0#500
     r = 0
-    flux = 2.5e19  # /6.3e28
-    n_trap_3a_max = 1e-1*Constant(6.3e28)
-    n_trap_3b_max = 1e-2*Constant(6.3e28)
+    flux = 0# 2.5e19  # /6.3e28
+    n_trap_3a_max = 1e-1*6.3e28
+    n_trap_3b_max = 1e-2*6.3e28
     rate_3a = 6e-4
     rate_3b = 2e-4
     xp = 1e-6
     v_0 = 1e13  # frequency factor s-1
     k_B = 8.6e-5  # Boltzmann constant
+
+    def pressure(self, t):
+        return 0.1*9.86923e-6
     TDS_time = int(delta_TDS / ramp) + 1
     Time = implantation_time+resting_time+TDS_time
-    num_steps = 3*int(implantation_time+resting_time+TDS_time)
+    num_steps = 10*int(implantation_time+resting_time+TDS_time)
     dT = Time / num_steps  # time step size
     t = 0  # Initialising time to 0s
-    stepsize_change_ratio = 1.25
+    stepsize_change_ratio = 1.12
     t_stop = implantation_time + resting_time - 20
     stepsize_stop_max = 0.5
     dt_min = 1e-5
@@ -447,10 +457,11 @@ def outside(x, on_boundary):
     return on_boundary and (near(x[0], size))
 # #Tritium concentration
 inside_bc_c = Expression(('0', '0', '0', '0', '0', '0'), t=0, degree=1)
-bci_c = DirichletBC(V, inside_bc_c, inside)
-bco_c = DirichletBC(V, inside_bc_c, outside)
-bcs = [bci_c, bco_c]
-
+inside_bc_solubility = Expression(('BC', '0', '0', '0', '0', '0'), BC=6.3e28*ttrap.solubility_BC(ttrap.pressure(0), ttrap.solubility(1.3e-4, 0.34, k_B, 373)), degree=1)
+bci_c = DirichletBC(V.sub(0), 6.3e28*ttrap.solubility_BC(ttrap.pressure(0), ttrap.solubility(1.3e-4, 0.34, k_B, 373)), inside)
+#bci_c = DirichletBC(V.sub(0), 0, inside)
+bco_c = DirichletBC(V.sub(0), 0, outside)
+bcs = [bci_c]#, bco_c]
 
 # Define test functions
 v_1, v_2, v_3, v_4, v_5, v_6 = TestFunctions(V)
@@ -501,7 +512,12 @@ D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
 alpha = ttrap.update_alpha(mesh, volume_markers, materials)
 beta = ttrap.update_beta(mesh, volume_markers, materials)
 
-
+temp = Expression('t <= (implantation_time+resting_time) ? \
+                  373 : 373+ramp*(t-(implantation_time+resting_time))',
+                  implantation_time=implantation_time,
+                  resting_time=resting_time,
+                  ramp=ramp,
+                  t=0, degree=2)
 # Define variational problem
 traps = ttrap.define_traps(n_trap_3_)
 F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
@@ -523,18 +539,13 @@ filedesorption = ttrap.save_as()
 print('Time stepping...')
 total_n = 0
 desorption = list()
-
+export_total = list()
 set_log_level(30)  # Set the log level to WARNING
 #set_log_level(20) # Set the log level to INFO
 
 timer = Timer()  # start timer
 while t < Time:
-    # Update current time
-    t += float(dt)
-    temp.t += float(dt)
-    flux_.t += float(dt)
-    if t > implantation_time:
-        D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
+
 
     print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s' +
           "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
@@ -550,11 +561,7 @@ while t < Time:
                                    dt_min=dt_min, t=t, t_stop=t_stop,
                                    stepsize_stop_max=stepsize_stop_max)
     
-    #print("nb_ité", nb_it)
-    #print("Converged", converged)
-    #print("dt", float(dt))
-    #print(solve(F == 0, u, bcs,
-    #            solver_parameters={"newton_solver": {"absolute_tolerance": 1e-19}}))
+
     solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
     _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
     res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
@@ -585,12 +592,19 @@ while t < Time:
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
+    export_total.append([total, temp(size/2), t])
     total_n = total
     if t > implantation_time+resting_time:
         desorption.append(desorption_rate)
     # Update previous solutions
     u_n.assign(u)
     n_trap_3_n.assign(n_trap_3_)
+    # Update current time
+    t += float(dt)
+    temp.t += float(dt)
+    flux_.t += float(dt)
+    if t > implantation_time:
+        D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
 
-ttrap.export_TDS(filedesorption)
+ttrap.export_TDS(filedesorption, export_total)
 print('\007s')
