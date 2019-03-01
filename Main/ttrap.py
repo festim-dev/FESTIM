@@ -188,7 +188,9 @@ class Ttrap():
         Returns :
         - volume_markers : MeshFunction that contains the subdomains
             (0 if no domain was found)
-        - measurement : the measurement dx based on volume_markers
+        - measurement_dx : the measurement dx based on volume_markers
+        - surface_markers : MeshFunction that contains the surfaces
+        - measurement_ds : the measurement ds based on surface_markers
         '''
         volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
         for cell in cells(mesh):
@@ -197,8 +199,21 @@ class Ttrap():
                  and cell.midpoint().x() <= material['borders'][1]:
                     volume_markers[cell] = material['id']
 
-        measurement = dx(subdomain_data=volume_markers)
-        return volume_markers, measurement
+        measurement_dx = dx(subdomain_data=volume_markers)
+
+        surface_markers = MeshFunction("size_t", mesh, mesh.topology().dim()-1, 0)
+        surface_markers.set_all(0)
+        i=0
+        for f in facets(mesh):
+            i+=1
+            x0 = f.midpoint()
+            surface_markers[f] = 0
+            if near(x0.x(), 0):
+                surface_markers[f] = 1
+            if near(x0.x(), size):
+                surface_markers[f] = 2
+        measurement_ds = ds(subdomain_data=surface_markers)
+        return volume_markers, measurement_dx, surface_markers, measurement_ds
 
     def define_traps(self, n_trap_3_):
         '''
@@ -213,26 +228,26 @@ class Ttrap():
         '''
         traps = [
             {
-                "energy": 0.9,
+                "energy": 1,
                 "density": 1e-2*6.3e28,
                 "materials": [1]
             },
             {
                 "energy": 1.4,
-                "density": 1e-2*6.3e28,
+                "density": 0*1e-2*6.3e28,
                 "materials": [1]
             }
             ,
             {
                 "energy": 0.9,
-                "density": 2e-4*6.3e28,#0*n_trap_3_,
-                "materials": [2]
+                "density": 0*2e-4*6.3e28,#0*n_trap_3_,
+                "materials": [1]
             }
             ,
             {
                 "energy": 1.4,
-                "density":2e-4*6.3e28,
-                "materials": [2]
+                "density":0*2e-4*6.3e28,
+                "materials": [1]
             }
             ,
             {
@@ -316,15 +331,78 @@ class Ttrap():
                 dt.assign(float(dt)/stepsize_change_ratio)
         
         return dt
+    
+    def apply_boundary_conditions(self, boundary_conditions, V,
+                                  surface_marker, ds):
+        '''
+        Create a list of DirichletBCs.
+        Arguments:
+        - boundary_conditions: dict, parameters for bcs
+        - V: FunctionSpace,
+        - surface_marker: MeshFunction, contains the markers for 
+        the different surfaces
+        - ds: Measurement
+        '''
+        bcs = list()
+        for type_BC in boundary_conditions:
+            for BC in boundary_conditions[type_BC]:
+                if type_BC == "dc":
+                    value_BC = Expression(str(BC['value']), t=0, degree=2)
+                elif type_BC == "solubility":
+                    pressure = Expression(str(BC["pressure"]), t=0, degree=2)
+                    value_BC = self.solubility_BC(
+                        pressure(0), BC["density"]*self.solubility(
+                            BC["S_0"], BC["E_S"],
+                            k_B, temp(size/2)))
+                if type(BC['surface']) == list:
+                    for surface in BC['surface']:
+                        bci = DirichletBC(V.sub(0), value_BC,
+                                          surface_marker, surface)
+                        bcs.append(bci)
+                else:
+                    bci = DirichletBC(V.sub(0), value_BC,
+                                      surface_marker, BC['surface'])
+                    bcs.append(bci)
+
+        return bcs
 
 
 class myclass(Ttrap):
     def __init__(self):
         ttrap = Ttrap()
 
+        def define_boundary_conditions():
+            '''
+            Returns a dict that contains the parameters for
+            boundary conditions.
+            ''' 
+            boundary_conditions = {
+                "dc": [
+                    {
+                        "surface": [1],
+                        "value": 0
+                        },
+                    {
+                        "surface": [2],
+                        "value": 0
+                        }
+                ]
+                #,
+                #"solubility": [
+                #    {
+                #      "surface": [1],
+                #      "S_0":1.3e-4,
+                #      "E_S":0.34,
+                #      "pressure":0.1/101325,
+                #      "density": 6.3e28
+                #    }
+                #    ]
+            }
+            return boundary_conditions
+
         def define_materials():
             '''
-            Create a list of dicts corresponding to the different materials
+            Creates a list of dicts corresponding to the different materials
             and containing properties.
             Returns:
             -materials : list of dicts corresponding to the different materials
@@ -335,7 +413,7 @@ class myclass(Ttrap):
                 "alpha": Constant(1.1e-10),  # lattice constant ()
                 "beta": Constant(6*6.3e28),  # number of solute sites per atom (6 for W)
                 "density": 6.3e28,
-                "borders": [0, 10e-9],
+                "borders": [0, 20e-6],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
@@ -349,25 +427,26 @@ class myclass(Ttrap):
                 "D_0": 4.1e-7,
                 "id": 2
             }
-            materials = [material1, material2]
+            materials = [material1]#, material2]
             return materials
 
         self.__mesh_parameters = {
-            "initial_number_of_cells": 3000,
-            "size": 75e-9,
+            "initial_number_of_cells": 1600,
+            "size": 20e-6,
             "refinements": [
                 {
-                    "cells": 100,
-                    "x": 50e-9
+                    "cells": 300,
+                    "x": 3e-6
                 },
                 {
                     "cells": 120,
-                    "x": 12e-9
+                    "x": 30e-9
                 }
             ],
             }
         self.__mesh = ttrap.mesh_and_refine(self.__mesh_parameters)
         self.__materials = define_materials()
+        self.__BC = define_boundary_conditions()
 
     def getMesh(self):
         return self.__mesh
@@ -377,13 +456,17 @@ class myclass(Ttrap):
 
     def getMeshParameters(self):
         return self.__mesh_parameters
+    
+    def getBC(self):
+        return self.__BC
+    
     # Declaration of variables
-    implantation_time = 1e6
+    implantation_time = 400
     resting_time = 50
     ramp = 8
-    delta_TDS = 0#500
+    delta_TDS = 500
     r = 0
-    flux = 0# 2.5e19  # /6.3e28
+    flux = 2.5e19
     n_trap_3a_max = 1e-1*6.3e28
     n_trap_3b_max = 1e-2*6.3e28
     rate_3a = 6e-4
@@ -391,9 +474,6 @@ class myclass(Ttrap):
     xp = 1e-6
     v_0 = 1e13  # frequency factor s-1
     k_B = 8.6e-5  # Boltzmann constant
-
-    def pressure(self, t):
-        return 0.1*9.86923e-6
     TDS_time = int(delta_TDS / ramp) + 1
     Time = implantation_time+resting_time+TDS_time
     num_steps = 10*int(implantation_time+resting_time+TDS_time)
@@ -422,7 +502,7 @@ k_B = ttrap.k_B  # Boltzmann constant
 TDS_time = ttrap.TDS_time
 Time = ttrap.Time
 num_steps = ttrap.num_steps
-dt = Constant(ttrap.dT) # time step size
+dt = Constant(ttrap.dT)  # time step size
 dT = ttrap.dT
 t = ttrap.t  # Initialising time to 0s
 stepsize_change_ratio = ttrap.stepsize_change_ratio
@@ -442,8 +522,32 @@ V = FunctionSpace(mesh, element)
 W = FunctionSpace(mesh, 'P', 1)
 V0 = FunctionSpace(mesh, 'DG', 0)
 
+x = interpolate(Expression('x[0]', degree=1), W)
+
 # Define and mark subdomains
-volume_markers, dx = ttrap.subdomains(mesh, materials)
+volume_markers, dx, surface_markers, ds = ttrap.subdomains(mesh, materials)
+
+
+
+# Define expressions used in variational forms
+print('Defining source terms')
+center = 4.5e-9 + 20e-9
+width = 2.5e-9
+f = Expression('1/(width*pow(2*3.14,0.5))*  \
+               exp(-0.5*pow(((x[0]-center)/width), 2))',
+               degree=2, center=center, width=width)
+teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
+                  xp=xp, degree=1)
+flux_ = Expression('t <= implantation_time ? flux : 0',
+                   t=0, implantation_time=implantation_time,
+                   flux=flux, degree=1)
+temp = Expression('t <= (implantation_time+resting_time) ? \
+                  373 : 373+ramp*(t-(implantation_time+resting_time))',
+                  implantation_time=implantation_time,
+                  resting_time=resting_time,
+                  ramp=ramp,
+                  t=0, degree=2)
+
 
 # BCs
 print('Defining boundary conditions')
@@ -455,13 +559,9 @@ def inside(x, on_boundary):
 
 def outside(x, on_boundary):
     return on_boundary and (near(x[0], size))
-# #Tritium concentration
-inside_bc_c = Expression(('0', '0', '0', '0', '0', '0'), t=0, degree=1)
-inside_bc_solubility = Expression(('BC', '0', '0', '0', '0', '0'), BC=6.3e28*ttrap.solubility_BC(ttrap.pressure(0), ttrap.solubility(1.3e-4, 0.34, k_B, 373)), degree=1)
-bci_c = DirichletBC(V.sub(0), 6.3e28*ttrap.solubility_BC(ttrap.pressure(0), ttrap.solubility(1.3e-4, 0.34, k_B, 373)), inside)
-#bci_c = DirichletBC(V.sub(0), 0, inside)
-bco_c = DirichletBC(V.sub(0), 0, outside)
-bcs = [bci_c]#, bco_c]
+
+bcs = ttrap.apply_boundary_conditions(ttrap.getBC(), V, surface_markers, ds)
+
 
 # Define test functions
 v_1, v_2, v_3, v_4, v_5, v_6 = TestFunctions(V)
@@ -488,42 +588,22 @@ ini_n_trap_3 = Expression("0", degree=1)
 n_trap_3_n = interpolate(ini_n_trap_3, W)
 n_trap_3_ = Function(W)
 
-# Define expressions used in variational forms
-print('Defining source terms')
-center = 4.5e-9 #+ 20e-9
-width = 2.5e-9
-f = Expression('1/(width*pow(2*3.14,0.5))*  \
-               exp(-0.5*pow(((x[0]-center)/width), 2))',
-               degree=2, center=center, width=width)
-teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
-                  xp=xp, degree=1)
-flux_ = Expression('t <= implantation_time ? flux : 0',
-                   t=0, implantation_time=implantation_time,
-                   flux=flux, degree=1)
 
 print('Defining variational problem')
-temp = Expression('t <= (implantation_time+resting_time) ? \
-                  300 : 300+ramp*(t-(implantation_time+resting_time))',
-                  implantation_time=implantation_time,
-                  resting_time=resting_time,
-                  ramp=ramp,
-                  t=0, degree=2)
+
 D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
 alpha = ttrap.update_alpha(mesh, volume_markers, materials)
 beta = ttrap.update_beta(mesh, volume_markers, materials)
 
-temp = Expression('t <= (implantation_time+resting_time) ? \
-                  373 : 373+ramp*(t-(implantation_time+resting_time))',
-                  implantation_time=implantation_time,
-                  resting_time=resting_time,
-                  ramp=ramp,
-                  t=0, degree=2)
 # Define variational problem
 traps = ttrap.define_traps(n_trap_3_)
 F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
 
 F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
-F_n3 += -(1-r)*flux_*((1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f + (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta)*v_trap_3 * dx
+F_n3 += -(1-r)*flux_*(
+    (1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f +
+    (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta) \
+    * v_trap_3*dx
 
 # Solution files
 xdmf_u_1 = XDMFFile('Solution/c_sol.xdmf')
@@ -546,7 +626,6 @@ set_log_level(30)  # Set the log level to WARNING
 timer = Timer()  # start timer
 while t < Time:
 
-
     print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s' +
           "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
           end="\r")
@@ -555,6 +634,7 @@ while t < Time:
     problem = NonlinearVariationalProblem(F, u, bcs, J)
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
+    solver.parameters["newton_solver"]["absolute_tolerance"] = 1e10
     nb_it, converged = solver.solve()
     dt = ttrap.adaptative_timestep(converged=converged, nb_it=nb_it, dt=dt,
                                    stepsize_change_ratio=stepsize_change_ratio,
@@ -562,7 +642,7 @@ while t < Time:
                                    stepsize_stop_max=stepsize_stop_max)
     
 
-    solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
+    #solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
     _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
     res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
     # Save solution to file (.xdmf)
@@ -592,7 +672,7 @@ while t < Time:
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
-    export_total.append([total, temp(size/2), t])
+    #export_total.append([assemble(retention*(size-x)**2*dx)*4*3.15, temp(size/2), t])
     total_n = total
     if t > implantation_time+resting_time:
         desorption.append(desorption_rate)
@@ -606,5 +686,5 @@ while t < Time:
     if t > implantation_time:
         D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
 
-ttrap.export_TDS(filedesorption, export_total)
+ttrap.export_TDS(filedesorption, desorption_rate)
 print('\007s')
