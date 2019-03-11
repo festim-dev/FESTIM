@@ -292,46 +292,6 @@ class Ttrap():
         measurement_ds = ds(subdomain_data=surface_markers)
         return volume_markers, measurement_dx, surface_markers, measurement_ds
 
-    def define_traps(self, n_trap_3_):
-        '''
-        Create a list of dicts corresponding to the different traps
-        and containing properties.
-        Arguments:
-        - n_trap_3_ : Function(W), only required if extrinsic trap is
-        simulated.
-        Returns:
-        -materials : list of dicts corresponding to the different traps
-        and containing properties.
-        '''
-        traps = [
-            {
-                "energy": 0.87,
-                "density": 1.3e-3*6.3e28,
-                "materials": [1]
-            },
-            {
-                "energy": 1.0,
-                "density": 4e-4*6.3e28,
-                "materials": [1]
-            },
-            {
-                "energy": 1.5,
-                "density": n_trap_3_,
-                "materials": [1]
-            },
-            {
-                "energy": 1.4,
-                "density": 0*2e-4*6.3e28,
-                "materials": [1]
-            },
-            {
-                "energy": 1.4,
-                "density": 0,
-                "materials": [1]
-            }
-        ]
-        return traps
-
     def mesh_and_refine(self, mesh_parameters):
         '''
         Mesh and refine iteratively until meeting the refinement
@@ -540,6 +500,46 @@ class myclass(Ttrap):
         folder = "Solution/"
         return folder, exports
 
+    def define_traps(self):
+        '''
+        Create a list of dicts corresponding to the different traps
+        and containing properties.
+        Arguments:
+        - n_trap_3_ : Function(W), only required if extrinsic trap is
+        simulated.
+        Returns:
+        -materials : list of dicts corresponding to the different traps
+        and containing properties.
+        '''
+        traps = [
+            {
+                "energy": 0.87,
+                "density": 1.3e-3*6.3e28,
+                "materials": [1]
+            },
+            {
+                "energy": 1.0,
+                "density": 4e-4*6.3e28,
+                "materials": [1]
+            },
+            {
+                "energy": 1.5,
+                "density": n_trap_3_,
+                "materials": [1]
+            },
+            {
+                "energy": 1.4,
+                "density": 0*2e-4*6.3e28,
+                "materials": [1]
+            },
+            {
+                "energy": 1.4,
+                "density": 0,
+                "materials": [1]
+            }
+        ]
+        return traps
+    
     def getMesh(self):
         return self.__mesh
 
@@ -685,7 +685,7 @@ n_trap_3_ = Function(W)
 print('Defining variational problem')
 
 # Define variational problem1
-traps = ttrap.define_traps(n_trap_3_)
+traps = ttrap.define_traps()
 F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
 
 F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
