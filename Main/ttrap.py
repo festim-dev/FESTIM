@@ -53,96 +53,150 @@ class Ttrap():
                     for val in desorption:
                         writer.writerows([val])
             except:
-                print("The file " + filedesorption + " is currently busy."
+                print("The file " + filedesorption +
+                      " might currently be busy."
                       "Please close the application then press any key")
                 input()
         return
 
-    def calculate_D(self, T, E, D_0):
+    def export_txt(self, filename, function):
         '''
-        Calculate the diffusion coeff at a certain temperature
-        and for a specific material (subdomain)
+        Exports a 1D function into a txt file.
         Arguments:
-        - T : float, temperature
-        - E : float, diffusion energy
-        - D_0 : float, diffusion pre-exponential factor
-        Returns : float, the diffusion coefficient
+        - filemame : str
+        - function : FEniCS Function
+        Returns:
+        - True on sucess,
+        - False on failure
         '''
-        coefficient = D_0 * exp(-E/k_B/T)
+        export = Function(W)
+        export = project(function)
+        busy = True
+        while busy is True:
+            try:
+                np.savetxt(filename + '.txt', np.transpose(
+                            [x.vector()[:], export.vector()[:]]))
+                return True
+            except:
+                print("The file " + filename + ".txt might currently be busy."
+                      "Please close the application then press any key.")
+                input()
 
-        return coefficient
+        return False
 
-    def update_D(self, mesh, volume_markers, materials, T):
+    def export_profiles(self, res, exports, t, dt):
         '''
-        Iterates through the mesh and compute the value of D
+        Exports 1D profiles in txt files.
         Arguments:
-        - mesh : the mesh
-        - volume_markers : MeshFunction that contains the subdomains
-        - T : float, the temperature
-        Returns : the Function D
+        - res: list, contains FEniCS Functions
+        - exports: dict, defined by define_exports()
+        - t: float, time
+        - dt: FEniCS Constant(), stepsize
+        Returns:
+        - dt: FEniCS Constant(), stepsize
         '''
-        D = Function(V0)
-        for cell in cells(mesh):
-            volume_id = volume_markers[cell]
-            found = False
-            for material in materials:
-                if volume_id == material["id"]:
-                    found = True
-                    D.vector()[cell.index()] = \
-                        self.calculate_D(T, material['E_diff'], material['D_0'])
-                    break
-            if found is False:
-                print('Computing D: Volume ID not found')
-        return D
+        functions = exports['txt']['functions']
+        labels = exports['txt']['labels']
+        if len(functions) != len(labels):
+            raise NameError("Number of functions to be exported "
+                            "doesn't match number of labels in txt exports")
 
-    def update_alpha(self, mesh, volume_markers, materials):
+        [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention] = res
+
+        solution_dict = {
+            'solute': _u_1,
+            '1': _u_2,
+            '2': _u_3,
+            '3': _u_4,
+            '4': _u_5,
+            '5': _u_6,
+            'retention': retention
+        }
+        times = sorted(exports['txt']['times'])
+        end = True
+        for time in times:
+            if t == time:
+                if times.index(time) != len(times)-1:
+                    next_time = times[times.index(time)+1]
+                    end = False
+                else:
+                    end = True
+                for i in range(len(functions)):
+                    solution = solution_dict[functions[i]]
+                    label = labels[i]
+                    self.export_txt(
+                        label + '_' + str(t) + 's', solution)
+                break
+            if t < time:
+                next_time = time
+                end = False
+                break
+        if end is False:
+            if t + float(dt) > next_time:
+                dt.assign(time - t)
+        return dt
+
+    def define_xdmf_files(self, exports, folder):
         '''
-        Iterates through the mesh and compute the value of D
+        Returns a list of XDMFFile
         Arguments:
-        - mesh : the mesh
-        - volume_markers : MeshFunction that contains the subdomains
-        - materials : list, contains all the materials dictionaries
-
-        Returns : the Function alpha
+        - exports: dict, defined by define_exports()
+        - folder: str, defined by define_exports()
         '''
-        alpha = Function(V0)
-        for cell in cells(mesh):
-            volume_id = volume_markers[cell]
-            found = False
-            for material in materials:
-                if volume_id == material["id"]:
-                    found = True
-                    alpha.vector()[cell.index()] = material['alpha']
-                    break
-            if found is False:
-                print('Computing alpha: Volume ID not found')
-        return alpha
+        if len(exports['xdmf']['functions']) != len(exports['xdmf']['labels']):
+            raise NameError("Number of functions to be exported "
+                            "doesn't match number of labels in xdmf exports")
+        files = list()
+        for i in range(0, len(exports["xdmf"]["functions"])):
+            files.append(
+                XDMFFile(folder + exports["xdmf"]["labels"][i] + '.xdmf'))
+        return files
 
-    def update_beta(self, mesh, volume_markers, materials):
+    def export_xdmf(self, res, exports, files, t):
         '''
-        Iterates through the mesh and compute the value of D
+        Exports the solutions fields in xdmf files.
         Arguments:
-        - mesh : the mesh
-        - volume_markers : MeshFunction that contains the subdomains
-        - materials : list, contains all the materials dictionaries
+        - res: list, contains FEniCS Functions
+        - exports: dict, defined by define_exports()
+        - files: list, contains XDMFFile
+        - t: float
 
-        Returns : the Function beta
         '''
-        beta = Function(V0)
-        for cell in cells(mesh):
-            volume_id = volume_markers[cell]
-            found = False
-            for material in materials:
-                if volume_id == material["id"]:
-                    found = True
-                    beta.vector()[cell.index()] = material['beta']
-                    break
-            if found is False:
-                print('Computing beta: Volume ID not found')
-        return beta
+        [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention] = res
+
+        solution_dict = {
+            'solute': _u_1,
+            '1': _u_2,
+            '2': _u_3,
+            '3': _u_4,
+            '4': _u_5,
+            '5': _u_6,
+            'retention': retention
+        }
+
+        for i in range(0, len(exports["xdmf"]["functions"])):
+            label = exports["xdmf"]["labels"][i]
+            function = exports["xdmf"]["functions"][i]
+            solution = solution_dict[exports["xdmf"]["functions"][i]]
+            solution.rename(label, "label")
+            files[i].write(solution, t)
+        return
+
+    def find_material_from_id(self, materials, id):
+        ''' Returns the material from a given id
+        Parameters:
+        - materials : list of dicts
+        - id : int
+        '''
+        for material in materials:
+            if material['id'] == id:
+                return material
+                break
+        print("Couldn't find ID " + str(id) + " in materials list")
+        return
 
     def formulation(self, traps, solutions, testfunctions, previous_solutions):
-        ''' formulation takes traps as argument (list).
+        ''' Creates formulation for trapping MRE model.
         Parameters:
         - traps : dict, contains the energy, density and domains
         of the traps
@@ -153,27 +207,49 @@ class Ttrap():
         Returns:
         - F : variational formulation
         '''
-        transient_sol = ((u_1 - u_n1) / dt)*v_1*dx
-        diff_sol = D*dot(grad(u_1), grad(v_1))*dx
-        source_sol = - (1-r)*flux_*f*v_1*dx
-
         F = 0
-        F += transient_sol + source_sol + diff_sol
+        F += ((u_1 - u_n1) / dt)*v_1*dx
+        for material in materials:
+            D_0 = material['D_0']
+            E_diff = material['E_diff']
+            subdomain = material['id']
+            F += D_0 * exp(-E_diff/k_B/temp) * \
+                dot(grad(u_1), grad(v_1))*dx(subdomain)
+        F += - (1-r)*flux_*f*v_1*dx
+
         i = 1
         for trap in traps:
-            #print(i)
             trap_density = trap['density']
             energy = trap['energy']
             material = trap['materials']
-            F += ((solutions[i] - previous_solutions[i]) / dt)*testfunctions[i]*dx
-            if type(trap['materials']) is list:
-                for subdomain in trap['materials']:
-                    F += - D/alpha/alpha/beta*u_1*(trap_density - solutions[i])*testfunctions[i]*dx(subdomain)
-                    F += v_0*exp(-energy/k_B/temp)*solutions[i]*testfunctions[i]*dx(subdomain)
+            F += ((solutions[i] - previous_solutions[i]) / dt) * \
+                testfunctions[i]*dx
+            if type(material) is list:
+                for subdomain in material:
+                    corresponding_material = \
+                        self.find_material_from_id(materials, subdomain)
+                    D_0 = corresponding_material['D_0']
+                    E_diff = corresponding_material['E_diff']
+                    alpha = corresponding_material['alpha']
+                    beta = corresponding_material['beta']
+                    F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*u_1 * \
+                        (trap_density - solutions[i]) * \
+                        testfunctions[i]*dx(subdomain)
+                    F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
+                        testfunctions[i]*dx(subdomain)
             else:
                 subdomain = trap['materials']
-                F += - D/alpha/alpha/beta*u_1*(trap_density - solutions[i])*testfunctions[i]*dx(subdomain)
-                F += v_0*exp(-energy/k_B/temp)*solutions[i]*testfunctions[i]*dx(subdomain)
+                corresponding_material = \
+                    self.find_material_from_id(materials, subdomain)
+                D_0 = corresponding_material['D_0']
+                E_diff = corresponding_material['E_diff']
+                alpha = corresponding_material['alpha']
+                beta = corresponding_material['beta']
+                F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*u_1 * \
+                    (trap_density - solutions[i]) * \
+                    testfunctions[i]*dx(subdomain)
+                F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
+                    testfunctions[i]*dx(subdomain)
             F += ((solutions[i] - previous_solutions[i]) / dt)*v_1*dx
             i += 1
         return F
@@ -201,11 +277,12 @@ class Ttrap():
 
         measurement_dx = dx(subdomain_data=volume_markers)
 
-        surface_markers = MeshFunction("size_t", mesh, mesh.topology().dim()-1, 0)
+        surface_markers = MeshFunction(
+            "size_t", mesh, mesh.topology().dim()-1, 0)
         surface_markers.set_all(0)
-        i=0
+        i = 0
         for f in facets(mesh):
-            i+=1
+            i += 1
             x0 = f.midpoint()
             surface_markers[f] = 0
             if near(x0.x(), 0):
@@ -214,49 +291,6 @@ class Ttrap():
                 surface_markers[f] = 2
         measurement_ds = ds(subdomain_data=surface_markers)
         return volume_markers, measurement_dx, surface_markers, measurement_ds
-
-    def define_traps(self, n_trap_3_):
-        '''
-        Create a list of dicts corresponding to the different traps
-        and containing properties.
-        Arguments:
-        - n_trap_3_ : Function(W), only required if extrinsic trap is
-        simulated.
-        Returns:
-        -materials : list of dicts corresponding to the different traps
-        and containing properties.
-        '''
-        traps = [
-            {
-                "energy": 1,
-                "density": 1e-2*6.3e28,
-                "materials": [1]
-            },
-            {
-                "energy": 1.4,
-                "density": 0*1e-2*6.3e28,
-                "materials": [1]
-            }
-            ,
-            {
-                "energy": 0.9,
-                "density": 0*2e-4*6.3e28,#0*n_trap_3_,
-                "materials": [1]
-            }
-            ,
-            {
-                "energy": 1.4,
-                "density":0*2e-4*6.3e28,
-                "materials": [1]
-            }
-            ,
-            {
-                "energy": 1.4,
-                "density": 0,
-                "materials": [1]
-            }
-        ]
-        return traps
 
     def mesh_and_refine(self, mesh_parameters):
         '''
@@ -276,15 +310,19 @@ class Ttrap():
             for refinement in mesh_parameters["refinements"]:
                 nb_cells_ref = refinement["cells"]
                 refinement_point = refinement["x"]
-                print("Mesh size before local refinement is " + str(len(mesh.cells())))
-                while len(mesh.cells()) < initial_number_of_cells + nb_cells_ref:
-                    cell_markers = MeshFunction("bool", mesh, mesh.topology().dim())
+                print("Mesh size before local refinement is " +
+                      str(len(mesh.cells())))
+                while len(mesh.cells()) < \
+                        initial_number_of_cells + nb_cells_ref:
+                    cell_markers = MeshFunction(
+                        "bool", mesh, mesh.topology().dim())
                     cell_markers.set_all(False)
                     for cell in cells(mesh):
                         if cell.midpoint().x() < refinement_point:
                             cell_markers[cell] = True
                     mesh = refine(mesh, cell_markers)
-                print("Mesh size after local refinement is " + str(len(mesh.cells())))
+                print("Mesh size after local refinement is " +
+                      str(len(mesh.cells())))
                 initial_number_of_cells = len(mesh.cells())
         else:
             print('No refinement parameters found')
@@ -292,7 +330,7 @@ class Ttrap():
 
     def solubility(self, S_0, E_S, k_B, T):
         return S_0*exp(-E_S/k_B/T)
-    
+
     def solubility_BC(self, P, S):
         return P**0.5*S
 
@@ -316,7 +354,6 @@ class Ttrap():
         '''
         while converged is False:
             dt.assign(float(dt)/stepsize_change_ratio)
-            #print(float(dt))
             nb_it, converged = solver.solve()
             if float(dt) < dt_min:
                 sys.exit('Error: stepsize reached minimal value')
@@ -329,9 +366,9 @@ class Ttrap():
                 dt.assign(float(dt)*stepsize_change_ratio)
             else:
                 dt.assign(float(dt)/stepsize_change_ratio)
-        
+
         return dt
-    
+
     def apply_boundary_conditions(self, boundary_conditions, V,
                                   surface_marker, ds):
         '''
@@ -339,7 +376,7 @@ class Ttrap():
         Arguments:
         - boundary_conditions: dict, parameters for bcs
         - V: FunctionSpace,
-        - surface_marker: MeshFunction, contains the markers for 
+        - surface_marker: MeshFunction, contains the markers for
         the different surfaces
         - ds: Measurement
         '''
@@ -375,7 +412,10 @@ class myclass(Ttrap):
             '''
             Returns a dict that contains the parameters for
             boundary conditions.
-            ''' 
+            Parameters needed :
+            - dc : "surface" , "value"
+            - solubility : "surface", "S_0", "E_S", "pressure", "density"
+            '''
             boundary_conditions = {
                 "dc": [
                     {
@@ -386,17 +426,9 @@ class myclass(Ttrap):
                         "surface": [2],
                         "value": 0
                         }
-                ]
-                #,
-                #"solubility": [
-                #    {
-                #      "surface": [1],
-                #      "S_0":1.3e-4,
-                #      "E_S":0.34,
-                #      "pressure":0.1/101325,
-                #      "density": 6.3e28
-                #    }
-                #    ]
+                ],
+                "solubility": [
+                    ]
             }
             return boundary_conditions
 
@@ -410,8 +442,8 @@ class myclass(Ttrap):
             '''
             materials = []
             material1 = {
-                "alpha": Constant(1.1e-10),  # lattice constant ()
-                "beta": Constant(6*6.3e28),  # number of solute sites per atom (6 for W)
+                "alpha": 1.1e-10,  # lattice constant ()
+                "beta": 6*6.3e28,  # number of solute sites per atom (6 for W)
                 "density": 6.3e28,
                 "borders": [0, 20e-6],
                 "E_diff": 0.39,
@@ -419,8 +451,8 @@ class myclass(Ttrap):
                 "id": 1
             }
             material2 = {
-                "alpha": Constant(1.1e-10),
-                "beta": Constant(6*6.3e28),
+                "alpha": 1.1e-10,
+                "beta": 6*6.3e28,
                 "density": 6.3e28,
                 "borders": [10e-9, 75e-9],
                 "E_diff": 0.39,
@@ -431,7 +463,7 @@ class myclass(Ttrap):
             return materials
 
         self.__mesh_parameters = {
-            "initial_number_of_cells": 1600,
+            "initial_number_of_cells": 2200,
             "size": 20e-6,
             "refinements": [
                 {
@@ -448,18 +480,81 @@ class myclass(Ttrap):
         self.__materials = define_materials()
         self.__BC = define_boundary_conditions()
 
+    def define_exports(self):
+        exports = {
+            "txt": {
+                "functions": ['retention'],
+                "times": [100],
+                "labels": ['retention']
+            },
+            "xdmf": {
+                "functions": ['solute', '1', '2', '3', '4', '5', 'retention'],
+                "labels":  ['solute', 'trap_1', 'trap_2',
+                            'trap_3', 'trap_4', 'trap_5', 'retention']
+            },
+            "TDS": {
+                "label": "desorption",
+                "TDS_time": 450
+                }
+        }
+        folder = "Solution/"
+        return folder, exports
+
+    def define_traps(self):
+        '''
+        Create a list of dicts corresponding to the different traps
+        and containing properties.
+        Arguments:
+        - n_trap_3_ : Function(W), only required if extrinsic trap is
+        simulated.
+        Returns:
+        -materials : list of dicts corresponding to the different traps
+        and containing properties.
+        '''
+        traps = [
+            {
+                "energy": 0.87,
+                "density": 1.3e-3*6.3e28,
+                "materials": [1]
+            },
+            {
+                "energy": 1.0,
+                "density": 4e-4*6.3e28,
+                "materials": [1]
+            },
+            {
+                "energy": 1.5,
+                "density": n_trap_3_,
+                "materials": [1]
+            },
+            {
+                "energy": 1.4,
+                "density": 0*2e-4*6.3e28,
+                "materials": [1]
+            },
+            {
+                "energy": 1.4,
+                "density": 0,
+                "materials": [1]
+            }
+        ]
+        return traps
+    
     def getMesh(self):
         return self.__mesh
+
+    def getExports(self):
+        return self.__exports
 
     def getMaterials(self):
         return self.__materials
 
     def getMeshParameters(self):
         return self.__mesh_parameters
-    
+
     def getBC(self):
         return self.__BC
-    
+
     # Declaration of variables
     implantation_time = 400
     resting_time = 50
@@ -476,10 +571,10 @@ class myclass(Ttrap):
     k_B = 8.6e-5  # Boltzmann constant
     TDS_time = int(delta_TDS / ramp) + 1
     Time = implantation_time+resting_time+TDS_time
-    num_steps = 10*int(implantation_time+resting_time+TDS_time)
+    num_steps = 2*int(implantation_time+resting_time+TDS_time)
     dT = Time / num_steps  # time step size
     t = 0  # Initialising time to 0s
-    stepsize_change_ratio = 1.12
+    stepsize_change_ratio = 1.1
     t_stop = implantation_time + resting_time - 20
     stepsize_stop_max = 0.5
     dt_min = 1e-5
@@ -527,11 +622,9 @@ x = interpolate(Expression('x[0]', degree=1), W)
 # Define and mark subdomains
 volume_markers, dx, surface_markers, ds = ttrap.subdomains(mesh, materials)
 
-
-
 # Define expressions used in variational forms
 print('Defining source terms')
-center = 4.5e-9 + 20e-9
+center = 4.5e-9  # + 20e-9
 width = 2.5e-9
 f = Expression('1/(width*pow(2*3.14,0.5))*  \
                exp(-0.5*pow(((x[0]-center)/width), 2))',
@@ -542,7 +635,7 @@ flux_ = Expression('t <= implantation_time ? flux : 0',
                    t=0, implantation_time=implantation_time,
                    flux=flux, degree=1)
 temp = Expression('t <= (implantation_time+resting_time) ? \
-                  373 : 373+ramp*(t-(implantation_time+resting_time))',
+                  300 : 300+ramp*(t-(implantation_time+resting_time))',
                   implantation_time=implantation_time,
                   resting_time=resting_time,
                   ramp=ramp,
@@ -591,12 +684,8 @@ n_trap_3_ = Function(W)
 
 print('Defining variational problem')
 
-D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
-alpha = ttrap.update_alpha(mesh, volume_markers, materials)
-beta = ttrap.update_beta(mesh, volume_markers, materials)
-
-# Define variational problem
-traps = ttrap.define_traps(n_trap_3_)
+# Define variational problem1
+traps = ttrap.define_traps()
 F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
 
 F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
@@ -606,15 +695,10 @@ F_n3 += -(1-r)*flux_*(
     * v_trap_3*dx
 
 # Solution files
-xdmf_u_1 = XDMFFile('Solution/c_sol.xdmf')
-xdmf_u_2 = XDMFFile('Solution/c_trap1.xdmf')
-xdmf_u_3 = XDMFFile('Solution/c_trap2.xdmf')
-xdmf_u_4 = XDMFFile('Solution/c_trap3.xdmf')
-xdmf_u_5 = XDMFFile('Solution/c_trap4.xdmf')
-xdmf_u_6 = XDMFFile('Solution/c_trap5.xdmf')
-xdmf_retention = XDMFFile('Solution/retention.xdmf')
-filedesorption = ttrap.save_as()
+folder, exports = ttrap.define_exports()
 
+filedesorption = ttrap.save_as()  # folder + exports["TDS"]["label"]+ '.csv'
+files = ttrap.define_xdmf_files(exports, folder)
 #  Time-stepping
 print('Time stepping...')
 total_n = 0
@@ -624,12 +708,14 @@ set_log_level(30)  # Set the log level to WARNING
 #set_log_level(20) # Set the log level to INFO
 
 timer = Timer()  # start timer
+
+
 while t < Time:
 
     print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s' +
           "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
           end="\r")
-    
+
     J = derivative(F, u, du)  # Define the Jacobian
     problem = NonlinearVariationalProblem(F, u, bcs, J)
     solver = NonlinearVariationalSolver(problem)
@@ -640,35 +726,22 @@ while t < Time:
                                    stepsize_change_ratio=stepsize_change_ratio,
                                    dt_min=dt_min, t=t, t_stop=t_stop,
                                    stepsize_stop_max=stepsize_stop_max)
-    
 
-    #solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
+    solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
+
     _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
     res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
-    # Save solution to file (.xdmf)
-    _u_1.rename("solute", "label")
-    _u_2.rename("trap_1", "label")
-    _u_3.rename("trap_2", "label")
-    _u_4.rename("trap_3", "label")
-    _u_5.rename("trap_4", "label")
-    _u_6.rename("trap_5", "label")
-    xdmf_u_1.write(_u_1, t)
-    xdmf_u_2.write(_u_2, t)
-    xdmf_u_3.write(_u_3, t)
-    xdmf_u_4.write(_u_4, t)
-    xdmf_u_5.write(_u_5, t)
-    xdmf_u_6.write(_u_6, t)
-    retention = Function(W)
     retention = project(_u_1)
-    i = 1
     total_trap = 0
-    for trap in traps:
+    for i in range(1, len(traps)+1):
         sol = res[i]
         total_trap += assemble(sol*dx)
         retention = project(retention + res[i], W)
-        i += 1
-    retention.rename("retention", "label")
-    xdmf_retention.write(retention, t)
+    ttrap.export_xdmf([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention], exports,
+                      files, t)
+    dt = ttrap.export_profiles([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention],
+                               exports, t, dt)
+
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
@@ -676,6 +749,7 @@ while t < Time:
     total_n = total
     if t > implantation_time+resting_time:
         desorption.append(desorption_rate)
+
     # Update previous solutions
     u_n.assign(u)
     n_trap_3_n.assign(n_trap_3_)
@@ -683,8 +757,7 @@ while t < Time:
     t += float(dt)
     temp.t += float(dt)
     flux_.t += float(dt)
-    if t > implantation_time:
-        D = ttrap.update_D(mesh, volume_markers, materials, temp(size/2))
 
-ttrap.export_TDS(filedesorption, desorption_rate)
+
+ttrap.export_TDS(filedesorption, desorption)
 print('\007s')
