@@ -149,8 +149,10 @@ class Ttrap():
                             "doesn't match number of labels in xdmf exports")
         files = list()
         for i in range(0, len(exports["xdmf"]["functions"])):
-            files.append(
-                XDMFFile(folder + exports["xdmf"]["labels"][i] + '.xdmf'))
+            u_file = XDMFFile(folder + exports["xdmf"]["labels"][i] + '.xdmf')
+            u_file.parameters["flush_output"] = True
+            u_file.parameters["rewrite_function_mesh"] = False
+            files.append(u_file)
         return files
 
     def export_xdmf(self, res, exports, files, t):
@@ -744,7 +746,6 @@ set_log_level(30)  # Set the log level to WARNING
 #set_log_level(20) # Set the log level to INFO
 
 timer = Timer()  # start timer
-
 
 while t < Time:
 
