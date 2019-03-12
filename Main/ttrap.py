@@ -1,6 +1,7 @@
 from fenics import *
 from dolfin import *
 import numpy as np
+import sympy as sp
 import csv
 import sys
 import os
@@ -148,8 +149,10 @@ class Ttrap():
                             "doesn't match number of labels in xdmf exports")
         files = list()
         for i in range(0, len(exports["xdmf"]["functions"])):
-            files.append(
-                XDMFFile(folder + exports["xdmf"]["labels"][i] + '.xdmf'))
+            u_file = XDMFFile(folder + exports["xdmf"]["labels"][i] + '.xdmf')
+            u_file.parameters["flush_output"] = True
+            u_file.parameters["rewrite_function_mesh"] = False
+            files.append(u_file)
         return files
 
     def export_xdmf(self, res, exports, files, t):
@@ -215,7 +218,7 @@ class Ttrap():
             subdomain = material['id']
             F += D_0 * exp(-E_diff/k_B/temp) * \
                 dot(grad(u_1), grad(v_1))*dx(subdomain)
-        F += - (1-r)*flux_*f*v_1*dx
+        F += - flux_*f*v_1*dx
 
         i = 1
         for trap in traps:
@@ -319,6 +322,7 @@ class Ttrap():
                     cell_markers.set_all(False)
                     for cell in cells(mesh):
                         if cell.midpoint().x() < refinement_point:
+
                             cell_markers[cell] = True
                     mesh = refine(mesh, cell_markers)
                 print("Mesh size after local refinement is " +
@@ -524,7 +528,7 @@ class myclass(Ttrap):
             },
             {
                 "energy": 1.5,
-                "density": n_trap_3_,
+                "density": n_trap_3,
                 "materials": [1]
             },
             {
@@ -539,7 +543,50 @@ class myclass(Ttrap):
             }
         ]
         return traps
-    
+
+    def define_solving_parameters(self):
+        '''
+        Returns the solving parameters needed for simulation.
+        '''
+        implantation_time = 400
+        resting_time = 50
+        delta_TDS = 500
+        TDS_time = int(delta_TDS / ramp) + 1
+        solving_parameters = {
+            "final_time": implantation_time+resting_time+TDS_time,
+            "num_steps": 2*int(implantation_time+resting_time+TDS_time),
+            "adaptative_time_step": {
+                "stepsize_change_ratio": 1.1,
+                "t_stop": implantation_time + resting_time - 20,
+                "stepsize_stop_max": 0.5,
+                "dt_min": 1e-5
+                },
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_it": 50,
+            }
+        }
+        return solving_parameters
+
+    def define_source_term(self):
+        '''
+        Returns:
+        - source_term, dict. Contains flux and distribution.
+        '''
+        x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
+        center = 4.5e-9  # + 20e-9
+        width = 2.5e-9
+        r = 0
+        flux = (1-r)*2.5e19 * (t <= implantation_time)
+        distribution = 1/(width*(2*3.14)**0.5) * \
+            sp.exp(-0.5*((x-center)/width)**2)
+        source_term = {
+            'flux': sp.printing.ccode(flux),
+            'distribution': sp.printing.ccode(distribution)
+            }
+        return source_term
+
     def getMesh(self):
         return self.__mesh
 
@@ -560,8 +607,6 @@ class myclass(Ttrap):
     resting_time = 50
     ramp = 8
     delta_TDS = 500
-    r = 0
-    flux = 2.5e19
     n_trap_3a_max = 1e-1*6.3e28
     n_trap_3b_max = 1e-2*6.3e28
     rate_3a = 6e-4
@@ -573,11 +618,7 @@ class myclass(Ttrap):
     Time = implantation_time+resting_time+TDS_time
     num_steps = 2*int(implantation_time+resting_time+TDS_time)
     dT = Time / num_steps  # time step size
-    t = 0  # Initialising time to 0s
-    stepsize_change_ratio = 1.1
-    t_stop = implantation_time + resting_time - 20
-    stepsize_stop_max = 0.5
-    dt_min = 1e-5
+
 
 ttrap = myclass()
 
@@ -585,8 +626,6 @@ implantation_time = ttrap.implantation_time
 resting_time = ttrap.resting_time
 ramp = ttrap.ramp
 delta_TDS = ttrap.delta_TDS
-r = ttrap.r
-flux = ttrap.flux  # /6.3e28
 n_trap_3a_max = ttrap.n_trap_3a_max
 n_trap_3b_max = ttrap.n_trap_3b_max
 rate_3a = ttrap.rate_3a
@@ -594,18 +633,21 @@ rate_3b = ttrap.rate_3b
 xp = ttrap.xp
 v_0 = ttrap.v_0  # frequency factor s-1
 k_B = ttrap.k_B  # Boltzmann constant
-TDS_time = ttrap.TDS_time
-Time = ttrap.Time
-num_steps = ttrap.num_steps
-dt = Constant(ttrap.dT)  # time step size
-dT = ttrap.dT
-t = ttrap.t  # Initialising time to 0s
-stepsize_change_ratio = ttrap.stepsize_change_ratio
-t_stop = ttrap.t_stop
-stepsize_stop_max = ttrap.stepsize_stop_max
+solving_parameters = ttrap.define_solving_parameters()
+Time = solving_parameters["final_time"]
+num_steps = solving_parameters["num_steps"]
+dT = Time / num_steps
+dt = Constant(dT)  # time step size
+t = 0  # Initialising time to 0s
+stepsize_change_ratio = solving_parameters[
+    "adaptative_time_step"][
+        "stepsize_change_ratio"]
+t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
+stepsize_stop_max = solving_parameters[
+    "adaptative_time_step"][
+        "stepsize_stop_max"]
+dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
 size = ttrap.getMeshParameters()["size"]
-dt_min = ttrap.dt_min
-
 # Mesh and refinement
 materials = ttrap.getMaterials()
 mesh = ttrap.getMesh()
@@ -624,23 +666,19 @@ volume_markers, dx, surface_markers, ds = ttrap.subdomains(mesh, materials)
 
 # Define expressions used in variational forms
 print('Defining source terms')
-center = 4.5e-9  # + 20e-9
-width = 2.5e-9
-f = Expression('1/(width*pow(2*3.14,0.5))*  \
-               exp(-0.5*pow(((x[0]-center)/width), 2))',
-               degree=2, center=center, width=width)
+source_term = ttrap.define_source_term()
 teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
                   xp=xp, degree=1)
-flux_ = Expression('t <= implantation_time ? flux : 0',
-                   t=0, implantation_time=implantation_time,
-                   flux=flux, degree=1)
+
+flux_ = Expression(source_term["flux"], t=0, degree=2)
+f = Expression(source_term["distribution"], t=0, degree=2)
+
 temp = Expression('t <= (implantation_time+resting_time) ? \
                   300 : 300+ramp*(t-(implantation_time+resting_time))',
                   implantation_time=implantation_time,
                   resting_time=resting_time,
                   ramp=ramp,
                   t=0, degree=2)
-
 
 # BCs
 print('Defining boundary conditions')
@@ -664,7 +702,7 @@ v_trap_3 = TestFunction(W)
 
 u = Function(V)
 du = TrialFunction(V)
-n_trap_3 = TrialFunction(W)  # trap 3 density
+n_trap_3 = Function(W)  # trap 3 density
 
 
 # Split system functions to access components
@@ -689,7 +727,7 @@ traps = ttrap.define_traps()
 F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
 
 F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
-F_n3 += -(1-r)*flux_*(
+F_n3 += -flux_*(
     (1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f +
     (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta) \
     * v_trap_3*dx
@@ -709,7 +747,6 @@ set_log_level(30)  # Set the log level to WARNING
 
 timer = Timer()  # start timer
 
-
 while t < Time:
 
     print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s' +
@@ -720,14 +757,17 @@ while t < Time:
     problem = NonlinearVariationalProblem(F, u, bcs, J)
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
-    solver.parameters["newton_solver"]["absolute_tolerance"] = 1e10
+    solver.parameters["newton_solver"]["absolute_tolerance"] = \
+        solving_parameters['newton_solver']['absolute_tolerance']
+    solver.parameters["newton_solver"]["relative_tolerance"] = \
+        solving_parameters['newton_solver']['relative_tolerance']
     nb_it, converged = solver.solve()
     dt = ttrap.adaptative_timestep(converged=converged, nb_it=nb_it, dt=dt,
                                    stepsize_change_ratio=stepsize_change_ratio,
                                    dt_min=dt_min, t=t, t_stop=t_stop,
                                    stepsize_stop_max=stepsize_stop_max)
 
-    solve(lhs(F_n3) == rhs(F_n3), n_trap_3_, [])
+    solve(F_n3 == 0, n_trap_3, [])
 
     _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
     res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
@@ -752,7 +792,7 @@ while t < Time:
 
     # Update previous solutions
     u_n.assign(u)
-    n_trap_3_n.assign(n_trap_3_)
+    n_trap_3_n.assign(n_trap_3)
     # Update current time
     t += float(dt)
     temp.t += float(dt)
