@@ -548,16 +548,14 @@ class myclass(Ttrap):
         '''
         Returns the solving parameters needed for simulation.
         '''
-        implantation_time = 400
-        resting_time = 50
-        delta_TDS = 500
-        TDS_time = int(delta_TDS / ramp) + 1
         solving_parameters = {
-            "final_time": implantation_time+resting_time+TDS_time,
-            "num_steps": 2*int(implantation_time+resting_time+TDS_time),
+            "final_time": self.implantation_time +
+            self.resting_time+self.TDS_time,
+            "num_steps": 2*int(self.implantation_time +
+                               self.resting_time+self.TDS_time),
             "adaptative_time_step": {
                 "stepsize_change_ratio": 1.1,
-                "t_stop": implantation_time + resting_time - 20,
+                "t_stop": self.implantation_time + self.resting_time - 20,
                 "stepsize_stop_max": 0.5,
                 "dt_min": 1e-5
                 },
@@ -569,6 +567,20 @@ class myclass(Ttrap):
         }
         return solving_parameters
 
+    def define_temperature(self):
+        '''
+        Returns the temperature sequence as function of space and time
+        returns: T, Expression()
+        '''
+        x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
+        T = {
+            'type': "expression",
+            'value': sp.printing.ccode(
+                300 + (t > self.implantation_time+self.resting_time) *
+                self.ramp * (t - (self.implantation_time+self.resting_time)))
+        }
+        return T
+
     def define_source_term(self):
         '''
         Returns:
@@ -578,7 +590,7 @@ class myclass(Ttrap):
         center = 4.5e-9  # + 20e-9
         width = 2.5e-9
         r = 0
-        flux = (1-r)*2.5e19 * (t <= implantation_time)
+        flux = (1-r)*2.5e19 * (t <= self.implantation_time)
         distribution = 1/(width*(2*3.14)**0.5) * \
             sp.exp(-0.5*((x-center)/width)**2)
         source_term = {
@@ -607,6 +619,7 @@ class myclass(Ttrap):
     resting_time = 50
     ramp = 8
     delta_TDS = 500
+    TDS_time = int(delta_TDS / ramp) + 1
     n_trap_3a_max = 1e-1*6.3e28
     n_trap_3b_max = 1e-2*6.3e28
     rate_3a = 6e-4
@@ -614,18 +627,10 @@ class myclass(Ttrap):
     xp = 1e-6
     v_0 = 1e13  # frequency factor s-1
     k_B = 8.6e-5  # Boltzmann constant
-    TDS_time = int(delta_TDS / ramp) + 1
-    Time = implantation_time+resting_time+TDS_time
-    num_steps = 2*int(implantation_time+resting_time+TDS_time)
-    dT = Time / num_steps  # time step size
 
 
 ttrap = myclass()
 
-implantation_time = ttrap.implantation_time
-resting_time = ttrap.resting_time
-ramp = ttrap.ramp
-delta_TDS = ttrap.delta_TDS
 n_trap_3a_max = ttrap.n_trap_3a_max
 n_trap_3b_max = ttrap.n_trap_3b_max
 rate_3a = ttrap.rate_3a
@@ -672,13 +677,8 @@ teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
 
 flux_ = Expression(source_term["flux"], t=0, degree=2)
 f = Expression(source_term["distribution"], t=0, degree=2)
-
-temp = Expression('t <= (implantation_time+resting_time) ? \
-                  300 : 300+ramp*(t-(implantation_time+resting_time))',
-                  implantation_time=implantation_time,
-                  resting_time=resting_time,
-                  ramp=ramp,
-                  t=0, degree=2)
+T = ttrap.define_temperature()
+temp = Expression(T['value'], t=t, degree=2)
 
 # BCs
 print('Defining boundary conditions')
@@ -787,7 +787,7 @@ while t < Time:
     desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
     #export_total.append([assemble(retention*(size-x)**2*dx)*4*3.15, temp(size/2), t])
     total_n = total
-    if t > implantation_time+resting_time:
+    if t > ttrap.implantation_time+ttrap.resting_time:
         desorption.append(desorption_rate)
 
     # Update previous solutions
