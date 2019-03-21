@@ -225,16 +225,34 @@ class Ttrap():
         v_trap_3 = TestFunction(W)
         return testfunctions, v_trap_3
 
-    def define_functions(self, u):
+    def define_functions(self, V):
         '''
         Returns Function() objects for formulation
         '''
-        n_trap_3 = Function(W)  # trap 3 density
+        u = Function(V)
+        
         # Split system functions to access components
         u_1, u_2, u_3, u_4, u_5, u_6 = split(u)
         solutions = [u_1, u_2, u_3, u_4, u_5, u_6]
-        return solutions, n_trap_3
+        return u, solutions
 
+    def initialising_solutions(self, V):
+        '''
+        Returns the prievious solutions Function() objects for formulation
+        and initialise them.
+        '''
+
+        print('Defining initial values')
+        u_n, components = ttrap.define_functions(V)
+        expression = list()
+        for u in components:
+            expression.append("0")
+        expression = tuple(expression)
+        ini_u = Expression(expression, degree=1, t=t)
+        u_n = interpolate(ini_u, V)
+        components = split(u_n)
+        return u_n, components
+    
     def formulation(self, traps, solutions, testfunctions, previous_solutions):
         ''' Creates formulation for trapping MRE model.
         Parameters:
@@ -272,8 +290,8 @@ class Ttrap():
                     E_diff = corresponding_material['E_diff']
                     alpha = corresponding_material['alpha']
                     beta = corresponding_material['beta']
-                    F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*solutions[0] * \
-                        (trap_density - solutions[i]) * \
+                    F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta * \
+                        solutions[0] * (trap_density - solutions[i]) * \
                         testfunctions[i]*dx(subdomain)
                     F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
                         testfunctions[i]*dx(subdomain)
@@ -285,8 +303,8 @@ class Ttrap():
                 E_diff = corresponding_material['E_diff']
                 alpha = corresponding_material['alpha']
                 beta = corresponding_material['beta']
-                F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*solutions[0] * \
-                    (trap_density - solutions[i]) * \
+                F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta * \
+                    solutions[0] * (trap_density - solutions[i]) * \
                     testfunctions[i]*dx(subdomain)
                 F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
                     testfunctions[i]*dx(subdomain)
@@ -728,24 +746,18 @@ if __name__ == "__main__":
     bcs, expressions = ttrap.apply_boundary_conditions(
         ttrap.getBC(), V, surface_markers, ds)
 
-    # Define test functions
+    # Define functions
 
     testfunctions, v_trap_3 = ttrap.define_test_functions(V, W)
-    u = Function(V)
-
-
-    solutions, n_trap_3 = ttrap.define_functions(u)
+    u, solutions = ttrap.define_functions(V)
     du = TrialFunction(V)
 
-    print('Defining initial values')
-    ini_u = Expression(("0", "0", "0", "0", "0", "0"), degree=1)
-    u_n = interpolate(ini_u, V)
-    u_n1, u_n2, u_n3, u_n4, u_n5, u_n6 = split(u_n)
-    previous_solutions = [u_n1, u_n2, u_n3, u_n4, u_n5, u_n6]
+    n_trap_3 = Function(W)  # trap 3 density
 
+    # Initialising the solutions
+    u_n, previous_solutions = ttrap.initialising_solutions(V)
     ini_n_trap_3 = Expression("0", degree=1)
     n_trap_3_n = interpolate(ini_n_trap_3, W)
-
     print('Defining variational problem')
 
     # Define variational problem1
