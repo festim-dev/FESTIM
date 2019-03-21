@@ -73,6 +73,7 @@ class Ttrap():
         export = Function(W)
         export = project(function)
         busy = True
+        x = interpolate(Expression('x[0]', degree=1), W)
         while busy is True:
             try:
                 np.savetxt(filename + '.txt', np.transpose(
@@ -197,6 +198,22 @@ class Ttrap():
                 break
         print("Couldn't find ID " + str(id) + " in materials list")
         return
+
+    def create_function_spaces(self, element1='P', order1=1,
+                               element2='P', degree2=1):
+        ''' Returns FuncionSpaces for concentration and dynamic trap densities
+        Arguments:
+        - element1='P': string, the element of concentrations
+        - order1=1: int, the order of the element of concentrations
+        - element2='P': string, the element of dynamic trap densities
+        - order1=2: int, the order of the element of dynamic trap densities
+        '''
+        element = FiniteElement(element1, interval, order1)
+        mixed_element = MixedElement([element, element, element, element,
+                                      element, element])
+        V = FunctionSpace(mesh, mixed_element)
+        W = FunctionSpace(mesh, element2, degree2)
+        return V, W
 
     def formulation(self, traps, solutions, testfunctions, previous_solutions):
         ''' Creates formulation for trapping MRE model.
@@ -671,11 +688,7 @@ if __name__ == "__main__":
     mesh = ttrap.getMesh()
 
     # Define function space for system of concentrations and properties
-    P1 = FiniteElement('P', interval, 1)
-    element = MixedElement([P1, P1, P1, P1, P1, P1])
-    V = FunctionSpace(mesh, element)
-    W = FunctionSpace(mesh, 'P', 1)
-
+    V, W = ttrap.create_function_spaces()
     # Define and mark subdomains
     volume_markers, dx, surface_markers, ds = ttrap.subdomains(mesh, materials)
 
