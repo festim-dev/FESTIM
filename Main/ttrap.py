@@ -221,27 +221,33 @@ class Ttrap():
         '''
         v = TestFunction(V)
         v_1, v_2, v_3, v_4, v_5, v_6 = split(v)
-        testfunctions = [v_1, v_2, v_3, v_4, v_5, v_6]
+        testfunctions_concentrations = [v_1, v_2, v_3, v_4, v_5, v_6]
         v_trap_3 = TestFunction(W)
-        return testfunctions, v_trap_3
+        testfunctions_extrinsic_traps = list()
+        testfunctions_extrinsic_traps.append(v_trap_3)
+        return testfunctions_concentrations, testfunctions_extrinsic_traps
 
     def define_functions(self, V):
         '''
         Returns Function() objects for formulation
         '''
         u = Function(V)
-        
+
         # Split system functions to access components
         u_1, u_2, u_3, u_4, u_5, u_6 = split(u)
         solutions = [u_1, u_2, u_3, u_4, u_5, u_6]
         return u, solutions
+
+    def define_functions_extrinsic_traps(self, W):
+        traps = []
+        traps.append(Function(W))  # trap 3 density
+        return traps
 
     def initialising_solutions(self, V):
         '''
         Returns the prievious solutions Function() objects for formulation
         and initialise them.
         '''
-
         print('Defining initial values')
         u_n, components = ttrap.define_functions(V)
         expression = list()
@@ -252,8 +258,15 @@ class Ttrap():
         u_n = interpolate(ini_u, V)
         components = split(u_n)
         return u_n, components
-    
-    def formulation(self, traps, solutions, testfunctions, previous_solutions):
+
+    def initialising_extrinsic_traps(self, W):
+        ini_n_trap_3 = Expression("0", degree=1)
+        n_trap_3_n = interpolate(ini_n_trap_3, W)
+        previous_solutions = [n_trap_3_n]
+        return previous_solutions
+
+    def formulation(self, traps, extrinsic_traps, solutions, testfunctions,
+                    previous_solutions):
         ''' Creates formulation for trapping MRE model.
         Parameters:
         - traps : dict, contains the energy, density and domains
@@ -276,8 +289,16 @@ class Ttrap():
         F += - flux_*f*testfunctions[0]*dx
 
         i = 1
+        j = 0
         for trap in traps:
-            trap_density = trap['density']
+            if 'type' in trap.keys():
+                if trap['type'] == 'extrinsic':
+                    trap_density = extrinsic_traps[j]
+                    j += 1
+                else:
+                    trap_density = trap['density']
+            else:
+                trap_density = trap['density']
             energy = trap['energy']
             material = trap['materials']
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
@@ -312,6 +333,22 @@ class Ttrap():
                 testfunctions[0]*dx
             i += 1
         return F
+
+    def formulation_extrinsic_traps(self, traps, solutions, testfunctions,
+                                    previous_solutions):
+        teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
+                          xp=xp, degree=1)
+        formulations = []
+        i = 0
+        for trap in traps:
+            F = ((solutions[i] - previous_solutions[i])/dt)*testfunctions[i]*dx
+            F += -flux_*(
+                (1 - solutions[i]/n_trap_3a_max)*rate_3a*f +
+                (1 - solutions[i]/n_trap_3b_max) *
+                rate_3b*teta) * testfunctions[i]*dx
+            formulations.append(F)
+            i += 1
+        return formulations
 
     def subdomains(self, mesh, materials):
         '''
@@ -596,8 +633,8 @@ class myclass(Ttrap):
             },
             {
                 "energy": 1.5,
-                "density": n_trap_3,
-                "materials": [1]
+                "materials": [1],
+                "type": 'extrinsic'
             },
             {
                 "energy": 1.4,
@@ -748,30 +785,28 @@ if __name__ == "__main__":
 
     # Define functions
 
-    testfunctions, v_trap_3 = ttrap.define_test_functions(V, W)
+    testfunctions_concentrations, testfunctions_traps = \
+        ttrap.define_test_functions(V, W)
     u, solutions = ttrap.define_functions(V)
     du = TrialFunction(V)
 
-    n_trap_3 = Function(W)  # trap 3 density
-
+    extrinsic_traps = ttrap.define_functions_extrinsic_traps(W)
     # Initialising the solutions
-    u_n, previous_solutions = ttrap.initialising_solutions(V)
-    ini_n_trap_3 = Expression("0", degree=1)
-    n_trap_3_n = interpolate(ini_n_trap_3, W)
+    u_n, previous_solutions_concentrations = ttrap.initialising_solutions(V)
+
+    previous_solutions_traps = ttrap.initialising_extrinsic_traps(W)
     print('Defining variational problem')
 
     # Define variational problem1
     traps = ttrap.define_traps()
-    F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
+    F = ttrap.formulation(traps, extrinsic_traps, solutions,
+                          testfunctions_concentrations,
+                          previous_solutions_concentrations)
 
     # Define variational problem for extrinsic traps
-    teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
-                      xp=xp, degree=1)
-    F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
-    F_n3 += -flux_*(
-        (1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f +
-        (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta) \
-        * v_trap_3*dx
+
+    extrinsic_formulations = ttrap.formulation_extrinsic_traps(
+        [1], extrinsic_traps, testfunctions_traps, previous_solutions_traps)
 
     # Solution files
     folder, exports = ttrap.define_exports()
@@ -811,7 +846,7 @@ if __name__ == "__main__":
             dt_min=dt_min, t=t, t_stop=t_stop,
             stepsize_stop_max=stepsize_stop_max)
 
-        solve(F_n3 == 0, n_trap_3, [])
+        solve(extrinsic_formulations[0] == 0, extrinsic_traps[0], [])
 
         _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
         res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
@@ -835,7 +870,7 @@ if __name__ == "__main__":
 
         # Update previous solutions
         u_n.assign(u)
-        n_trap_3_n.assign(n_trap_3)
+        previous_solutions_traps[0].assign(extrinsic_traps[0])
         # Update current time
         t += float(dt)
         temp.t += float(dt)
