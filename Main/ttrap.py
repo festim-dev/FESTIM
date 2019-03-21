@@ -746,8 +746,9 @@ print('Time stepping...')
 total_n = 0
 desorption = list()
 export_total = list()
-set_log_level(30)  # Set the log level to WARNING
-#set_log_level(20) # Set the log level to INFO
+level = 30  # 30 for WARNING 20 for INFO
+set_log_level(level)
+
 
 timer = Timer()  # start timer
 
