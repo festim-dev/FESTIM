@@ -225,6 +225,16 @@ class Ttrap():
         v_trap_3 = TestFunction(W)
         return testfunctions, v_trap_3
 
+    def define_functions(self, u):
+        '''
+        Returns Function() objects for formulation
+        '''
+        n_trap_3 = Function(W)  # trap 3 density
+        # Split system functions to access components
+        u_1, u_2, u_3, u_4, u_5, u_6 = split(u)
+        solutions = [u_1, u_2, u_3, u_4, u_5, u_6]
+        return solutions, n_trap_3
+
     def formulation(self, traps, solutions, testfunctions, previous_solutions):
         ''' Creates formulation for trapping MRE model.
         Parameters:
@@ -238,13 +248,13 @@ class Ttrap():
         - F : variational formulation
         '''
         F = 0
-        F += ((u_1 - u_n1) / dt)*testfunctions[0]*dx
+        F += ((solutions[0] - previous_solutions[0]) / dt)*testfunctions[0]*dx
         for material in materials:
             D_0 = material['D_0']
             E_diff = material['E_diff']
             subdomain = material['id']
             F += D_0 * exp(-E_diff/k_B/temp) * \
-                dot(grad(u_1), grad(testfunctions[0]))*dx(subdomain)
+                dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
         F += - flux_*f*testfunctions[0]*dx
 
         i = 1
@@ -262,7 +272,7 @@ class Ttrap():
                     E_diff = corresponding_material['E_diff']
                     alpha = corresponding_material['alpha']
                     beta = corresponding_material['beta']
-                    F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*u_1 * \
+                    F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*solutions[0] * \
                         (trap_density - solutions[i]) * \
                         testfunctions[i]*dx(subdomain)
                     F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
@@ -275,7 +285,7 @@ class Ttrap():
                 E_diff = corresponding_material['E_diff']
                 alpha = corresponding_material['alpha']
                 beta = corresponding_material['beta']
-                F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*u_1 * \
+                F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta*solutions[0] * \
                     (trap_density - solutions[i]) * \
                     testfunctions[i]*dx(subdomain)
                 F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
@@ -721,14 +731,11 @@ if __name__ == "__main__":
     # Define test functions
 
     testfunctions, v_trap_3 = ttrap.define_test_functions(V, W)
-
     u = Function(V)
-    du = TrialFunction(V)
-    n_trap_3 = Function(W)  # trap 3 density
 
-    # Split system functions to access components
-    u_1, u_2, u_3, u_4, u_5, u_6 = split(u)
-    solutions = [u_1, u_2, u_3, u_4, u_5, u_6]
+
+    solutions, n_trap_3 = ttrap.define_functions(u)
+    du = TrialFunction(V)
 
     print('Defining initial values')
     ini_u = Expression(("0", "0", "0", "0", "0", "0"), degree=1)
@@ -738,7 +745,6 @@ if __name__ == "__main__":
 
     ini_n_trap_3 = Expression("0", degree=1)
     n_trap_3_n = interpolate(ini_n_trap_3, W)
-    n_trap_3_ = Function(W)
 
     print('Defining variational problem')
 
