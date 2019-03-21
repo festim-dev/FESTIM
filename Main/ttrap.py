@@ -215,6 +215,16 @@ class Ttrap():
         W = FunctionSpace(mesh, element2, degree2)
         return V, W
 
+    def define_test_functions(self, V, W):
+        '''
+        Returns the testfunctions for formulation
+        '''
+        v = TestFunction(V)
+        v_1, v_2, v_3, v_4, v_5, v_6 = split(v)
+        testfunctions = [v_1, v_2, v_3, v_4, v_5, v_6]
+        v_trap_3 = TestFunction(W)
+        return testfunctions, v_trap_3
+
     def formulation(self, traps, solutions, testfunctions, previous_solutions):
         ''' Creates formulation for trapping MRE model.
         Parameters:
@@ -228,14 +238,14 @@ class Ttrap():
         - F : variational formulation
         '''
         F = 0
-        F += ((u_1 - u_n1) / dt)*v_1*dx
+        F += ((u_1 - u_n1) / dt)*testfunctions[0]*dx
         for material in materials:
             D_0 = material['D_0']
             E_diff = material['E_diff']
             subdomain = material['id']
             F += D_0 * exp(-E_diff/k_B/temp) * \
-                dot(grad(u_1), grad(v_1))*dx(subdomain)
-        F += - flux_*f*v_1*dx
+                dot(grad(u_1), grad(testfunctions[0]))*dx(subdomain)
+        F += - flux_*f*testfunctions[0]*dx
 
         i = 1
         for trap in traps:
@@ -270,7 +280,8 @@ class Ttrap():
                     testfunctions[i]*dx(subdomain)
                 F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
                     testfunctions[i]*dx(subdomain)
-            F += ((solutions[i] - previous_solutions[i]) / dt)*v_1*dx
+            F += ((solutions[i] - previous_solutions[i]) / dt) * \
+                testfunctions[0]*dx
             i += 1
         return F
 
@@ -695,8 +706,6 @@ if __name__ == "__main__":
     # Define expressions used in variational forms
     print('Defining source terms')
     source_term = ttrap.define_source_term()
-    teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
-                      xp=xp, degree=1)
 
     flux_ = Expression(source_term["flux"], t=0, degree=2)
     f = Expression(source_term["distribution"], t=0, degree=2)
@@ -710,9 +719,8 @@ if __name__ == "__main__":
         ttrap.getBC(), V, surface_markers, ds)
 
     # Define test functions
-    v_1, v_2, v_3, v_4, v_5, v_6 = TestFunctions(V)
-    testfunctions = [v_1, v_2, v_3, v_4, v_5, v_6]
-    v_trap_3 = TestFunction(W)
+
+    testfunctions, v_trap_3 = ttrap.define_test_functions(V, W)
 
     u = Function(V)
     du = TrialFunction(V)
@@ -738,6 +746,9 @@ if __name__ == "__main__":
     traps = ttrap.define_traps()
     F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
 
+    # Define variational problem for extrinsic traps
+    teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
+                      xp=xp, degree=1)
     F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
     F_n3 += -flux_*(
         (1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f +
