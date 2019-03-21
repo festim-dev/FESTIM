@@ -475,16 +475,7 @@ class myclass(Ttrap):
                 "D_0": 4.1e-7,
                 "id": 1
             }
-            material2 = {
-                "alpha": 1.1e-10,
-                "beta": 6*6.3e28,
-                "density": 6.3e28,
-                "borders": [10e-9, 75e-9],
-                "E_diff": 0.39,
-                "D_0": 4.1e-7,
-                "id": 2
-            }
-            materials = [material1]#, material2]
+            materials = [material1]
             return materials
 
         self.__mesh_parameters = {
@@ -683,9 +674,7 @@ P1 = FiniteElement('P', interval, 1)
 element = MixedElement([P1, P1, P1, P1, P1, P1])
 V = FunctionSpace(mesh, element)
 W = FunctionSpace(mesh, 'P', 1)
-V0 = FunctionSpace(mesh, 'DG', 0)
 
-x = interpolate(Expression('x[0]', degree=1), W)
 
 # Define and mark subdomains
 volume_markers, dx, surface_markers, ds = ttrap.subdomains(mesh, materials)
@@ -704,13 +693,6 @@ temp = Expression(T['value'], t=t, degree=2)
 # BCs
 print('Defining boundary conditions')
 
-
-def inside(x, on_boundary):
-    return on_boundary and (near(x[0], 0))
-
-
-def outside(x, on_boundary):
-    return on_boundary and (near(x[0], size))
 
 bcs, expressions = ttrap.apply_boundary_conditions(
     ttrap.getBC(), V, surface_markers, ds)
@@ -807,7 +789,6 @@ while t < Time:
     total_sol = assemble(_u_1*dx)
     total = total_trap + total_sol
     desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
-    #export_total.append([assemble(retention*(size-x)**2*dx)*4*3.15, temp(size/2), t])
     total_n = total
     if t > ttrap.implantation_time+ttrap.resting_time:
         desorption.append(desorption_rate)
