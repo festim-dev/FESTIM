@@ -383,18 +383,26 @@ class Ttrap():
         - surface_marker: MeshFunction, contains the markers for
         the different surfaces
         - ds: Measurement
+        Returns:
+        - bcs: list, contains fenics DirichletBC
+        - expression: list, contains the fenics Expression
+        to be updated.
         '''
         bcs = list()
+        expressions = list()
         for type_BC in boundary_conditions:
             for BC in boundary_conditions[type_BC]:
                 if type_BC == "dc":
                     value_BC = Expression(str(BC['value']), t=0, degree=2)
                 elif type_BC == "solubility":
-                    pressure = Expression(str(BC["pressure"]), t=0, degree=2)
+                    pressure = BC["pressure"]
                     value_BC = self.solubility_BC(
-                        pressure(0), BC["density"]*self.solubility(
+                        pressure, BC["density"]*self.solubility(
                             BC["S_0"], BC["E_S"],
-                            k_B, temp(size/2)))
+                            k_B, temp(0)))
+                    value_BC = Expression(sp.printing.ccode(value_BC), t=0,
+                                          degree=2)
+                expressions.append(value_BC)
                 if type(BC['surface']) == list:
                     for surface in BC['surface']:
                         bci = DirichletBC(V.sub(0), value_BC,
@@ -405,7 +413,19 @@ class Ttrap():
                                       surface_marker, BC['surface'])
                     bcs.append(bci)
 
-        return bcs
+        return bcs, expressions
+
+    def update_bc(self, expressions, t):
+        '''
+        Arguments:
+        - expressions: list, contains the fenics Expression
+        to be updated.
+        - t: float, time.
+        Update all FEniCS Expression() in expressions.
+        '''
+        for expression in expressions:
+            expression.t = t
+        return expressions
 
 
 class myclass(Ttrap):
@@ -420,6 +440,7 @@ class myclass(Ttrap):
             - dc : "surface" , "value"
             - solubility : "surface", "S_0", "E_S", "pressure", "density"
             '''
+            x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
             boundary_conditions = {
                 "dc": [
                     {
@@ -467,7 +488,7 @@ class myclass(Ttrap):
             return materials
 
         self.__mesh_parameters = {
-            "initial_number_of_cells": 2200,
+            "initial_number_of_cells": 200,
             "size": 20e-6,
             "refinements": [
                 {
@@ -691,7 +712,8 @@ def inside(x, on_boundary):
 def outside(x, on_boundary):
     return on_boundary and (near(x[0], size))
 
-bcs = ttrap.apply_boundary_conditions(ttrap.getBC(), V, surface_markers, ds)
+bcs, expressions = ttrap.apply_boundary_conditions(
+    ttrap.getBC(), V, surface_markers, ds)
 
 
 # Define test functions
@@ -797,6 +819,7 @@ while t < Time:
     t += float(dt)
     temp.t += float(dt)
     flux_.t += float(dt)
+    expressions = ttrap.update_bc(expressions, t)
 
 
 ttrap.export_TDS(filedesorption, desorption)
