@@ -641,168 +641,164 @@ class myclass(Ttrap):
     k_B = 8.6e-5  # Boltzmann constant
 
 
-ttrap = myclass()
+if __name__ == "__main__":
+    ttrap = myclass()
 
-n_trap_3a_max = ttrap.n_trap_3a_max
-n_trap_3b_max = ttrap.n_trap_3b_max
-rate_3a = ttrap.rate_3a
-rate_3b = ttrap.rate_3b
-xp = ttrap.xp
-v_0 = ttrap.v_0  # frequency factor s-1
-k_B = ttrap.k_B  # Boltzmann constant
-solving_parameters = ttrap.define_solving_parameters()
-Time = solving_parameters["final_time"]
-num_steps = solving_parameters["num_steps"]
-dT = Time / num_steps
-dt = Constant(dT)  # time step size
-t = 0  # Initialising time to 0s
-stepsize_change_ratio = solving_parameters[
-    "adaptative_time_step"][
-        "stepsize_change_ratio"]
-t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
-stepsize_stop_max = solving_parameters[
-    "adaptative_time_step"][
-        "stepsize_stop_max"]
-dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
-size = ttrap.getMeshParameters()["size"]
-# Mesh and refinement
-materials = ttrap.getMaterials()
-mesh = ttrap.getMesh()
+    n_trap_3a_max = ttrap.n_trap_3a_max
+    n_trap_3b_max = ttrap.n_trap_3b_max
+    rate_3a = ttrap.rate_3a
+    rate_3b = ttrap.rate_3b
+    xp = ttrap.xp
+    v_0 = ttrap.v_0  # frequency factor s-1
+    k_B = ttrap.k_B  # Boltzmann constant
+    solving_parameters = ttrap.define_solving_parameters()
+    Time = solving_parameters["final_time"]
+    num_steps = solving_parameters["num_steps"]
+    dT = Time / num_steps
+    dt = Constant(dT)  # time step size
+    t = 0  # Initialising time to 0s
+    stepsize_change_ratio = solving_parameters[
+        "adaptative_time_step"][
+            "stepsize_change_ratio"]
+    t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
+    stepsize_stop_max = solving_parameters[
+        "adaptative_time_step"][
+            "stepsize_stop_max"]
+    dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
+    size = ttrap.getMeshParameters()["size"]
+    # Mesh and refinement
+    materials = ttrap.getMaterials()
+    mesh = ttrap.getMesh()
 
-# Define function space for system of concentrations and properties
-P1 = FiniteElement('P', interval, 1)
-element = MixedElement([P1, P1, P1, P1, P1, P1])
-V = FunctionSpace(mesh, element)
-W = FunctionSpace(mesh, 'P', 1)
+    # Define function space for system of concentrations and properties
+    P1 = FiniteElement('P', interval, 1)
+    element = MixedElement([P1, P1, P1, P1, P1, P1])
+    V = FunctionSpace(mesh, element)
+    W = FunctionSpace(mesh, 'P', 1)
 
+    # Define and mark subdomains
+    volume_markers, dx, surface_markers, ds = ttrap.subdomains(mesh, materials)
 
-# Define and mark subdomains
-volume_markers, dx, surface_markers, ds = ttrap.subdomains(mesh, materials)
+    # Define expressions used in variational forms
+    print('Defining source terms')
+    source_term = ttrap.define_source_term()
+    teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
+                      xp=xp, degree=1)
 
-# Define expressions used in variational forms
-print('Defining source terms')
-source_term = ttrap.define_source_term()
-teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
-                  xp=xp, degree=1)
+    flux_ = Expression(source_term["flux"], t=0, degree=2)
+    f = Expression(source_term["distribution"], t=0, degree=2)
+    T = ttrap.define_temperature()
+    temp = Expression(T['value'], t=t, degree=2)
 
-flux_ = Expression(source_term["flux"], t=0, degree=2)
-f = Expression(source_term["distribution"], t=0, degree=2)
-T = ttrap.define_temperature()
-temp = Expression(T['value'], t=t, degree=2)
+    # BCs
+    print('Defining boundary conditions')
 
-# BCs
-print('Defining boundary conditions')
+    bcs, expressions = ttrap.apply_boundary_conditions(
+        ttrap.getBC(), V, surface_markers, ds)
 
+    # Define test functions
+    v_1, v_2, v_3, v_4, v_5, v_6 = TestFunctions(V)
+    testfunctions = [v_1, v_2, v_3, v_4, v_5, v_6]
+    v_trap_3 = TestFunction(W)
 
-bcs, expressions = ttrap.apply_boundary_conditions(
-    ttrap.getBC(), V, surface_markers, ds)
+    u = Function(V)
+    du = TrialFunction(V)
+    n_trap_3 = Function(W)  # trap 3 density
 
+    # Split system functions to access components
+    u_1, u_2, u_3, u_4, u_5, u_6 = split(u)
+    solutions = [u_1, u_2, u_3, u_4, u_5, u_6]
 
-# Define test functions
-v_1, v_2, v_3, v_4, v_5, v_6 = TestFunctions(V)
-testfunctions = [v_1, v_2, v_3, v_4, v_5, v_6]
-v_trap_3 = TestFunction(W)
+    print('Defining initial values')
+    ini_u = Expression(("0", "0", "0", "0", "0", "0"), degree=1)
+    u_n = interpolate(ini_u, V)
+    u_n1, u_n2, u_n3, u_n4, u_n5, u_n6 = split(u_n)
+    previous_solutions = [u_n1, u_n2, u_n3, u_n4, u_n5, u_n6]
 
+    ini_n_trap_3 = Expression("0", degree=1)
+    n_trap_3_n = interpolate(ini_n_trap_3, W)
+    n_trap_3_ = Function(W)
 
-u = Function(V)
-du = TrialFunction(V)
-n_trap_3 = Function(W)  # trap 3 density
+    print('Defining variational problem')
 
+    # Define variational problem1
+    traps = ttrap.define_traps()
+    F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
 
-# Split system functions to access components
-u_1, u_2, u_3, u_4, u_5, u_6 = split(u)
-solutions = [u_1, u_2, u_3, u_4, u_5, u_6]
+    F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
+    F_n3 += -flux_*(
+        (1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f +
+        (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta) \
+        * v_trap_3*dx
 
-print('Defining initial values')
-ini_u = Expression(("0", "0", "0", "0", "0", "0"), degree=1)
-u_n = interpolate(ini_u, V)
-u_n1, u_n2, u_n3, u_n4, u_n5, u_n6 = split(u_n)
-previous_solutions = [u_n1, u_n2, u_n3, u_n4, u_n5, u_n6]
+    # Solution files
+    folder, exports = ttrap.define_exports()
 
-ini_n_trap_3 = Expression("0", degree=1)
-n_trap_3_n = interpolate(ini_n_trap_3, W)
-n_trap_3_ = Function(W)
+    filedesorption = ttrap.save_as()
+    # folder + exports["TDS"]["label"]+ '.csv'
+    files = ttrap.define_xdmf_files(exports, folder)
+    #  Time-stepping
+    print('Time stepping...')
+    total_n = 0
+    desorption = list()
+    export_total = list()
+    level = 30  # 30 for WARNING 20 for INFO
+    set_log_level(level)
 
+    timer = Timer()  # start timer
 
-print('Defining variational problem')
+    while t < Time:
 
-# Define variational problem1
-traps = ttrap.define_traps()
-F = ttrap.formulation(traps, solutions, testfunctions, previous_solutions)
+        print(str(round(t/Time*100, 2)) + ' %        ' +
+              str(round(t, 1)) + ' s' +
+              "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
+              end="\r")
 
-F_n3 = ((n_trap_3 - n_trap_3_n)/dt)*v_trap_3*dx
-F_n3 += -flux_*(
-    (1 - n_trap_3_n/n_trap_3a_max)*rate_3a*f +
-    (1 - n_trap_3_n/n_trap_3b_max)*rate_3b*teta) \
-    * v_trap_3*dx
+        J = derivative(F, u, du)  # Define the Jacobian
+        problem = NonlinearVariationalProblem(F, u, bcs, J)
+        solver = NonlinearVariationalSolver(problem)
+        solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
+        solver.parameters["newton_solver"]["absolute_tolerance"] = \
+            solving_parameters['newton_solver']['absolute_tolerance']
+        solver.parameters["newton_solver"]["relative_tolerance"] = \
+            solving_parameters['newton_solver']['relative_tolerance']
+        nb_it, converged = solver.solve()
+        dt = ttrap.adaptative_timestep(
+            converged=converged, nb_it=nb_it, dt=dt,
+            stepsize_change_ratio=stepsize_change_ratio,
+            dt_min=dt_min, t=t, t_stop=t_stop,
+            stepsize_stop_max=stepsize_stop_max)
 
-# Solution files
-folder, exports = ttrap.define_exports()
+        solve(F_n3 == 0, n_trap_3, [])
 
-filedesorption = ttrap.save_as()  # folder + exports["TDS"]["label"]+ '.csv'
-files = ttrap.define_xdmf_files(exports, folder)
-#  Time-stepping
-print('Time stepping...')
-total_n = 0
-desorption = list()
-export_total = list()
-level = 30  # 30 for WARNING 20 for INFO
-set_log_level(level)
+        _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
+        res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
+        retention = project(_u_1)
+        total_trap = 0
+        for i in range(1, len(traps)+1):
+            sol = res[i]
+            total_trap += assemble(sol*dx)
+            retention = project(retention + res[i], W)
+        ttrap.export_xdmf([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention],
+                          exports, files, t)
+        dt = ttrap.export_profiles([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6,
+                                    retention], exports, t, dt)
 
+        total_sol = assemble(_u_1*dx)
+        total = total_trap + total_sol
+        desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
+        total_n = total
+        if t > ttrap.implantation_time+ttrap.resting_time:
+            desorption.append(desorption_rate)
 
-timer = Timer()  # start timer
+        # Update previous solutions
+        u_n.assign(u)
+        n_trap_3_n.assign(n_trap_3)
+        # Update current time
+        t += float(dt)
+        temp.t += float(dt)
+        flux_.t += float(dt)
+        expressions = ttrap.update_bc(expressions, t)
 
-while t < Time:
-
-    print(str(round(t/Time*100, 2)) + ' %        ' + str(round(t, 1)) + ' s' +
-          "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
-          end="\r")
-
-    J = derivative(F, u, du)  # Define the Jacobian
-    problem = NonlinearVariationalProblem(F, u, bcs, J)
-    solver = NonlinearVariationalSolver(problem)
-    solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
-    solver.parameters["newton_solver"]["absolute_tolerance"] = \
-        solving_parameters['newton_solver']['absolute_tolerance']
-    solver.parameters["newton_solver"]["relative_tolerance"] = \
-        solving_parameters['newton_solver']['relative_tolerance']
-    nb_it, converged = solver.solve()
-    dt = ttrap.adaptative_timestep(converged=converged, nb_it=nb_it, dt=dt,
-                                   stepsize_change_ratio=stepsize_change_ratio,
-                                   dt_min=dt_min, t=t, t_stop=t_stop,
-                                   stepsize_stop_max=stepsize_stop_max)
-
-    solve(F_n3 == 0, n_trap_3, [])
-
-    _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
-    res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
-    retention = project(_u_1)
-    total_trap = 0
-    for i in range(1, len(traps)+1):
-        sol = res[i]
-        total_trap += assemble(sol*dx)
-        retention = project(retention + res[i], W)
-    ttrap.export_xdmf([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention], exports,
-                      files, t)
-    dt = ttrap.export_profiles([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention],
-                               exports, t, dt)
-
-    total_sol = assemble(_u_1*dx)
-    total = total_trap + total_sol
-    desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
-    total_n = total
-    if t > ttrap.implantation_time+ttrap.resting_time:
-        desorption.append(desorption_rate)
-
-    # Update previous solutions
-    u_n.assign(u)
-    n_trap_3_n.assign(n_trap_3)
-    # Update current time
-    t += float(dt)
-    temp.t += float(dt)
-    flux_.t += float(dt)
-    expressions = ttrap.update_bc(expressions, t)
-
-
-ttrap.export_TDS(filedesorption, desorption)
-print('\007s')
+    ttrap.export_TDS(filedesorption, desorption)
+    print('\007s')
