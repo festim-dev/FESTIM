@@ -393,7 +393,7 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
                 f_b = Expression(f_b, t=0, degree=2)
                 expressions.append(f_b)
 
-                F = ((solutions[i] - previous_solutions[i])/dt) \
+                F = ((solutions[i] - previous_solutions[i])/dt) * \
                     testfunctions[i]*dx
                 F += -phi_0*(
                     (1 - solutions[i]/n_amax)*eta_a*f_a +
