@@ -1,4 +1,4 @@
-from ttrap import *
+from FESTIM import *
 
 x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
 
@@ -40,6 +40,7 @@ parameters = {
         {
             "energy": 1.5,
             "materials": [1],
+            "density": 0,
             "type": 'extrinsic'
         },
         {
