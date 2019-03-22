@@ -393,13 +393,13 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
                 f_b = Expression(f_b, t=0, degree=2)
                 expressions.append(f_b)
 
-            F = ((solutions[i] - previous_solutions[i])/dt)*testfunctions[i]*dx
-            F += -phi_0*(
-                (1 - solutions[i]/n_amax)*eta_a*f_a +
-                (1 - solutions[i]/n_bmax)*eta_b*f_b) \
-                * testfunctions[i]*dx
-            formulations.append(F)
-            i += 1
+                F = ((solutions[i] - previous_solutions[i])/dt)*testfunctions[i]*dx
+                F += -phi_0*(
+                    (1 - solutions[i]/n_amax)*eta_a*f_a +
+                    (1 - solutions[i]/n_bmax)*eta_b*f_b) \
+                    * testfunctions[i]*dx
+                formulations.append(F)
+                i += 1
     return formulations, expressions
 
 
@@ -669,10 +669,10 @@ def run(parameters):
 
     while t < Time:
 
-        print(str(round(t/Time*100, 2)) + ' %        ' +
-              str(round(t, 1)) + ' s' +
-              "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
-              end="\r")
+        #print(str(round(t/Time*100, 2)) + ' %        ' +
+        #      str(round(t, 1)) + ' s' +
+        #      "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
+        #      end="\r")
 
         J = derivative(F, u, du)  # Define the Jacobian
         problem = NonlinearVariationalProblem(F, u, bcs, J)
@@ -692,6 +692,8 @@ def run(parameters):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
         _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
+        print(_u_3(5e-9))
+        print(_u_4(5e-9))
         res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
         retention = project(_u_1)
         total_trap = 0
