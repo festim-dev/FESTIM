@@ -256,16 +256,22 @@ def define_functions_extrinsic_traps(W, traps):
     return extrinsic_traps
 
 
-def initialising_solutions(V):
+def initialising_solutions(V, initial_conditions):
     '''
     Returns the prievious solutions Function() objects for formulation
-    and initialise them.
+    and initialise them (0 by default).
+    Arguments:
+    - V: FunctionSpace(), function space of concentrations
+    - initial_conditions: list, contains values and components
     '''
     print('Defining initial values')
     u_n, components = define_functions(V)
-    expression = list()
-    for u in components:
-        expression.append("0")
+    # initial conditions are 0 by default
+    expression = ['0'] * len(components)
+    for ini in initial_conditions:
+        value = ini["value"]
+        value = sp.printing.ccode(value)
+        expression[ini["component"]] = value
     expression = tuple(expression)
     ini_u = Expression(expression, degree=1, t=0)
     u_n = interpolate(ini_u, V)
@@ -636,7 +642,12 @@ def run(parameters):
     testfunctions_concentrations, testfunctions_traps = \
         define_test_functions(V, W, 6, len(extrinsic_traps))
     # Initialising the solutions
-    u_n, previous_solutions_concentrations = initialising_solutions(V)
+    try:
+        initial_conditions = parameters["initial_conditions"]
+    except:
+        initial_conditions = []
+    u_n, previous_solutions_concentrations = \
+        initialising_solutions(V, initial_conditions)
     previous_solutions_traps = \
         initialising_extrinsic_traps(W, len(extrinsic_traps))
 
