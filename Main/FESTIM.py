@@ -215,16 +215,21 @@ def create_function_spaces(mesh, element1='P', order1=1,
     return V, W
 
 
-def define_test_functions(V, W):
+def define_test_functions(V, W, number_int_traps, number_ext_traps):
     '''
     Returns the testfunctions for formulation
+    Arguments:
+    - V, W: FunctionSpace(), functionspaces of concentrations and
+    trap densities
+    - number_int_traps: int, number of intrisic traps
+    - number_ext_traps: int, number of extrinsic traps
     '''
     v = TestFunction(V)
     v_1, v_2, v_3, v_4, v_5, v_6 = split(v)
     testfunctions_concentrations = [v_1, v_2, v_3, v_4, v_5, v_6]
-    v_trap_3 = TestFunction(W)
     testfunctions_extrinsic_traps = list()
-    testfunctions_extrinsic_traps.append(v_trap_3)
+    for i in range(number_ext_traps):
+        testfunctions_extrinsic_traps.append(TestFunction(W))
     return testfunctions_concentrations, testfunctions_extrinsic_traps
 
 
@@ -239,10 +244,20 @@ def define_functions(V):
     return u, solutions
 
 
-def define_functions_extrinsic_traps(W):
-    traps = []
-    traps.append(Function(W))  # trap 3 density
-    return traps
+def define_functions_extrinsic_traps(W, traps):
+    '''
+    Returns a list of Function(W)
+    Arguments:
+    -W: FunctionSpace, functionspace of trap densities
+    -traps: dict, contains the traps infos
+    '''
+    extrinsic_traps = []
+
+    for trap in traps:
+        if 'type' in trap.keys():  # Default is intrinsic
+            if trap['type'] == 'extrinsic':
+                extrinsic_traps.append(Function(W))  # density
+    return extrinsic_traps
 
 
 def initialising_solutions(V):
@@ -262,10 +277,17 @@ def initialising_solutions(V):
     return u_n, components
 
 
-def initialising_extrinsic_traps(W):
-    ini_n_trap_3 = Expression("0", degree=1)
-    n_trap_3_n = interpolate(ini_n_trap_3, W)
-    previous_solutions = [n_trap_3_n]
+def initialising_extrinsic_traps(W, number_of_traps):
+    '''
+    Returns a list of Function(W)
+    Arguments:
+    - W: FunctionSpace, functionspace of the extrinsic traps
+    - number_of_traps: int, number of traps
+    '''
+    previous_solutions = []
+    for i in range(number_of_traps):
+        ini = Expression("0", degree=1)
+        previous_solutions.append(interpolate(ini, W))
     return previous_solutions
 
 
@@ -290,8 +312,8 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
         F += D_0 * exp(-E_diff/k_B/temp) * \
             dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
     F += - flux_*f*testfunctions[0]*dx
-    i = 1
-    j = 0
+    i = 1  # index in traps
+    j = 0  # index in extrinsic_traps
     for trap in traps:
         if 'type' in trap.keys():
             if trap['type'] == 'extrinsic':
@@ -337,9 +359,18 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     return F
 
 
-def formulation_extrinsic_traps(traps, solutions, testfunctions,
+def formulation_extrinsic_traps(solutions, testfunctions,
                                 previous_solutions, dt, flux_, f):
-
+    '''
+    Creates a list that contains formulations to be solved during
+    time stepping.
+    Arguments:
+    - solutions: list, contains the solutions fields
+    - testfunctions: list, contains the testfunctions
+    - previous_solutions: list, contains fields
+    - dt: Constant(), stepsize
+    - flux_, f: Expression() #todo, make this generic
+    '''
     n_trap_3a_max = 1e-1*6.3e28
     n_trap_3b_max = 1e-2*6.3e28
     rate_3a = 6e-4
@@ -349,7 +380,7 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
                       xp=xp, degree=1)
     formulations = []
     i = 0
-    for trap in traps:
+    for trap in solutions:
         F = ((solutions[i] - previous_solutions[i])/dt)*testfunctions[i]*dx
         F += -flux_*(
             (1 - solutions[i]/n_trap_3a_max)*rate_3a*f +
@@ -582,28 +613,29 @@ def run(parameters):
         temp)
 
     # Define functions
-    testfunctions_concentrations, testfunctions_traps = \
-        define_test_functions(V, W)
+    traps = parameters["traps"]
 
     u, solutions = define_functions(V)
     du = TrialFunction(V)
-    extrinsic_traps = define_functions_extrinsic_traps(W)
+    extrinsic_traps = define_functions_extrinsic_traps(W, traps)
+    testfunctions_concentrations, testfunctions_traps = \
+        define_test_functions(V, W, 6, len(extrinsic_traps))
     # Initialising the solutions
     u_n, previous_solutions_concentrations = initialising_solutions(V)
-    previous_solutions_traps = initialising_extrinsic_traps(W)
+    previous_solutions_traps = \
+        initialising_extrinsic_traps(W, len(extrinsic_traps))
 
     print('Defining variational problem')
     # Define variational problem1
-    traps = parameters["traps"]
+
     F = formulation(traps, extrinsic_traps, solutions,
                     testfunctions_concentrations,
                     previous_solutions_concentrations, dt, dx, materials,
                     temp, flux_, f)
-
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations = formulation_extrinsic_traps(
-        [1], extrinsic_traps, testfunctions_traps, previous_solutions_traps,
+        extrinsic_traps, testfunctions_traps, previous_solutions_traps,
         dt, flux_, f)
 
     # Solution files
@@ -644,8 +676,8 @@ def run(parameters):
             stepsize_change_ratio=stepsize_change_ratio,
             dt_min=dt_min, t=t, t_stop=t_stop,
             stepsize_stop_max=stepsize_stop_max)
-
-        solve(extrinsic_formulations[0] == 0, extrinsic_traps[0], [])
+        for j in range(len(extrinsic_formulations)):
+            solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
         _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
         res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
@@ -659,7 +691,6 @@ def run(parameters):
                     exports, files, t)
         dt = export_profiles([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6,
                              retention], exports, t, dt, W)
-
         total_sol = assemble(_u_1*dx)
         total = total_trap + total_sol
         desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
@@ -669,7 +700,8 @@ def run(parameters):
 
         # Update previous solutions
         u_n.assign(u)
-        previous_solutions_traps[0].assign(extrinsic_traps[0])
+        for j in range(len(previous_solutions_traps)):
+            previous_solutions_traps[j].assign(extrinsic_traps[j])
         # Update current time
         t += float(dt)
         temp.t += float(dt)
