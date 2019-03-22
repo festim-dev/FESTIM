@@ -359,8 +359,8 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     return F
 
 
-def formulation_extrinsic_traps(solutions, testfunctions,
-                                previous_solutions, dt, flux_, f):
+def formulation_extrinsic_traps(traps, solutions, testfunctions,
+                                previous_solutions, dt):
     '''
     Creates a list that contains formulations to be solved during
     time stepping.
@@ -371,24 +371,36 @@ def formulation_extrinsic_traps(solutions, testfunctions,
     - dt: Constant(), stepsize
     - flux_, f: Expression() #todo, make this generic
     '''
-    n_trap_3a_max = 1e-1*6.3e28
-    n_trap_3b_max = 1e-2*6.3e28
-    rate_3a = 6e-4
-    rate_3b = 2e-4
-    xp = 1e-6
-    teta = Expression('(x[0] < xp && x[0] > 0)? 1/xp : 0',
-                      xp=xp, degree=1)
+
     formulations = []
+    expressions = []
     i = 0
-    for trap in solutions:
-        F = ((solutions[i] - previous_solutions[i])/dt)*testfunctions[i]*dx
-        F += -flux_*(
-            (1 - solutions[i]/n_trap_3a_max)*rate_3a*f +
-            (1 - solutions[i]/n_trap_3b_max) *
-            rate_3b*teta) * testfunctions[i]*dx
-        formulations.append(F)
-        i += 1
-    return formulations
+    for trap in traps:
+        if 'type' in trap.keys():
+            if trap['type'] == 'extrinsic':
+                parameters = trap["form_parameters"]
+                phi_0 = sp.printing.ccode(parameters['phi_0'])
+                phi_0 = Expression(phi_0, t=0, degree=2)
+                expressions.append(phi_0)
+                n_amax = parameters['n_amax']
+                n_bmax = parameters['n_bmax']
+                eta_a = parameters['eta_a']
+                eta_b = parameters['eta_b']
+                f_a = sp.printing.ccode(parameters['f_a'])
+                f_a = Expression(f_a, t=0, degree=2)
+                expressions.append(f_a)
+                f_b = sp.printing.ccode(parameters['f_b'])
+                f_b = Expression(f_b, t=0, degree=2)
+                expressions.append(f_b)
+
+            F = ((solutions[i] - previous_solutions[i])/dt)*testfunctions[i]*dx
+            F += -phi_0*(
+                (1 - solutions[i]/n_amax)*eta_a*f_a +
+                (1 - solutions[i]/n_bmax)*eta_b*f_b) \
+                * testfunctions[i]*dx
+            formulations.append(F)
+            i += 1
+    return formulations, expressions
 
 
 def subdomains(mesh, materials, size):
@@ -550,7 +562,7 @@ def apply_boundary_conditions(boundary_conditions, V,
     return bcs, expressions
 
 
-def update_bc(expressions, t):
+def update_expressions(expressions, t):
     '''
     Arguments:
     - expressions: list, contains the fenics Expression
@@ -634,9 +646,9 @@ def run(parameters):
                     temp, flux_, f)
     # Define variational problem for extrinsic traps
 
-    extrinsic_formulations = formulation_extrinsic_traps(
-        extrinsic_traps, testfunctions_traps, previous_solutions_traps,
-        dt, flux_, f)
+    extrinsic_formulations, expressions_form = formulation_extrinsic_traps(
+        traps, extrinsic_traps, testfunctions_traps, previous_solutions_traps,
+        dt)
 
     # Solution files
     exports = parameters["exports"]
@@ -706,7 +718,8 @@ def run(parameters):
         t += float(dt)
         temp.t += float(dt)
         flux_.t += float(dt)
-        expressions = update_bc(expressions, t)
+        expressions = update_expressions(expressions, t)
+        expressions_form = update_expressions(expressions_form, t)
 
     export_TDS(filedesorption, desorption)
     print('\007s')
