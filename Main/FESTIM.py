@@ -298,7 +298,9 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     - previous_solutions : list, contains the previous solution fields
     Returns:
     - F : variational formulation
+    - expressions: list, contains Expression() to be updated
     '''
+    expressions = []
     F = 0
     F += ((solutions[0] - previous_solutions[0]) / dt)*testfunctions[0]*dx
     for material in materials:
@@ -308,6 +310,9 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
         F += D_0 * exp(-E_diff/k_B/temp) * \
             dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
     F += - flux_*f*testfunctions[0]*dx
+    expressions.append(flux_)
+    expressions.append(f)
+    expressions.append(temp)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in traps:
@@ -323,21 +328,9 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
         material = trap['materials']
         F += ((solutions[i] - previous_solutions[i]) / dt) * \
             testfunctions[i]*dx
-        if type(material) is list:
-            for subdomain in material:
-                corresponding_material = \
-                    find_material_from_id(materials, subdomain)
-                D_0 = corresponding_material['D_0']
-                E_diff = corresponding_material['E_diff']
-                alpha = corresponding_material['alpha']
-                beta = corresponding_material['beta']
-                F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta * \
-                    solutions[0] * (trap_density - solutions[i]) * \
-                    testfunctions[i]*dx(subdomain)
-                F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
-                    testfunctions[i]*dx(subdomain)
-        else:
-            subdomain = trap['materials']
+        if type(material) is not list:
+            material = [material]
+        for subdomain in material:
             corresponding_material = \
                 find_material_from_id(materials, subdomain)
             D_0 = corresponding_material['D_0']
@@ -349,10 +342,17 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
                 testfunctions[i]*dx(subdomain)
             F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
+        try:  # if a source term is set then add it to the form
+            source = sp.printing.ccode(trap['source_term'])
+            source = Expression(source, t=0, degree=2)
+            F += -source*testfunctions[i]*dx
+            expressions.append(source)
+        except:
+            pass
         F += ((solutions[i] - previous_solutions[i]) / dt) * \
             testfunctions[0]*dx
         i += 1
-    return F
+    return F, expressions
 
 
 def formulation_extrinsic_traps(traps, solutions, testfunctions,
@@ -547,9 +547,15 @@ def apply_boundary_conditions(boundary_conditions, V,
                 value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                       degree=2)
             expressions.append(value_BC)
+            try:
+                # Fetch the component of the BC
+                component = BC["component"]
+            except:
+                # By default, component is solute (ie. 0)
+                component = 0
             if type(BC['surface']) == list:
                 for surface in BC['surface']:
-                    bci = DirichletBC(V.sub(0), value_BC,
+                    bci = DirichletBC(V.sub(component), value_BC,
                                       surface_marker, surface)
                     bcs.append(bci)
             else:
@@ -569,7 +575,7 @@ def update_expressions(expressions, t):
     '''
     for expression in expressions:
         expression.t = t
-        return expressions
+    return expressions
 
 
 def run(parameters):
@@ -615,7 +621,7 @@ def run(parameters):
     flux_ = Expression(source_term["flux"], t=0, degree=2)
     f = Expression(source_term["distribution"], t=0, degree=2)
     T = parameters["temperature"]
-    temp = Expression(T['value'], t=t, degree=2)
+    temp = Expression(T['value'], t=0, degree=2)
     # BCs
     print('Defining boundary conditions')
     bcs, expressions = apply_boundary_conditions(
@@ -637,10 +643,10 @@ def run(parameters):
     print('Defining variational problem')
     # Define variational problem1
 
-    F = formulation(traps, extrinsic_traps, solutions,
-                    testfunctions_concentrations,
-                    previous_solutions_concentrations, dt, dx, materials,
-                    temp, flux_, f)
+    F, expressions_F = formulation(traps, extrinsic_traps, solutions,
+                                   testfunctions_concentrations,
+                                   previous_solutions_concentrations, dt, dx,
+                                   materials, temp, flux_, f)
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations, expressions_form = formulation_extrinsic_traps(
@@ -712,11 +718,9 @@ def run(parameters):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
         # Update current time
         t += float(dt)
-        temp.t += float(dt)
-        flux_.t += float(dt)
         expressions = update_expressions(expressions, t)
         expressions_form = update_expressions(expressions_form, t)
-
+        expressions_F = update_expressions(expressions_F, t)
     export_TDS(filedesorption, desorption)
     print('\007s')
 

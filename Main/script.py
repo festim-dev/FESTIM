@@ -75,7 +75,8 @@ parameters = {
         "dc": [
             {
                 "surface": [1],
-                "value": 0
+                "value": 0,
+                "component": 0
                 },
             {
                 "surface": [2],
@@ -83,13 +84,6 @@ parameters = {
                 }
         ],
         "solubility": [  # "surface", "S_0", "E_S", "pressure", "density"
-            #{
-            #    "surface": 1,
-            #    "S_0": 1.3e-4,
-            #    "E_S": 0.34,
-            #    "pressure": 10*1e5,
-            #    "density": 6.3e28
-            #}
             ]
             },
     "temperature": {
