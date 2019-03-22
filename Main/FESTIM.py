@@ -103,15 +103,9 @@ def export_profiles(res, exports, t, dt, W):
     if len(functions) != len(labels):
         raise NameError("Number of functions to be exported "
                         "doesn't match number of labels in txt exports")
-    [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention] = res
     solution_dict = {
-        'solute': _u_1,
-        '1': _u_2,
-        '2': _u_3,
-        '3': _u_4,
-        '4': _u_5,
-        '5': _u_6,
-        'retention': retention
+        'solute': res[0],
+        'retention': res[len(res)-1]
     }
     times = sorted(exports['txt']['times'])
     end = True
@@ -123,10 +117,16 @@ def export_profiles(res, exports, t, dt, W):
             else:
                 end = True
             for i in range(len(functions)):
-                solution = solution_dict[functions[i]]
+                try:
+                    nb = int(exports["xdmf"]["functions"][i])
+                    solution = res[nb]
+                except:
+                    solution = solution_dict[functions[i]]
                 label = labels[i]
                 export_txt(
-                    label + '_' + str(t) + 's', solution, W)
+                    exports["xdmf"]["folder"] + '/' + label + '_' +
+                    str(t) + 's',
+                    solution, W)
             break
         if t < time:
             next_time = time
@@ -149,7 +149,8 @@ def define_xdmf_files(exports):
                         "doesn't match number of labels in xdmf exports")
     files = list()
     for i in range(0, len(exports["xdmf"]["functions"])):
-        u_file = XDMFFile(exports["xdmf"]["labels"][i] + '.xdmf')
+        u_file = XDMFFile(exports["xdmf"]["folder"]+'/' +
+                          exports["xdmf"]["labels"][i] + '.xdmf')
         u_file.parameters["flush_output"] = True
         u_file.parameters["rewrite_function_mesh"] = False
         files.append(u_file)
@@ -165,20 +166,18 @@ def export_xdmf(res, exports, files, t):
     - files: list, contains XDMFFile
     - t: float
     '''
-    [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention] = res
+
     solution_dict = {
-        'solute': _u_1,
-        '1': _u_2,
-        '2': _u_3,
-        '3': _u_4,
-        '4': _u_5,
-        '5': _u_6,
-        'retention': retention
+        'solute': res[0],
+        'retention': res[len(res)-1]
     }
     for i in range(0, len(exports["xdmf"]["functions"])):
         label = exports["xdmf"]["labels"][i]
-        function = exports["xdmf"]["functions"][i]
-        solution = solution_dict[exports["xdmf"]["functions"][i]]
+        try:
+            nb = int(exports["xdmf"]["functions"][i])
+            solution = res[nb]
+        except:
+            solution = solution_dict[exports["xdmf"]["functions"][i]]
         solution.rename(label, "label")
         files[i].write(solution, t)
     return
@@ -198,19 +197,18 @@ def find_material_from_id(materials, id):
     return
 
 
-def create_function_spaces(mesh, element1='P', order1=1,
+def create_function_spaces(mesh, nb_traps, element1='P', order1=1,
                            element2='P', degree2=1):
     ''' Returns FuncionSpaces for concentration and dynamic trap densities
     Arguments:
+    - mesh: Mesh(), mesh of the functionspaces
+    - nb_traps: int, number of traps
     - element1='P': string, the element of concentrations
     - order1=1: int, the order of the element of concentrations
     - element2='P': string, the element of dynamic trap densities
     - order1=2: int, the order of the element of dynamic trap densities
     '''
-    element = FiniteElement(element1, interval, order1)
-    mixed_element = MixedElement([element, element, element, element,
-                                  element, element])
-    V = FunctionSpace(mesh, mixed_element)
+    V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
     W = FunctionSpace(mesh, element2, degree2)
     return V, W
 
@@ -225,8 +223,7 @@ def define_test_functions(V, W, number_int_traps, number_ext_traps):
     - number_ext_traps: int, number of extrinsic traps
     '''
     v = TestFunction(V)
-    v_1, v_2, v_3, v_4, v_5, v_6 = split(v)
-    testfunctions_concentrations = [v_1, v_2, v_3, v_4, v_5, v_6]
+    testfunctions_concentrations = list(split(v))
     testfunctions_extrinsic_traps = list()
     for i in range(number_ext_traps):
         testfunctions_extrinsic_traps.append(TestFunction(W))
@@ -239,8 +236,7 @@ def define_functions(V):
     '''
     u = Function(V)
     # Split system functions to access components
-    u_1, u_2, u_3, u_4, u_5, u_6 = split(u)
-    solutions = [u_1, u_2, u_3, u_4, u_5, u_6]
+    solutions = list(split(u))
     return u, solutions
 
 
@@ -606,8 +602,9 @@ def run(parameters):
     # Mesh and refinement
     materials = parameters["materials"]
     mesh = mesh_and_refine(parameters["mesh_parameters"])
+    traps = parameters["traps"]
     # Define function space for system of concentrations and properties
-    V, W = create_function_spaces(mesh)
+    V, W = create_function_spaces(mesh, len(traps))
 
     # Define and mark subdomains
     volume_markers, dx, surface_markers, ds = subdomains(mesh, materials, size)
@@ -626,7 +623,6 @@ def run(parameters):
         temp)
 
     # Define functions
-    traps = parameters["traps"]
 
     u, solutions = define_functions(V)
     du = TrialFunction(V)
@@ -692,19 +688,18 @@ def run(parameters):
         for j in range(len(extrinsic_formulations)):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
-        _u_1, _u_2, _u_3, _u_4, _u_5, _u_6 = u.split()
-        res = [_u_1, _u_2, _u_3, _u_4, _u_5, _u_6]
-        retention = project(_u_1)
+        res = list(u.split())
+        retention = project(res[0])
         total_trap = 0
         for i in range(1, len(traps)+1):
             sol = res[i]
             total_trap += assemble(sol*dx)
             retention = project(retention + res[i], W)
-        export_xdmf([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6, retention],
+        res.append(retention)
+        export_xdmf(res,
                     exports, files, t)
-        dt = export_profiles([_u_1, _u_2, _u_3, _u_4, _u_5, _u_6,
-                             retention], exports, t, dt, W)
-        total_sol = assemble(_u_1*dx)
+        dt = export_profiles(res, exports, t, dt, W)
+        total_sol = assemble(res[0]*dx)
         total = total_trap + total_sol
         desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
         total_n = total

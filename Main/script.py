@@ -15,6 +15,9 @@ distribution = 1/(width*(2*3.14)**0.5) * \
     sp.exp(-0.5*((x-center)/width)**2)
 xp = 1e-6
 teta = (x < xp) * (x > 0) * (1/xp)
+
+folder = 'Solution'
+
 parameters = {
     "materials": [
         {
@@ -52,16 +55,6 @@ parameters = {
                 "f_b": teta,
                 "eta_b": 2e-4,
             }
-        },
-        {
-            "energy": 1.4,
-            "density": 0*2e-4*6.3e28,
-            "materials": [1]
-        },
-        {
-            "energy": 1.4,
-            "density": 0,
-            "materials": [1]
         }
         ],
     "mesh_parameters": {
@@ -130,16 +123,19 @@ parameters = {
         "txt": {
             "functions": ['retention'],
             "times": [100],
-            "labels": ['retention']
+            "labels": ['retention'],
+            "folder": folder
         },
         "xdmf": {
-            "functions": ['solute', '1', '2', '3', '4', '5', 'retention'],
+            "functions": ['solute', '1', '2', '3', '4', 'retention'],
             "labels":  ['solute', 'trap_1', 'trap_2',
-                        'trap_3', 'trap_4', 'trap_5', 'retention']
+                        'trap_3', 'trap_4', 'retention'],
+            "folder": folder
         },
         "TDS": {
             "label": "desorption",
-            "TDS_time": 450
+            "TDS_time": 450,
+            "folder": folder
             }
         },
 
