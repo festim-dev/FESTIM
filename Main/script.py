@@ -1,4 +1,4 @@
-from ttrap import *
+from FESTIM import *
 
 x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
 
@@ -13,7 +13,8 @@ r = 0
 flux = (1-r)*2.5e19 * (t <= implantation_time)
 distribution = 1/(width*(2*3.14)**0.5) * \
     sp.exp(-0.5*((x-center)/width)**2)
-
+xp = 1e-6
+teta = (x < xp) * (x > 0) * (1/xp)
 parameters = {
     "materials": [
         {
@@ -40,7 +41,17 @@ parameters = {
         {
             "energy": 1.5,
             "materials": [1],
-            "type": 'extrinsic'
+            "density": 0,
+            "type": 'extrinsic',
+            "form_parameters":{
+                "phi_0": flux,
+                "n_amax": 1e-1*6.3e28,
+                "f_a": distribution,
+                "eta_a": 6e-4,
+                "n_bmax": 1e-2*6.3e28,
+                "f_b": teta,
+                "eta_b": 2e-4,
+            }
         },
         {
             "energy": 1.4,
