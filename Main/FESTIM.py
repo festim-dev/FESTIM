@@ -682,6 +682,11 @@ def run(parameters):
     timer = Timer()  # start timer
 
     while t < Time:
+        # Update current time
+        t += float(dt)
+        expressions = update_expressions(expressions, t)
+        expressions_form = update_expressions(expressions_form, t)
+        expressions_F = update_expressions(expressions_F, t)
 
         print(str(round(t/Time*100, 2)) + ' %        ' +
               str(round(t, 1)) + ' s' +
@@ -727,11 +732,7 @@ def run(parameters):
         u_n.assign(u)
         for j in range(len(previous_solutions_traps)):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
-        # Update current time
-        t += float(dt)
-        expressions = update_expressions(expressions, t)
-        expressions_form = update_expressions(expressions_form, t)
-        expressions_F = update_expressions(expressions_F, t)
+
     export_TDS(filedesorption, desorption)
     print('\007s')
 
