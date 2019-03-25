@@ -273,7 +273,7 @@ def initialising_solutions(V, initial_conditions):
         value = sp.printing.ccode(value)
         expression[ini["component"]] = value
     expression = tuple(expression)
-    ini_u = Expression(expression, degree=1, t=0)
+    ini_u = Expression(expression, degree=3, t=0)
     u_n = interpolate(ini_u, V)
     components = split(u_n)
     return u_n, components
@@ -288,7 +288,7 @@ def initialising_extrinsic_traps(W, number_of_traps):
     '''
     previous_solutions = []
     for i in range(number_of_traps):
-        ini = Expression("0", degree=1)
+        ini = Expression("0", degree=2)
         previous_solutions.append(interpolate(ini, W))
     return previous_solutions
 
@@ -543,7 +543,7 @@ def apply_boundary_conditions(boundary_conditions, V,
     for type_BC in boundary_conditions:
         for BC in boundary_conditions[type_BC]:
             if type_BC == "dc":
-                value_BC = Expression(str(BC['value']), t=0, degree=2)
+                value_BC = Expression(str(BC['value']), t=0, degree=4)
             elif type_BC == "solubility":
                 pressure = BC["pressure"]
                 value_BC = solubility_BC(
@@ -582,6 +582,23 @@ def update_expressions(expressions, t):
     for expression in expressions:
         expression.t = t
     return expressions
+
+
+def compute_error(parameters, t, u_n):
+    res = u_n.split()
+    tab = []
+
+    for error in parameters:
+        er = []
+        for i in range(len(res)):
+            sol = Expression(sp.printing.ccode(error["exact_solution"][i]),
+                             degree=error["degree"], t=t)
+            error_L2 = errornorm(
+                sol, res[i], error["norm"])
+            er.append(error_L2)
+        er.append(t)
+        tab.append(er)
+    return tab
 
 
 def run(parameters):
@@ -680,8 +697,14 @@ def run(parameters):
     set_log_level(level)
 
     timer = Timer()  # start timer
+    error = []
 
     while t < Time:
+        # Compute error
+        try:
+            error.extend(compute_error(parameters["exports"]["error"], t, u_n))
+        except:
+            pass
         # Update current time
         t += float(dt)
         expressions = update_expressions(expressions, t)
@@ -740,6 +763,7 @@ def run(parameters):
 
     export_TDS(filedesorption, desorption)
     print('\007s')
+    return
 
 if __name__ == "__main__":
     pass
