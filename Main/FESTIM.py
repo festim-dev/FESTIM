@@ -688,11 +688,13 @@ def run(parameters):
         expressions_form = update_expressions(expressions_form, t)
         expressions_F = update_expressions(expressions_F, t)
 
+        # Display time
         print(str(round(t/Time*100, 2)) + ' %        ' +
               str(round(t, 1)) + ' s' +
               "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
               end="\r")
 
+        # Solve main problem
         J = derivative(F, u, du)  # Define the Jacobian
         problem = NonlinearVariationalProblem(F, u, bcs, J)
         solver = NonlinearVariationalSolver(problem)
@@ -707,9 +709,12 @@ def run(parameters):
             stepsize_change_ratio=stepsize_change_ratio,
             dt_min=dt_min, t=t, t_stop=t_stop,
             stepsize_stop_max=stepsize_stop_max)
+
+        # Solve extrinsic traps formulation
         for j in range(len(extrinsic_formulations)):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
+        # Post prossecing
         res = list(u.split())
         retention = project(res[0])
         total_trap = 0
