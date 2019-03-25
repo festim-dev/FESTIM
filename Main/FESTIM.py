@@ -603,6 +603,8 @@ def compute_error(parameters, t, u_n):
 
 def run(parameters):
     # Declaration of variables
+    output = dict()  # Final output
+
     implantation_time = 400
     resting_time = 50
     ramp = 8
@@ -684,8 +686,6 @@ def run(parameters):
     # Solution files
     exports = parameters["exports"]
 
-    filedesorption = save_as()
-    # folder + exports["TDS"]["label"]+ '.csv'
     files = define_xdmf_files(exports)
 
     #  Time-stepping
@@ -761,9 +761,14 @@ def run(parameters):
         for j in range(len(previous_solutions_traps)):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
 
-    export_TDS(filedesorption, desorption)
+    # Store data in output
+    output["TDS"] = desorption
+    output["error"] = error
+    output["parameters"] = parameters
+
+    # End
     print('\007s')
-    return
+    return output
 
 if __name__ == "__main__":
     pass
