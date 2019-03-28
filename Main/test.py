@@ -6,11 +6,12 @@ def test_run():
     Test function run() for several refinements
     '''
     x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
+    u = 1 + sp.exp(-4*pi**2*t)*sp.cos(2*pi*x)
+    v = 1 + sp.exp(-4*pi**2*t)*sp.cos(2*pi*x)
 
-    def parameters(h, dt):
+    def parameters(h, dt, final_time, u, v):
         size = 1
-        u = 1 + x**2 + sp.sin(t)
-        v = 1 + x**2 + sp.cos(t)
+
         v_0 = 1e13
         E_t = 1.5
         T = 700
@@ -25,8 +26,8 @@ def test_run():
         v_i = v_0 * exp(-E_t/k_B/T)
         v_m = D/alpha/alpha/beta
 
-        f = sp.cos(t) - 2*D - sp.sin(t)
-        g = v_i*v - v_m * u * (n_trap-v)-sp.sin(t)
+        f = sp.diff(u, t) + sp.diff(v, t) - D * sp.diff(u, x, 2)
+        g = sp.diff(v, t) + v_i*v - v_m * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
@@ -49,11 +50,11 @@ def test_run():
                 ],
             "initial_conditions": [
                 {
-                    "value": 1 + x**2 + sp.sin(t),
+                    "value": u,
                     "component": 0
                 },
                 {
-                    "value": 1 + x**2 + sp.cos(t),
+                    "value": v,
                     "component": 1
                 }
             ],
@@ -68,12 +69,12 @@ def test_run():
                 "dc": [
                     {
                         "surface": [1, 2],
-                        "value": sp.printing.ccode(1 + x**2 + sp.sin(t)),
+                        "value": sp.printing.ccode(u),
                         "component": 0
                     },
                     {
                         "surface": [1, 2],
-                        "value": sp.printing.ccode(1 + x**2 + sp.cos(t)),
+                        "value": sp.printing.ccode(v),
                         "component": 1
                     }
                 ],
@@ -89,12 +90,12 @@ def test_run():
                 'distribution': sp.printing.ccode(1)
                 },
             "solving_parameters": {
-                "final_time": 1,
+                "final_time": final_time,
                 "num_steps": round(1/dt),
                 "adaptative_time_step": {
                     "stepsize_change_ratio": 1,
                     "t_stop": 0,
-                    "stepsize_stop_max": 0.5,
+                    "stepsize_stop_max": dt,
                     "dt_min": 1e-5
                     },
                 "newton_solver": {
@@ -123,7 +124,7 @@ def test_run():
                 "error": [
                     {
                         "exact_solution": [u, v],
-                        "norm": 'L2',
+                        "norm": 'error_max',
                         "degree": 4
                     }
                 ]
@@ -131,16 +132,18 @@ def test_run():
         }
         return parameters
 
-    tol = 1e-7
+    tol_u = 1e-7
+    tol_v = 1e-1
     sizes = [1/1600, 1/1700]
     dt = 1/50
+    final_time = 0.1
     for h in sizes:
-        output = run(parameters(h, dt))
-        error_1 = [i[0] for i in output['error']]
-        error_2 = [i[1] for i in output['error']]
-        max_error = max(error_1)
-        msg = 'Maximum error is:' + str(max_error) + '\n \
-            with h =' + str(h) + '\n \
-            with dt =' + str(dt)
+        output = run(parameters(h, dt, final_time, u, v))
+        error_max_u = output["error"][0][1]
+        error_max_v = output["error"][0][2]
+        msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
+            Maximum error on v is:' + str(error_max_v) + '\n \
+            with h = ' + str(h) + '\n \
+            with dt = ' + str(dt)
         print(msg)
-        assert max_error < tol, msg
+        assert error_max_u < tol_u and error_max_v < tol_v
