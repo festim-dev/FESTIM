@@ -584,19 +584,28 @@ def update_expressions(expressions, t):
     return expressions
 
 
-def compute_error(parameters, t, u_n):
+def compute_error(parameters, t, u_n, mesh):
+    '''
+    Returns a list containing the errors
+    '''
     res = u_n.split()
     tab = []
-
     for error in parameters:
         er = []
-        for i in range(len(res)):
+        er.append(t)
+        for i in range(len(error["exact_solution"])):
             sol = Expression(sp.printing.ccode(error["exact_solution"][i]),
                              degree=error["degree"], t=t)
-            error_L2 = errornorm(
-                sol, res[i], error["norm"])
-            er.append(error_L2)
-        er.append(t)
+            if error["norm"] == "error_max":
+                vertex_values_u = res[i].compute_vertex_values(mesh)
+                vertex_values_sol = sol.compute_vertex_values(mesh)
+                error_max = np.max(np.abs(vertex_values_u - vertex_values_sol))
+                er.append(error_max)
+            else:
+                error_L2 = errornorm(
+                    sol, res[i], error["norm"])
+                er.append(error_L2)
+        
         tab.append(er)
     return tab
 
@@ -700,11 +709,7 @@ def run(parameters):
     error = []
 
     while t < Time:
-        # Compute error
-        try:
-            error.extend(compute_error(parameters["exports"]["error"], t, u_n))
-        except:
-            pass
+
         # Update current time
         t += float(dt)
         expressions = update_expressions(expressions, t)
@@ -760,11 +765,16 @@ def run(parameters):
         u_n.assign(u)
         for j in range(len(previous_solutions_traps)):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
-
+    # Compute error
+    try:
+        error = compute_error(parameters["exports"]["error"], t, u_n, mesh)
+    except:
+        pass
     # Store data in output
     output["TDS"] = desorption
     output["error"] = error
     output["parameters"] = parameters
+    output["mesh"] = mesh
 
     # End
     print('\007s')
