@@ -11,7 +11,7 @@ def test_run():
 
     def parameters(h, dt, final_time, u, v):
         size = 1
-
+        folder = 'Solution_Test'
         v_0 = 1e13
         E_t = 1.5
         T = 700
@@ -109,17 +109,17 @@ def test_run():
                     "functions": [],
                     "times": [],
                     "labels": [],
-                    "folder": ''
+                    "folder": folder
                 },
                 "xdmf": {
                     "functions": [],
                     "labels":  [],
-                    "folder": ''
+                    "folder": folder
                 },
                 "TDS": {
-                    "label": "desorption",
-                    "TDS_time": 450,
-                    "folder": ''
+                    "file": "desorption",
+                    "TDS_time": 0,
+                    "folder": folder
                     },
                 "error": [
                     {
