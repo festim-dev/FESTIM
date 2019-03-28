@@ -543,7 +543,8 @@ def apply_boundary_conditions(boundary_conditions, V,
     for type_BC in boundary_conditions:
         for BC in boundary_conditions[type_BC]:
             if type_BC == "dc":
-                value_BC = Expression(str(BC['value']), t=0, degree=4)
+                value_BC = sp.printing.ccode(BC['value'])
+                value_BC = Expression(value_BC, t=0, degree=4)
             elif type_BC == "solubility":
                 pressure = BC["pressure"]
                 value_BC = solubility_BC(
@@ -652,10 +653,11 @@ def run(parameters):
     # Define expressions used in variational forms
     print('Defining source terms')
     source_term = parameters["source_term"]
-    flux_ = Expression(source_term["flux"], t=0, degree=2)
-    f = Expression(source_term["distribution"], t=0, degree=2)
+    flux_ = Expression(sp.printing.ccode(source_term["flux"]), t=0, degree=2)
+    f = Expression(
+        sp.printing.ccode(source_term["distribution"]), t=0, degree=2)
     T = parameters["temperature"]
-    temp = Expression(T['value'], t=0, degree=2)
+    temp = Expression(sp.printing.ccode(T['value']), t=0, degree=2)
     # BCs
     print('Defining boundary conditions')
     bcs, expressions = apply_boundary_conditions(
@@ -779,6 +781,8 @@ def run(parameters):
     # End
     print('\007s')
     return output
+
+x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
 
 if __name__ == "__main__":
     pass
