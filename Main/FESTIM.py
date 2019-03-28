@@ -44,11 +44,14 @@ def export_TDS(filedesorption, desorption):
     - desorption : list, values to be exported.
     '''
     busy = True
+    if '/' in filedesorption:
+        # Creates the directory if necessary
+        os.makedirs(os.path.dirname(filedesorption), exist_ok=True)
     while busy is True:
         try:
-            with open(filedesorption, "w+") as output:
+            with open(filedesorption, "w+") as f:
                 busy = False
-                writer = csv.writer(output, lineterminator='\n')
+                writer = csv.writer(f, lineterminator='\n')
                 writer.writerows(['dTt'])
                 for val in desorption:
                     writer.writerows([val])
@@ -615,12 +618,6 @@ def run(parameters):
     # Declaration of variables
     output = dict()  # Final output
 
-    implantation_time = 400
-    resting_time = 50
-    ramp = 8
-    delta_TDS = 500
-    TDS_time = int(delta_TDS / ramp) + 1
-
     global v_0
     v_0 = 1e13  # frequency factor s-1
     global k_B
@@ -760,18 +757,30 @@ def run(parameters):
         total = total_trap + total_sol
         desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
         total_n = total
-        if t > implantation_time+resting_time:
+        if t > parameters["exports"]["TDS"]["TDS_time"]:
             desorption.append(desorption_rate)
 
         # Update previous solutions
         u_n.assign(u)
         for j in range(len(previous_solutions_traps)):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
+
     # Compute error
     try:
         error = compute_error(parameters["exports"]["error"], t, u_n, mesh)
     except:
         pass
+
+    # Export TDS
+    if "TDS" in parameters["exports"]:
+        p = parameters["exports"]["TDS"]
+        if "file" in p.keys():
+            file_tds = ''
+            if "folder" in p.keys():
+                file_tds += p["folder"] + '/'
+            file_tds += p["file"] + ".csv"
+            export_TDS(file_tds, desorption)
+
     # Store data in output
     output["TDS"] = desorption
     output["error"] = error
