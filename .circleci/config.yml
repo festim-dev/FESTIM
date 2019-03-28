@@ -1,0 +1,11 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: quay.io/fenicsproject/stable:latest
+    steps:
+      - checkout
+      - run:
+          name: Run Tests
+          command: |
+            pytest-3 Main/test.py
