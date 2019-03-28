@@ -5,7 +5,7 @@ def test_run():
     '''
     Test function run() for several refinements
     '''
-    x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
+
     u = 1 + sp.exp(-4*pi**2*t)*sp.cos(2*pi*x)
     v = 1 + sp.exp(-4*pi**2*t)*sp.cos(2*pi*x)
 
@@ -69,12 +69,12 @@ def test_run():
                 "dc": [
                     {
                         "surface": [1, 2],
-                        "value": sp.printing.ccode(u),
+                        "value": u,
                         "component": 0
                     },
                     {
                         "surface": [1, 2],
-                        "value": sp.printing.ccode(v),
+                        "value": v,
                         "component": 1
                     }
                 ],
@@ -83,11 +83,11 @@ def test_run():
                 },
             "temperature": {
                     'type': "expression",
-                    'value': sp.printing.ccode(T)
+                    'value': T
                 },
             "source_term": {
-                'flux': sp.printing.ccode(f),
-                'distribution': sp.printing.ccode(1)
+                'flux': f,
+                'distribution': 1
                 },
             "solving_parameters": {
                 "final_time": final_time,
