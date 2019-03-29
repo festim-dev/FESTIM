@@ -106,6 +106,9 @@ def export_profiles(res, exports, t, dt, W):
     if len(functions) != len(labels):
         raise NameError("Number of functions to be exported "
                         "doesn't match number of labels in txt exports")
+    if len(functions) > len(res):
+        raise NameError("Too many functions to export "
+                        "in txt exports")
     solution_dict = {
         'solute': res[0],
         'retention': res[len(res)-1]
@@ -169,7 +172,9 @@ def export_xdmf(res, exports, files, t):
     - files: list, contains XDMFFile
     - t: float
     '''
-
+    if len(exports['xdmf']['functions']) > len(res):
+        raise NameError("Too many functions to export "
+                        "in xdmf exports")
     solution_dict = {
         'solute': res[0],
         'retention': res[len(res)-1]
