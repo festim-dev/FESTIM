@@ -1,13 +1,55 @@
-from FESTIM import *
+import FESTIM
+import pytest
+import sympy as sp
 
 
-def test_run():
+def test_mesh_and_refine_meets_refinement_conditions():
+    def create_subdomains(x1, x2):
+        class domain(FESTIM.SubDomain):
+            def inside(self, x, on_boundary):
+                return x[0] >= x1 and x[0] <= x2
+        domain = domain()
+        return domain
+
+    def mesh_parameters(ini, size, refs, pos):
+        param = {
+            "initial_number_of_cells": ini,
+            "size": size,
+            "refinements":  []
+        }
+        for i in range(len(refs)):
+            param["refinements"].append({"cells": refs[i], "x": pos[i]})
+        return param
+    refinements = [[[2, 3], [0.5, 0.25]], [[3, 11], [0.5, 0.25]]]
+    for i in range(len(refinements)):
+        param = mesh_parameters(2, 1, refinements[i][0], refinements[i][1])
+        mesh = FESTIM.mesh_and_refine(param)
+
+        mf1 = FESTIM.MeshFunction('size_t', mesh, 1)
+        mf2 = FESTIM.MeshFunction('size_t', mesh, 1)
+        subdomain1 = create_subdomains(0, refinements[i][1][1])
+        subdomain1.mark(mf1, 1)
+        subdomain2 = create_subdomains(0, refinements[i][1][0])
+        subdomain2.mark(mf2, 2)
+        nb_cell_1 = 0
+        nb_cell_2 = 0
+        for cell in FESTIM.cells(mesh):
+            cell_no = cell.index()
+            if mf1.array()[cell_no] == 1:
+                nb_cell_1 += 1
+            if mf2.array()[cell_no] == 2:
+                nb_cell_2 += 1
+        assert nb_cell_1 >= refinements[i][0][1]
+        assert nb_cell_2 >= refinements[i][0][0]
+
+
+def test_run_MMS():
     '''
     Test function run() for several refinements
     '''
 
-    u = 1 + sp.exp(-4*pi**2*t)*sp.cos(2*pi*x)
-    v = 1 + sp.exp(-4*pi**2*t)*sp.cos(2*pi*x)
+    u = 1 + sp.exp(-4*FESTIM.pi**2*FESTIM.t)*sp.cos(2*FESTIM.pi*FESTIM.x)
+    v = 1 + sp.exp(-4*FESTIM.pi**2*FESTIM.t)*sp.cos(2*FESTIM.pi*FESTIM.x)
 
     def parameters(h, dt, final_time, u, v):
         size = 1
@@ -22,12 +64,13 @@ def test_run():
         E_diff = 0.39
         D_0 = 4.1e-7
         k_B = 8.6e-5
-        D = D_0 * exp(-E_diff/k_B/T)
-        v_i = v_0 * exp(-E_t/k_B/T)
+        D = D_0 * FESTIM.exp(-E_diff/k_B/T)
+        v_i = v_0 * FESTIM.exp(-E_t/k_B/T)
         v_m = D/alpha/alpha/beta
 
-        f = sp.diff(u, t) + sp.diff(v, t) - D * sp.diff(u, x, 2)
-        g = sp.diff(v, t) + v_i*v - v_m * u * (n_trap-v)
+        f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
+            D * sp.diff(u, FESTIM.x, 2)
+        g = sp.diff(v, FESTIM.t) + v_i*v - v_m * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
@@ -138,7 +181,7 @@ def test_run():
     dt = 1/50
     final_time = 0.1
     for h in sizes:
-        output = run(parameters(h, dt, final_time, u, v))
+        output = FESTIM.run(parameters(h, dt, final_time, u, v))
         error_max_u = output["error"][0][1]
         error_max_v = output["error"][0][2]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
