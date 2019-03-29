@@ -1,4 +1,5 @@
 import FESTIM
+import fenics
 import pytest
 import sympy as sp
 
@@ -48,8 +49,8 @@ def test_run_MMS():
     Test function run() for several refinements
     '''
 
-    u = 1 + sp.exp(-4*FESTIM.pi**2*FESTIM.t)*sp.cos(2*FESTIM.pi*FESTIM.x)
-    v = 1 + sp.exp(-4*FESTIM.pi**2*FESTIM.t)*sp.cos(2*FESTIM.pi*FESTIM.x)
+    u = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
+    v = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
 
     def parameters(h, dt, final_time, u, v):
         size = 1
@@ -64,8 +65,8 @@ def test_run_MMS():
         E_diff = 0.39
         D_0 = 4.1e-7
         k_B = 8.6e-5
-        D = D_0 * FESTIM.exp(-E_diff/k_B/T)
-        v_i = v_0 * FESTIM.exp(-E_t/k_B/T)
+        D = D_0 * fenics.exp(-E_diff/k_B/T)
+        v_i = v_0 * fenics.exp(-E_t/k_B/T)
         v_m = D/alpha/alpha/beta
 
         f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
