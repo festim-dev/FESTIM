@@ -5,6 +5,10 @@ import sympy as sp
 
 
 def test_mesh_and_refine_meets_refinement_conditions():
+    '''
+    Test that function mesh_and_refine() gives the right
+    refinement conditions
+    '''
     def create_subdomains(x1, x2):
         class domain(FESTIM.SubDomain):
             def inside(self, x, on_boundary):
@@ -45,6 +49,10 @@ def test_mesh_and_refine_meets_refinement_conditions():
 
 
 def test_formulation_1_trap_1_material():
+    '''
+    Test function formulation() with 1 intrinsic trap
+    and 1 material
+    '''
     dt = 1
     traps = [{
         "energy": 1,
@@ -108,6 +116,10 @@ def test_formulation_1_trap_1_material():
 
 
 def test_formulation_2_traps_1_material():
+    '''
+    Test function formulation() with 2 intrinsic traps
+    and 1 material
+    '''    
     # Set parameters
     dt = 1
     traps = [{
@@ -201,6 +213,10 @@ def test_formulation_2_traps_1_material():
 
 
 def test_formulation_1_trap_2_materials():
+    '''
+    Test function formulation() with 1 intrinsic trap
+    and 2 materials
+    '''
     def create_subdomains(x1, x2):
         class domain(FESTIM.SubDomain):
             def inside(self, x, on_boundary):
@@ -297,6 +313,75 @@ def test_formulation_1_trap_2_materials():
     fenics.solve(F == 0, u_2, [])
     # Calculates the L2 norm of the error
     error = fenics.errornorm(u, u_2, 'L2')  
+
+    assert error == 0
+
+
+def test_formulation_1_extrap_1_material():
+    '''
+    Test function formulation() with 1 extrinsic trap
+    and 1 material
+    '''
+    dt = 1
+    traps = [{
+        "energy": 1,
+        "materials": [1],
+        "type": "extrinsic"
+        }]
+    materials = [{
+            "alpha": 1,
+            "beta": 2,
+            "density": 3,
+            "borders": [0, 1],
+            "E_diff": 4,
+            "D_0": 5,
+            "id": 1
+            }]
+    
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    W = fenics.FunctionSpace(mesh, 'P', 1)
+    u, u_2 = fenics.Function(V), fenics.Function(V)
+    u_n, u_n_2 = fenics.Function(V), fenics.Function(V)
+    v, v_2 = fenics.TestFunction(V), fenics.TestFunction(V)
+    n, n_2 = fenics.interpolate(fenics.Expression('1', degree=0), W), \
+        fenics.interpolate(fenics.Expression('1', degree=0), W)
+    solutions, solutions_2 = list(fenics.split(u)), list(fenics.split(u_2))
+    previous_solutions, previous_solutions_2 = \
+        list(fenics.split(u_n)), list(fenics.split(u_n_2))
+    testfunctions, testfunctions_2 = \
+        list(fenics.split(v)), list(fenics.split(v_2))
+    extrinsic_traps, extrinsic_traps_2 = [n], [n_2]
+    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
+    dx = fenics.dx(subdomain_data=mf)
+    temp = fenics.Expression("300", degree=0)
+    flux_ = fenics.Expression("10000", degree=0)
+    f = fenics.Expression("1", degree=0)
+
+    F, expressions = FESTIM.formulation(
+        traps, extrinsic_traps_2, solutions_2, testfunctions_2,
+        previous_solutions_2, dt, dx, materials, temp, flux_,
+        f)
+    expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
+        testfunctions[0]*dx
+    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
+        fenics.dot(
+            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += -flux_*f*testfunctions[0]*dx + \
+        ((solutions[1] - previous_solutions[1]) / dt) * \
+        testfunctions[1]*dx
+    expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
+        solutions[0] * (extrinsic_traps[0] - solutions[1]) * \
+        testfunctions[1]*dx(1)
+    expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[1] * \
+        testfunctions[1]*dx(1)
+    expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
+        testfunctions[0]*dx
+
+    fenics.solve(expected_form == 0, u, [])
+    fenics.solve(F == 0, u_2, [])
+    # Calculates the L2 norm of the error
+    error = fenics.errornorm(u, u_2, 'L2')
 
     assert error == 0
 
