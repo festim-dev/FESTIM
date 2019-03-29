@@ -563,15 +563,15 @@ def apply_boundary_conditions(boundary_conditions, V,
             except:
                 # By default, component is solute (ie. 0)
                 component = 0
-            if type(BC['surface']) == list:
-                for surface in BC['surface']:
-                    bci = DirichletBC(V.sub(component), value_BC,
-                                      surface_marker, surface)
-                    bcs.append(bci)
+            if type(BC['surface']) is not list:
+                surfaces = [BC['surface']]
             else:
-                bci = DirichletBC(V.sub(0), value_BC,
-                                  surface_marker, BC['surface'])
+                surfaces = BC['surface']
+            for surface in surfaces:
+                bci = DirichletBC(V.sub(component), value_BC,
+                                  surface_marker, surface)
                 bcs.append(bci)
+
     return bcs, expressions
 
 
