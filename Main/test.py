@@ -106,7 +106,94 @@ def test_formulation_1_trap_1_material():
 
     assert error == 0
 
-test_formulation_1_trap()
+
+def test_formulation_2_traps_1_material():
+    # Set parameters
+    dt = 1
+    traps = [{
+        "energy": 1,
+        "density": 2,
+        "materials": [1]
+        },
+        {
+        "energy": 1,
+        "density": 2,
+        "materials": [1]
+        }]
+    materials = [{
+            "alpha": 1,
+            "beta": 2,
+            "density": 3,
+            "borders": [0, 1],
+            "E_diff": 4,
+            "D_0": 5,
+            "id": 1
+            }]
+    extrinsic_traps = []
+
+    # Prepare
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, len(traps)+1)
+    u, u_2 = fenics.Function(V), fenics.Function(V)
+    u_n, u_n_2 = fenics.Function(V), fenics.Function(V)
+    v, v_2 = fenics.TestFunction(V), fenics.TestFunction(V)
+
+    solutions, solutions_2 = list(fenics.split(u)), list(fenics.split(u_2))
+    previous_solutions, previous_solutions_2 = \
+        list(fenics.split(u_n)), list(fenics.split(u_n_2))
+    testfunctions, testfunctions_2 = \
+        list(fenics.split(v)), list(fenics.split(v_2))
+
+    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
+    dx = fenics.dx(subdomain_data=mf)
+    temp = fenics.Expression("0", degree=0)
+    flux_ = fenics.Expression("1", degree=0)
+    f = fenics.Expression("1", degree=0)
+
+    F, expressions = FESTIM.formulation(
+        traps, extrinsic_traps, solutions_2, testfunctions_2,
+        previous_solutions_2, dt, dx, materials, temp, flux_,
+        f)
+    # Transient sol
+    expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
+        testfunctions[0]*dx
+    # Diffusion sol
+    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
+        fenics.dot(
+            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    # Source sol
+    expected_form += -flux_*f*testfunctions[0]*dx
+    # Transient trap 1
+    expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
+        testfunctions[1]*dx
+    # Trapping trap 1
+    expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
+        solutions[0] * (2 - solutions[1]) * \
+        testfunctions[1]*dx(1)
+    # Detrapping trap 1
+    expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[1] * \
+        testfunctions[1]*dx(1)
+    # Source detrapping sol
+    expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
+        testfunctions[0]*dx
+
+    expected_form += ((solutions[2] - previous_solutions[2]) / dt) * \
+        testfunctions[2]*dx
+    expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
+        solutions[0] * (2 - solutions[2]) * \
+        testfunctions[2]*dx(1)
+    expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[2] * \
+        testfunctions[2]*dx(1)
+    expected_form += ((solutions[2] - previous_solutions[2]) / dt) * \
+        testfunctions[0]*dx
+
+    # Solve both formulations
+    fenics.solve(expected_form == 0, u, [])
+    fenics.solve(F == 0, u_2, [])
+    # Calculates the L2 norm of the error
+    error = fenics.errornorm(u, u_2, 'L2')  
+
+    assert error == 0
 
 
 def test_run_MMS():
