@@ -320,6 +320,8 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     - F : variational formulation
     - expressions: list, contains Expression() to be updated
     '''
+    k_B = 8.6e-5  # Boltzmann constant
+    v_0 = 1e13  # frequency factor s-1
     expressions = []
     F = 0
     F += ((solutions[0] - previous_solutions[0]) / dt)*testfunctions[0]*dx
@@ -635,10 +637,6 @@ def run(parameters):
     # Declaration of variables
     output = dict()  # Final output
 
-    global v_0
-    v_0 = 1e13  # frequency factor s-1
-    global k_B
-    k_B = 8.6e-5  # Boltzmann constant
     solving_parameters = parameters["solving_parameters"]
     Time = solving_parameters["final_time"]
     num_steps = solving_parameters["num_steps"]
