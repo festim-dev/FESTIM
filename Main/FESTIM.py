@@ -153,9 +153,6 @@ def define_xdmf_files(exports):
     if len(exports['xdmf']['functions']) != len(exports['xdmf']['labels']):
         raise NameError("Number of functions to be exported "
                         "doesn't match number of labels in xdmf exports")
-    if len(functions) > len(res):
-        raise NameError("Too many functions to export "
-                        "in xdmf exports")
     files = list()
     for i in range(0, len(exports["xdmf"]["functions"])):
         u_file = XDMFFile(exports["xdmf"]["folder"]+'/' +
@@ -175,7 +172,9 @@ def export_xdmf(res, exports, files, t):
     - files: list, contains XDMFFile
     - t: float
     '''
-
+    if len(exports['xdmf']['functions']) > len(res):
+        raise NameError("Too many functions to export "
+                        "in xdmf exports")
     solution_dict = {
         'solute': res[0],
         'retention': res[len(res)-1]
