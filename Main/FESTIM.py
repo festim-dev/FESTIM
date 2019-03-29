@@ -211,7 +211,10 @@ def create_function_spaces(mesh, nb_traps, element1='P', order1=1,
     - element2='P': string, the element of dynamic trap densities
     - order1=2: int, the order of the element of dynamic trap densities
     '''
-    V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
+    if nb_traps == 0:
+        V = FunctionSpace(mesh, element1, order1)
+    else:
+        V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
     W = FunctionSpace(mesh, element2, degree2)
     return V, W
 
@@ -275,7 +278,10 @@ def initialising_solutions(V, initial_conditions):
         value = ini["value"]
         value = sp.printing.ccode(value)
         expression[ini["component"]] = value
-    expression = tuple(expression)
+    if len(expression) == 1:
+        expression = expression[0]
+    else:
+        expression = tuple(expression)
     ini_u = Expression(expression, degree=3, t=0)
     u_n = interpolate(ini_u, V)
     components = split(u_n)
@@ -543,6 +549,8 @@ def apply_boundary_conditions(boundary_conditions, V,
     '''
     bcs = list()
     expressions = list()
+    a = Function(V)
+    dim = len(split(a))  # number of components in V
     for type_BC in boundary_conditions:
         for BC in boundary_conditions[type_BC]:
             if type_BC == "dc":
@@ -567,8 +575,12 @@ def apply_boundary_conditions(boundary_conditions, V,
                 surfaces = [BC['surface']]
             else:
                 surfaces = BC['surface']
+            if dim == 1:
+                funspace = V
+            else:  # if only one component, use subspace
+                funspace = V.sub(component)
             for surface in surfaces:
-                bci = DirichletBC(V.sub(component), value_BC,
+                bci = DirichletBC(funspace, value_BC,
                                   surface_marker, surface)
                 bcs.append(bci)
 
@@ -609,7 +621,7 @@ def compute_error(parameters, t, u_n, mesh):
                 error_L2 = errornorm(
                     sol, res[i], error["norm"])
                 er.append(error_L2)
-        
+
         tab.append(er)
     return tab
 
@@ -743,6 +755,8 @@ def run(parameters):
 
         # Post prossecing
         res = list(u.split())
+        if not res:  # if u is non-vector
+            res = [u]
         retention = project(res[0])
         total_trap = 0
         for i in range(1, len(traps)+1):
