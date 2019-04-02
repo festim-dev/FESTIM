@@ -550,7 +550,7 @@ def apply_boundary_conditions(boundary_conditions, V,
                         BC["S_0"], BC["E_S"],
                         k_B, temp(0)))
             value_BC = Expression(sp.printing.ccode(value_BC), t=0,
-                                      degree=2)
+                                  degree=2)
         expressions.append(value_BC)
         try:
             # Fetch the component of the BC
@@ -587,6 +587,32 @@ def update_expressions(expressions, t):
     return expressions
 
 
+def solve_u(F, u, bcs, t, dt, solving_parameters):
+    du = TrialFunction(u.function_space())
+    J = derivative(F, u, du)  # Define the Jacobian
+    problem = NonlinearVariationalProblem(F, u, bcs, J)
+    solver = NonlinearVariationalSolver(problem)
+    solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
+    solver.parameters["newton_solver"]["absolute_tolerance"] = \
+        solving_parameters['newton_solver']['absolute_tolerance']
+    solver.parameters["newton_solver"]["relative_tolerance"] = \
+        solving_parameters['newton_solver']['relative_tolerance']
+    nb_it, converged = solver.solve()
+
+    t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
+    stepsize_stop_max = \
+        solving_parameters["adaptative_time_step"]["stepsize_stop_max"]
+    stepsize_change_ratio = \
+        solving_parameters["adaptative_time_step"]["stepsize_change_ratio"]
+    dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
+    dt = adaptative_timestep(
+        converged=converged, nb_it=nb_it, dt=dt,
+        stepsize_change_ratio=stepsize_change_ratio,
+        dt_min=dt_min, t=t, t_stop=t_stop,
+        stepsize_stop_max=stepsize_stop_max)
+    return u, dt
+
+
 def compute_error(parameters, t, u_n, mesh):
     '''
     Returns a list containing the errors
@@ -613,6 +639,17 @@ def compute_error(parameters, t, u_n, mesh):
     return tab
 
 
+def compute_retention(res, W):
+    if not res:  # if u is non-vector
+        res = [u]
+    retention = project(res[0])
+    total_trap = 0
+    for i in range(1, len(res)):
+        sol = res[i]
+        retention = project(retention + res[i], W)
+    return retention
+
+
 def run(parameters):
     # Declaration of variables
     output = dict()  # Final output
@@ -622,15 +659,7 @@ def run(parameters):
     num_steps = solving_parameters["num_steps"]
     dT = Time / num_steps
     dt = Constant(dT)  # time step size
-    t = 0  # Initialising time to 0s
-    stepsize_change_ratio = solving_parameters[
-        "adaptative_time_step"][
-            "stepsize_change_ratio"]
-    t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
-    stepsize_stop_max = solving_parameters[
-        "adaptative_time_step"][
-            "stepsize_stop_max"]
-    dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
+
     size = parameters["mesh_parameters"]["size"]
     # Mesh and refinement
     materials = parameters["materials"]
@@ -657,7 +686,6 @@ def run(parameters):
     # Define functions
 
     u, solutions = define_functions(V)
-    du = TrialFunction(V)
     extrinsic_traps = define_functions_extrinsic_traps(W, traps)
     testfunctions_concentrations, testfunctions_traps = \
         define_test_functions(V, W, 6, len(extrinsic_traps))
@@ -699,7 +727,7 @@ def run(parameters):
 
     timer = Timer()  # start timer
     error = []
-
+    t = 0  # Initialising time to 0s
     while t < Time:
 
         # Update current time
@@ -715,41 +743,20 @@ def run(parameters):
               end="\r")
 
         # Solve main problem
-        J = derivative(F, u, du)  # Define the Jacobian
-        problem = NonlinearVariationalProblem(F, u, bcs, J)
-        solver = NonlinearVariationalSolver(problem)
-        solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
-        solver.parameters["newton_solver"]["absolute_tolerance"] = \
-            solving_parameters['newton_solver']['absolute_tolerance']
-        solver.parameters["newton_solver"]["relative_tolerance"] = \
-            solving_parameters['newton_solver']['relative_tolerance']
-        nb_it, converged = solver.solve()
-        dt = adaptative_timestep(
-            converged=converged, nb_it=nb_it, dt=dt,
-            stepsize_change_ratio=stepsize_change_ratio,
-            dt_min=dt_min, t=t, t_stop=t_stop,
-            stepsize_stop_max=stepsize_stop_max)
-
+        solve_u(F, u, bcs, t, dt, solving_parameters)
         # Solve extrinsic traps formulation
         for j in range(len(extrinsic_formulations)):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
         # Post prossecing
         res = list(u.split())
-        if not res:  # if u is non-vector
-            res = [u]
-        retention = project(res[0])
-        total_trap = 0
-        for i in range(1, len(traps)+1):
-            sol = res[i]
-            total_trap += assemble(sol*dx)
-            retention = project(retention + res[i], W)
+        retention = compute_retention(res, W)
         res.append(retention)
         export_xdmf(res,
                     exports, files, t)
         dt = export_profiles(res, exports, t, dt, W)
-        total_sol = assemble(res[0]*dx)
-        total = total_trap + total_sol
+
+        total = assemble(retention*dx)
         desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
         total_n = total
         if t > parameters["exports"]["TDS"]["TDS_time"]:
