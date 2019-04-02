@@ -190,18 +190,16 @@ def test_formulation_no_trap_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
-    f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, materials, temp, flux_,
-        f)
+        previous_solutions, dt, dx, materials, temp, flux_)
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
         fenics.dot(
             fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
-    expected_form += -flux_*f*testfunctions[0]*dx
+    expected_form += -flux_*testfunctions[0]*dx
 
     assert expected_form.equals(F) is True
 
@@ -241,18 +239,16 @@ def test_formulation_1_trap_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
-    f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, materials, temp, flux_,
-        f)
+        previous_solutions, dt, dx, materials, temp, flux_)
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
         fenics.dot(
             fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
-    expected_form += -flux_*f*testfunctions[0]*dx + \
+    expected_form += -flux_*testfunctions[0]*dx + \
         ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
@@ -309,12 +305,10 @@ def test_formulation_2_traps_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
-    f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, materials, temp, flux_,
-        f)
+        previous_solutions, dt, dx, materials, temp, flux_)
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
@@ -323,7 +317,7 @@ def test_formulation_2_traps_1_material():
         fenics.dot(
             fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
     # Source sol
-    expected_form += -flux_*f*testfunctions[0]*dx
+    expected_form += -flux_*testfunctions[0]*dx
     # Transient trap 1
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
@@ -410,12 +404,10 @@ def test_formulation_1_trap_2_materials():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
-    f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, materials, temp, flux_,
-        f)
+        previous_solutions, dt, dx, materials, temp, flux_)
 
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
@@ -429,7 +421,7 @@ def test_formulation_1_trap_2_materials():
         fenics.dot(
             fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(2)
     # Source sol
-    expected_form += -flux_*f*testfunctions[0]*dx
+    expected_form += -flux_*testfunctions[0]*dx
     # Transient trap 1
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
@@ -490,18 +482,16 @@ def test_formulation_1_extrap_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("10000", degree=0)
-    f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, materials, temp, flux_,
-        f)
+        previous_solutions, dt, dx, materials, temp, flux_)
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
         fenics.dot(
             fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
-    expected_form += -flux_*f*testfunctions[0]*dx + \
+    expected_form += -flux_*testfunctions[0]*dx + \
         ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
@@ -599,8 +589,7 @@ def test_run_MMS():
                     'value': T
                 },
             "source_term": {
-                'flux': f,
-                'distribution': 1
+                'flux': f
                 },
             "solving_parameters": {
                 "final_time": final_time,

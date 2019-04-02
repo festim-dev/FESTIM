@@ -8,36 +8,6 @@ import os
 import argparse
 
 
-def save_as():
-    '''
-    - parameters : none
-    - returns filedescription : string of the saving path
-    '''
-    valid = False
-    while valid is False:
-        print("Save as (.csv):")
-        filedesorption = input()
-        if filedesorption == '':
-            filedesorption = "desorption.csv"
-        if filedesorption.endswith('.csv'):
-            valid = True
-            try:
-                with open(filedesorption, 'r') as f:
-                    print('This file already exists.'
-                          ' Do you want to replace it ? (y/n)')
-                choice = input()
-                if choice == "n" or choice == "N":
-                    valid = False
-                elif choice != "y" and choice != "Y":
-                    valid = False
-            except:
-                valid = True
-        else:
-            print("Please enter a file ending with the extension .csv")
-            valid = False
-    return filedesorption
-
-
 def export_TDS(filedesorption, desorption):
     '''
     - filedesorption : string, the path of the csv file.
@@ -318,7 +288,7 @@ def initialising_extrinsic_traps(W, number_of_traps):
 
 
 def formulation(traps, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, materials, temp, flux_, f):
+                previous_solutions, dt, dx, materials, temp, flux_):
     ''' Creates formulation for trapping MRE model.
     Parameters:
     - traps : dict, contains the energy, density and domains
@@ -341,9 +311,8 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
         subdomain = material['id']
         F += D_0 * exp(-E_diff/k_B/temp) * \
             dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
-    F += - flux_*f*testfunctions[0]*dx
+    F += - flux_*testfunctions[0]*dx
     expressions.append(flux_)
-    expressions.append(f)
     expressions.append(temp)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
@@ -677,8 +646,6 @@ def run(parameters):
     print('Defining source terms')
     source_term = parameters["source_term"]
     flux_ = Expression(sp.printing.ccode(source_term["flux"]), t=0, degree=2)
-    f = Expression(
-        sp.printing.ccode(source_term["distribution"]), t=0, degree=2)
     T = parameters["temperature"]
     temp = Expression(sp.printing.ccode(T['value']), t=0, degree=2)
     # BCs
@@ -710,7 +677,7 @@ def run(parameters):
     F, expressions_F = formulation(traps, extrinsic_traps, solutions,
                                    testfunctions_concentrations,
                                    previous_solutions_concentrations, dt, dx,
-                                   materials, temp, flux_, f)
+                                   materials, temp, flux_)
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations, expressions_form = formulation_extrinsic_traps(
