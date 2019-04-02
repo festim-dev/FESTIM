@@ -134,22 +134,19 @@ def test_apply_boundary_conditions():
         if fenics.near(x0.x(), 1):
             surface_markers[f] = 2
 
-    boundary_conditions = {
-        "dc": [
-            {
-                "surface": [1],
-                "value": 0,
-                "component": 0
-                },
-            {
-                "surface": [2],
-                "value": 0
-                }
-        ],
-        "solubility": [  # "surface", "S_0", "E_S", "pressure", "density"
-            ]
-            }
-
+    boundary_conditions = [
+        {
+            "surface": [1],
+            "value": 0,
+            "component": 0,
+            "type": "dc"
+        },
+        {
+            "surface": [2],
+            "value": 0,
+            "type": "dc"
+        }
+        ]
     FESTIM.apply_boundary_conditions(
         boundary_conditions, V, surface_markers, 1, 300)
 
@@ -575,22 +572,20 @@ def test_run_MMS():
                     "refinements": [
                     ],
                 },
-            "boundary_conditions": {
-                "dc": [
+            "boundary_conditions": [
                     {
                         "surface": [1, 2],
                         "value": u,
-                        "component": 0
+                        "component": 0,
+                        "type": "dc"
                     },
                     {
                         "surface": [1, 2],
                         "value": v,
-                        "component": 1
+                        "component": 1,
+                        "type": "dc"
                     }
                 ],
-                "solubility": [  # "surface", "S_0", "E_S", "pressure", "density"
-                ]
-                },
             "temperature": {
                     'type': "expression",
                     'value': T
