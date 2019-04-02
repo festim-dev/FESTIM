@@ -153,6 +153,10 @@ def define_xdmf_files(exports):
     if len(exports['xdmf']['functions']) != len(exports['xdmf']['labels']):
         raise NameError("Number of functions to be exported "
                         "doesn't match number of labels in xdmf exports")
+    if exports["xdmf"]["folder"] == "":
+        raise ValueError("folder value cannot be an empty string")
+    if type(exports["xdmf"]["folder"]) is not str:
+        raise TypeError("folder value must be of type str")
     files = list()
     for i in range(0, len(exports["xdmf"]["functions"])):
         u_file = XDMFFile(exports["xdmf"]["folder"]+'/' +
@@ -185,7 +189,13 @@ def export_xdmf(res, exports, files, t):
             nb = int(exports["xdmf"]["functions"][i])
             solution = res[nb]
         except:
-            solution = solution_dict[exports["xdmf"]["functions"][i]]
+            try:
+                solution = solution_dict[exports["xdmf"]["functions"][i]]
+            except:
+                raise KeyError(
+                    "The key " + exports["xdmf"]["functions"][i] +
+                    " is unknown.")
+
         solution.rename(label, "label")
         files[i].write(solution, t)
     return
@@ -320,6 +330,8 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     - F : variational formulation
     - expressions: list, contains Expression() to be updated
     '''
+    k_B = 8.6e-5  # Boltzmann constant
+    v_0 = 1e13  # frequency factor s-1
     expressions = []
     F = 0
     F += ((solutions[0] - previous_solutions[0]) / dt)*testfunctions[0]*dx
@@ -541,7 +553,7 @@ def apply_boundary_conditions(boundary_conditions, V,
     '''
     Create a list of DirichletBCs.
     Arguments:
-    - boundary_conditions: dict, parameters for bcs
+    - boundary_conditions: list, parameters for bcs
     - V: FunctionSpace,
     - surface_marker: MeshFunction, contains the markers for
     the different surfaces
@@ -554,37 +566,38 @@ def apply_boundary_conditions(boundary_conditions, V,
     '''
     bcs = list()
     expressions = list()
-    a = Function(V)
-    dim = len(split(a))  # number of components in V
-    for type_BC in boundary_conditions:
-        for BC in boundary_conditions[type_BC]:
-            if type_BC == "dc":
-                value_BC = sp.printing.ccode(BC['value'])
-                value_BC = Expression(value_BC, t=0, degree=4)
-            elif type_BC == "solubility":
-                pressure = BC["pressure"]
-                value_BC = solubility_BC(
+    for BC in boundary_conditions:
+        try:
+            type_BC = BC["type"]
+        except:
+            raise KeyError("Missing boundary condition type key")
+        if type_BC == "dc":
+            value_BC = sp.printing.ccode(BC['value'])
+            value_BC = Expression(value_BC, t=0, degree=4)
+        elif type_BC == "solubility":
+            pressure = BC["pressure"]
+            value_BC = solubility_BC(
                     pressure, BC["density"]*solubility(
                         BC["S_0"], BC["E_S"],
                         k_B, temp(0)))
-                value_BC = Expression(sp.printing.ccode(value_BC), t=0,
+            value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                       degree=2)
-            expressions.append(value_BC)
-            try:
-                # Fetch the component of the BC
-                component = BC["component"]
-            except:
-                # By default, component is solute (ie. 0)
-                component = 0
-            if type(BC['surface']) is not list:
-                surfaces = [BC['surface']]
-            else:
-                surfaces = BC['surface']
-            if dim == 1:
-                funspace = V
-            else:  # if only one component, use subspace
-                funspace = V.sub(component)
-            for surface in surfaces:
+        expressions.append(value_BC)
+        try:
+            # Fetch the component of the BC
+            component = BC["component"]
+        except:
+            # By default, component is solute (ie. 0)
+            component = 0
+        if type(BC['surface']) is not list:
+            surfaces = [BC['surface']]
+        else:
+            surfaces = BC['surface']
+        if V.num_sub_spaces() == 0:
+            funspace = V
+        else:  # if only one component, use subspace
+            funspace = V.sub(component)
+        for surface in surfaces:
                 bci = DirichletBC(funspace, value_BC,
                                   surface_marker, surface)
                 bcs.append(bci)
@@ -635,10 +648,6 @@ def run(parameters):
     # Declaration of variables
     output = dict()  # Final output
 
-    global v_0
-    v_0 = 1e13  # frequency factor s-1
-    global k_B
-    k_B = 8.6e-5  # Boltzmann constant
     solving_parameters = parameters["solving_parameters"]
     Time = solving_parameters["final_time"]
     num_steps = solving_parameters["num_steps"]
