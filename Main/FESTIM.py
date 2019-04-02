@@ -566,8 +566,6 @@ def apply_boundary_conditions(boundary_conditions, V,
     '''
     bcs = list()
     expressions = list()
-    a = Function(V)
-    dim = len(split(a))  # number of components in V
     for type_BC in boundary_conditions:
         for BC in boundary_conditions[type_BC]:
             if type_BC == "dc":
@@ -592,7 +590,7 @@ def apply_boundary_conditions(boundary_conditions, V,
                 surfaces = [BC['surface']]
             else:
                 surfaces = BC['surface']
-            if dim == 1:
+            if V.num_sub_spaces() == 1:
                 funspace = V
             else:  # if only one component, use subspace
                 funspace = V.sub(component)
