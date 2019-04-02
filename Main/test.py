@@ -140,15 +140,13 @@ def test_formulation_1_trap_1_material():
     extrinsic_traps = []
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
-    u, u_2 = fenics.Function(V), fenics.Function(V)
-    u_n, u_n_2 = fenics.Function(V), fenics.Function(V)
-    v, v_2 = fenics.TestFunction(V), fenics.TestFunction(V)
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
 
-    solutions, solutions_2 = list(fenics.split(u)), list(fenics.split(u_2))
-    previous_solutions, previous_solutions_2 = \
-        list(fenics.split(u_n)), list(fenics.split(u_n_2))
-    testfunctions, testfunctions_2 = \
-        list(fenics.split(v)), list(fenics.split(v_2))
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
 
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
@@ -157,8 +155,8 @@ def test_formulation_1_trap_1_material():
     f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
-        traps, extrinsic_traps, solutions_2, testfunctions_2,
-        previous_solutions_2, dt, dx, materials, temp, flux_,
+        traps, extrinsic_traps, solutions, testfunctions,
+        previous_solutions, dt, dx, materials, temp, flux_,
         f)
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
@@ -176,12 +174,7 @@ def test_formulation_1_trap_1_material():
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[0]*dx
 
-    fenics.solve(expected_form == 0, u, [])
-    fenics.solve(F == 0, u_2, [])
-    # Calculates the L2 norm of the error
-    error = fenics.errornorm(u, u_2, 'L2')  
-
-    assert error == 0
+    assert expected_form.equals(F) is True
 
 
 def test_formulation_2_traps_1_material():
@@ -215,15 +208,13 @@ def test_formulation_2_traps_1_material():
     # Prepare
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, len(traps)+1)
-    u, u_2 = fenics.Function(V), fenics.Function(V)
-    u_n, u_n_2 = fenics.Function(V), fenics.Function(V)
-    v, v_2 = fenics.TestFunction(V), fenics.TestFunction(V)
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
 
-    solutions, solutions_2 = list(fenics.split(u)), list(fenics.split(u_2))
-    previous_solutions, previous_solutions_2 = \
-        list(fenics.split(u_n)), list(fenics.split(u_n_2))
-    testfunctions, testfunctions_2 = \
-        list(fenics.split(v)), list(fenics.split(v_2))
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
 
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
@@ -232,8 +223,8 @@ def test_formulation_2_traps_1_material():
     f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
-        traps, extrinsic_traps, solutions_2, testfunctions_2,
-        previous_solutions_2, dt, dx, materials, temp, flux_,
+        traps, extrinsic_traps, solutions, testfunctions,
+        previous_solutions, dt, dx, materials, temp, flux_,
         f)
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
@@ -272,13 +263,7 @@ def test_formulation_2_traps_1_material():
     expected_form += ((solutions[2] - previous_solutions[2]) / dt) * \
         testfunctions[0]*dx
 
-    # Solve both formulations
-    fenics.solve(expected_form == 0, u, [])
-    fenics.solve(F == 0, u_2, [])
-    # Calculates the L2 norm of the error
-    error = fenics.errornorm(u, u_2, 'L2')  
-
-    assert error == 0
+    assert expected_form.equals(F) is True
 
 
 def test_formulation_1_trap_2_materials():
@@ -324,24 +309,23 @@ def test_formulation_1_trap_2_materials():
     mat1.mark(mf, 1)
     mat2.mark(mf, 2)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
-    u, u_2 = fenics.Function(V), fenics.Function(V)
-    u_n, u_n_2 = fenics.Function(V), fenics.Function(V)
-    v, v_2 = fenics.TestFunction(V), fenics.TestFunction(V)
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
 
-    solutions, solutions_2 = list(fenics.split(u)), list(fenics.split(u_2))
-    previous_solutions, previous_solutions_2 = \
-        list(fenics.split(u_n)), list(fenics.split(u_n_2))
-    testfunctions, testfunctions_2 = \
-        list(fenics.split(v)), list(fenics.split(v_2))
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
 
+    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
     f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
-        traps, extrinsic_traps, solutions_2, testfunctions_2,
-        previous_solutions_2, dt, dx, materials, temp, flux_,
+        traps, extrinsic_traps, solutions, testfunctions,
+        previous_solutions, dt, dx, materials, temp, flux_,
         f)
 
     # Transient sol
@@ -378,12 +362,7 @@ def test_formulation_1_trap_2_materials():
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[0]*dx
 
-    fenics.solve(expected_form == 0, u, [])
-    fenics.solve(F == 0, u_2, [])
-    # Calculates the L2 norm of the error
-    error = fenics.errornorm(u, u_2, 'L2')  
-
-    assert error == 0
+    assert expected_form.equals(F) is True
 
 
 def test_formulation_1_extrap_1_material():
@@ -410,17 +389,14 @@ def test_formulation_1_extrap_1_material():
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     W = fenics.FunctionSpace(mesh, 'P', 1)
-    u, u_2 = fenics.Function(V), fenics.Function(V)
-    u_n, u_n_2 = fenics.Function(V), fenics.Function(V)
-    v, v_2 = fenics.TestFunction(V), fenics.TestFunction(V)
-    n, n_2 = fenics.interpolate(fenics.Expression('1', degree=0), W), \
-        fenics.interpolate(fenics.Expression('1', degree=0), W)
-    solutions, solutions_2 = list(fenics.split(u)), list(fenics.split(u_2))
-    previous_solutions, previous_solutions_2 = \
-        list(fenics.split(u_n)), list(fenics.split(u_n_2))
-    testfunctions, testfunctions_2 = \
-        list(fenics.split(v)), list(fenics.split(v_2))
-    extrinsic_traps, extrinsic_traps_2 = [n], [n_2]
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
+    n = fenics.interpolate(fenics.Expression('1', degree=0), W)
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
+    extrinsic_traps = [n]
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
@@ -428,8 +404,8 @@ def test_formulation_1_extrap_1_material():
     f = fenics.Expression("1", degree=0)
 
     F, expressions = FESTIM.formulation(
-        traps, extrinsic_traps_2, solutions_2, testfunctions_2,
-        previous_solutions_2, dt, dx, materials, temp, flux_,
+        traps, extrinsic_traps, solutions, testfunctions,
+        previous_solutions, dt, dx, materials, temp, flux_,
         f)
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
@@ -447,12 +423,7 @@ def test_formulation_1_extrap_1_material():
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[0]*dx
 
-    fenics.solve(expected_form == 0, u, [])
-    fenics.solve(F == 0, u_2, [])
-    # Calculates the L2 norm of the error
-    error = fenics.errornorm(u, u_2, 'L2')
-
-    assert error == 0
+    assert expected_form.equals(F) is True
 
 
 def test_run_MMS():
