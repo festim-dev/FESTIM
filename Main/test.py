@@ -117,6 +117,53 @@ def test_export_xdmf():
             exports, files, 20)
 
 
+def test_formulation_no_trap_1_material():
+    '''
+    Test function formulation() with 1 intrinsic trap
+    and 1 material
+    '''
+    dt = 1
+    traps = []
+    materials = [{
+            "alpha": 1,
+            "beta": 2,
+            "density": 3,
+            "borders": [0, 1],
+            "E_diff": 4,
+            "D_0": 5,
+            "id": 1
+            }]
+    extrinsic_traps = []
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 1)
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
+
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
+
+    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
+    dx = fenics.dx(subdomain_data=mf)
+    temp = fenics.Expression("300", degree=0)
+    flux_ = fenics.Expression("1", degree=0)
+    f = fenics.Expression("1", degree=0)
+
+    F, expressions = FESTIM.formulation(
+        traps, extrinsic_traps, solutions, testfunctions,
+        previous_solutions, dt, dx, materials, temp, flux_,
+        f)
+    expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
+        testfunctions[0]*dx
+    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
+        fenics.dot(
+            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += -flux_*f*testfunctions[0]*dx
+
+    assert expected_form.equals(F) is True
+
+
 def test_formulation_1_trap_1_material():
     '''
     Test function formulation() with 1 intrinsic trap
