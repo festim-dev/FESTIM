@@ -599,8 +599,7 @@ def test_run_MMS():
                     'value': T
                 },
             "source_term": {
-                'flux': f,
-                'distribution': 1
+                'flux': f
                 },
             "solving_parameters": {
                 "final_time": final_time,
