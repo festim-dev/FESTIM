@@ -8,36 +8,6 @@ import os
 import argparse
 
 
-def save_as():
-    '''
-    - parameters : none
-    - returns filedescription : string of the saving path
-    '''
-    valid = False
-    while valid is False:
-        print("Save as (.csv):")
-        filedesorption = input()
-        if filedesorption == '':
-            filedesorption = "desorption.csv"
-        if filedesorption.endswith('.csv'):
-            valid = True
-            try:
-                with open(filedesorption, 'r') as f:
-                    print('This file already exists.'
-                          ' Do you want to replace it ? (y/n)')
-                choice = input()
-                if choice == "n" or choice == "N":
-                    valid = False
-                elif choice != "y" and choice != "Y":
-                    valid = False
-            except:
-                valid = True
-        else:
-            print("Please enter a file ending with the extension .csv")
-            valid = False
-    return filedesorption
-
-
 def export_TDS(filedesorption, desorption):
     '''
     - filedesorption : string, the path of the csv file.
