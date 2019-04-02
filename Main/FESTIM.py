@@ -8,29 +8,29 @@ import os
 import argparse
 
 
-def export_TDS(filedesorption, desorption):
-    '''
-    - filedesorption : string, the path of the csv file.
-    - desorption : list, values to be exported.
-    '''
-    busy = True
-    if '/' in filedesorption:
-        # Creates the directory if necessary
-        os.makedirs(os.path.dirname(filedesorption), exist_ok=True)
-    while busy is True:
-        try:
-            with open(filedesorption, "w+") as f:
-                busy = False
-                writer = csv.writer(f, lineterminator='\n')
-                writer.writerows(['dTt'])
-                for val in desorption:
-                    writer.writerows([val])
-        except:
-            print("The file " + filedesorption +
-                  " might currently be busy."
-                  "Please close the application then press any key")
-            input()
-    return
+def tds_to_csv(parameters, desorption):
+    if "TDS" in parameters["exports"]:
+        p = parameters["exports"]["TDS"]
+        if "file" in p.keys():
+            file_tds = ''
+            if "folder" in p.keys():
+                file_tds += p["folder"] + '/'
+            file_tds += p["file"] + ".csv"
+            os.makedirs(os.path.dirname(file_tds), exist_ok=True)
+        busy = True
+        while busy is True:
+            try:
+                with open(file_tds, "w+") as f:
+                    busy = False
+                    writer = csv.writer(f, lineterminator='\n')
+                    writer.writerows(['dTt'])
+                    for val in desorption:
+                        writer.writerows([val])
+            except:
+                print("The file " + file_tds +
+                      " might currently be busy."
+                      "Please close the application then press any key")
+                input()
 
 
 def export_txt(filename, function, W):
@@ -719,7 +719,7 @@ def run(parameters):
 
     #  Time-stepping
     print('Time stepping...')
-    total_n = 0
+    inventory_n = 0
     desorption = list()
     export_total = list()
     level = 30  # 30 for WARNING 20 for INFO
@@ -756,9 +756,9 @@ def run(parameters):
                     exports, files, t)
         dt = export_profiles(res, exports, t, dt, W)
 
-        total = assemble(retention*dx)
-        desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
-        total_n = total
+        inventory = assemble(retention*dx)
+        desorption_rate = [-(inventory-inventory_n)/float(dt), temp(size/2), t]
+        inventory_n = inventory
         if t > parameters["exports"]["TDS"]["TDS_time"]:
             desorption.append(desorption_rate)
 
@@ -774,15 +774,7 @@ def run(parameters):
         pass
 
     # Export TDS
-    if "TDS" in parameters["exports"]:
-        p = parameters["exports"]["TDS"]
-        if "file" in p.keys():
-            file_tds = ''
-            if "folder" in p.keys():
-                file_tds += p["folder"] + '/'
-            file_tds += p["file"] + ".csv"
-            export_TDS(file_tds, desorption)
-
+    tds_to_csv(parameters, desorption)
     # Store data in output
     output["TDS"] = desorption
     output["error"] = error
