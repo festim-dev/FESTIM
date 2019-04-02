@@ -226,8 +226,10 @@ def create_function_spaces(mesh, nb_traps, element1='P', order1=1,
     - element2='P': string, the element of dynamic trap densities
     - order1=2: int, the order of the element of dynamic trap densities
     '''
-
-    V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
+    if nb_traps == 0:
+        V = FunctionSpace(mesh, element1, order1)
+    else:
+        V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
     W = FunctionSpace(mesh, element2, degree2)
     return V, W
 
@@ -588,7 +590,7 @@ def apply_boundary_conditions(boundary_conditions, V,
                 surfaces = [BC['surface']]
             else:
                 surfaces = BC['surface']
-            if V.num_sub_spaces() == 1:
+            if V.num_sub_spaces() == 0:
                 funspace = V
             else:  # if only one component, use subspace
                 funspace = V.sub(component)
