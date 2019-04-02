@@ -189,7 +189,13 @@ def export_xdmf(res, exports, files, t):
             nb = int(exports["xdmf"]["functions"][i])
             solution = res[nb]
         except:
-            solution = solution_dict[exports["xdmf"]["functions"][i]]
+            try:
+                solution = solution_dict[exports["xdmf"]["functions"][i]]
+            except:
+                raise KeyError(
+                    "The key " + exports["xdmf"]["functions"][i] +
+                    " is unknown.")
+
         solution.rename(label, "label")
         files[i].write(solution, t)
     return
