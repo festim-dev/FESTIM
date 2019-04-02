@@ -652,10 +652,9 @@ def compute_retention(res, W):
 
 def run(parameters):
     # Declaration of variables
-    output = dict()  # Final output
 
-    size = parameters["mesh_parameters"]["size"]
     # Mesh and refinement
+    size = parameters["mesh_parameters"]["size"]
     mesh = mesh_and_refine(parameters["mesh_parameters"])
     # Define function space for system of concentrations and properties
     V, W = create_function_spaces(mesh, len(parameters["traps"]))
@@ -770,6 +769,7 @@ def run(parameters):
     # Export TDS
     tds_to_csv(parameters, desorption)
     # Store data in output
+    output = dict()  # Final output
     output["TDS"] = desorption
     output["error"] = error
     output["parameters"] = parameters
