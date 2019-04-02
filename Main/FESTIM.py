@@ -204,7 +204,7 @@ def create_function_spaces(mesh, nb_traps, element1='P', order1=1,
     return V, W
 
 
-def define_test_functions(V, W, number_int_traps, number_ext_traps):
+def define_test_functions(V, W, number_ext_traps):
     '''
     Returns the testfunctions for formulation
     Arguments:
@@ -679,7 +679,7 @@ def run(parameters):
     u, solutions = define_functions(V)
     extrinsic_traps = define_functions_extrinsic_traps(W, parameters["traps"])
     testfunctions_concentrations, testfunctions_traps = \
-        define_test_functions(V, W, 6, len(extrinsic_traps))
+        define_test_functions(V, W, len(extrinsic_traps))
     # Initialising the solutions
     try:
         initial_conditions = parameters["initial_conditions"]
