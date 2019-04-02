@@ -654,27 +654,20 @@ def run(parameters):
     # Declaration of variables
     output = dict()  # Final output
 
-    solving_parameters = parameters["solving_parameters"]
-    Time = solving_parameters["final_time"]
-    num_steps = solving_parameters["num_steps"]
-    dT = Time / num_steps
-    dt = Constant(dT)  # time step size
-
     size = parameters["mesh_parameters"]["size"]
     # Mesh and refinement
     materials = parameters["materials"]
     mesh = mesh_and_refine(parameters["mesh_parameters"])
-    traps = parameters["traps"]
     # Define function space for system of concentrations and properties
-    V, W = create_function_spaces(mesh, len(traps))
+    V, W = create_function_spaces(mesh, len(parameters["traps"]))
 
     # Define and mark subdomains
     volume_markers, dx, surface_markers, ds = subdomains(mesh, materials, size)
 
     # Define expressions used in variational forms
     print('Defining source terms')
-    source_term = parameters["source_term"]
-    flux_ = Expression(sp.printing.ccode(source_term["flux"]), t=0, degree=2)
+    flux_ = Expression(
+        sp.printing.ccode(parameters["source_term"]["flux"]), t=0, degree=2)
     T = parameters["temperature"]
     temp = Expression(sp.printing.ccode(T['value']), t=0, degree=2)
     # BCs
@@ -686,7 +679,7 @@ def run(parameters):
     # Define functions
 
     u, solutions = define_functions(V)
-    extrinsic_traps = define_functions_extrinsic_traps(W, traps)
+    extrinsic_traps = define_functions_extrinsic_traps(W, parameters["traps"])
     testfunctions_concentrations, testfunctions_traps = \
         define_test_functions(V, W, 6, len(extrinsic_traps))
     # Initialising the solutions
@@ -701,16 +694,18 @@ def run(parameters):
 
     print('Defining variational problem')
     # Define variational problem1
-
-    F, expressions_F = formulation(traps, extrinsic_traps, solutions,
-                                   testfunctions_concentrations,
+    Time = parameters["solving_parameters"]["final_time"]
+    num_steps = parameters["solving_parameters"]["num_steps"]
+    dt = Constant(Time / num_steps)  # time step size
+    F, expressions_F = formulation(parameters["traps"], extrinsic_traps,
+                                   solutions, testfunctions_concentrations,
                                    previous_solutions_concentrations, dt, dx,
                                    materials, temp, flux_)
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations, expressions_form = formulation_extrinsic_traps(
-        traps, extrinsic_traps, testfunctions_traps, previous_solutions_traps,
-        dt)
+        parameters["traps"], extrinsic_traps, testfunctions_traps,
+        previous_solutions_traps, dt)
 
     # Solution files
     exports = parameters["exports"]
@@ -743,7 +738,7 @@ def run(parameters):
               end="\r")
 
         # Solve main problem
-        solve_u(F, u, bcs, t, dt, solving_parameters)
+        solve_u(F, u, bcs, t, dt, parameters["solving_parameters"])
         # Solve extrinsic traps formulation
         for j in range(len(extrinsic_formulations)):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
