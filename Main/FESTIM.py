@@ -656,13 +656,12 @@ def run(parameters):
 
     size = parameters["mesh_parameters"]["size"]
     # Mesh and refinement
-    materials = parameters["materials"]
     mesh = mesh_and_refine(parameters["mesh_parameters"])
     # Define function space for system of concentrations and properties
     V, W = create_function_spaces(mesh, len(parameters["traps"]))
 
     # Define and mark subdomains
-    volume_markers, dx, surface_markers, ds = subdomains(mesh, materials, size)
+    volume_markers, dx, surface_markers, ds = subdomains(mesh, parameters["materials"], size)
 
     # Define expressions used in variational forms
     print('Defining source terms')
@@ -700,7 +699,7 @@ def run(parameters):
     F, expressions_F = formulation(parameters["traps"], extrinsic_traps,
                                    solutions, testfunctions_concentrations,
                                    previous_solutions_concentrations, dt, dx,
-                                   materials, temp, flux_)
+                                   parameters["materials"], temp, flux_)
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations, expressions_form = formulation_extrinsic_traps(
