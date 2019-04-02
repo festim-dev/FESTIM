@@ -50,36 +50,71 @@ def test_mesh_and_refine_meets_refinement_conditions():
 
 def test_define_xdmf_files():
     folder = "Solution"
-    expected = [FESTIM.XDMFFile(folder + "/" + "a.xdmf"),
-                FESTIM.XDMFFile(folder + "/" + "b.xdmf")]
+    expected = [fenics.XDMFFile(folder + "/" + "a.xdmf"),
+                fenics.XDMFFile(folder + "/" + "b.xdmf")]
     exports = {
         "xdmf": {
             "functions": ['solute', '1'],
-            "labels":  ['solute', 'trap_1'],
+            "labels":  ['a', 'b'],
             "folder": folder
         }
         }
     assert len(expected) == len(FESTIM.define_xdmf_files(exports))
+
+    # Test an int type for folder
     with pytest.raises(TypeError, match=r'str'):
         folder = 123
         exports = {
             "xdmf": {
                 "functions": ['solute', '1'],
-                "labels":  ['solute', 'trap_1'],
+                "labels":  ['a', 'b'],
                 "folder": folder
             }
             }
         FESTIM.define_xdmf_files(exports)
+
+    # Test an empty string for folder
     with pytest.raises(ValueError, match=r'empty string'):
         folder = ''
         exports = {
             "xdmf": {
                 "functions": ['solute', '1'],
-                "labels":  ['solute', 'trap_1'],
+                "labels":  ['a', 'b'],
                 "folder": folder
             }
             }
         FESTIM.define_xdmf_files(exports)
+
+
+def test_export_xdmf():
+    mesh = fenics.UnitSquareMesh(3, 3)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    folder = "Solution"
+    exports = {
+        "xdmf": {
+            "functions": ['solute', 'retention'],
+            "labels":  ['a', 'b'],
+            "folder": folder
+        }
+        }
+    files = [fenics.XDMFFile(folder + "/" + "a.xdmf"),
+             fenics.XDMFFile(folder + "/" + "b.xdmf")]
+    assert FESTIM.export_xdmf(
+        [fenics.Function(V), fenics.Function(V)],
+        exports, files, 20) is None
+
+    exports["xdmf"]["functions"] = ['solute', 'blabla']
+
+    with pytest.raises(KeyError, match=r'blabla'):
+        FESTIM.export_xdmf(
+            [fenics.Function(V), fenics.Function(V)],
+            exports, files, 20)
+
+    exports["xdmf"]["functions"] = ['solute', '13']
+    with pytest.raises(KeyError, match=r'13'):
+        FESTIM.export_xdmf(
+            [fenics.Function(V), fenics.Function(V)],
+            exports, files, 20)
 
 
 def test_formulation_1_trap_1_material():
