@@ -584,8 +584,8 @@ def apply_boundary_conditions(boundary_conditions, V,
                                       degree=2)
         expressions.append(value_BC)
         try:
-                # Fetch the component of the BC
-                component = BC["component"]
+            # Fetch the component of the BC
+            component = BC["component"]
         except:
             # By default, component is solute (ie. 0)
             component = 0
