@@ -117,6 +117,43 @@ def test_export_xdmf():
             exports, files, 20)
 
 
+def test_apply_boundary_conditions():
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+
+    surface_markers = fenics.MeshFunction(
+        "size_t", mesh, mesh.topology().dim()-1, 0)
+    surface_markers.set_all(0)
+    i = 0
+    for f in fenics.facets(mesh):
+        i += 1
+        x0 = f.midpoint()
+        surface_markers[f] = 0
+        if fenics.near(x0.x(), 0):
+            surface_markers[f] = 1
+        if fenics.near(x0.x(), 1):
+            surface_markers[f] = 2
+
+    boundary_conditions = {
+        "dc": [
+            {
+                "surface": [1],
+                "value": 0,
+                "component": 0
+                },
+            {
+                "surface": [2],
+                "value": 0
+                }
+        ],
+        "solubility": [  # "surface", "S_0", "E_S", "pressure", "density"
+            ]
+            }
+
+    FESTIM.apply_boundary_conditions(
+        boundary_conditions, V, surface_markers, 1, 300)
+
+
 def test_formulation_no_trap_1_material():
     '''
     Test function formulation() with 1 intrinsic trap
