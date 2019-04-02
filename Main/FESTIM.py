@@ -553,7 +553,7 @@ def apply_boundary_conditions(boundary_conditions, V,
     '''
     Create a list of DirichletBCs.
     Arguments:
-    - boundary_conditions: dict, parameters for bcs
+    - boundary_conditions: list, parameters for bcs
     - V: FunctionSpace,
     - surface_marker: MeshFunction, contains the markers for
     the different surfaces
@@ -566,35 +566,38 @@ def apply_boundary_conditions(boundary_conditions, V,
     '''
     bcs = list()
     expressions = list()
-    for type_BC in boundary_conditions:
-        for BC in boundary_conditions[type_BC]:
-            if type_BC == "dc":
-                value_BC = sp.printing.ccode(BC['value'])
-                value_BC = Expression(value_BC, t=0, degree=4)
-            elif type_BC == "solubility":
-                pressure = BC["pressure"]
-                value_BC = solubility_BC(
+    for BC in boundary_conditions:
+        try:
+            type_BC = BC["type"]
+        except:
+            raise KeyError("Missing boundary condition type key")
+        if type_BC == "dc":
+            value_BC = sp.printing.ccode(BC['value'])
+            value_BC = Expression(value_BC, t=0, degree=4)
+        elif type_BC == "solubility":
+            pressure = BC["pressure"]
+            value_BC = solubility_BC(
                     pressure, BC["density"]*solubility(
                         BC["S_0"], BC["E_S"],
                         k_B, temp(0)))
-                value_BC = Expression(sp.printing.ccode(value_BC), t=0,
+            value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                       degree=2)
-            expressions.append(value_BC)
-            try:
+        expressions.append(value_BC)
+        try:
                 # Fetch the component of the BC
                 component = BC["component"]
-            except:
-                # By default, component is solute (ie. 0)
-                component = 0
-            if type(BC['surface']) is not list:
-                surfaces = [BC['surface']]
-            else:
-                surfaces = BC['surface']
-            if V.num_sub_spaces() == 0:
-                funspace = V
-            else:  # if only one component, use subspace
-                funspace = V.sub(component)
-            for surface in surfaces:
+        except:
+            # By default, component is solute (ie. 0)
+            component = 0
+        if type(BC['surface']) is not list:
+            surfaces = [BC['surface']]
+        else:
+            surfaces = BC['surface']
+        if V.num_sub_spaces() == 0:
+            funspace = V
+        else:  # if only one component, use subspace
+            funspace = V.sub(component)
+        for surface in surfaces:
                 bci = DirichletBC(funspace, value_BC,
                                   surface_marker, surface)
                 bcs.append(bci)
