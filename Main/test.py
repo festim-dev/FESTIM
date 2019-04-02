@@ -143,12 +143,20 @@ def test_apply_boundary_conditions():
         },
         {
             "surface": [2],
-            "value": 0,
+            "value": 1,
             "type": "dc"
         }
         ]
-    FESTIM.apply_boundary_conditions(
+    bcs, expressions = FESTIM.apply_boundary_conditions(
         boundary_conditions, V, surface_markers, 1, 300)
+    assert len(bcs) == 2
+    assert len(expressions) == 2
+
+    u = fenics.Function(V)
+    for bc in bcs:
+        bc.apply(u.vector())
+    assert abs(u(0)-0) < 1e-15
+    assert abs(u(1)-1) < 1e-15
 
 
 def test_formulation_no_trap_1_material():
