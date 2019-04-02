@@ -48,6 +48,40 @@ def test_mesh_and_refine_meets_refinement_conditions():
         assert nb_cell_2 >= refinements[i][0][0]
 
 
+def test_define_xdmf_files():
+    folder = "Solution"
+    expected = [FESTIM.XDMFFile(folder + "/" + "a.xdmf"),
+                FESTIM.XDMFFile(folder + "/" + "b.xdmf")]
+    exports = {
+        "xdmf": {
+            "functions": ['solute', '1'],
+            "labels":  ['solute', 'trap_1'],
+            "folder": folder
+        }
+        }
+    assert len(expected) == len(FESTIM.define_xdmf_files(exports))
+    with pytest.raises(TypeError, match=r'str'):
+        folder = 123
+        exports = {
+            "xdmf": {
+                "functions": ['solute', '1'],
+                "labels":  ['solute', 'trap_1'],
+                "folder": folder
+            }
+            }
+        FESTIM.define_xdmf_files(exports)
+    with pytest.raises(ValueError, match=r'empty string'):
+        folder = ''
+        exports = {
+            "xdmf": {
+                "functions": ['solute', '1'],
+                "labels":  ['solute', 'trap_1'],
+                "folder": folder
+            }
+            }
+        FESTIM.define_xdmf_files(exports)
+
+
 def test_formulation_1_trap_1_material():
     '''
     Test function formulation() with 1 intrinsic trap
