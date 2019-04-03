@@ -505,6 +505,111 @@ def test_formulation_1_extrap_1_material():
     assert expected_form.equals(F) is True
 
 
+def test_run_temperature():
+    '''
+    Check that the temperature module works well in 1D stationary
+    '''
+    u = 1 + 2*FESTIM.x**2
+    size = 1
+    parameters = {
+        "materials": [
+            {
+                "thermal_cond": 1,
+                "alpha": 1.1e-10,
+                "beta": 6*6.3e28,
+                "density": 6.3e28,
+                "borders": [0, size],
+                "E_diff": 0.39,
+                "D_0": 4.1e-7,
+                "id": 1
+                }
+                ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": size,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+                    {
+                        "surface": [1],
+                        "value": 1,
+                        "component": 0,
+                        "type": "dc"
+                    }
+            ],
+        "temperature": {
+            "type": "solve_stationary",
+            "boundary_conditions": [
+                {
+                    "type": "dirichlet",
+                    "value": u,
+                    "surface": [1, 2]
+                }
+                #{
+                #    "type": "neumann",
+                #    "value": 10e6,
+                #    "surface": 2
+                #},
+                #{
+                #    "type": "convective_flux",
+                #    "h_coeff": 70000,
+                #    "T_ext": 273.15+75,
+                #    "surface": 1
+                #}
+                ],
+            "source_term": [
+                {
+                    "value": -4,
+                    "volume": 1
+                }
+            ],
+            "initial_condition": u
+        },
+        "source_term": {
+            'flux': 0
+            },
+        "solving_parameters": {
+            "final_time": 30,
+            "num_steps": 60,
+            "adaptative_time_step": {
+                "stepsize_change_ratio": 1,
+                "t_stop": 40,
+                "stepsize_stop_max": 0.5,
+                "dt_min": 1e-5
+                },
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_it": 50,
+            }
+            },
+        "exports": {
+            "txt": {
+                "functions": ['retention'],
+                "times": [100],
+                "labels": ['retention']
+            },
+            "xdmf": {
+                "functions": [],
+                "labels":  [],
+                "folder": "Coucou"
+            },
+            "TDS": {
+                "file": "desorption",
+                "TDS_time": 450
+                }
+            },
+
+    }
+    output = FESTIM.run(parameters)
+    # temp at the middle
+    T_computed = output["temperature"][1][1]
+    assert abs(T_computed - (1+2*(size/2)**2)) < 1e-9
+
+
 def test_run_MMS():
     '''
     Test function run() for several refinements
