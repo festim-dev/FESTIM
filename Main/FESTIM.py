@@ -402,7 +402,7 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
 
 
 def define_variational_problem_heat_transfers(
-        parameters, functions, measurements, dt=None):
+        parameters, functions, measurements, dt):
     '''
     Parameters:
     - parameters: dict, contains materials and temperature parameters
@@ -781,6 +781,11 @@ def run(parameters):
         T = Function(W, name="T")
         T_n = Function(W)
         vT = TestFunction(W)
+        if parameters["temperature"]["type"] == "solve_transient":
+            T_n = sp.printing.ccode(
+                parameters["temperature"]["initial_condition"])
+            T_n = Expression(T_n, degree=2, t=0)
+            T_n = interpolate(T_n, W)
         bcs_T, expressions_bcs_T = \
             define_dirichlet_bcs_T(parameters, W, surface_markers)
         FT, expressions_FT = \
@@ -789,11 +794,6 @@ def run(parameters):
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
-        elif parameters["temperature"]["type"] == "solve_transient":
-            T_n = sp.printing.ccode(
-                parameters["temperature"]["initial_condition"])
-            T_n = Expression(T_n, degree=2, t=0)
-            T_n = interpolate(T_n, W)
 
     # BCs
     print('Defining boundary conditions')
@@ -816,7 +816,6 @@ def run(parameters):
         initialising_solutions(V, initial_conditions)
     previous_solutions_traps = \
         initialising_extrinsic_traps(W, len(extrinsic_traps))
-
     print('Defining variational problem')
     # Define variational problem1
 
@@ -846,7 +845,7 @@ def run(parameters):
     temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
     while t < Time:
-        # Update current time
+        ## Update current time
         t += float(dt)
         expressions = update_expressions(expressions, t)
         expressions_form = update_expressions(expressions_form, t)
@@ -868,10 +867,15 @@ def run(parameters):
             JT = derivative(FT, T, dT)  # Define the Jacobian
             problem = NonlinearVariationalProblem(FT, T, bcs_T, JT)
             solver = NonlinearVariationalSolver(problem)
-            solver.parameters["newton_solver"]["absolute_tolerance"] = 10e-1
+            solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-3
             solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
             solver.solve()
             T_n.assign(T)
+            #expressions_bcs_T = update_expressions(expressions_bcs_T, t)
+            #expressions_FT = update_expressions(expressions_FT, t)
+            #solve(FT == 0, T, bcs_T)
+            #T_n.assign(T)
+            #f.write(T, t)
         # Solve main problem
         solve_u(F, u, bcs, t, dt, parameters["solving_parameters"])
         # Solve extrinsic traps formulation
@@ -915,6 +919,74 @@ def run(parameters):
     print('\007s')
     return output
 
+
+def run_T(parameters):
+    size = 1
+    mesh = mesh_and_refine(parameters["mesh_parameters"])
+    cell_markers, boundaries = subdomains(mesh, parameters["materials"], size)
+    dx = Measure('dx', domain=mesh, subdomain_data=cell_markers)
+    ds = Measure('ds', domain=mesh, subdomain_data=boundaries)
+    W, V = create_function_spaces(mesh, 0)
+    # Define and mark subdomains
+    dt = Constant(0.5)
+
+    ## Define temperature
+    if parameters["temperature"]["type"] == "expression":
+        T = Expression(
+            sp.printing.ccode(
+                parameters["temperature"]['value']), t=0, degree=2)
+    else:
+    # Define variational problem for heat transfers
+        T = Function(V, name="T")
+        T_n = Function(V)
+        vT = TestFunction(V)
+
+
+
+        #if parameters["temperature"]["type"] == "solve_stationary":
+        #    print("Solving stationary heat equation")
+        #    solve(FT == 0, T, bcs_T)
+        #if parameters["temperature"]["type"] == "solve_transient":
+        T_n = sp.printing.ccode(
+            parameters["temperature"]["initial_condition"])
+        T_n = Expression(T_n, degree=2, t=0)
+        T_n = interpolate(T_n, V) 
+        bcs_T, expressions_bcs_T = \
+            define_dirichlet_bcs_T(parameters, V, boundaries)
+        FT, expressions_FT = \
+            define_variational_problem_heat_transfers(
+                parameters, [T, vT, T_n], [dx, ds], dt)
+       
+        #T.assign(T_n)
+        #T = Function(V, name="T")
+        #T_n = sp.printing.ccode(parameters["temperature"]["initial_condition"])
+        #T_n = Expression(T_n, degree=2, t=0)
+        #T_n = interpolate(T_n, V)
+        #vT = TestFunction(V)
+        ##
+        #bcs_T, expressions_bcs_T = \
+        #    define_dirichlet_bcs_T(parameters, V, boundaries)
+        #FT, expressions_FT = \
+        #    define_variational_problem_heat_transfers(
+        #        parameters, [T, vT, T_n], [dx, ds], dt)
+
+    set_log_level(30)
+    f = XDMFFile("Sol_temp/T_monoblock.xdmf")
+   
+    if parameters["temperature"]["type"] == "solve_transient":
+        t = 0
+        T.assign(T_n)
+        f.write(T, t)
+        print("Time stepping...")
+        while t < 30:
+            print(t, T(size/2))
+            t += float(dt)
+
+            expressions_bcs_T = update_expressions(expressions_bcs_T, t)
+            expressions_FT = update_expressions(expressions_FT, t)
+            solve(FT == 0, T, bcs_T)
+            T_n.assign(T)
+            f.write(T, t)
 x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
 
 if __name__ == "__main__":
