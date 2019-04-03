@@ -421,7 +421,6 @@ def subdomains(mesh, materials, size):
             if cell.midpoint().x() >= material['borders'][0] \
              and cell.midpoint().x() <= material['borders'][1]:
                 volume_markers[cell] = material['id']
-    measurement_dx = dx(subdomain_data=volume_markers)
     surface_markers = MeshFunction(
         "size_t", mesh, mesh.topology().dim()-1, 0)
     surface_markers.set_all(0)
@@ -434,8 +433,7 @@ def subdomains(mesh, materials, size):
             surface_markers[f] = 1
         if near(x0.x(), size):
             surface_markers[f] = 2
-    measurement_ds = ds(subdomain_data=surface_markers)
-    return volume_markers, measurement_dx, surface_markers, measurement_ds
+    return volume_markers, surface_markers
 
 
 def mesh_and_refine(mesh_parameters):
@@ -660,7 +658,10 @@ def run(parameters):
     V, W = create_function_spaces(mesh, len(parameters["traps"]))
 
     # Define and mark subdomains
-    volume_markers, dx, surface_markers, ds = subdomains(mesh, parameters["materials"], size)
+    volume_markers, surface_markers = \
+        subdomains(mesh, parameters["materials"], size)
+    ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
     # Define expressions used in variational forms
     print('Defining source terms')
