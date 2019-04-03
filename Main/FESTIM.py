@@ -15,8 +15,8 @@ def tds_to_csv(parameters, desorption):
             file_tds = ''
             if "folder" in p.keys():
                 file_tds += p["folder"] + '/'
+                os.makedirs(os.path.dirname(file_tds), exist_ok=True)
             file_tds += p["file"] + ".csv"
-            os.makedirs(os.path.dirname(file_tds), exist_ok=True)
         busy = True
         while busy is True:
             try:
@@ -786,8 +786,8 @@ def run(parameters):
         FT, expressions_FT = \
             define_variational_problem_heat_transfers(
                 parameters, [T, vT, T_n], [dx, ds], dt)
-        if parameters["temperature"]["type"] == "solve_stationnary":
-            print("Solving stationnary heat equation")
+        if parameters["temperature"]["type"] == "solve_stationary":
+            print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
         elif parameters["temperature"]["type"] == "solve_transient":
             T_n = sp.printing.ccode(
