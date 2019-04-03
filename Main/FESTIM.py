@@ -842,6 +842,7 @@ def run(parameters):
 
     timer = Timer()  # start timer
     error = []
+    temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
     while t < Time:
         # Update current time
@@ -883,7 +884,7 @@ def run(parameters):
         export_xdmf(res,
                     exports, files, t)
         dt = export_profiles(res, exports, t, dt, W)
-
+        temperature.append([t, T(size/2)])
         inventory = assemble(retention*dx)
         desorption_rate = [-(inventory-inventory_n)/float(dt), T(size/2), t]
         inventory_n = inventory
@@ -908,7 +909,7 @@ def run(parameters):
     output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
-
+    output["temperature"] = temperature
     # End
     print('\007s')
     return output
