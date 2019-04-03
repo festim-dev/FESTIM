@@ -734,7 +734,8 @@ def compute_error(parameters, t, u_n, mesh):
     return tab
 
 
-def compute_retention(res, W):
+def compute_retention(u, W):
+    res = list(split(u))
     if not res:  # if u is non-vector
         res = [u]
     retention = project(res[0])
@@ -879,7 +880,7 @@ def run(parameters):
 
         # Post prossecing
         res = list(u.split())
-        retention = compute_retention(res, W)
+        retention = compute_retention(u, W)
         res.append(retention)
         export_xdmf(res,
                     exports, files, t)
