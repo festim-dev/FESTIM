@@ -505,7 +505,7 @@ def test_formulation_1_extrap_1_material():
     assert expected_form.equals(F) is True
 
 
-def test_run_temperature():
+def test_run_temperature_stationary():
     '''
     Check that the temperature module works well in 1D stationary
     '''
@@ -608,6 +608,109 @@ def test_run_temperature():
     # temp at the middle
     T_computed = output["temperature"][1][1]
     assert abs(T_computed - (1+2*(size/2)**2)) < 1e-9
+
+
+def test_run_temperature_transient():
+    '''
+    Check that the temperature module works well in 1D transient
+    '''
+    u = 1 + 2*FESTIM.x**2+FESTIM.t
+    size = 1
+    parameters = {
+        "materials": [
+            {
+                "thermal_cond": 1,
+                "rho": 1,
+                "heat_capacity": 1,
+                "alpha": 1.1e-10,  # lattice constant ()
+                "beta": 6*6.3e28,  # number of solute sites per atom (6 for W)
+                "density": 6.3e28,
+                "borders": [0, size],
+                "E_diff": 0.39,
+                "D_0": 4.1e-7,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": size,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+                    {
+                        "surface": [1],
+                        "value": 1,
+                        "component": 0,
+                        "type": "dc"
+                    }
+            ],
+        "temperature": {
+            "type": "solve_transient",
+            "boundary_conditions": [
+                {
+                    "type": "dirichlet",
+                    "value": u,
+                    "surface": [1, 2]
+                }
+                ],
+            "source_term": [
+                {
+                    "value": sp.diff(u, FESTIM.t) - sp.diff(u, FESTIM.x, 2),
+                    "volume": 1
+                }
+            ],
+            "initial_condition": u
+        },
+        "source_term": {
+            'flux': 0
+            },
+        "solving_parameters": {
+            "final_time": 30,
+            "num_steps": 60,
+            "adaptative_time_step": {
+                "stepsize_change_ratio": 1,
+                "t_stop": 40,
+                "stepsize_stop_max": 0.5,
+                "dt_min": 1e-5
+                },
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_it": 50,
+            }
+            },
+        "exports": {
+            "txt": {
+                "functions": ['retention'],
+                "times": [100],
+                "labels": ['retention']
+            },
+            "xdmf": {
+                "functions": [],
+                "labels":  [],
+                "folder": "Coucou"
+            },
+            "TDS": {
+                "file": "desorption",
+                "TDS_time": 450
+                }
+            },
+
+    }
+    output = FESTIM.run(parameters)
+    # temp at the middle
+    T_computed = output["temperature"][1][1]
+    error = []
+    u_D = fenics.Expression(sp.printing.ccode(u), t=0, degree=4)
+    for i in range(1, len(output["temperature"])):
+        t = output["temperature"][i][0]
+        T = output["temperature"][i][1]
+        u_D.t = t
+        error.append(abs(T - u_D(size/2)))
+    assert max(error) < 1e-9
 
 
 def test_run_MMS():
