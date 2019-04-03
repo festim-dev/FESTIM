@@ -288,7 +288,7 @@ def initialising_extrinsic_traps(W, number_of_traps):
 
 
 def formulation(traps, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, materials, temp, flux_):
+                previous_solutions, dt, dx, materials, T, flux_):
     ''' Creates formulation for trapping MRE model.
     Parameters:
     - traps : dict, contains the energy, density and domains
@@ -309,11 +309,11 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
         D_0 = material['D_0']
         E_diff = material['E_diff']
         subdomain = material['id']
-        F += D_0 * exp(-E_diff/k_B/temp) * \
+        F += D_0 * exp(-E_diff/k_B/T) * \
             dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
     F += - flux_*testfunctions[0]*dx
     expressions.append(flux_)
-    expressions.append(temp)  # Add it to the expressions to be updated
+    expressions.append(T)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in traps:
@@ -338,10 +338,10 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
             E_diff = corresponding_material['E_diff']
             alpha = corresponding_material['alpha']
             beta = corresponding_material['beta']
-            F += - D_0 * exp(-E_diff/k_B/temp)/alpha/alpha/beta * \
+            F += - D_0 * exp(-E_diff/k_B/T)/alpha/alpha/beta * \
                 solutions[0] * (trap_density - solutions[i]) * \
                 testfunctions[i]*dx(subdomain)
-            F += v_0*exp(-energy/k_B/temp)*solutions[i] * \
+            F += v_0*exp(-energy/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
         try:  # if a source term is set then add it to the form
             source = sp.printing.ccode(trap['source_term'])
@@ -402,7 +402,7 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
 
 
 def define_variational_problem_heat_transfers(
-        parameters, functions, measurements, dt):
+        parameters, functions, measurements, dt=None):
     '''
     Parameters:
     - parameters: dict, contains materials and temperature parameters
@@ -419,8 +419,8 @@ def define_variational_problem_heat_transfers(
     dx = measurements[0]
     ds = measurements[1]
     T = functions[0]
-    T_n = functions[2]
     vT = functions[1]
+
     F = 0
     for mat in parameters["materials"]:
         if "thermal_cond" not in mat.keys():
@@ -428,6 +428,7 @@ def define_variational_problem_heat_transfers(
         thermal_cond = mat["thermal_cond"]
         vol = mat["id"]
         if parameters["temperature"]["type"] == "solve_transient":
+            T_n = functions[2]
             if "heat_capacity" not in mat.keys():
                 raise NameError("Missing heat_capacity key in material")
             if "rho" not in mat.keys():
@@ -642,7 +643,7 @@ def apply_boundary_conditions(boundary_conditions, V,
             value_BC = solubility_BC(
                     pressure, BC["density"]*solubility(
                         BC["S_0"], BC["E_S"],
-                        k_B, temp(0)))
+                        k_B, T(0)))
             value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                   degree=2)
         expressions.append(value_BC)
@@ -746,6 +747,11 @@ def compute_retention(res, W):
 
 def run(parameters):
     # Declaration of variables
+    Time = parameters["solving_parameters"]["final_time"]
+    num_steps = parameters["solving_parameters"]["num_steps"]
+    dt = Constant(Time / num_steps)  # time step size
+    level = 30  # 30 for WARNING 20 for INFO
+    set_log_level(level)
 
     # Mesh and refinement
     size = parameters["mesh_parameters"]["size"]
@@ -763,13 +769,36 @@ def run(parameters):
     print('Defining source terms')
     flux_ = Expression(
         sp.printing.ccode(parameters["source_term"]["flux"]), t=0, degree=2)
-    T = parameters["temperature"]
-    temp = Expression(sp.printing.ccode(T['value']), t=0, degree=2)
+
+    # Define temperature
+    if parameters["temperature"]["type"] == "expression":
+        T = Expression(
+            sp.printing.ccode(
+                parameters["temperature"]['value']), t=0, degree=2)
+    else:
+        # Define variational problem for heat transfers
+        T = Function(W, name="T")
+        T_n = Function(W)
+        vT = TestFunction(W)
+        bcs_T, expressions_bcs_T = \
+            define_dirichlet_bcs_T(parameters, W, surface_markers)
+        FT, expressions_FT = \
+            define_variational_problem_heat_transfers(
+                parameters, [T, vT, T_n], [dx, ds], dt)
+        if parameters["temperature"]["type"] == "solve_stationnary":
+            print("Solving stationnary heat equation")
+            solve(FT == 0, T, bcs_T)
+        elif parameters["temperature"]["type"] == "solve_transient":
+            T_n = sp.printing.ccode(
+                parameters["temperature"]["initial_condition"])
+            T_n = Expression(T_n, degree=2, t=0)
+            T_n = interpolate(T_n, W)
+
     # BCs
     print('Defining boundary conditions')
     bcs, expressions = apply_boundary_conditions(
         parameters["boundary_conditions"], V, surface_markers, ds,
-        temp)
+        T)
 
     # Define functions
 
@@ -789,13 +818,11 @@ def run(parameters):
 
     print('Defining variational problem')
     # Define variational problem1
-    Time = parameters["solving_parameters"]["final_time"]
-    num_steps = parameters["solving_parameters"]["num_steps"]
-    dt = Constant(Time / num_steps)  # time step size
+
     F, expressions_F = formulation(parameters["traps"], extrinsic_traps,
                                    solutions, testfunctions_concentrations,
                                    previous_solutions_concentrations, dt, dx,
-                                   parameters["materials"], temp, flux_)
+                                   parameters["materials"], T, flux_)
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations, expressions_form = formulation_extrinsic_traps(
@@ -812,19 +839,19 @@ def run(parameters):
     inventory_n = 0
     desorption = list()
     export_total = list()
-    level = 30  # 30 for WARNING 20 for INFO
-    set_log_level(level)
 
     timer = Timer()  # start timer
     error = []
     t = 0  # Initialising time to 0s
     while t < Time:
-
         # Update current time
         t += float(dt)
         expressions = update_expressions(expressions, t)
         expressions_form = update_expressions(expressions_form, t)
         expressions_F = update_expressions(expressions_F, t)
+        if parameters["temperature"]["type"] != "expression":
+            expressions_FT = update_expressions(expressions_FT, t)
+            expressions_bcs_T = update_expressions(expressions_bcs_T, t)
 
         # Display time
         print(str(round(t/Time*100, 2)) + ' %        ' +
@@ -832,6 +859,17 @@ def run(parameters):
               "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
               end="\r")
 
+        # Solve heat transfers
+        if parameters["temperature"]["type"] == "solve_transient":
+            set_log_level(level)
+            dT = TrialFunction(T.function_space())
+            JT = derivative(FT, T, dT)  # Define the Jacobian
+            problem = NonlinearVariationalProblem(FT, T, bcs_T, JT)
+            solver = NonlinearVariationalSolver(problem)
+            solver.parameters["newton_solver"]["absolute_tolerance"] = 10e-1
+            solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
+            solver.solve()
+            T_n.assign(T)
         # Solve main problem
         solve_u(F, u, bcs, t, dt, parameters["solving_parameters"])
         # Solve extrinsic traps formulation
@@ -847,11 +885,10 @@ def run(parameters):
         dt = export_profiles(res, exports, t, dt, W)
 
         inventory = assemble(retention*dx)
-        desorption_rate = [-(inventory-inventory_n)/float(dt), temp(size/2), t]
+        desorption_rate = [-(inventory-inventory_n)/float(dt), T(size/2), t]
         inventory_n = inventory
         if t > parameters["exports"]["TDS"]["TDS_time"]:
             desorption.append(desorption_rate)
-
         # Update previous solutions
         u_n.assign(u)
         for j in range(len(previous_solutions_traps)):
