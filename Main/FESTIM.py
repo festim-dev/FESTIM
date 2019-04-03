@@ -8,29 +8,29 @@ import os
 import argparse
 
 
-def export_TDS(filedesorption, desorption):
-    '''
-    - filedesorption : string, the path of the csv file.
-    - desorption : list, values to be exported.
-    '''
-    busy = True
-    if '/' in filedesorption:
-        # Creates the directory if necessary
-        os.makedirs(os.path.dirname(filedesorption), exist_ok=True)
-    while busy is True:
-        try:
-            with open(filedesorption, "w+") as f:
-                busy = False
-                writer = csv.writer(f, lineterminator='\n')
-                writer.writerows(['dTt'])
-                for val in desorption:
-                    writer.writerows([val])
-        except:
-            print("The file " + filedesorption +
-                  " might currently be busy."
-                  "Please close the application then press any key")
-            input()
-    return
+def tds_to_csv(parameters, desorption):
+    if "TDS" in parameters["exports"]:
+        p = parameters["exports"]["TDS"]
+        if "file" in p.keys():
+            file_tds = ''
+            if "folder" in p.keys():
+                file_tds += p["folder"] + '/'
+            file_tds += p["file"] + ".csv"
+            os.makedirs(os.path.dirname(file_tds), exist_ok=True)
+        busy = True
+        while busy is True:
+            try:
+                with open(file_tds, "w+") as f:
+                    busy = False
+                    writer = csv.writer(f, lineterminator='\n')
+                    writer.writerows(['dTt'])
+                    for val in desorption:
+                        writer.writerows([val])
+            except:
+                print("The file " + file_tds +
+                      " might currently be busy."
+                      "Please close the application then press any key")
+                input()
 
 
 def export_txt(filename, function, W):
@@ -204,7 +204,7 @@ def create_function_spaces(mesh, nb_traps, element1='P', order1=1,
     return V, W
 
 
-def define_test_functions(V, W, number_int_traps, number_ext_traps):
+def define_test_functions(V, W, number_ext_traps):
     '''
     Returns the testfunctions for formulation
     Arguments:
@@ -421,7 +421,6 @@ def subdomains(mesh, materials, size):
             if cell.midpoint().x() >= material['borders'][0] \
              and cell.midpoint().x() <= material['borders'][1]:
                 volume_markers[cell] = material['id']
-    measurement_dx = dx(subdomain_data=volume_markers)
     surface_markers = MeshFunction(
         "size_t", mesh, mesh.topology().dim()-1, 0)
     surface_markers.set_all(0)
@@ -434,8 +433,7 @@ def subdomains(mesh, materials, size):
             surface_markers[f] = 1
         if near(x0.x(), size):
             surface_markers[f] = 2
-    measurement_ds = ds(subdomain_data=surface_markers)
-    return volume_markers, measurement_dx, surface_markers, measurement_ds
+    return volume_markers, surface_markers
 
 
 def mesh_and_refine(mesh_parameters):
@@ -550,7 +548,7 @@ def apply_boundary_conditions(boundary_conditions, V,
                         BC["S_0"], BC["E_S"],
                         k_B, temp(0)))
             value_BC = Expression(sp.printing.ccode(value_BC), t=0,
-                                      degree=2)
+                                  degree=2)
         expressions.append(value_BC)
         try:
             # Fetch the component of the BC
@@ -587,6 +585,32 @@ def update_expressions(expressions, t):
     return expressions
 
 
+def solve_u(F, u, bcs, t, dt, solving_parameters):
+    du = TrialFunction(u.function_space())
+    J = derivative(F, u, du)  # Define the Jacobian
+    problem = NonlinearVariationalProblem(F, u, bcs, J)
+    solver = NonlinearVariationalSolver(problem)
+    solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
+    solver.parameters["newton_solver"]["absolute_tolerance"] = \
+        solving_parameters['newton_solver']['absolute_tolerance']
+    solver.parameters["newton_solver"]["relative_tolerance"] = \
+        solving_parameters['newton_solver']['relative_tolerance']
+    nb_it, converged = solver.solve()
+
+    t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
+    stepsize_stop_max = \
+        solving_parameters["adaptative_time_step"]["stepsize_stop_max"]
+    stepsize_change_ratio = \
+        solving_parameters["adaptative_time_step"]["stepsize_change_ratio"]
+    dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
+    dt = adaptative_timestep(
+        converged=converged, nb_it=nb_it, dt=dt,
+        stepsize_change_ratio=stepsize_change_ratio,
+        dt_min=dt_min, t=t, t_stop=t_stop,
+        stepsize_stop_max=stepsize_stop_max)
+    return u, dt
+
+
 def compute_error(parameters, t, u_n, mesh):
     '''
     Returns a list containing the errors
@@ -613,39 +637,36 @@ def compute_error(parameters, t, u_n, mesh):
     return tab
 
 
+def compute_retention(res, W):
+    if not res:  # if u is non-vector
+        res = [u]
+    retention = project(res[0])
+    total_trap = 0
+    for i in range(1, len(res)):
+        sol = res[i]
+        retention = project(retention + res[i], W)
+    return retention
+
+
 def run(parameters):
     # Declaration of variables
-    output = dict()  # Final output
 
-    solving_parameters = parameters["solving_parameters"]
-    Time = solving_parameters["final_time"]
-    num_steps = solving_parameters["num_steps"]
-    dT = Time / num_steps
-    dt = Constant(dT)  # time step size
-    t = 0  # Initialising time to 0s
-    stepsize_change_ratio = solving_parameters[
-        "adaptative_time_step"][
-            "stepsize_change_ratio"]
-    t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
-    stepsize_stop_max = solving_parameters[
-        "adaptative_time_step"][
-            "stepsize_stop_max"]
-    dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
-    size = parameters["mesh_parameters"]["size"]
     # Mesh and refinement
-    materials = parameters["materials"]
+    size = parameters["mesh_parameters"]["size"]
     mesh = mesh_and_refine(parameters["mesh_parameters"])
-    traps = parameters["traps"]
     # Define function space for system of concentrations and properties
-    V, W = create_function_spaces(mesh, len(traps))
+    V, W = create_function_spaces(mesh, len(parameters["traps"]))
 
     # Define and mark subdomains
-    volume_markers, dx, surface_markers, ds = subdomains(mesh, materials, size)
+    volume_markers, surface_markers = \
+        subdomains(mesh, parameters["materials"], size)
+    ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
     # Define expressions used in variational forms
     print('Defining source terms')
-    source_term = parameters["source_term"]
-    flux_ = Expression(sp.printing.ccode(source_term["flux"]), t=0, degree=2)
+    flux_ = Expression(
+        sp.printing.ccode(parameters["source_term"]["flux"]), t=0, degree=2)
     T = parameters["temperature"]
     temp = Expression(sp.printing.ccode(T['value']), t=0, degree=2)
     # BCs
@@ -657,10 +678,9 @@ def run(parameters):
     # Define functions
 
     u, solutions = define_functions(V)
-    du = TrialFunction(V)
-    extrinsic_traps = define_functions_extrinsic_traps(W, traps)
+    extrinsic_traps = define_functions_extrinsic_traps(W, parameters["traps"])
     testfunctions_concentrations, testfunctions_traps = \
-        define_test_functions(V, W, 6, len(extrinsic_traps))
+        define_test_functions(V, W, len(extrinsic_traps))
     # Initialising the solutions
     try:
         initial_conditions = parameters["initial_conditions"]
@@ -673,16 +693,18 @@ def run(parameters):
 
     print('Defining variational problem')
     # Define variational problem1
-
-    F, expressions_F = formulation(traps, extrinsic_traps, solutions,
-                                   testfunctions_concentrations,
+    Time = parameters["solving_parameters"]["final_time"]
+    num_steps = parameters["solving_parameters"]["num_steps"]
+    dt = Constant(Time / num_steps)  # time step size
+    F, expressions_F = formulation(parameters["traps"], extrinsic_traps,
+                                   solutions, testfunctions_concentrations,
                                    previous_solutions_concentrations, dt, dx,
-                                   materials, temp, flux_)
+                                   parameters["materials"], temp, flux_)
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations, expressions_form = formulation_extrinsic_traps(
-        traps, extrinsic_traps, testfunctions_traps, previous_solutions_traps,
-        dt)
+        parameters["traps"], extrinsic_traps, testfunctions_traps,
+        previous_solutions_traps, dt)
 
     # Solution files
     exports = parameters["exports"]
@@ -691,7 +713,7 @@ def run(parameters):
 
     #  Time-stepping
     print('Time stepping...')
-    total_n = 0
+    inventory_n = 0
     desorption = list()
     export_total = list()
     level = 30  # 30 for WARNING 20 for INFO
@@ -699,7 +721,7 @@ def run(parameters):
 
     timer = Timer()  # start timer
     error = []
-
+    t = 0  # Initialising time to 0s
     while t < Time:
 
         # Update current time
@@ -715,43 +737,22 @@ def run(parameters):
               end="\r")
 
         # Solve main problem
-        J = derivative(F, u, du)  # Define the Jacobian
-        problem = NonlinearVariationalProblem(F, u, bcs, J)
-        solver = NonlinearVariationalSolver(problem)
-        solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
-        solver.parameters["newton_solver"]["absolute_tolerance"] = \
-            solving_parameters['newton_solver']['absolute_tolerance']
-        solver.parameters["newton_solver"]["relative_tolerance"] = \
-            solving_parameters['newton_solver']['relative_tolerance']
-        nb_it, converged = solver.solve()
-        dt = adaptative_timestep(
-            converged=converged, nb_it=nb_it, dt=dt,
-            stepsize_change_ratio=stepsize_change_ratio,
-            dt_min=dt_min, t=t, t_stop=t_stop,
-            stepsize_stop_max=stepsize_stop_max)
-
+        solve_u(F, u, bcs, t, dt, parameters["solving_parameters"])
         # Solve extrinsic traps formulation
         for j in range(len(extrinsic_formulations)):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
         # Post prossecing
         res = list(u.split())
-        if not res:  # if u is non-vector
-            res = [u]
-        retention = project(res[0])
-        total_trap = 0
-        for i in range(1, len(traps)+1):
-            sol = res[i]
-            total_trap += assemble(sol*dx)
-            retention = project(retention + res[i], W)
+        retention = compute_retention(res, W)
         res.append(retention)
         export_xdmf(res,
                     exports, files, t)
         dt = export_profiles(res, exports, t, dt, W)
-        total_sol = assemble(res[0]*dx)
-        total = total_trap + total_sol
-        desorption_rate = [-(total-total_n)/float(dt), temp(size/2), t]
-        total_n = total
+
+        inventory = assemble(retention*dx)
+        desorption_rate = [-(inventory-inventory_n)/float(dt), temp(size/2), t]
+        inventory_n = inventory
         if t > parameters["exports"]["TDS"]["TDS_time"]:
             desorption.append(desorption_rate)
 
@@ -767,16 +768,9 @@ def run(parameters):
         pass
 
     # Export TDS
-    if "TDS" in parameters["exports"]:
-        p = parameters["exports"]["TDS"]
-        if "file" in p.keys():
-            file_tds = ''
-            if "folder" in p.keys():
-                file_tds += p["folder"] + '/'
-            file_tds += p["file"] + ".csv"
-            export_TDS(file_tds, desorption)
-
+    tds_to_csv(parameters, desorption)
     # Store data in output
+    output = dict()  # Final output
     output["TDS"] = desorption
     output["error"] = error
     output["parameters"] = parameters
