@@ -401,6 +401,75 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
     return formulations, expressions
 
 
+def define_variational_problem_heat_transfers(
+        parameters, functions, measurements, dt):
+    '''
+    Parameters:
+    - parameters: dict, contains materials and temperature parameters
+    - functions: list, [0]: current solution, [1]: TestFunction,
+        [2]: previous solution
+    - measurements: list, [0] dx, [1]: ds
+    - dt: FEniCS Constant(), time step size
+    Returns:
+    - F: FEniCS Form(), the formulation for heat transfers problem
+    - expressions: list, contains all the Expression() for later update
+    '''
+    print('Defining variational problem heat transfers')
+    expressions = []
+    dx = measurements[0]
+    ds = measurements[1]
+    T = functions[0]
+    T_n = functions[2]
+    vT = functions[1]
+    F = 0
+    for mat in parameters["materials"]:
+        if "thermal_cond" not in mat.keys():
+            raise NameError("Missing thermal_cond key in material")
+        thermal_cond = mat["thermal_cond"]
+        vol = mat["id"]
+        if parameters["temperature"]["type"] == "solve_transient":
+            if "heat_capacity" not in mat.keys():
+                raise NameError("Missing heat_capacity key in material")
+            if "rho" not in mat.keys():
+                raise NameError("Missing rho key in material")
+            cp = mat["heat_capacity"]
+            rho = mat["rho"]
+            # Transien term
+            F += rho*cp*(T-T_n)/dt*vT*dx(vol)
+        # Diffusion term
+        F += thermal_cond*dot(grad(T), grad(vT))*dx(vol)
+
+    for source in parameters["temperature"]["source_term"]:
+        src = sp.printing.ccode(source["value"])
+        src = Expression(src, degree=2, t=0)
+        expressions.append(src)
+        # Source term
+        F += - src*vT*dx(source["volume"])
+    for bc in parameters["temperature"]["boundary_conditions"]:
+        if type(bc["surface"]) is list:
+            surfaces = bc["surface"]
+        else:
+            surfaces = [bc["surface"]]
+        for surf in surfaces:
+            if bc["type"] == "neumann":
+                value = sp.printing.ccode(bc["value"])
+                value = Expression(value, degree=2, t=0)
+                # Surface flux term
+                F += - value*vT*ds(surf)
+                expressions.append(value)
+            elif bc["type"] == "convective_flux":
+                h = sp.printing.ccode(bc["h_coeff"])
+                h = Expression(h, degree=2, t=0)
+                T_ext = sp.printing.ccode(bc["T_ext"])
+                T_ext = Expression(T_ext, degree=2, t=0)
+                # Surface convective flux term
+                F += h * (T - T_ext)*vT*ds(surf)
+                expressions.append(h)
+                expressions.append(T_ext)
+
+    return F, expressions
+
+
 def subdomains(mesh, materials, size):
     '''
     Iterates through the mesh and mark them
@@ -513,6 +582,33 @@ def adaptative_timestep(converged, nb_it, dt, dt_min,
         else:
             dt.assign(float(dt)/stepsize_change_ratio)
     return dt
+
+
+def define_dirichlet_bcs_T(parameters, V, boundaries):
+    '''
+    Arguments:
+    - parameters: dict, contains materials and temperature parameters
+    - V: FEniCS FunctionSpace(), functionspace of temperature
+    - boundaries: FEniCS MeshFunction(), markers for facets.
+    Returns:
+    - bcs: list, contains FEniCS DirichletBC()
+    - expressions: list, contains FEniCS Expression() to be updated
+    '''
+    bcs = []
+    expressions = []
+    for bc in parameters["temperature"]["boundary_conditions"]:
+        if bc["type"] == "dirichlet":
+            value = sp.printing.ccode(bc["value"])
+            value = Expression(value, degree=2, t=0)
+            expressions.append(value)
+            if type(bc["surface"]) is list:
+                surfaces = bc["surface"]
+            else:
+                surfaces = [bc["surface"]]
+            for surf in surfaces:
+                bci = DirichletBC(V, value, boundaries, surf)
+                bcs.append(bci)
+    return bcs, expressions
 
 
 def apply_boundary_conditions(boundary_conditions, V,
