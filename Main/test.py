@@ -856,4 +856,6 @@ def test_run_MMS():
             with h = ' + str(h) + '\n \
             with dt = ' + str(dt)
         print(msg)
+        assert output["temperature"][1][1] == 700
+        assert output["temperature"][5][1] == 700
         assert error_max_u < tol_u and error_max_v < tol_v
