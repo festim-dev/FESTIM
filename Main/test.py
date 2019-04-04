@@ -4,6 +4,8 @@ import pytest
 import sympy as sp
 
 
+# Unit tests
+
 def test_mesh_and_refine_meets_refinement_conditions():
     '''
     Test that function mesh_and_refine() gives the right
@@ -504,6 +506,8 @@ def test_formulation_1_extrap_1_material():
 
     assert expected_form.equals(F) is True
 
+
+# Integration tests
 
 def test_run_temperature_stationary():
     '''
