@@ -1,11 +1,22 @@
 from fenics import *
 from dolfin import *
 import numpy as np
+from scipy.interpolate import interp1d
 import sympy as sp
 import csv
 import sys
 import os
 import argparse
+
+
+class ExpressionFromInterpolatedData(UserExpression):
+    def __init__(self, t, fun, **kwargs):
+        self.t = t
+        self._fun = fun
+        UserExpression.__init__(self, **kwargs)
+
+    def eval(self, values, x):
+        values[:] = float(self._fun(self.t))
 
 
 def tds_to_csv(parameters, desorption):
@@ -646,6 +657,18 @@ def apply_boundary_conditions(boundary_conditions, V,
                         k_B, T(0)))
             value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                   degree=2)
+        elif type_BC == "table":
+            table = BC["value"]
+            # Interpolate table
+            interpolant = interp1d(
+                list(np.array(table)[:, 0]),
+                list(np.array(table)[:, 1]),
+                fill_value='extrapolate')
+            # create UserExpression based on interpolant and t
+            value_BC = ExpressionFromInterpolatedData(
+                t=0, fun=interpolant, element=V.ufl_element())
+        else:
+            raise NameError("Unknown boundary condition type")
         expressions.append(value_BC)
         try:
             # Fetch the component of the BC
@@ -662,9 +685,9 @@ def apply_boundary_conditions(boundary_conditions, V,
         else:  # if only one component, use subspace
             funspace = V.sub(component)
         for surface in surfaces:
-                bci = DirichletBC(funspace, value_BC,
-                                  surface_marker, surface)
-                bcs.append(bci)
+            bci = DirichletBC(funspace, value_BC,
+                              surface_marker, surface)
+            bcs.append(bci)
 
     return bcs, expressions
 
