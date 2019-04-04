@@ -268,7 +268,7 @@ def test_formulation_2_traps_1_material():
     '''
     Test function formulation() with 2 intrinsic traps
     and 1 material
-    '''    
+    '''
     # Set parameters
     dt = 1
     traps = [{
@@ -468,7 +468,7 @@ def test_formulation_1_extrap_1_material():
             "D_0": 5,
             "id": 1
             }]
-    
+
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     W = fenics.FunctionSpace(mesh, 'P', 1)
@@ -552,17 +552,6 @@ def test_run_temperature_stationary():
                     "value": u,
                     "surface": [1, 2]
                 }
-                #{
-                #    "type": "neumann",
-                #    "value": 10e6,
-                #    "surface": 2
-                #},
-                #{
-                #    "type": "convective_flux",
-                #    "h_coeff": 70000,
-                #    "T_ext": 273.15+75,
-                #    "surface": 1
-                #}
                 ],
             "source_term": [
                 {
