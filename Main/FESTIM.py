@@ -646,6 +646,8 @@ def apply_boundary_conditions(boundary_conditions, V,
                         k_B, T(0)))
             value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                   degree=2)
+        else:
+            raise NameError("Unknown boundary condition type")
         expressions.append(value_BC)
         try:
             # Fetch the component of the BC
@@ -662,9 +664,9 @@ def apply_boundary_conditions(boundary_conditions, V,
         else:  # if only one component, use subspace
             funspace = V.sub(component)
         for surface in surfaces:
-                bci = DirichletBC(funspace, value_BC,
+            bci = DirichletBC(funspace, value_BC,
                                   surface_marker, surface)
-                bcs.append(bci)
+            bcs.append(bci)
 
     return bcs, expressions
 
