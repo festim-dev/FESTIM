@@ -894,11 +894,6 @@ def run(parameters):
             solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
             solver.solve()
             T_n.assign(T)
-            #expressions_bcs_T = update_expressions(expressions_bcs_T, t)
-            #expressions_FT = update_expressions(expressions_FT, t)
-            #solve(FT == 0, T, bcs_T)
-            #T_n.assign(T)
-            #f.write(T, t)
         # Solve main problem
         solve_u(F, u, bcs, t, dt, parameters["solving_parameters"])
         # Solve extrinsic traps formulation
