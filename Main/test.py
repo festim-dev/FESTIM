@@ -241,10 +241,12 @@ def test_formulation_1_trap_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
-
     F, expressions = FESTIM.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
+
+    # take density Expression() from formulation()
+    density = expressions[2]
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
@@ -254,13 +256,12 @@ def test_formulation_1_trap_1_material():
         ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
-        solutions[0] * (2 - solutions[1]) * \
+        solutions[0] * (density - solutions[1]) * \
         testfunctions[1]*dx(1)
     expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[1] * \
         testfunctions[1]*dx(1)
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[0]*dx
-
     assert expected_form.equals(F) is True
 
 
@@ -273,18 +274,18 @@ def test_formulation_2_traps_1_material():
     dt = 1
     traps = [{
         "energy": 1,
-        "density": 2,
+        "density": 2 + FESTIM.x,
         "materials": [1]
         },
         {
         "energy": 1,
-        "density": 2,
+        "density": 3,
         "materials": [1]
         }]
     materials = [{
             "alpha": 1,
             "beta": 2,
-            "density": 3,
+            "density": 3 + FESTIM.t,
             "borders": [0, 1],
             "E_diff": 4,
             "D_0": 5,
@@ -311,6 +312,10 @@ def test_formulation_2_traps_1_material():
     F, expressions = FESTIM.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
+
+    # Densities from formulation()
+    density1 = expressions[2]
+    density2 = expressions[3]
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
@@ -325,7 +330,7 @@ def test_formulation_2_traps_1_material():
         testfunctions[1]*dx
     # Trapping trap 1
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
-        solutions[0] * (2 - solutions[1]) * \
+        solutions[0] * (density1 - solutions[1]) * \
         testfunctions[1]*dx(1)
     # Detrapping trap 1
     expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[1] * \
@@ -339,7 +344,7 @@ def test_formulation_2_traps_1_material():
         testfunctions[2]*dx
     # Trapping trap 2
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
-        solutions[0] * (2 - solutions[2]) * \
+        solutions[0] * (density2 - solutions[2]) * \
         testfunctions[2]*dx(1)
     # Detrapping trap 2
     expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[2] * \
@@ -365,7 +370,7 @@ def test_formulation_1_trap_2_materials():
     dt = 1
     traps = [{
         "energy": 1,
-        "density": 2,
+        "density": 2 + FESTIM.x**2,
         "materials": [1, 2]
         }]
     materials = [{
@@ -411,6 +416,8 @@ def test_formulation_1_trap_2_materials():
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
 
+    # Density from formulation()
+    density = expressions[2]
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
@@ -429,11 +436,11 @@ def test_formulation_1_trap_2_materials():
         testfunctions[1]*dx
     # Trapping trap 1 mat 1
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
-        solutions[0] * (2 - solutions[1]) * \
+        solutions[0] * (density - solutions[1]) * \
         testfunctions[1]*dx(1)
     # Trapping trap 1 mat 2
     expected_form += - 6 * fenics.exp(-5/8.6e-5/temp)/2/2/3 * \
-        solutions[0] * (2 - solutions[1]) * \
+        solutions[0] * (density - solutions[1]) * \
         testfunctions[1]*dx(2)
     # Detrapping trap 1 mat 1
     expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[1] * \

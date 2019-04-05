@@ -328,14 +328,14 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in traps:
-        if 'type' in trap.keys():
-            if trap['type'] == 'extrinsic':
-                trap_density = extrinsic_traps[j]
-                j += 1
-            else:
-                trap_density = trap['density']
+        if 'type' in trap.keys() and trap['type'] == 'extrinsic':
+            trap_density = extrinsic_traps[j]
+            j += 1
         else:
-            trap_density = trap['density']
+            trap_density = sp.printing.ccode(trap['density'])
+            trap_density = Expression(trap_density, degree=2, t=0)
+            expressions.append(trap_density)
+
         energy = trap['energy']
         material = trap['materials']
         F += ((solutions[i] - previous_solutions[i]) / dt) * \
@@ -868,7 +868,7 @@ def run(parameters):
     temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
     while t < Time:
-        ## Update current time
+        # Update current time
         t += float(dt)
         expressions = update_expressions(expressions, t)
         expressions_form = update_expressions(expressions_form, t)
