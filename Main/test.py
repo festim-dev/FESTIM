@@ -285,7 +285,7 @@ def test_formulation_2_traps_1_material():
     materials = [{
             "alpha": 1,
             "beta": 2,
-            "density": 3 + FESTIM.t,
+            "density": 3,
             "borders": [0, 1],
             "E_diff": 4,
             "D_0": 5,
