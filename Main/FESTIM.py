@@ -76,7 +76,7 @@ def export_profiles(res, exports, t, dt, W):
     Exports 1D profiles in txt files.
     Arguments:
     - res: list, contains FEniCS Functions
-    - exports: dict, defined by define_exports()
+    - exports: dict, dict, contains parameters
     - t: float, time
     - dt: FEniCS Constant(), stepsize
     Returns:
@@ -129,7 +129,7 @@ def define_xdmf_files(exports):
     '''
     Returns a list of XDMFFile
     Arguments:
-    - exports: dict, defined by define_exports()
+    - exports: dict, contains parameters
     '''
     if len(exports['xdmf']['functions']) != len(exports['xdmf']['labels']):
         raise NameError("Number of functions to be exported "
@@ -153,7 +153,7 @@ def export_xdmf(res, exports, files, t):
     Exports the solutions fields in xdmf files.
     Arguments:
     - res: list, contains FEniCS Functions
-    - exports: dict, defined by define_exports()
+    - exports: dict, contains parameters
     - files: list, contains XDMFFile
     - t: float
     '''
@@ -1003,8 +1003,6 @@ def run(parameters):
     #  Time-stepping
     print('Time stepping...')
 
-    export_total = list()
-
     timer = Timer()  # start timer
     error = []
     if "derived_quantities" in parameters["exports"].keys():
@@ -1078,16 +1076,15 @@ def run(parameters):
         for j in range(len(previous_solutions_traps)):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
 
-    # Compute error
-    try:
-        error = compute_error(parameters["exports"]["error"], t, u_n, mesh)
-    except:
-        pass
+
 
     # Store data in output
     output = dict()  # Final output
 
-    output["error"] = error
+    # Compute error
+    if "error" in parameters["exports"].keys():
+        error = compute_error(parameters["exports"]["error"], t, u_n, mesh)
+        output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
     output["temperature"] = temperature
