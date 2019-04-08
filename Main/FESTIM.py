@@ -862,6 +862,8 @@ def post_processing(parameters, solutions, properties, markers):
     n = FacetNormal(mesh)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
+
+    # Create dicts
     field_to_sol = {
         'solute': solutions[0],
         'retention': solutions[len(solutions)-2],
@@ -879,7 +881,7 @@ def post_processing(parameters, solutions, properties, markers):
             val = interpolate(val, V)
             field_to_sol[key] = val
     tab = []
-
+    # Compute quantities
     for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
         sol = field_to_sol[flux["field"]]
         prop = field_to_prop[flux["field"]]
@@ -1075,8 +1077,6 @@ def run(parameters):
         u_n.assign(u)
         for j in range(len(previous_solutions_traps)):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
-
-
 
     # Store data in output
     output = dict()  # Final output
