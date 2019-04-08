@@ -828,22 +828,21 @@ def header_post_processing(parameters):
                     "exports"]["derived_quantities"]["average_volume"]:
         for vol in average["volumes"]:
             header.append(
-                "Average " + average['field'] + " on surface " + str(vol))
+                "Average " + average['field'] + " volume " + str(vol))
     for minimum in parameters[
                     "exports"]["derived_quantities"]["minimum_volume"]:
         for vol in minimum["volumes"]:
-            header.append("Minimum " + minimum["field"] + " vol " + str(vol))
+            header.append("Minimum " + minimum["field"] + " volume " + str(vol))
     for maximum in parameters[
                     "exports"]["derived_quantities"]["maximum_volume"]:
         for vol in maximum["volumes"]:
-            header.append("Maximum " + minimum["field"] + " vol " + str(vol))
+            header.append("Maximum " + maximum["field"] + " volume " + str(vol))
     for total in parameters["exports"]["derived_quantities"]["total_volume"]:
         for vol in total["volumes"]:
-            header.append("Total " + minimum["field"] + " vol " + str(vol))
+            header.append("Total " + total["field"] + " volume " + str(vol))
     for total in parameters["exports"]["derived_quantities"]["total_surface"]:
-        sol = field_to_sol[total["field"]]
         for surf in total["surfaces"]:
-            header.append("Total " + minimum["field"] + " surf " + str(surf))
+            header.append("Total " + total["field"] + " surface " + str(surf))
 
     return header
 
