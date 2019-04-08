@@ -591,6 +591,71 @@ def test_post_processing():
     assert len(tab) == len(expected)
     for i in range(0, len(tab)):
         assert abs(tab[i] - expected[i])/expected[i] < 1e-3
+
+
+def test_header_post_processing():
+    # Set parameters for derived quantities
+    parameters = {
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    },
+                    {
+                        "field": 'T',
+                        "surfaces": [2]
+                    },
+                ],
+                "average_volume": [
+                    {
+                        "field": 'T',
+                        "volumes": [1]
+                    }
+                ],
+                "total_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [1, 2]
+                    }
+                ],
+                "total_surface": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    }
+                ],
+                "maximum_volume": [
+                    {
+                        "field": 'T',
+                        "volumes": [1]
+                    }
+                ],
+                "minimum_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [2]
+                    }
+                ],
+                "file": "derived_quantities",
+                "folder": "",
+            }
+        }
+    }
+
+    tab = FESTIM.header_post_processing(parameters)
+    expected = ["t(s)",
+                "Flux surface 2: solute", "Flux surface 2: T",
+                "Average T volume 1",
+                "Minimum solute volume 2", "Maximum T volume 1",
+                "Total solute volume 1", "Total solute volume 2",
+                "Total solute surface 2"]
+    assert len(tab) == len(expected)
+    for i in range(0, len(tab)):
+        assert tab[i] == expected[i]
+
+
 # Integration tests
 
 
