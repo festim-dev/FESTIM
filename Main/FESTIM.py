@@ -832,7 +832,7 @@ def header_post_processing(parameters):
     for minimum in parameters[
                     "exports"]["derived_quantities"]["minimum_volume"]:
         for vol in minimum["volumes"]:
-            header.append("Minimum " + minimum["field"] + "vol " + str(vol))
+            header.append("Minimum " + minimum["field"] + " vol " + str(vol))
     for maximum in parameters[
                     "exports"]["derived_quantities"]["maximum_volume"]:
         for vol in maximum["volumes"]:
