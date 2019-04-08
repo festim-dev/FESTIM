@@ -514,7 +514,85 @@ def test_formulation_1_extrap_1_material():
     assert expected_form.equals(F) is True
 
 
+def test_post_processing():
+    '''
+    Test the function FESTIM.post_processing()
+    '''
+    # Create Functions
+    mesh = fenics.UnitIntervalMesh(10000)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    u = fenics.Expression("2*x[0]*x[0]", degree=3)
+    u = fenics.interpolate(u, V)
+    T = fenics.Expression("2*x[0]*x[0] + 1", degree=3)
+    T = fenics.interpolate(T, V)
+
+    surface_markers = fenics.MeshFunction("size_t", mesh, 0, 1)
+    domain = fenics.CompiledSubDomain('x[0] > 0.99999999')
+    domain.mark(surface_markers, 2)
+
+    volume_markers = fenics.MeshFunction("size_t", mesh, 1, 1)
+    domain = fenics.CompiledSubDomain('x[0] > 0.75')
+    domain.mark(volume_markers, 2)
+    # Set parameters for derived quantities
+    parameters = {
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    },
+                    {
+                        "field": 'T',
+                        "surfaces": [2]
+                    },
+                ],
+                "average_volume": [
+                    {
+                        "field": 'T',
+                        "volumes": [1]
+                    }
+                ],
+                "total_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [1, 2]
+                    }
+                ],
+                "total_surface": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    }
+                ],
+                "maximum_volume": [
+                    {
+                        "field": 'T',
+                        "volumes": [1]
+                    }
+                ],
+                "minimum_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [2]
+                    }
+                ],
+                "file": "derived_quantities",
+                "folder": "",
+            }
+        }
+    }
+    # Expected result
+    expected = [4, 4, 11/8, 9/8, 17/8, 9/32, 37/96, 2]
+    # Compute
+    tab = FESTIM.post_processing(parameters, [u, u, T], [1, 1],
+                                 [volume_markers, surface_markers])
+    # Compare
+    assert len(tab) == len(expected)
+    for i in range(0, len(tab)):
+        assert abs(tab[i] - expected[i])/expected[i] < 1e-3
 # Integration tests
+
 
 def test_run_temperature_stationary():
     '''
