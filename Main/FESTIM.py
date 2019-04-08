@@ -769,6 +769,150 @@ def compute_retention(u, W):
     return retention
 
 
+def calculate_maximum_volume(u, cell_function, subdomain_id):
+    '''
+    Computes the maxmimum value of Function u on the domain subdomain_id
+    based on MeshFunction cell_function
+    '''
+    V = u.function_space()
+    dofmap = V.dofmap()
+    mesh = V.mesh()
+    maxi = u.vector().min()
+    for cell in cells(mesh):
+        if cell_function[cell.index()] == subdomain_id:
+            dofs = dofmap.cell_dofs(cell.index())
+            for dof in dofs:
+                try:
+                    [dof][0]
+                    if u.vector()[dof][0] > maxi:
+                        maxi = u.vector()[dof][0]
+                except:
+                    if u.vector()[dof] > maxi:
+                        maxi = u.vector()[dof]
+    return maxi
+
+
+def calculate_minimum_volume(u, cell_function, subdomain_id):
+    '''
+    Computes the minimum value of Function u on the domain subdomain_id
+    based on MeshFunction cell_function
+    '''
+    V = u.function_space()
+    dofmap = V.dofmap()
+    mesh = V.mesh()
+    mini = u.vector().max()
+    for cell in cells(mesh):
+        if cell_function[cell.index()] == subdomain_id:
+            dofs = dofmap.cell_dofs(cell.index())
+            for dof in dofs:
+                try:
+                    [dof][0]
+                    if u.vector()[dof][0] < mini:
+                        mini = u.vector()[dof][0]
+                except:
+                    if u.vector()[dof] < mini:
+                        mini = u.vector()[dof]
+    return mini
+
+
+def header_post_processing(parameters):
+    '''
+    Creates the header for post_proc list
+    '''
+    output_file = parameters["exports"]["derived_quantities"]["output_file"]
+    header = ['t(s)']
+    i = 0
+    for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+        for surf in flux["surfaces"]:
+            header.append("Flux surface " + str(surf) + ": " + flux['field'])
+    for average in parameters[
+                    "exports"]["derived_quantities"]["average_volume"]:
+        for vol in average["volumes"]:
+            header.append(
+                "Average " + average['field'] + "on surface " + str(vol))
+    for minimum in parameters[
+                    "exports"]["derived_quantities"]["minimum_volume"]:
+        for vol in minimum["volumes"]:
+            header.append("Minimum " + minimum["field"] + "vol " + str(vol))
+    for maximum in parameters[
+                    "exports"]["derived_quantities"]["maximum_volume"]:
+        for vol in maximum["volumes"]:
+            header.append("Maximum " + minimum["field"] + "vol " + str(vol))
+    for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+        for vol in total["volumes"]:
+            header.append("Total " + minimum["field"] + "vol " + str(vol))
+    for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+        sol = field_to_sol[total["field"]]
+        for surf in total["surfaces"]:
+            header.append("Total " + minimum["field"] + "surf " + str(surf))
+
+    return header
+
+
+def post_processing(parameters, solutions, properties, markers):
+    ''' 
+    Computes all the derived_quantities and store it into list
+    '''
+    D = properties[0]
+    thermal_cond = properties[1]
+
+    volume_markers = markers[0]
+    surface_markers = markers[1]
+    V = solutions[0].function_space()
+    mesh = V.mesh()
+    n = FacetNormal(mesh)
+    dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
+    ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    field_to_sol = {
+        'solute': solutions[0],
+        'retention': solutions[len(solutions)-2],
+        'T': solutions[len(solutions)-1],
+    }
+    field_to_prop = {
+        'solute': D,
+        'T': thermal_cond,
+    }
+    for i in range(1, len(solutions)-2):
+        field_to_sol[str(i)] = solutions[i]
+
+    for key, val in field_to_sol.items():
+        if isinstance(val, function.expression.Expression):
+            val = interpolate(val, V)
+            field_to_sol[key] = val
+    tab = []
+
+    for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+        sol = field_to_sol[flux["field"]]
+        prop = field_to_prop[flux["field"]]
+        for surf in flux["surfaces"]:
+            tab.append(assemble(prop*dot(grad(sol), n)*ds(surf)))
+    for average in parameters[
+                    "exports"]["derived_quantities"]["average_volume"]:
+        sol = field_to_sol[average["field"]]
+        for vol in average["volumes"]:
+            val = assemble(sol*dx(vol))/assemble(1*dx(vol))
+            tab.append(val)
+    for minimum in parameters[
+                    "exports"]["derived_quantities"]["minimum_volume"]:
+        sol = field_to_sol[minimum["field"]]
+        for vol in minimum["volumes"]:
+            tab.append(calculate_minimum_volume(sol, volume_markers, vol))
+    for maximum in parameters[
+                    "exports"]["derived_quantities"]["maximum_volume"]:
+        sol = field_to_sol[maximum["field"]]
+        for vol in maximum["volumes"]:
+            tab.append(calculate_maximum_volume(sol, volume_markers, vol))
+    for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+        sol = field_to_sol[minimum["field"]]
+        for vol in total["volumes"]:
+            tab.append(assemble(sol*dx(vol)))
+    for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+        sol = field_to_sol[total["field"]]
+        for surf in total["surfaces"]:
+            tab.append(assemble(sol*ds(surf)))
+    return tab
+
+
 def run(parameters):
     # Declaration of variables
     Time = parameters["solving_parameters"]["final_time"]
@@ -865,6 +1009,8 @@ def run(parameters):
 
     timer = Timer()  # start timer
     error = []
+    if "derived_quantities" in parameters["exports"].keys():
+        post_proc_global = [header_post_processing(parameters)]
     temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
     while t < Time:
@@ -900,10 +1046,19 @@ def run(parameters):
         for j in range(len(extrinsic_formulations)):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
-        # Post prossecing
+        # Post processing
+
         res = list(u.split())
         retention = compute_retention(u, W)
         res.append(retention)
+        if "derived_quantities" in parameters["exports"].keys():
+            post_proc_t = post_processing(
+                parameters,
+                [u, retention, T],
+                [1, 1],
+                [volume_markers, surface_markers])
+            post_proc_t.insert(0, t)
+            post_proc_global.append(post_proc_t)
         export_xdmf(res,
                     exports, files, t)
         dt = export_profiles(res, exports, t, dt, W)
@@ -933,6 +1088,8 @@ def run(parameters):
     output["parameters"] = parameters
     output["mesh"] = mesh
     output["temperature"] = temperature
+    if "derived_quantities" in parameters["exports"].keys():
+        output["derived_quantities"] = post_proc_global
     # End
     print('\007s')
     return output
