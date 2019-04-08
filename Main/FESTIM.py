@@ -19,26 +19,26 @@ class ExpressionFromInterpolatedData(UserExpression):
         values[:] = float(self._fun(self.t))
 
 
-def tds_to_csv(parameters, desorption):
-    if "TDS" in parameters["exports"]:
-        p = parameters["exports"]["TDS"]
-        if "file" in p.keys():
-            file_tds = ''
-            if "folder" in p.keys():
-                file_tds += p["folder"] + '/'
-                os.makedirs(os.path.dirname(file_tds), exist_ok=True)
-            file_tds += p["file"] + ".csv"
+def write_to_csv(dict, desorption):
+    if "file" in dict.keys():
+        file_export = ''
+        if "folder" in dict.keys():
+            file_export += dict["folder"] + '/'
+            os.makedirs(os.path.dirname(file_export), exist_ok=True)
+        if dict["file"].endswith(".csv"):
+            file_export += dict["file"]
+        else:
+            file_export += dict["file"] + ".csv"
         busy = True
         while busy is True:
             try:
-                with open(file_tds, "w+") as f:
+                with open(file_export, "w+") as f:
                     busy = False
                     writer = csv.writer(f, lineterminator='\n')
-                    writer.writerows(['dTt'])
                     for val in desorption:
                         writer.writerows([val])
             except:
-                print("The file " + file_tds +
+                print("The file " + file_export +
                       " might currently be busy."
                       "Please close the application then press any key")
                 input()
@@ -819,7 +819,6 @@ def header_post_processing(parameters):
     '''
     Creates the header for post_proc list
     '''
-    output_file = parameters["exports"]["derived_quantities"]["output_file"]
     header = ['t(s)']
     i = 0
     for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
@@ -850,7 +849,7 @@ def header_post_processing(parameters):
 
 
 def post_processing(parameters, solutions, properties, markers):
-    ''' 
+    '''
     Computes all the derived_quantities and store it into list
     '''
     D = properties[0]
@@ -998,19 +997,21 @@ def run(parameters):
 
     # Solution files
     exports = parameters["exports"]
-
-    files = define_xdmf_files(exports)
+    if "xdmf" in parameters["exports"].keys():
+        files = define_xdmf_files(exports)
 
     #  Time-stepping
     print('Time stepping...')
-    inventory_n = 0
-    desorption = list()
+
     export_total = list()
 
     timer = Timer()  # start timer
     error = []
     if "derived_quantities" in parameters["exports"].keys():
         post_proc_global = [header_post_processing(parameters)]
+    if "TDS" in parameters["exports"].keys():
+        inventory_n = 0
+        desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
     temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
     while t < Time:
@@ -1059,15 +1060,19 @@ def run(parameters):
                 [volume_markers, surface_markers])
             post_proc_t.insert(0, t)
             post_proc_global.append(post_proc_t)
-        export_xdmf(res,
-                    exports, files, t)
+        if "xdmf" in parameters["exports"].keys():
+            export_xdmf(res,
+                        exports, files, t)
         dt = export_profiles(res, exports, t, dt, W)
         temperature.append([t, T(size/2)])
-        inventory = assemble(retention*dx)
-        desorption_rate = [-(inventory-inventory_n)/float(dt), T(size/2), t]
-        inventory_n = inventory
-        if t > parameters["exports"]["TDS"]["TDS_time"]:
-            desorption.append(desorption_rate)
+
+        if "TDS" in parameters["exports"].keys():
+            inventory = assemble(retention*dx)
+            desorption_rate = \
+                [t, T(size/2), -(inventory-inventory_n)/float(dt)]
+            inventory_n = inventory
+            if t > parameters["exports"]["TDS"]["TDS_time"]:
+                desorption.append(desorption_rate)
         # Update previous solutions
         u_n.assign(u)
         for j in range(len(previous_solutions_traps)):
@@ -1079,17 +1084,21 @@ def run(parameters):
     except:
         pass
 
-    # Export TDS
-    tds_to_csv(parameters, desorption)
     # Store data in output
     output = dict()  # Final output
-    output["TDS"] = desorption
+
     output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
     output["temperature"] = temperature
     if "derived_quantities" in parameters["exports"].keys():
         output["derived_quantities"] = post_proc_global
+        write_to_csv(parameters["exports"]["derived_quantities"],
+                     post_proc_global)
+    # Export TDS
+    if "TDS" in parameters["exports"].keys():
+        output["TDS"] = desorption
+        write_to_csv(parameters["exports"]["TDS"], desorption)
     # End
     print('\007s')
     return output
