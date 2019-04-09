@@ -514,9 +514,9 @@ def test_formulation_1_extrap_1_material():
     assert expected_form.equals(F) is True
 
 
-def test_post_processing():
+def test_derived_quantities():
     '''
-    Test the function FESTIM.post_processing()
+    Test the function FESTIM.derived_quantities()
     '''
     # Create Functions
     mesh = fenics.UnitIntervalMesh(10000)
@@ -585,15 +585,15 @@ def test_post_processing():
     # Expected result
     expected = [4, 4, 11/8, 9/8, 17/8, 9/32, 37/96, 2]
     # Compute
-    tab = FESTIM.post_processing(parameters, [u, u, T], [1, 1],
-                                 [volume_markers, surface_markers])
+    tab = FESTIM.derived_quantities(parameters, [u, u, T], [1, 1],
+                                    [volume_markers, surface_markers])
     # Compare
     assert len(tab) == len(expected)
     for i in range(0, len(tab)):
         assert abs(tab[i] - expected[i])/expected[i] < 1e-3
 
 
-def test_header_post_processing():
+def test_header_derived_quantities():
     # Set parameters for derived quantities
     parameters = {
         "exports": {
@@ -644,7 +644,7 @@ def test_header_post_processing():
         }
     }
 
-    tab = FESTIM.header_post_processing(parameters)
+    tab = FESTIM.header_derived_quantities(parameters)
     expected = ["t(s)",
                 "Flux surface 2: solute", "Flux surface 2: T",
                 "Average T volume 1",
