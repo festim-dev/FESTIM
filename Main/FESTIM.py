@@ -776,7 +776,8 @@ def calculate_maximum_volume(f, subdomains, subd_id):
     dm = V.dofmap()
 
     subd_dofs = np.unique(np.hstack(
-        [dm.cell_dofs(c.index()) for c in SubsetIterator(subdomains, subd_id)]))
+        [dm.cell_dofs(c.index())
+         for c in SubsetIterator(subdomains, subd_id)]))
 
     return np.max(f.vector().get_local()[subd_dofs])
 
@@ -788,12 +789,13 @@ def calculate_minimum_volume(f, subdomains, subd_id):
     dm = V.dofmap()
 
     subd_dofs = np.unique(np.hstack(
-        [dm.cell_dofs(c.index()) for c in SubsetIterator(subdomains, subd_id)]))
+        [dm.cell_dofs(c.index())
+         for c in SubsetIterator(subdomains, subd_id)]))
 
     return np.min(f.vector().get_local()[subd_dofs])
 
 
-def header_post_processing(parameters):
+def header_derived_quantities(parameters):
     '''
     Creates the header for post_proc list
     '''
@@ -827,7 +829,7 @@ def header_post_processing(parameters):
     return header
 
 
-def post_processing(parameters, solutions, properties, markers):
+def derived_quantities(parameters, solutions, properties, markers):
     '''
     Computes all the derived_quantities and store it into list
     '''
@@ -987,7 +989,7 @@ def run(parameters):
     timer = Timer()  # start timer
     error = []
     if "derived_quantities" in parameters["exports"].keys():
-        post_proc_global = [header_post_processing(parameters)]
+        derived_quantities_global = [header_derived_quantities(parameters)]
     if "TDS" in parameters["exports"].keys():
         inventory_n = 0
         desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
@@ -1032,13 +1034,13 @@ def run(parameters):
         retention = compute_retention(u, W)
         res.append(retention)
         if "derived_quantities" in parameters["exports"].keys():
-            post_proc_t = post_processing(
+            derived_quantities_t = derived_quantities(
                 parameters,
                 [u, retention, T],
                 [1, 1],
                 [volume_markers, surface_markers])
-            post_proc_t.insert(0, t)
-            post_proc_global.append(post_proc_t)
+            derived_quantities_t.insert(0, t)
+            derived_quantities_global.append(derived_quantities_t)
         if "xdmf" in parameters["exports"].keys():
             export_xdmf(res,
                         exports, files, t)
