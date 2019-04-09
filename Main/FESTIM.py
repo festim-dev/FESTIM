@@ -769,50 +769,28 @@ def compute_retention(u, W):
     return retention
 
 
-def calculate_maximum_volume(u, cell_function, subdomain_id):
-    '''
-    Computes the maxmimum value of Function u on the domain subdomain_id
-    based on MeshFunction cell_function
-    '''
-    V = u.function_space()
-    dofmap = V.dofmap()
-    mesh = V.mesh()
-    maxi = u.vector().min()
-    for cell in cells(mesh):
-        if cell_function[cell.index()] == subdomain_id:
-            dofs = dofmap.cell_dofs(cell.index())
-            for dof in dofs:
-                try:
-                    [dof][0]
-                    if u.vector()[dof][0] > maxi:
-                        maxi = u.vector()[dof][0]
-                except:
-                    if u.vector()[dof] > maxi:
-                        maxi = u.vector()[dof]
-    return maxi
+def calculate_maximum_volume(f, subdomains, subd_id):
+    '''Minimum of f over subdomains cells marked with subd_id'''
+    V = f.function_space()
+
+    dm = V.dofmap()
+
+    subd_dofs = np.unique(np.hstack(
+        [dm.cell_dofs(c.index()) for c in SubsetIterator(subdomains, subd_id)]))
+
+    return np.max(f.vector().get_local()[subd_dofs])
 
 
-def calculate_minimum_volume(u, cell_function, subdomain_id):
-    '''
-    Computes the minimum value of Function u on the domain subdomain_id
-    based on MeshFunction cell_function
-    '''
-    V = u.function_space()
-    dofmap = V.dofmap()
-    mesh = V.mesh()
-    mini = u.vector().max()
-    for cell in cells(mesh):
-        if cell_function[cell.index()] == subdomain_id:
-            dofs = dofmap.cell_dofs(cell.index())
-            for dof in dofs:
-                try:
-                    [dof][0]
-                    if u.vector()[dof][0] < mini:
-                        mini = u.vector()[dof][0]
-                except:
-                    if u.vector()[dof] < mini:
-                        mini = u.vector()[dof]
-    return mini
+def calculate_minimum_volume(f, subdomains, subd_id):
+    '''Minimum of f over subdomains cells marked with subd_id'''
+    V = f.function_space()
+
+    dm = V.dofmap()
+
+    subd_dofs = np.unique(np.hstack(
+        [dm.cell_dofs(c.index()) for c in SubsetIterator(subdomains, subd_id)]))
+
+    return np.min(f.vector().get_local()[subd_dofs])
 
 
 def header_post_processing(parameters):
