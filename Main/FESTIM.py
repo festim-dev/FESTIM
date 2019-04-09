@@ -43,6 +43,8 @@ def write_to_csv(dict, desorption):
                       "Please close the application then press any key")
                 input()
 
+    return True
+
 
 def export_txt(filename, function, W):
     '''
@@ -797,7 +799,7 @@ def calculate_minimum_volume(f, subdomains, subd_id):
 
 def header_derived_quantities(parameters):
     '''
-    Creates the header for post_proc list
+    Creates the header for derived_quantities list
     '''
     header = ['t(s)']
     i = 0
@@ -1070,9 +1072,9 @@ def run(parameters):
     output["mesh"] = mesh
     output["temperature"] = temperature
     if "derived_quantities" in parameters["exports"].keys():
-        output["derived_quantities"] = post_proc_global
+        output["derived_quantities"] = derived_quantities_global
         write_to_csv(parameters["exports"]["derived_quantities"],
-                     post_proc_global)
+                     derived_quantities_global)
     # Export TDS
     if "TDS" in parameters["exports"].keys():
         output["TDS"] = desorption
