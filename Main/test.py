@@ -514,6 +514,41 @@ def test_formulation_1_extrap_1_material():
     assert expected_form.equals(F) is True
 
 
+def test_create_flux_functions():
+    '''
+    Test the function FESTIM.create_flux_functions()
+    '''
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    materials = [
+        {
+            "D_0": 2,
+            "E_diff": 3,
+            "thermal_cond": 4,
+            "id": 1
+            },
+        {
+            "D_0": 3,
+            "E_diff": 4,
+            "thermal_cond": 5,
+            "id": 2
+            }
+            ]
+    mf = fenics.MeshFunction("size_t", mesh, 1, 0)
+    for cell in fenics.cells(mesh):
+        x = cell.midpoint().x()
+        if x < 0.5:
+            mf[cell] = 1
+        else:
+            mf[cell] = 2
+    A, B, C = FESTIM.create_flux_functions(mesh, materials, mf)
+    for cell in fenics.cells(mesh):
+        cell_no = cell.index()
+        assert A.vector()[cell_no] == mf[cell]+1
+        assert B.vector()[cell_no] == mf[cell]+2
+        assert C.vector()[cell_no] == mf[cell]+3
+
+
 def test_derived_quantities():
     '''
     Test the function FESTIM.derived_quantities()

@@ -771,6 +771,31 @@ def compute_retention(u, W):
     return retention
 
 
+def create_flux_functions(mesh, materials, volume_markers):
+    '''
+    Returns Function() objects for fluxes computation
+    '''
+    D0 = FunctionSpace(mesh, 'DG', 0)
+    D_0 = Function(D0, name="D_0")
+    E_diff = Function(D0, name="E_diff")
+    thermal_cond = Function(D0, name="thermal_cond")
+
+    # Update coefficient D_0 and E_diff
+    for cell in cells(mesh):
+
+        subdomain_id = volume_markers[cell]
+        material = find_material_from_id(materials, subdomain_id)
+        value_D0 = material["D_0"]
+        value_E_diff = material["E_diff"]
+        if "thermal_cond" in material:
+            value_thermal_cond = material["thermal_cond"]
+        cell_no = cell.index()
+        D_0.vector()[cell_no] = value_D0
+        E_diff.vector()[cell_no] = value_E_diff
+        thermal_cond.vector()[cell_no] = value_thermal_cond
+    return D_0, E_diff, thermal_cond
+
+
 def calculate_maximum_volume(f, subdomains, subd_id):
     '''Minimum of f over subdomains cells marked with subd_id'''
     V = f.function_space()
@@ -902,7 +927,7 @@ def run(parameters):
     Time = parameters["solving_parameters"]["final_time"]
     num_steps = parameters["solving_parameters"]["num_steps"]
     dt = Constant(Time / num_steps)  # time step size
-    level = 30  # 30 for WARNING 20 for INFO
+    level = 20  # 30 for WARNING 20 for INFO
     set_log_level(level)
 
     # Mesh and refinement
@@ -916,7 +941,11 @@ def run(parameters):
         subdomains(mesh, parameters["materials"], size)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
-
+    # Create functions for flux computation
+    if "derived_quantities" in parameters["exports"]:
+        if "surface_flux" in parameters["exports"]["derived_quantities"]:
+            D_0, E_diff, thermal_cond = create_flux_functions(
+                mesh, parameters["materials"], volume_markers)
     # Define expressions used in variational forms
     print('Defining source terms')
     flux_ = Expression(
@@ -1039,7 +1068,7 @@ def run(parameters):
             derived_quantities_t = derived_quantities(
                 parameters,
                 [u, retention, T],
-                [1, 1],
+                [D_0*exp(-E_diff/T), thermal_cond],
                 [volume_markers, surface_markers])
             derived_quantities_t.insert(0, t)
             derived_quantities_global.append(derived_quantities_t)
