@@ -19,29 +19,31 @@ class ExpressionFromInterpolatedData(UserExpression):
         values[:] = float(self._fun(self.t))
 
 
-def tds_to_csv(parameters, desorption):
-    if "TDS" in parameters["exports"]:
-        p = parameters["exports"]["TDS"]
-        if "file" in p.keys():
-            file_tds = ''
-            if "folder" in p.keys():
-                file_tds += p["folder"] + '/'
-                os.makedirs(os.path.dirname(file_tds), exist_ok=True)
-            file_tds += p["file"] + ".csv"
+def write_to_csv(dict, desorption):
+    if "file" in dict.keys():
+        file_export = ''
+        if "folder" in dict.keys():
+            file_export += dict["folder"] + '/'
+            os.makedirs(os.path.dirname(file_export), exist_ok=True)
+        if dict["file"].endswith(".csv"):
+            file_export += dict["file"]
+        else:
+            file_export += dict["file"] + ".csv"
         busy = True
         while busy is True:
             try:
-                with open(file_tds, "w+") as f:
+                with open(file_export, "w+") as f:
                     busy = False
                     writer = csv.writer(f, lineterminator='\n')
-                    writer.writerows(['dTt'])
                     for val in desorption:
                         writer.writerows([val])
             except:
-                print("The file " + file_tds +
+                print("The file " + file_export +
                       " might currently be busy."
                       "Please close the application then press any key")
                 input()
+
+    return True
 
 
 def export_txt(filename, function, W):
@@ -76,7 +78,7 @@ def export_profiles(res, exports, t, dt, W):
     Exports 1D profiles in txt files.
     Arguments:
     - res: list, contains FEniCS Functions
-    - exports: dict, defined by define_exports()
+    - exports: dict, dict, contains parameters
     - t: float, time
     - dt: FEniCS Constant(), stepsize
     Returns:
@@ -129,7 +131,7 @@ def define_xdmf_files(exports):
     '''
     Returns a list of XDMFFile
     Arguments:
-    - exports: dict, defined by define_exports()
+    - exports: dict, contains parameters
     '''
     if len(exports['xdmf']['functions']) != len(exports['xdmf']['labels']):
         raise NameError("Number of functions to be exported "
@@ -153,7 +155,7 @@ def export_xdmf(res, exports, files, t):
     Exports the solutions fields in xdmf files.
     Arguments:
     - res: list, contains FEniCS Functions
-    - exports: dict, defined by define_exports()
+    - exports: dict, contains parameters
     - files: list, contains XDMFFile
     - t: float
     '''
@@ -769,12 +771,163 @@ def compute_retention(u, W):
     return retention
 
 
+def create_flux_functions(mesh, materials, volume_markers):
+    '''
+    Returns Function() objects for fluxes computation
+    '''
+    D0 = FunctionSpace(mesh, 'DG', 0)
+    D_0 = Function(D0, name="D_0")
+    E_diff = Function(D0, name="E_diff")
+    thermal_cond = Function(D0, name="thermal_cond")
+
+    # Update coefficient D_0 and E_diff
+    for cell in cells(mesh):
+
+        subdomain_id = volume_markers[cell]
+        material = find_material_from_id(materials, subdomain_id)
+        value_D0 = material["D_0"]
+        value_E_diff = material["E_diff"]
+        if "thermal_cond" in material:
+            value_thermal_cond = material["thermal_cond"]
+        cell_no = cell.index()
+        D_0.vector()[cell_no] = value_D0
+        E_diff.vector()[cell_no] = value_E_diff
+        thermal_cond.vector()[cell_no] = value_thermal_cond
+    return D_0, E_diff, thermal_cond
+
+
+def calculate_maximum_volume(f, subdomains, subd_id):
+    '''Minimum of f over subdomains cells marked with subd_id'''
+    V = f.function_space()
+
+    dm = V.dofmap()
+
+    subd_dofs = np.unique(np.hstack(
+        [dm.cell_dofs(c.index())
+         for c in SubsetIterator(subdomains, subd_id)]))
+
+    return np.max(f.vector().get_local()[subd_dofs])
+
+
+def calculate_minimum_volume(f, subdomains, subd_id):
+    '''Minimum of f over subdomains cells marked with subd_id'''
+    V = f.function_space()
+
+    dm = V.dofmap()
+
+    subd_dofs = np.unique(np.hstack(
+        [dm.cell_dofs(c.index())
+         for c in SubsetIterator(subdomains, subd_id)]))
+
+    return np.min(f.vector().get_local()[subd_dofs])
+
+
+def header_derived_quantities(parameters):
+    '''
+    Creates the header for derived_quantities list
+    '''
+    header = ['t(s)']
+    i = 0
+    for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+        for surf in flux["surfaces"]:
+            header.append("Flux surface " + str(surf) + ": " + flux['field'])
+    for average in parameters[
+                    "exports"]["derived_quantities"]["average_volume"]:
+        for vol in average["volumes"]:
+            header.append(
+                "Average " + average['field'] + " volume " + str(vol))
+    for minimum in parameters[
+                    "exports"]["derived_quantities"]["minimum_volume"]:
+        for vol in minimum["volumes"]:
+            header.append(
+                "Minimum " + minimum["field"] + " volume " + str(vol))
+    for maximum in parameters[
+                    "exports"]["derived_quantities"]["maximum_volume"]:
+        for vol in maximum["volumes"]:
+            header.append(
+                "Maximum " + maximum["field"] + " volume " + str(vol))
+    for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+        for vol in total["volumes"]:
+            header.append("Total " + total["field"] + " volume " + str(vol))
+    for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+        for surf in total["surfaces"]:
+            header.append("Total " + total["field"] + " surface " + str(surf))
+
+    return header
+
+
+def derived_quantities(parameters, solutions, properties, markers):
+    '''
+    Computes all the derived_quantities and store it into list
+    '''
+    D = properties[0]
+    thermal_cond = properties[1]
+
+    volume_markers = markers[0]
+    surface_markers = markers[1]
+    V = solutions[0].function_space()
+    mesh = V.mesh()
+    n = FacetNormal(mesh)
+    dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
+    ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
+
+    # Create dicts
+    field_to_sol = {
+        'solute': solutions[0],
+        'retention': solutions[len(solutions)-2],
+        'T': solutions[len(solutions)-1],
+    }
+    field_to_prop = {
+        'solute': D,
+        'T': thermal_cond,
+    }
+    for i in range(1, len(solutions)-2):
+        field_to_sol[str(i)] = solutions[i]
+
+    for key, val in field_to_sol.items():
+        if isinstance(val, function.expression.Expression):
+            val = interpolate(val, V)
+            field_to_sol[key] = val
+    tab = []
+    # Compute quantities
+    for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+        sol = field_to_sol[flux["field"]]
+        prop = field_to_prop[flux["field"]]
+        for surf in flux["surfaces"]:
+            tab.append(assemble(prop*dot(grad(sol), n)*ds(surf)))
+    for average in parameters[
+                    "exports"]["derived_quantities"]["average_volume"]:
+        sol = field_to_sol[average["field"]]
+        for vol in average["volumes"]:
+            val = assemble(sol*dx(vol))/assemble(1*dx(vol))
+            tab.append(val)
+    for minimum in parameters[
+                    "exports"]["derived_quantities"]["minimum_volume"]:
+        sol = field_to_sol[minimum["field"]]
+        for vol in minimum["volumes"]:
+            tab.append(calculate_minimum_volume(sol, volume_markers, vol))
+    for maximum in parameters[
+                    "exports"]["derived_quantities"]["maximum_volume"]:
+        sol = field_to_sol[maximum["field"]]
+        for vol in maximum["volumes"]:
+            tab.append(calculate_maximum_volume(sol, volume_markers, vol))
+    for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+        sol = field_to_sol[minimum["field"]]
+        for vol in total["volumes"]:
+            tab.append(assemble(sol*dx(vol)))
+    for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+        sol = field_to_sol[total["field"]]
+        for surf in total["surfaces"]:
+            tab.append(assemble(sol*ds(surf)))
+    return tab
+
+
 def run(parameters):
     # Declaration of variables
     Time = parameters["solving_parameters"]["final_time"]
     num_steps = parameters["solving_parameters"]["num_steps"]
     dt = Constant(Time / num_steps)  # time step size
-    level = 30  # 30 for WARNING 20 for INFO
+    level = 20  # 30 for WARNING 20 for INFO
     set_log_level(level)
 
     # Mesh and refinement
@@ -788,7 +941,11 @@ def run(parameters):
         subdomains(mesh, parameters["materials"], size)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
-
+    # Create functions for flux computation
+    if "derived_quantities" in parameters["exports"]:
+        if "surface_flux" in parameters["exports"]["derived_quantities"]:
+            D_0, E_diff, thermal_cond = create_flux_functions(
+                mesh, parameters["materials"], volume_markers)
     # Define expressions used in variational forms
     print('Defining source terms')
     flux_ = Expression(
@@ -854,17 +1011,19 @@ def run(parameters):
 
     # Solution files
     exports = parameters["exports"]
-
-    files = define_xdmf_files(exports)
+    if "xdmf" in parameters["exports"].keys():
+        files = define_xdmf_files(exports)
 
     #  Time-stepping
     print('Time stepping...')
-    inventory_n = 0
-    desorption = list()
-    export_total = list()
 
     timer = Timer()  # start timer
     error = []
+    if "derived_quantities" in parameters["exports"].keys():
+        derived_quantities_global = [header_derived_quantities(parameters)]
+    if "TDS" in parameters["exports"].keys():
+        inventory_n = 0
+        desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
     temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
     while t < Time:
@@ -900,39 +1059,55 @@ def run(parameters):
         for j in range(len(extrinsic_formulations)):
             solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
-        # Post prossecing
+        # Post processing
+
         res = list(u.split())
         retention = compute_retention(u, W)
         res.append(retention)
-        export_xdmf(res,
-                    exports, files, t)
+        if "derived_quantities" in parameters["exports"].keys():
+            derived_quantities_t = derived_quantities(
+                parameters,
+                [u, retention, T],
+                [D_0*exp(-E_diff/T), thermal_cond],
+                [volume_markers, surface_markers])
+            derived_quantities_t.insert(0, t)
+            derived_quantities_global.append(derived_quantities_t)
+        if "xdmf" in parameters["exports"].keys():
+            export_xdmf(res,
+                        exports, files, t)
         dt = export_profiles(res, exports, t, dt, W)
         temperature.append([t, T(size/2)])
-        inventory = assemble(retention*dx)
-        desorption_rate = [-(inventory-inventory_n)/float(dt), T(size/2), t]
-        inventory_n = inventory
-        if t > parameters["exports"]["TDS"]["TDS_time"]:
-            desorption.append(desorption_rate)
+
+        if "TDS" in parameters["exports"].keys():
+            inventory = assemble(retention*dx)
+            desorption_rate = \
+                [t, T(size/2), -(inventory-inventory_n)/float(dt)]
+            inventory_n = inventory
+            if t > parameters["exports"]["TDS"]["TDS_time"]:
+                desorption.append(desorption_rate)
         # Update previous solutions
         u_n.assign(u)
         for j in range(len(previous_solutions_traps)):
             previous_solutions_traps[j].assign(extrinsic_traps[j])
 
-    # Compute error
-    try:
-        error = compute_error(parameters["exports"]["error"], t, u_n, mesh)
-    except:
-        pass
-
-    # Export TDS
-    tds_to_csv(parameters, desorption)
     # Store data in output
     output = dict()  # Final output
-    output["TDS"] = desorption
-    output["error"] = error
+
+    # Compute error
+    if "error" in parameters["exports"].keys():
+        error = compute_error(parameters["exports"]["error"], t, u_n, mesh)
+        output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
     output["temperature"] = temperature
+    if "derived_quantities" in parameters["exports"].keys():
+        output["derived_quantities"] = derived_quantities_global
+        write_to_csv(parameters["exports"]["derived_quantities"],
+                     derived_quantities_global)
+    # Export TDS
+    if "TDS" in parameters["exports"].keys():
+        output["TDS"] = desorption
+        write_to_csv(parameters["exports"]["TDS"], desorption)
     # End
     print('\007s')
     return output
