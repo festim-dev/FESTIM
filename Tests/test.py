@@ -1,4 +1,4 @@
-import FESTIM
+from FESTIM import FESTIM
 import fenics
 import pytest
 import sympy as sp
