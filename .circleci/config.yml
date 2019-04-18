@@ -8,4 +8,4 @@ jobs:
       - run:
           name: Run Tests
           command: |
-            pytest-3 Tests/test.py
+            pytest-3 Tests/
