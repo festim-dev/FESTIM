@@ -1,5 +1,5 @@
 # Unit tests formulation
-from FESTIM import FESTIM
+import FESTIM
 import fenics
 import pytest
 import sympy as sp
@@ -37,7 +37,7 @@ def test_formulation_no_trap_1_material():
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
 
-    F, expressions = FESTIM.formulation(
+    F, expressions = FESTIM.formulations.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
@@ -85,7 +85,7 @@ def test_formulation_1_trap_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
-    F, expressions = FESTIM.formulation(
+    F, expressions = FESTIM.formulations.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
 
@@ -153,7 +153,7 @@ def test_formulation_2_traps_1_material():
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
 
-    F, expressions = FESTIM.formulation(
+    F, expressions = FESTIM.formulations.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
 
@@ -206,7 +206,7 @@ def test_formulation_1_trap_2_materials():
     and 2 materials
     '''
     def create_subdomains(x1, x2):
-        class domain(FESTIM.SubDomain):
+        class domain(fenics.SubDomain):
             def inside(self, x, on_boundary):
                 return x[0] >= x1 and x[0] <= x2
         domain = domain()
@@ -256,7 +256,7 @@ def test_formulation_1_trap_2_materials():
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("1", degree=0)
 
-    F, expressions = FESTIM.formulation(
+    F, expressions = FESTIM.formulations.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
 
@@ -336,7 +336,7 @@ def test_formulation_1_extrap_1_material():
     temp = fenics.Expression("300", degree=0)
     flux_ = fenics.Expression("10000", degree=0)
 
-    F, expressions = FESTIM.formulation(
+    F, expressions = FESTIM.formulations.formulation(
         traps, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, materials, temp, flux_)
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \

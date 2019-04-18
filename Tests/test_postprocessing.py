@@ -1,4 +1,4 @@
-from FESTIM import FESTIM
+import FESTIM
 import fenics
 import pytest
 import sympy as sp
@@ -15,7 +15,7 @@ def test_define_xdmf_files():
             "folder": folder
         }
         }
-    assert len(expected) == len(FESTIM.define_xdmf_files(exports))
+    assert len(expected) == len(FESTIM.export.define_xdmf_files(exports))
 
     # Test an int type for folder
     with pytest.raises(TypeError, match=r'str'):
@@ -27,7 +27,7 @@ def test_define_xdmf_files():
                 "folder": folder
             }
             }
-        FESTIM.define_xdmf_files(exports)
+        FESTIM.export.define_xdmf_files(exports)
 
     # Test an empty string for folder
     with pytest.raises(ValueError, match=r'empty string'):
@@ -39,7 +39,7 @@ def test_define_xdmf_files():
                 "folder": folder
             }
             }
-        FESTIM.define_xdmf_files(exports)
+        FESTIM.export.define_xdmf_files(exports)
 
 
 def test_export_xdmf():
@@ -55,20 +55,20 @@ def test_export_xdmf():
         }
     files = [fenics.XDMFFile(folder + "/" + "a.xdmf"),
              fenics.XDMFFile(folder + "/" + "b.xdmf")]
-    assert FESTIM.export_xdmf(
+    assert FESTIM.export.export_xdmf(
         [fenics.Function(V), fenics.Function(V)],
         exports, files, 20) is None
 
     exports["xdmf"]["functions"] = ['solute', 'blabla']
 
     with pytest.raises(KeyError, match=r'blabla'):
-        FESTIM.export_xdmf(
+        FESTIM.export.export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
             exports, files, 20)
 
     exports["xdmf"]["functions"] = ['solute', '13']
     with pytest.raises(KeyError, match=r'13'):
-        FESTIM.export_xdmf(
+        FESTIM.export.export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
             exports, files, 20)
 
@@ -100,7 +100,7 @@ def test_create_flux_functions():
             mf[cell] = 1
         else:
             mf[cell] = 2
-    A, B, C = FESTIM.create_flux_functions(mesh, materials, mf)
+    A, B, C = FESTIM.post_processing.create_flux_functions(mesh, materials, mf)
     for cell in fenics.cells(mesh):
         cell_no = cell.index()
         assert A.vector()[cell_no] == mf[cell]+1
@@ -179,8 +179,9 @@ def test_derived_quantities():
     # Expected result
     expected = [4, 4, 11/8, 9/8, 17/8, 9/32, 37/96, 2]
     # Compute
-    tab = FESTIM.derived_quantities(parameters, [u, u, T], [1, 1],
-                                    [volume_markers, surface_markers])
+    tab = FESTIM.post_processing.derived_quantities(
+        parameters, [u, u, T], [1, 1],
+        [volume_markers, surface_markers])
     # Compare
     assert len(tab) == len(expected)
     for i in range(0, len(tab)):
@@ -238,7 +239,7 @@ def test_header_derived_quantities():
         }
     }
 
-    tab = FESTIM.header_derived_quantities(parameters)
+    tab = FESTIM.post_processing.header_derived_quantities(parameters)
     expected = ["t(s)",
                 "Flux surface 2: solute", "Flux surface 2: T",
                 "Average T volume 1",

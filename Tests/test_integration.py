@@ -1,11 +1,10 @@
-from FESTIM import FESTIM
+import FESTIM
 import fenics
 import pytest
 import sympy as sp
 
 
 # Integration tests
-
 
 def test_run_temperature_stationary():
     '''
@@ -95,7 +94,7 @@ def test_run_temperature_stationary():
             },
 
     }
-    output = FESTIM.run(parameters)
+    output = FESTIM.generic_simulation.run(parameters)
     # temp at the middle
     T_computed = output["temperature"][1][1]
     assert abs(T_computed - (1+2*(size/2)**2)) < 1e-9
@@ -191,7 +190,7 @@ def test_run_temperature_transient():
             },
 
     }
-    output = FESTIM.run(parameters)
+    output = FESTIM.generic_simulation.run(parameters)
     # temp at the middle
     T_computed = output["temperature"][1][1]
     error = []
@@ -339,7 +338,8 @@ def test_run_MMS():
     dt = 1/50
     final_time = 0.1
     for h in sizes:
-        output = FESTIM.run(parameters(h, dt, final_time, u, v))
+        output = FESTIM.generic_simulation.run(
+            parameters(h, dt, final_time, u, v))
         error_max_u = output["error"][0][1]
         error_max_v = output["error"][0][2]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
