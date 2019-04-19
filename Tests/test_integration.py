@@ -59,7 +59,7 @@ def test_run_temperature_stationary():
             "initial_condition": u
         },
         "source_term": {
-            'flux': 0
+            'value': 0
             },
         "solving_parameters": {
             "final_time": 30,
@@ -155,7 +155,7 @@ def test_run_temperature_transient():
             "initial_condition": u
         },
         "source_term": {
-            'flux': 0
+            'value': 0
             },
         "solving_parameters": {
             "final_time": 30,
@@ -287,7 +287,7 @@ def test_run_MMS():
                     'value': T
                 },
             "source_term": {
-                'flux': f
+                'value': f
                 },
             "solving_parameters": {
                 "final_time": final_time,

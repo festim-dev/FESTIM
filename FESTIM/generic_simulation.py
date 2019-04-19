@@ -31,7 +31,7 @@ def run(parameters):
     # Define expressions used in variational forms
     print('Defining source terms')
     flux_ = Expression(
-        sp.printing.ccode(parameters["source_term"]["flux"]), t=0, degree=2)
+        sp.printing.ccode(parameters["source_term"]["value"]), t=0, degree=2)
 
     # Define temperature
     if parameters["temperature"]["type"] == "expression":
