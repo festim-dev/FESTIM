@@ -2,6 +2,7 @@ from fenics import *
 import csv
 import sys
 import os
+import numpy as np
 
 
 def write_to_csv(dict, desorption):
