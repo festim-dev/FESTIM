@@ -13,14 +13,27 @@ The governing equations are composed of:
 
 The following features are included in this tool:
 - 1D transient simulations of HIs diffusion/trapping/detrapping in multimaterial domains
-- 1D transient/stationary simulation of heat diffusion
-- Analytical temperature expression
-- Extrinsic traps
+- Adaptive stepsize
+- Temperature module as:
+    - user-defined expression
+    - transient/stationnary heat equation
+    
+- Multiple Intrinsic/Extrinsic traps
 - Non-homogeneous trap distribution
-- Nonzero initial values
-- Boundary conditions: Dirichlet, Pressure/solubility
+- Wide range of in-built boundary conditions :
+    - Sievert's law
+    - experimental data
+    - user-defined expression 
+    - ...
+ - Derived quantities computation:
+    - surface fluxes
+    - volume integrations
+    - Min/max values over domains
+    - Mean values over domains
 
-FESTIM spatially discretizes the PDEs using the Finite Element Methods. At this extent, we chose to use the C++/Python library [FEniCS](https://fenicsproject.org). The implicit time discretisation method is backward Euler and the PDEs are solved using FEniCS' Newton nonlinear solver. We also provides a library of generic functions so that users can write custom simulations in addition to the flexibility of [FEniCS](https://fenicsproject.org) built-in functions.
+FESTIM spatially discretizes the PDEs using the Finite Element Methods. At this extent, we chose to use the C++/Python library [FEniCS](https://fenicsproject.org). 
+The implicit time discretisation method is backward Euler.
+PDEs are solved using FEniCS' Newton nonlinear solver. A library of generic functions is provided so that users can run custom simulations in addition to the flexibility of [FEniCS](https://fenicsproject.org) built-in functions.
 
 ## Run FESTIM in Docker (e.g. on Windows, Mac, many Linux distributions)
 The FEniCS project provides a [Docker image](https://hub.docker.com/r/fenicsproject/stable/) with FEniCS and its dependencies (python3, UFL, DOLFIN, numpy, sympy...)  already installed. See their ["FEniCS in Docker" manual](https://fenics.readthedocs.io/projects/containers/en/latest/).
@@ -37,12 +50,16 @@ Clone FESTIM's git repository:
     
 Run the tests:
 
-    pytest-3 Main/test.py
+    pytest-3 Tests/
 ## Visualisation
 FESTIM allows users to export their data to .csv, .txt or to a XDMF format with an XML interface. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
 
 ## Todo
 - write more tests
 - write more demos
+- Adaptive Mesh Refinement (AMR)
+- improve adaptive stepsize
+- support for 2D/3D simulations
+
 ## References
 - Hodille _et al._ _Macroscopic rate equation modeling of trapping/detrapping of hydrogen isotopes in tungsten materials_. JNM 467 (2015) 424-431
