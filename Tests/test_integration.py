@@ -63,7 +63,7 @@ def test_run_temperature_stationary():
             },
         "solving_parameters": {
             "final_time": 30,
-            "num_steps": 60,
+            "initial_stepsize": 60,
             "adaptive_stepsize": {
                 "stepsize_change_ratio": 1,
                 "t_stop": 40,
@@ -159,7 +159,7 @@ def test_run_temperature_transient():
             },
         "solving_parameters": {
             "final_time": 30,
-            "num_steps": 60,
+            "initial_stepsize": 60,
             "adaptive_stepsize": {
                 "stepsize_change_ratio": 1,
                 "t_stop": 40,
@@ -291,7 +291,7 @@ def test_run_MMS():
                 },
             "solving_parameters": {
                 "final_time": final_time,
-                "num_steps": round(1/dt),
+                "initial_stepsize": round(1/dt),
                 "adaptive_stepsize": {
                     "stepsize_change_ratio": 1,
                     "t_stop": 0,

@@ -6,8 +6,8 @@ import sympy as sp
 def run(parameters):
     # Declaration of variables
     Time = parameters["solving_parameters"]["final_time"]
-    num_steps = parameters["solving_parameters"]["num_steps"]
-    dt = Constant(Time / num_steps)  # time step size
+    initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
+    dt = Constant(Time / initial_stepsize)  # time step size
     level = 30  # 30 for WARNING 20 for INFO
     set_log_level(level)
 
