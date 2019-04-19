@@ -63,7 +63,7 @@ def test_run_temperature_stationary():
             },
         "solving_parameters": {
             "final_time": 30,
-            "initial_stepsize": 60,
+            "initial_stepsize": 0.5,
             "adaptive_stepsize": {
                 "stepsize_change_ratio": 1,
                 "t_stop": 40,
@@ -159,7 +159,7 @@ def test_run_temperature_transient():
             },
         "solving_parameters": {
             "final_time": 30,
-            "initial_stepsize": 60,
+            "initial_stepsize": 0.5,
             "adaptive_stepsize": {
                 "stepsize_change_ratio": 1,
                 "t_stop": 40,
@@ -291,7 +291,7 @@ def test_run_MMS():
                 },
             "solving_parameters": {
                 "final_time": final_time,
-                "initial_stepsize": round(1/dt),
+                "initial_stepsize": dt,
                 "adaptive_stepsize": {
                     "stepsize_change_ratio": 1,
                     "t_stop": 0,
@@ -335,7 +335,7 @@ def test_run_MMS():
     tol_u = 1e-7
     tol_v = 1e-1
     sizes = [1/1600, 1/1700]
-    dt = 1/50
+    dt = 0.1/50
     final_time = 0.1
     for h in sizes:
         output = FESTIM.generic_simulation.run(
