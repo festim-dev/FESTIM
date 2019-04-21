@@ -14,13 +14,13 @@ def solve_u(F, u, bcs, t, dt, solving_parameters):
         solving_parameters['newton_solver']['relative_tolerance']
     nb_it, converged = solver.solve()
 
-    t_stop = solving_parameters["adaptative_time_step"]["t_stop"]
+    t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
     stepsize_stop_max = \
-        solving_parameters["adaptative_time_step"]["stepsize_stop_max"]
+        solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
     stepsize_change_ratio = \
-        solving_parameters["adaptative_time_step"]["stepsize_change_ratio"]
-    dt_min = solving_parameters["adaptative_time_step"]["dt_min"]
-    dt = adaptative_timestep(
+        solving_parameters["adaptive_stepsize"]["stepsize_change_ratio"]
+    dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
+    dt = adaptive_stepsize(
         converged=converged, nb_it=nb_it, dt=dt,
         stepsize_change_ratio=stepsize_change_ratio,
         dt_min=dt_min, t=t, t_stop=t_stop,
@@ -28,9 +28,9 @@ def solve_u(F, u, bcs, t, dt, solving_parameters):
     return u, dt
 
 
-def adaptative_timestep(converged, nb_it, dt, dt_min,
-                        stepsize_change_ratio, t, t_stop,
-                        stepsize_stop_max):
+def adaptive_stepsize(converged, nb_it, dt, dt_min,
+                      stepsize_change_ratio, t, t_stop,
+                      stepsize_stop_max):
     '''
     Adapts the stepsize as function of the number of iterations of the
     solver.
@@ -41,7 +41,7 @@ def adaptative_timestep(converged, nb_it, dt, dt_min,
     - dt_min : float, stepsize minimum value
     - stepsize_change_ration : float, stepsize change ratio
     - t : float, time
-    - t_stop : float, time where adaptative time step stops
+    - t_stop : float, time where adaptive time step stops
     - stepsize_stop_max : float, maximum stepsize after stop
     Returns:
     - dt : Constant(), fenics object

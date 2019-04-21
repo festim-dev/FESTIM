@@ -6,9 +6,9 @@ import sympy as sp
 def run(parameters):
     # Declaration of variables
     Time = parameters["solving_parameters"]["final_time"]
-    num_steps = parameters["solving_parameters"]["num_steps"]
-    dt = Constant(Time / num_steps)  # time step size
-    level = 20  # 30 for WARNING 20 for INFO
+    initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
+    dt = Constant(initial_stepsize)  # time step size
+    level = 30  # 30 for WARNING 20 for INFO
     set_log_level(level)
 
     # Mesh and refinement
@@ -31,7 +31,7 @@ def run(parameters):
     # Define expressions used in variational forms
     print('Defining source terms')
     flux_ = Expression(
-        sp.printing.ccode(parameters["source_term"]["flux"]), t=0, degree=2)
+        sp.printing.ccode(parameters["source_term"]["value"]), t=0, degree=2)
 
     # Define temperature
     if parameters["temperature"]["type"] == "expression":
