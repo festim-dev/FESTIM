@@ -184,7 +184,7 @@ def derived_quantities(parameters, solutions, properties, markers):
         for vol in maximum["volumes"]:
             tab.append(calculate_maximum_volume(sol, volume_markers, vol))
     for total in parameters["exports"]["derived_quantities"]["total_volume"]:
-        sol = field_to_sol[minimum["field"]]
+        sol = field_to_sol[total["field"]]
         for vol in total["volumes"]:
             tab.append(assemble(sol*dx(vol)))
     for total in parameters["exports"]["derived_quantities"]["total_surface"]:
