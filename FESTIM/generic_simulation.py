@@ -163,7 +163,7 @@ def run(parameters):
         if "derived_quantities" in parameters["exports"].keys():
             derived_quantities_t = FESTIM.post_processing.derived_quantities(
                 parameters,
-                [u, retention, T],
+                [*res, T],
                 [D_0*exp(-E_diff/T), thermal_cond],
                 [volume_markers, surface_markers])
             derived_quantities_t.insert(0, t)
