@@ -58,12 +58,6 @@ def run(parameters):
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
 
-    # BCs
-    print('Defining boundary conditions')
-    bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
-        parameters["boundary_conditions"], V, surface_markers, ds,
-        T)
-
     # Define functions
 
     u, solutions = FESTIM.functionspaces_and_functions.define_functions(V)
@@ -92,6 +86,16 @@ def run(parameters):
         solutions, testfunctions_concentrations,
         previous_solutions_concentrations, dt, dx,
         parameters["materials"], T, flux_)
+
+    # BCs
+    print('Defining boundary conditions')
+    bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
+        parameters["boundary_conditions"], V, surface_markers, ds,
+        T)
+    fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
+        parameters["boundary_conditions"], solutions,
+        testfunctions_concentrations, ds)
+    F += fluxes
     # Define variational problem for extrinsic traps
 
     extrinsic_formulations, expressions_form = \
@@ -125,6 +129,8 @@ def run(parameters):
             expressions_form, t)
         expressions_F = FESTIM.helpers.update_expressions(
             expressions_F, t)
+        expressions_fluxes = FESTIM.helpers.update_expressions(
+            expressions_fluxes, t)
         if parameters["temperature"]["type"] != "expression":
             expressions_FT = FESTIM.helpers.update_expressions(
                 expressions_FT, t)
