@@ -30,7 +30,8 @@ def test_fluxes():
     testfunctions = list(fenics.split(v))
     sol = solutions[0]
     test_sol = testfunctions[0]
-    F, expressions = FESTIM.boundary_conditions.apply_fluxes(boundary_conditions, sol, test_sol, fenics.ds)
+    F, expressions = FESTIM.boundary_conditions.apply_fluxes(
+        boundary_conditions, solutions, testfunctions, fenics.ds)
     expected_form = 0
     expected_form += -test_sol * (kr * sol**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(1)
