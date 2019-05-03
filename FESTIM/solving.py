@@ -12,8 +12,8 @@ def solve_u(F, u, bcs, t, dt, solving_parameters):
         solving_parameters['newton_solver']['absolute_tolerance']
     solver.parameters["newton_solver"]["relative_tolerance"] = \
         solving_parameters['newton_solver']['relative_tolerance']
-    nb_it, converged = solver.solve()
-
+    solver.parameters["newton_solver"]["maximum_iterations"] = \
+        solving_parameters['newton_solver']['maximum_iterations']
     t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
     stepsize_stop_max = \
         solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
@@ -21,21 +21,21 @@ def solve_u(F, u, bcs, t, dt, solving_parameters):
         solving_parameters["adaptive_stepsize"]["stepsize_change_ratio"]
     dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
     dt = adaptive_stepsize(
-        converged=converged, nb_it=nb_it, dt=dt,
+        solver=solver, dt=dt,
         stepsize_change_ratio=stepsize_change_ratio,
         dt_min=dt_min, t=t, t_stop=t_stop,
         stepsize_stop_max=stepsize_stop_max)
     return u, dt
 
 
-def adaptive_stepsize(converged, nb_it, dt, dt_min,
+def adaptive_stepsize(solver, dt, dt_min,
                       stepsize_change_ratio, t, t_stop,
                       stepsize_stop_max):
     '''
     Adapts the stepsize as function of the number of iterations of the
     solver.
     Arguments:
-    - converged : bool, determines if the time step has converged.
+    - solver : FEniCS NonlinearVariationalSolver
     - nb_it : int, number of iterations
     - dt : Constant(), fenics object
     - dt_min : float, stepsize minimum value
@@ -46,6 +46,7 @@ def adaptive_stepsize(converged, nb_it, dt, dt_min,
     Returns:
     - dt : Constant(), fenics object
     '''
+    nb_it, converged = solver.solve()
     while converged is False:
         dt.assign(float(dt)/stepsize_change_ratio)
         nb_it, converged = solver.solve()

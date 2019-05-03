@@ -2,6 +2,7 @@ from FESTIM import *
 from fenics import *
 import sympy as sp
 
+
 class ExpressionFromInterpolatedData(UserExpression):
     def __init__(self, t, fun, **kwargs):
         self.t = t
@@ -78,9 +79,12 @@ def apply_boundary_conditions(boundary_conditions, V,
             value_BC = solubility_BC(
                     pressure, BC["density"]*solubility(
                         BC["S_0"], BC["E_S"],
-                        k_B, T(0)))
+                        k_B, T))
             value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                   degree=2)
+            print("WARNING: solubility BC. \
+                If temperature is type solve_transient\
+                     initial temperature will be considered.")
         elif type_BC == "table":
             table = BC["value"]
             # Interpolate table
