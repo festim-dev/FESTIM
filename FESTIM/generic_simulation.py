@@ -4,6 +4,12 @@ import sympy as sp
 
 
 def run(parameters):
+    # Export parameters
+    try:  # if parameters are in the export key
+        FESTIM.export.export_parameters(parameters)
+    except:
+        pass
+
     # Declaration of variables
     Time = parameters["solving_parameters"]["final_time"]
     initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
