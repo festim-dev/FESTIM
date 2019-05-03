@@ -48,31 +48,35 @@ def solubility_BC(P, S):
     return P**0.5*S
 
 
-def apply_fluxes(boundary_conditions, u, v, ds, F=0):
+def apply_fluxes(boundary_conditions, solutions, testfunctions, ds):
     ''' Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
     '''
     expressions = []
+    solute = solutions[0]
+    test_solute = testfunctions[0]
+    F = 0
     for bc in boundary_conditions:
-        if bc["type"] not in helpers.bc_types["neumann"] and \
-           bc["type"] not in helpers.bc_types["robin"] and \
-           bc["type"] not in helpers.bc_types["dc"]:
+        if bc["type"] not in helpers.bc_types["dc"]:
+            if bc["type"] not in helpers.bc_types["neumann"] and \
+               bc["type"] not in helpers.bc_types["robin"]:
 
-            raise NameError("Unknown boundary condition type : " + bc["type"])
-        if bc["type"] == "flux":
-            flux = sp.printing.ccode(bc["value"])
-            flux = Expression(flux, t=0,
-                              degree=2)
-            expressions.append(flux)
-        elif bc["type"] == "recomb":
-            flux = bc["Kr"]*u**bc["order"]
+                raise NameError(
+                    "Unknown boundary condition type : " + bc["type"])
+            if bc["type"] == "flux":
+                flux = sp.printing.ccode(bc["value"])
+                flux = Expression(flux, t=0,
+                                  degree=2)
+                expressions.append(flux)
+            elif bc["type"] == "recomb":
+                flux = bc["Kr"]*solute**bc["order"]
 
-        if type(bc['surface']) is not list:
-            surfaces = [bc['surface']]
-        else:
-            surfaces = bc['surface']
-        for surf in surfaces:
-            F += -v*flux*ds(surf)
+            if type(bc['surface']) is not list:
+                surfaces = [bc['surface']]
+            else:
+                surfaces = bc['surface']
+            for surf in surfaces:
+                F += -test_solute*flux*ds(surf)
     return F, expressions
 
 
