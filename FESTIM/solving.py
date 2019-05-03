@@ -12,6 +12,8 @@ def solve_u(F, u, bcs, t, dt, solving_parameters):
         solving_parameters['newton_solver']['absolute_tolerance']
     solver.parameters["newton_solver"]["relative_tolerance"] = \
         solving_parameters['newton_solver']['relative_tolerance']
+    solver.parameters["newton_solver"]["maximum_iterations"] = \
+        solving_parameters['newton_solver']['maximum_iterations']
     nb_it, converged = solver.solve()
 
     t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
