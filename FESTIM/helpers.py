@@ -23,3 +23,10 @@ def update_expressions(expressions, t):
     for expression in expressions:
         expression.t = t
     return expressions
+
+
+bc_types = {
+    "dc": ["dc", "solubility", "table"],
+    "neumann": ["flux"],
+    "robin": ["recomb"]
+}

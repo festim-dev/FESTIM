@@ -48,6 +48,38 @@ def solubility_BC(P, S):
     return P**0.5*S
 
 
+def apply_fluxes(boundary_conditions, solutions, testfunctions, ds):
+    ''' Modifies the formulation and adds fluxes based
+    on parameters in boundary_conditions
+    '''
+    expressions = []
+    solute = solutions[0]
+    test_solute = testfunctions[0]
+    F = 0
+    for bc in boundary_conditions:
+        if bc["type"] not in helpers.bc_types["dc"]:
+            if bc["type"] not in helpers.bc_types["neumann"] and \
+               bc["type"] not in helpers.bc_types["robin"]:
+
+                raise NameError(
+                    "Unknown boundary condition type : " + bc["type"])
+            if bc["type"] == "flux":
+                flux = sp.printing.ccode(bc["value"])
+                flux = Expression(flux, t=0,
+                                  degree=2)
+                expressions.append(flux)
+            elif bc["type"] == "recomb":
+                flux = bc["Kr"]*solute**bc["order"]
+
+            if type(bc['surface']) is not list:
+                surfaces = [bc['surface']]
+            else:
+                surfaces = bc['surface']
+            for surf in surfaces:
+                F += -test_solute*flux*ds(surf)
+    return F, expressions
+
+
 def apply_boundary_conditions(boundary_conditions, V,
                               surface_marker, ds, temp):
     '''
@@ -95,8 +127,12 @@ def apply_boundary_conditions(boundary_conditions, V,
             # create UserExpression based on interpolant and t
             value_BC = ExpressionFromInterpolatedData(
                 t=0, fun=interpolant, element=V.ufl_element())
-        else:
-            raise NameError("Unknown boundary condition type")
+
+        if BC["type"] not in helpers.bc_types["neumann"] and \
+           BC["type"] not in helpers.bc_types["robin"] and \
+           BC["type"] not in helpers.bc_types["dc"]:
+
+            raise NameError("Unknown boundary condition type : " + bc["type"])
         expressions.append(value_BC)
         try:
             # Fetch the component of the BC
