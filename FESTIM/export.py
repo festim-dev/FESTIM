@@ -196,6 +196,9 @@ def export_parameters(parameters):
     Dumps parameters dict in a json file.
     '''
     json_file = parameters["exports"]["parameters"]
+    os.makedirs(os.path.dirname(json_file), exist_ok=True)
+    if json_file.endswith(".json") is False:
+        json_file += ".json"
     param = treat_value(parameters)
     with open(json_file, 'w') as fp:
         json.dump(param, fp, indent=4, sort_keys=True)
