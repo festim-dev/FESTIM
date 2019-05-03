@@ -2,6 +2,8 @@ from fenics import *
 import csv
 import sys
 import os
+import sympy as sp
+import json
 import numpy as np
 
 
@@ -168,3 +170,33 @@ def export_xdmf(res, exports, files, t):
         solution.rename(label, "label")
         files[i].write(solution, t)
     return
+
+
+def treat_value(d):
+    '''
+    Recursively converts as string the sympy objects in d
+    Arguments: d, dict
+    '''
+    if type(d) is dict:
+        for key, value in d.items():
+            if isinstance(value, tuple(sp.core.all_classes)):
+                print(key, value)
+                value = str(sp.printing.ccode(value))
+                d[key] = value
+            elif type(value) is dict or type(value) is list:
+                d[key] = treat_value(value)
+    elif type(d) is list:
+        for e in d:
+            e = treat_value(e)
+    return d
+
+
+def export_parameters(parameters):
+    '''
+    Dumps parameters dict in a json file.
+    '''
+    json_file = parameters["exports"]["parameters"]
+    param = treat_value(parameters)
+    with open(json_file, 'w') as fp:
+        json.dump(param, fp, indent=4, sort_keys=True)
+    return True
