@@ -5,6 +5,40 @@ import pytest
 import sympy as sp
 
 
+def test_fluxes():
+    kr = 2
+    order = 2
+    boundary_conditions = [
+
+        {
+            "type": "recomb",
+            "Kr": kr,
+            "order": order,
+            "surface": 1,
+            },
+        {
+            "type": "flux",
+            "value": 2*FESTIM.x + FESTIM.t,
+            "surface": [1, 2],
+        },
+    ]
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    u = fenics.Function(V)
+    v = fenics.TestFunction(V)
+    solutions = list(fenics.split(u))
+    testfunctions = list(fenics.split(v))
+    sol = solutions[0]
+    test_sol = testfunctions[0]
+    F, expressions = FESTIM.boundary_conditions.apply_fluxes(boundary_conditions, sol, test_sol, fenics.ds)
+    expected_form = 0
+    expected_form += -test_sol * (kr * sol**order)*fenics.ds(1)
+    expected_form += -test_sol*expressions[0]*fenics.ds(1)
+    expected_form += -test_sol*expressions[0]*fenics.ds(2)
+
+    assert expected_form.equals(F) is True
+
+
 def test_formulation_no_trap_1_material():
     '''
     Test function formulation() with 1 intrinsic trap
