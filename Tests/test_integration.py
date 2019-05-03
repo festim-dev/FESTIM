@@ -73,7 +73,7 @@ def test_run_temperature_stationary():
             "newton_solver": {
                 "absolute_tolerance": 1e10,
                 "relative_tolerance": 1e-9,
-                "maximum_it": 50,
+                "maximum_iterations": 50,
             }
             },
         "exports": {
@@ -169,7 +169,7 @@ def test_run_temperature_transient():
             "newton_solver": {
                 "absolute_tolerance": 1e10,
                 "relative_tolerance": 1e-9,
-                "maximum_it": 50,
+                "maximum_iterations": 50,
             }
             },
         "exports": {
@@ -301,7 +301,7 @@ def test_run_MMS():
                 "newton_solver": {
                     "absolute_tolerance": 1e-10,
                     "relative_tolerance": 1e-9,
-                    "maximum_it": 50,
+                    "maximum_iterations": 50,
                 }
                 },
             "exports": {
