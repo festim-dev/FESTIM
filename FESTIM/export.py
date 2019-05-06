@@ -177,12 +177,15 @@ def treat_value(d):
     Recursively converts as string the sympy objects in d
     Arguments: d, dict
     '''
+    T = sp.symbols('T')
     if type(d) is dict:
         for key, value in d.items():
             if isinstance(value, tuple(sp.core.all_classes)):
                 print(key, value)
                 value = str(sp.printing.ccode(value))
                 d[key] = value
+            elif callable(value):  # if value is fun
+                d[key] = str(sp.printing.ccode(value(T)))
             elif type(value) is dict or type(value) is list:
                 d[key] = treat_value(value)
     elif type(d) is list:

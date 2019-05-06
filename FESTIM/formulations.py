@@ -142,6 +142,8 @@ def define_variational_problem_heat_transfers(
         if "thermal_cond" not in mat.keys():
             raise NameError("Missing thermal_cond key in material")
         thermal_cond = mat["thermal_cond"]
+        if callable(thermal_cond):  # if thermal_cond is a function
+            thermal_cond = thermal_cond(T)
         vol = mat["id"]
         if parameters["temperature"]["type"] == "solve_transient":
             T_n = functions[2]
@@ -151,17 +153,24 @@ def define_variational_problem_heat_transfers(
                 raise NameError("Missing rho key in material")
             cp = mat["heat_capacity"]
             rho = mat["rho"]
+            if callable(cp):  # if cp or rho are functions, apply T
+                cp = cp(T)
+            if callable(rho):
+                rho = rho(T)
             # Transien term
             F += rho*cp*(T-T_n)/dt*vT*dx(vol)
         # Diffusion term
         F += thermal_cond*dot(grad(T), grad(vT))*dx(vol)
 
+    # Source terms
     for source in parameters["temperature"]["source_term"]:
         src = sp.printing.ccode(source["value"])
         src = Expression(src, degree=2, t=0)
         expressions.append(src)
         # Source term
         F += - src*vT*dx(source["volume"])
+
+    # Boundary conditions
     for bc in parameters["temperature"]["boundary_conditions"]:
         if type(bc["surface"]) is list:
             surfaces = bc["surface"]
