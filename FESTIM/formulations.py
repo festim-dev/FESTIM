@@ -162,12 +162,15 @@ def define_variational_problem_heat_transfers(
         # Diffusion term
         F += thermal_cond*dot(grad(T), grad(vT))*dx(vol)
 
+    # Source terms
     for source in parameters["temperature"]["source_term"]:
         src = sp.printing.ccode(source["value"])
         src = Expression(src, degree=2, t=0)
         expressions.append(src)
         # Source term
         F += - src*vT*dx(source["volume"])
+
+    # Boundary conditions
     for bc in parameters["temperature"]["boundary_conditions"]:
         if type(bc["surface"]) is list:
             surfaces = bc["surface"]
