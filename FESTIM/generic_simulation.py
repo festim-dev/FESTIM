@@ -100,7 +100,7 @@ def run(parameters):
         T)
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
         parameters["boundary_conditions"], solutions,
-        testfunctions_concentrations, ds)
+        testfunctions_concentrations, ds, T)
     F += fluxes
     # Define variational problem for extrinsic traps
 

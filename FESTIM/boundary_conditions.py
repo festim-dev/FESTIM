@@ -1,6 +1,7 @@
 from FESTIM import *
 from fenics import *
 import sympy as sp
+import numpy as np
 
 
 class ExpressionFromInterpolatedData(UserExpression):
@@ -48,7 +49,7 @@ def solubility_BC(P, S):
     return P**0.5*S
 
 
-def apply_fluxes(boundary_conditions, solutions, testfunctions, ds):
+def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
     ''' Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
     '''
@@ -56,6 +57,7 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds):
     solute = solutions[0]
     test_solute = testfunctions[0]
     F = 0
+    k_B = 8.6e-5
     for bc in boundary_conditions:
         if bc["type"] not in helpers.bc_types["dc"]:
             if bc["type"] not in helpers.bc_types["neumann"] and \
@@ -69,7 +71,8 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds):
                                   degree=2)
                 expressions.append(flux)
             elif bc["type"] == "recomb":
-                flux = bc["Kr"]*solute**bc["order"]
+                Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/k_B/T)
+                flux = -Kr*solute**bc["order"]
 
             if type(bc['surface']) is not list:
                 surfaces = [bc['surface']]
@@ -133,24 +136,25 @@ def apply_boundary_conditions(boundary_conditions, V,
            BC["type"] not in helpers.bc_types["dc"]:
 
             raise NameError("Unknown boundary condition type : " + bc["type"])
-        expressions.append(value_BC)
-        try:
-            # Fetch the component of the BC
-            component = BC["component"]
-        except:
-            # By default, component is solute (ie. 0)
-            component = 0
-        if type(BC['surface']) is not list:
-            surfaces = [BC['surface']]
-        else:
-            surfaces = BC['surface']
-        if V.num_sub_spaces() == 0:
-            funspace = V
-        else:  # if only one component, use subspace
-            funspace = V.sub(component)
-        for surface in surfaces:
-            bci = DirichletBC(funspace, value_BC,
-                              surface_marker, surface)
-            bcs.append(bci)
+        if type_BC in helpers.bc_types["dc"]:
+            expressions.append(value_BC)
+            try:
+                # Fetch the component of the BC
+                component = BC["component"]
+            except:
+                # By default, component is solute (ie. 0)
+                component = 0
+            if type(BC['surface']) is not list:
+                surfaces = [BC['surface']]
+            else:
+                surfaces = BC['surface']
+            if V.num_sub_spaces() == 0:
+                funspace = V
+            else:  # if only one component, use subspace
+                funspace = V.sub(component)
+            for surface in surfaces:
+                bci = DirichletBC(funspace, value_BC,
+                                  surface_marker, surface)
+                bcs.append(bci)
 
     return bcs, expressions
