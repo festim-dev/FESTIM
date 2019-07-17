@@ -18,13 +18,9 @@ def initialising_solutions(V, initial_conditions):
     for ini in initial_conditions:
         value = ini["value"]
         value = sp.printing.ccode(value)
-        expression[ini["component"]] = value
-    if len(expression) == 1:
-        expression = expression[0]
-    else:
-        expression = tuple(expression)
-    ini_u = Expression(expression, degree=3, t=0)
-    u_n = interpolate(ini_u, V)
+        comp = Expression(value, degree=3, t=0)
+        comp = interpolate(comp, V.sub(ini["component"]).collapse())
+        assign(u_n.sub(ini["component"]), comp)
     components = split(u_n)
     return u_n, components
 
