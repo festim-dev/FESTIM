@@ -17,7 +17,10 @@ def initialising_solutions(V, initial_conditions):
     expression = ['0'] * len(components)
     for ini in initial_conditions:
         if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
-            comp = Function(V.sub(ini["component"]).collapse())
+            if V.num_sub_spaces() > 0:
+                comp = Function(V.sub(ini["component"]).collapse())
+            else:
+                comp = Function(V)
             if "label" not in ini.keys():
                 raise KeyError("label key not found")
             if "time_step" not in ini.keys():
@@ -29,11 +32,12 @@ def initialising_solutions(V, initial_conditions):
             value = ini["value"]
             value = sp.printing.ccode(value)
             comp = Expression(value, degree=3, t=0)
-        if V.dim() > 1:
+        if V.num_sub_spaces() > 0:
             comp = interpolate(comp, V.sub(ini["component"]).collapse())
+            assign(u_n.sub(ini["component"]), comp)
         else:
-            comp = interpolate(comp, V)
-        assign(u_n.sub(ini["component"]), comp)
+            u_n = interpolate(comp, V)
+
     components = split(u_n)
     return u_n, components
 
