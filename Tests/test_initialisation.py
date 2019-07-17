@@ -193,3 +193,28 @@ def test_initialisation_no_component():
     w, components = initialise_solutions.initialising_solutions(
         V, parameters["initial_conditions"])
     assert fenics.errornorm(u, w) == 0
+
+
+def test_initialisation_duplicates():
+    '''
+    Test that initialising_solutions set component at 0
+    by default
+    '''
+    mesh = fenics.UnitSquareMesh(8, 8)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 3)
+
+    parameters = {
+        "initial_conditions": [
+            {
+                "value": 1+FESTIM.x + FESTIM.y,
+                "component": 0
+            },
+            {
+                "value": 1+FESTIM.x + FESTIM.y,
+                "component": 0
+            },
+        ],
+    }
+    with pytest.raises(KeyError, match=r'duplicate'):
+        initialise_solutions.initialising_solutions(
+            V, parameters["initial_conditions"])
