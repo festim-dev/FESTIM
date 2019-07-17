@@ -26,11 +26,13 @@ def initialising_solutions(V, initial_conditions):
                 file.read_checkpoint(comp, ini["label"], ini["time_step"])
             #  only works if meshes are the same
         else:
-            print('coucou')
             value = ini["value"]
             value = sp.printing.ccode(value)
             comp = Expression(value, degree=3, t=0)
-        comp = interpolate(comp, V.sub(ini["component"]).collapse())
+        if V.dim() > 1:
+            comp = interpolate(comp, V.sub(ini["component"]).collapse())
+        else:
+            comp = interpolate(comp, V)
         assign(u_n.sub(ini["component"]), comp)
     components = split(u_n)
     return u_n, components
