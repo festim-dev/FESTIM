@@ -152,19 +152,26 @@ def test_initialisation_default():
     assert fenics.errornorm(u, w) == 0
 
 
-def test_initialisation_default_solute_only():
+def test_initialisation_solute_only():
     '''
     Test that initialising_solutions interpolates correctly
-    if nothing is given (default is 0) and solution has
-    only 1 component (ie solute)
+    if solution has only 1 component (ie solute)
     '''
     mesh = fenics.UnitSquareMesh(8, 8)
     V = fenics.FunctionSpace(mesh, 'P', 1)
     u = fenics.Function(V)
     w = fenics.Function(V)
-    ini_u = fenics.Expression("0", degree=1)
+    ini_u = fenics.Expression("1 + x[0] + x[1]", degree=1)
     u = fenics.interpolate(ini_u, V)
 
+    parameters = {
+        "initial_conditions": [
+            {
+                "value": 1+FESTIM.x + FESTIM.y,
+                "component": 0,
+            },
+        ],
+    }
     w, components = initialise_solutions.initialising_solutions(
-        V, [])
+        V, parameters["initial_conditions"])
     assert fenics.errornorm(u, w) == 0
