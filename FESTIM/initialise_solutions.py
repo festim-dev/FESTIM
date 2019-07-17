@@ -13,6 +13,9 @@ def initialising_solutions(V, initial_conditions):
     '''
     print('Defining initial values')
     u_n, components = FESTIM.functionspaces_and_functions.define_functions(V)
+
+    check_no_duplicates(initial_conditions)
+
     for ini in initial_conditions:
         if 'component' not in ini.keys():
             ini["component"] = 0
@@ -55,3 +58,17 @@ def initialising_extrinsic_traps(W, number_of_traps):
         ini = Expression("0", degree=2)
         previous_solutions.append(interpolate(ini, W))
     return previous_solutions
+
+
+def check_no_duplicates(initial_conditions):
+    components = []
+    for e in initial_conditions:
+        if "component" not in e:
+            comp = 0
+        else:
+            comp = e["component"]
+        if comp in components:
+            raise ValueError("Duplicate component " + str(comp))
+        else:
+            components.append(comp)
+    return
