@@ -13,10 +13,11 @@ def initialising_solutions(V, initial_conditions):
     '''
     print('Defining initial values')
     u_n, components = FESTIM.functionspaces_and_functions.define_functions(V)
-    # initial conditions are 0 by default
-    expression = ['0'] * len(components)
     for ini in initial_conditions:
+        if 'component' not in ini.keys():
+            ini["component"] = 0
         if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
+
             if V.num_sub_spaces() > 0:
                 comp = Function(V.sub(ini["component"]).collapse())
             else:
