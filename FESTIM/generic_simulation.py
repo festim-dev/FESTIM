@@ -32,8 +32,9 @@ def run(parameters):
     # Create functions for flux computation
     if "derived_quantities" in parameters["exports"]:
         if "surface_flux" in parameters["exports"]["derived_quantities"]:
-            D_0, E_diff, thermal_cond = create_flux_functions(
-                mesh, parameters["materials"], volume_markers)
+            D_0, E_diff, thermal_cond =\
+                FESTIM.post_processing.create_flux_functions(
+                    mesh, parameters["materials"], volume_markers)
     # Define expressions used in variational forms
     print('Defining source terms')
     flux_ = Expression(
@@ -62,7 +63,9 @@ def run(parameters):
                 parameters, [T, vT, T_n], [dx, ds], dt)
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
+            T_file = XDMFFile("Sol_monoblock_1D_comparison/temperature.xdmf")
             solve(FT == 0, T, bcs_T)
+            T_file.write(T)
 
     # Define functions
 
@@ -74,9 +77,9 @@ def run(parameters):
         FESTIM.functionspaces_and_functions.define_test_functions(
             V, W, len(extrinsic_traps))
     # Initialising the solutions
-    try:
+    if "initial_conditions" in parameters.keys():
         initial_conditions = parameters["initial_conditions"]
-    except:
+    else:
         initial_conditions = []
     u_n, previous_solutions_concentrations = \
         FESTIM.initialise_solutions.initialising_solutions(
@@ -120,7 +123,8 @@ def run(parameters):
     timer = Timer()  # start timer
     error = []
     if "derived_quantities" in parameters["exports"].keys():
-        derived_quantities_global = [header_derived_quantities(parameters)]
+        derived_quantities_global = \
+            [FESTIM.post_processing.header_derived_quantities(parameters)]
     if "TDS" in parameters["exports"].keys():
         inventory_n = 0
         desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
