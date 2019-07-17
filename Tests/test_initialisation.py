@@ -215,6 +215,6 @@ def test_initialisation_duplicates():
             },
         ],
     }
-    with pytest.raises(KeyError, match=r'duplicate'):
+    with pytest.raises(ValueError, match=r'Duplicate'):
         initialise_solutions.initialising_solutions(
             V, parameters["initial_conditions"])
