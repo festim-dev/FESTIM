@@ -140,12 +140,6 @@ def test_initialisation_default():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-    ini_u = fenics.Expression("0", degree=1)
-    ini_u = fenics.interpolate(ini_u, V.sub(0).collapse())
-    fenics.assign(u.sub(0), ini_u)
-    ini_u = fenics.Expression("0", degree=1)
-    ini_u = fenics.interpolate(ini_u, V.sub(1).collapse())
-    fenics.assign(u.sub(1), ini_u)
 
     w, components = initialise_solutions.initialising_solutions(
         V, [])
@@ -168,6 +162,31 @@ def test_initialisation_solute_only():
             {
                 "value": 1+FESTIM.x + FESTIM.y,
                 "component": 0
+            },
+        ],
+    }
+    w, components = initialise_solutions.initialising_solutions(
+        V, parameters["initial_conditions"])
+    assert fenics.errornorm(u, w) == 0
+
+
+def test_initialisation_no_component():
+    '''
+    Test that initialising_solutions set component at 0
+    by default
+    '''
+    mesh = fenics.UnitSquareMesh(8, 8)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 3)
+    u = fenics.Function(V)
+    w = fenics.Function(V)
+    ini_u = fenics.Expression("1 + x[0] + x[1]", degree=1)
+    ini_u = fenics.interpolate(ini_u, V.sub(0).collapse())
+    fenics.assign(u.sub(0), ini_u)
+
+    parameters = {
+        "initial_conditions": [
+            {
+                "value": 1+FESTIM.x + FESTIM.y,
             },
         ],
     }
