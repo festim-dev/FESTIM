@@ -163,12 +163,11 @@ def test_initialisation_solute_only():
     w = fenics.Function(V)
     ini_u = fenics.Expression("1 + x[0] + x[1]", degree=1)
     u = fenics.interpolate(ini_u, V)
-
     parameters = {
         "initial_conditions": [
             {
                 "value": 1+FESTIM.x + FESTIM.y,
-                "component": 0,
+                "component": 0
             },
         ],
     }
