@@ -422,13 +422,14 @@ def test_formulation_steady_state():
     Test function formulation() with 1 intrinsic trap
     and 1 material in steady state
     '''
-    dt = 1
     parameters = {
-        "traps": [{
-            "energy": 1,
-            "density": 2,
-            "materials": [1]
-            }],
+        "traps": [
+            {
+              "energy": 1,
+              "density": 2,
+              "materials": [1]
+            }
+            ],
         "materials": [{
             "alpha": 1,
             "beta": 2,
@@ -456,23 +457,16 @@ def test_formulation_steady_state():
     temp = fenics.Expression("300", degree=0)
     F, expressions = FESTIM.formulations.formulation(
         parameters, extrinsic_traps, solutions,
-        testfunctions, previous_solutions, dt, dx, temp, transient=False)
+        testfunctions, previous_solutions, 0, dx, temp, transient=False)
     flux_ = expressions[0]
-
-    # take density Expression() from formulation()
     density = expressions[2]
-    expected_form = 0
+    expected_form = -flux_*testfunctions[0]*dx
     expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
         fenics.dot(
             fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
-    expected_form += -flux_*testfunctions[0]*dx + \
-        ((solutions[1] - previous_solutions[1]) / dt) * \
-        testfunctions[1]*dx
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
         solutions[0] * (density - solutions[1]) * \
         testfunctions[1]*dx(1)
     expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[1] * \
         testfunctions[1]*dx(1)
-    expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
-        testfunctions[0]*dx
     assert expected_form.equals(F) is True
