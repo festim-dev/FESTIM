@@ -158,3 +158,23 @@ def test_create_mesh_xdmf():
                 [v.point().x(), v.point().y()])
     for i in range(0, len(vertices_mesh)):
         assert vertices_mesh[i] == vertices_mesh2[i]
+
+
+def test_subdomains_from_xdmf():
+
+    # write files
+    mesh = fenics.UnitCubeMesh(6, 6, 6)
+    mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
+    mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    cell_file = "cell_file.xdmf"
+    facet_file = "facet_file.xdmf"
+    fenics.XDMFFile(cell_file).write(mf_cells)
+    fenics.XDMFFile(facet_file).write(mf_facets)
+    # read files
+    mf_cells_2, mf_facets_2 = meshing.read_subdomains_from_xdmf(
+        mesh, cell_file, facet_file)
+
+    # check
+    for cell in fenics.cells(mesh):
+        assert mf_cells[cell] == mf_cells_2[cell]
+        assert mf_facets[cell] == mf_facets_2[cell]
