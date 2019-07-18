@@ -3,14 +3,12 @@ from operator import itemgetter
 
 
 def create_mesh(mesh_parameters):
-    print(type(Mesh()))
     if "cells_file" in mesh_parameters.keys():
         # Read volumetric mesh
         mesh = Mesh()
         XDMFFile(mesh_parameters["cells_file"]).read(mesh)
     elif ("mesh" in mesh_parameters.keys() and
             isinstance(mesh_parameters["mesh"], type(Mesh()))):
-            print('coucou')
             mesh = mesh_parameters["mesh"]
     else:
         mesh = mesh_and_refine(mesh_parameters)
