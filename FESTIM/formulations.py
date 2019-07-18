@@ -30,10 +30,10 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
-        flux_ = Expression(
+        source = Expression(
             sp.printing.ccode(parameters["source_term"]["value"]), t=0, degree=2)
-        F += - flux_*testfunctions[0]*dx
-        expressions.append(flux_)
+        F += - source*testfunctions[0]*dx
+        expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
