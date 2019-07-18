@@ -3,8 +3,8 @@ import sympy as sp
 import FESTIM
 
 
-def formulation(traps, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, materials, T, flux_):
+def formulation(parameters, extrinsic_traps, solutions, testfunctions,
+                previous_solutions, dt, dx, T):
     ''' Creates formulation for trapping MRE model.
     Parameters:
     - traps : dict, contains the energy, density and domains
@@ -21,18 +21,23 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     expressions = []
     F = 0
     F += ((solutions[0] - previous_solutions[0]) / dt)*testfunctions[0]*dx
-    for material in materials:
+    for material in parameters["materials"]:
         D_0 = material['D_0']
         E_diff = material['E_diff']
         subdomain = material['id']
         F += D_0 * exp(-E_diff/k_B/T) * \
             dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
-    F += - flux_*testfunctions[0]*dx
-    expressions.append(flux_)
+    # Define flux
+    if "source_term" in parameters.keys():
+        print('Defining source terms')
+        flux_ = Expression(
+            sp.printing.ccode(parameters["source_term"]["value"]), t=0, degree=2)
+        F += - flux_*testfunctions[0]*dx
+        expressions.append(flux_)
     expressions.append(T)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
-    for trap in traps:
+    for trap in parameters["traps"]:
         if 'type' in trap.keys() and trap['type'] == 'extrinsic':
             trap_density = extrinsic_traps[j]
             j += 1
@@ -49,7 +54,8 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
             material = [material]
         for subdomain in material:
             corresponding_material = \
-                FESTIM.helpers.find_material_from_id(materials, subdomain)
+                FESTIM.helpers.find_material_from_id(
+                    parameters["materials"], subdomain)
             D_0 = corresponding_material['D_0']
             E_diff = corresponding_material['E_diff']
             alpha = corresponding_material['alpha']

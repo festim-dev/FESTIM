@@ -90,10 +90,9 @@ def run(parameters, log_level=40):
     # Define variational problem1
 
     F, expressions_F = FESTIM.formulations.formulation(
-        parameters["traps"], extrinsic_traps,
+        parameters, extrinsic_traps,
         solutions, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx,
-        parameters["materials"], T, flux_)
+        previous_solutions_concentrations, dt, dx, T)
 
     # BCs
     print('Defining boundary conditions')
