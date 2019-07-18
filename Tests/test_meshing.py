@@ -92,3 +92,33 @@ def test_fail_subdomains_1D_difference_size_borders():
             ]
     with pytest.raises(ValueError, match=r'match'):
         meshing.subdomains_1D(mesh, materials, 1)
+
+
+def test_create_mesh_xdmf():
+
+    # write xdmf file
+    mesh = fenics.UnitSquareMesh(10, 10)
+    f = fenics.XDMFFile("mesh.xdmf")
+    f.write(mesh)
+
+    # read mesh
+    mesh_parameters = {
+        "cells_file": "mesh.xdmf",
+        "facets_file": "Maillages Monoblock/Mesh 8/mesh_8_line.xdmf"
+        }
+    mesh2 = meshing.create_mesh(mesh_parameters)
+
+    # check that vertices are the same
+    vertices_mesh = []
+    for f in fenics.facets(mesh):
+        for v in fenics.vertices(f):
+            vertices_mesh.append(
+                [v.point().x(), v.point().y()])
+
+    vertices_mesh2 = []
+    for f in fenics.facets(mesh2):
+        for v in fenics.vertices(f):
+            vertices_mesh2.append(
+                [v.point().x(), v.point().y()])
+    for i in range(0, len(vertices_mesh)):
+        assert vertices_mesh[i] == vertices_mesh2[i]
