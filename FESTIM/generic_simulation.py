@@ -116,7 +116,7 @@ def run(parameters):
     exports = parameters["exports"]
     if "xdmf" in parameters["exports"].keys():
         files = FESTIM.export.define_xdmf_files(exports)
-
+        append = False
     #  Time-stepping
     print('Time stepping...')
 
@@ -185,7 +185,8 @@ def run(parameters):
             derived_quantities_t.insert(0, t)
             derived_quantities_global.append(derived_quantities_t)
         if "xdmf" in parameters["exports"].keys():
-            FESTIM.export.export_xdmf(res, exports, files, t)
+            FESTIM.export.export_xdmf(res, exports, files, t, append=append)
+            append = True
         dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
         temperature.append([t, T(size/2)])
 
