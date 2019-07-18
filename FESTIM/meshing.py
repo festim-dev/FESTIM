@@ -1,4 +1,5 @@
 from fenics import *
+from operator import itemgetter
 
 
 def create_mesh(mesh_parameters):
@@ -19,6 +20,7 @@ def subdomains(mesh, parameters):
                 mesh_parameters["cells_file"], mesh_parameters["facets_file"])
     else:
         size = parameters["mesh_parameters"]["size"]
+        check_borders(size, parameters["materials"])
         volume_markers, surface_markers = \
             subdomains_1D(mesh, parameters["materials"], size)
     return volume_markers, surface_markers
@@ -110,3 +112,19 @@ def subdomains_1D(mesh, materials, size):
         if near(x0.x(), size):
             surface_markers[f] = 2
     return volume_markers, surface_markers
+
+
+def check_borders(size, materials):
+    check = True
+    all_borders = []
+    for m in materials:
+        all_borders.append(m["borders"])
+    all_borders = sorted(all_borders, key=itemgetter(0))
+    if all_borders[0][0] is not 0:
+        raise ValueError("Borders don't begin at zero")
+    for i in range(0, len(all_borders)-1):
+        if all_borders[i][1] != all_borders[i+1][0]:
+            raise ValueError("Borders don't match to each other")
+    if all_borders[len(all_borders) - 1][1] != size:
+        raise ValueError("Borders don't match with size")
+    return True
