@@ -5,7 +5,7 @@ def create_mesh(mesh_parameters):
     if "cells_file" in mesh_parameters.keys():
         # Read volumetric mesh
         mesh = Mesh()
-        XDMFFile(volumetric_file).read(mesh)
+        XDMFFile(mesh_parameters["cells_file"]).read(mesh)
     else:
         mesh = mesh_and_refine(mesh_parameters)
     return mesh
