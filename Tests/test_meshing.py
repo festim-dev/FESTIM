@@ -73,25 +73,61 @@ def test_subdomains_1D():
             assert volume_markers[cell] == 2
 
 
-def test_fail_subdomains_1D_difference_size_borders():
-    '''
-    Test that an error is raised if the borders don't match
-    the size of the mesh
-    '''
-    mesh = fenics.UnitIntervalMesh(20)
-
+def test_check_borders():
     materials = [
         {
-            "borders": [0, 0.5],
+            "borders": [0.5, 0.7],
             "id": 1,
             },
         {
-            "borders": [0.5, 0.7],
+            "borders": [0, 0.5],
             "id": 2,
             }
             ]
-    with pytest.raises(ValueError, match=r'match'):
-        meshing.subdomains_1D(mesh, materials, 1)
+    size = 0.7
+    assert meshing.check_borders(size, materials) is True
+
+    with pytest.raises(ValueError, match=r'zero'):
+        size = 0.7
+        materials = [
+            {
+                "borders": [0.5, 0.7],
+                "id": 1,
+                },
+            {
+                "borders": [0.2, 0.5],
+                "id": 2,
+                }
+                ]
+        meshing.check_borders(size, materials)
+
+    with pytest.raises(ValueError, match=r'each other'):
+        materials = [
+            {
+                "borders": [0.5, 1],
+                "id": 1,
+                },
+            {
+                "borders": [0, 0.6],
+                "id": 2,
+                },
+            {
+                "borders": [0.6, 1],
+                "id": 3,
+                }
+                ]
+        size = 1
+        meshing.check_borders(size, materials)
+
+    with pytest.raises(ValueError, match=r'size'):
+        materials = [
+            {
+                "borders": [0, 1],
+                "id": 1,
+                }
+                ]
+        size = 3
+        meshing.check_borders(size, materials)
 
 
 def test_create_mesh_xdmf():
