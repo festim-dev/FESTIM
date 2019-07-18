@@ -1,6 +1,45 @@
 from fenics import *
 
 
+def create_mesh(mesh_parameters):
+    if "cells_file" in mesh_parameters.keys():
+        # Read volumetric mesh
+        mesh = Mesh()
+        XDMFFile(volumetric_file).read(mesh)
+    else:
+        mesh = mesh_and_refine(mesh_parameters)
+    return mesh
+
+
+def subdomains(mesh, parameters):
+    mesh_parameters = parameters["mesh_parameters"]
+    if "cells_file" in mesh_parameters.keys():
+        volume_markers, surface_markers = \
+            read_subdomains_from_xdmf(
+                mesh_parameters["cells_file"], mesh_parameters["facets_file"])
+    else:
+        size = parameters["mesh_parameters"]["size"]
+        volume_markers, surface_markers = \
+            subdomains_1D(mesh, parameters["materials"], size)
+    return volume_markers, surface_markers
+
+
+def read_subdomains_from_xdmf(volumetric_file, boundary_file):
+
+    # Read tags for volume elements
+    cell_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
+    XDMFFile(volumetric_file).read(cell_markers, "cell_tags")
+
+    # Read tags for surface elements
+    # (can also be used for applying DirichletBC)
+    boundaries = MeshValueCollection("size_t", mesh, mesh.topology().dim() - 1)
+    XDMFFile(boundary_file).read(boundaries, "cell_tags")
+    boundaries = MeshFunction("size_t", mesh, boundaries)
+
+    print(len(cell_markers))
+    return cell_markers, boundaries
+
+
 def mesh_and_refine(mesh_parameters):
     '''
     Mesh and refine iteratively until meeting the refinement
@@ -38,7 +77,7 @@ def mesh_and_refine(mesh_parameters):
     return mesh
 
 
-def subdomains(mesh, materials, size):
+def subdomains_1D(mesh, materials, size):
     '''
     Iterates through the mesh and mark them
     based on their position in the domain
