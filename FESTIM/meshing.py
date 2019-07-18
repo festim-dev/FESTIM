@@ -3,10 +3,15 @@ from operator import itemgetter
 
 
 def create_mesh(mesh_parameters):
+    print(type(Mesh()))
     if "cells_file" in mesh_parameters.keys():
         # Read volumetric mesh
         mesh = Mesh()
         XDMFFile(mesh_parameters["cells_file"]).read(mesh)
+    elif ("mesh" in mesh_parameters.keys() and
+            isinstance(mesh_parameters["mesh"], type(Mesh()))):
+            print('coucou')
+            mesh = mesh_parameters["mesh"]
     else:
         mesh = mesh_and_refine(mesh_parameters)
     return mesh
@@ -20,6 +25,12 @@ def subdomains(mesh, parameters):
                 mesh,
                 mesh_parameters["cells_file"],
                 mesh_parameters["facets_file"])
+    elif ("meshfunction_cells" in mesh_parameters.keys() and
+            isinstance(
+                mesh_parameters["meshfunction_cells"],
+                type(MeshFunction("size_t", mesh, mesh.topology().dim())))):
+        volume_markers = mesh_parameters["meshfunction_cells"]
+        surface_markers = mesh_parameters["meshfunction_facets"]
     else:
         size = parameters["mesh_parameters"]["size"]
         check_borders(size, parameters["materials"])
