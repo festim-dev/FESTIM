@@ -3,7 +3,7 @@ from fenics import *
 import sympy as sp
 
 
-def run(parameters):
+def run(parameters, log_level=40):
     # Export parameters
     try:  # if parameters are in the export key
         FESTIM.export.export_parameters(parameters)
@@ -14,8 +14,7 @@ def run(parameters):
     Time = parameters["solving_parameters"]["final_time"]
     initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
     dt = Constant(initial_stepsize)  # time step size
-    level = 40  # 30 for WARNING 20 for INFO
-    set_log_level(level)
+    set_log_level(log_level)
 
     # Mesh and refinement
     size = parameters["mesh_parameters"]["size"]
@@ -155,7 +154,6 @@ def run(parameters):
 
         # Solve heat transfers
         if parameters["temperature"]["type"] == "solve_transient":
-            set_log_level(level)
             dT = TrialFunction(T.function_space())
             JT = derivative(FT, T, dT)  # Define the Jacobian
             problem = NonlinearVariationalProblem(FT, T, bcs_T, JT)
