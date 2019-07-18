@@ -34,10 +34,6 @@ def run(parameters, log_level=40):
             D_0, E_diff, thermal_cond =\
                 FESTIM.post_processing.create_flux_functions(
                     mesh, parameters["materials"], volume_markers)
-    # Define expressions used in variational forms
-    print('Defining source terms')
-    flux_ = Expression(
-        sp.printing.ccode(parameters["source_term"]["value"]), t=0, degree=2)
 
     # Define temperature
     if parameters["temperature"]["type"] == "expression":
