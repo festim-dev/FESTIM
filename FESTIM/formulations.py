@@ -4,7 +4,7 @@ import FESTIM
 
 
 def formulation(parameters, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, T):
+                previous_solutions, dt, dx, T, transient):
     ''' Creates formulation for trapping MRE model.
     Parameters:
     - traps : dict, contains the energy, density and domains
@@ -20,7 +20,9 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     v_0 = 1e13  # frequency factor s-1
     expressions = []
     F = 0
-    F += ((solutions[0] - previous_solutions[0]) / dt)*testfunctions[0]*dx
+    if transient is True:
+        F += ((solutions[0]-previous_solutions[0])/dt)*testfunctions[0]*dx
+
     for material in parameters["materials"]:
         D_0 = material['D_0']
         E_diff = material['E_diff']
@@ -31,7 +33,8 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     if "source_term" in parameters.keys():
         print('Defining source terms')
         source = Expression(
-            sp.printing.ccode(parameters["source_term"]["value"]), t=0, degree=2)
+            sp.printing.ccode(
+                parameters["source_term"]["value"]), t=0, degree=2)
         F += - source*testfunctions[0]*dx
         expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
