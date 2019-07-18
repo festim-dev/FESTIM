@@ -14,7 +14,7 @@ def run(parameters):
     Time = parameters["solving_parameters"]["final_time"]
     initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
     dt = Constant(initial_stepsize)  # time step size
-    level = 30  # 30 for WARNING 20 for INFO
+    level = 40  # 30 for WARNING 20 for INFO
     set_log_level(level)
 
     # Mesh and refinement
