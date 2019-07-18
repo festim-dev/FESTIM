@@ -3,10 +3,10 @@ from operator import itemgetter
 
 
 def create_mesh(mesh_parameters):
-    if "cells_file" in mesh_parameters.keys():
+    if "mesh_file" in mesh_parameters.keys():
         # Read volumetric mesh
         mesh = Mesh()
-        XDMFFile(mesh_parameters["cells_file"]).read(mesh)
+        XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
     elif ("mesh" in mesh_parameters.keys() and
             isinstance(mesh_parameters["mesh"], type(Mesh()))):
             mesh = mesh_parameters["mesh"]
