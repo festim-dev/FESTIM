@@ -30,7 +30,7 @@ def test_export_and_initialise_xdmf(tmpdir):
     files = [fenics.XDMFFile(str(Path(file1)))]
     export.export_xdmf(
         [u],
-        exports, files, 20)
+        exports, files, 20, append=False)
 
     #  Read
     parameters = {
@@ -90,4 +90,4 @@ def test_initialise_and_export_xdmf(tmpdir):
     files = [fenics.XDMFFile(str(Path(file2)))]
     assert export.export_xdmf(
         [v],
-        exports, files, 20) is None
+        exports, files, 20, append=False) is None

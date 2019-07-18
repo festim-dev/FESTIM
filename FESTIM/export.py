@@ -138,7 +138,7 @@ def define_xdmf_files(exports):
     return files
 
 
-def export_xdmf(res, exports, files, t):
+def export_xdmf(res, exports, files, t, append):
     '''
     Exports the solutions fields in xdmf files.
     Arguments:
@@ -146,6 +146,7 @@ def export_xdmf(res, exports, files, t):
     - exports: dict, contains parameters
     - files: list, contains XDMFFile
     - t: float
+    - append: bool, erase the previous file or not
     '''
     if len(exports['xdmf']['functions']) > len(res):
         raise NameError("Too many functions to export "
@@ -168,7 +169,8 @@ def export_xdmf(res, exports, files, t):
                     " is unknown.")
 
         solution.rename(label, "label")
-        files[i].write(solution, t)
+        files[i].write_checkpoint(
+            solution, label, t, XDMFFile.Encoding.HDF5, append=append)
     return
 
 
@@ -181,7 +183,6 @@ def treat_value(d):
     if type(d) is dict:
         for key, value in d.items():
             if isinstance(value, tuple(sp.core.all_classes)):
-                print(key, value)
                 value = str(sp.printing.ccode(value))
                 d[key] = value
             elif callable(value):  # if value is fun
