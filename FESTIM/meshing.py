@@ -17,7 +17,9 @@ def subdomains(mesh, parameters):
     if "cells_file" in mesh_parameters.keys():
         volume_markers, surface_markers = \
             read_subdomains_from_xdmf(
-                mesh_parameters["cells_file"], mesh_parameters["facets_file"])
+                mesh,
+                mesh_parameters["cells_file"],
+                mesh_parameters["facets_file"])
     else:
         size = parameters["mesh_parameters"]["size"]
         check_borders(size, parameters["materials"])
@@ -26,20 +28,28 @@ def subdomains(mesh, parameters):
     return volume_markers, surface_markers
 
 
-def read_subdomains_from_xdmf(volumetric_file, boundary_file):
+def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
 
     # Read tags for volume elements
-    cell_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
-    XDMFFile(volumetric_file).read(cell_markers, "cell_tags")
+    volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
+    try:
+        XDMFFile(volumetric_file).read(volume_markers, "f")
+    except:
+        raise ValueError('Attribute should be named "f" in ' + volumetric_file)
+    # f is the attribute name carreful
 
     # Read tags for surface elements
     # (can also be used for applying DirichletBC)
-    boundaries = MeshValueCollection("size_t", mesh, mesh.topology().dim() - 1)
-    XDMFFile(boundary_file).read(boundaries, "cell_tags")
-    boundaries = MeshFunction("size_t", mesh, boundaries)
+    surface_markers = \
+        MeshValueCollection("size_t", mesh, mesh.topology().dim() - 1)
+    try:
+        XDMFFile(boundary_file).read(surface_markers, "f")
+    except:
+        raise ValueError('Attribute should be named "f" in ' + boundary_file)
+    surface_markers = MeshFunction("size_t", mesh, surface_markers)
 
-    print(len(cell_markers))
-    return cell_markers, boundaries
+    print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
+    return volume_markers, surface_markers
 
 
 def mesh_and_refine(mesh_parameters):
