@@ -18,14 +18,14 @@ def run(parameters, log_level=40):
 
     # Mesh and refinement
     size = parameters["mesh_parameters"]["size"]
-    mesh = FESTIM.meshing.mesh_and_refine(parameters["mesh_parameters"])
+    mesh = FESTIM.meshing.create_mesh(parameters["mesh_parameters"])
     # Define function space for system of concentrations and properties
     V, W = FESTIM.functionspaces_and_functions.create_function_spaces(
         mesh, len(parameters["traps"]))
 
     # Define and mark subdomains
     volume_markers, surface_markers = \
-        FESTIM.meshing.subdomains(mesh, parameters["materials"], size)
+        FESTIM.meshing.subdomains(mesh, parameters)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
     # Create functions for flux computation
