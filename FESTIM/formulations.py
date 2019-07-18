@@ -20,7 +20,7 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     v_0 = 1e13  # frequency factor s-1
     expressions = []
     F = 0
-    if transient is True:
+    if transient:
         F += ((solutions[0]-previous_solutions[0])/dt)*testfunctions[0]*dx
 
     for material in parameters["materials"]:
@@ -51,8 +51,9 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
 
         energy = trap['energy']
         material = trap['materials']
-        F += ((solutions[i] - previous_solutions[i]) / dt) * \
-            testfunctions[i]*dx
+        if transient:
+            F += ((solutions[i] - previous_solutions[i]) / dt) * \
+                testfunctions[i]*dx
         if type(material) is not list:
             material = [material]
         for subdomain in material:
@@ -75,8 +76,9 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             expressions.append(source)
         except:
             pass
-        F += ((solutions[i] - previous_solutions[i]) / dt) * \
-            testfunctions[0]*dx
+        if transient:
+            F += ((solutions[i] - previous_solutions[i]) / dt) * \
+                testfunctions[0]*dx
         i += 1
     return F, expressions
 
