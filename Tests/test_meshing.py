@@ -3,6 +3,7 @@ from FESTIM import meshing
 import fenics
 import pytest
 import sympy as sp
+from pathlib import Path
 
 
 def test_mesh_and_refine_meets_refinement_conditions():
@@ -130,17 +131,17 @@ def test_check_borders():
         meshing.check_borders(size, materials)
 
 
-def test_create_mesh_xdmf():
+def test_create_mesh_xdmf(tmpdir):
 
     # write xdmf file
     mesh = fenics.UnitSquareMesh(10, 10)
-    f = fenics.XDMFFile("mesh.xdmf")
+    file1 = tmpdir.join("mesh.xdmf")
+    f = fenics.XDMFFile(str(Path(file1)))
     f.write(mesh)
 
     # read mesh
     mesh_parameters = {
-        "cells_file": "mesh.xdmf",
-        "facets_file": "Maillages Monoblock/Mesh 8/mesh_8_line.xdmf"
+        "cells_file": str(Path(file1)),
         }
     mesh2 = meshing.create_mesh(mesh_parameters)
 
@@ -160,19 +161,19 @@ def test_create_mesh_xdmf():
         assert vertices_mesh[i] == vertices_mesh2[i]
 
 
-def test_subdomains_from_xdmf():
+def test_subdomains_from_xdmf(tmpdir):
 
     # write files
     mesh = fenics.UnitCubeMesh(6, 6, 6)
     mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
     mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
-    cell_file = "cell_file.xdmf"
-    facet_file = "facet_file.xdmf"
-    fenics.XDMFFile(cell_file).write(mf_cells)
-    fenics.XDMFFile(facet_file).write(mf_facets)
+    file1 = tmpdir.join("cell_file.xdmf")
+    file2 = tmpdir.join("facet_file.xdmf")
+    fenics.XDMFFile(str(Path(file1))).write(mf_cells)
+    fenics.XDMFFile(str(Path(file2))).write(mf_facets)
     # read files
     mf_cells_2, mf_facets_2 = meshing.read_subdomains_from_xdmf(
-        mesh, cell_file, facet_file)
+        mesh, str(Path(file1)), str(Path(file2)))
 
     # check
     for cell in fenics.cells(mesh):
