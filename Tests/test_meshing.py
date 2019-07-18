@@ -179,3 +179,56 @@ def test_subdomains_from_xdmf(tmpdir):
     for cell in fenics.cells(mesh):
         assert mf_cells[cell] == mf_cells_2[cell]
         assert mf_facets[cell] == mf_facets_2[cell]
+
+
+def test_create_mesh_inbuilt():
+    '''
+    Test when mesh is given by the user
+    '''
+    # create mesh
+    mesh = fenics.UnitSquareMesh(10, 10)
+
+    # read mesh
+    mesh_parameters = {
+        "mesh": mesh
+        }
+    mesh2 = meshing.create_mesh(mesh_parameters)
+
+    # check that vertices are the same
+    vertices_mesh = []
+    for f in fenics.facets(mesh):
+        for v in fenics.vertices(f):
+            vertices_mesh.append(
+                [v.point().x(), v.point().y()])
+
+    vertices_mesh2 = []
+    for f in fenics.facets(mesh2):
+        for v in fenics.vertices(f):
+            vertices_mesh2.append(
+                [v.point().x(), v.point().y()])
+    for i in range(0, len(vertices_mesh)):
+        assert vertices_mesh[i] == vertices_mesh2[i]
+
+
+def test_subdomains_inbuilt():
+    '''
+    Test when meshfunctions are given by
+    the user
+    '''
+    # create
+    mesh = fenics.UnitCubeMesh(6, 6, 6)
+    mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
+    mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    mesh_parameters = {
+        "mesh_parameters": {
+            "mesh": mesh,
+            "meshfunction_cells": mf_cells,
+            "meshfunction_facets": mf_facets
+        }
+    }
+    # read
+    mf_cells_2, mf_facets_2 = meshing.subdomains(mesh, mesh_parameters)
+    # check
+    for cell in fenics.cells(mesh):
+        assert mf_cells[cell] == mf_cells_2[cell]
+        assert mf_facets[cell] == mf_facets_2[cell]
