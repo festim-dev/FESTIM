@@ -13,18 +13,35 @@ def initialising_solutions(V, initial_conditions):
     '''
     print('Defining initial values')
     u_n, components = FESTIM.functionspaces_and_functions.define_functions(V)
-    # initial conditions are 0 by default
-    expression = ['0'] * len(components)
+
+    check_no_duplicates(initial_conditions)
+
     for ini in initial_conditions:
-        value = ini["value"]
-        value = sp.printing.ccode(value)
-        expression[ini["component"]] = value
-    if len(expression) == 1:
-        expression = expression[0]
-    else:
-        expression = tuple(expression)
-    ini_u = Expression(expression, degree=3, t=0)
-    u_n = interpolate(ini_u, V)
+        if 'component' not in ini.keys():
+            ini["component"] = 0
+        if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
+
+            if V.num_sub_spaces() > 0:
+                comp = Function(V.sub(ini["component"]).collapse())
+            else:
+                comp = Function(V)
+            if "label" not in ini.keys():
+                raise KeyError("label key not found")
+            if "time_step" not in ini.keys():
+                raise KeyError("time_step key not found")
+            with XDMFFile(ini["value"]) as file:
+                file.read_checkpoint(comp, ini["label"], ini["time_step"])
+            #  only works if meshes are the same
+        else:
+            value = ini["value"]
+            value = sp.printing.ccode(value)
+            comp = Expression(value, degree=3, t=0)
+        if V.num_sub_spaces() > 0:
+            comp = interpolate(comp, V.sub(ini["component"]).collapse())
+            assign(u_n.sub(ini["component"]), comp)
+        else:
+            u_n = interpolate(comp, V)
+
     components = split(u_n)
     return u_n, components
 
@@ -41,3 +58,17 @@ def initialising_extrinsic_traps(W, number_of_traps):
         ini = Expression("0", degree=2)
         previous_solutions.append(interpolate(ini, W))
     return previous_solutions
+
+
+def check_no_duplicates(initial_conditions):
+    components = []
+    for e in initial_conditions:
+        if "component" not in e:
+            comp = 0
+        else:
+            comp = e["component"]
+        if comp in components:
+            raise ValueError("Duplicate component " + str(comp))
+        else:
+            components.append(comp)
+    return
