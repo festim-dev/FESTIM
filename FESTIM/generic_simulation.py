@@ -9,7 +9,17 @@ def run(parameters, log_level=40):
         FESTIM.export.export_parameters(parameters)
     except:
         pass
-
+    # Transient or not
+    if "type" in parameters["solving_parameters"].keys():
+        if parameters["solving_parameters"]["type"] == "solve_transient":
+                transient = True
+        elif parameters["solving_parameters"]["type"] == "solve_stationary":
+            transient = False
+        elif "type" in parameters["solving_parameters"].keys():
+            raise ValueError(
+                str(parameters["solving_parameters"]["type"]) + ' unkown')
+    else:
+        transient = True
     # Declaration of variables
     Time = parameters["solving_parameters"]["final_time"]
     initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
@@ -88,7 +98,7 @@ def run(parameters, log_level=40):
     F, expressions_F = FESTIM.formulations.formulation(
         parameters, extrinsic_traps,
         solutions, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx, T)
+        previous_solutions_concentrations, dt, dx, T, transient=transient)
 
     # BCs
     print('Defining boundary conditions')
