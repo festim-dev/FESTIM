@@ -57,20 +57,20 @@ def test_export_xdmf():
              fenics.XDMFFile(folder + "/" + "b.xdmf")]
     assert FESTIM.export.export_xdmf(
         [fenics.Function(V), fenics.Function(V)],
-        exports, files, 20) is None
+        exports, files, 20, append=True) is None
 
     exports["xdmf"]["functions"] = ['solute', 'blabla']
 
     with pytest.raises(KeyError, match=r'blabla'):
         FESTIM.export.export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
-            exports, files, 20)
+            exports, files, 20, append=True)
 
     exports["xdmf"]["functions"] = ['solute', '13']
     with pytest.raises(KeyError, match=r'13'):
         FESTIM.export.export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
-            exports, files, 20)
+            exports, files, 20, append=True)
 
 
 def test_create_flux_functions():
