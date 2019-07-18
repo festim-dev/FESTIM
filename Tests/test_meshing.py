@@ -141,7 +141,7 @@ def test_create_mesh_xdmf(tmpdir):
 
     # read mesh
     mesh_parameters = {
-        "cells_file": str(Path(file1)),
+        "mesh_file": str(Path(file1)),
         }
     mesh2 = meshing.create_mesh(mesh_parameters)
 
