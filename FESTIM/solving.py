@@ -2,9 +2,8 @@ from FESTIM import *
 from fenics import *
 
 
-def solve_it(F, u, bcs, t, dt, solving_parameters):
+def solve_it(F, u, J, bcs, t, dt, solving_parameters):
     converged = False
-    du = TrialFunction(u.function_space())
     u_ = Function(u.function_space())
     u_.assign(u)
     while converged is False:
@@ -15,7 +14,7 @@ def solve_it(F, u, bcs, t, dt, solving_parameters):
         stepsize_change_ratio = \
             solving_parameters["adaptive_stepsize"]["stepsize_change_ratio"]
         dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
-        u, nb_it, converged = solve_once(F, u, du, bcs, solving_parameters)
+        u, nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
         adaptive_stepsize(
             nb_it=nb_it, converged=converged, dt=dt,
             stepsize_change_ratio=stepsize_change_ratio,
@@ -24,8 +23,7 @@ def solve_it(F, u, bcs, t, dt, solving_parameters):
     return u, dt
 
 
-def solve_once(F, u, du, bcs, solving_parameters):
-    J = derivative(F, u, du)  # Define the Jacobian
+def solve_once(F, u, J, bcs, solving_parameters):
     problem = NonlinearVariationalProblem(F, u, bcs, J)
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False

@@ -9,6 +9,7 @@ def run(parameters, log_level=40):
         FESTIM.export.export_parameters(parameters)
     except:
         pass
+
     # Transient or not
     if "type" in parameters["solving_parameters"].keys():
         if parameters["solving_parameters"]["type"] == "solve_transient":
@@ -20,6 +21,7 @@ def run(parameters, log_level=40):
                 str(parameters["solving_parameters"]["type"]) + ' unkown')
     else:
         transient = True
+
     # Declaration of variables
     if transient:
         Time = parameters["solving_parameters"]["final_time"]
@@ -95,13 +97,16 @@ def run(parameters, log_level=40):
     previous_solutions_traps = \
         FESTIM.initialise_solutions.initialising_extrinsic_traps(
             W, len(extrinsic_traps))
-    print('Defining variational problem')
-    # Define variational problem1
 
+    # Define variational problem1
+    print('Defining variational problem')
     F, expressions_F = FESTIM.formulations.formulation(
         parameters, extrinsic_traps,
         solutions, testfunctions_concentrations,
         previous_solutions_concentrations, dt, dx, T, transient=transient)
+
+    du = TrialFunction(u.function_space())
+    J = derivative(F, u, du)  # Define the Jacobian
 
     # BCs
     print('Defining boundary conditions')
@@ -112,6 +117,7 @@ def run(parameters, log_level=40):
         parameters["boundary_conditions"], solutions,
         testfunctions_concentrations, ds, T)
     F += fluxes
+
     # Define variational problem for extrinsic traps
     if transient:
         extrinsic_formulations, expressions_form = \
@@ -124,6 +130,7 @@ def run(parameters, log_level=40):
     if "xdmf" in parameters["exports"].keys():
         files = FESTIM.export.define_xdmf_files(exports)
         append = False
+
     #  Time-stepping
     print('Time stepping...')
 
@@ -137,6 +144,7 @@ def run(parameters, log_level=40):
         desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
     temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
+
     if transient:
         while t < Time:
             # Update current time
@@ -174,15 +182,15 @@ def run(parameters, log_level=40):
                     1e-10
                 solver.solve()
                 T_n.assign(T)
+
             # Solve main problem
             FESTIM.solving.solve_it(
-                F, u, bcs, t, dt, parameters["solving_parameters"])
+                F, u, J, bcs, t, dt, parameters["solving_parameters"])
             # Solve extrinsic traps formulation
             for j in range(len(extrinsic_formulations)):
                 solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
             # Post processing
-
             res = list(u.split())
             retention = FESTIM.post_processing.compute_retention(u, W)
             res.append(retention)
@@ -217,7 +225,7 @@ def run(parameters, log_level=40):
         # Solve steady state
         du = TrialFunction(u.function_space())
         FESTIM.solving.solve_once(
-            F, u, du, bcs, parameters["solving_parameters"])
+            F, u, J, bcs, parameters["solving_parameters"])
         res = list(u.split())
         retention = FESTIM.post_processing.compute_retention(u, W)
         res.append(retention)
@@ -255,10 +263,12 @@ def run(parameters, log_level=40):
         output["derived_quantities"] = derived_quantities_global
         FESTIM.export.write_to_csv(parameters["exports"]["derived_quantities"],
                                    derived_quantities_global)
+
     # Export TDS
     if "TDS" in parameters["exports"].keys():
         output["TDS"] = desorption
         FESTIM.export.write_to_csv(parameters["exports"]["TDS"], desorption)
+
     # End
     print('\007s')
     return output
