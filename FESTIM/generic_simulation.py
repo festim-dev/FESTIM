@@ -209,21 +209,38 @@ def run(parameters, log_level=40):
             for j in range(len(previous_solutions_traps)):
                 previous_solutions_traps[j].assign(extrinsic_traps[j])
     else:
+        # Solve steady state
         du = TrialFunction(u.function_space())
         FESTIM.solving.solve_once(F, u, du, bcs, parameters["solving_parameters"])
         res = list(u.split())
         retention = FESTIM.post_processing.compute_retention(u, W)
         res.append(retention)
+
+        # Post processing
+        res = list(u.split())
+        retention = FESTIM.post_processing.compute_retention(u, W)
+        res.append(retention)
+        if "derived_quantities" in parameters["exports"].keys():
+            derived_quantities_t = FESTIM.post_processing.derived_quantities(
+                parameters,
+                [*res, T],
+                [D_0*exp(-E_diff/T), thermal_cond],
+                [volume_markers, surface_markers])
+            derived_quantities_t.insert(0, t)
+            derived_quantities_global.append(derived_quantities_t)
         if "xdmf" in parameters["exports"].keys():
             FESTIM.export.export_xdmf(res, exports, files, t, append=append)
             append = True
+        dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
+        temperature.append([t, T(size/2)])
+
     # Store data in output
     output = dict()  # Final output
 
     # Compute error
     if "error" in parameters["exports"].keys():
         error = FESTIM.post_processing.compute_error(
-            parameters["exports"]["error"], t, u_n, mesh)
+            parameters["exports"]["error"], t, u, mesh)
         output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
