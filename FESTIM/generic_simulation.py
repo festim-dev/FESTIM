@@ -158,7 +158,8 @@ def run(parameters, log_level=40):
             # Display time
             print(str(round(t/Time*100, 2)) + ' %        ' +
                   str(round(t, 1)) + ' s' +
-                  "    Ellapsed time so far: %s s" % round(timer.elapsed()[0], 1),
+                  "    Ellapsed time so far: %s s" %
+                  round(timer.elapsed()[0], 1),
                   end="\r")
 
             # Solve heat transfers
@@ -167,8 +168,10 @@ def run(parameters, log_level=40):
                 JT = derivative(FT, T, dT)  # Define the Jacobian
                 problem = NonlinearVariationalProblem(FT, T, bcs_T, JT)
                 solver = NonlinearVariationalSolver(problem)
-                solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-3
-                solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
+                solver.parameters["newton_solver"]["absolute_tolerance"] = \
+                    1e-3
+                solver.parameters["newton_solver"]["relative_tolerance"] = \
+                    1e-10
                 solver.solve()
                 T_n.assign(T)
             # Solve main problem
@@ -184,15 +187,17 @@ def run(parameters, log_level=40):
             retention = FESTIM.post_processing.compute_retention(u, W)
             res.append(retention)
             if "derived_quantities" in parameters["exports"].keys():
-                derived_quantities_t = FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    [*res, T],
-                    [D_0*exp(-E_diff/T), thermal_cond],
-                    [volume_markers, surface_markers])
+                derived_quantities_t = \
+                    FESTIM.post_processing.derived_quantities(
+                        parameters,
+                        [*res, T],
+                        [D_0*exp(-E_diff/T), thermal_cond],
+                        [volume_markers, surface_markers])
                 derived_quantities_t.insert(0, t)
                 derived_quantities_global.append(derived_quantities_t)
             if "xdmf" in parameters["exports"].keys():
-                FESTIM.export.export_xdmf(res, exports, files, t, append=append)
+                FESTIM.export.export_xdmf(
+                    res, exports, files, t, append=append)
                 append = True
             dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
             temperature.append([t, T(size/2)])
@@ -211,7 +216,8 @@ def run(parameters, log_level=40):
     else:
         # Solve steady state
         du = TrialFunction(u.function_space())
-        FESTIM.solving.solve_once(F, u, du, bcs, parameters["solving_parameters"])
+        FESTIM.solving.solve_once(
+            F, u, du, bcs, parameters["solving_parameters"])
         res = list(u.split())
         retention = FESTIM.post_processing.compute_retention(u, W)
         res.append(retention)
