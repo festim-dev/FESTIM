@@ -457,8 +457,8 @@ def test_run_MMS_steady_state():
         }
         return parameters
 
-    tol_u = 1e-7
-    tol_v = 1e-1
+    tol_u = 1e-12
+    tol_v = 1e-5
     sizes = [1/1600, 1/1700]
     for h in sizes:
         output = FESTIM.generic_simulation.run(
