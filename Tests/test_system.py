@@ -93,7 +93,6 @@ def test_run_temperature_stationary(tmpdir):
 
     }
     output = FESTIM.generic_simulation.run(parameters)
-    # temp at the middle
     T_computed = output["temperature"][1][1]
     assert abs(T_computed - (1+2*(size/2)**2)) < 1e-9
 
