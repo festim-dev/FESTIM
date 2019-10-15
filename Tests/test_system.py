@@ -356,9 +356,8 @@ def test_run_MMS_steady_state(tmpdir):
         D = D_0 * fenics.exp(-E_diff/k_B/T)
         v_i = v_0 * fenics.exp(-E_t/k_B/T)
         v_m = D/alpha/alpha/beta
-        f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
-            D * sp.diff(u, FESTIM.x, 2)
-        g = sp.diff(v, FESTIM.t) + v_i*v - v_m * u * (n_trap-v)
+        f = sp.diff(v, FESTIM.t) - D * sp.diff(u, FESTIM.x, 2)
+        g = v_i*v - v_m * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
