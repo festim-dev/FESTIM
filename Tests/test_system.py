@@ -175,7 +175,6 @@ def test_run_temperature_transient():
     }
     output = FESTIM.generic_simulation.run(parameters)
     # temp at the middle
-    T_computed = output["temperature"][1][1]
     error = []
     u_D = fenics.Expression(sp.printing.ccode(u), t=0, degree=4)
     for i in range(1, len(output["temperature"])):
@@ -196,7 +195,6 @@ def test_run_MMS(tmpdir):
 
     def parameters(h, dt, final_time, u, v):
         size = 1
-        folder = 'Solution_Test'
         v_0 = 1e13
         E_t = 1.5
         T = 700
