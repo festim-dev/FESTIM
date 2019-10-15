@@ -2,6 +2,7 @@ import FESTIM
 import fenics
 import pytest
 import sympy as sp
+from pathlib import Path
 
 
 # Integration tests
@@ -82,15 +83,6 @@ def test_run_temperature_stationary():
                 "times": [100],
                 "labels": ['retention']
             },
-            "xdmf": {
-                "functions": [],
-                "labels":  [],
-                "folder": "Coucou"
-            },
-            "TDS": {
-                "file": "desorption",
-                "TDS_time": 450
-                }
             },
 
     }
@@ -178,15 +170,6 @@ def test_run_temperature_transient():
                 "times": [100],
                 "labels": ['retention']
             },
-            "xdmf": {
-                "functions": [],
-                "labels":  [],
-                "folder": "Coucou"
-            },
-            "TDS": {
-                "file": "desorption",
-                "TDS_time": 450
-                }
             },
 
     }
@@ -203,11 +186,11 @@ def test_run_temperature_transient():
     assert max(error) < 1e-9
 
 
-def test_run_MMS():
+def test_run_MMS(tmpdir):
     '''
     Test function run() for several refinements
     '''
-
+    d = tmpdir.mkdir("Solution_Test")
     u = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
     v = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
 
@@ -309,17 +292,17 @@ def test_run_MMS():
                     "functions": [],
                     "times": [],
                     "labels": [],
-                    "folder": folder
+                    "folder": str(Path(d))
                 },
                 "xdmf": {
                     "functions": [],
                     "labels":  [],
-                    "folder": folder
+                    "folder": str(Path(d))
                 },
                 "TDS": {
                     "file": "desorption",
                     "TDS_time": 0,
-                    "folder": folder
+                    "folder": str(Path(d))
                     },
                 "error": [
                     {
@@ -352,17 +335,16 @@ def test_run_MMS():
         assert error_max_u < tol_u and error_max_v < tol_v
 
 
-def test_run_MMS_steady_state():
+def test_run_MMS_steady_state(tmpdir):
     '''
     Test function run() for several refinements in steady state
     '''
-
+    d = tmpdir.mkdir("Solution_Test")
     u = 1 + sp.cos(2*fenics.pi*FESTIM.x)
     v = 1 + sp.cos(2*fenics.pi*FESTIM.x)
 
     def parameters(h, u, v):
         size = 1
-        folder = 'Solution_Test'
         v_0 = 1e13
         E_t = 1.5
         T = 700
@@ -439,12 +421,12 @@ def test_run_MMS_steady_state():
                     "functions": [],
                     "times": [],
                     "labels": [],
-                    "folder": folder
+                    "folder": str(Path(d))
                 },
                 "xdmf": {
                     "functions": ['solute', '1'],
                     "labels":  ['solute', '1'],
-                    "folder": folder
+                    "folder": str(Path(d))
                 },
                 "error": [
                     {
