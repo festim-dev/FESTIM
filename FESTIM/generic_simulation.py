@@ -73,10 +73,8 @@ def run(parameters, log_level=40):
                 parameters, [T, vT, T_n], [dx, ds], dt)
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
-            T_file = XDMFFile("Sol_monoblock_1D_comparison/temperature.xdmf")
             solve(FT == 0, T, bcs_T)
-            T_file.write(T)
-
+            # Todo: add xdmf export for T field
     # Define functions
 
     u, solutions = FESTIM.functionspaces_and_functions.define_functions(V)
