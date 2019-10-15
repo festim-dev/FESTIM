@@ -2,6 +2,7 @@ import FESTIM
 import fenics
 import pytest
 import sympy as sp
+from pathlib import Path
 
 
 def test_define_xdmf_files():
@@ -42,22 +43,22 @@ def test_define_xdmf_files():
         FESTIM.export.define_xdmf_files(exports)
 
 
-def test_export_xdmf():
+def test_export_xdmf(tmpdir):
     mesh = fenics.UnitSquareMesh(3, 3)
     V = fenics.FunctionSpace(mesh, 'P', 1)
-    folder = "Solution"
+    d = tmpdir.mkdir("Solution_Test")
     exports = {
         "xdmf": {
             "functions": ['solute', 'retention'],
             "labels":  ['a', 'b'],
-            "folder": folder
+            "folder": str(Path(d))
         }
         }
-    files = [fenics.XDMFFile(folder + "/" + "a.xdmf"),
-             fenics.XDMFFile(folder + "/" + "b.xdmf")]
-    assert FESTIM.export.export_xdmf(
-        [fenics.Function(V), fenics.Function(V)],
-        exports, files, 20, append=True) is None
+    files = [fenics.XDMFFile(str(Path(d.join("a.xdmf")))),
+             fenics.XDMFFile(str(Path(d.join("b.xdmf"))))]
+
+    assert FESTIM.export.export_xdmf([fenics.Function(V), fenics.Function(V)],
+                                     exports, files, 20, append=True) is None
 
     exports["xdmf"]["functions"] = ['solute', 'blabla']
 
