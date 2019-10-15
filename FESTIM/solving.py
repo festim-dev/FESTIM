@@ -2,36 +2,40 @@ from FESTIM import *
 from fenics import *
 
 
-def solve_u(F, u, bcs, t, dt, solving_parameters):
+def solve_it(F, u, J, bcs, t, dt, solving_parameters):
     converged = False
-    du = TrialFunction(u.function_space())
     u_ = Function(u.function_space())
     u_.assign(u)
     while converged is False:
         u.assign(u_)
-        J = derivative(F, u, du)  # Define the Jacobian
-        problem = NonlinearVariationalProblem(F, u, bcs, J)
-        solver = NonlinearVariationalSolver(problem)
-        solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
-        solver.parameters["newton_solver"]["absolute_tolerance"] = \
-            solving_parameters['newton_solver']['absolute_tolerance']
-        solver.parameters["newton_solver"]["relative_tolerance"] = \
-            solving_parameters['newton_solver']['relative_tolerance']
-        solver.parameters["newton_solver"]["maximum_iterations"] = \
-            solving_parameters['newton_solver']['maximum_iterations']
         t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
         stepsize_stop_max = \
             solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
         stepsize_change_ratio = \
             solving_parameters["adaptive_stepsize"]["stepsize_change_ratio"]
         dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
-        nb_it, converged = solver.solve()
+        u, nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
         adaptive_stepsize(
             nb_it=nb_it, converged=converged, dt=dt,
             stepsize_change_ratio=stepsize_change_ratio,
             dt_min=dt_min, t=t, t_stop=t_stop,
             stepsize_stop_max=stepsize_stop_max)
     return u, dt
+
+
+def solve_once(F, u, J, bcs, solving_parameters):
+    problem = NonlinearVariationalProblem(F, u, bcs, J)
+    solver = NonlinearVariationalSolver(problem)
+    solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
+    solver.parameters["newton_solver"]["absolute_tolerance"] = \
+        solving_parameters['newton_solver']['absolute_tolerance']
+    solver.parameters["newton_solver"]["relative_tolerance"] = \
+        solving_parameters['newton_solver']['relative_tolerance']
+    solver.parameters["newton_solver"]["maximum_iterations"] = \
+        solving_parameters['newton_solver']['maximum_iterations']
+    nb_it, converged = solver.solve()
+
+    return u, nb_it, converged
 
 
 def adaptive_stepsize(nb_it, converged, dt, dt_min,
