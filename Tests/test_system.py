@@ -5,12 +5,13 @@ import sympy as sp
 from pathlib import Path
 
 
-# Integration tests
+# System tests
 
-def test_run_temperature_stationary():
+def test_run_temperature_stationary(tmpdir):
     '''
     Check that the temperature module works well in 1D stationary
     '''
+    d = tmpdir.mkdir("Solution_Test")
     u = 1 + 2*FESTIM.x**2
     size = 1
     parameters = {
@@ -83,19 +84,24 @@ def test_run_temperature_stationary():
                 "times": [100],
                 "labels": ['retention']
             },
+            "xdmf": {
+                    "functions": ['T'],
+                    "labels":  ['temperature'],
+                    "folder": str(Path(d))
+            },
             },
 
     }
     output = FESTIM.generic_simulation.run(parameters)
-    # temp at the middle
     T_computed = output["temperature"][1][1]
     assert abs(T_computed - (1+2*(size/2)**2)) < 1e-9
 
 
-def test_run_temperature_transient():
+def test_run_temperature_transient(tmpdir):
     '''
     Check that the temperature module works well in 1D transient
     '''
+    d = tmpdir.mkdir("Solution_Test")
     u = 1 + 2*FESTIM.x**2+FESTIM.t
     size = 1
     parameters = {
@@ -169,6 +175,11 @@ def test_run_temperature_transient():
                 "functions": ['retention'],
                 "times": [100],
                 "labels": ['retention']
+            },
+            "xdmf": {
+                    "functions": ['T'],
+                    "labels":  ['temperature'],
+                    "folder": str(Path(d))
             },
             },
 
@@ -293,8 +304,8 @@ def test_run_MMS(tmpdir):
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": [],
-                    "labels":  [],
+                    "functions": ['T'],
+                    "labels":  ['temperature'],
                     "folder": str(Path(d))
                 },
                 "TDS": {
@@ -421,8 +432,8 @@ def test_run_MMS_steady_state(tmpdir):
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": ['solute', '1'],
-                    "labels":  ['solute', '1'],
+                    "functions": ['solute', '1', 'T'],
+                    "labels":  ['solute', '1', 'temp'],
                     "folder": str(Path(d))
                 },
                 "error": [

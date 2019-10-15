@@ -153,7 +153,8 @@ def export_xdmf(res, exports, files, t, append):
                         "in xdmf exports")
     solution_dict = {
         'solute': res[0],
-        'retention': res[len(res)-1]
+        'retention': res[len(res)-2],
+        'T': res[len(res)-1],
     }
     for i in range(0, len(exports["xdmf"]["functions"])):
         label = exports["xdmf"]["labels"][i]

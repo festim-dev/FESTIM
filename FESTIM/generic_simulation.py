@@ -192,11 +192,15 @@ def run(parameters, log_level=40):
             res = list(u.split())
             retention = FESTIM.post_processing.compute_retention(u, W)
             res.append(retention)
+            if isinstance(T, function.expression.Expression):
+                res.append(interpolate(T, W))
+            else:
+                res.append(T)
             if "derived_quantities" in parameters["exports"].keys():
                 derived_quantities_t = \
                     FESTIM.post_processing.derived_quantities(
                         parameters,
-                        [*res, T],
+                        res,
                         [D_0*exp(-E_diff/T), thermal_cond],
                         [volume_markers, surface_markers])
                 derived_quantities_t.insert(0, t)
@@ -227,21 +231,27 @@ def run(parameters, log_level=40):
         res = list(u.split())
         retention = FESTIM.post_processing.compute_retention(u, W)
         res.append(retention)
+        if isinstance(T, function.expression.Expression):
+            res.append(interpolate(T, W))
+        else:
+            res.append(T)
 
         # Post processing
         res = list(u.split())
         retention = FESTIM.post_processing.compute_retention(u, W)
         res.append(retention)
         if "derived_quantities" in parameters["exports"].keys():
-            derived_quantities_t = FESTIM.post_processing.derived_quantities(
-                parameters,
-                [*res, T],
-                [D_0*exp(-E_diff/T), thermal_cond],
-                [volume_markers, surface_markers])
+            derived_quantities_t = \
+                FESTIM.post_processing.derived_quantities(
+                    parameters,
+                    res,
+                    [D_0*exp(-E_diff/T), thermal_cond],
+                    [volume_markers, surface_markers])
             derived_quantities_t.insert(0, t)
             derived_quantities_global.append(derived_quantities_t)
         if "xdmf" in parameters["exports"].keys():
-            FESTIM.export.export_xdmf(res, exports, files, t, append=append)
+            FESTIM.export.export_xdmf(
+                res, exports, files, t, append=append)
             append = True
         dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
         temperature.append([t, T(size/2)])
