@@ -4,26 +4,74 @@ import numpy as np
 import FESTIM
 
 
-def compute_error(parameters, t, u_n, mesh):
+def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
+                        append, flux_fonctions, derived_quantities_global):
+    res = list(u.split())
+    retention = FESTIM.post_processing.compute_retention(u, W)
+    res.append(retention)
+    if isinstance(T, function.expression.Expression):
+        res.append(interpolate(T, W))
+    else:
+        res.append(T)
+
+    if "derived_quantities" in parameters["exports"].keys():
+        D_0, E_diff, thermal_cond = flux_fonctions
+        derived_quantities_t = \
+            FESTIM.post_processing.derived_quantities(
+                parameters,
+                res,
+                [D_0*exp(-E_diff/T), thermal_cond],
+                markers)
+        derived_quantities_t.insert(0, t)
+        derived_quantities_global.append(derived_quantities_t)
+    if "xdmf" in parameters["exports"].keys():
+        FESTIM.export.export_xdmf(
+            res, parameters["exports"], files, t, append=append)
+    dt = FESTIM.export.export_profiles(res, parameters["exports"], t, dt, W)
+
+    return derived_quantities_global, dt
+
+
+def compute_error(parameters, t, res, mesh):
     '''
     Returns a list containing the errors
     '''
-    res = u_n.split()
     tab = []
+
+    solution_dict = {
+        'solute': res[0],
+        'retention': res[len(res)-2],
+        'T': res[len(res)-1],
+    }
+
     for error in parameters:
         er = []
         er.append(t)
-        for i in range(len(error["exact_solution"])):
-            sol = Expression(sp.printing.ccode(error["exact_solution"][i]),
-                             degree=error["degree"], t=t)
+        for i in range(len(error["exact_solutions"])):
+            exact_sol = Expression(sp.printing.ccode(
+                error["exact_solutions"][i]),
+                degree=error["degree"],
+                t=t)
+            try:
+                nb = int(error["computed_solutions"][i])
+                computed_sol = res[nb]
+            except:
+                try:
+                    computed_sol = solution_dict[
+                        error["computed_solutions"][i]]
+                except:
+                    raise KeyError(
+                        "The key " + error["computed_solutions"][i] +
+                        " is unknown.")
+
             if error["norm"] == "error_max":
-                vertex_values_u = res[i].compute_vertex_values(mesh)
-                vertex_values_sol = sol.compute_vertex_values(mesh)
+                vertex_values_u = computed_sol.compute_vertex_values(mesh)
+                vertex_values_sol = exact_sol.compute_vertex_values(mesh)
                 error_max = np.max(np.abs(vertex_values_u - vertex_values_sol))
                 er.append(error_max)
             else:
                 error_L2 = errornorm(
-                    sol, res[i], error["norm"])
+                    exact_sol, computed_sol, error["norm"])
                 er.append(error_L2)
 
         tab.append(er)
@@ -35,9 +83,7 @@ def compute_retention(u, W):
     if not res:  # if u is non-vector
         res = [u]
     retention = project(res[0])
-    total_trap = 0
     for i in range(1, len(res)):
-        sol = res[i]
         retention = project(retention + res[i], W)
     return retention
 
@@ -99,7 +145,6 @@ def header_derived_quantities(parameters):
     Creates the header for derived_quantities list
     '''
     header = ['t(s)']
-    i = 0
     for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
         for surf in flux["surfaces"]:
             header.append("Flux surface " + str(surf) + ": " + flux['field'])

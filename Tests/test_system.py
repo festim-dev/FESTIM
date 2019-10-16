@@ -89,12 +89,19 @@ def test_run_temperature_stationary(tmpdir):
                     "labels":  ['temperature'],
                     "folder": str(Path(d))
             },
+            "error": [
+                {
+                    "computed_solutions": ['T'],
+                    "exact_solutions": [u],
+                    "norm": 'error_max',
+                    "degree": 4
+                }
+            ]
             },
 
     }
     output = FESTIM.generic_simulation.run(parameters)
-    T_computed = output["temperature"][1][1]
-    assert abs(T_computed - (1+2*(size/2)**2)) < 1e-9
+    assert output["error"][0][1] < 1e-9
 
 
 def test_run_temperature_transient(tmpdir):
@@ -181,19 +188,20 @@ def test_run_temperature_transient(tmpdir):
                     "labels":  ['temperature'],
                     "folder": str(Path(d))
             },
+            "error": [
+                {
+                    "computed_solutions": ['T'],
+                    "exact_solutions": [u],
+                    "norm": 'error_max',
+                    "degree": 4
+                }
+            ]
             },
 
     }
     output = FESTIM.generic_simulation.run(parameters)
-    # temp at the middle
-    error = []
-    u_D = fenics.Expression(sp.printing.ccode(u), t=0, degree=4)
-    for i in range(1, len(output["temperature"])):
-        t = output["temperature"][i][0]
-        T = output["temperature"][i][1]
-        u_D.t = t
-        error.append(abs(T - u_D(size/2)))
-    assert max(error) < 1e-9
+
+    assert output["error"][0][1] < 1e-9
 
 
 def test_run_MMS(tmpdir):
@@ -303,11 +311,6 @@ def test_run_MMS(tmpdir):
                     "labels": [],
                     "folder": str(Path(d))
                 },
-                "xdmf": {
-                    "functions": ['T'],
-                    "labels":  ['temperature'],
-                    "folder": str(Path(d))
-                },
                 "TDS": {
                     "file": "desorption",
                     "TDS_time": 0,
@@ -315,7 +318,8 @@ def test_run_MMS(tmpdir):
                     },
                 "error": [
                     {
-                        "exact_solution": [u, v],
+                        "computed_solutions": [0, 1],
+                        "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
                     }
@@ -339,8 +343,6 @@ def test_run_MMS(tmpdir):
             with h = ' + str(h) + '\n \
             with dt = ' + str(dt)
         print(msg)
-        assert output["temperature"][1][1] == 700
-        assert output["temperature"][5][1] == 700
         assert error_max_u < tol_u and error_max_v < tol_v
 
 
@@ -438,7 +440,8 @@ def test_run_MMS_steady_state(tmpdir):
                 },
                 "error": [
                     {
-                        "exact_solution": [u, v],
+                        "computed_solutions": [0, 1],
+                        "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
                     }

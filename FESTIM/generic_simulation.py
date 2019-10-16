@@ -10,29 +10,26 @@ def run(parameters, log_level=40):
     except:
         pass
 
-    # Transient or not
+    # Check if transient
+    transient = True
     if "type" in parameters["solving_parameters"].keys():
         if parameters["solving_parameters"]["type"] == "solve_transient":
-                transient = True
+            transient = True
         elif parameters["solving_parameters"]["type"] == "solve_stationary":
             transient = False
         elif "type" in parameters["solving_parameters"].keys():
             raise ValueError(
                 str(parameters["solving_parameters"]["type"]) + ' unkown')
-    else:
-        transient = True
 
     # Declaration of variables
+    dt = 0
     if transient:
         Time = parameters["solving_parameters"]["final_time"]
         initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
         dt = Constant(initial_stepsize)  # time step size
-    else:
-        dt = 0
     set_log_level(log_level)
 
     # Mesh and refinement
-    size = parameters["mesh_parameters"]["size"]
     mesh = FESTIM.meshing.create_mesh(parameters["mesh_parameters"])
     # Define function space for system of concentrations and properties
     V, W = FESTIM.functionspaces_and_functions.create_function_spaces(
@@ -43,7 +40,9 @@ def run(parameters, log_level=40):
         FESTIM.meshing.subdomains(mesh, parameters)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
+
     # Create functions for flux computation
+    D_0, E_diff, thermal_cond = [None]*3
     if "derived_quantities" in parameters["exports"]:
         if "surface_flux" in parameters["exports"]["derived_quantities"]:
             D_0, E_diff, thermal_cond =\
@@ -74,9 +73,8 @@ def run(parameters, log_level=40):
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
-            # Todo: add xdmf export for T field
-    # Define functions
 
+    # Define functions
     u, solutions = FESTIM.functionspaces_and_functions.define_functions(V)
     extrinsic_traps = \
         FESTIM.functionspaces_and_functions.define_functions_extrinsic_traps(
@@ -84,6 +82,7 @@ def run(parameters, log_level=40):
     testfunctions_concentrations, testfunctions_traps = \
         FESTIM.functionspaces_and_functions.define_test_functions(
             V, W, len(extrinsic_traps))
+
     # Initialising the solutions
     if "initial_conditions" in parameters.keys():
         initial_conditions = parameters["initial_conditions"]
@@ -96,17 +95,7 @@ def run(parameters, log_level=40):
         FESTIM.initialise_solutions.initialising_extrinsic_traps(
             W, len(extrinsic_traps))
 
-    # Define variational problem1
-    print('Defining variational problem')
-    F, expressions_F = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps,
-        solutions, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx, T, transient=transient)
-
-    du = TrialFunction(u.function_space())
-    J = derivative(F, u, du)  # Define the Jacobian
-
-    # BCs
+    # Boundary conditions
     print('Defining boundary conditions')
     bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
         parameters["boundary_conditions"], V, surface_markers, ds,
@@ -114,7 +103,17 @@ def run(parameters, log_level=40):
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
         parameters["boundary_conditions"], solutions,
         testfunctions_concentrations, ds, T)
+
+    # Define variational problem H transport
+    print('Defining variational problem')
+    F, expressions_F = FESTIM.formulations.formulation(
+        parameters, extrinsic_traps,
+        solutions, testfunctions_concentrations,
+        previous_solutions_concentrations, dt, dx, T, transient=transient)
     F += fluxes
+
+    du = TrialFunction(u.function_space())
+    J = derivative(F, u, du)  # Define the Jacobian
 
     # Define variational problem for extrinsic traps
     if transient:
@@ -124,26 +123,22 @@ def run(parameters, log_level=40):
                 previous_solutions_traps, dt)
 
     # Solution files
-    exports = parameters["exports"]
+    files = []
+    append = False
     if "xdmf" in parameters["exports"].keys():
-        files = FESTIM.export.define_xdmf_files(exports)
-        append = False
+        files = FESTIM.export.define_xdmf_files(parameters["exports"])
 
-    #  Time-stepping
-    print('Time stepping...')
-
-    timer = Timer()  # start timer
-    error = []
+    derived_quantities_global = []
     if "derived_quantities" in parameters["exports"].keys():
         derived_quantities_global = \
             [FESTIM.post_processing.header_derived_quantities(parameters)]
-    if "TDS" in parameters["exports"].keys():
-        inventory_n = 0
-        desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
-    temperature = [["t (s)", "T (K)"]]
+
     t = 0  # Initialising time to 0s
+    timer = Timer()  # start timer
 
     if transient:
+        #  Time-stepping
+        print('Time stepping...')
         while t < Time:
             # Update current time
             t += float(dt)
@@ -184,77 +179,51 @@ def run(parameters, log_level=40):
             # Solve main problem
             FESTIM.solving.solve_it(
                 F, u, J, bcs, t, dt, parameters["solving_parameters"])
+
             # Solve extrinsic traps formulation
             for j in range(len(extrinsic_formulations)):
                 solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
             # Post processing
-            res = list(u.split())
-            retention = FESTIM.post_processing.compute_retention(u, W)
-            res.append(retention)
-            if isinstance(T, function.expression.Expression):
-                res.append(interpolate(T, W))
-            else:
-                res.append(T)
-            if "derived_quantities" in parameters["exports"].keys():
-                derived_quantities_t = \
-                    FESTIM.post_processing.derived_quantities(
-                        parameters,
-                        res,
-                        [D_0*exp(-E_diff/T), thermal_cond],
-                        [volume_markers, surface_markers])
-                derived_quantities_t.insert(0, t)
-                derived_quantities_global.append(derived_quantities_t)
-            if "xdmf" in parameters["exports"].keys():
-                FESTIM.export.export_xdmf(
-                    res, exports, files, t, append=append)
-                append = True
-            dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
-            temperature.append([t, T(size/2)])
+            FESTIM.post_processing.run_post_processing(
+                parameters,
+                transient,
+                u, T,
+                [volume_markers, surface_markers],
+                W,
+                t,
+                dt,
+                files,
+                append,
+                [D_0, E_diff, thermal_cond],
+                derived_quantities_global)
+            append = True
 
-            if "TDS" in parameters["exports"].keys():
-                inventory = assemble(retention*dx)
-                desorption_rate = \
-                    [t, T(size/2), -(inventory-inventory_n)/float(dt)]
-                inventory_n = inventory
-                if t > parameters["exports"]["TDS"]["TDS_time"]:
-                    desorption.append(desorption_rate)
             # Update previous solutions
             u_n.assign(u)
             for j in range(len(previous_solutions_traps)):
                 previous_solutions_traps[j].assign(extrinsic_traps[j])
     else:
         # Solve steady state
+        print('Solving steady state problem...')
+
         du = TrialFunction(u.function_space())
         FESTIM.solving.solve_once(
             F, u, J, bcs, parameters["solving_parameters"])
-        res = list(u.split())
-        retention = FESTIM.post_processing.compute_retention(u, W)
-        res.append(retention)
-        if isinstance(T, function.expression.Expression):
-            res.append(interpolate(T, W))
-        else:
-            res.append(T)
 
         # Post processing
-        res = list(u.split())
-        retention = FESTIM.post_processing.compute_retention(u, W)
-        res.append(retention)
-        if "derived_quantities" in parameters["exports"].keys():
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    [D_0*exp(-E_diff/T), thermal_cond],
-                    [volume_markers, surface_markers])
-            derived_quantities_t.insert(0, t)
-            derived_quantities_global.append(derived_quantities_t)
-        if "xdmf" in parameters["exports"].keys():
-            FESTIM.export.export_xdmf(
-                res, exports, files, t, append=append)
-            append = True
-        dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
-        temperature.append([t, T(size/2)])
+        FESTIM.post_processing.run_post_processing(
+            parameters,
+            transient,
+            u, T,
+            [volume_markers, surface_markers],
+            W,
+            t,
+            dt,
+            files,
+            append,
+            [D_0, E_diff, thermal_cond],
+            derived_quantities_global)
 
     # Store data in output
     output = dict()  # Final output
@@ -262,20 +231,14 @@ def run(parameters, log_level=40):
     # Compute error
     if "error" in parameters["exports"].keys():
         error = FESTIM.post_processing.compute_error(
-            parameters["exports"]["error"], t, u, mesh)
+            parameters["exports"]["error"], t, [*list(u.split()), T], mesh)
         output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
-    output["temperature"] = temperature
     if "derived_quantities" in parameters["exports"].keys():
         output["derived_quantities"] = derived_quantities_global
         FESTIM.export.write_to_csv(parameters["exports"]["derived_quantities"],
                                    derived_quantities_global)
-
-    # Export TDS
-    if "TDS" in parameters["exports"].keys():
-        output["TDS"] = desorption
-        FESTIM.export.write_to_csv(parameters["exports"]["TDS"], desorption)
 
     # End
     print('\007s')
