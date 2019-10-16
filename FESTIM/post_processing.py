@@ -4,8 +4,8 @@ import numpy as np
 import FESTIM
 
 
-def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files, append,
-                        flux_fonctions, derived_quantities_global):
+def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
+                        append, flux_fonctions, derived_quantities_global):
     res = list(u.split())
     retention = FESTIM.post_processing.compute_retention(u, W)
     res.append(retention)
@@ -83,9 +83,7 @@ def compute_retention(u, W):
     if not res:  # if u is non-vector
         res = [u]
     retention = project(res[0])
-    total_trap = 0
     for i in range(1, len(res)):
-        sol = res[i]
         retention = project(retention + res[i], W)
     return retention
 
@@ -147,7 +145,6 @@ def header_derived_quantities(parameters):
     Creates the header for derived_quantities list
     '''
     header = ['t(s)']
-    i = 0
     for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
         for surf in flux["surfaces"]:
             header.append("Flux surface " + str(surf) + ": " + flux['field'])
