@@ -22,12 +22,11 @@ def run(parameters, log_level=40):
                 str(parameters["solving_parameters"]["type"]) + ' unkown')
 
     # Declaration of variables
+    dt = 0
     if transient:
         Time = parameters["solving_parameters"]["final_time"]
         initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
         dt = Constant(initial_stepsize)  # time step size
-    else:
-        dt = 0
     set_log_level(log_level)
 
     # Mesh and refinement
