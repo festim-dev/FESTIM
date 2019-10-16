@@ -32,7 +32,6 @@ def run(parameters, log_level=40):
     set_log_level(log_level)
 
     # Mesh and refinement
-    size = parameters["mesh_parameters"]["size"]
     mesh = FESTIM.meshing.create_mesh(parameters["mesh_parameters"])
     # Define function space for system of concentrations and properties
     V, W = FESTIM.functionspaces_and_functions.create_function_spaces(
@@ -126,9 +125,8 @@ def run(parameters, log_level=40):
                 previous_solutions_traps, dt)
 
     # Solution files
-    exports = parameters["exports"]
     if "xdmf" in parameters["exports"].keys():
-        files = FESTIM.export.define_xdmf_files(exports)
+        files = FESTIM.export.define_xdmf_files(parameters["exports"])
         append = False
 
     timer = Timer()  # start timer
@@ -137,9 +135,7 @@ def run(parameters, log_level=40):
     if "derived_quantities" in parameters["exports"].keys():
         derived_quantities_global = \
             [FESTIM.post_processing.header_derived_quantities(parameters)]
-    if "TDS" in parameters["exports"].keys():
-        inventory_n = 0
-        desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
+
     t = 0  # Initialising time to 0s
 
     if transient:
@@ -185,6 +181,7 @@ def run(parameters, log_level=40):
             # Solve main problem
             FESTIM.solving.solve_it(
                 F, u, J, bcs, t, dt, parameters["solving_parameters"])
+
             # Solve extrinsic traps formulation
             for j in range(len(extrinsic_formulations)):
                 solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
@@ -203,12 +200,15 @@ def run(parameters, log_level=40):
                 [D_0, E_diff, thermal_cond],
                 derived_quantities_global)
             append = True
+
             # Update previous solutions
             u_n.assign(u)
             for j in range(len(previous_solutions_traps)):
                 previous_solutions_traps[j].assign(extrinsic_traps[j])
     else:
         # Solve steady state
+        print('Solving steady state problem...')
+
         du = TrialFunction(u.function_space())
         FESTIM.solving.solve_once(
             F, u, J, bcs, parameters["solving_parameters"])
