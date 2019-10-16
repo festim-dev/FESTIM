@@ -95,14 +95,7 @@ def run(parameters, log_level=40):
         FESTIM.initialise_solutions.initialising_extrinsic_traps(
             W, len(extrinsic_traps))
 
-    # Define variational problem1
-    print('Defining variational problem')
-    F, expressions_F = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps,
-        solutions, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx, T, transient=transient)
-
-    # BCs
+    # Boundary conditions
     print('Defining boundary conditions')
     bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
         parameters["boundary_conditions"], V, surface_markers, ds,
@@ -110,6 +103,13 @@ def run(parameters, log_level=40):
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
         parameters["boundary_conditions"], solutions,
         testfunctions_concentrations, ds, T)
+
+    # Define variational problem H transport
+    print('Defining variational problem')
+    F, expressions_F = FESTIM.formulations.formulation(
+        parameters, extrinsic_traps,
+        solutions, testfunctions_concentrations,
+        previous_solutions_concentrations, dt, dx, T, transient=transient)
     F += fluxes
 
     du = TrialFunction(u.function_space())
@@ -123,18 +123,18 @@ def run(parameters, log_level=40):
                 previous_solutions_traps, dt)
 
     # Solution files
+    files = []
+    append = False
     if "xdmf" in parameters["exports"].keys():
         files = FESTIM.export.define_xdmf_files(parameters["exports"])
-        append = False
 
-    timer = Timer()  # start timer
-    error = []
     derived_quantities_global = []
     if "derived_quantities" in parameters["exports"].keys():
         derived_quantities_global = \
             [FESTIM.post_processing.header_derived_quantities(parameters)]
 
     t = 0  # Initialising time to 0s
+    timer = Timer()  # start timer
 
     if transient:
         #  Time-stepping
