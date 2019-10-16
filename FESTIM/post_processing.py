@@ -4,26 +4,46 @@ import numpy as np
 import FESTIM
 
 
-def compute_error(parameters, t, u_n, mesh):
+def compute_error(parameters, t, res, mesh):
     '''
     Returns a list containing the errors
     '''
-    res = u_n.split()
     tab = []
+
+    solution_dict = {
+        'solute': res[0],
+        'retention': res[len(res)-2],
+        'T': res[len(res)-1],
+    }
+
     for error in parameters:
         er = []
         er.append(t)
-        for i in range(len(error["exact_solution"])):
-            sol = Expression(sp.printing.ccode(error["exact_solution"][i]),
-                             degree=error["degree"], t=t)
+        for i in range(len(error["exact_solutions"])):
+            exact_sol = Expression(sp.printing.ccode(
+                error["exact_solutions"][i]),
+                degree=error["degree"],
+                t=t)
+            try:
+                nb = int(error["computed_solutions"][i])
+                computed_sol = res[nb]
+            except:
+                try:
+                    computed_sol = solution_dict[
+                        error["computed_solutions"][i]]
+                except:
+                    raise KeyError(
+                        "The key " + error["computed_solutions"][i] +
+                        " is unknown.")
+
             if error["norm"] == "error_max":
-                vertex_values_u = res[i].compute_vertex_values(mesh)
-                vertex_values_sol = sol.compute_vertex_values(mesh)
+                vertex_values_u = computed_sol.compute_vertex_values(mesh)
+                vertex_values_sol = exact_sol.compute_vertex_values(mesh)
                 error_max = np.max(np.abs(vertex_values_u - vertex_values_sol))
                 er.append(error_max)
             else:
                 error_L2 = errornorm(
-                    sol, res[i], error["norm"])
+                    exact_sol, computed_sol, error["norm"])
                 er.append(error_L2)
 
         tab.append(er)

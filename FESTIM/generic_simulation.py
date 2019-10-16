@@ -257,7 +257,7 @@ def run(parameters, log_level=40):
     # Compute error
     if "error" in parameters["exports"].keys():
         error = FESTIM.post_processing.compute_error(
-            parameters["exports"]["error"], t, u, mesh)
+            parameters["exports"]["error"], t, res, mesh)
         output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
