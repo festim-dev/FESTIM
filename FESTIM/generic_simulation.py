@@ -11,6 +11,7 @@ def run(parameters, log_level=40):
         pass
 
     # Check if transient
+    transient = True
     if "type" in parameters["solving_parameters"].keys():
         if parameters["solving_parameters"]["type"] == "solve_transient":
             transient = True
@@ -19,8 +20,6 @@ def run(parameters, log_level=40):
         elif "type" in parameters["solving_parameters"].keys():
             raise ValueError(
                 str(parameters["solving_parameters"]["type"]) + ' unkown')
-    else:
-        transient = True
 
     # Declaration of variables
     if transient:
