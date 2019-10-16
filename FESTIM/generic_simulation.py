@@ -129,9 +129,6 @@ def run(parameters, log_level=40):
         files = FESTIM.export.define_xdmf_files(exports)
         append = False
 
-    #  Time-stepping
-    print('Time stepping...')
-
     timer = Timer()  # start timer
     error = []
     if "derived_quantities" in parameters["exports"].keys():
@@ -144,6 +141,8 @@ def run(parameters, log_level=40):
     t = 0  # Initialising time to 0s
 
     if transient:
+        #  Time-stepping
+        print('Time stepping...')
         while t < Time:
             # Update current time
             t += float(dt)
