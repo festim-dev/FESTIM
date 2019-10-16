@@ -207,7 +207,6 @@ def run(parameters, log_level=40):
                     res, exports, files, t, append=append)
                 append = True
             dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
-            temperature.append([t, T(size/2)])
 
             if "TDS" in parameters["exports"].keys():
                 inventory = assemble(retention*dx)
