@@ -4,8 +4,8 @@ import numpy as np
 import FESTIM
 
 
-def post_proc(parameters, transient, u, T, markers, W, t, dt, files, append,
-              flux_fonctions, derived_quantities_global):
+def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files, append,
+                        flux_fonctions, derived_quantities_global):
     res = list(u.split())
     retention = FESTIM.post_processing.compute_retention(u, W)
     res.append(retention)

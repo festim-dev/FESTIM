@@ -76,7 +76,7 @@ def run(parameters, log_level=40):
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
-    
+
     # Define functions
     u, solutions = FESTIM.functionspaces_and_functions.define_functions(V)
     extrinsic_traps = \
@@ -85,7 +85,7 @@ def run(parameters, log_level=40):
     testfunctions_concentrations, testfunctions_traps = \
         FESTIM.functionspaces_and_functions.define_test_functions(
             V, W, len(extrinsic_traps))
-    
+
     # Initialising the solutions
     if "initial_conditions" in parameters.keys():
         initial_conditions = parameters["initial_conditions"]
@@ -117,7 +117,7 @@ def run(parameters, log_level=40):
 
     du = TrialFunction(u.function_space())
     J = derivative(F, u, du)  # Define the Jacobian
-    
+
     # Define variational problem for extrinsic traps
     if transient:
         extrinsic_formulations, expressions_form = \
@@ -190,18 +190,18 @@ def run(parameters, log_level=40):
                 solve(extrinsic_formulations[j] == 0, extrinsic_traps[j], [])
 
             # Post processing
-            FESTIM.post_processing.post_proc(
-                        parameters,
-                        transient,
-                        u, T,
-                        [volume_markers, surface_markers],
-                        W,
-                        t,
-                        dt,
-                        files,
-                        append,
-                        [D_0, E_diff, thermal_cond],
-                        derived_quantities_global)
+            FESTIM.post_processing.run_post_processing(
+                parameters,
+                transient,
+                u, T,
+                [volume_markers, surface_markers],
+                W,
+                t,
+                dt,
+                files,
+                append,
+                [D_0, E_diff, thermal_cond],
+                derived_quantities_global)
             append = True
             # Update previous solutions
             u_n.assign(u)
@@ -214,7 +214,7 @@ def run(parameters, log_level=40):
             F, u, J, bcs, parameters["solving_parameters"])
 
         # Post processing
-        FESTIM.post_processing.post_proc(
+        FESTIM.post_processing.run_post_processing(
             parameters,
             transient,
             u, T,
