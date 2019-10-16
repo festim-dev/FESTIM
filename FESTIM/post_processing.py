@@ -59,12 +59,12 @@ def create_flux_functions(mesh, materials, volume_markers):
             materials, subdomain_id)
         value_D0 = material["D_0"]
         value_E_diff = material["E_diff"]
+        cell_no = cell.index()
         if "thermal_cond" in material:
             value_thermal_cond = material["thermal_cond"]
-        cell_no = cell.index()
+            thermal_cond.vector()[cell_no] = value_thermal_cond
         D_0.vector()[cell_no] = value_D0
         E_diff.vector()[cell_no] = value_E_diff
-        thermal_cond.vector()[cell_no] = value_thermal_cond
     return D_0, E_diff, thermal_cond
 
 
