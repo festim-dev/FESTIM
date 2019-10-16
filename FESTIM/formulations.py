@@ -27,8 +27,8 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         D_0 = material['D_0']
         E_diff = material['E_diff']
         subdomain = material['id']
-        F += D_0 * exp(-E_diff/k_B/T) * \
-            dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
+        F += dot(D_0 * exp(-E_diff/k_B/T)*grad(solutions[0]),
+                 grad(testfunctions[0]))*dx(subdomain)
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
