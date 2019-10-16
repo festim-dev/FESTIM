@@ -4,6 +4,34 @@ import numpy as np
 import FESTIM
 
 
+def post_proc(parameters, transient, u, T, markers, W, t, dt, files, append,
+              flux_fonctions, derived_quantities_global):
+    res = list(u.split())
+    retention = FESTIM.post_processing.compute_retention(u, W)
+    res.append(retention)
+    if isinstance(T, function.expression.Expression):
+        res.append(interpolate(T, W))
+    else:
+        res.append(T)
+
+    if "derived_quantities" in parameters["exports"].keys():
+        D_0, E_diff, thermal_cond = flux_fonctions
+        derived_quantities_t = \
+            FESTIM.post_processing.derived_quantities(
+                parameters,
+                res,
+                [D_0*exp(-E_diff/T), thermal_cond],
+                markers)
+        derived_quantities_t.insert(0, t)
+        derived_quantities_global.append(derived_quantities_t)
+    if "xdmf" in parameters["exports"].keys():
+        FESTIM.export.export_xdmf(
+            res, parameters["exports"], files, t, append=append)
+    dt = FESTIM.export.export_profiles(res, parameters["exports"], t, dt, W)
+
+    return derived_quantities_global, dt
+
+
 def compute_error(parameters, t, res, mesh):
     '''
     Returns a list containing the errors
