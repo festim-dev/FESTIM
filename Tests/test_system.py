@@ -311,11 +311,6 @@ def test_run_MMS(tmpdir):
                     "labels": [],
                     "folder": str(Path(d))
                 },
-                "xdmf": {
-                    "functions": ['T'],
-                    "labels":  ['temperature'],
-                    "folder": str(Path(d))
-                },
                 "TDS": {
                     "file": "desorption",
                     "TDS_time": 0,
