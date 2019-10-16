@@ -103,9 +103,6 @@ def run(parameters, log_level=40):
         solutions, testfunctions_concentrations,
         previous_solutions_concentrations, dt, dx, T, transient=transient)
 
-    du = TrialFunction(u.function_space())
-    J = derivative(F, u, du)  # Define the Jacobian
-
     # BCs
     print('Defining boundary conditions')
     bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
@@ -116,6 +113,8 @@ def run(parameters, log_level=40):
         testfunctions_concentrations, ds, T)
     F += fluxes
 
+    du = TrialFunction(u.function_space())
+    J = derivative(F, u, du)  # Define the Jacobian
     # Define variational problem for extrinsic traps
     if transient:
         extrinsic_formulations, expressions_form = \
