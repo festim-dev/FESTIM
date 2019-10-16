@@ -137,7 +137,6 @@ def run(parameters, log_level=40):
     if "TDS" in parameters["exports"].keys():
         inventory_n = 0
         desorption = [["t (s)", "T (K)", "d (m-2.s-1)"]]
-    temperature = [["t (s)", "T (K)"]]
     t = 0  # Initialising time to 0s
 
     if transient:
@@ -253,7 +252,6 @@ def run(parameters, log_level=40):
                 res, exports, files, t, append=append)
             append = True
         dt = FESTIM.export.export_profiles(res, exports, t, dt, W)
-        temperature.append([t, T(size/2)])
 
     # Store data in output
     output = dict()  # Final output
@@ -265,7 +263,6 @@ def run(parameters, log_level=40):
         output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
-    output["temperature"] = temperature
     if "derived_quantities" in parameters["exports"].keys():
         output["derived_quantities"] = derived_quantities_global
         FESTIM.export.write_to_csv(parameters["exports"]["derived_quantities"],
