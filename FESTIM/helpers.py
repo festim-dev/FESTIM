@@ -30,3 +30,19 @@ bc_types = {
     "neumann": ["flux"],
     "robin": ["recomb"]
 }
+
+quantity_types = [
+    "surface_flux",
+    "average_volume",
+    "average_surface",
+    "maximum_volume",
+    "minimum_volume",
+    "total_volume",
+    "total_surface"
+    ]
+
+field_types = [
+    "solute",
+    "retention",
+    "T"
+]
