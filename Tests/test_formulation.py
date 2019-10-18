@@ -3,6 +3,7 @@ import FESTIM
 import fenics
 import pytest
 import sympy as sp
+from ufl.core.multiindex import Index
 
 
 def test_fluxes():
@@ -53,6 +54,7 @@ def test_formulation_no_trap_1_material():
     Test function formulation() with 1 intrinsic trap
     and 1 material
     '''
+    Index._globalcount = 8
     dt = 1
     parameters = {
         "materials": [{
@@ -86,12 +88,13 @@ def test_formulation_no_trap_1_material():
         parameters, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, temp, transient=True)
 
+    Index._globalcount = 8
     flux_ = expressions[0]
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
-    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
-        fenics.dot(
-            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += -flux_*testfunctions[0]*dx
 
     assert expected_form.equals(F) is True
@@ -102,6 +105,7 @@ def test_formulation_1_trap_1_material():
     Test function formulation() with 1 intrinsic trap
     and 1 material
     '''
+    Index._globalcount = 8
     dt = 1
     parameters = {
         "traps": [{
@@ -138,14 +142,14 @@ def test_formulation_1_trap_1_material():
         parameters, extrinsic_traps, solutions,
         testfunctions, previous_solutions, dt, dx, temp, transient=True)
     flux_ = expressions[0]
-
+    Index._globalcount = 8
     # take density Expression() from formulation()
     density = expressions[2]
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
-    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
-        fenics.dot(
-            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += -flux_*testfunctions[0]*dx + \
         ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
@@ -164,6 +168,7 @@ def test_formulation_2_traps_1_material():
     Test function formulation() with 2 intrinsic traps
     and 1 material
     '''
+    Index._globalcount = 8
     # Set parameters
     dt = 1
     extrinsic_traps = []
@@ -209,6 +214,7 @@ def test_formulation_2_traps_1_material():
         previous_solutions, dt, dx, temp, transient=True)
     flux_ = expressions[0]
 
+    Index._globalcount = 8
     # Densities from formulation()
     density1 = expressions[2]
     density2 = expressions[3]
@@ -216,9 +222,9 @@ def test_formulation_2_traps_1_material():
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     # Diffusion sol
-    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
-        fenics.dot(
-            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     # Source sol
     expected_form += -flux_*testfunctions[0]*dx
     # Transient trap 1
@@ -257,6 +263,8 @@ def test_formulation_1_trap_2_materials():
     Test function formulation() with 1 intrinsic trap
     and 2 materials
     '''
+    Index._globalcount = 8
+
     def create_subdomains(x1, x2):
         class domain(fenics.SubDomain):
             def inside(self, x, on_boundary):
@@ -315,20 +323,20 @@ def test_formulation_1_trap_2_materials():
         parameters, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, temp, transient=True)
     flux_ = expressions[0]
-
+    Index._globalcount = 8
     # Density from formulation()
     density = expressions[2]
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     # Diffusion sol mat 1
-    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
-        fenics.dot(
-            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp)*fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     # Diffusion sol mat 2
-    expected_form += 6 * fenics.exp(-5/8.6e-5/temp) * \
-        fenics.dot(
-            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(2)
+    expected_form += fenics.dot(
+            6 * fenics.exp(-5/8.6e-5/temp) * fenics.grad(solutions[0]),
+            fenics.grad(testfunctions[0]))*dx(2)
     # Source sol
     expected_form += -flux_*testfunctions[0]*dx
     # Transient trap 1
@@ -351,7 +359,6 @@ def test_formulation_1_trap_2_materials():
     # Source detrapping sol
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[0]*dx
-
     assert expected_form.equals(F) is True
 
 
@@ -360,6 +367,7 @@ def test_formulation_1_extrap_1_material():
     Test function formulation() with 1 extrinsic trap
     and 1 material
     '''
+    Index._globalcount = 8
     dt = 1
     parameters = {
         "traps": [{
@@ -398,11 +406,12 @@ def test_formulation_1_extrap_1_material():
         parameters, extrinsic_traps, solutions, testfunctions,
         previous_solutions, dt, dx, temp, transient=True)
     flux_ = expressions[0]
+    Index._globalcount = 8
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
-    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
-        fenics.dot(
-            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += -flux_*testfunctions[0]*dx + \
         ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
@@ -422,6 +431,7 @@ def test_formulation_steady_state():
     Test function formulation() with 1 intrinsic trap
     and 1 material in steady state
     '''
+    Index._globalcount = 8
     parameters = {
         "traps": [
             {
@@ -458,15 +468,94 @@ def test_formulation_steady_state():
     F, expressions = FESTIM.formulations.formulation(
         parameters, extrinsic_traps, solutions,
         testfunctions, previous_solutions, 0, dx, temp, transient=False)
+    Index._globalcount = 8
+    print(F)
     flux_ = expressions[0]
     density = expressions[2]
     expected_form = -flux_*testfunctions[0]*dx
-    expected_form += 5 * fenics.exp(-4/8.6e-5/temp) * \
-        fenics.dot(
-            fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
         solutions[0] * (density - solutions[1]) * \
         testfunctions[1]*dx(1)
     expected_form += 1e13*fenics.exp(-1/8.6e-5/temp)*solutions[1] * \
         testfunctions[1]*dx(1)
+    print(expected_form)
     assert expected_form.equals(F) is True
+
+
+def test_formulation_heat_transfer():
+    '''
+    Test function define_variational_problem_heat_transfers
+    '''
+
+    def thermal_cond(a):
+        return a**2
+
+    Index._globalcount = 8
+    u = 1 + 2*FESTIM.x**2
+    parameters = {
+        "materials": [{
+            "borders": [0, 1],
+            "thermal_cond": thermal_cond,
+            "rho": 5,
+            "heat_capacity": 4,
+            "id": 1
+            }],
+        "temperature": {
+            "type": "solve_transient",
+            "boundary_conditions": [
+                {
+                    "type": "dirichlet",
+                    "value": u,
+                    "surface": [1]
+                },
+                {
+                    "type": "neumann",
+                    "value": 2,
+                    "surface": [2]
+                },                
+                ],
+            "source_term": [
+                {
+                    "value": -4,
+                    "volume": 1
+                }
+            ],
+        },
+    }
+    dt = 2
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+
+    T = fenics.Function(V)
+    T_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
+    functions = [T, v, T_n]
+
+    # create mesh functions
+    surface_markers = fenics.MeshFunction("size_t", mesh, mesh.topology().dim()-1, 0)
+    surface_markers.set_all(0)
+    for f in fenics.facets(mesh):
+        x0 = f.midpoint()
+        if fenics.near(x0.x(), 0):
+            surface_markers[f] = 1
+        if fenics.near(x0.x(), 1):
+            surface_markers[f] = 2
+    volume_markers = fenics.MeshFunction('size_t', mesh, 1, 1)
+    ds = fenics.Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    dx = fenics.Measure('dx', domain=mesh, subdomain_data=volume_markers)
+    # Run function
+    F, expressions = \
+        FESTIM.formulations.define_variational_problem_heat_transfers(
+            parameters, functions, [dx, ds], dt=dt)
+    Index._globalcount = 8
+    source = expressions[0]
+    expected_form = 5*4*(T - T_n)/dt * v * dx(1) + fenics.dot(thermal_cond(T)*fenics.grad(T), fenics.grad(v))*dx(1) 
+    expected_form += - source*v*dx(1)
+
+    neumann_flux = expressions[1]
+    expected_form += -neumann_flux * v * ds(2)
+
+    assert expected_form.equals(F)

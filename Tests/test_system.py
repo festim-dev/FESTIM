@@ -216,7 +216,7 @@ def test_run_MMS(tmpdir):
         size = 1
         v_0 = 1e13
         E_t = 1.5
-        T = 700
+        T = 700 + 30*FESTIM.x
         density = 1 * 6.3e28
         beta = 6*density
         alpha = 1.1e-10
@@ -224,12 +224,13 @@ def test_run_MMS(tmpdir):
         E_diff = 0.39
         D_0 = 4.1e-7
         k_B = 8.6e-5
-        D = D_0 * fenics.exp(-E_diff/k_B/T)
-        v_i = v_0 * fenics.exp(-E_t/k_B/T)
+        D = D_0 * sp.exp(-E_diff/k_B/T)
+        v_i = v_0 * sp.exp(-E_t/k_B/T)
         v_m = D/alpha/alpha/beta
 
         f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
-            D * sp.diff(u, FESTIM.x, 2)
+            D * sp.diff(u, FESTIM.x, 2) - \
+            sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
         g = sp.diff(v, FESTIM.t) + v_i*v - v_m * u * (n_trap-v)
         parameters = {
             "materials": [
@@ -358,7 +359,7 @@ def test_run_MMS_steady_state(tmpdir):
         size = 1
         v_0 = 1e13
         E_t = 1.5
-        T = 700
+        T = 700 + 30*FESTIM.x
         density = 1
         beta = 6*density
         alpha = 1
@@ -366,10 +367,11 @@ def test_run_MMS_steady_state(tmpdir):
         E_diff = 0
         D_0 = 1
         k_B = 8.6e-5
-        D = D_0 * fenics.exp(-E_diff/k_B/T)
-        v_i = v_0 * fenics.exp(-E_t/k_B/T)
+        D = D_0 * sp.exp(-E_diff/k_B/T)
+        v_i = v_0 * sp.exp(-E_t/k_B/T)
         v_m = D/alpha/alpha/beta
-        f = sp.diff(v, FESTIM.t) - D * sp.diff(u, FESTIM.x, 2)
+        f = sp.diff(v, FESTIM.t) - D * sp.diff(u, FESTIM.x, 2) - \
+            sp.diff(D, FESTIM.x, 1)*sp.diff(u, FESTIM.x, 1)
         g = v_i*v - v_m * u * (n_trap-v)
         parameters = {
             "materials": [
