@@ -148,6 +148,9 @@ def header_derived_quantities(parameters):
     '''
     Creates the header for derived_quantities list
     '''
+
+    check_keys_derived_quantities(parameters)
+
     header = ['t(s)']
     if "surface_flux" in parameters["exports"]["derived_quantities"].keys():
         for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
@@ -254,3 +257,27 @@ def derived_quantities(parameters, solutions, properties, markers):
             for surf in total["surfaces"]:
                 tab.append(assemble(sol*ds(surf)))
     return tab
+
+
+def check_keys_derived_quantities(parameters):
+    for quantity in parameters["exports"]["derived_quantities"].keys():
+        if quantity not in [*FESTIM.helpers.quantity_types, "file", "folder"]:
+            raise ValueError("Unknown quantity: " + quantity)
+        if quantity not in ["file", "folder"]:
+            for f in parameters["exports"]["derived_quantities"][quantity]:
+                if "field" not in f.keys():
+                    raise KeyError("Missing key 'field'")
+                else:
+                    if type(f["field"]) is int:
+                        if f["field"] > len(parameters["traps"]) or f["field"] < 0:
+                            raise ValueError("Unknown field: " + str(f["field"]))
+                    elif type(f["field"]) is str:
+                        if f["field"] not in FESTIM.helpers.field_types:
+                            try:
+                                if int(f["field"]) > len(parameters["traps"]) or int(f["field"])  < 0:
+                                    raise ValueError("Unknown field: " + f["field"])
+                            except:
+                                raise ValueError("Unknown field: " + str(f["field"]))
+
+                if "surfaces" not in f.keys() and "volumes" not in f.keys():
+                    raise KeyError("Missing key 'surfaces' or 'volumes'")
