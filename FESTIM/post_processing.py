@@ -6,7 +6,10 @@ import FESTIM
 
 def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
                         append, flux_fonctions, derived_quantities_global):
-    res = list(u.split())
+    if u.function_space().num_sub_spaces() == 0:
+        res = [u]
+    else:
+        res = list(u.split())
     retention = FESTIM.post_processing.compute_retention(u, W)
     res.append(retention)
     if isinstance(T, function.expression.Expression):
@@ -147,28 +150,28 @@ def header_derived_quantities(parameters):
     header = ['t(s)']
     for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
         for surf in flux["surfaces"]:
-            header.append("Flux surface " + str(surf) + ": " + flux['field'])
+            header.append("Flux surface " + str(surf) + ": " + str(flux['field']))
     for average in parameters[
                     "exports"]["derived_quantities"]["average_volume"]:
         for vol in average["volumes"]:
             header.append(
-                "Average " + average['field'] + " volume " + str(vol))
+                "Average " + str(average['field']) + " volume " + str(vol))
     for minimum in parameters[
                     "exports"]["derived_quantities"]["minimum_volume"]:
         for vol in minimum["volumes"]:
             header.append(
-                "Minimum " + minimum["field"] + " volume " + str(vol))
+                "Minimum " + str(minimum["field"]) + " volume " + str(vol))
     for maximum in parameters[
                     "exports"]["derived_quantities"]["maximum_volume"]:
         for vol in maximum["volumes"]:
             header.append(
-                "Maximum " + maximum["field"] + " volume " + str(vol))
+                "Maximum " + str(maximum["field"]) + " volume " + str(vol))
     for total in parameters["exports"]["derived_quantities"]["total_volume"]:
         for vol in total["volumes"]:
-            header.append("Total " + total["field"] + " volume " + str(vol))
+            header.append("Total " + str(total["field"]) + " volume " + str(vol))
     for total in parameters["exports"]["derived_quantities"]["total_surface"]:
         for surf in total["surfaces"]:
-            header.append("Total " + total["field"] + " surface " + str(surf))
+            header.append("Total " + str(total["field"]) + " surface " + str(surf))
 
     return header
 
@@ -209,32 +212,32 @@ def derived_quantities(parameters, solutions, properties, markers):
     tab = []
     # Compute quantities
     for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
-        sol = field_to_sol[flux["field"]]
-        prop = field_to_prop[flux["field"]]
+        sol = field_to_sol[str(flux["field"])]
+        prop = field_to_prop[str(flux["field"])]
         for surf in flux["surfaces"]:
             tab.append(assemble(prop*dot(grad(sol), n)*ds(surf)))
     for average in parameters[
                     "exports"]["derived_quantities"]["average_volume"]:
-        sol = field_to_sol[average["field"]]
+        sol = field_to_sol[str(average["field"])]
         for vol in average["volumes"]:
             val = assemble(sol*dx(vol))/assemble(1*dx(vol))
             tab.append(val)
     for minimum in parameters[
                     "exports"]["derived_quantities"]["minimum_volume"]:
-        sol = field_to_sol[minimum["field"]]
+        sol = field_to_sol[str(minimum["field"])]
         for vol in minimum["volumes"]:
             tab.append(calculate_minimum_volume(sol, volume_markers, vol))
     for maximum in parameters[
                     "exports"]["derived_quantities"]["maximum_volume"]:
-        sol = field_to_sol[maximum["field"]]
+        sol = field_to_sol[str(maximum["field"])]
         for vol in maximum["volumes"]:
             tab.append(calculate_maximum_volume(sol, volume_markers, vol))
     for total in parameters["exports"]["derived_quantities"]["total_volume"]:
-        sol = field_to_sol[total["field"]]
+        sol = field_to_sol[str(total["field"])]
         for vol in total["volumes"]:
             tab.append(assemble(sol*dx(vol)))
     for total in parameters["exports"]["derived_quantities"]["total_surface"]:
-        sol = field_to_sol[total["field"]]
+        sol = field_to_sol[str(total["field"])]
         for surf in total["surfaces"]:
             tab.append(assemble(sol*ds(surf)))
     return tab
