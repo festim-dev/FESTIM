@@ -311,11 +311,6 @@ def test_run_MMS(tmpdir):
                     "labels": [],
                     "folder": str(Path(d))
                 },
-                "TDS": {
-                    "file": "desorption",
-                    "TDS_time": 0,
-                    "folder": str(Path(d))
-                    },
                 "error": [
                     {
                         "computed_solutions": [0, 1],
