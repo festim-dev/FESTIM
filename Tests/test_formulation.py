@@ -92,7 +92,9 @@ def test_formulation_no_trap_1_material():
     flux_ = expressions[0]
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
-    expected_form += fenics.dot(5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += -flux_*testfunctions[0]*dx
 
     assert expected_form.equals(F) is True
@@ -145,7 +147,9 @@ def test_formulation_1_trap_1_material():
     density = expressions[2]
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
-    expected_form += fenics.dot(5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += -flux_*testfunctions[0]*dx + \
         ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
@@ -218,7 +222,9 @@ def test_formulation_2_traps_1_material():
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     # Diffusion sol
-    expected_form +=  fenics.dot(5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     # Source sol
     expected_form += -flux_*testfunctions[0]*dx
     # Transient trap 1
@@ -324,10 +330,13 @@ def test_formulation_1_trap_2_materials():
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
     # Diffusion sol mat 1
-    expected_form += fenics.dot(5 * fenics.exp(-4/8.6e-5/temp) *fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp)*fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     # Diffusion sol mat 2
-    expected_form +=  fenics.dot(
-            6 * fenics.exp(-5/8.6e-5/temp) * fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(2)
+    expected_form += fenics.dot(
+            6 * fenics.exp(-5/8.6e-5/temp) * fenics.grad(solutions[0]),
+            fenics.grad(testfunctions[0]))*dx(2)
     # Source sol
     expected_form += -flux_*testfunctions[0]*dx
     # Transient trap 1
@@ -400,7 +409,9 @@ def test_formulation_1_extrap_1_material():
     Index._globalcount = 8
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx
-    expected_form += fenics.dot(5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += -flux_*testfunctions[0]*dx + \
         ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[1]*dx
@@ -462,7 +473,9 @@ def test_formulation_steady_state():
     flux_ = expressions[0]
     density = expressions[2]
     expected_form = -flux_*testfunctions[0]*dx
-    expected_form += fenics.dot(5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/8.6e-5/temp) * fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
     expected_form += - 5 * fenics.exp(-4/8.6e-5/temp)/1/1/2 * \
         solutions[0] * (density - solutions[1]) * \
         testfunctions[1]*dx(1)
