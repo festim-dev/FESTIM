@@ -297,8 +297,8 @@ def test_header_derived_quantities_wrong_key():
         }
     }
     with pytest.raises(ValueError, match=r'quantity'):
-        tab = FESTIM.post_processing.header_derived_quantities(parameters_quantity)
+        tab = FESTIM.post_processing.header_derived_quantities(
+            parameters_quantity)
     with pytest.raises(ValueError, match=r'field'):
-        tab = FESTIM.post_processing.header_derived_quantities(parameters_field)
-    with pytest.raises(ValueError, match=r'surface'):
-        tab = FESTIM.post_processing.header_derived_quantities(parameters_surface)
+        tab = FESTIM.post_processing.header_derived_quantities(
+            parameters_field)
