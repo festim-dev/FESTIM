@@ -218,33 +218,39 @@ def derived_quantities(parameters, solutions, properties, markers):
             field_to_sol[key] = val
     tab = []
     # Compute quantities
-    for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
-        sol = field_to_sol[str(flux["field"])]
-        prop = field_to_prop[str(flux["field"])]
-        for surf in flux["surfaces"]:
-            tab.append(assemble(prop*dot(grad(sol), n)*ds(surf)))
-    for average in parameters[
-                    "exports"]["derived_quantities"]["average_volume"]:
-        sol = field_to_sol[str(average["field"])]
-        for vol in average["volumes"]:
-            val = assemble(sol*dx(vol))/assemble(1*dx(vol))
-            tab.append(val)
-    for minimum in parameters[
-                    "exports"]["derived_quantities"]["minimum_volume"]:
-        sol = field_to_sol[str(minimum["field"])]
-        for vol in minimum["volumes"]:
-            tab.append(calculate_minimum_volume(sol, volume_markers, vol))
-    for maximum in parameters[
-                    "exports"]["derived_quantities"]["maximum_volume"]:
-        sol = field_to_sol[str(maximum["field"])]
-        for vol in maximum["volumes"]:
-            tab.append(calculate_maximum_volume(sol, volume_markers, vol))
-    for total in parameters["exports"]["derived_quantities"]["total_volume"]:
-        sol = field_to_sol[str(total["field"])]
-        for vol in total["volumes"]:
-            tab.append(assemble(sol*dx(vol)))
-    for total in parameters["exports"]["derived_quantities"]["total_surface"]:
-        sol = field_to_sol[str(total["field"])]
-        for surf in total["surfaces"]:
-            tab.append(assemble(sol*ds(surf)))
+    if "surface_flux" in parameters["exports"]["derived_quantities"].keys():
+        for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+            sol = field_to_sol[str(flux["field"])]
+            prop = field_to_prop[str(flux["field"])]
+            for surf in flux["surfaces"]:
+                tab.append(assemble(prop*dot(grad(sol), n)*ds(surf)))
+    if "average_volume" in parameters["exports"]["derived_quantities"].keys():
+        for average in parameters[
+                        "exports"]["derived_quantities"]["average_volume"]:
+            sol = field_to_sol[str(average["field"])]
+            for vol in average["volumes"]:
+                val = assemble(sol*dx(vol))/assemble(1*dx(vol))
+                tab.append(val)
+    if "minimum_volume" in parameters["exports"]["derived_quantities"].keys():
+        for minimum in parameters[
+                        "exports"]["derived_quantities"]["minimum_volume"]:
+            sol = field_to_sol[str(minimum["field"])]
+            for vol in minimum["volumes"]:
+                tab.append(calculate_minimum_volume(sol, volume_markers, vol))
+    if "maximum_volume" in parameters["exports"]["derived_quantities"].keys():
+        for maximum in parameters[
+                        "exports"]["derived_quantities"]["maximum_volume"]:
+            sol = field_to_sol[str(maximum["field"])]
+            for vol in maximum["volumes"]:
+                tab.append(calculate_maximum_volume(sol, volume_markers, vol))
+    if "total_volume" in parameters["exports"]["derived_quantities"].keys():
+        for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+            sol = field_to_sol[str(total["field"])]
+            for vol in total["volumes"]:
+                tab.append(assemble(sol*dx(vol)))
+    if "total_surface" in parameters["exports"]["derived_quantities"].keys():
+        for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+            sol = field_to_sol[str(total["field"])]
+            for surf in total["surfaces"]:
+                tab.append(assemble(sol*ds(surf)))
     return tab
