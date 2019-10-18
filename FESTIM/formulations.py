@@ -171,7 +171,7 @@ def define_variational_problem_heat_transfers(
             # Transien term
             F += rho*cp*(T-T_n)/dt*vT*dx(vol)
         # Diffusion term
-        F += thermal_cond*dot(grad(T), grad(vT))*dx(vol)
+        F += dot(thermal_cond*grad(T), grad(vT))*dx(vol)
 
     # Source terms
     for source in parameters["temperature"]["source_term"]:
