@@ -30,7 +30,8 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
     if "xdmf" in parameters["exports"].keys():
         FESTIM.export.export_xdmf(
             res, parameters["exports"], files, t, append=append)
-    dt = FESTIM.export.export_profiles(res, parameters["exports"], t, dt, W)
+    if "txt" in parameters["exports"].keys():
+        dt = FESTIM.export.export_profiles(res, parameters["exports"], t, dt, W)
 
     return derived_quantities_global, dt
 
@@ -148,30 +149,36 @@ def header_derived_quantities(parameters):
     Creates the header for derived_quantities list
     '''
     header = ['t(s)']
-    for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
-        for surf in flux["surfaces"]:
-            header.append("Flux surface " + str(surf) + ": " + str(flux['field']))
-    for average in parameters[
-                    "exports"]["derived_quantities"]["average_volume"]:
-        for vol in average["volumes"]:
-            header.append(
-                "Average " + str(average['field']) + " volume " + str(vol))
-    for minimum in parameters[
-                    "exports"]["derived_quantities"]["minimum_volume"]:
-        for vol in minimum["volumes"]:
-            header.append(
-                "Minimum " + str(minimum["field"]) + " volume " + str(vol))
-    for maximum in parameters[
-                    "exports"]["derived_quantities"]["maximum_volume"]:
-        for vol in maximum["volumes"]:
-            header.append(
-                "Maximum " + str(maximum["field"]) + " volume " + str(vol))
-    for total in parameters["exports"]["derived_quantities"]["total_volume"]:
-        for vol in total["volumes"]:
-            header.append("Total " + str(total["field"]) + " volume " + str(vol))
-    for total in parameters["exports"]["derived_quantities"]["total_surface"]:
-        for surf in total["surfaces"]:
-            header.append("Total " + str(total["field"]) + " surface " + str(surf))
+    if "surface_flux" in parameters["exports"]["derived_quantities"].keys():
+        for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+            for surf in flux["surfaces"]:
+                header.append("Flux surface " + str(surf) + ": " + str(flux['field']))
+    if "average_volume" in parameters["exports"]["derived_quantities"].keys():
+        for average in parameters[
+                        "exports"]["derived_quantities"]["average_volume"]:
+            for vol in average["volumes"]:
+                header.append(
+                    "Average " + str(average['field']) + " volume " + str(vol))
+    if "minimum_volume" in parameters["exports"]["derived_quantities"].keys():
+        for minimum in parameters[
+                        "exports"]["derived_quantities"]["minimum_volume"]:
+            for vol in minimum["volumes"]:
+                header.append(
+                    "Minimum " + str(minimum["field"]) + " volume " + str(vol))
+    if "maximum_volume" in parameters["exports"]["derived_quantities"].keys():
+        for maximum in parameters[
+                        "exports"]["derived_quantities"]["maximum_volume"]:
+            for vol in maximum["volumes"]:
+                header.append(
+                    "Maximum " + str(maximum["field"]) + " volume " + str(vol))
+    if "total_volume" in parameters["exports"]["derived_quantities"].keys():
+        for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+            for vol in total["volumes"]:
+                header.append("Total " + str(total["field"]) + " volume " + str(vol))
+    if "total_surface" in parameters["exports"]["derived_quantities"].keys():
+        for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+            for surf in total["surfaces"]:
+                header.append("Total " + str(total["field"]) + " surface " + str(surf))
 
     return header
 
