@@ -250,3 +250,55 @@ def test_header_derived_quantities():
     assert len(tab) == len(expected)
     for i in range(0, len(tab)):
         assert tab[i] == expected[i]
+
+
+def test_header_derived_quantities_wrong_key():
+    # Set parameters for derived quantities
+    parameters_quantity = {
+        "exports": {
+            "derived_quantities": {
+                "FOO": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    },
+                ],
+                "file": "derived_quantities",
+                "folder": "",
+            }
+        }
+    }
+    parameters_field = {
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": 'foo',
+                        "surfaces": [2]
+                    },
+                ],
+                "file": "derived_quantities",
+                "folder": "",
+            }
+        }
+    }
+    parameters_surface = {
+        "exports": {
+            "derived_quantities": {
+                "FOO": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [20]
+                    },
+                ],
+                "file": "derived_quantities",
+                "folder": "",
+            }
+        }
+    }
+    with pytest.raises(ValueError, match=r'quantity'):
+        tab = FESTIM.post_processing.header_derived_quantities(
+            parameters_quantity)
+    with pytest.raises(ValueError, match=r'field'):
+        tab = FESTIM.post_processing.header_derived_quantities(
+            parameters_field)

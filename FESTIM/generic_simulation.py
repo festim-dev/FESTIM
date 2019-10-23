@@ -229,9 +229,13 @@ def run(parameters, log_level=40):
     output = dict()  # Final output
 
     # Compute error
+    if u.function_space().num_sub_spaces() == 0:
+        res = [u]
+    else:
+        res = list(u.split())
     if "error" in parameters["exports"].keys():
         error = FESTIM.post_processing.compute_error(
-            parameters["exports"]["error"], t, [*list(u.split()), T], mesh)
+            parameters["exports"]["error"], t, [*res, T], mesh)
         output["error"] = error
     output["parameters"] = parameters
     output["mesh"] = mesh
