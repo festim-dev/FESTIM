@@ -113,13 +113,20 @@ def test_derived_quantities():
     '''
     Test the function FESTIM.derived_quantities()
     '''
+    T = 2*FESTIM.x**2 + 1
+    u = 2*FESTIM.x**2
+    D = 2*T
+    thermal_cond = T**2
+    Q = 2*T + 3
+    R = 8.314
+
     # Create Functions
     mesh = fenics.UnitIntervalMesh(10000)
     V = fenics.FunctionSpace(mesh, 'P', 1)
-    u = fenics.Expression("2*x[0]*x[0]", degree=3)
-    u = fenics.interpolate(u, V)
-    T = fenics.Expression("2*x[0]*x[0] + 1", degree=3)
-    T = fenics.interpolate(T, V)
+    u_ = fenics.Expression(sp.printing.ccode(u), degree=3)
+    u_ = fenics.interpolate(u_, V)
+    T_ = fenics.Expression(sp.printing.ccode(T), degree=3)
+    T_ = fenics.interpolate(T_, V)
 
     surface_markers = fenics.MeshFunction("size_t", mesh, 0, 1)
     domain = fenics.CompiledSubDomain('x[0] > 0.99999999')
@@ -148,6 +155,19 @@ def test_derived_quantities():
                         "volumes": [1]
                     }
                 ],
+
+                "minimum_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [2]
+                    }
+                ],
+                "maximum_volume": [
+                    {
+                        "field": 'T',
+                        "volumes": [1]
+                    }
+                ],
                 "total_volume": [
                     {
                         "field": 'solute',
@@ -160,16 +180,122 @@ def test_derived_quantities():
                         "surfaces": [2]
                     }
                 ],
+                "file": "derived_quantities",
+                "folder": "",
+            }
+        }
+    }
+
+    # Expected result
+    flux_u = D*sp.diff(u, FESTIM.x)
+    flux_T = thermal_cond*(sp.diff(T, FESTIM.x))
+    average_T_1 = (sp.integrate(T, FESTIM.x).subs(FESTIM.x, 0.75) -
+                   sp.integrate(T, FESTIM.x).subs(FESTIM.x, 0))/0.75
+    total_u_1 = sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0.75) - \
+        sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0)
+    total_u_2 = sp.integrate(u, FESTIM.x).subs(FESTIM.x, 1) - \
+        sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0.75)
+    total_surf_u_2 = u.subs(FESTIM.x, 1)
+    max_T_1 = T.subs(FESTIM.x, 0.75)
+    min_u_2 = u.subs(FESTIM.x, 0.75)
+    expected = [
+        flux_u.subs(FESTIM.x, 1),
+        flux_T.subs(FESTIM.x, 1),
+        average_T_1,
+        min_u_2,
+        max_T_1,
+        total_u_1,
+        total_u_2,
+        total_surf_u_2]
+
+    # Compute
+    D = fenics.Expression(sp.printing.ccode(D), degree=3)
+    D = fenics.interpolate(D, V)
+    thermal_cond = fenics.Expression(sp.printing.ccode(thermal_cond), degree=3)
+    thermal_cond = fenics.interpolate(thermal_cond, V)
+    tab = FESTIM.post_processing.derived_quantities(
+        parameters, [u_, u_, T_], [D, thermal_cond],
+        [volume_markers, surface_markers])
+
+    # Compare
+    assert len(tab) == len(expected)
+    for i in range(0, len(tab)):
+        assert abs(tab[i] - expected[i])/expected[i] < 1e-3
+
+
+def test_derived_quantities_soret():
+    '''
+    Test the function FESTIM.derived_quantities()
+    with soret effect
+    '''
+    T = 2*FESTIM.x**2 + 1
+    u = 2*FESTIM.x**2
+    D = 2*T
+    thermal_cond = T**2
+    Q = 2*T + 3
+    R = 8.314
+
+    # Create Functions
+    mesh = fenics.UnitIntervalMesh(10000)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    u_ = fenics.Expression(sp.printing.ccode(u), degree=3)
+    u_ = fenics.interpolate(u_, V)
+    T_ = fenics.Expression(sp.printing.ccode(T), degree=3)
+    T_ = fenics.interpolate(T_, V)
+
+    surface_markers = fenics.MeshFunction("size_t", mesh, 0, 1)
+    domain = fenics.CompiledSubDomain('x[0] > 0.99999999')
+    domain.mark(surface_markers, 2)
+
+    volume_markers = fenics.MeshFunction("size_t", mesh, 1, 1)
+    domain = fenics.CompiledSubDomain('x[0] > 0.75')
+    domain.mark(volume_markers, 2)
+    # Set parameters for derived quantities
+    parameters = {
+        "temperature": {
+            "soret": True,
+        },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    },
+                    {
+                        "field": 'T',
+                        "surfaces": [2]
+                    },
+                ],
+                "average_volume": [
+                    {
+                        "field": 'T',
+                        "volumes": [1]
+                    }
+                ],
+
+                "minimum_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [2]
+                    }
+                ],
                 "maximum_volume": [
                     {
                         "field": 'T',
                         "volumes": [1]
                     }
                 ],
-                "minimum_volume": [
+                "total_volume": [
                     {
                         "field": 'solute',
-                        "volumes": [2]
+                        "volumes": [1, 2]
+                    }
+                ],
+                "total_surface": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
                     }
                 ],
                 "file": "derived_quantities",
@@ -177,12 +303,38 @@ def test_derived_quantities():
             }
         }
     }
+
     # Expected result
-    expected = [4, 4, 11/8, 9/8, 17/8, 9/32, 37/96, 2]
+    flux_u = D*(sp.diff(u, FESTIM.x) + Q*u/(R*T**2)*sp.diff(T, FESTIM.x))
+    flux_T = thermal_cond*(sp.diff(T, FESTIM.x))
+    average_T_1 = (sp.integrate(T, FESTIM.x).subs(FESTIM.x, 0.75) -
+                   sp.integrate(T, FESTIM.x).subs(FESTIM.x, 0))/0.75
+    total_u_1 = sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0.75) - \
+        sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0)
+    total_u_2 = sp.integrate(u, FESTIM.x).subs(FESTIM.x, 1) - \
+        sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0.75)
+    total_surf_u_2 = u.subs(FESTIM.x, 1)
+    max_T_1 = T.subs(FESTIM.x, 0.75)
+    min_u_2 = u.subs(FESTIM.x, 0.75)
+    expected = [
+        flux_u.subs(FESTIM.x, 1),
+        flux_T.subs(FESTIM.x, 1),
+        average_T_1,
+        min_u_2,
+        max_T_1,
+        total_u_1,
+        total_u_2,
+        total_surf_u_2]
+
     # Compute
+    D = fenics.Expression(sp.printing.ccode(D), degree=3)
+    D = fenics.interpolate(D, V)
+    thermal_cond = fenics.Expression(sp.printing.ccode(thermal_cond), degree=3)
+    thermal_cond = fenics.interpolate(thermal_cond, V)
     tab = FESTIM.post_processing.derived_quantities(
-        parameters, [u, u, T], [1, 1],
+        parameters, [u_, u_, T_], [D, thermal_cond],
         [volume_markers, surface_markers])
+
     # Compare
     assert len(tab) == len(expected)
     for i in range(0, len(tab)):
