@@ -18,7 +18,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
         res.append(T)
 
     if "derived_quantities" in parameters["exports"].keys():
-        D_0, E_diff, thermal_cond = flux_fonctions
+        D_0, E_diff, thermal_cond, G, S = flux_fonctions
         derived_quantities_t = \
             FESTIM.post_processing.derived_quantities(
                 parameters,
@@ -100,6 +100,8 @@ def create_flux_functions(mesh, materials, volume_markers):
     D_0 = Function(D0, name="D_0")
     E_diff = Function(D0, name="E_diff")
     thermal_cond = Function(D0, name="thermal_cond")
+    G = Function(D0, name="G")
+    S = Function(D0, name="S")
 
     # Update coefficient D_0 and E_diff
     for cell in cells(mesh):
@@ -111,11 +113,13 @@ def create_flux_functions(mesh, materials, volume_markers):
         value_E_diff = material["E_diff"]
         cell_no = cell.index()
         if "thermal_cond" in material:
-            value_thermal_cond = material["thermal_cond"]
-            thermal_cond.vector()[cell_no] = value_thermal_cond
+            thermal_cond.vector()[cell_no] = material["thermal_cond"]
+        if "H" in material:
+            G.vector()[cell_no] = material["H"]["free_enthalpy"]
+            S.vector()[cell_no] = material["H"]["entropy"]
         D_0.vector()[cell_no] = value_D0
         E_diff.vector()[cell_no] = value_E_diff
-    return D_0, E_diff, thermal_cond
+    return D_0, E_diff, thermal_cond, G, S
 
 
 def calculate_maximum_volume(f, subdomains, subd_id):
@@ -192,7 +196,12 @@ def derived_quantities(parameters, solutions, properties, markers):
     '''
     D = properties[0]
     thermal_cond = properties[1]
-
+    soret = False
+    if "temperature" in parameters.keys():
+        if "soret" in parameters["temperature"].keys():
+            if parameters["temperature"]["soret"] is True:
+                soret = True
+                Q = properties[2]
     volume_markers = markers[0]
     surface_markers = markers[1]
     V = solutions[0].function_space()
@@ -203,10 +212,13 @@ def derived_quantities(parameters, solutions, properties, markers):
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
+    solute = solutions[0]
+    ret = solutions[len(solutions)-2]
+    T = solutions[len(solutions)-1]
     field_to_sol = {
-        'solute': solutions[0],
-        'retention': solutions[len(solutions)-2],
-        'T': solutions[len(solutions)-1],
+        'solute': solute,
+        'retention': ret,
+        'T': T,
     }
     field_to_prop = {
         'solute': D,
@@ -226,7 +238,11 @@ def derived_quantities(parameters, solutions, properties, markers):
             sol = field_to_sol[str(flux["field"])]
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
-                tab.append(assemble(prop*dot(grad(sol), n)*ds(surf)))
+                phi = assemble(prop*dot(grad(sol), n)*ds(surf))
+                if soret is True and str(flux["field"]) == 'solute':
+                    phi += assemble(
+                        prop*sol*Q/(FESTIM.R*T**2)*dot(grad(T), n)*ds(surf))
+                tab.append(phi)
     if "average_volume" in parameters["exports"]["derived_quantities"].keys():
         for average in parameters[
                         "exports"]["derived_quantities"]["average_volume"]:

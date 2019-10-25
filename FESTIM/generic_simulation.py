@@ -51,9 +51,10 @@ def run(parameters, log_level=40):
 
     # Define temperature
     if parameters["temperature"]["type"] == "expression":
-        T = Expression(
+        T_expr = Expression(
             sp.printing.ccode(
                 parameters["temperature"]['value']), t=0, degree=2)
+        T = interpolate(T_expr, W)
     else:
         # Define variational problem for heat transfers
         T = Function(W, name="T")
@@ -155,6 +156,10 @@ def run(parameters, log_level=40):
                     expressions_FT, t)
                 expressions_bcs_T = FESTIM.helpers.update_expressions(
                     expressions_bcs_T, t)
+
+            else:
+                T_expr.t = t
+                T.assign(interpolate(T_expr, W))
 
             # Display time
             print(str(round(t/Time*100, 2)) + ' %        ' +

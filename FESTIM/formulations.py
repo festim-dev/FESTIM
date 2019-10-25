@@ -16,10 +16,17 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     - F : variational formulation
     - expressions: list, contains Expression() to be updated
     '''
-    k_B = 8.6e-5  # Boltzmann constant
+    k_B = FESTIM.k_B  # Boltzmann constant
     v_0 = 1e13  # frequency factor s-1
     expressions = []
     F = 0
+
+    soret = False
+    if "temperature" in parameters.keys():
+        if "soret" in parameters["temperature"].keys():
+            if parameters["temperature"]["soret"] is True:
+                soret = True
+
     if transient:
         F += ((solutions[0]-previous_solutions[0])/dt)*testfunctions[0]*dx
 
@@ -29,6 +36,11 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         subdomain = material['id']
         F += dot(D_0 * exp(-E_diff/k_B/T)*grad(solutions[0]),
                  grad(testfunctions[0]))*dx(subdomain)
+        if soret is True:
+            Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
+            F += dot(D_0 * exp(-E_diff/k_B/T) *
+                     Q * solutions[0] / (FESTIM.R * T**2) * grad(T),
+                     grad(testfunctions[0]))*dx(subdomain)
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
