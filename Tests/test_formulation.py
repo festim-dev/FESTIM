@@ -559,3 +559,88 @@ def test_formulation_heat_transfer():
     expected_form += -neumann_flux * v * ds(2)
 
     assert expected_form.equals(F)
+
+
+def test_formulation_soret():
+    Index._globalcount = 8
+
+    def create_subdomains(x1, x2):
+        class domain(fenics.SubDomain):
+            def inside(self, x, on_boundary):
+                return x[0] >= x1 and x[0] <= x2
+        domain = domain()
+        return domain
+    parameters = {
+        "traps": [],
+        "materials": [{
+                "alpha": 1,
+                "beta": 2,
+                "density": 3,
+                "borders": [0, 0.5],
+                "E_diff": 4,
+                "D_0": 5,
+                "H":{
+                    "free_enthalpy": 4,
+                    "entropy": 3
+                },
+                "id": 1
+                },
+                {
+                "alpha": 1,
+                "beta": 2,
+                "density": 3,
+                "borders": [0, 0.5],
+                "E_diff": 4,
+                "D_0": 5,
+                "H":{
+                    "free_enthalpy": 4,
+                    "entropy": 3
+                },
+                "id": 2
+                }
+                ],
+        "source_term": {"value": 1},
+        "temperature": {
+            "soret": True
+        }
+    }
+    extrinsic_traps = []
+    mesh = fenics.UnitIntervalMesh(10)
+    mf = fenics.MeshFunction("size_t", mesh, 1, 1)
+    mat1 = create_subdomains(0, 0.5)
+    mat2 = create_subdomains(0.5, 1)
+    mat1.mark(mf, 1)
+    mat2.mark(mf, 2)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
+
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
+
+    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
+    dx = fenics.dx(subdomain_data=mf)
+    temp = fenics.Expression("300", degree=0)
+    temp = fenics.interpolate(temp, V)  # temp must be a function and not an expression in that case
+    dt = 2
+    F, expressions = FESTIM.formulations.formulation(
+        parameters, extrinsic_traps, solutions, testfunctions,
+        previous_solutions, dt, dx, temp, transient=True)
+    flux_ = expressions[0]
+    Index._globalcount = 8
+
+    # Transient sol
+    expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
+        testfunctions[0]*dx
+    # Diffusion sol mat 1
+    expected_form += fenics.dot(5 * fenics.exp(-4/FESTIM.k_B/temp)*fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(1)
+    expected_form += fenics.dot(5 * fenics.exp(-4/FESTIM.k_B/temp)*(4*temp + 3)*solutions[0]/(FESTIM.R*temp**2)*fenics.grad(temp), fenics.grad(testfunctions[0]))*dx(1)
+    # Diffusion sol mat 2
+    expected_form += fenics.dot(5 * fenics.exp(-4/FESTIM.k_B/temp) * fenics.grad(solutions[0]), fenics.grad(testfunctions[0]))*dx(2)
+    expected_form += fenics.dot(5 * fenics.exp(-4/FESTIM.k_B/temp) * (4*temp + 3)*solutions[0]/(FESTIM.R*temp**2)*fenics.grad(temp), fenics.grad(testfunctions[0]))*dx(2)
+    # Source sol
+    expected_form += -flux_*testfunctions[0]*dx
+
+    assert expected_form.equals(F) is True
