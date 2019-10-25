@@ -85,12 +85,20 @@ def test_create_flux_functions():
             "D_0": 2,
             "E_diff": 3,
             "thermal_cond": 4,
+            "H": {
+                "free_enthalpy": 5,
+                "entropy": 6
+            },
             "id": 1
             },
         {
             "D_0": 3,
             "E_diff": 4,
             "thermal_cond": 5,
+            "H": {
+                "free_enthalpy": 6,
+                "entropy": 7
+            },
             "id": 2
             }
             ]
@@ -101,12 +109,14 @@ def test_create_flux_functions():
             mf[cell] = 1
         else:
             mf[cell] = 2
-    A, B, C = FESTIM.post_processing.create_flux_functions(mesh, materials, mf)
+    A, B, C, D, E = FESTIM.post_processing.create_flux_functions(mesh, materials, mf)
     for cell in fenics.cells(mesh):
         cell_no = cell.index()
         assert A.vector()[cell_no] == mf[cell]+1
         assert B.vector()[cell_no] == mf[cell]+2
         assert C.vector()[cell_no] == mf[cell]+3
+        assert D.vector()[cell_no] == mf[cell]+4
+        assert E.vector()[cell_no] == mf[cell]+5
 
 
 def test_derived_quantities():
@@ -137,6 +147,7 @@ def test_derived_quantities():
     domain.mark(volume_markers, 2)
     # Set parameters for derived quantities
     parameters = {
+        "temperature": {},
         "exports": {
             "derived_quantities": {
                 "surface_flux": [
@@ -331,8 +342,10 @@ def test_derived_quantities_soret():
     D = fenics.interpolate(D, V)
     thermal_cond = fenics.Expression(sp.printing.ccode(thermal_cond), degree=3)
     thermal_cond = fenics.interpolate(thermal_cond, V)
+    Q = fenics.Expression(sp.printing.ccode(Q), degree=3)
+    Q = fenics.interpolate(Q, V)
     tab = FESTIM.post_processing.derived_quantities(
-        parameters, [u_, u_, T_], [D, thermal_cond],
+        parameters, [u_, u_, T_], [D, thermal_cond, Q],
         [volume_markers, surface_markers])
 
     # Compare

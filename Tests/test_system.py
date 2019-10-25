@@ -342,6 +342,135 @@ def test_run_MMS(tmpdir):
         assert error_max_u < tol_u and error_max_v < tol_v
 
 
+def test_run_MMS_soret(tmpdir):
+    '''
+    Test function run() for several refinements with Soret effect
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    u = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x/0.1)
+    # u = 1 + sp.cos(2*fenics.pi*FESTIM.x) + sp.cos(FESTIM.t*2*fenics.pi)
+
+    def parameters(h, dt, final_time, u):
+        size = 0.1
+        T = 2 + sp.cos(2*fenics.pi*FESTIM.x)*sp.cos(FESTIM.t)
+        density = 1
+        beta = 6
+        alpha = 1.1e-10
+        E_diff = 0
+        D_0 = 2
+        k_B = FESTIM.k_B
+        D = D_0 * sp.exp(-E_diff/k_B/T)
+        H = -2
+        S = 3
+        R = FESTIM.R
+        f = sp.diff(u, FESTIM.t) - \
+            sp.diff(
+                (D*(sp.diff(u, FESTIM.x) +
+                    (H*T+S)*u/(R*T**2)*sp.diff(T, FESTIM.x))),
+                FESTIM.x)
+
+        parameters = {
+            "materials": [
+                {
+                    "alpha": alpha,  # lattice constant ()
+                    "beta": beta,  # number of solute sites per atom (6 for W)
+                    "density": density,
+                    "borders": [0, size],
+                    "E_diff": E_diff,
+                    "H": {
+                        "free_enthalpy": H,
+                        "entropy": S
+                    },
+                    "D_0": D_0,
+                    "id": 1
+                    }
+                    ],
+            "traps": [],
+            "initial_conditions": [
+                {
+                    "value": u,
+                    "component": 0
+                },
+            ],
+
+            "mesh_parameters": {
+                    "initial_number_of_cells": round(size/h),
+                    "size": size,
+                    "refinements": [
+                    ],
+                },
+            "boundary_conditions": [
+                    {
+                       "surface": [1, 2],
+                       "value": u,
+                       "component": 0,
+                       "type": "dc"
+                    }
+                ],
+            "temperature": {
+                    'type': "expression",
+                    'value': T,
+                    "soret": True
+                },
+            "source_term": {
+                'value': f
+                },
+            "solving_parameters": {
+                "final_time": final_time,
+                "initial_stepsize": dt,
+                "adaptive_stepsize": {
+                    "stepsize_change_ratio": 1,
+                    "t_stop": 0,
+                    "stepsize_stop_max": dt,
+                    "dt_min": 1e-5
+                    },
+                "newton_solver": {
+                    "absolute_tolerance": 1e-10,
+                    "relative_tolerance": 1e-9,
+                    "maximum_iterations": 50,
+                }
+                },
+            "exports": {
+                "txt": {
+                    "functions": [],
+                    "times": [],
+                    "labels": [],
+                    "folder": str(Path(d))
+                },
+                "xdmf": {
+                    "functions": [0, 'T'],
+                    "labels": ["solute", 'T'],
+                    "folder": str(Path(d))
+                },
+                "error": [
+                    {
+                        "computed_solutions": [0],
+                        "exact_solutions": [u],
+                        "norm": 'L2',
+                        "degree": 4
+                    }
+                ]
+                },
+        }
+        return parameters
+
+    tol_u = 1e-5
+    sizes = [1/1000, 1/2000]
+    dt = 0.1/50
+    final_time = 0.1
+    for h in sizes:
+        output = FESTIM.generic_simulation.run(
+            parameters(h, dt, final_time, u))
+        error_max_u = output["error"][0][1]
+        msg = 'L2 error on u is:' + str(error_max_u) + '\n \
+            with h = ' + str(h) + '\n \
+            with dt = ' + str(dt)
+        print(msg)
+        assert error_max_u < tol_u
+
+    return
+
+
 def test_run_MMS_steady_state(tmpdir):
     '''
     Test function run() for several refinements in steady state
