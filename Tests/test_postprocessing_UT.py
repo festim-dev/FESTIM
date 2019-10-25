@@ -109,7 +109,8 @@ def test_create_flux_functions():
             mf[cell] = 1
         else:
             mf[cell] = 2
-    A, B, C, D, E = FESTIM.post_processing.create_flux_functions(mesh, materials, mf)
+    A, B, C, D, E = \
+        FESTIM.post_processing.create_flux_functions(mesh, materials, mf)
     for cell in fenics.cells(mesh):
         cell_no = cell.index()
         assert A.vector()[cell_no] == mf[cell]+1
