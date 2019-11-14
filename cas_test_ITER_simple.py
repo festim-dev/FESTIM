@@ -171,7 +171,7 @@ parameters = {
             #             'trap_3', 'trap_4', 'retention'],
             "functions": ['T', 'solute', '1', 'retention'],
             "labels": ['T', 'solute', 'trap_1', 'retention'],
-            "folder": 'Resultats/cas_test_simplifie_ITER'
+            "folder": 'results/cas_test_simplifie_ITER'
         },
     }
 }
