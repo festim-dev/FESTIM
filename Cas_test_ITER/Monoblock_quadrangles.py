@@ -10,7 +10,9 @@ import salome
 salome.salome_init()
 import salome_notebook
 notebook = salome_notebook.NoteBook()
-sys.path.insert(0, r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage')
+sys.path.insert(0, r'/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER')
+# or sys.path.insert(0, r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage')
+
 
 ###
 ### GEOM component
@@ -96,25 +98,25 @@ geompy.addToStudy( O, 'O' )
 geompy.addToStudy( OX, 'OX' )
 geompy.addToStudy( OY, 'OY' )
 geompy.addToStudy( OZ, 'OZ' )
-geompy.addToStudy( G, 'G' )
 geompy.addToStudy( I, 'I' )
+geompy.addToStudy( G, 'G' )
 geompy.addToStudy( F, 'F' )
-geompy.addToStudy( L, 'L' )
-geompy.addToStudy( C, 'C' )
+geompy.addToStudy( Q, 'Q' )
+geompy.addToStudy( P, 'P' )
+geompy.addToStudy( OO, 'OO' )
+geompy.addToStudy( B, 'B' )
 geompy.addToStudy( J, 'J' )
 geompy.addToStudy( H, 'H' )
 geompy.addToStudy( E, 'E' )
 geompy.addToStudy( K, 'K' )
-geompy.addToStudy( Q, 'Q' )
-geompy.addToStudy( P, 'P' )
-geompy.addToStudy( OO, 'OO' )
-geompy.addToStudy( D, 'D' )
-geompy.addToStudy( B, 'B' )
+geompy.addToStudy( L, 'L' )
 geompy.addToStudy( M, 'M' )
-geompy.addToStudy( N, 'N' )
-geompy.addToStudy( A, 'A' )
-geompy.addToStudy( Ap, 'Ap' )
+geompy.addToStudy( C, 'C' )
 geompy.addToStudy( Bp, 'Bp' )
+geompy.addToStudy( Ap, 'Ap' )
+geompy.addToStudy( A, 'A' )
+geompy.addToStudy( D, 'D' )
+geompy.addToStudy( N, 'N' )
 geompy.addToStudy( R, 'R' )
 geompy.addToStudy( Ligne_1, 'Ligne_1' )
 geompy.addToStudy( Ligne_2, 'Ligne_2' )
@@ -219,6 +221,20 @@ Auto_group_for_bords_horizontaux = geompy.CreateGroup(Assemblage_1, geompy.Shape
 geompy.UnionList(Auto_group_for_bords_horizontaux, [Ar__te_8, Ar__te_15, Ar__te_16, Ar__te_17, Ar__te_18, Ar__te_19])
 Auto_group_for_bord_43 = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["EDGE"])
 geompy.UnionList(Auto_group_for_bord_43, [Ar__te_2, Ar__te_43])
+tungsten = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["FACE"])
+geompy.UnionIDs(tungsten, [2, 12, 22, 42, 32])
+cucrzr = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["FACE"])
+geompy.UnionIDs(cucrzr, [52, 62, 72])
+cu = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["FACE"])
+geompy.UnionIDs(cu, [2, 12, 22, 32, 42, 52, 62, 72, 82, 92, 102])
+left = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["EDGE"])
+geompy.UnionIDs(left, [11, 17, 37])
+top = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["EDGE"])
+geompy.UnionIDs(top, [4])
+coolant = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["EDGE"])
+geompy.UnionIDs(coolant, [101, 104, 91])
+bottom = geompy.CreateGroup(Assemblage_1, geompy.ShapeType["EDGE"])
+geompy.UnionIDs(bottom, [47])
 geompy.addToStudyInFather( Assemblage_1, Auto_group_for_Sous_maillage_1, 'Auto_group_for_Sous-maillage_1' )
 geompy.addToStudyInFather( Assemblage_1, Auto_group_for_Bords_cercles, 'Auto_group_for_Bords_cercles' )
 geompy.addToStudyInFather( Assemblage_1, Auto_group_for_Sous_maillage_1_1, 'Auto_group_for_Sous-maillage_1' )
@@ -227,6 +243,14 @@ geompy.addToStudyInFather( Assemblage_1, Auto_group_for_cercle_middle, 'Auto_gro
 geompy.addToStudyInFather( Assemblage_1, Auto_group_for_bords_rectangles_bas, 'Auto_group_for_bords_rectangles_bas' )
 geompy.addToStudyInFather( Assemblage_1, Auto_group_for_bords_horizontaux, 'Auto_group_for_bords_horizontaux' )
 geompy.addToStudyInFather( Assemblage_1, Auto_group_for_bord_43, 'Auto_group_for_bord_43' )
+geompy.addToStudyInFather( Assemblage_1, tungsten, 'tungsten' )
+geompy.addToStudyInFather( Assemblage_1, cucrzr, 'cucrzr' )
+geompy.addToStudyInFather( Assemblage_1, cu, 'cu' )
+geompy.addToStudyInFather( Assemblage_1, left, 'left' )
+geompy.addToStudyInFather( Assemblage_1, top, 'top' )
+geompy.addToStudyInFather( Assemblage_1, coolant, 'coolant' )
+geompy.addToStudyInFather( Assemblage_1, bottom, 'bottom' )
+
 
 ###
 ### SMESH component
@@ -332,6 +356,15 @@ bord3 = Maillage_1.GetSubMesh( Ar__te_3, 'bord_3' )
 a2D = Maillage_1.GetSubMesh( Assemblage_1, 'Sous-maillage_1' )
 
 
+cucrzr_1 = Maillage_1.GroupOnGeom(cucrzr,'cucrzr',SMESH.FACE)
+cu_1 = Maillage_1.GroupOnGeom(cu,'cu',SMESH.FACE)
+tungsten_1 = Maillage_1.GroupOnGeom(tungsten,'tungsten',SMESH.FACE)
+top_1 = Maillage_1.GroupOnGeom(top,'top',SMESH.EDGE)
+coolant_1 = Maillage_1.GroupOnGeom(coolant,'coolant',SMESH.EDGE)
+left_1 = Maillage_1.GroupOnGeom(left,'left',SMESH.EDGE)
+bottom_1 = Maillage_1.GroupOnGeom(bottom,'bottom',SMESH.EDGE)
+
+
 ## Set names of Mesh objects
 smesh.SetName(Regular_1D, 'Regular_1D')
 smesh.SetName(Quadrangle_2D, 'Quadrangle_2D')
@@ -354,24 +387,6 @@ smesh.SetName(bord2, 'bord2')
 smesh.SetName(bord44, 'bord44')
 smesh.SetName(bord3, 'bord3')
 smesh.SetName(bord_3, 'bord_3')
-
-###
-### PARAVIS component
-###
-
-import pvsimple
-pvsimple.ShowParaviewView()
-# trace generated using paraview version 5.6.0-RC1
-
-#### import the simple module from the paraview
-from pvsimple import *
-#### disable automatic camera reset on 'Show'
-pvsimple._DisableFirstRenderCameraReset()
-
-#### saving camera placements for all active views
-
-
-
 
 if salome.sg.hasDesktop():
   salome.sg.updateObjBrowser()
