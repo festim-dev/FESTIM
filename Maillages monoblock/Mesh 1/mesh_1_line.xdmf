@@ -1,0 +1,15 @@
+<Xdmf Version="3.0">
+  <Domain>
+    <Grid Name="Grid">
+      <Geometry GeometryType="XY">
+        <DataItem DataType="Float" Dimensions="41315 2" Format="HDF" Precision="8">mesh_1_line.h5:/data0</DataItem>
+      </Geometry>
+      <Topology NumberOfElements="1438" TopologyType="Polyline">
+        <DataItem DataType="Int" Dimensions="1438 2" Format="HDF" Precision="4">mesh_1_line.h5:/data1</DataItem>
+      </Topology>
+      <Attribute AttributeType="Scalar" Center="Cell" Name="cell_tags">
+        <DataItem DataType="Int" Dimensions="1438" Format="HDF" Precision="4">mesh_1_line.h5:/data2</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
