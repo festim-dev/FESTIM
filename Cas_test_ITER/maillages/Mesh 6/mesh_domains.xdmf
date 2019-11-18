@@ -1,0 +1,16 @@
+<Xdmf Version="3.0">
+  <Domain>
+    <Grid Name="Grid">
+      <Information Name="Information" Value="0"><![CDATA[<main/>]]></Information>
+      <Geometry GeometryType="XY">
+        <DataItem DataType="Float" Dimensions="40312 2" Format="HDF" Precision="8">mesh_domains.h5:/data0</DataItem>
+      </Geometry>
+      <Topology TopologyType="Triangle" NumberOfElements="75366">
+        <DataItem DataType="Int" Dimensions="75366 3" Format="HDF" Precision="4">mesh_domains.h5:/data1</DataItem>
+      </Topology>
+      <Attribute Name="f" AttributeType="Scalar" Center="Cell">
+        <DataItem DataType="Int" Dimensions="75366" Format="HDF" Precision="4">mesh_domains.h5:/data2</DataItem>
+      </Attribute>
+    </Grid>
+  </Domain>
+</Xdmf>
