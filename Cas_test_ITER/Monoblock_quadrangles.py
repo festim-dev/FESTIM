@@ -328,10 +328,12 @@ bord_3.SetTableFunction( [ 0, 0.001, 0.85, 0.02, 1, 1 ] )
 smesh.SetName(Maillage_1, 'Maillage_1')
 try:
   Maillage_1.ExportMED(r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.med',auto_groups=0,minor=40,overwrite=1,meshPart=None,autoDimension=1)
+  # Doesn't work create an empty file
   pass
 except:
   try:
     Maillage_1.ExportMED(r'/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/maillages/mesh_1.med',auto_groups=0,minor=40,overwrite=1,meshPart=None,autoDimension=1)
+    # Doesn't work create an empty file
     pass
   except:
     print('ExportMED() failed. Invalid file name?')
