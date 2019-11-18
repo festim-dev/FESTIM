@@ -10,7 +10,8 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
         res = [u]
     else:
         res = list(u.split())
-    retention = FESTIM.post_processing.compute_retention(u, W)
+    DG1 = FunctionSpace(u.function_space().mesh(), 'DG', 1)
+    retention = FESTIM.post_processing.compute_retention(u, DG1)
     res.append(retention)
     if isinstance(T, function.expression.Expression):
         res.append(interpolate(T, W))

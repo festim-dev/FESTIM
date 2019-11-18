@@ -41,10 +41,10 @@ def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
 
     # Read tags for volume elements
     volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
-    try:
-        XDMFFile(volumetric_file).read(volume_markers, "f")
-    except:
-        raise ValueError('Attribute should be named "f" in ' + volumetric_file)
+    # try:
+    XDMFFile(volumetric_file).read(volume_markers, "f")
+    # except:
+        # raise ValueError('Attribute should be named "f" in ' + volumetric_file)
     # f is the attribute name carreful
 
     # Read tags for surface elements
