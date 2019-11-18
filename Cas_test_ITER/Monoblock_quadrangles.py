@@ -327,22 +327,26 @@ try:
   Maillage_1.ExportMED(r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.med',auto_groups=0,minor=40,overwrite=1,meshPart=None,autoDimension=1)
   pass
 except:
-  print('ExportMED() failed. Invalid file name?')
-try:
-  Maillage_1.ExportUNV( r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.unv' )
-  pass
-except:
-  print('ExportUNV() failed. Invalid file name?')
-try:
-  Maillage_1.ExportDAT( r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.dat' )
-  pass
-except:
-  print('ExportDAT() failed. Invalid file name?')
-try:
-  Maillage_1.ExportGMF(r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.mesh',Maillage_1)
-  pass
-except:
-  print('ExportGMF() failed. Invalid file name?')
+  try:
+    Maillage_1.ExportMED(r'/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/maillages/mesh_1.med',auto_groups=0,minor=40,overwrite=1,meshPart=None,autoDimension=1)
+    pass
+  except:
+    print('ExportMED() failed. Invalid file name?')
+# try:
+#   Maillage_1.ExportUNV( r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.unv' )
+#   pass
+# except:
+#   print('ExportUNV() failed. Invalid file name?')
+# try:
+#   Maillage_1.ExportDAT( r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.dat' )
+#   pass
+# except:
+#   print('ExportDAT() failed. Invalid file name?')
+# try:
+#   Maillage_1.ExportGMF(r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage/Maillage_1.mesh',Maillage_1)
+#   pass
+# except:
+#   print('ExportGMF() failed. Invalid file name?')
 isDone = Maillage_1.Compute()
 cercles_haut_bas = Maillage_1.GetSubMesh( Auto_group_for_Sous_maillage_1_1, 'Sous-maillage_1' )
 bords_cercles = Maillage_1.GetSubMesh( Auto_group_for_Sous_maillage_1_2, 'Sous-maillage_1' )
