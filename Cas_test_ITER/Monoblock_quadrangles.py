@@ -10,8 +10,11 @@ import salome
 salome.salome_init()
 import salome_notebook
 notebook = salome_notebook.NoteBook()
-sys.path.insert(0, r'/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER')
-# or sys.path.insert(0, r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage')
+try:
+  sys.path.insert(0, r'D:/Recherche/FESTIM/2019 Cas ITER/Maillage')
+except:
+  sys.path.insert(0, r'/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER')
+
 
 
 ###
