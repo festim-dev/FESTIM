@@ -1,8 +1,15 @@
+# Bonjour, ce script est à executer en se trouvant dans FESTIM_4_JONATHAN/Cas_test_ITER
+# Pour executer run : python3 cas_test_ITER_simple.py
+# Ce script produira dans FESTIM_4_JONATHAN/Cas_test_ITER/results/[nombre_de_pieges] 
+# des fichiers XDMF et un fichier .csv
+
+
 from context import FESTIM
 from fenics import *
 import sympy as sp
 
 
+# Definition des BCs
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t < t_implantation) * 1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200))
@@ -29,11 +36,12 @@ def bc_coolant_HT(t_implantation, t_rest, t_baking):
 
     return expression
 
-
+# Definition des paramètres
 atom_density_W = 6.3e28  # atomic density m^-3
 atom_density_Cu = 6.3e28  # atomic density m^-3
 atom_density_CuCrZr = 6.3e28  # atomic density m^-3
 
+# Definition des id (doit etre les memes que dans le maillage xdmf)
 id_W = 8
 id_Cu = 7
 id_CuCrZr = 6
@@ -42,14 +50,15 @@ id_top_surf = 9
 id_coolant_surf = 10
 id_left_surf = 11
 
+# Definition des temps
 t_implantation = 6000*400
 t_rest = 6000*1800
 t_baking = 30*24*3600
 
-H = 29e-3
-D3 = 16e-3
-
+# Definition du fichier de stockage
 folder = 'results/cas_test_simplifie_ITER/4_traps'
+
+# Dict parameters
 parameters = {
     "mesh_parameters": {
         "mesh_file": "maillages/Mesh 10/mesh_domains.xdmf",
@@ -215,4 +224,5 @@ parameters = {
     }
 }
 
+# Run
 FESTIM.generic_simulation.run(parameters, log_level=40)
