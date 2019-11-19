@@ -20,12 +20,21 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
 
     if "derived_quantities" in parameters["exports"].keys():
         D_0, E_diff, thermal_cond, G, S = flux_fonctions
-        derived_quantities_t = \
-            FESTIM.post_processing.derived_quantities(
-                parameters,
-                res,
-                [D_0*exp(-E_diff/T), thermal_cond],
-                markers)
+        if D_0 is not None:
+            derived_quantities_t = \
+                FESTIM.post_processing.derived_quantities(
+                    parameters,
+                    res,
+                    markers,
+                    [D_0*exp(-E_diff/T), thermal_cond, G+T*S]
+                    )
+        else:
+            derived_quantities_t = \
+                FESTIM.post_processing.derived_quantities(
+                    parameters,
+                    res,
+                    markers)
+
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
@@ -192,7 +201,7 @@ def header_derived_quantities(parameters):
     return header
 
 
-def derived_quantities(parameters, solutions, properties, markers):
+def derived_quantities(parameters, solutions, markers, properties=[None, None, None]):
     '''
     Computes all the derived_quantities and store it into list
     '''
