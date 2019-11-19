@@ -1,4 +1,4 @@
-import FESTIM
+from context import FESTIM
 from fenics import *
 import sympy as sp
 
@@ -15,7 +15,7 @@ def bc_top_HT(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t < t_implantation) * 1200
     rest = (t > t_implantation)*(t < t_implantation + t_rest) * 343
-    baking = (t > t_implantation + t_rest)*(t < t_implantation + t_rest + t_baking)*350
+    baking = (t > t_implantation + t_rest)*350
     expression = implantation + rest + baking
     return expression
 
@@ -24,7 +24,7 @@ def bc_coolant_HT(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t < t_implantation) * 373
     rest = (t > t_implantation)*(t < t_implantation + t_rest) * 343
-    baking = (t > t_implantation + t_rest)*(t < t_implantation + t_rest + t_baking)*350
+    baking = (t > t_implantation + t_rest)*350
     expression = implantation + rest + baking
 
     return expression
@@ -40,6 +40,7 @@ id_CuCrZr = 6
 
 id_top_surf = 9
 id_coolant_surf = 10
+id_left_surf = 11
 
 t_implantation = 6000*400
 t_rest = 6000*1800
@@ -48,11 +49,12 @@ t_baking = 30*24*3600
 H = 29e-3
 D3 = 16e-3
 
+folder = 'results/cas_test_simplifie_ITER/4_traps'
 parameters = {
     "mesh_parameters": {
-        "mesh_file": "maillage_monoblock/mesh_domains.xdmf",
-        "cells_file": "maillage_monoblock/mesh_domains.xdmf",
-        "facets_file": "maillage_monoblock/mesh_boundaries.xdmf",
+        "mesh_file": "maillages/Mesh 10/mesh_domains.xdmf",
+        "cells_file": "maillages/Mesh 10/mesh_domains.xdmf",
+        "facets_file": "maillages/Mesh 10/mesh_boundaries.xdmf",
         },
     "materials": [
         {
@@ -95,21 +97,21 @@ parameters = {
             "energy": 1,
             "materials": [id_W]
         },
-        # {
-        #     "density": 5e-3*atom_density_W*(FESTIM.y > 0.014499),
-        #     "energy": 1.4,
-        #     "materials": [id_W]
-        # },
-        # {
-        #     "density": 5e-5*atom_density_Cu,
-        #     "energy": 0.5,
-        #     "materials": [id_Cu]
-        # },
-        # {
-        #     "density": 5e-5*atom_density_CuCrZr,
-        #     "energy": 0.85,
-        #     "materials": [id_CuCrZr]
-        # },
+        {
+            "density": 5e-3*atom_density_W*(FESTIM.y > 0.014499),
+            "energy": 1.4,
+            "materials": [id_W]
+        },
+        {
+            "density": 5e-5*atom_density_Cu,
+            "energy": 0.5,
+            "materials": [id_Cu]
+        },
+        {
+            "density": 5e-5*atom_density_CuCrZr,
+            "energy": 0.85,
+            "materials": [id_CuCrZr]
+        },
         ],
     "boundary_conditions": [
         {
@@ -125,12 +127,22 @@ parameters = {
             "order": 2,
         },
         # {
-        #     "type": "recomb",
-        #     "surface": [id_left, id_right],
-        #     "Kr_0": 3.2e-15,
-        #     "E_Kr": 0.2
+        #     "type": "dc",
+        #     "surface": id_left_surf,
+        #     "value": 0
         # },
+        {
+            "type": "recomb",
+            "surface": [id_left_surf],
+            "Kr_0": 2.9e-18,
+            "E_Kr": 1.16,
+            "order": 2,
+        },
         ],
+    "source_term": {
+        "type": "expression",
+        "value": 0*1e23/(5e-6)*(FESTIM.y >= 0.0145 - 5e-6),
+    },
     "temperature": {
         "type": "solve_transient",
         "boundary_conditions": [
@@ -151,12 +163,12 @@ parameters = {
         },
     "solving_parameters": {
         "final_time": t_implantation + t_rest + t_baking,
-        "initial_stepsize": 10,
+        "initial_stepsize": 1,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.1,
-            "t_stop": t_implantation + t_rest + t_baking + 1,
-            "stepsize_stop_max": 200000,
-            "dt_min": 1e-4,
+            "t_stop": t_implantation,
+            "stepsize_stop_max": t_rest/15,
+            "dt_min": 1e-8,
             },
         "newton_solver": {
             "absolute_tolerance": 1e10,
@@ -166,13 +178,40 @@ parameters = {
         },
     "exports": {
         "xdmf": {
-            # "functions": ['T', 'solute', '1', '2', '3', '4', 'retention'],
-            # "labels":  ['temperature', 'solute', 'trap_1', 'trap_2',
-            #             'trap_3', 'trap_4', 'retention'],
-            "functions": ['T', 'solute', '1', 'retention'],
-            "labels": ['T', 'solute', 'trap_1', 'retention'],
-            "folder": 'results/cas_test_simplifie_ITER'
+            "functions": ['T', 'solute', '1', '2', '3', '4', 'retention'],
+            "labels": ['T', 'solute', '1', '2', '3', '4', 'retention'],
+            "folder": folder
         },
+        "derived_quantities": {
+            "total_volume": [
+                {
+                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "field": "solute"
+                },
+                {
+                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "field": "1"
+                },
+                {
+                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "field": "2"
+                },
+                {
+                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "field": "3"
+                },
+                {
+                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "field": "4"
+                },
+                {
+                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "field": "retention"
+                },
+            ],
+            "file": "derived_quantities.csv",
+            "folder": folder
+        }
     }
 }
 
