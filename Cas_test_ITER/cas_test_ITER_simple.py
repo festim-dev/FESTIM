@@ -1,6 +1,8 @@
-# Bonjour, ce script est à executer en se trouvant dans FESTIM_4_JONATHAN/Cas_test_ITER
+# Bonjour, ce script est à executer en se trouvant dans
+# FESTIM_4_JONATHAN/Cas_test_ITER
 # Pour executer run : python3 cas_test_ITER_simple.py
-# Ce script produira dans FESTIM_4_JONATHAN/Cas_test_ITER/results/[nombre_de_pieges] 
+# Ce script produira dans
+# FESTIM_4_JONATHAN/Cas_test_ITER/results/[nombre_de_pieges]
 # des fichiers XDMF et un fichier .csv
 
 
@@ -11,7 +13,8 @@ import sympy as sp
 # Definition des BCs
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
-    implantation = (t < t_implantation) * 1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200))
+    implantation = (t < t_implantation) * \
+        1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200))
     expression = implantation
 
     return expression
@@ -34,6 +37,7 @@ def bc_coolant_HT(t_implantation, t_rest, t_baking):
     expression = implantation + rest + baking
 
     return expression
+
 
 # Definition des paramètres
 # atom_density  =  density(g/m3)*Na(/mol)/M(g/mol)
@@ -230,5 +234,6 @@ parameters = {
     }
 }
 
-# Run
-FESTIM.generic_simulation.run(parameters, log_level=40)
+if __name__ == "__main__":
+    # Run
+    FESTIM.generic_simulation.run(parameters, log_level=40)
