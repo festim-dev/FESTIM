@@ -1,6 +1,8 @@
-# Bonjour, ce script est à executer en se trouvant dans FESTIM_4_JONATHAN/Cas_test_ITER
+# Bonjour, ce script est à executer en se trouvant dans
+# FESTIM_4_JONATHAN/Cas_test_ITER
 # Pour executer run : python3 cas_test_ITER_simple.py
-# Ce script produira dans FESTIM_4_JONATHAN/Cas_test_ITER/results/[nombre_de_pieges] 
+# Ce script produira dans
+# FESTIM_4_JONATHAN/Cas_test_ITER/results/[nombre_de_pieges]
 # des fichiers XDMF et un fichier .csv
 
 
@@ -12,7 +14,8 @@ import sympy as sp
 # Definition des BCs
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
-    implantation = (t < t_implantation) * 1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200))
+    implantation = (t < t_implantation) * \
+        1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200))
     expression = implantation
 
     return expression
@@ -36,10 +39,12 @@ def bc_coolant_HT(t_implantation, t_rest, t_baking):
 
     return expression
 
+
 # Definition des paramètres
-atom_density_W = 6.3e28  # atomic density m^-3
-atom_density_Cu = 6.3e28  # atomic density m^-3
-atom_density_CuCrZr = 6.3e28  # atomic density m^-3
+# atom_density  =  density(g/m3)*Na(/mol)/M(g/mol)
+atom_density_W = 6.3222e28  # atomic density m^-3
+atom_density_Cu = 8.4912e28  # atomic density m^-3
+atom_density_CuCrZr = 2.6096e28  # atomic density m^-3
 
 # Definition des id (doit etre les memes que dans le maillage xdmf)
 id_W = 8
@@ -91,7 +96,7 @@ parameters = {
         {
             # CuCrZr
             "D_0": 3.92e-7,
-            "E_diff": 0.418,
+            "E_diff": 4e28,
             "alpha": 3.61e-10*atom_density_CuCrZr**0.5,
             "beta": 1,
             "thermal_cond": 350,
@@ -148,10 +153,10 @@ parameters = {
             "order": 2,
         },
         ],
-    "source_term": {
-        "type": "expression",
-        "value": 0*1e23/(5e-6)*(FESTIM.y >= 0.0145 - 5e-6),
-    },
+    # "source_term": {
+    #     "type": "expression",
+    #     "value": 0*1e23/(5e-6)*(FESTIM.y >= 0.0145 - 5e-6),
+    # },
     "temperature": {
         "type": "solve_transient",
         "boundary_conditions": [
@@ -224,5 +229,6 @@ parameters = {
     }
 }
 
-# Run
-FESTIM.generic_simulation.run(parameters, log_level=40)
+if __name__ == "__main__":
+    # Run
+    FESTIM.generic_simulation.run(parameters, log_level=40)
