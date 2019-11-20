@@ -8,7 +8,6 @@ from context import FESTIM
 from fenics import *
 import sympy as sp
 
-
 # Definition des BCs
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
@@ -37,9 +36,10 @@ def bc_coolant_HT(t_implantation, t_rest, t_baking):
     return expression
 
 # Definition des paramètres
-atom_density_W = 6.3e28  # atomic density m^-3
-atom_density_Cu = 6.3e28  # atomic density m^-3
-atom_density_CuCrZr = 6.3e28  # atomic density m^-3
+# atom_density  =  density(g/m3)*Na(/mol)/M(g/mol)
+atom_density_W = 6.3222e28  # atomic density m^-3
+atom_density_Cu = 8.4912e28  # atomic density m^-3
+atom_density_CuCrZr = 2.6096e28  # atomic density m^-3
 
 # Definition des id (doit etre les memes que dans le maillage xdmf)
 id_W = 8
@@ -70,6 +70,8 @@ parameters = {
             # Tungsten
             "D_0": 2.9e-7,
             "E_diff": 0.39,
+            "S_0": 1.3e-4, #at/m3.Pa0.5 (from Grislia 2015)
+            "E_S": 0.34, #eV
             "alpha": 1.29e-10,
             "beta": 6*atom_density_W,
             "thermal_cond": 120,
@@ -81,6 +83,8 @@ parameters = {
             # Cu
             "D_0": 6.6e-7,
             "E_diff": 0.387,
+            "S_0": 3.12e28, #at/m3.Pa0.5 (from ITER)
+            "E_S": 0.572, #eV
             "alpha": 3.61e-10*atom_density_Cu**0.5,
             "beta": 1,
             "thermal_cond": 350,
@@ -92,6 +96,8 @@ parameters = {
             # CuCrZr
             "D_0": 3.92e-7,
             "E_diff": 0.418,
+            "S_0": 4.28e23, #at/m3.Pa0.5 (from ITER)
+            "E_S": 0.387, #eV
             "alpha": 3.61e-10*atom_density_CuCrZr**0.5,
             "beta": 1,
             "thermal_cond": 350,
@@ -148,10 +154,10 @@ parameters = {
             "order": 2,
         },
         ],
-    "source_term": {
-        "type": "expression",
-        "value": 0*1e23/(5e-6)*(FESTIM.y >= 0.0145 - 5e-6),
-    },
+    # "source_term": {
+    #     "type": "expression",
+    #     "value": 0*1e23/(5e-6)*(FESTIM.y >= 0.0145 - 5e-6),
+    # },
     "temperature": {
         "type": "solve_transient",
         "boundary_conditions": [
