@@ -42,10 +42,10 @@ def run(parameters, log_level=40):
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
     # Create functions for flux computation
-    D_0, E_diff, thermal_cond = [None]*3
+    D_0, E_diff, thermal_cond, G, S = [None]*5
     if "derived_quantities" in parameters["exports"]:
         if "surface_flux" in parameters["exports"]["derived_quantities"]:
-            D_0, E_diff, thermal_cond =\
+            D_0, E_diff, thermal_cond, G, S =\
                 FESTIM.post_processing.create_flux_functions(
                     mesh, parameters["materials"], volume_markers)
 
@@ -200,7 +200,7 @@ def run(parameters, log_level=40):
                 dt,
                 files,
                 append,
-                [D_0, E_diff, thermal_cond],
+                [D_0, E_diff, thermal_cond, G, S],
                 derived_quantities_global)
             append = True
 
@@ -227,7 +227,7 @@ def run(parameters, log_level=40):
             dt,
             files,
             append,
-            [D_0, E_diff, thermal_cond],
+            [D_0, E_diff, thermal_cond, G, S],
             derived_quantities_global)
 
     # Store data in output

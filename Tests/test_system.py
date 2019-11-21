@@ -85,9 +85,19 @@ def test_run_temperature_stationary(tmpdir):
                 "labels": ['retention']
             },
             "xdmf": {
-                    "functions": ['T'],
-                    "labels":  ['temperature'],
+                    "functions": ['T', 'solute'],
+                    "labels":  ['temperature', 'solute'],
                     "folder": str(Path(d))
+            },
+            "derived_quantities": {
+                "total_volume": [
+                    {
+                        "volumes": [1],
+                        "field": "solute"
+                    },
+                ],
+                "file": "derived_quantities.csv",
+                "folder": str(Path(d))
             },
             "error": [
                 {
