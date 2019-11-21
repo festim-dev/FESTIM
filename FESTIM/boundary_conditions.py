@@ -1,6 +1,7 @@
 from FESTIM import *
 from fenics import *
 import sympy as sp
+import numpy as np
 
 
 class ExpressionFromInterpolatedData(UserExpression):
@@ -26,7 +27,7 @@ def define_dirichlet_bcs_T(parameters, V, boundaries):
     bcs = []
     expressions = []
     for bc in parameters["temperature"]["boundary_conditions"]:
-        if bc["type"] == "dirichlet":
+        if bc["type"] == "dc":
             value = sp.printing.ccode(bc["value"])
             value = Expression(value, degree=2, t=0)
             expressions.append(value)
@@ -46,6 +47,40 @@ def solubility(S_0, E_S, k_B, T):
 
 def solubility_BC(P, S):
     return P**0.5*S
+
+
+def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
+    ''' Modifies the formulation and adds fluxes based
+    on parameters in boundary_conditions
+    '''
+    expressions = []
+    solute = solutions[0]
+    test_solute = testfunctions[0]
+    F = 0
+    k_B = 8.6e-5
+    for bc in boundary_conditions:
+        if bc["type"] not in helpers.bc_types["dc"]:
+            if bc["type"] not in helpers.bc_types["neumann"] and \
+               bc["type"] not in helpers.bc_types["robin"]:
+
+                raise NameError(
+                    "Unknown boundary condition type : " + bc["type"])
+            if bc["type"] == "flux":
+                flux = sp.printing.ccode(bc["value"])
+                flux = Expression(flux, t=0,
+                                  degree=2)
+                expressions.append(flux)
+            elif bc["type"] == "recomb":
+                Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/k_B/T)
+                flux = -Kr*solute**bc["order"]
+
+            if type(bc['surface']) is not list:
+                surfaces = [bc['surface']]
+            else:
+                surfaces = bc['surface']
+            for surf in surfaces:
+                F += -test_solute*flux*ds(surf)
+    return F, expressions
 
 
 def apply_boundary_conditions(boundary_conditions, V,
@@ -95,26 +130,31 @@ def apply_boundary_conditions(boundary_conditions, V,
             # create UserExpression based on interpolant and t
             value_BC = ExpressionFromInterpolatedData(
                 t=0, fun=interpolant, element=V.ufl_element())
-        else:
-            raise NameError("Unknown boundary condition type")
-        expressions.append(value_BC)
-        try:
-            # Fetch the component of the BC
-            component = BC["component"]
-        except:
-            # By default, component is solute (ie. 0)
-            component = 0
-        if type(BC['surface']) is not list:
-            surfaces = [BC['surface']]
-        else:
-            surfaces = BC['surface']
-        if V.num_sub_spaces() == 0:
-            funspace = V
-        else:  # if only one component, use subspace
-            funspace = V.sub(component)
-        for surface in surfaces:
-            bci = DirichletBC(funspace, value_BC,
-                              surface_marker, surface)
-            bcs.append(bci)
+
+        if BC["type"] not in helpers.bc_types["neumann"] and \
+           BC["type"] not in helpers.bc_types["robin"] and \
+           BC["type"] not in helpers.bc_types["dc"]:
+
+            raise NameError("Unknown boundary condition type : " + bc["type"])
+        if type_BC in helpers.bc_types["dc"]:
+            expressions.append(value_BC)
+            try:
+                # Fetch the component of the BC
+                component = BC["component"]
+            except:
+                # By default, component is solute (ie. 0)
+                component = 0
+            if type(BC['surface']) is not list:
+                surfaces = [BC['surface']]
+            else:
+                surfaces = BC['surface']
+            if V.num_sub_spaces() == 0:
+                funspace = V
+            else:  # if only one component, use subspace
+                funspace = V.sub(component)
+            for surface in surfaces:
+                bci = DirichletBC(funspace, value_BC,
+                                  surface_marker, surface)
+                bcs.append(bci)
 
     return bcs, expressions

@@ -2,6 +2,8 @@ from fenics import *
 import csv
 import sys
 import os
+import sympy as sp
+import json
 import numpy as np
 
 
@@ -136,7 +138,7 @@ def define_xdmf_files(exports):
     return files
 
 
-def export_xdmf(res, exports, files, t):
+def export_xdmf(res, exports, files, t, append):
     '''
     Exports the solutions fields in xdmf files.
     Arguments:
@@ -144,13 +146,15 @@ def export_xdmf(res, exports, files, t):
     - exports: dict, contains parameters
     - files: list, contains XDMFFile
     - t: float
+    - append: bool, erase the previous file or not
     '''
     if len(exports['xdmf']['functions']) > len(res):
         raise NameError("Too many functions to export "
                         "in xdmf exports")
     solution_dict = {
         'solute': res[0],
-        'retention': res[len(res)-1]
+        'retention': res[len(res)-2],
+        'T': res[len(res)-1],
     }
     for i in range(0, len(exports["xdmf"]["functions"])):
         label = exports["xdmf"]["labels"][i]
@@ -166,5 +170,41 @@ def export_xdmf(res, exports, files, t):
                     " is unknown.")
 
         solution.rename(label, "label")
-        files[i].write(solution, t)
+        files[i].write_checkpoint(
+            solution, label, t, XDMFFile.Encoding.HDF5, append=append)
     return
+
+
+def treat_value(d):
+    '''
+    Recursively converts as string the sympy objects in d
+    Arguments: d, dict
+    '''
+    T = sp.symbols('T')
+    if type(d) is dict:
+        for key, value in d.items():
+            if isinstance(value, tuple(sp.core.all_classes)):
+                value = str(sp.printing.ccode(value))
+                d[key] = value
+            elif callable(value):  # if value is fun
+                d[key] = str(sp.printing.ccode(value(T)))
+            elif type(value) is dict or type(value) is list:
+                d[key] = treat_value(value)
+    elif type(d) is list:
+        for e in d:
+            e = treat_value(e)
+    return d
+
+
+def export_parameters(parameters):
+    '''
+    Dumps parameters dict in a json file.
+    '''
+    json_file = parameters["exports"]["parameters"]
+    os.makedirs(os.path.dirname(json_file), exist_ok=True)
+    if json_file.endswith(".json") is False:
+        json_file += ".json"
+    param = treat_value(parameters)
+    with open(json_file, 'w') as fp:
+        json.dump(param, fp, indent=4, sort_keys=True)
+    return True

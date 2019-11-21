@@ -3,8 +3,8 @@ import sympy as sp
 import FESTIM
 
 
-def formulation(traps, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, materials, T, flux_):
+def formulation(parameters, extrinsic_traps, solutions, testfunctions,
+                previous_solutions, dt, dx, T, transient):
     ''' Creates formulation for trapping MRE model.
     Parameters:
     - traps : dict, contains the energy, density and domains
@@ -16,23 +16,43 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
     - F : variational formulation
     - expressions: list, contains Expression() to be updated
     '''
-    k_B = 8.6e-5  # Boltzmann constant
+    k_B = FESTIM.k_B  # Boltzmann constant
     v_0 = 1e13  # frequency factor s-1
     expressions = []
     F = 0
-    F += ((solutions[0] - previous_solutions[0]) / dt)*testfunctions[0]*dx
-    for material in materials:
+
+    soret = False
+    if "temperature" in parameters.keys():
+        if "soret" in parameters["temperature"].keys():
+            if parameters["temperature"]["soret"] is True:
+                soret = True
+
+    if transient:
+        F += ((solutions[0]-previous_solutions[0])/dt)*testfunctions[0]*dx
+
+    for material in parameters["materials"]:
         D_0 = material['D_0']
         E_diff = material['E_diff']
         subdomain = material['id']
-        F += D_0 * exp(-E_diff/k_B/T) * \
-            dot(grad(solutions[0]), grad(testfunctions[0]))*dx(subdomain)
-    F += - flux_*testfunctions[0]*dx
-    expressions.append(flux_)
+        F += dot(D_0 * exp(-E_diff/k_B/T)*grad(solutions[0]),
+                 grad(testfunctions[0]))*dx(subdomain)
+        if soret is True:
+            Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
+            F += dot(D_0 * exp(-E_diff/k_B/T) *
+                     Q * solutions[0] / (FESTIM.R * T**2) * grad(T),
+                     grad(testfunctions[0]))*dx(subdomain)
+    # Define flux
+    if "source_term" in parameters.keys():
+        print('Defining source terms')
+        source = Expression(
+            sp.printing.ccode(
+                parameters["source_term"]["value"]), t=0, degree=2)
+        F += - source*testfunctions[0]*dx
+        expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
-    for trap in traps:
+    for trap in parameters["traps"]:
         if 'type' in trap.keys() and trap['type'] == 'extrinsic':
             trap_density = extrinsic_traps[j]
             j += 1
@@ -43,13 +63,15 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
 
         energy = trap['energy']
         material = trap['materials']
-        F += ((solutions[i] - previous_solutions[i]) / dt) * \
-            testfunctions[i]*dx
+        if transient:
+            F += ((solutions[i] - previous_solutions[i]) / dt) * \
+                testfunctions[i]*dx
         if type(material) is not list:
             material = [material]
         for subdomain in material:
             corresponding_material = \
-                FESTIM.helpers.find_material_from_id(materials, subdomain)
+                FESTIM.helpers.find_material_from_id(
+                    parameters["materials"], subdomain)
             D_0 = corresponding_material['D_0']
             E_diff = corresponding_material['E_diff']
             alpha = corresponding_material['alpha']
@@ -66,8 +88,9 @@ def formulation(traps, extrinsic_traps, solutions, testfunctions,
             expressions.append(source)
         except:
             pass
-        F += ((solutions[i] - previous_solutions[i]) / dt) * \
-            testfunctions[0]*dx
+        if transient:
+            F += ((solutions[i] - previous_solutions[i]) / dt) * \
+                testfunctions[0]*dx
         i += 1
     return F, expressions
 
@@ -142,6 +165,8 @@ def define_variational_problem_heat_transfers(
         if "thermal_cond" not in mat.keys():
             raise NameError("Missing thermal_cond key in material")
         thermal_cond = mat["thermal_cond"]
+        if callable(thermal_cond):  # if thermal_cond is a function
+            thermal_cond = thermal_cond(T)
         vol = mat["id"]
         if parameters["temperature"]["type"] == "solve_transient":
             T_n = functions[2]
@@ -151,17 +176,24 @@ def define_variational_problem_heat_transfers(
                 raise NameError("Missing rho key in material")
             cp = mat["heat_capacity"]
             rho = mat["rho"]
+            if callable(cp):  # if cp or rho are functions, apply T
+                cp = cp(T)
+            if callable(rho):
+                rho = rho(T)
             # Transien term
             F += rho*cp*(T-T_n)/dt*vT*dx(vol)
         # Diffusion term
-        F += thermal_cond*dot(grad(T), grad(vT))*dx(vol)
+        F += dot(thermal_cond*grad(T), grad(vT))*dx(vol)
 
+    # Source terms
     for source in parameters["temperature"]["source_term"]:
         src = sp.printing.ccode(source["value"])
         src = Expression(src, degree=2, t=0)
         expressions.append(src)
         # Source term
         F += - src*vT*dx(source["volume"])
+
+    # Boundary conditions
     for bc in parameters["temperature"]["boundary_conditions"]:
         if type(bc["surface"]) is list:
             surfaces = bc["surface"]
