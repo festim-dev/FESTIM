@@ -50,5 +50,5 @@ FESTIM allows users to export their data to .csv, .txt or to a XDMF format with 
 </p>
 
 ## References
-- R. Delaporte-Mathurin, et al., ‘Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components Using FESTIM’. Nuclear Materials and Energy 21: 100709. https://doi.org/10.1016/j.nme.2019.100709.
+- R. Delaporte-Mathurin, _et al._, _Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components using FESTIM_. Nuclear Materials and Energy 21: 100709. DOI: [10.1016/j.nme.2019.100709](https://doi.org/10.1016/j.nme.2019.100709).
 
