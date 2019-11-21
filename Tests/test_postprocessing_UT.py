@@ -226,8 +226,8 @@ def test_derived_quantities():
     thermal_cond = fenics.Expression(sp.printing.ccode(thermal_cond), degree=3)
     thermal_cond = fenics.interpolate(thermal_cond, V)
     tab = FESTIM.post_processing.derived_quantities(
-        parameters, [u_, u_, T_], [D, thermal_cond],
-        [volume_markers, surface_markers])
+        parameters, [u_, u_, T_], [volume_markers, surface_markers],
+        [D, thermal_cond, D])
 
     # Compare
     assert len(tab) == len(expected)
@@ -346,8 +346,8 @@ def test_derived_quantities_soret():
     Q = fenics.Expression(sp.printing.ccode(Q), degree=3)
     Q = fenics.interpolate(Q, V)
     tab = FESTIM.post_processing.derived_quantities(
-        parameters, [u_, u_, T_], [D, thermal_cond, Q],
-        [volume_markers, surface_markers])
+        parameters, [u_, u_, T_], [volume_markers, surface_markers],
+        [D, thermal_cond, Q])
 
     # Compare
     assert len(tab) == len(expected)
