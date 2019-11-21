@@ -1,5 +1,5 @@
 from fenics import *
-from cas_test_ITER_simple import parameters, id_W, id_Cu, id_CuCrZr, \
+from parameters import parameters, id_W, id_Cu, id_CuCrZr, \
     atom_density_Cu, atom_density_W, atom_density_CuCrZr
 from context import FESTIM
 from FESTIM.meshing import read_subdomains_from_xdmf
@@ -97,13 +97,28 @@ V_DG0 = FunctionSpace(mesh, DG0)
 
 # # # # # Option 3 : seperate files (only post processed fields)
 
+T = Function(V_P1)
+solute = Function(V_P1)
+trap_1 = Function(V_DG1)
+trap_2 = Function(V_DG1)
+trap_3 = Function(V_DG1)
+trap_4 = Function(V_DG1)
+retention = Function(V_DG1)
+
+
+functions = [solute, trap_1, trap_2, trap_3, trap_4, retention, T]
+
+
 # create files
 file_solute_atfr = XDMFFile(folder + "/solute_atfr.xdmf")
 file_solute_atfr.parameters["rewrite_function_mesh"] = False
+file_solute_atfr.parameters["flush_output"] = True
 file_rho = XDMFFile(folder + "/rho.xdmf")
 file_rho.parameters["rewrite_function_mesh"] = False
+file_rho.parameters["flush_output"] = True
 file_D = XDMFFile(folder + "/D.xdmf")
 file_D.parameters["rewrite_function_mesh"] = False
+file_D.parameters["flush_output"] = True
 
 # properties should belong to DG0 functionspace
 rho = Function(V_DG0)  # Create function rho (atomic density in at.m-3)
@@ -131,12 +146,14 @@ for cell in cells(mesh):  # Iterate through mesh cells
     D_0.vector()[cell.index()] = value_D_0
     E_diff.vector()[cell.index()] = value_E_diff
 
+file_rho.write(rho)
+
 for i in range(0, 150):
     print(i)
     t = i  # TODO: change this....
 
     # Read
-    for j in range(0, len(element)):
+    for j in range(0, len(functions)):
         files[j].read_checkpoint(functions[j], labels[j], i)
     # Compute
     solute_atfr = project(solute/rho, V_DG1)  # solute concentration in at.fr.
@@ -145,5 +162,4 @@ for i in range(0, 150):
     D.rename("D", "D")
     # Write
     file_solute_atfr.write(solute_atfr, t)
-    file_rho.write(rho, t)
     file_D.write(D, t)
