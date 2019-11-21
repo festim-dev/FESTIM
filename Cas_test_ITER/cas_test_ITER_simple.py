@@ -74,7 +74,7 @@ parameters = {
             # Tungsten
             "D_0": 2.9e-7,
             "E_diff": 0.39,
-            "S_0": 1.3e-4, #at/m3.Pa0.5 (from Grislia 2015)
+            "S_0": 1.3e-4*atom_density_W, #at/m3.Pa0.5 (from Grislia 2015)
             "E_S": 0.34, #eV
             "alpha": 1.29e-10,
             "beta": 6*atom_density_W,

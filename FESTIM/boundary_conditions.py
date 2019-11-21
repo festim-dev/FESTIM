@@ -57,7 +57,7 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
     solute = solutions[0]
     test_solute = testfunctions[0]
     F = 0
-    k_B = 8.6e-5
+    k_B = FESTIM.k_B
     for bc in boundary_conditions:
         if bc["type"] not in helpers.bc_types["dc"]:
             if bc["type"] not in helpers.bc_types["neumann"] and \
