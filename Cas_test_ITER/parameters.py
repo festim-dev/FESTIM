@@ -1,5 +1,4 @@
 from context import FESTIM
-from fenics import *
 import sympy as sp
 
 
