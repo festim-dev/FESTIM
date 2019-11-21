@@ -27,7 +27,7 @@ def define_dirichlet_bcs_T(parameters, V, boundaries):
     bcs = []
     expressions = []
     for bc in parameters["temperature"]["boundary_conditions"]:
-        if bc["type"] == "dirichlet":
+        if bc["type"] == "dc":
             value = sp.printing.ccode(bc["value"])
             value = Expression(value, degree=2, t=0)
             expressions.append(value)

@@ -47,7 +47,7 @@ def test_run_temperature_stationary(tmpdir):
             "type": "solve_stationary",
             "boundary_conditions": [
                 {
-                    "type": "dirichlet",
+                    "type": "dc",
                     "value": u,
                     "surface": [1, 2]
                 }
@@ -146,7 +146,7 @@ def test_run_temperature_transient(tmpdir):
             "type": "solve_transient",
             "boundary_conditions": [
                 {
-                    "type": "dirichlet",
+                    "type": "dc",
                     "value": u,
                     "surface": [1, 2]
                 }
