@@ -1,4 +1,5 @@
 from FESTIM import *
+import FESTIM
 from fenics import *
 import sympy as sp
 import numpy as np
