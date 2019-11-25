@@ -21,10 +21,9 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     v_0 = 1e13  # frequency factor s-1
     expressions = []
     F = 0
-
     for material in parameters["materials"]:
         D_0 = material['D_0']
-        D_0 = material['D_0']
+        S_0 = material['S_0']
         E_diff = material['E_diff']
         E_S = material['E_S']
         subdomain = material['id']
@@ -55,9 +54,11 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             E_diff = corresponding_material['E_diff']
             alpha = corresponding_material['alpha']
             beta = corresponding_material['beta']
+            S_0 = corresponding_material['S_0']
+            E_S = corresponding_material['E_S']
             F += - D_0 * exp(-E_diff/k_B/T)/alpha/alpha/beta * \
                 solutions[0] * (trap_density - solutions[i]) * \
-                testfunctions[i]*dx(subdomain)
+                testfunctions[i]*dx(subdomain) #S_0 * exp(-E_S/k_B/T)*
             F += v_0*exp(-energy/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
 
@@ -115,12 +116,6 @@ def run(parameters, log_level=40):
 
     # Define functions
     u, solutions = FESTIM.functionspaces_and_functions.define_functions(V)
-    # S_W = Function(W)
-    # S_W = S_0W*exp(-E_SW/FESTIM.k_B/T)
-    # S_Cu = Function(W)
-    # S_Cu = S_0Cu*exp(-E_SCu/FESTIM.k_B/T)
-    # S_CuCrZr = Function(W)
-    # S_CuCrZr = S_0CuCrZr*exp(-E_SCuCrZr/FESTIM.k_B/T)
 
     testfunctions_concentrations, testfunctions_traps = \
         FESTIM.functionspaces_and_functions.define_test_functions(
@@ -146,7 +141,7 @@ def run(parameters, log_level=40):
 
     # Define variational problem H transport
     print('Defining variational problem')
-    F, expressions_F = FESTIM.formulations.formulation(
+    F, expressions_F = formulation(
         parameters, [],
         solutions, testfunctions_concentrations,
         previous_solutions_concentrations, dt, dx, T, transient=transient)
@@ -227,4 +222,4 @@ def run(parameters, log_level=40):
     return
 
 
-run(parameters)
+run(parameters, log_level=20)
