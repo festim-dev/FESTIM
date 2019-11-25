@@ -6,7 +6,8 @@ import sympy as sp
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t < t_implantation) * \
-        1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200))
+        1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) / \
+        (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))  # Solubility W
     expression = implantation
 
     return expression
@@ -52,7 +53,7 @@ t_rest = 47696400-t_implantation
 t_baking = 50648400-t_rest
 
 # Definition du fichier de stockage
-folder = 'results/ITER_case_C/'
+folder = 'results/ITER_case_theta/'
 
 # Dict parameters
 parameters = {
@@ -68,7 +69,7 @@ parameters = {
             "E_diff": 0.39,
             "S_0": atom_density_W*1.3e-4,  # at/m3.Pa0.5 (from Grislia 2015)
             "E_S": 0.34,  # eV
-            "alpha": (2.9e-7*atom_density_W/(2.9e12*1.0000))**0.5, # 1.0000 coef H/D/T
+            "alpha": (2.9e-7*atom_density_W/(2.9e12*1.0000))**0.5,  # 1.0000 coef H/D/T
             "beta": 1,
             "thermal_cond": 120,
             "heat_capacity": 1,
@@ -131,6 +132,11 @@ parameters = {
             "value": bc_top_H(t_implantation, t_rest, t_baking)
         },
         {
+            "type": "dc",
+            "surface": id_left_surf,
+            "value": 0
+        },
+        {
             "type": "recomb",
             "surface": id_coolant_surf,
             "Kr_0": 2.9e-14,
@@ -142,13 +148,13 @@ parameters = {
         #     "surface": id_left_surf,
         #     "value": 0
         # },
-        {
-            "type": "recomb",
-            "surface": [id_left_surf],
-            "Kr_0": 2.9e-18,
-            "E_Kr": 1.16,
-            "order": 2,
-        },
+        # {
+        #     "type": "recomb",
+        #     "surface": [id_left_surf],
+        #     "Kr_0": 2.9e-18,
+        #     "E_Kr": 1.16,
+        #     "order": 2,
+        # },
         ],
     # "source_term": {
     #     "type": "expression",
@@ -177,8 +183,8 @@ parameters = {
         "initial_stepsize": 1,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.1,
-            "t_stop": t_implantation,
-            "stepsize_stop_max": t_rest/15,
+            "t_stop": t_implantation + t_rest*8/10,
+            "stepsize_stop_max": t_baking/15,
             "dt_min": 1e-8,
             },
         "newton_solver": {
@@ -197,7 +203,7 @@ parameters = {
             "total_volume": [
                 {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
-                    "field": "0"
+                    "field": "solute"
                 },
                 {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
