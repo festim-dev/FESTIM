@@ -16,7 +16,7 @@ def bc_top_HT(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t < t_implantation) * 1200
     rest = (t > t_implantation)*(t < t_implantation + t_rest) * 343
-    baking = (t > t_implantation + t_rest)*350
+    baking = (t > t_implantation + t_rest)*(350+273.15)
     expression = implantation + rest + baking
     return expression
 
@@ -25,7 +25,7 @@ def bc_coolant_HT(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t < t_implantation) * 373
     rest = (t > t_implantation)*(t < t_implantation + t_rest) * 343
-    baking = (t > t_implantation + t_rest)*350
+    baking = (t > t_implantation + t_rest)*(350+273.15)
     expression = implantation + rest + baking
 
     return expression
@@ -48,11 +48,11 @@ id_left_surf = 11
 
 # Definition des temps
 t_implantation = 6000*400
-t_rest = 6000*1800
-t_baking = 30*24*3600
+t_rest = 47696400-t_implantation
+t_baking = 50648400-t_rest
 
 # Definition du fichier de stockage
-folder = 'results/cas_test_simplifie_ITER/4_traps'
+folder = 'results/ITER_case_C/'
 
 # Dict parameters
 parameters = {
@@ -68,7 +68,7 @@ parameters = {
             "E_diff": 0.39,
             "S_0": atom_density_W*1.3e-4,  # at/m3.Pa0.5 (from Grislia 2015)
             "E_S": 0.34,  # eV
-            "alpha": (2.9e-7*atom_density_W/(2.9e12*0.8164))**0.5,
+            "alpha": (2.9e-7*atom_density_W/(2.9e12*1.0000))**0.5, # 1.0000 coef H/D/T
             "beta": 1,
             "thermal_cond": 120,
             "heat_capacity": 1,
@@ -189,15 +189,15 @@ parameters = {
         },
     "exports": {
         "xdmf": {
-            "functions": ['T', 'solute', '1', '2', '3', '4', 'retention'],
-            "labels": ['T', 'solute', '1', '2', '3', '4', 'retention'],
+            "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
+            "labels": ['T', '0', '1', '2', '3', '4', 'sum'],
             "folder": folder
         },
         "derived_quantities": {
             "total_volume": [
                 {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
-                    "field": "solute"
+                    "field": "0"
                 },
                 {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
