@@ -222,4 +222,4 @@ def run(parameters, log_level=40):
     return
 
 
-run(parameters, log_level=20)
+run(parameters, log_level=40)
