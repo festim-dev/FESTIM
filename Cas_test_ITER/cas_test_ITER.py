@@ -50,6 +50,8 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             corresponding_material = \
                 FESTIM.helpers.find_material_from_id(
                     parameters["materials"], subdomain)
+            S_0 = corresponding_material['S_0']
+            E_S = corresponding_material['E_S']
             D_0 = corresponding_material['D_0']
             E_diff = corresponding_material['E_diff']
             alpha = corresponding_material['alpha']
@@ -57,8 +59,8 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             S_0 = corresponding_material['S_0']
             E_S = corresponding_material['E_S']
             F += - D_0 * exp(-E_diff/k_B/T)/alpha/alpha/beta * \
-                solutions[0] * (trap_density - solutions[i]) * \
-                testfunctions[i]*dx(subdomain) #S_0 * exp(-E_S/k_B/T)*
+                S_0 * exp(-E_S/k_B/T)* solutions[0] * (trap_density - solutions[i]) * \
+                testfunctions[i]*dx(subdomain) #
             F += v_0*exp(-energy/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
 
@@ -121,6 +123,20 @@ def run(parameters, log_level=40):
         FESTIM.functionspaces_and_functions.define_test_functions(
             V, W, 0)
 
+    # Create function solubility
+    V_DG0 = FunctionSpace(mesh, "DG", 0)
+    V_DG1 = FunctionSpace(mesh, "DG", 1)
+    S_0 = Function(V_DG0)
+    E_S = Function(V_DG0)
+    for cell in cells(mesh):  # Iterate through mesh cells
+        subdomain_id = volume_markers[cell]
+        mat = FESTIM.helpers.find_material_from_id(
+            parameters["materials"], subdomain_id)
+        value_S_0 = mat["S_0"]
+        value_E_S = mat["E_S"]
+        S_0.vector()[cell.index()] = value_S_0
+        E_S.vector()[cell.index()] = value_E_S
+    solubility = S_0*exp(-E_S/FESTIM.k_B/T)
     # Initialising the solutions
     initial_conditions = []
     u_n, previous_solutions_concentrations = \
@@ -137,7 +153,7 @@ def run(parameters, log_level=40):
         T)
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
         parameters["boundary_conditions"], solutions,
-        testfunctions_concentrations, ds, T)
+        testfunctions_concentrations, ds, T, solubility)
 
     # Define variational problem H transport
     print('Defining variational problem')
