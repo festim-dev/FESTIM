@@ -58,9 +58,9 @@ folder = 'results/ITER_case_theta/'
 # Dict parameters
 parameters = {
     "mesh_parameters": {
-        "mesh_file": "maillages/Mesh 10/mesh_domains.xdmf",
-        "cells_file": "maillages/Mesh 10/mesh_domains.xdmf",
-        "facets_file": "maillages/Mesh 10/mesh_boundaries.xdmf",
+        "mesh_file": "maillages/Mesh_ITER/mesh_domains.xdmf",
+        "cells_file": "maillages/Mesh_ITER/mesh_domains.xdmf",
+        "facets_file": "maillages/Mesh_ITER/mesh_boundaries.xdmf",
         },
     "materials": [
         {
@@ -156,10 +156,6 @@ parameters = {
         #     "order": 2,
         # },
         ],
-    # "source_term": {
-    #     "type": "expression",
-    #     "value": 0*1e23/(5e-6)*(FESTIM.y >= 0.0145 - 5e-6),
-    # },
     "temperature": {
         "type": "solve_transient",
         "boundary_conditions": [
