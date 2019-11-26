@@ -234,6 +234,9 @@ def run(parameters, log_level=40):
         # Update previous solutions
         u_n.assign(u)
 
+    FESTIM.export.write_to_csv(parameters["exports"]["derived_quantities"],
+                               derived_quantities_global)
+
     # End
     print('\007s')
     return
