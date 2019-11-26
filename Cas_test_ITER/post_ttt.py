@@ -7,13 +7,13 @@ from FESTIM import k_B
 
 # import mesh
 mesh = Mesh()
-XDMFFile("maillages/Mesh 10/mesh_domains.xdmf").read(mesh)
+XDMFFile("maillages/Mesh_ITER/mesh_domains.xdmf").read(mesh)
 
 # import mesh functions
 vm, sm = read_subdomains_from_xdmf(
     mesh,
-    volumetric_file="maillages/Mesh 10/mesh_domains.xdmf",
-    boundary_file="maillages/Mesh 10/mesh_boundaries.xdmf")
+    volumetric_file="maillages/Mesh_ITER/mesh_domains.xdmf",
+    boundary_file="maillages/Mesh_ITER/mesh_boundaries.xdmf")
 
 # Create XDMFFile
 folder = 'results/ITER_case_theta'
@@ -102,7 +102,7 @@ for cell in cells(mesh):  # Iterate through mesh cells
 
 file_rho.write(rho)
 
-for i in range(0, 2):
+for i in range(0, 191):
     print(i)
     t = i  # TODO: change this....
 
