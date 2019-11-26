@@ -74,7 +74,6 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T, S):
             elif bc["type"] == "recomb":
                 Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/k_B/T)
                 flux = -Kr*(S*solute)**bc["order"]
-                print(flux)
             if type(bc['surface']) is not list:
                 surfaces = [bc['surface']]
             else:
