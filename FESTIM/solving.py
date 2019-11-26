@@ -1,5 +1,6 @@
 from FESTIM import *
 from fenics import *
+import numpy as np
 
 
 def solve_it(F, u, J, bcs, t, dt, solving_parameters):
@@ -8,18 +9,27 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
     u_.assign(u)
     while converged is False:
         u.assign(u_)
+        u, nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
         t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
         stepsize_stop_max = \
             solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
         stepsize_change_ratio = \
             solving_parameters["adaptive_stepsize"]["stepsize_change_ratio"]
         dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
-        u, nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
         adaptive_stepsize(
-            nb_it=nb_it, converged=converged, dt=dt,
-            stepsize_change_ratio=stepsize_change_ratio,
-            dt_min=dt_min, t=t, t_stop=t_stop,
-            stepsize_stop_max=stepsize_stop_max)
+                nb_it=nb_it, converged=converged, dt=dt,
+                stepsize_change_ratio=stepsize_change_ratio,
+                dt_min=dt_min, t=t, t_stop=t_stop,
+                stepsize_stop_max=stepsize_stop_max)
+    times = np.array(sorted(solving_parameters['times']))
+    if t < times[len(times) - 1]:
+        index_closest = (np.abs(times-t)).argmin()
+        if t >= times[index_closest]:
+            next_time = times[index_closest+1]
+        else:
+            next_time = times[index_closest]
+        if t + float(dt) > next_time:
+            dt.assign(next_time - t)
     return u, dt
 
 

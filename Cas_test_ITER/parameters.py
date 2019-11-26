@@ -171,6 +171,10 @@ parameters = {
         },
     "solving_parameters": {
         "final_time": t_implantation + t_rest + t_baking,
+        "times": [t_implantation,
+                  t_implantation+t_rest,
+                  t_implantation+t_rest+t_baking,
+                  t_implantation+t_rest+t_baking + 1],
         "initial_stepsize": 1,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.1,
