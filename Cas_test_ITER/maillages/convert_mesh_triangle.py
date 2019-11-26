@@ -1,6 +1,6 @@
 import meshio
-folder = "Mesh 10"
-name = folder + "/mesh_10"
+folder = "Mesh_ITER"
+name = folder + "/Mesh_ITER"
 if name.endswith(".med") is False:
     mesh_file_med = name + ".med"
 mesh = meshio.read(mesh_file_med)
