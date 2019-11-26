@@ -110,13 +110,17 @@ for i in range(0, 191):
     for j in range(0, len(functions)):
         files[j].read_checkpoint(functions[j], labels[j], i)
     # Compute
-    D = project(D_0*exp(-E_diff/k_B/T), V_DG1)  # diffusion coefficient in m2.s-1
+    # diffusion coefficient in m2.s-1
+    D = project(D_0*exp(-E_diff/k_B/T), V_DG1)
     D.rename("D", "D")  # mandatory
-    S = project(S_0*exp(-E_S/k_B/T), V_DG1)  # solubilite coefficient in m2.s-1
+    # solubilite coefficient in m2.s-1
+    S = project(S_0*exp(-E_S/k_B/T), V_DG1)
     S.rename("S", "S")
-    solute_m3 = project(S_0*exp(-E_S/k_B/T)*theta, V_DG1)  # solute concentration in m-3
+    # solute concentration in m-3
+    solute_m3 = project(S_0*exp(-E_S/k_B/T)*theta, V_DG1)
     solute_m3.rename("solute_m3", "solute_m3")
-    solute_atfr = project(solute_m3/rho, V_DG1)  # solute concentration in at.fr.
+    # solute concentration in at.fr.
+    solute_atfr = project(solute_m3/rho, V_DG1)
     solute_atfr.rename("solute_atfr", "solute_atfr")
     retention = project(solute_m3 + trap_1 + trap_2 + trap_3 + trap_4, V_DG1)
     retention.rename("retention", "retention")

@@ -59,8 +59,9 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             S_0 = corresponding_material['S_0']
             E_S = corresponding_material['E_S']
             F += - D_0 * exp(-E_diff/k_B/T)/alpha/alpha/beta * \
-                S_0 * exp(-E_S/k_B/T)* solutions[0] * (trap_density - solutions[i]) * \
-                testfunctions[i]*dx(subdomain) #
+                S_0 * exp(-E_S/k_B/T) * solutions[0] * \
+                (trap_density - solutions[i]) * \
+                testfunctions[i]*dx(subdomain)
             F += v_0*exp(-energy/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
 

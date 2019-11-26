@@ -7,7 +7,7 @@ def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t < t_implantation) * \
         1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) / \
-        (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))  # Solubility W
+        (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))
     expression = implantation
 
     return expression
