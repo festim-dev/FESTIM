@@ -132,11 +132,6 @@ parameters = {
             "value": bc_top_H(t_implantation, t_rest, t_baking)
         },
         {
-            "type": "dc",
-            "surface": id_left_surf,
-            "value": 0
-        },
-        {
             "type": "recomb",
             "surface": id_coolant_surf,
             "Kr_0": 2.9e-14,
@@ -148,13 +143,13 @@ parameters = {
         #     "surface": id_left_surf,
         #     "value": 0
         # },
-        # {
-        #     "type": "recomb",
-        #     "surface": [id_left_surf],
-        #     "Kr_0": 2.9e-18,
-        #     "E_Kr": 1.16,
-        #     "order": 2,
-        # },
+        {
+            "type": "recomb",
+            "surface": [id_left_surf],
+            "Kr_0": 2.9e-18,
+            "E_Kr": 1.16,
+            "order": 2,
+        },
         ],
     "temperature": {
         "type": "solve_transient",
