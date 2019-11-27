@@ -189,8 +189,8 @@ parameters = {
         },
     "exports": {
         "xdmf": {
-            "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
-            "labels": ['T', '0', '1', '2', '3', '4', 'sum'],
+            "functions": ['T', '0', '1', '2', '3', '4'],
+            "labels": ['T', '0', '1', '2', '3', '4'],
             "folder": folder
         },
         "derived_quantities": {
@@ -214,10 +214,6 @@ parameters = {
                 {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
                     "field": "4"
-                },
-                {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
-                    "field": "retention"
                 },
             ],
             "file": "derived_quantities.csv",
