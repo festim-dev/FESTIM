@@ -57,14 +57,14 @@ t_rest = 47696400-t_implantation
 t_baking = 50648400-t_rest-t_implantation
 
 # Definition du fichier de stockage
-folder = 'results/04_ITER_case_theta_sol2_50798/'
+folder = 'results/05_ITER_case_theta_sol2_99950/'
 
 # Dict parameters
 parameters = {
     "mesh_parameters": {
-        "mesh_file": "maillages/Mesh_ITER_50798/mesh_domains.xdmf",
-        "cells_file": "maillages/Mesh_ITER_50798/mesh_domains.xdmf",
-        "facets_file": "maillages/Mesh_ITER_50798/mesh_boundaries.xdmf",
+        "mesh_file": "maillages/Mesh_ITER_99950/mesh_domains.xdmf",
+        "cells_file": "maillages/Mesh_ITER_99950/mesh_domains.xdmf",
+        "facets_file": "maillages/Mesh_ITER_99950/mesh_boundaries.xdmf",
         },
     "materials": [
         {
@@ -181,7 +181,7 @@ parameters = {
         },
     "solving_parameters": {
         "final_time": t_implantation + t_rest + t_baking,
-        "times": [t_implantation,
+        "times": [t_implantation, 10, 1000,
                   t_implantation+t_rest,
                   t_implantation+t_rest+t_baking],
         "initial_stepsize": 100,
@@ -201,7 +201,7 @@ parameters = {
         "xdmf": {
             "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
             "labels": ['T', '0', '1', '2', '3', '4', 'retention'],
-            "folder": folder
+            "folder": folder,
             "all_timesteps": False,
         },
         "derived_quantities": {
