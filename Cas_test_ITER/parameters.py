@@ -5,9 +5,14 @@ import sympy as sp
 # Definition des BCs
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
+    #
     implantation = (t < t_implantation) * \
         1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) / \
         (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))
+    #
+    #implantation = (t < t_implantation) * \
+    #    1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) # S=1.0
+    #
     expression = implantation
 
     return expression
@@ -53,7 +58,7 @@ t_rest = 47696400-t_implantation
 t_baking = 50648400-t_rest
 
 # Definition du fichier de stockage
-folder = 'results/ITER_case_theta/'
+folder = 'results/03_ITER_case_theta_sol2/'
 
 # Dict parameters
 parameters = {
@@ -69,6 +74,8 @@ parameters = {
             "E_diff": 0.39,
             "S_0": atom_density_W*1.3e-4,  # at/m3.Pa0.5 (from Grislia 2015)
             "E_S": 0.34,  # eV
+            #"S_0": 1.0,  # case without solubility
+            #"E_S": 0.0,  # case without solubility
             "alpha": (2.9e-7*atom_density_W/(2.9e12*1.0000))**0.5,  # 1.0000 coef H/D/T
             "beta": 1,
             "thermal_cond": 120,
@@ -82,6 +89,8 @@ parameters = {
             "E_diff": 0.387,
             "S_0": 3.12e28,  # at/m3.Pa0.5 (from ITER)
             "E_S": 0.572,  # eV
+            #"S_0": 1.0,  # case without solubility
+            #"E_S": 0.0,  # case without solubility
             "alpha": 3.61e-10*(atom_density_Cu)**0.5,
             "beta": 1,
             "thermal_cond": 350,
@@ -95,6 +104,8 @@ parameters = {
             "E_diff": 0.418,
             "S_0": 4.28e23,  # at/m3.Pa0.5 (from ITER)
             "E_S": 0.387,  # eV
+            #"S_0": 1.0,  # case without solubility
+            #"E_S": 0.0,  # case without solubility
             "alpha": 3.61e-10*(atom_density_CuCrZr)**0.5,
             "beta": 1,
             "thermal_cond": 350,
