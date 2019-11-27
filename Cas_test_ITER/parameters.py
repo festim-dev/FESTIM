@@ -28,7 +28,7 @@ def bc_top_HT(t_implantation, t_rest, t_baking):
 
 def bc_coolant_HT(t_implantation, t_rest, t_baking):
     t = FESTIM.t
-    implantation = (t < t_implantation) * 373
+    implantation = (t <= t_implantation) * 373
     rest = (t > t_implantation)*(t <= t_implantation + t_rest) * 343
     baking = (t > t_implantation + t_rest)*(350+273.15)
     expression = implantation + rest + baking
