@@ -50,7 +50,7 @@ id_left_surf = 11
 # Definition des temps
 t_implantation = 6000*400
 t_rest = 47696400-t_implantation
-t_baking = 50648400-t_rest
+t_baking = 50648400-t_rest-t_implantation
 
 # Definition du fichier de stockage
 folder = 'results/ITER_case_theta/'
@@ -176,7 +176,7 @@ parameters = {
                   t_implantation+t_rest+t_baking],
         "initial_stepsize": 1,
         "adaptive_stepsize": {
-            "stepsize_change_ratio": 1.1,
+            "stepsize_change_ratio": 1.2,
             "t_stop": t_implantation + t_rest,
             "stepsize_stop_max": t_baking/15,
             "dt_min": 1e-8,
