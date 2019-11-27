@@ -11,7 +11,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
     else:
         res = list(u.split())
     DG1 = FunctionSpace(u.function_space().mesh(), 'DG', 1)
-    retention = FESTIM.post_processing.compute_retention(u, DG1)
+    retention = FESTIM.post_processing.compute_retention(u, DG1, flux_fonctions[5])
     res.append(retention)
     if isinstance(T, function.expression.Expression):
         res.append(interpolate(T, W))
@@ -19,14 +19,14 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
         res.append(T)
 
     if "derived_quantities" in parameters["exports"].keys():
-        D_0, E_diff, thermal_cond, G, S = flux_fonctions
+        D_0, E_diff, thermal_cond, G, S, solubility = flux_fonctions
         if D_0 is not None:
             derived_quantities_t = \
                 FESTIM.post_processing.derived_quantities(
                     parameters,
                     res,
                     markers,
-                    [D_0*exp(-E_diff/T), thermal_cond, G+T*S]
+                    [D_0*exp(-E_diff/T), thermal_cond, G+T*S, solubility]
                     )
         else:
             derived_quantities_t = \
@@ -94,11 +94,11 @@ def compute_error(parameters, t, res, mesh):
     return tab
 
 
-def compute_retention(u, W):
+def compute_retention(u, W, S):
     res = list(split(u))
     if not res:  # if u is non-vector
         res = [u]
-    retention = project(res[0])
+    retention = project(S*res[0], W)
     for i in range(1, len(res)):
         retention = project(retention + res[i], W)
     return retention
@@ -202,12 +202,13 @@ def header_derived_quantities(parameters):
     return header
 
 
-def derived_quantities(parameters, solutions, markers, properties=[None, None, None]):
+def derived_quantities(parameters, solutions, markers, properties=[None, None, None, None]):
     '''
     Computes all the derived_quantities and store it into list
     '''
     D = properties[0]
     thermal_cond = properties[1]
+    solubility = properties[3]
     soret = False
     if "temperature" in parameters.keys():
         if "soret" in parameters["temperature"].keys():
@@ -224,7 +225,7 @@ def derived_quantities(parameters, solutions, markers, properties=[None, None, N
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
-    solute = solutions[0]
+    solute = solutions[0]*solubility
     ret = solutions[len(solutions)-2]
     T = solutions[len(solutions)-1]
     field_to_sol = {
