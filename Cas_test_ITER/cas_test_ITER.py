@@ -227,7 +227,7 @@ def run(parameters, log_level=40):
             dt,
             files,
             append,
-            [D_0, E_diff, thermal_cond, G, S],
+            [D_0, E_diff, thermal_cond, G, S, solubility],
             derived_quantities_global)
         if t in parameters["solving_parameters"]["times"]:
             append = True

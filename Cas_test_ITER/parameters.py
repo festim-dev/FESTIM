@@ -5,7 +5,6 @@ import sympy as sp
 # Definition des BCs
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
-    #
     implantation = (t <= t_implantation) * \
         1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) / \
         (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))
@@ -187,7 +186,7 @@ parameters = {
                   t_implantation+t_rest+t_baking],
         "initial_stepsize": 100,
         "adaptive_stepsize": {
-            "stepsize_change_ratio": 1.2,
+            "stepsize_change_ratio": 1.3,
             "t_stop": t_implantation + t_rest + t_baking,
             "stepsize_stop_max": t_baking/15,
             "dt_min": 1e-8,
@@ -200,8 +199,8 @@ parameters = {
         },
     "exports": {
         "xdmf": {
-            "functions": ['T', '0', '1', '2', '3', '4'],
-            "labels": ['T', '0', '1', '2', '3', '4'],
+            "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
+            "labels": ['T', '0', '1', '2', '3', '4', 'retention'],
             "folder": folder
         },
         "derived_quantities": {
@@ -226,6 +225,16 @@ parameters = {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
                     "field": "4"
                 },
+                {
+                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "field": "retention"
+                },
+            ],
+            "surface_flux": [
+                {
+                    "surfaces": [id_coolant_surf, id_left_surf],
+                    "field": "solute"
+                }
             ],
             "file": "derived_quantities.csv",
             "folder": folder

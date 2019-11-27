@@ -102,13 +102,17 @@ for cell in cells(mesh):  # Iterate through mesh cells
 
 file_rho.write(rho)
 
-for i in range(0, 191):
-    print(i)
+i = 0
+while True:
     t = i  # TODO: change this....
 
     # Read
-    for j in range(0, len(functions)):
-        files[j].read_checkpoint(functions[j], labels[j], i)
+    try:
+        for j in range(0, len(functions)):
+            files[j].read_checkpoint(functions[j], labels[j], i)
+    except:
+        break
+    print(i)
     # Compute
     # diffusion coefficient in m2.s-1
     D = project(D_0*exp(-E_diff/k_B/T), V_DG1)
@@ -130,3 +134,4 @@ for i in range(0, 191):
     file_D.write(D, t)
     file_S.write(S, t)
     file_retention.write(retention, t)
+    i += 1
