@@ -6,7 +6,7 @@ import sympy as sp
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     #
-    implantation = (t < t_implantation) * \
+    implantation = (t <= t_implantation) * \
         1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) / \
         (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))
     #
@@ -20,17 +20,17 @@ def bc_top_H(t_implantation, t_rest, t_baking):
 
 def bc_top_HT(t_implantation, t_rest, t_baking):
     t = FESTIM.t
-    implantation = (t < t_implantation) * 1200
-    rest = (t > t_implantation)*(t < t_implantation + t_rest) * 343
-    baking = (t > t_implantation + t_rest)*(350+273.15)
+    implantation = (t <= t_implantation) * 1200
+    rest = (t > t_implantation)*(t <= (t_implantation + t_rest) ) * 343
+    baking = (t > (t_implantation + t_rest) )*(350+273.15)
     expression = implantation + rest + baking
     return expression
 
 
 def bc_coolant_HT(t_implantation, t_rest, t_baking):
     t = FESTIM.t
-    implantation = (t < t_implantation) * 373
-    rest = (t > t_implantation)*(t < t_implantation + t_rest) * 343
+    implantation = (t <= t_implantation) * 373
+    rest = (t > t_implantation)*(t <= t_implantation + t_rest) * 343
     baking = (t > t_implantation + t_rest)*(350+273.15)
     expression = implantation + rest + baking
 
@@ -58,14 +58,14 @@ t_rest = 47696400-t_implantation
 t_baking = 50648400-t_rest-t_implantation
 
 # Definition du fichier de stockage
-folder = 'results/03_ITER_case_theta_sol2/'
+folder = 'results/04_ITER_case_theta_sol2_50798/'
 
 # Dict parameters
 parameters = {
     "mesh_parameters": {
-        "mesh_file": "maillages/Mesh_ITER/mesh_domains.xdmf",
-        "cells_file": "maillages/Mesh_ITER/mesh_domains.xdmf",
-        "facets_file": "maillages/Mesh_ITER/mesh_boundaries.xdmf",
+        "mesh_file": "maillages/Mesh_ITER_50798/mesh_domains.xdmf",
+        "cells_file": "maillages/Mesh_ITER_50798/mesh_domains.xdmf",
+        "facets_file": "maillages/Mesh_ITER_50798/mesh_boundaries.xdmf",
         },
     "materials": [
         {
@@ -185,7 +185,7 @@ parameters = {
         "times": [t_implantation,
                   t_implantation+t_rest,
                   t_implantation+t_rest+t_baking],
-        "initial_stepsize": 1,
+        "initial_stepsize": 100,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.2,
             "t_stop": t_implantation + t_rest + t_baking,
