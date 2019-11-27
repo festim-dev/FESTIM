@@ -243,4 +243,4 @@ def run(parameters, log_level=40):
     return
 
 
-run(parameters, log_level=40)
+run(parameters, log_level=20) #20 all convergence info ; 40 only %

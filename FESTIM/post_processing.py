@@ -38,9 +38,11 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
-        if t in parameters["solving_parameters"]["times"]:
-            FESTIM.export.export_xdmf(
-                res, parameters["exports"], files, t, append=append)
+
+       if t in parameters["solving_parameters"]["times"]: FESTIM.export.export_xdmf(res, parameters["exports"], files, t, append=append) # export seulement tableau
+       #FESTIM.export.export_xdmf(res, parameters["exports"], files, t, append=append)
+
+
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
             res, parameters["exports"], t, dt, W)
