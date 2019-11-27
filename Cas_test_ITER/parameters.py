@@ -55,7 +55,7 @@ id_left_surf = 11
 # Definition des temps
 t_implantation = 6000*400
 t_rest = 47696400-t_implantation
-t_baking = 50648400-t_rest
+t_baking = 50648400-t_rest-t_implantation
 
 # Definition du fichier de stockage
 folder = 'results/03_ITER_case_theta_sol2/'
@@ -182,10 +182,13 @@ parameters = {
         },
     "solving_parameters": {
         "final_time": t_implantation + t_rest + t_baking,
+        "times": [t_implantation,
+                  t_implantation+t_rest,
+                  t_implantation+t_rest+t_baking],
         "initial_stepsize": 1,
         "adaptive_stepsize": {
-            "stepsize_change_ratio": 1.1,
-            "t_stop": t_implantation + t_rest*8/10,
+            "stepsize_change_ratio": 1.2,
+            "t_stop": t_implantation + t_rest + t_baking,
             "stepsize_stop_max": t_baking/15,
             "dt_min": 1e-8,
             },
@@ -197,8 +200,8 @@ parameters = {
         },
     "exports": {
         "xdmf": {
-            "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
-            "labels": ['T', '0', '1', '2', '3', '4', 'sum'],
+            "functions": ['T', '0', '1', '2', '3', '4'],
+            "labels": ['T', '0', '1', '2', '3', '4'],
             "folder": folder
         },
         "derived_quantities": {
@@ -222,10 +225,6 @@ parameters = {
                 {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
                     "field": "4"
-                },
-                {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
-                    "field": "retention"
                 },
             ],
             "file": "derived_quantities.csv",
