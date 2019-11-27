@@ -177,7 +177,7 @@ parameters = {
         "initial_stepsize": 1,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.2,
-            "t_stop": t_implantation + t_rest,
+            "t_stop": t_implantation + t_rest + t_baking,
             "stepsize_stop_max": t_baking/15,
             "dt_min": 1e-8,
             },
