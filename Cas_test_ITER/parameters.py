@@ -202,6 +202,7 @@ parameters = {
             "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
             "labels": ['T', '0', '1', '2', '3', '4', 'retention'],
             "folder": folder
+            "all_timesteps": False,
         },
         "derived_quantities": {
             "total_volume": [
