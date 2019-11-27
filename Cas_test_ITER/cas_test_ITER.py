@@ -229,7 +229,8 @@ def run(parameters, log_level=40):
             append,
             [D_0, E_diff, thermal_cond, G, S],
             derived_quantities_global)
-        append = True
+        if t in parameters["solving_parameters"]["times"]:
+            append = True
 
         # Update previous solutions
         u_n.assign(u)
