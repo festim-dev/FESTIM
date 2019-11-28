@@ -9,7 +9,7 @@ def bc_top_H(t_implantation, t_rest, t_baking):
         1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) / \
         (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))
     #
-    #implantation = (t < t_implantation) * \
+    #implantation = (t <= t_implantation) * \
     #    1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) # S=1.0
     #
     expression = implantation
@@ -183,12 +183,13 @@ parameters = {
         "final_time": t_implantation + t_rest + t_baking,
         "times": [t_implantation, 10, 1000,
                   t_implantation+t_rest,
-                  t_implantation+t_rest+t_baking],
-        "initial_stepsize": 100,
+                  t_implantation+t_rest+t_baking,
+                  t_implantation+t_rest+t_baking/2],
+        "initial_stepsize": 10000,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.3,
-            "t_stop": t_implantation + t_rest + t_baking,
-            "stepsize_stop_max": t_baking/15,
+            "t_stop": t_implantation + t_rest,
+            "stepsize_stop_max": t_baking/10,
             "dt_min": 1e-8,
             },
         "newton_solver": {
@@ -200,7 +201,7 @@ parameters = {
     "exports": {
         "xdmf": {
             "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
-            "labels": ['T', '0', '1', '2', '3', '4', 'retention'],
+            "labels": ['T', 'theta', '1', '2', '3', '4', 'retention'],
             "folder": folder,
             "all_timesteps": False,
         },
@@ -211,19 +212,19 @@ parameters = {
                     "field": "solute"
                 },
                 {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "volumes": [id_W],
                     "field": "1"
                 },
                 {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "volumes": [id_W],
                     "field": "2"
                 },
                 {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "volumes": [id_Cu],
                     "field": "3"
                 },
                 {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
+                    "volumes": [id_CuCrZr],
                     "field": "4"
                 },
                 {
