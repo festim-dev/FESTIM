@@ -1,6 +1,7 @@
 from fenics import *
 from parameters import parameters, id_W, id_Cu, id_CuCrZr, \
-    atom_density_Cu, atom_density_W, atom_density_CuCrZr
+    atom_density_Cu, atom_density_W, atom_density_CuCrZr, \
+    folder
 from context import FESTIM
 from FESTIM.meshing import read_subdomains_from_xdmf
 from FESTIM import k_B
@@ -16,9 +17,9 @@ vm, sm = read_subdomains_from_xdmf(
     boundary_file="maillages/Mesh_ITER/mesh_boundaries.xdmf")
 
 # Create XDMFFile
-folder = 'results/ITER_case_theta'
-labels = ["0", "1", "2", "3", "4", "sum", "T"]
-files_names = ["0", "1", "2", "3", "4", "sum", "T"]
+# folder = 'results/05_ITER_case_theta_sol2/'  # use this to overide path
+labels = ["0", "1", "2", "3", "4", "T"]
+files_names = ["0", "1", "2", "3", "4", "T"]
 files = []
 for i in range(0, len(labels)):
     files.append(XDMFFile(folder + "/" + files_names[i] + ".xdmf"))
@@ -43,7 +44,7 @@ trap_4 = Function(V_DG1)
 retention = Function(V_DG1)
 
 
-functions = [theta, trap_1, trap_2, trap_3, trap_4, retention, T]
+functions = [theta, trap_1, trap_2, trap_3, trap_4, T]
 
 
 # create files
