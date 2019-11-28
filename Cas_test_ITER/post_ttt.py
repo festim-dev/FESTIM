@@ -18,8 +18,8 @@ vm, sm = read_subdomains_from_xdmf(
 
 # Create XDMFFile
 # folder = 'results/05_ITER_case_theta_sol2/'  # use this to overide path
-labels = ["0", "1", "2", "3", "4", "T"]
-files_names = ["0", "1", "2", "3", "4", "T"]
+labels = ["theta", "1", "2", "3", "4", "T"]
+files_names = ["theta", "1", "2", "3", "4", "T"]
 files = []
 for i in range(0, len(labels)):
     files.append(XDMFFile(folder + "/" + files_names[i] + ".xdmf"))
@@ -44,7 +44,7 @@ trap_4 = Function(V_DG1)
 retention = Function(V_DG1)
 
 
-functions = [theta, trap_1, trap_2, trap_3, trap_4, T]
+func_m3tions = [theta, trap_1, trap_2, trap_3, trap_4, T]
 
 
 # create files
@@ -66,7 +66,7 @@ file_D.parameters["flush_output"] = True
 file_S = XDMFFile(folder + "/S.xdmf")
 file_S.parameters["rewrite_function_mesh"] = False
 file_S.parameters["flush_output"] = True
-file_retention = XDMFFile(folder + "/retention.xdmf")
+file_retention = XDMFFile(folder + "/retention_m3.xdmf")
 file_retention.parameters["rewrite_function_mesh"] = False
 file_retention.parameters["flush_output"] = True
 # properties should belong to DG0 functionspace
