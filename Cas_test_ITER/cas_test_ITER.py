@@ -27,7 +27,7 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         E_diff = material['E_diff']
         E_S = material['E_S']
         subdomain = material['id']
-        F += (S_0*exp(-E_S/k_B/T)*(solutions[0]-previous_solutions[0])/dt) *\
+        F += ((S_0*exp(-E_S/k_B/T)*solutions[0]-previous_solutions[0])/dt) *\
             testfunctions[0]*dx(subdomain)
         F += dot(D_0 * exp(-E_diff/k_B/T) *
                  grad(S_0 * exp(-E_S/k_B/T)*solutions[0]),
@@ -243,4 +243,4 @@ def run(parameters, log_level=40):
     return
 
 
-run(parameters, log_level=20) #20 all convergence info ; 40 only %
+run(parameters, log_level=40)  # 20 all convergence info ; 40 only %
