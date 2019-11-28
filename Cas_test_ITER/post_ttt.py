@@ -112,6 +112,7 @@ while True:
         for j in range(0, len(functions)):
             files[j].read_checkpoint(functions[j], labels[j], i)
     except:
+        print("Either no more timesteps in file or bug in reading")
         break
     print(i)
     # Compute
