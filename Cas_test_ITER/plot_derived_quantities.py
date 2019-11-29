@@ -37,12 +37,17 @@ with open(filename, 'r') as csvfile:
 
         else:
             t.append(float(row[index_t]))
-            ret = float(row[index_ret_1])+float(row[index_ret_2])+float(row[index_ret_3])
+            ret = float(row[index_ret_1]) + \
+                float(row[index_ret_2]) + \
+                float(row[index_ret_3])
             # ret *= 2*12e-3  # whole monoblock
             # ret *= 1/6.022e23  # in mol
             # ret *= 1  # in g
             inventory.append(ret)
-            solute.append(float(row[index_solute_1])+float(row[index_solute_2])+float(row[index_solute_3]))
+            solute.append(
+                float(row[index_solute_1]) +
+                float(row[index_solute_2]) +
+                float(row[index_solute_3]))
             trap1.append(float(row[index_trap_1]))
             trap2.append(float(row[index_trap_2]))
             trap3.append(float(row[index_trap_3]))
@@ -57,7 +62,7 @@ with open(filename, 'r') as csvfile:
 # # Plot retention
 
 plt.xlabel('t (s)')
-plt.ylabel('Integrated retention (H)')
+plt.ylabel('Integrated retention (H/m)')
 plt.plot(t, inventory, label=r'Inventory', linewidth=1.5)
 plt.plot(t, solute, label=r'Solute', linestyle='--')
 plt.plot(t, trap1, label=r'Trap 1', linestyle='--')
@@ -67,16 +72,19 @@ plt.plot(t, trap4, label=r'Trap 4', linestyle='--')
 plt.minorticks_on()
 plt.grid(which='minor', alpha=0.3)
 plt.grid(which='major', alpha=0.7)
+# plt.xscale("log")
 plt.legend()
 plt.show()
 
-# # # Plot flux at coolant
+# # Plot flux at coolant
 
-# plt.plot(t, flux_coolant, label="Flux coolant")
-# plt.show()
+plt.xlabel('t (s)')
+plt.ylabel('Particle flux at coolant (H/m/s)')
+plt.plot(t, flux_coolant, label="Flux coolant")
+plt.show()
 
-# # # Plot left flux
-
-# plt.plot(t, flux_left, label="Flux left")
-# plt.legend()
-# plt.show()
+# # Plot left flux
+plt.xlabel('t (s)')
+plt.ylabel('Particle flux left (H/m/s)')
+plt.plot(t, flux_left, label="Flux left")
+plt.show()
