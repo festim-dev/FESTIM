@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import csv
 
-filename = 'results/05_ITER_case_theta_sol2/derived_quantities.csv'
+filename = 'results/05_ITER_case_theta_sol2_99950/derived_quantities.csv'
 
 f = plt.figure()
 

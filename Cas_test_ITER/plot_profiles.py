@@ -58,7 +58,7 @@ def plot_T(periods):
     plt.show()
 
 
-folder = "results/05_ITER_case_theta_sol2/"
+folder = 'results/05_ITER_case_theta_sol2_99950/'
 
 plot_concentration("implantation")
 plot_concentration("rest")
