@@ -26,16 +26,13 @@ def plot_concentration(period, plot_solute=True):
     """
     for trap in [1, 2, 3, 4]:
         arc_length, y = read(
-            "results/05_ITER_case_theta_sol2/profile_trap" + str(trap) +
-            '_' + period + '.csv',
+            folder + "profile_trap" + str(trap) + '_' + period + '.csv',
             str(trap))
         plt.plot(arc_length, y, label="Trap " + str(trap))
 
     if plot_solute:
         arc_length, y = read(
-            "results/05_ITER_case_theta_sol2/profile_solute_"
-            + period + '.csv',
-            "solute_m3")
+            folder + "profile_solute_" + period + '.csv', "solute_m3")
         plt.plot(arc_length, y, label="Solute")
 
     plt.ylim(bottom=1e17)
@@ -53,7 +50,7 @@ def plot_concentration(period, plot_solute=True):
 def plot_T(periods):
     for period in periods:
         arc_length, y = read(
-            "results/05_ITER_case_theta_sol2/profile_T_" + period + '.csv', 'T')
+            folder + "profile_T_" + period + '.csv', 'T')
         plt.plot(arc_length, y, label=period)
     plt.legend()
     plt.minorticks_on()
@@ -61,6 +58,8 @@ def plot_T(periods):
     plt.grid(which='major', alpha=0.7)
     plt.show()
 
+
+folder = "results/05_ITER_case_theta_sol2/"
 
 plot_concentration("implantation")
 plot_concentration("rest")
