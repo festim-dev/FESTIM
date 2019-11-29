@@ -1,15 +1,15 @@
 # trace generated using paraview version 5.7.0
 #
-# To ensure correct image size when batch processing, please search 
+# To ensure correct image size when batch processing, please search
 # for and uncomment the line `# renderView*.ViewSize = [*,*]`
 
 #### import the simple module from the paraview
 from paraview.simple import *
 #### disable automatic camera reset on 'Show'
 paraview.simple._DisableFirstRenderCameraReset()
-
+folder = '/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2_99950'
 # create a new 'Xdmf3ReaderS'
-a1xdmf = Xdmf3ReaderS(FileName=['/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/1.xdmf'])
+a1xdmf = Xdmf3ReaderS(FileName=[folder + '/1.xdmf'])
 
 # get animation scene
 animationScene1 = GetAnimationScene()
@@ -21,13 +21,13 @@ timeKeeper1 = GetTimeKeeper()
 animationScene1.UpdateAnimationUsingDataTimeSteps()
 
 # create a new 'Xdmf3ReaderS'
-a2xdmf = Xdmf3ReaderS(FileName=['/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/2.xdmf'])
+a2xdmf = Xdmf3ReaderS(FileName=[folder + '/2.xdmf'])
 
 # create a new 'Xdmf3ReaderS'
-a3xdmf = Xdmf3ReaderS(FileName=['/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/3.xdmf'])
+a3xdmf = Xdmf3ReaderS(FileName=[folder + '/3.xdmf'])
 
 # create a new 'Xdmf3ReaderS'
-a4xdmf = Xdmf3ReaderS(FileName=['/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/4.xdmf'])
+a4xdmf = Xdmf3ReaderS(FileName=[folder + '/4.xdmf'])
 
 # get the material library
 materialLibrary1 = GetMaterialLibrary()
@@ -342,25 +342,25 @@ lineChartView1.Update()
 SetActiveSource(plotOverLine1)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap1_implantation.csv', proxy=plotOverLine1)
+SaveData(folder + '/profile_trap1_implantation.csv', proxy=plotOverLine1)
 
 # set active source
 SetActiveSource(plotOverLine2)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap2_implantation.csv', proxy=plotOverLine2)
+SaveData(folder + '/profile_trap2_implantation.csv', proxy=plotOverLine2)
 
 # set active source
 SetActiveSource(plotOverLine3)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap3_implantation.csv', proxy=plotOverLine3)
+SaveData(folder + '/profile_trap3_implantation.csv', proxy=plotOverLine3)
 
 # set active source
 SetActiveSource(plotOverLine4)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap4_implantation.csv', proxy=plotOverLine4)
+SaveData(folder + '/profile_trap4_implantation.csv', proxy=plotOverLine4)
 
 animationScene1.GoToNext()
 
@@ -368,25 +368,25 @@ animationScene1.GoToNext()
 SetActiveSource(plotOverLine1)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap1_rest.csv', proxy=plotOverLine1)
+SaveData(folder + '/profile_trap1_rest.csv', proxy=plotOverLine1)
 
 # set active source
 SetActiveSource(plotOverLine2)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap2_rest.csv', proxy=plotOverLine2)
+SaveData(folder + '/profile_trap2_rest.csv', proxy=plotOverLine2)
 
 # set active source
 SetActiveSource(plotOverLine3)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap3_rest.csv', proxy=plotOverLine3)
+SaveData(folder + '/profile_trap3_rest.csv', proxy=plotOverLine3)
 
 # set active source
 SetActiveSource(plotOverLine4)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap4_rest.csv', proxy=plotOverLine4)
+SaveData(folder + '/profile_trap4_rest.csv', proxy=plotOverLine4)
 
 animationScene1.GoToNext()
 
@@ -394,25 +394,25 @@ animationScene1.GoToNext()
 SetActiveSource(plotOverLine1)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap1_baking.csv', proxy=plotOverLine1)
+SaveData(folder + '/profile_trap1_baking.csv', proxy=plotOverLine1)
 
 # set active source
 SetActiveSource(plotOverLine2)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap2_baking.csv', proxy=plotOverLine2)
+SaveData(folder + '/profile_trap2_baking.csv', proxy=plotOverLine2)
 
 # set active source
 SetActiveSource(plotOverLine3)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap3_baking.csv', proxy=plotOverLine3)
+SaveData(folder + '/profile_trap3_baking.csv', proxy=plotOverLine3)
 
 # set active source
 SetActiveSource(plotOverLine4)
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_trap4_baking.csv', proxy=plotOverLine4)
+SaveData(folder + '/profile_trap4_baking.csv', proxy=plotOverLine4)
 
 #### uncomment the following to render all views
 # RenderAllViews()

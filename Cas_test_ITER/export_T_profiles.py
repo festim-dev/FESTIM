@@ -10,7 +10,8 @@ from paraview.simple import *
 paraview.simple._DisableFirstRenderCameraReset()
 
 # create a new 'Xdmf3ReaderS'
-txdmf = Xdmf3ReaderS(FileName=['/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/T.xdmf'])
+folder = '/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2_99950'
+txdmf = Xdmf3ReaderS(FileName=['/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2_99950/T.xdmf'])
 
 # get animation scene
 animationScene1 = GetAnimationScene()
@@ -74,14 +75,14 @@ AssignViewToLayout(view=lineChartView1, layout=layout1, hint=0)
 lineChartView1.Update()
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_T_implantation.csv', proxy=plotOverLine1)
+SaveData(folder + '/profile_T_implantation.csv', proxy=plotOverLine1)
 
 animationScene1.GoToNext()
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_T_rest.csv', proxy=plotOverLine1)
+SaveData(folder + '/profile_T_rest.csv', proxy=plotOverLine1)
 
 animationScene1.GoToNext()
 
 # save data
-SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_T_baking.csv', proxy=plotOverLine1)
+SaveData(folder + '/profile_T_baking.csv', proxy=plotOverLine1)
