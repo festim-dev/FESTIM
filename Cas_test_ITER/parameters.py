@@ -2,7 +2,7 @@ from context import FESTIM
 import sympy as sp
 
 
-# Definition des BCs
+# BCs definition
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t <= t_implantation) * \
@@ -36,13 +36,13 @@ def bc_coolant_HT(t_implantation, t_rest, t_baking):
     return expression
 
 
-# Definition des paramètres
+# Parameters
 # atom_density  =  density(g/m3)*Na(/mol)/M(g/mol)
 atom_density_W = 6.3222e28  # atomic density m^-3
 atom_density_Cu = 8.4912e28  # atomic density m^-3
 atom_density_CuCrZr = 2.6096e28  # atomic density m^-3
 
-# Definition des id (doit etre les memes que dans le maillage xdmf)
+# IDs for edges and surfaces (must be the same as in xdmf files)
 id_W = 8
 id_Cu = 7
 id_CuCrZr = 6
@@ -51,12 +51,12 @@ id_top_surf = 9
 id_coolant_surf = 10
 id_left_surf = 11
 
-# Definition des temps
+# Times
 t_implantation = 6000*400
 t_rest = 47696400-t_implantation
 t_baking = 50648400-t_rest-t_implantation
 
-# Definition du fichier de stockage
+# Storage folder
 folder = 'results/05_ITER_case_theta_sol2_99950/'
 
 # Dict parameters
@@ -181,11 +181,11 @@ parameters = {
         },
     "solving_parameters": {
         "final_time": t_implantation + t_rest + t_baking,
-        "times": [t_implantation, 10, 1000,
+        "times": [t_implantation,
                   t_implantation+t_rest,
-                  t_implantation+t_rest+t_baking,
-                  t_implantation+t_rest+t_baking/2],
-        "initial_stepsize": 10000,
+                  t_implantation+t_rest+t_baking/10,
+                  t_implantation+t_rest+t_baking],
+        "initial_stepsize": 100000,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.3,
             "t_stop": t_implantation + t_rest,
