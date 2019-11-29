@@ -44,7 +44,7 @@ trap_4 = Function(V_DG1)
 retention = Function(V_DG1)
 
 
-func_m3tions = [theta, trap_1, trap_2, trap_3, trap_4, T]
+functions = [theta, trap_1, trap_2, trap_3, trap_4, T]
 
 
 # create files
