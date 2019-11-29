@@ -84,8 +84,10 @@ plotOverLine1 = PlotOverLine(Input=txdmf,
     Source='High Resolution Line Source')
 
 # init the 'High Resolution Line Source' selected for 'Source'
-plotOverLine1.Source.Point1 = [-0.014000000432133675, -0.013500000350177288, 0.0]
-plotOverLine1.Source.Point2 = [1.6488543198088203e-16, 0.014499999582767487, 0.0]
+point1 = [-1e-9, -0.013500000350177288, 0.0]
+point2 = [-1e-9, 0.014499999582767487, 0.0]
+plotOverLine1.Source.Point1 = point1
+plotOverLine1.Source.Point2 = point2
 
 # show data in view
 plotOverLine1Display = Show(plotOverLine1, renderView1)
