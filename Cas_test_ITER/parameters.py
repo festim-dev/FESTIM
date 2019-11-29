@@ -183,7 +183,6 @@ parameters = {
         "final_time": t_implantation + t_rest + t_baking,
         "times": [t_implantation,
                   t_implantation+t_rest,
-                  t_implantation+t_rest+t_baking/10,
                   t_implantation+t_rest+t_baking],
         "initial_stepsize": 100000,
         "adaptive_stepsize": {
