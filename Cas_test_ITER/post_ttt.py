@@ -8,13 +8,13 @@ from FESTIM import k_B
 
 # import mesh
 mesh = Mesh()
-XDMFFile("maillages/Mesh_ITER/mesh_domains.xdmf").read(mesh)
+XDMFFile("maillages/Mesh_ITER_99950/mesh_domains.xdmf").read(mesh)
 
 # import mesh functions
 vm, sm = read_subdomains_from_xdmf(
     mesh,
-    volumetric_file="maillages/Mesh_ITER/mesh_domains.xdmf",
-    boundary_file="maillages/Mesh_ITER/mesh_boundaries.xdmf")
+    volumetric_file="maillages/Mesh_ITER_99950/mesh_domains.xdmf",
+    boundary_file="maillages/Mesh_ITER_99950/mesh_boundaries.xdmf")
 
 # Create XDMFFile
 # folder = 'results/05_ITER_case_theta_sol2/'  # use this to overide path
