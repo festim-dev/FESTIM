@@ -216,13 +216,6 @@ a2xdmfDisplay.SetScalarBarVisibility(renderView1, True)
 # update the view to ensure updated data information
 renderView1.Update()
 
-# set active source
-SetActiveSource(a1xdmf)
-
-# destroy renderView1
-Delete(renderView1)
-del renderView1
-
 # create a new 'Plot Over Line'
 plotOverLine1 = PlotOverLine(Input=a1xdmf,
     Source='High Resolution Line Source')
@@ -233,8 +226,6 @@ point2 = [-1e-9, 0.014499999582767487, 0.0]
 # init the 'High Resolution Line Source' selected for 'Source'
 plotOverLine1.Source.Point1 = point1
 plotOverLine1.Source.Point2 = point2
-# set active source
-SetActiveSource(a2xdmf)
 
 # create a new 'Plot Over Line'
 plotOverLine2 = PlotOverLine(Input=a2xdmf,
@@ -244,9 +235,6 @@ plotOverLine2 = PlotOverLine(Input=a2xdmf,
 plotOverLine2.Source.Point1 = point1
 plotOverLine2.Source.Point2 = point2
 
-# set active source
-SetActiveSource(a3xdmf)
-
 # create a new 'Plot Over Line'
 plotOverLine3 = PlotOverLine(Input=a3xdmf,
     Source='High Resolution Line Source')
@@ -254,9 +242,6 @@ plotOverLine3 = PlotOverLine(Input=a3xdmf,
 # init the 'High Resolution Line Source' selected for 'Source'
 plotOverLine3.Source.Point1 = point1
 plotOverLine3.Source.Point2 = point2
-
-# set active source
-SetActiveSource(a4xdmf)
 
 # create a new 'Plot Over Line'
 plotOverLine4 = PlotOverLine(Input=a4xdmf,

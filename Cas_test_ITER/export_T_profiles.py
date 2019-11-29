@@ -23,61 +23,6 @@ animationScene1.UpdateAnimationUsingDataTimeSteps()
 
 # get active view
 renderView1 = GetActiveViewOrCreate('RenderView')
-# uncomment following to set a specific view size
-# renderView1.ViewSize = [962, 928]
-
-# show data in view
-txdmfDisplay = Show(txdmf, renderView1)
-
-# get color transfer function/color map for 'T'
-tLUT = GetColorTransferFunction('T')
-
-# get opacity transfer function/opacity map for 'T'
-tPWF = GetOpacityTransferFunction('T')
-
-# trace defaults for the display properties.
-txdmfDisplay.Representation = 'Surface'
-txdmfDisplay.ColorArrayName = ['POINTS', 'T']
-txdmfDisplay.LookupTable = tLUT
-txdmfDisplay.OSPRayScaleArray = 'T'
-txdmfDisplay.OSPRayScaleFunction = 'PiecewiseFunction'
-txdmfDisplay.SelectOrientationVectors = 'None'
-txdmfDisplay.ScaleFactor = 0.0027999999932944775
-txdmfDisplay.SelectScaleArray = 'T'
-txdmfDisplay.GlyphType = 'Arrow'
-txdmfDisplay.GlyphTableIndexArray = 'T'
-txdmfDisplay.GaussianRadius = 0.00013999999966472388
-txdmfDisplay.SetScaleArray = ['POINTS', 'T']
-txdmfDisplay.ScaleTransferFunction = 'PiecewiseFunction'
-txdmfDisplay.OpacityArray = ['POINTS', 'T']
-txdmfDisplay.OpacityTransferFunction = 'PiecewiseFunction'
-txdmfDisplay.DataAxesGrid = 'GridAxesRepresentation'
-txdmfDisplay.PolarAxes = 'PolarAxesRepresentation'
-txdmfDisplay.ScalarOpacityFunction = tPWF
-txdmfDisplay.ScalarOpacityUnitDistance = 0.0009165247490795945
-
-# init the 'PiecewiseFunction' selected for 'ScaleTransferFunction'
-txdmfDisplay.ScaleTransferFunction.Points = [373.0, 0.0, 0.5, 0.0, 1200.0, 1.0, 0.5, 0.0]
-
-# init the 'PiecewiseFunction' selected for 'OpacityTransferFunction'
-txdmfDisplay.OpacityTransferFunction.Points = [373.0, 0.0, 0.5, 0.0, 1200.0, 1.0, 0.5, 0.0]
-
-# reset view to fit data
-renderView1.ResetCamera()
-
-#changing interaction mode based on data extents
-renderView1.InteractionMode = '2D'
-renderView1.CameraPosition = [-0.007000000216066755, 0.0004999996162950993, 10000.0]
-renderView1.CameraFocalPoint = [-0.007000000216066755, 0.0004999996162950993, 0.0]
-
-# get the material library
-materialLibrary1 = GetMaterialLibrary()
-
-# show color bar/color legend
-txdmfDisplay.SetScalarBarVisibility(renderView1, True)
-
-# update the view to ensure updated data information
-renderView1.Update()
 
 # create a new 'Plot Over Line'
 plotOverLine1 = PlotOverLine(Input=txdmf,
@@ -91,25 +36,6 @@ plotOverLine1.Source.Point2 = point2
 
 # show data in view
 plotOverLine1Display = Show(plotOverLine1, renderView1)
-
-# trace defaults for the display properties.
-plotOverLine1Display.Representation = 'Surface'
-plotOverLine1Display.ColorArrayName = ['POINTS', 'T']
-plotOverLine1Display.LookupTable = tLUT
-plotOverLine1Display.OSPRayScaleArray = 'T'
-plotOverLine1Display.OSPRayScaleFunction = 'PiecewiseFunction'
-plotOverLine1Display.SelectOrientationVectors = 'None'
-plotOverLine1Display.ScaleFactor = 0.0027999999932944775
-plotOverLine1Display.SelectScaleArray = 'T'
-plotOverLine1Display.GlyphType = 'Arrow'
-plotOverLine1Display.GlyphTableIndexArray = 'T'
-plotOverLine1Display.GaussianRadius = 0.00013999999966472388
-plotOverLine1Display.SetScaleArray = ['POINTS', 'T']
-plotOverLine1Display.ScaleTransferFunction = 'PiecewiseFunction'
-plotOverLine1Display.OpacityArray = ['POINTS', 'T']
-plotOverLine1Display.OpacityTransferFunction = 'PiecewiseFunction'
-plotOverLine1Display.DataAxesGrid = 'GridAxesRepresentation'
-plotOverLine1Display.PolarAxes = 'PolarAxesRepresentation'
 
 # init the 'PiecewiseFunction' selected for 'ScaleTransferFunction'
 plotOverLine1Display.ScaleTransferFunction.Points = [373.0212049547773, 0.0, 0.5, 0.0, 1200.0, 1.0, 0.5, 0.0]
@@ -159,15 +85,3 @@ animationScene1.GoToNext()
 
 # save data
 SaveData('/home/rdelaporte/FESTIM_4_JONATHAN/Cas_test_ITER/results/05_ITER_case_theta_sol2/profile_T_baking.csv', proxy=plotOverLine1)
-
-#### saving camera placements for all active views
-
-# current camera placement for renderView1
-renderView1.InteractionMode = '2D'
-renderView1.CameraPosition = [-0.007000000216066755, 0.0004999996162950993, 10000.0]
-renderView1.CameraFocalPoint = [-0.007000000216066755, 0.0004999996162950993, 0.0]
-renderView1.CameraParallelScale = 0.015652475909138583
-
-#### uncomment the following to render all views
-# RenderAllViews()
-# alternatively, if you want to write images, you can use SaveScreenshot(...).
