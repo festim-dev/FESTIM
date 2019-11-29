@@ -227,10 +227,12 @@ del renderView1
 plotOverLine1 = PlotOverLine(Input=a1xdmf,
     Source='High Resolution Line Source')
 
-# init the 'High Resolution Line Source' selected for 'Source'
-plotOverLine1.Source.Point1 = [-0.014000000432133675, -0.013500000350177288, 0.0]
-plotOverLine1.Source.Point2 = [1.6488543198088203e-16, 0.014499999582767487, 0.0]
+point1 = [-1e-9, -0.013500000350177288, 0.0]
+point2 = [-1e-9, 0.014499999582767487, 0.0]
 
+# init the 'High Resolution Line Source' selected for 'Source'
+plotOverLine1.Source.Point1 = point1
+plotOverLine1.Source.Point2 = point2
 # set active source
 SetActiveSource(a2xdmf)
 
@@ -239,8 +241,8 @@ plotOverLine2 = PlotOverLine(Input=a2xdmf,
     Source='High Resolution Line Source')
 
 # init the 'High Resolution Line Source' selected for 'Source'
-plotOverLine2.Source.Point1 = [-0.014000000432133675, -0.013500000350177288, 0.0]
-plotOverLine2.Source.Point2 = [1.6488543198088203e-16, 0.014499999582767487, 0.0]
+plotOverLine2.Source.Point1 = point1
+plotOverLine2.Source.Point2 = point2
 
 # set active source
 SetActiveSource(a3xdmf)
@@ -250,8 +252,8 @@ plotOverLine3 = PlotOverLine(Input=a3xdmf,
     Source='High Resolution Line Source')
 
 # init the 'High Resolution Line Source' selected for 'Source'
-plotOverLine3.Source.Point1 = [-0.014000000432133675, -0.013500000350177288, 0.0]
-plotOverLine3.Source.Point2 = [1.6488543198088203e-16, 0.014499999582767487, 0.0]
+plotOverLine3.Source.Point1 = point1
+plotOverLine3.Source.Point2 = point2
 
 # set active source
 SetActiveSource(a4xdmf)
@@ -261,8 +263,8 @@ plotOverLine4 = PlotOverLine(Input=a4xdmf,
     Source='High Resolution Line Source')
 
 # init the 'High Resolution Line Source' selected for 'Source'
-plotOverLine4.Source.Point1 = [-0.014000000432133675, -0.013500000350177288, 0.0]
-plotOverLine4.Source.Point2 = [1.6488543198088203e-16, 0.014499999582767487, 0.0]
+plotOverLine4.Source.Point1 = point1
+plotOverLine4.Source.Point2 = point2
 
 # Create a new 'Line Chart View'
 lineChartView1 = CreateView('XYChartView')
