@@ -44,11 +44,24 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
-        source = Expression(
-            sp.printing.ccode(
-                parameters["source_term"]["value"]), t=0, degree=2)
-        F += - source*testfunctions[0]*dx
-        expressions.append(source)
+        if isinstance(parameters["source_term"], dict):
+            source = Expression(
+                sp.printing.ccode(
+                    parameters["source_term"]["value"]), t=0, degree=2)
+            F += - source*testfunctions[0]*dx
+            expressions.append(source)
+        elif parameters["source_term"] is type(list):
+            for source_dict in parameters["source_term"]:
+                source = Expression(
+                    sp.printing.ccode(
+                        source_dict["value"]), t=0, degree=2)
+                if source_dict["volumes"] is type(int):
+                    volumes = list(source_dict["volumes"])
+                else:
+                    volumes = source_dict["volumes"]
+                for vol in volumes:
+                    F += - source*testfunctions[0]*dx(vol)
+                expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
