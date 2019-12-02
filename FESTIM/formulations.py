@@ -44,7 +44,7 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
-        if isintance(parameters["source_term"], dict):
+        if isinstance(parameters["source_term"], dict):
             source = Expression(
                 sp.printing.ccode(
                     parameters["source_term"]["value"]), t=0, degree=2)
