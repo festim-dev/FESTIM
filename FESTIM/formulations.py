@@ -43,8 +43,8 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
                      grad(testfunctions[0]))*dx(subdomain)
     # Define flux
     if "source_term" in parameters.keys():
-        if parameters["source_term"] is type(dict):
-            print('Defining source terms')
+        print('Defining source terms')
+        if isintance(parameters["source_term"], dict):
             source = Expression(
                 sp.printing.ccode(
                     parameters["source_term"]["value"]), t=0, degree=2)
