@@ -26,7 +26,7 @@ parameters = {
         {
             "D_0": 1,
             "E_diff": 0,
-            "S_0": 1,  # at/m3.Pa0.5 (from ITER)
+            "S_0": 2,  # at/m3.Pa0.5 (from ITER)
             "E_S": 0,  # eV
             "alpha": 1,
             "beta": 1,
@@ -53,7 +53,7 @@ parameters = {
         "value": 300
         },
     "solving_parameters": {
-        "type": "solve_stationary",
+        "type": "solve_transient",
         "final_time": 0.2,
         "times": [15],
         "initial_stepsize": 0.001,

@@ -335,4 +335,4 @@ def run(parameters, log_level=40):
     print('\007')
     return output
 
-run(parameters, log_level=20)  # 20 all convergence info ; 40 only %
+run(parameters, log_level=40)  # 20 all convergence info ; 40 only %
