@@ -22,14 +22,15 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
                 dt_min=dt_min, t=t, t_stop=t_stop,
                 stepsize_stop_max=stepsize_stop_max)
     times = np.array(sorted(solving_parameters['times']))
-    if t < times[len(times) - 1]:
-        index_closest = (np.abs(times-t)).argmin()
-        if t >= times[index_closest]:
-            next_time = times[index_closest+1]
-        else:
-            next_time = times[index_closest]
-        if t + float(dt) > next_time:
-            dt.assign(next_time - t)
+    if "times" in solving_parameters.keys():
+        if t < times[len(times) - 1]:
+            index_closest = (np.abs(times-t)).argmin()
+            if t >= times[index_closest]:
+                next_time = times[index_closest+1]
+            else:
+                next_time = times[index_closest]
+            if t + float(dt) > next_time:
+                dt.assign(next_time - t)
     return u, dt
 
 
