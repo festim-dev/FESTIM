@@ -28,7 +28,7 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         E_S = material['E_S']
         subdomain = material['id']
         if transient:
-            F += ((S_0*exp(-E_S/k_B/T)*solutions[0]-previous_solutions[0])/dt) *\
+            F += (S_0*exp(-E_S/k_B/T)*(solutions[0]-previous_solutions[0])/dt) *\
                 testfunctions[0]*dx(subdomain)
         F += dot(D_0 * exp(-E_diff/k_B/T) *
                  grad(S_0 * exp(-E_S/k_B/T)*solutions[0]),
