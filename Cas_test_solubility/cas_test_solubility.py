@@ -5,7 +5,7 @@ from parameters_solubility import parameters
 
 
 def formulation(parameters, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, T, transient):
+                previous_solutions, dt, dx, T, T_n, transient):
     ''' Creates formulation for trapping MRE model.
     Parameters:
     - traps : dict, contains the energy, density and domains
@@ -28,7 +28,7 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         E_S = material['E_S']
         subdomain = material['id']
         if transient:
-            F += (S_0*exp(-E_S/k_B/T)*(solutions[0]-previous_solutions[0])/dt) *\
+            F += ((S_0*exp(-E_S/k_B/T)*solutions[0]-S_0*exp(-E_S/k_B/T_n)*previous_solutions[0])/dt) *\
                 testfunctions[0]*dx(subdomain)
         F += dot(D_0 * exp(-E_diff/k_B/T) *
                  grad(S_0 * exp(-E_S/k_B/T)*solutions[0]),
@@ -125,6 +125,8 @@ def run(parameters, log_level=40):
             sp.printing.ccode(
                 parameters["temperature"]['value']), t=0, degree=2)
         T = interpolate(T_expr, W)
+        T_n = Function(W)
+        T_n.assign(T)
     else:
         # Define variational problem for heat transfers
         T = Function(W, name="T")
@@ -193,7 +195,7 @@ def run(parameters, log_level=40):
     F, expressions_F = formulation(
         parameters, extrinsic_traps,
         solutions, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx, T, transient=transient)
+        previous_solutions_concentrations, dt, dx, T, T_n, transient=transient)
     F += fluxes
 
     du = TrialFunction(u.function_space())
@@ -288,6 +290,7 @@ def run(parameters, log_level=40):
             append = True
             # Update previous solutions
             u_n.assign(u)
+            T_n.assign(T)
             for j in range(len(previous_solutions_traps)):
                 previous_solutions_traps[j].assign(extrinsic_traps[j])
     else:
