@@ -6,6 +6,7 @@ import sympy as sp
 folder = 'results/'
 
 # Dict parameters
+T = 300 * (FESTIM.t < 0.1) + 300
 parameters = {
     "mesh_parameters": {
         "size": 1,
@@ -17,7 +18,7 @@ parameters = {
             "D_0": 1,
             "E_diff": 0,
             "S_0": 1,  # at/m3.Pa0.5 (from Grislia 2015)
-            "E_S": 0,  # eV
+            "E_S": 0.1,  # eV
             "alpha": 1,  # 1.0000 coef H/D/T
             "beta": 1,
             "borders": [0, 0.5],
@@ -26,8 +27,8 @@ parameters = {
         {
             "D_0": 1,
             "E_diff": 0,
-            "S_0": 2,  # at/m3.Pa0.5 (from ITER)
-            "E_S": 0,  # eV
+            "S_0": 1,  # at/m3.Pa0.5 (from ITER)
+            "E_S": 0.1,  # eV
             "alpha": 1,
             "beta": 1,
             "borders": [0.5, 1],
@@ -40,17 +41,17 @@ parameters = {
         {
             "type": "dc",
             "surface": 1,
-            "value": 4
+            "value": 4/(1*sp.exp(-0.1/FESTIM.k_B/T))
         },
         {
             "type": "dc",
             "surface": 2,
-            "value": 4
+            "value": 4/(1*sp.exp(-0.1/FESTIM.k_B/T))
         },
         ],
     "temperature": {
         "type": "expression",
-        "value": 300
+        "value": T
         },
     "solving_parameters": {
         "type": "solve_transient",
