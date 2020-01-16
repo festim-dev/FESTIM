@@ -118,11 +118,13 @@ def simu(p):
             "derived_quantities": {
                 "file": "derived_quantities.csv",
                 "folder": "derived_quantities",
-                "total_volume": [
+                "average_volume": [
                     {
                         "field": "T",
                         "volumes": [1]
-                    },
+                    }
+                ],
+                "total_volume": [
                     {
                         "field": "retention",
                         "volumes": [1]
