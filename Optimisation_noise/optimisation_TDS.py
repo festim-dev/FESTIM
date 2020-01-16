@@ -74,7 +74,7 @@ def simu(p):
                         "x": 3e-6
                     },
                     {
-                        "cells": 100,
+                        "cells": 50,
                         "x": 30e-9
                     }
                 ],
@@ -162,18 +162,18 @@ def error(p):
     res.pop(0)  # remove header
     res = np.array(res)
     # create d(ret)/dt
-    tds = np.array()
-    for i in range(0, len(res)):
-        tds.append([res[i][0], -(res[i+1][1] - res[i][1])/(res[i+1][0] - res[i][0])])
-
-    interp_tds = interp1d(
-        tds[implantation_time + resting_time:, 1],
-        tds[implantation_time + resting_time:, 2],
-        fill_value='extrapolate')
+    T = []
+    flux = []
+    for i in range(0, len(res) - 1):
+        if res[i][0] >= implantation_time + resting_time:
+            T.append(res[i][1])
+            flux.append(-(res[i+1][2] - res[i][2])/(res[i+1][0] - res[i][0]))
+    T = np.array(T)
+    flux = np.array(flux)
+    interp_tds = interp1d(T, flux, fill_value='extrapolate')
     err = 0
     for e in ref:
-        T = e[0]
-        err += abs(e[1] - interp_tds(T))
+        err += abs(e[1] - interp_tds(e[0]))
     err *= 1/len(ref)
     print('Average absolute error is :' + str(err))
     with open(folder + '/simulations_results.csv', 'a') as f:
@@ -182,11 +182,10 @@ def error(p):
 
     return err
 folder = '8e+16'
-folder = '2e+17'
+# folder = '2e+17'
 ref = read_ref(folder + '/ref.csv')
 
-
-x0 = np.array([0.86931, 1.4929e-3, 1.105, 0.5856860e-3])
+x0 = np.array([1, 1.6e-3, 1.2, 0.8e-3])
 res = minimize(error, x0, method='Nelder-Mead',
                options={'disp': True, 'ftol': 0.001, 'xtol': 0.001})
 print('Solution is: ' + str(res.x))
