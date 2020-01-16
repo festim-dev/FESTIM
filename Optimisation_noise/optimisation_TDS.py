@@ -120,7 +120,7 @@ def simu(p):
                 "folder": "derived_quantities",
                 "total_volume": [
                     {
-                        "field": "temperature",
+                        "field": "T",
                         "volumes": [1]
                     },
                     {
