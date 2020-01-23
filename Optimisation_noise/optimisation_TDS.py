@@ -7,7 +7,7 @@ import csv
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
 
-i = 0
+j = 0
 implantation_time = 400
 resting_time = 50
 tds_time = 100
@@ -60,8 +60,8 @@ def simu(p):
                "materials": 1,
             },
             {
-              "energy": p[2],
-              "density": p[3] * density,
+              "energy": 1.1,
+              "density": 5e-4 * density,
               "materials": 1,
             },
             ],
@@ -110,14 +110,9 @@ def simu(p):
             }
             },
         "exports": {
-            "TDS": {
-                "file": file_name,
-                "TDS_time": implantation_time + resting_time,
-                "folder": folder + "/TDS profiles"
-                },
             "derived_quantities": {
-                "file": "derived_quantities.csv",
-                "folder": "derived_quantities",
+                "file": '_'.join(map(str, p)) + ".csv",
+                "folder": folder + "/derived_quantities",
                 "average_volume": [
                     {
                         "field": "T",
@@ -150,14 +145,44 @@ def simu(p):
     return output["derived_quantities"]
 
 
+def mean_absolute_error(a, b, bounds=[], p=1):
+    val = 0
+    count = 0
+    for e in b:
+        for b in bounds:
+            if e[0] > b[0] and e[0] < b[1]:
+                coeff = p
+            else:
+                coeff = 1
+        val += coeff*abs(e[1] - a(e[0]))
+        count += coeff
+    val *= 1/count
+    return val
+
+
+def RMSD(a, b):
+    val = 0
+    for e in b:
+        val += (e[1] - a(e[0]))**2
+    val /= len(b)
+    val = val**0.5
+    return val
+
+
 def error(p):
     '''
     Compute average absolute error between simulation and reference
     '''
     print('-' * 40)
+    global j
+    j += 1
+    print('i = ' + str(j))
     print('New simulation.')
     print('Point is:')
     print(p)
+    for e in p:
+        if e < 0:
+            return 1e30
     res = simu(p)
     res.pop(0)  # remove header
     res = np.array(res)
@@ -171,21 +196,35 @@ def error(p):
     T = np.array(T)
     flux = np.array(flux)
     interp_tds = interp1d(T, flux, fill_value='extrapolate')
-    err = 0
-    for e in ref:
-        err += abs(e[1] - interp_tds(e[0]))
-    err *= 1/len(ref)
-    print('Average absolute error is :' + str(err))
-    with open(folder + '/simulations_results.csv', 'a') as f:
-        writer = csv.writer(f, lineterminator='\n', delimiter=',')
-        writer.writerow([*p, err])
+    err = mean_absolute_error(interp_tds, ref)
+    # err = RMSD(interp_tds, ref)
+    err /= 1
 
+    print('Average absolute error is :' + str(err) + ' ' + str(fatol) + str(xatol))
+    # with open(folder + '/simulations_results.csv', 'a') as f:
+    #     writer = csv.writer(f, lineterminator='\n', delimiter=',')
+    #     writer.writerow([*p, err])
     return err
+
+
 folder = '8e+16'
 # folder = '2e+17'
 ref = read_ref(folder + '/ref.csv')
 
-x0 = np.array([1, 1.6e-3, 1.2, 0.8e-3])
-res = minimize(error, x0, method='Nelder-Mead',
-               options={'disp': True, 'ftol': 0.001, 'xtol': 0.001})
-print('Solution is: ' + str(res.x))
+if __name__ == "__main__":
+    j = 0
+    # real parameters are [0.87, 1.3e-3, 1.1, 0.5e-3]
+    x0 = np.array([0.9, 1.6e-3, 1.2, 0.8e-3])
+    # x0 = np.array([8.84009076e-01, 1.83210293e-03])#, 1.13631720e+00, 7.27940393e-04])
+    x0 = np.array([0.9, 4.5e-3])#, 1.13631720e+00, 7.27940393e-04])
+    # x0 = np.array([0.76948378, 1.3e-3])#, 1.13631720e+00, 7.27940393e-04])
+
+    # gtol = 3e19
+    # res = minimize(error, x0, method='BFGS',
+    #                options={'disp': True, 'gtol': gtol})
+    # print('Solution is: ' + str(res.x) + str(gtol))
+    fatol = 1e15
+    xatol = 1e-4
+    res = minimize(error, x0, method='Nelder-Mead',
+                   options={'disp': True, 'fatol': fatol, 'xatol': xatol})
+    print('Solution is: ' + str(res.x))
