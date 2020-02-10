@@ -47,7 +47,8 @@ plt.xlabel(r"$E_1$ (eV)")
 plt.ylabel(r"$n_1$ (at.fr.)")
 plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
 plt.legend(loc='lower left')
-
+plt.savefig("cost_function_pondered_average/cost_function_2D.svg", bbox_inches='tight')
+plt.savefig("cost_function_pondered_average/cost_function_2D.pdf", bbox_inches='tight')
 
 fig = plt.figure(2)
 ax = plt.axes(projection='3d')
@@ -59,4 +60,6 @@ plt.ylabel(r"$n_1$ (at.fr.)")
 ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 ax.set_zlabel(r"Rationalised error")
 
+plt.savefig("cost_function_pondered_average/cost_function_3D.svg", bbox_inches='tight')
+plt.savefig("cost_function_pondered_average/cost_function_3D.pdf", bbox_inches='tight')
 plt.show()
