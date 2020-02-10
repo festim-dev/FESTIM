@@ -61,15 +61,15 @@ def test_export_xdmf(tmpdir):
     assert FESTIM.export.export_xdmf([fenics.Function(V), fenics.Function(V)],
                                      exports, files, 20, append=True) is None
 
-    exports["xdmf"]["functions"] = ['solute', 'blabla']
+    exports["xdmf"]["functions"] = ['solute', 'foo']
 
-    with pytest.raises(KeyError, match=r'blabla'):
+    with pytest.raises(ValueError, match=r'foo'):
         FESTIM.export.export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
             exports, files, 20, append=True)
 
     exports["xdmf"]["functions"] = ['solute', '13']
-    with pytest.raises(KeyError, match=r'13'):
+    with pytest.raises(ValueError, match=r'13'):
         FESTIM.export.export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
             exports, files, 20, append=True)
