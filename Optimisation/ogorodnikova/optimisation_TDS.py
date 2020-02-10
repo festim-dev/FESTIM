@@ -55,25 +55,25 @@ def simu(p):
         "traps": [
 
             {
-               "energy": p[0],
-               "density": p[1] * density,
+               "energy": 0.849199704993,
+               "density": 1.08753443745 * 1e-3 * density,
                "materials": 1,
             },
             {
-              "energy": 1.0,
-              "density": 4e-4 * density,
+              "energy": 0.967984862256,
+              "density": 5.24800051466 * 1e-4 * density,
               "materials": 1,
             },
             {
-                "energy": 1.5,
+                "energy": p[0],
                 "materials": [1],
                 "type": 'extrinsic',
                 "form_parameters":{
                     "phi_0": 2.5e19 * (t <= 400),
-                    "n_amax": 1e-1*6.3e28,
+                    "n_amax": p[1]*0.1*6.3e28,
                     "f_a": distribution,
                     "eta_a": 6e-4,
-                    "n_bmax": 1e-2*6.3e28,
+                    "n_bmax": p[2]*1e-2*6.3e28,
                     "f_b": (x < 1e-6) * (x > 0) * (1/1e-6),
                     "eta_b": 2e-4,
                 }
@@ -229,13 +229,19 @@ def error(xi):
 folder = 'temp'
 folder = 'optimisation_5D'
 folder = 'cost_function_unpondered_average'
+folder = 'optimisation_trap3'
 
 ref = read_ref('ref.csv')
 
 if __name__ == "__main__":
     # real parameters are [0.87, 1.3e-3, 1, 4e-4]
     x0 = np.array([1, 1.4e-3])#, 1.2, 5e-4])
-    x0 = np.array([0.87, 1.3, 1, 4, 1.5])#, 1.2, 5e-4])
+    x0 = np.array([0.87, 1.3, 1, 4, 1.5])
+    # result is : [0.849199704993 1.08753443745 0.967984862256 5.24800051466 1.37441734167]
+
+    x0 = np.array([1.5, 1, 1.2])
+
+    # result is : [ 1.41310529  4.82880627  8.69626235]
 
     # res = minimize(error, x0, method='BFGS', bounds=((0, None), (0, None)),
     #                options={'disp': True, 'gtol': 1e16})
