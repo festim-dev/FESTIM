@@ -17,7 +17,7 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     - expressions: list, contains Expression() to be updated
     '''
     k_B = FESTIM.k_B  # Boltzmann constant
-    v_0 = 1e13  # frequency factor s-1
+    nu_0_default = 1e13  # frequency factor s-1
     expressions = []
     F = 0
 
@@ -89,18 +89,22 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             E_diff = corresponding_material['E_diff']
             alpha = corresponding_material['alpha']
             beta = corresponding_material['beta']
+            if 'nu_0' in corresponding_material.keys():
+                nu_0 = corresponding_material['nu_0']
+            else:
+                nu_0 = nu_0_default
             F += - D_0 * exp(-E_diff/k_B/T)/alpha/alpha/beta * \
                 solutions[0] * (trap_density - solutions[i]) * \
                 testfunctions[i]*dx(subdomain)
-            F += v_0*exp(-energy/k_B/T)*solutions[i] * \
+            F += nu_0*exp(-energy/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
-        try:  # if a source term is set then add it to the form
+        # if a source term is set then add it to the form
+        if 'source_term' in trap.keys():
             source = sp.printing.ccode(trap['source_term'])
             source = Expression(source, t=0, degree=2)
             F += -source*testfunctions[i]*dx
             expressions.append(source)
-        except:
-            pass
+
         if transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[0]*dx
