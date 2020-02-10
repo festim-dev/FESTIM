@@ -56,12 +56,12 @@ def simu(p):
 
             {
                "energy": p[0],
-               "density": p[1] * density,
+               "density": p[1]  * density,
                "materials": 1,
             },
             {
-              "energy": 1.1,
-              "density": 5e-4 * density,
+              "energy": p[2],
+              "density": p[3] * density,
               "materials": 1,
             },
             ],
@@ -148,6 +148,7 @@ def simu(p):
 def mean_absolute_error(a, b, bounds=[], p=1):
     val = 0
     count = 0
+    coeff = 1
     for e in b:
         for b in bounds:
             if e[0] > b[0] and e[0] < b[1]:
@@ -200,7 +201,7 @@ def error(p):
     # err = RMSD(interp_tds, ref)
     err /= 1
 
-    print('Average absolute error is :' + str(err) + ' ' + str(fatol) + str(xatol))
+    print('Average absolute error is :' + str(err) + ' ' + str(fatol) + ' ' + str(xatol))
     # with open(folder + '/simulations_results.csv', 'a') as f:
     #     writer = csv.writer(f, lineterminator='\n', delimiter=',')
     #     writer.writerow([*p, err])
@@ -214,9 +215,10 @@ ref = read_ref(folder + '/ref.csv')
 if __name__ == "__main__":
     j = 0
     # real parameters are [0.87, 1.3e-3, 1.1, 0.5e-3]
-    x0 = np.array([0.9, 1.6e-3, 1.2, 0.8e-3])
+    # x0 = np.array([0.9, 1.6e-3, 1.2, 0.8e-3])
+    x0 = np.array([0.9, 2.1e-3, 1.2, 1.1e-3])
     # x0 = np.array([8.84009076e-01, 1.83210293e-03])#, 1.13631720e+00, 7.27940393e-04])
-    x0 = np.array([0.9, 4.5e-3])#, 1.13631720e+00, 7.27940393e-04])
+    # x0 = np.array([9.0, 1.6, 1.2, 8])
     # x0 = np.array([0.76948378, 1.3e-3])#, 1.13631720e+00, 7.27940393e-04])
 
     # gtol = 3e19
@@ -224,7 +226,29 @@ if __name__ == "__main__":
     #                options={'disp': True, 'gtol': gtol})
     # print('Solution is: ' + str(res.x) + str(gtol))
     fatol = 1e15
-    xatol = 1e-4
-    res = minimize(error, x0, method='Nelder-Mead',
-                   options={'disp': True, 'fatol': fatol, 'xatol': xatol})
-    print('Solution is: ' + str(res.x))
+    xatol = 1e-3
+
+    def minimise_with_neldermead(ftol, xtol, x):
+        global fatol
+        global xatol
+        fatol = ftol
+        xatol = xtol
+        res = minimize(error, x, method='Nelder-Mead',
+                       options={'disp': True, 'fatol': ftol, 'xatol': xtol})
+        print('Solution is: ' + str(res.x))
+        goon = True
+        while goon:
+            a = input('Do you wish to restart ?')
+            if a == 'no' or a == 'No':
+                goon = False
+            elif a == 'Yes' or a == 'yes':
+                new_fatol = fatol
+                new_xatol = xatol
+                b = input('Choose fatol :')
+                if b != '':
+                    new_fatol = float(b)
+                c = input('Choose xatol :')
+                if c != '':
+                    new_xatol = float(c)
+                minimise_with_neldermead(new_fatol, new_xatol, np.array([res.x[0], res.x[1]]))
+    minimise_with_neldermead(fatol, xatol, x0)
