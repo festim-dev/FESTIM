@@ -94,14 +94,16 @@ def export_profiles(res, exports, t, dt, W):
             else:
                 end = True
             for i in range(len(functions)):
-                try:
-                    nb = int(exports["xdmf"]["functions"][i])
-                    solution = res[nb]
-                except:
+                print(functions[i])
+                if functions[i].isdigit() is True:
+                    solution = res[int(functions[i])]
+                elif functions[i] in solution_dict:
                     solution = solution_dict[functions[i]]
+                else:
+                    raise ValueError("function " + functions[i] + " is unknown")
                 label = labels[i]
                 export_txt(
-                    exports["xdmf"]["folder"] + '/' + label + '_' +
+                    exports["txt"]["folder"] + '/' + label + '_' +
                     str(t) + 's',
                     solution, W)
             break
