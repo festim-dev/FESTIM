@@ -98,13 +98,13 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
                 testfunctions[i]*dx(subdomain)
             F += nu_0*exp(-energy/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
-        try:  # if a source term is set then add it to the form
+        # if a source term is set then add it to the form
+        if 'source_term' in trap.keys():
             source = sp.printing.ccode(trap['source_term'])
             source = Expression(source, t=0, degree=2)
             F += -source*testfunctions[i]*dx
             expressions.append(source)
-        except:
-            pass
+
         if transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[0]*dx
