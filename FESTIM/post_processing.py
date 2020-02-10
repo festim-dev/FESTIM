@@ -65,17 +65,20 @@ def compute_error(parameters, t, res, mesh):
                 error["exact_solutions"][i]),
                 degree=error["degree"],
                 t=t)
-            try:
-                nb = int(error["computed_solutions"][i])
-                computed_sol = res[nb]
-            except:
-                try:
-                    computed_sol = solution_dict[
-                        error["computed_solutions"][i]]
-                except:
-                    raise KeyError(
-                        "The key " + error["computed_solutions"][i] +
-                        " is unknown.")
+            err = error["computed_solutions"][i]
+            if type(err) is str:
+                if err.isdigit():
+                    nb = int(err)
+                    computed_sol = res[nb]
+                else:
+                    if err in solution_dict.keys():
+                        computed_sol = solution_dict[
+                            err]
+                    else:
+                        raise KeyError(
+                            "The key " + err + " is unknown.")
+            elif type(err) is int:
+                computed_sol = res[err]
 
             if error["norm"] == "error_max":
                 vertex_values_u = computed_sol.compute_vertex_values(mesh)
@@ -163,38 +166,41 @@ def header_derived_quantities(parameters):
     '''
 
     check_keys_derived_quantities(parameters)
-
+    derived_quant_dict = parameters["exports"]["derived_quantities"]
     header = ['t(s)']
-    if "surface_flux" in parameters["exports"]["derived_quantities"].keys():
-        for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+    if "surface_flux" in derived_quant_dict.keys():
+        for flux in derived_quant_dict["surface_flux"]:
             for surf in flux["surfaces"]:
-                header.append("Flux surface " + str(surf) + ": " + str(flux['field']))
-    if "average_volume" in parameters["exports"]["derived_quantities"].keys():
+                header.append(
+                    "Flux surface " + str(surf) + ": " + str(flux['field']))
+    if "average_volume" in derived_quant_dict.keys():
         for average in parameters[
                         "exports"]["derived_quantities"]["average_volume"]:
             for vol in average["volumes"]:
                 header.append(
                     "Average " + str(average['field']) + " volume " + str(vol))
-    if "minimum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "minimum_volume" in derived_quant_dict.keys():
         for minimum in parameters[
                         "exports"]["derived_quantities"]["minimum_volume"]:
             for vol in minimum["volumes"]:
                 header.append(
                     "Minimum " + str(minimum["field"]) + " volume " + str(vol))
-    if "maximum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "maximum_volume" in derived_quant_dict.keys():
         for maximum in parameters[
                         "exports"]["derived_quantities"]["maximum_volume"]:
             for vol in maximum["volumes"]:
                 header.append(
                     "Maximum " + str(maximum["field"]) + " volume " + str(vol))
-    if "total_volume" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+    if "total_volume" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_volume"]:
             for vol in total["volumes"]:
-                header.append("Total " + str(total["field"]) + " volume " + str(vol))
-    if "total_surface" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+                header.append(
+                    "Total " + str(total["field"]) + " volume " + str(vol))
+    if "total_surface" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_surface"]:
             for surf in total["surfaces"]:
-                header.append("Total " + str(total["field"]) + " surface " + str(surf))
+                header.append(
+                    "Total " + str(total["field"]) + " surface " + str(surf))
 
     return header
 
@@ -243,8 +249,9 @@ def derived_quantities(parameters, solutions,
             field_to_sol[key] = val
     tab = []
     # Compute quantities
-    if "surface_flux" in parameters["exports"]["derived_quantities"].keys():
-        for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+    derived_quant_dict = parameters["exports"]["derived_quantities"]
+    if "surface_flux" in derived_quant_dict.keys():
+        for flux in derived_quant_dict["surface_flux"]:
             sol = field_to_sol[str(flux["field"])]
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
@@ -253,32 +260,32 @@ def derived_quantities(parameters, solutions,
                     phi += assemble(
                         prop*sol*Q/(FESTIM.R*T**2)*dot(grad(T), n)*ds(surf))
                 tab.append(phi)
-    if "average_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "average_volume" in derived_quant_dict.keys():
         for average in parameters[
                         "exports"]["derived_quantities"]["average_volume"]:
             sol = field_to_sol[str(average["field"])]
             for vol in average["volumes"]:
                 val = assemble(sol*dx(vol))/assemble(1*dx(vol))
                 tab.append(val)
-    if "minimum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "minimum_volume" in derived_quant_dict.keys():
         for minimum in parameters[
                         "exports"]["derived_quantities"]["minimum_volume"]:
             sol = field_to_sol[str(minimum["field"])]
             for vol in minimum["volumes"]:
                 tab.append(calculate_minimum_volume(sol, volume_markers, vol))
-    if "maximum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "maximum_volume" in derived_quant_dict.keys():
         for maximum in parameters[
                         "exports"]["derived_quantities"]["maximum_volume"]:
             sol = field_to_sol[str(maximum["field"])]
             for vol in maximum["volumes"]:
                 tab.append(calculate_maximum_volume(sol, volume_markers, vol))
-    if "total_volume" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+    if "total_volume" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_volume"]:
             sol = field_to_sol[str(total["field"])]
             for vol in total["volumes"]:
                 tab.append(assemble(sol*dx(vol)))
-    if "total_surface" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+    if "total_surface" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_surface"]:
             sol = field_to_sol[str(total["field"])]
             for surf in total["surfaces"]:
                 tab.append(assemble(sol*ds(surf)))
@@ -295,15 +302,21 @@ def check_keys_derived_quantities(parameters):
                     raise KeyError("Missing key 'field'")
                 else:
                     if type(f["field"]) is int:
-                        if f["field"] > len(parameters["traps"]) or f["field"] < 0:
-                            raise ValueError("Unknown field: " + str(f["field"]))
+                        if f["field"] > len(parameters["traps"]) or \
+                           f["field"] < 0:
+                            raise ValueError(
+                                "Unknown field: " + str(f["field"]))
                     elif type(f["field"]) is str:
                         if f["field"] not in FESTIM.helpers.field_types:
-                            try:
-                                if int(f["field"]) > len(parameters["traps"]) or int(f["field"])  < 0:
-                                    raise ValueError("Unknown field: " + f["field"])
-                            except:
-                                raise ValueError("Unknown field: " + str(f["field"]))
+                            if f["field"].isdigit():
+                                if int(f["field"]) > len(parameters["traps"]) \
+                                    or \
+                                   int(f["field"]) < 0:
+                                    raise ValueError(
+                                        "Unknown field: " + f["field"])
+                            else:
+                                raise ValueError(
+                                    "Unknown field: " + str(f["field"]))
 
                 if "surfaces" not in f.keys() and "volumes" not in f.keys():
                     raise KeyError("Missing key 'surfaces' or 'volumes'")
