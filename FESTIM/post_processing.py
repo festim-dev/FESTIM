@@ -25,7 +25,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
                     parameters,
                     res,
                     markers,
-                    [D_0*exp(-E_diff/T), thermal_cond, G+T*S]
+                    [D_0*exp(-E_diff/FESTIM.k_B/T), thermal_cond, G+T*S]
                     )
         else:
             derived_quantities_t = \
