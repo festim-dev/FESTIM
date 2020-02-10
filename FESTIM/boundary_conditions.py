@@ -1,4 +1,5 @@
-from FESTIM import *
+# from FESTIM import *
+import FESTIM
 from fenics import *
 import sympy as sp
 import numpy as np
@@ -57,11 +58,11 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
     solute = solutions[0]
     test_solute = testfunctions[0]
     F = 0
-    k_B = 8.6e-5
+    k_B = FESTIM.k_B
     for bc in boundary_conditions:
-        if bc["type"] not in helpers.bc_types["dc"]:
-            if bc["type"] not in helpers.bc_types["neumann"] and \
-               bc["type"] not in helpers.bc_types["robin"]:
+        if bc["type"] not in FESTIM.helpers.bc_types["dc"]:
+            if bc["type"] not in FESTIM.helpers.bc_types["neumann"] and \
+               bc["type"] not in FESTIM.helpers.bc_types["robin"]:
 
                 raise NameError(
                     "Unknown boundary condition type : " + bc["type"])
@@ -102,9 +103,9 @@ def apply_boundary_conditions(boundary_conditions, V,
     bcs = list()
     expressions = list()
     for BC in boundary_conditions:
-        try:
+        if "type" in BC.keys():
             type_BC = BC["type"]
-        except:
+        else:
             raise KeyError("Missing boundary condition type key")
         if type_BC == "dc":
             value_BC = sp.printing.ccode(BC['value'])
@@ -131,17 +132,17 @@ def apply_boundary_conditions(boundary_conditions, V,
             value_BC = ExpressionFromInterpolatedData(
                 t=0, fun=interpolant, element=V.ufl_element())
 
-        if BC["type"] not in helpers.bc_types["neumann"] and \
-           BC["type"] not in helpers.bc_types["robin"] and \
-           BC["type"] not in helpers.bc_types["dc"]:
+        if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
+           BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
+           BC["type"] not in FESTIM.helpers.bc_types["dc"]:
 
             raise NameError("Unknown boundary condition type : " + bc["type"])
-        if type_BC in helpers.bc_types["dc"]:
+        if type_BC in FESTIM.helpers.bc_types["dc"]:
             expressions.append(value_BC)
-            try:
+            if "component" in BC.keys():
                 # Fetch the component of the BC
                 component = BC["component"]
-            except:
+            else:
                 # By default, component is solute (ie. 0)
                 component = 0
             if type(BC['surface']) is not list:
