@@ -2,6 +2,7 @@ import FESTIM
 import fenics
 import pytest
 import sympy as sp
+import numpy as np
 from pathlib import Path
 
 
@@ -72,6 +73,47 @@ def test_export_xdmf(tmpdir):
         FESTIM.export.export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
             exports, files, 20, append=True)
+
+
+def test_export_profiles(tmpdir):
+    '''
+    Test the function export.export_profiles()
+    '''
+    mesh = fenics.UnitIntervalMesh(3)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    d = tmpdir.mkdir("Solution_Test")
+    functions = [fenics.Function(V), fenics.Function(V)]
+    exports = {
+        "txt": {
+            "functions": ['1', 'retention'],
+            "times": [2.5, 1, 3.2],
+            "labels":  ['a', 'b'],
+            "folder": str(Path(d))
+        }
+        }
+
+    t = 0
+    dt = fenics.Constant(2)
+    while t < 4:
+        dt_old = dt
+        dt = FESTIM.export.export_profiles(functions, exports, t, dt, V)
+        # Test that dt is not changed if not on time
+        if True not in np.isclose(t, exports["txt"]["times"]):
+            assert np.isclose(float(dt_old), float(dt)) is True
+        # Test that dt has the right value
+        elif t < 2:
+            assert np.isclose(float(dt), 1) is True
+        elif t < 3:
+            assert np.isclose(float(dt), 0.5) is True
+        else:
+            assert np.isclose(float(dt), 0.2) is True
+        t += float(dt)
+
+    # Test that a ValueError is raised if wrong function
+    t = 1
+    exports["txt"]["functions"][0] = "foo"
+    with pytest.raises(ValueError):
+        FESTIM.export.export_profiles(functions, exports, t, dt, V)
 
 
 def test_create_flux_functions():
