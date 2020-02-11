@@ -599,3 +599,9 @@ def test_run_MMS_steady_state(tmpdir):
             with h = ' + str(h)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
+
+
+# def test_run_MMS_mu_steady_state(tmpdir):
+
+
+    
