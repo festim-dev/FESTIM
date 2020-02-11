@@ -116,16 +116,16 @@ def test_export_profiles(tmpdir):
         FESTIM.export.export_profiles(functions, exports, t, dt, V)
 
 
-def test_create_flux_functions():
+def test_create_properties():
     '''
-    Test the function FESTIM.create_flux_functions()
+    Test the function FESTIM.create_properties()
     '''
     mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
+    DG_1 = fenics.FunctionSpace(mesh, 'DG', 1)
     materials = [
         {
-            "D_0": 2,
-            "E_diff": 3,
+            "D_0": 1,
+            "E_diff": 0,
             "thermal_cond": 4,
             "H": {
                 "free_enthalpy": 5,
@@ -134,11 +134,11 @@ def test_create_flux_functions():
             "id": 1
             },
         {
-            "D_0": 3,
-            "E_diff": 4,
+            "D_0": 2,
+            "E_diff": 0,
             "thermal_cond": 5,
             "H": {
-                "free_enthalpy": 6,
+                "free_enthalpy": 5,
                 "entropy": 7
             },
             "id": 2
@@ -151,15 +151,17 @@ def test_create_flux_functions():
             mf[cell] = 1
         else:
             mf[cell] = 2
-    A, B, C, D, E = \
-        FESTIM.post_processing.create_flux_functions(mesh, materials, mf)
+    T = fenics.Expression("1", degree=1)
+    D, B, C = \
+        FESTIM.post_processing.create_properties(mesh, materials, mf, T)
+    D = fenics.interpolate(D, DG_1)
+    B = fenics.interpolate(B, DG_1)
+    C = fenics.interpolate(C, DG_1)
+
     for cell in fenics.cells(mesh):
-        cell_no = cell.index()
-        assert A.vector()[cell_no] == mf[cell]+1
-        assert B.vector()[cell_no] == mf[cell]+2
-        assert C.vector()[cell_no] == mf[cell]+3
-        assert D.vector()[cell_no] == mf[cell]+4
-        assert E.vector()[cell_no] == mf[cell]+5
+        assert D(cell.midpoint().x()) == mf[cell]
+        assert B(cell.midpoint().x()) == mf[cell] + 3
+        assert C(cell.midpoint().x()) == mf[cell] + 10
 
 
 def test_derived_quantities():

@@ -104,34 +104,82 @@ def compute_retention(u, W):
     return retention
 
 
-def create_flux_functions(mesh, materials, volume_markers):
-    '''
-    Returns Function() objects for fluxes computation
-    '''
-    D0 = FunctionSpace(mesh, 'DG', 0)
-    D_0 = Function(D0, name="D_0")
-    E_diff = Function(D0, name="E_diff")
-    thermal_cond = Function(D0, name="thermal_cond")
-    G = Function(D0, name="G")
-    S = Function(D0, name="S")
+class DiffusionCoeff(UserExpression):
+    def __init__(self, mesh, materials, vm, T, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._vm = vm
+        self._T = T
+        self._materials = materials
 
-    # Update coefficient D_0 and E_diff
-    for cell in cells(mesh):
-
-        subdomain_id = volume_markers[cell]
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
-            materials, subdomain_id)
-        value_D0 = material["D_0"]
-        value_E_diff = material["E_diff"]
-        cell_no = cell.index()
-        if "thermal_cond" in material:
-            thermal_cond.vector()[cell_no] = material["thermal_cond"]
-        if "H" in material:
-            G.vector()[cell_no] = material["H"]["free_enthalpy"]
-            S.vector()[cell_no] = material["H"]["entropy"]
-        D_0.vector()[cell_no] = value_D0
-        E_diff.vector()[cell_no] = value_E_diff
-    return D_0, E_diff, thermal_cond, G, S
+            self._materials, subdomain_id)
+        D_0 = material["D_0"]
+        E_diff = material["E_diff"]        
+        value[0] = D_0*exp(-E_diff/FESTIM.k_B/self._T(x))
+
+    def value_shape(self):
+        return ()
+
+
+class ThermalCondCoeff(UserExpression):
+    def __init__(self, mesh, materials, vm, T, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = FESTIM.helpers.find_material_from_id(
+            self._materials, subdomain_id)
+        if callable(material["thermal_cond"]):
+            value[0] = material["thermal_cond"](self._T(x))
+        else:
+            value[0] = material["thermal_cond"]
+
+    def value_shape(self):
+        return ()
+
+
+class HCoeff(UserExpression):
+    def __init__(self, mesh, materials, vm, T, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = FESTIM.helpers.find_material_from_id(
+            self._materials, subdomain_id)
+
+        value[0] = material["H"]["free_enthalpy"] + self._T(x)*material["H"]["entropy"]
+
+    def value_shape(self):
+        return ()
+
+
+def create_properties(mesh, materials, vm, T):
+    '''
+    Arguments:
+    - mesh
+    - materials : parameters["materials"]
+    - vm : MeshFunction()
+    - T : fenics.Expression() or fenics.Function()
+    Returns UserExpression classes for D, thermal_cond, and H
+    '''
+    D = DiffusionCoeff(mesh, materials, vm, T, degree=2)
+    thermal_cond = ThermalCondCoeff(mesh, materials, vm, T, degree=2)
+    H = HCoeff(mesh, materials, vm, T, degree=2)
+    return D, thermal_cond, H
 
 
 def calculate_maximum_volume(f, subdomains, subd_id):
