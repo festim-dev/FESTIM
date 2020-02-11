@@ -228,7 +228,7 @@ def run(parameters, log_level=40):
             dt,
             files,
             append,
-            [D, thermal_cond, H],
+            [D, thermal_cond, cp, rho, H],
             derived_quantities_global)
 
     # Store data in output
