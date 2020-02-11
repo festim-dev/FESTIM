@@ -17,7 +17,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         res.append(interpolate(T, W))
     else:
         res.append(T)
-    D, thermal_cond, H = flux_fonctions
+    D, thermal_cond, cp, rho, H = flux_fonctions
     D_ = interpolate(D, V_DG1)
     thermal_cond_ = None
     if thermal_cond is not None:
@@ -126,23 +126,24 @@ class DiffusionCoeff(UserExpression):
         return ()
 
 
-class ThermalCondCoeff(UserExpression):
-    def __init__(self, mesh, materials, vm, T, **kwargs):
+class ThermalProp(UserExpression):
+    def __init__(self, mesh, materials, vm, T, key, **kwargs):
         super().__init__(kwargs)
         self._mesh = mesh
         self._T = T
         self._vm = vm
         self._materials = materials
+        self._key = key
 
     def eval_cell(self, value, x, ufc_cell):
         cell = Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
-        if callable(material["thermal_cond"]):
-            value[0] = material["thermal_cond"](self._T(x))
+        if callable(material[self._key]):
+            value[0] = material[self._key](self._T(x))
         else:
-            value[0] = material["thermal_cond"]
+            value[0] = material[self._key]
 
     def value_shape(self):
         return ()
@@ -180,17 +181,23 @@ def create_properties(mesh, materials, vm, T):
     '''
     D = DiffusionCoeff(mesh, materials, vm, T, degree=2)
     thermal_cond = None
+    cp = None
+    rho = None
     H = None
     for mat in materials:
         if "thermal_cond" in mat.keys():
             therm = True
-            thermal_cond = ThermalCondCoeff(mesh, materials, vm, T, degree=2)
-
+            thermal_cond = ThermalProp(mesh, materials, vm, T,
+                                       'thermal_cond', degree=2)
+            cp = ThermalProp(mesh, materials, vm, T,
+                             'heat_capacity', degree=2)
+            rho = ThermalProp(mesh, materials, vm, T,
+                              'rho', degree=2)
         if "H" in mat.keys():
             soret = True
             H = HCoeff(mesh, materials, vm, T, degree=2)
 
-    return D, thermal_cond, H
+    return D, thermal_cond, cp, rho, H
 
 
 def calculate_maximum_volume(f, subdomains, subd_id):

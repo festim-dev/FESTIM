@@ -68,8 +68,7 @@ def run(parameters, log_level=40):
             solve(FT == 0, T, bcs_T)
 
     # Create functions for flux computation
-    # D_0, E_diff, thermal_cond, G, S = [None]*5
-    D, thermal_cond, H =\
+    D, thermal_cond, cp, rho, H =\
         FESTIM.post_processing.create_properties(
             mesh, parameters["materials"], volume_markers, T)
 
@@ -202,7 +201,7 @@ def run(parameters, log_level=40):
                 dt,
                 files,
                 append,
-                [D, thermal_cond, H],
+                [D, thermal_cond, cp, rho, H],
                 derived_quantities_global)
             append = True
 

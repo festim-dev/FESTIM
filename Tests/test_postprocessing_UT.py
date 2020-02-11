@@ -127,6 +127,8 @@ def test_create_properties():
             "D_0": 1,
             "E_diff": 0,
             "thermal_cond": 4,
+            "heat_capacity": 5,
+            "rho": 6,
             "H": {
                 "free_enthalpy": 5,
                 "entropy": 6
@@ -137,6 +139,8 @@ def test_create_properties():
             "D_0": 2,
             "E_diff": 0,
             "thermal_cond": 5,
+            "heat_capacity": 6,
+            "rho": 7,
             "H": {
                 "free_enthalpy": 5,
                 "entropy": 7
@@ -152,16 +156,20 @@ def test_create_properties():
         else:
             mf[cell] = 2
     T = fenics.Expression("1", degree=1)
-    D, B, C = \
+    A, B, C, D, E = \
         FESTIM.post_processing.create_properties(mesh, materials, mf, T)
-    D = fenics.interpolate(D, DG_1)
+    A = fenics.interpolate(A, DG_1)
     B = fenics.interpolate(B, DG_1)
     C = fenics.interpolate(C, DG_1)
+    D = fenics.interpolate(D, DG_1)
+    E = fenics.interpolate(E, DG_1)
 
     for cell in fenics.cells(mesh):
-        assert D(cell.midpoint().x()) == mf[cell]
+        assert A(cell.midpoint().x()) == mf[cell]
         assert B(cell.midpoint().x()) == mf[cell] + 3
-        assert C(cell.midpoint().x()) == mf[cell] + 10
+        assert C(cell.midpoint().x()) == mf[cell] + 4
+        assert D(cell.midpoint().x()) == mf[cell] + 5
+        assert E(cell.midpoint().x()) == mf[cell] + 10
 
 
 def test_derived_quantities():
