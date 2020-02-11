@@ -268,7 +268,9 @@ def test_run_post_processing_flux(tmpdir):
             derived_quantities_global=tab)
     print(derived_quantities_global[0])
     print(derived_quantities_global[1])
-    assert np.isclose(derived_quantities_global[1][1], -1*2*5*fenics.exp(-0.4/FESTIM.k_B/T(0)))
-    assert np.isclose(derived_quantities_global[1][2], -1*-2*6*fenics.exp(-0.5/FESTIM.k_B/T(1)))
+    assert np.isclose(derived_quantities_global[1][1],
+                      -1*2*5*fenics.exp(-0.4/FESTIM.k_B/T(0)))
+    assert np.isclose(derived_quantities_global[1][2],
+                      -1*-2*6*fenics.exp(-0.5/FESTIM.k_B/T(1)))
     assert np.isclose(derived_quantities_global[1][3], -1*100*3)
     assert np.isclose(derived_quantities_global[1][4], -1*-100*5)

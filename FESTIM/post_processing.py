@@ -4,8 +4,9 @@ import numpy as np
 import FESTIM
 
 
-def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt, files,
-                        append, flux_fonctions, derived_quantities_global):
+def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
+                        files, append, flux_fonctions,
+                        derived_quantities_global):
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
@@ -118,7 +119,7 @@ class DiffusionCoeff(UserExpression):
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
         D_0 = material["D_0"]
-        E_diff = material["E_diff"]        
+        E_diff = material["E_diff"]
         value[0] = D_0*exp(-E_diff/FESTIM.k_B/self._T(x))
 
     def value_shape(self):
@@ -161,7 +162,8 @@ class HCoeff(UserExpression):
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
 
-        value[0] = material["H"]["free_enthalpy"] + self._T(x)*material["H"]["entropy"]
+        value[0] = material["H"]["free_enthalpy"] + \
+            self._T(x)*material["H"]["entropy"]
 
     def value_shape(self):
         return ()
