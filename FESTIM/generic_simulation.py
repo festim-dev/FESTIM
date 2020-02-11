@@ -41,14 +41,6 @@ def run(parameters, log_level=40):
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
-    # Create functions for flux computation
-    D_0, E_diff, thermal_cond, G, S = [None]*5
-    if "derived_quantities" in parameters["exports"]:
-        if "surface_flux" in parameters["exports"]["derived_quantities"]:
-            D_0, E_diff, thermal_cond, G, S =\
-                FESTIM.post_processing.create_flux_functions(
-                    mesh, parameters["materials"], volume_markers)
-
     # Define temperature
     if parameters["temperature"]["type"] == "expression":
         T_expr = Expression(
@@ -74,6 +66,12 @@ def run(parameters, log_level=40):
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
+
+    # Create functions for flux computation
+    # D_0, E_diff, thermal_cond, G, S = [None]*5
+    D, thermal_cond, H =\
+        FESTIM.post_processing.create_properties(
+            mesh, parameters["materials"], volume_markers, T)
 
     # Define functions
     u, solutions = FESTIM.functionspaces_and_functions.define_functions(V)
@@ -160,7 +158,9 @@ def run(parameters, log_level=40):
             else:
                 T_expr.t = t
                 T.assign(interpolate(T_expr, W))
-
+            D.T = T
+            H.T = T
+            thermal_cond.T = T
             # Display time
             print(str(round(t/Time*100, 2)) + ' %        ' +
                   str(round(t, 1)) + ' s' +
