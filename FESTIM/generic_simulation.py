@@ -34,7 +34,7 @@ def run(parameters, log_level=40):
     # Define function space for system of concentrations and properties
     V, W = FESTIM.functionspaces_and_functions.create_function_spaces(
         mesh, len(parameters["traps"]))
-
+    V_DG1 = FunctionSpace(mesh, 'DG', 1)
     # Define and mark subdomains
     volume_markers, surface_markers = \
         FESTIM.meshing.subdomains(mesh, parameters)
@@ -158,9 +158,11 @@ def run(parameters, log_level=40):
             else:
                 T_expr.t = t
                 T.assign(interpolate(T_expr, W))
-            D.T = T
-            H.T = T
-            thermal_cond.T = T
+            D._T = T
+            if H is not None:
+                H._T = T
+            if thermal_cond is not None:
+                thermal_cond._T = T
             # Display time
             print(str(round(t/Time*100, 2)) + ' %        ' +
                   str(round(t, 1)) + ' s' +
@@ -195,12 +197,12 @@ def run(parameters, log_level=40):
                 transient,
                 u, T,
                 [volume_markers, surface_markers],
-                W,
+                W, V_DG1,
                 t,
                 dt,
                 files,
                 append,
-                [D_0, E_diff, thermal_cond, G, S],
+                [D, thermal_cond, H],
                 derived_quantities_global)
             append = True
 
@@ -222,12 +224,12 @@ def run(parameters, log_level=40):
             transient,
             u, T,
             [volume_markers, surface_markers],
-            W,
+            W, V_DG1,
             t,
             dt,
             files,
             append,
-            [D_0, E_diff, thermal_cond, G, S],
+            [D, thermal_cond, H],
             derived_quantities_global)
 
     # Store data in output

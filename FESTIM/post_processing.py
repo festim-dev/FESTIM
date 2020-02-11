@@ -4,7 +4,7 @@ import numpy as np
 import FESTIM
 
 
-def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
+def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt, files,
                         append, flux_fonctions, derived_quantities_global):
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
@@ -16,23 +16,23 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
         res.append(interpolate(T, W))
     else:
         res.append(T)
-
+    D, thermal_cond, H = flux_fonctions
+    D_ = interpolate(D, V_DG1)
+    thermal_cond_ = None
+    if thermal_cond is not None:
+        thermal_cond_ = interpolate(thermal_cond, V_DG1)
+    H_ = None
+    if H is not None:
+        H_ = interpolate(H, V_DG1)
     if "derived_quantities" in parameters["exports"].keys():
-        D_0, E_diff, thermal_cond, G, S = flux_fonctions
-        if D_0 is not None:
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    markers,
-                    [D_0*exp(-E_diff/FESTIM.k_B/T), thermal_cond, G+T*S]
-                    )
-        else:
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    markers)
+        derived_quantities_t = \
+            FESTIM.post_processing.derived_quantities(
+                parameters,
+                res,
+                markers,
+                [D_, thermal_cond_, H_]
+                )
+
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
@@ -177,8 +177,17 @@ def create_properties(mesh, materials, vm, T):
     Returns UserExpression classes for D, thermal_cond, and H
     '''
     D = DiffusionCoeff(mesh, materials, vm, T, degree=2)
-    thermal_cond = ThermalCondCoeff(mesh, materials, vm, T, degree=2)
-    H = HCoeff(mesh, materials, vm, T, degree=2)
+    thermal_cond = None
+    H = None
+    for mat in materials:
+        if "thermal_cond" in mat.keys():
+            therm = True
+            thermal_cond = ThermalCondCoeff(mesh, materials, vm, T, degree=2)
+
+        if "H" in mat.keys():
+            soret = True
+            H = HCoeff(mesh, materials, vm, T, degree=2)
+
     return D, thermal_cond, H
 
 
