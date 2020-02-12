@@ -5,6 +5,59 @@ import sympy as sp
 import numpy as np
 
 
+def test_fluxes_chemical_pot():
+    Kr_0 = 2
+    E_Kr = 3
+    S_0 = 2
+    E_S = 3
+    order = 2
+    k_B = FESTIM.k_B
+    T = 1000
+    parameters = {
+        "materials": [
+            {
+                "S_0": S_0,
+                "E_S": E_S,
+                "id": 1
+            }
+        ],
+        "boundary_conditions": [
+            {
+                "type": "recomb",
+                "Kr_0": Kr_0,
+                "E_Kr": E_Kr,
+                "order": order,
+                "surface": 1,
+            },
+            {
+                "type": "flux",
+                "value": 2*FESTIM.x + FESTIM.t,
+                "surface": [1, 2],
+            },
+        ]
+    }
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    u = fenics.Function(V)
+    v = fenics.TestFunction(V)
+
+    solutions = list(fenics.split(u))
+    testfunctions = list(fenics.split(v))
+    sol = solutions[0]
+    test_sol = testfunctions[0]
+
+    S = S_0*fenics.exp(-E_S/k_B/T)
+    Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
+    F, expressions = FESTIM.boundary_conditions.apply_fluxes(
+        parameters, solutions, testfunctions, fenics.ds, T, S)
+    expected_form = 0
+    expected_form += -test_sol * (Kr*(sol/S)**order)*fenics.ds(1)
+    expected_form += -test_sol*expressions[0]*fenics.ds(1)
+    expected_form += -test_sol*expressions[0]*fenics.ds(2)
+    # assert expressions[0]
+    assert expected_form.equals(F) is True
+
+
 def test_fluxes():
     Kr_0 = 2
     E_Kr = 3
