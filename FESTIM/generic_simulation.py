@@ -55,6 +55,8 @@ def run(parameters, log_level=40):
             sp.printing.ccode(
                 parameters["temperature"]['value']), t=0, degree=2)
         T = interpolate(T_expr, W)
+        T_n = Function(W)
+        T_n.assign(T)
     else:
         # Define variational problem for heat transfers
         T = Function(W, name="T")
@@ -110,7 +112,7 @@ def run(parameters, log_level=40):
     F, expressions_F = FESTIM.formulations.formulation(
         parameters, extrinsic_traps,
         solutions, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx, T, transient=transient)
+        previous_solutions_concentrations, dt, dx, T, T_n, transient=transient)
     F += fluxes
 
     du = TrialFunction(u.function_space())
@@ -158,6 +160,7 @@ def run(parameters, log_level=40):
                     expressions_bcs_T, t)
 
             else:
+                T_n.assign(T)
                 T_expr.t = t
                 T.assign(interpolate(T_expr, W))
 
