@@ -502,12 +502,13 @@ def test_derived_quantities_chemical_pot():
     S = fenics.Expression(sp.printing.ccode(S), degree=3)
     S = fenics.interpolate(S, V_DG1)
     tab = FESTIM.post_processing.derived_quantities(
-        parameters, [theta_, theta_, T_], [volume_markers, surface_markers],
-        [D, thermal_cond, None, S])
+        parameters, [fenics.project(S*theta_, V_DG1), theta_, T_], [volume_markers, surface_markers],
+        [D, thermal_cond, None])
 
     # Compare
     assert len(tab) == len(expected)
     for i in range(0, len(tab)):
+        print(i)
         assert abs(tab[i] - expected[i])/expected[i] < 1e-3
 
 

@@ -28,13 +28,16 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
     S_ = None
     if S is not None:
         S_ = interpolate(S, V_DG1)
+        solute = project(res[0]*S, V_DG1)
+        res[0] = solute
+
     if "derived_quantities" in parameters["exports"].keys():
         derived_quantities_t = \
             FESTIM.post_processing.derived_quantities(
                 parameters,
                 res,
                 markers,
-                [D_, thermal_cond_, H_, S_]
+                [D_, thermal_cond_, H_]
                 )
 
         derived_quantities_t.insert(0, t)
@@ -300,15 +303,11 @@ def derived_quantities(parameters, solutions,
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
-    if properties[3] is not None:  # if conservation of chemical potential
-        solute = project(solutions[0]*properties[3],
-                         properties[3].function_space())
-    else:
-        solute = solutions[0]
+
     ret = solutions[len(solutions)-2]
     T = solutions[len(solutions)-1]
     field_to_sol = {
-        'solute': solute,
+        'solute': solutions[0],
         'retention': ret,
         'T': T,
     }
