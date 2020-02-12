@@ -25,10 +25,9 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
     H_ = None
     if H is not None:
         H_ = interpolate(H, V_DG1)
-    S_ = None
     if S is not None:
-        S_ = interpolate(S, V_DG1)
-        solute = project(res[0]*S, V_DG1)
+        # this is costly ...
+        solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
         res[0] = solute
 
     if "derived_quantities" in parameters["exports"].keys():
