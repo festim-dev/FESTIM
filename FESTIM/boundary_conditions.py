@@ -50,7 +50,7 @@ def solubility_BC(P, S):
     return P**0.5*S
 
 
-def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
+def apply_fluxes(parameters, solutions, testfunctions, ds, T):
     ''' Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
     '''
@@ -59,6 +59,7 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
     test_solute = testfunctions[0]
     F = 0
     k_B = FESTIM.k_B
+    boundary_conditions = parameters["boundary_conditions"]
     for bc in boundary_conditions:
         if bc["type"] not in FESTIM.helpers.bc_types["dc"]:
             if bc["type"] not in FESTIM.helpers.bc_types["neumann"] and \
@@ -84,7 +85,7 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
     return F, expressions
 
 
-def apply_boundary_conditions(boundary_conditions, V,
+def apply_boundary_conditions(parameters, V,
                               surface_marker, ds, temp):
     '''
     Create a list of DirichletBCs.
@@ -102,6 +103,7 @@ def apply_boundary_conditions(boundary_conditions, V,
     '''
     bcs = list()
     expressions = list()
+    boundary_conditions = parameters["boundary_conditions"]
     for BC in boundary_conditions:
         if "type" in BC.keys():
             type_BC = BC["type"]

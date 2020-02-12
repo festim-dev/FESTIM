@@ -98,11 +98,9 @@ def run(parameters, log_level=40):
     # Boundary conditions
     print('Defining boundary conditions')
     bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
-        parameters["boundary_conditions"], V, surface_markers, ds,
-        T)
+        parameters, V, surface_markers, ds, T)
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
-        parameters["boundary_conditions"], solutions,
-        testfunctions_concentrations, ds, T)
+        parameters, solutions, testfunctions_concentrations, ds, T)
 
     # Define variational problem H transport
     print('Defining variational problem')
