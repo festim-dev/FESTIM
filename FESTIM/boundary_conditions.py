@@ -50,7 +50,7 @@ def solubility_BC(P, S):
     return P**0.5*S
 
 
-def apply_fluxes(parameters, solutions, testfunctions, ds, T):
+def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=0):
     ''' Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
     '''
@@ -60,6 +60,12 @@ def apply_fluxes(parameters, solutions, testfunctions, ds, T):
     F = 0
     k_B = FESTIM.k_B
     boundary_conditions = parameters["boundary_conditions"]
+    if S != 0:
+        for mat in parameters["materials"]:
+            if "S_0" in mat.keys() or "E_S" in mat.keys():
+                conservation_chemic_pot = True
+                solute = solute/S
+
     for bc in boundary_conditions:
         if bc["type"] not in FESTIM.helpers.bc_types["dc"]:
             if bc["type"] not in FESTIM.helpers.bc_types["neumann"] and \
@@ -161,7 +167,7 @@ def apply_boundary_conditions(parameters, V,
            BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
            BC["type"] not in FESTIM.helpers.bc_types["dc"]:
 
-            raise NameError("Unknown boundary condition type : " + bc["type"])
+            raise NameError("Unknown boundary condition type : " + BC["type"])
         if type_BC in FESTIM.helpers.bc_types["dc"]:
             if "component" in BC.keys():
                 # Fetch the component of the BC
