@@ -6,50 +6,6 @@ import sympy as sp
 from ufl.core.multiindex import Index
 
 
-def test_fluxes():
-    Kr_0 = 2
-    E_Kr = 3
-    order = 2
-    k_B = 8.6e-5
-    T = 1000
-    boundary_conditions = [
-
-        {
-            "type": "recomb",
-            "Kr_0": Kr_0,
-            "E_Kr": E_Kr,
-            "order": order,
-            "surface": 1,
-            },
-        {
-           "type": "flux",
-           "value": 2*FESTIM.x + FESTIM.t,
-           "surface": [1, 2],
-        },
-    ]
-    mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
-    u = fenics.Function(V)
-    v = fenics.TestFunction(V)
-
-    u = fenics.interpolate(fenics.Expression(('1', '1'), degree=1), V)
-
-    solutions = list(fenics.split(u))
-    testfunctions = list(fenics.split(v))
-    sol = solutions[0]
-    test_sol = testfunctions[0]
-    F, expressions = FESTIM.boundary_conditions.apply_fluxes(
-        {"boundary_conditions": boundary_conditions}, solutions,
-        testfunctions, fenics.ds, T)
-    expected_form = 0
-    expected_form += -test_sol * (-Kr_0 * fenics.exp(-E_Kr/k_B/T) *
-                                  sol**order)*fenics.ds(1)
-    expected_form += -test_sol*expressions[0]*fenics.ds(1)
-    expected_form += -test_sol*expressions[0]*fenics.ds(2)
-
-    assert expected_form.equals(F) is True
-
-
 def test_formulation_no_trap_1_material():
     '''
     Test function formulation() with 0 intrinsic trap
