@@ -85,8 +85,30 @@ def apply_fluxes(parameters, solutions, testfunctions, ds, T):
     return F, expressions
 
 
+class BoundaryConditionTheta(UserExpression):
+    def __init__(self, bci, mesh, materials, vm, T, **kwargs):
+        super().__init__(kwargs)
+        self._bci = bci
+        self._mesh = mesh
+        self._vm = vm
+        self._T = T
+        self._materials = materials
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = FESTIM.helpers.find_material_from_id(
+            self._materials, subdomain_id)
+        S_0 = material["S_0"]
+        E_S = material["E_S"]
+        value[0] = self._bci(x)/(S_0*exp(-E_S/FESTIM.k_B/self._T(x)))
+
+    def value_shape(self):
+        return ()
+
+
 def apply_boundary_conditions(parameters, V,
-                              surface_marker, ds, temp):
+                              markers, temp):
     '''
     Create a list of DirichletBCs.
     Arguments:
@@ -94,7 +116,6 @@ def apply_boundary_conditions(parameters, V,
     - V: FunctionSpace,
     - surface_marker: MeshFunction, contains the markers for
     the different surfaces
-    - ds: Measurement
     - temp: Expression, temperature.
     Returns:
     - bcs: list, contains fenics DirichletBC
@@ -104,6 +125,8 @@ def apply_boundary_conditions(parameters, V,
     bcs = list()
     expressions = list()
     boundary_conditions = parameters["boundary_conditions"]
+    volume_markers = markers[0]
+    surface_markers = markers[1]
     for BC in boundary_conditions:
         if "type" in BC.keys():
             type_BC = BC["type"]
@@ -140,13 +163,21 @@ def apply_boundary_conditions(parameters, V,
 
             raise NameError("Unknown boundary condition type : " + bc["type"])
         if type_BC in FESTIM.helpers.bc_types["dc"]:
-            expressions.append(value_BC)
             if "component" in BC.keys():
                 # Fetch the component of the BC
                 component = BC["component"]
             else:
                 # By default, component is solute (ie. 0)
                 component = 0
+            conservation_chemic_pot = False
+            for mat in parameters["materials"]:
+                if "S_0" in mat.keys():
+                    conservation_chemic_pot = True
+            if component == 0 and conservation_chemic_pot is True:
+                value_BC = BoundaryConditionTheta(
+                    value_BC, volume_markers.mesh(), parameters["materials"],
+                    volume_markers, temp)
+            expressions.append(value_BC)
             if type(BC['surface']) is not list:
                 surfaces = [BC['surface']]
             else:
@@ -157,7 +188,7 @@ def apply_boundary_conditions(parameters, V,
                 funspace = V.sub(component)
             for surface in surfaces:
                 bci = DirichletBC(funspace, value_BC,
-                                  surface_marker, surface)
+                                  surface_markers, surface)
                 bcs.append(bci)
 
     return bcs, expressions

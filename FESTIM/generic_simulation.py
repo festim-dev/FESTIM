@@ -98,7 +98,7 @@ def run(parameters, log_level=40):
     # Boundary conditions
     print('Defining boundary conditions')
     bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
-        parameters, V, surface_markers, ds, T)
+        parameters, V, [volume_markers, surface_markers], T)
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
         parameters, solutions, testfunctions_concentrations, ds, T)
 
