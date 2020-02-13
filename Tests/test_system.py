@@ -219,8 +219,8 @@ def test_run_MMS(tmpdir):
     Test function run() for several refinements
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
-    v = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
+    u = 1 + FESTIM.x**2 + FESTIM.t
+    v = u*FESTIM.t
 
     def parameters(h, dt, final_time, u, v):
         size = 1
@@ -335,7 +335,7 @@ def test_run_MMS(tmpdir):
         return parameters
 
     tol_u = 1e-7
-    tol_v = 1e-1
+    tol_v = 1e-3
     sizes = [1/1600, 1/1700]
     dt = 0.1/50
     final_time = 0.1
@@ -357,8 +357,8 @@ def test_run_MMS_chemical_pot(tmpdir):
     Test function run() with conservation of chemical potential (1 material)
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
-    v = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
+    u = 1 + FESTIM.x**2 + FESTIM.t
+    v = u*FESTIM.t
 
     def parameters(h, dt, final_time, u, v):
         size = 1
@@ -475,7 +475,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         return parameters
 
     tol_u = 1e-7
-    tol_v = 1e-1
+    tol_v = 1e-3
     sizes = [1/1600]
     dt = 0.1/50
     final_time = 0.1
@@ -497,8 +497,7 @@ def test_run_MMS_soret(tmpdir):
     Test function run() for several refinements with Soret effect
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x/0.1)
-    # u = 1 + sp.cos(2*fenics.pi*FESTIM.x) + sp.cos(FESTIM.t*2*fenics.pi)
+    u = 1 + FESTIM.x**2 + FESTIM.t
 
     def parameters(h, dt, final_time, u):
         size = 0.1
@@ -604,7 +603,7 @@ def test_run_MMS_soret(tmpdir):
         }
         return parameters
 
-    tol_u = 1e-5
+    tol_u = 1e-7
     sizes = [1/1000, 1/2000]
     dt = 0.1/50
     final_time = 0.1
@@ -626,8 +625,8 @@ def test_run_MMS_steady_state(tmpdir):
     Test function run() for several refinements in steady state
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.cos(2*fenics.pi*FESTIM.x)
-    v = 1 + sp.cos(2*fenics.pi*FESTIM.x)
+    u = 1 + FESTIM.x
+    v = 1 + FESTIM.x*2
 
     def parameters(h, u, v):
         size = 1
@@ -727,7 +726,7 @@ def test_run_MMS_steady_state(tmpdir):
         return parameters
 
     tol_u = 1e-12
-    tol_v = 1e-5
+    tol_v = 1e-7
     sizes = [1/1600, 1/1700]
     for h in sizes:
         output = FESTIM.generic_simulation.run(
