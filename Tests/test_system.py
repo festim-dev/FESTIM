@@ -354,7 +354,7 @@ def test_run_MMS(tmpdir):
 
 def test_run_MMS_chemical_pot(tmpdir):
     '''
-    Test function run() for several refinements
+    Test function run() with conservation of chemical potential (1 material)
     '''
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + sp.exp(-4*fenics.pi**2*FESTIM.t)*sp.cos(2*fenics.pi*FESTIM.x)
@@ -364,7 +364,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         size = 1
         v_0 = 1e13
         E_t = 1.5
-        T = 700 + 30*FESTIM.x
+        T = 700 + 30*FESTIM.x + FESTIM.t
         density = 1 * 6.3e28
         beta = 6*density
         alpha = 1.1e-10
