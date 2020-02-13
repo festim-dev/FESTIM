@@ -47,6 +47,8 @@ def run(parameters, log_level=40):
             sp.printing.ccode(
                 parameters["temperature"]['value']), t=0, degree=2)
         T = interpolate(T_expr, W)
+        T_n = Function(W)
+        T_n.assign(T)
     else:
         # Define variational problem for heat transfers
         T = Function(W, name="T")
@@ -68,7 +70,7 @@ def run(parameters, log_level=40):
             solve(FT == 0, T, bcs_T)
 
     # Create functions for flux computation
-    D, thermal_cond, cp, rho, H =\
+    D, thermal_cond, cp, rho, H, S =\
         FESTIM.post_processing.create_properties(
             mesh, parameters["materials"], volume_markers, T)
 
@@ -88,7 +90,7 @@ def run(parameters, log_level=40):
         initial_conditions = []
     u_n, previous_solutions_concentrations = \
         FESTIM.initialise_solutions.initialising_solutions(
-            V, initial_conditions)
+            parameters, V, S)
     previous_solutions_traps = \
         FESTIM.initialise_solutions.initialising_extrinsic_traps(
             W, len(extrinsic_traps))
@@ -96,18 +98,16 @@ def run(parameters, log_level=40):
     # Boundary conditions
     print('Defining boundary conditions')
     bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
-        parameters["boundary_conditions"], V, surface_markers, ds,
-        T)
+        parameters, V, [volume_markers, surface_markers], T)
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
-        parameters["boundary_conditions"], solutions,
-        testfunctions_concentrations, ds, T)
+        parameters, solutions, testfunctions_concentrations, ds, T, S)
 
     # Define variational problem H transport
     print('Defining variational problem')
     F, expressions_F = FESTIM.formulations.formulation(
         parameters, extrinsic_traps,
         solutions, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx, T, transient=transient)
+        previous_solutions_concentrations, dt, dx, T, T_n, transient=transient)
     F += fluxes
 
     du = TrialFunction(u.function_space())
@@ -155,6 +155,7 @@ def run(parameters, log_level=40):
                     expressions_bcs_T, t)
 
             else:
+                T_n.assign(T)
                 T_expr.t = t
                 T.assign(interpolate(T_expr, W))
             D._T = T
@@ -162,6 +163,10 @@ def run(parameters, log_level=40):
                 H._T = T
             if thermal_cond is not None:
                 thermal_cond._T = T
+            if S is not None:
+                for expr in expressions:
+                    if "_bci" in expr.__dict__.keys():
+                        expr._bci.t = t
             # Display time
             print(str(round(t/Time*100, 2)) + ' %        ' +
                   str(round(t, 1)) + ' s' +
@@ -201,7 +206,7 @@ def run(parameters, log_level=40):
                 dt,
                 files,
                 append,
-                [D, thermal_cond, cp, rho, H],
+                [D, thermal_cond, cp, rho, H, S],
                 derived_quantities_global)
             append = True
 
@@ -228,7 +233,7 @@ def run(parameters, log_level=40):
             dt,
             files,
             append,
-            [D, thermal_cond, cp, rho, H],
+            [D, thermal_cond, cp, rho, H, S],
             derived_quantities_global)
 
     # Store data in output
@@ -240,6 +245,9 @@ def run(parameters, log_level=40):
     else:
         res = list(u.split())
     if "error" in parameters["exports"].keys():
+        if S is not None:
+            solute = project(res[0]*S, V_DG1)
+            res[0] = solute
         error = FESTIM.post_processing.compute_error(
             parameters["exports"]["error"], t, [*res, T], mesh)
         output["error"] = error
