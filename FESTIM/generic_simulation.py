@@ -90,7 +90,7 @@ def run(parameters, log_level=40):
         initial_conditions = []
     u_n, previous_solutions_concentrations = \
         FESTIM.initialise_solutions.initialising_solutions(
-            V, initial_conditions)
+            parameters, V, S)
     previous_solutions_traps = \
         FESTIM.initialise_solutions.initialising_extrinsic_traps(
             W, len(extrinsic_traps))
@@ -163,6 +163,10 @@ def run(parameters, log_level=40):
                 H._T = T
             if thermal_cond is not None:
                 thermal_cond._T = T
+            if S is not None:
+                for expr in expressions:
+                    if "_bci" in expr.__dict__.keys():
+                        expr._bci.t = t
             # Display time
             print(str(round(t/Time*100, 2)) + ' %        ' +
                   str(round(t, 1)) + ' s' +
@@ -241,6 +245,9 @@ def run(parameters, log_level=40):
     else:
         res = list(u.split())
     if "error" in parameters["exports"].keys():
+        if S is not None:
+            solute = project(res[0]*S, V_DG1)
+            res[0] = solute
         error = FESTIM.post_processing.compute_error(
             parameters["exports"]["error"], t, [*res, T], mesh)
         output["error"] = error
