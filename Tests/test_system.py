@@ -19,7 +19,7 @@ def test_run_temperature_stationary(tmpdir):
             {
                 "thermal_cond": 1,
                 "borders": [0, size],
-                "E_diff": 0.39,
+                "E_D": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
                 }
@@ -125,7 +125,7 @@ def test_run_temperature_transient(tmpdir):
                 "rho": 1,
                 "heat_capacity": 1,
                 "borders": [0, size],
-                "E_diff": 0.39,
+                "E_D": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
             }
@@ -224,10 +224,10 @@ def test_run_MMS(tmpdir):
         E_p = 0.2
         T = 700 + 30*FESTIM.x
         n_trap = 1
-        E_diff = 0.1
+        E_D = 0.1
         D_0 = 2
         k_B = 8.6e-5
-        D = D_0 * sp.exp(-E_diff/k_B/T)
+        D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
 
@@ -239,7 +239,7 @@ def test_run_MMS(tmpdir):
             "materials": [
                 {
                     "borders": [0, size],
-                    "E_diff": E_diff,
+                    "E_D": E_D,
                     "D_0": D_0,
                     "id": 1
                     }
@@ -361,10 +361,10 @@ def test_run_MMS_chemical_pot(tmpdir):
         E_p = 0.2
         T = 700 + 30*FESTIM.x
         n_trap = 1
-        E_diff = 0.1
+        E_D = 0.1
         D_0 = 2
         k_B = 8.6e-5
-        D = D_0 * sp.exp(-E_diff/k_B/T)
+        D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
 
@@ -378,7 +378,7 @@ def test_run_MMS_chemical_pot(tmpdir):
                     "borders": [0, size],
                     "S_0": 2,
                     "E_S": 0.1,
-                    "E_diff": E_diff,
+                    "E_D": E_D,
                     "D_0": D_0,
                     "id": 1
                     }
@@ -494,10 +494,10 @@ def test_run_MMS_soret(tmpdir):
     def parameters(h, dt, final_time, u):
         size = 0.1
         T = 2 + sp.cos(2*fenics.pi*FESTIM.x)*sp.cos(FESTIM.t)
-        E_diff = 0
+        E_D = 0
         D_0 = 2
         k_B = FESTIM.k_B
-        D = D_0 * sp.exp(-E_diff/k_B/T)
+        D = D_0 * sp.exp(-E_D/k_B/T)
         H = -2
         S = 3
         R = FESTIM.R
@@ -511,7 +511,7 @@ def test_run_MMS_soret(tmpdir):
             "materials": [
                 {
                     "borders": [0, size],
-                    "E_diff": E_diff,
+                    "E_D": E_D,
                     "H": {
                         "free_enthalpy": H,
                         "entropy": S
@@ -622,10 +622,10 @@ def test_run_MMS_steady_state(tmpdir):
         E_p = 0.1
         T = 700 + 30*FESTIM.x
         n_trap = 1
-        E_diff = 0.1
+        E_D = 0.1
         D_0 = 2
         k_B = 8.6e-5
-        D = D_0 * sp.exp(-E_diff/k_B/T)
+        D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
 
@@ -637,7 +637,7 @@ def test_run_MMS_steady_state(tmpdir):
             "materials": [
                 {
                     "borders": [0, size],
-                    "E_diff": E_diff,
+                    "E_D": E_D,
                     "D_0": D_0,
                     "id": 1
                     }

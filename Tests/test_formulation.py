@@ -18,7 +18,7 @@ def test_formulation_no_trap_1_material():
             "alpha": 1,
             "beta": 2,
             "borders": [0, 1],
-            "E_diff": 4,
+            "E_D": 4,
             "D_0": 5,
             "id": 1
             }],
@@ -74,7 +74,7 @@ def test_formulation_1_trap_1_material():
             }],
         "materials": [{
             "borders": [0, 1],
-            "E_diff": 4,
+            "E_D": 4,
             "D_0": 5,
             "id": 1
             }],
@@ -147,7 +147,7 @@ def test_formulation_2_traps_1_material():
             }],
         "materials": [{
             "borders": [0, 1],
-            "E_diff": 4,
+            "E_D": 4,
             "D_0": 5,
             "id": 1
             }],
@@ -244,14 +244,14 @@ def test_formulation_1_trap_2_materials():
         "materials": [{
 
                 "borders": [0, 0.5],
-                "E_diff": 4,
+                "E_D": 4,
                 "D_0": 5,
                 "id": 1
                 },
                 {
 
                 "borders": [0.5, 1],
-                "E_diff": 5,
+                "E_D": 5,
                 "D_0": 6,
                 "id": 2
                 }],
@@ -340,7 +340,7 @@ def test_formulation_1_extrap_1_material():
             }],
         "materials": [{
                 "borders": [0, 1],
-                "E_diff": 4,
+                "E_D": 4,
                 "D_0": 5,
                 "id": 1
                 }],
@@ -405,7 +405,7 @@ def test_formulation_steady_state():
             ],
         "materials": [{
             "borders": [0, 1],
-            "E_diff": 4,
+            "E_D": 4,
             "D_0": 5,
             "id": 1
             }],
@@ -536,7 +536,7 @@ def test_formulation_soret():
         "traps": [],
         "materials": [{
                 "borders": [0, 0.5],
-                "E_diff": 4,
+                "E_D": 4,
                 "D_0": 5,
                 "H":{
                     "free_enthalpy": 4,
@@ -546,7 +546,7 @@ def test_formulation_soret():
                 },
                 {
                 "borders": [0, 0.5],
-                "E_diff": 4,
+                "E_D": 4,
                 "D_0": 5,
                 "H":{
                     "free_enthalpy": 4,
@@ -626,7 +626,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
     parameters = {
         "materials": [{
             "borders": [0, 1],
-            "E_diff": 4,
+            "E_D": 4,
             "D_0": 5,
             "S_0": 2,
             "E_S": 2,
@@ -688,7 +688,7 @@ def test_formulation_1_trap_1_material_chemical_pot():
         ],
         "materials": [{
             "borders": [0, 0.5],
-            "E_diff": 4,
+            "E_D": 4,
             "D_0": 5,
             "S_0": 2,
             "E_S": 2,
@@ -696,7 +696,7 @@ def test_formulation_1_trap_1_material_chemical_pot():
             },
             {
             "borders": [0.5, 1],
-            "E_diff": 4,
+            "E_D": 4,
             "D_0": 5,
             "S_0": 3,
             "E_S": 3,

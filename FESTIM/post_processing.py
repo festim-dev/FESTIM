@@ -126,8 +126,8 @@ class ArheniusCoeff(UserExpression):
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
         D_0 = material[self._pre_exp]
-        E_diff = material[self._E]
-        value[0] = D_0*exp(-E_diff/FESTIM.k_B/self._T(x))
+        E_D = material[self._E]
+        value[0] = D_0*exp(-E_D/FESTIM.k_B/self._T(x))
 
     def value_shape(self):
         return ()
@@ -186,7 +186,7 @@ def create_properties(mesh, materials, vm, T):
     - T : fenics.Expression() or fenics.Function()
     Returns UserExpression classes for D, thermal_cond, and H
     '''
-    D = ArheniusCoeff(mesh, materials, vm, T, "D_0", "E_diff", degree=2)
+    D = ArheniusCoeff(mesh, materials, vm, T, "D_0", "E_D", degree=2)
     thermal_cond = None
     cp = None
     rho = None

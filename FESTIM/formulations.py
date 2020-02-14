@@ -32,7 +32,7 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
 
     for material in parameters["materials"]:
         D_0 = material['D_0']
-        E_diff = material['E_diff']
+        E_D = material['E_D']
         if "S_0" in material.keys() or "E_S" in material.keys():
             chemical_pot = True
             E_S = material['E_S']
@@ -43,11 +43,11 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         subdomain = material['id']
         if transient:
             F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
-        F += dot(D_0 * exp(-E_diff/k_B/T)*grad(c_0),
+        F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                  grad(testfunctions[0]))*dx(subdomain)
         if soret is True:
             Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
-            F += dot(D_0 * exp(-E_diff/k_B/T) *
+            F += dot(D_0 * exp(-E_D/k_B/T) *
                      Q * c_0 / (FESTIM.R * T**2) * grad(T),
                      grad(testfunctions[0]))*dx(subdomain)
     # Define flux
