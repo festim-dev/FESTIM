@@ -18,9 +18,6 @@ def test_run_temperature_stationary(tmpdir):
         "materials": [
             {
                 "thermal_cond": 1,
-                "alpha": 1.1e-10,
-                "beta": 6*6.3e28,
-                "density": 6.3e28,
                 "borders": [0, size],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
@@ -127,9 +124,6 @@ def test_run_temperature_transient(tmpdir):
                 "thermal_cond": 1,
                 "rho": 1,
                 "heat_capacity": 1,
-                "alpha": 1.1e-10,  # lattice constant ()
-                "beta": 6*6.3e28,  # number of solute sites per atom (6 for W)
-                "density": 6.3e28,
                 "borders": [0, size],
                 "E_diff": 0.39,
                 "D_0": 4.1e-7,
@@ -224,40 +218,38 @@ def test_run_MMS(tmpdir):
 
     def parameters(h, dt, final_time, u, v):
         size = 1
-        nu_0 = 2
-        E_t = 1.5
+        k_0 = 2
+        E_k = 1.5
+        p_0 = 3
+        E_p = 0.2
         T = 700 + 30*FESTIM.x
-        density = 1
-        beta = 1
-        alpha = 2
         n_trap = 1
         E_diff = 0.1
         D_0 = 2
         k_B = 8.6e-5
         D = D_0 * sp.exp(-E_diff/k_B/T)
-        nu_i = nu_0 * sp.exp(-E_t/k_B/T)
-        nu_m = D/alpha/alpha/beta
+        p = p_0 * sp.exp(-E_p/k_B/T)
+        k = k_0 * sp.exp(-E_k/k_B/T)
 
         f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
             D * sp.diff(u, FESTIM.x, 2) - \
             sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-        g = sp.diff(v, FESTIM.t) + nu_i*v - nu_m * u * (n_trap-v)
+        g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
-                    "alpha": alpha,  # lattice constant ()
-                    "beta": beta,  # number of solute sites per atom (6 for W)
-                    "density": density,
                     "borders": [0, size],
                     "E_diff": E_diff,
                     "D_0": D_0,
-                    "nu_0": nu_0,
                     "id": 1
                     }
                     ],
             "traps": [
                 {
-                    "energy": E_t,
+                    "E_k": E_k,
+                    "k_0": k_0,
+                    "E_p": E_p,
+                    "p_0": p_0,
                     "density": n_trap,
                     "materials": 1,
                     "source_term": g
@@ -363,42 +355,40 @@ def test_run_MMS_chemical_pot(tmpdir):
 
     def parameters(h, dt, final_time, u, v):
         size = 1
-        nu_0 = 2
-        E_t = 1.5
+        k_0 = 2
+        E_k = 1.5
+        p_0 = 3
+        E_p = 0.2
         T = 700 + 30*FESTIM.x
-        density = 1
-        beta = 1
-        alpha = 2
         n_trap = 1
         E_diff = 0.1
         D_0 = 2
         k_B = 8.6e-5
         D = D_0 * sp.exp(-E_diff/k_B/T)
-        nu_i = nu_0 * sp.exp(-E_t/k_B/T)
-        nu_m = D/alpha/alpha/beta
+        p = p_0 * sp.exp(-E_p/k_B/T)
+        k = k_0 * sp.exp(-E_k/k_B/T)
 
         f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
             D * sp.diff(u, FESTIM.x, 2) - \
             sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-        g = sp.diff(v, FESTIM.t) + nu_i*v - nu_m * u * (n_trap-v)
+        g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
-                    "alpha": alpha,  # lattice constant ()
-                    "beta": beta,  # number of solute sites per atom (6 for W)
-                    "density": density,
                     "borders": [0, size],
                     "S_0": 2,
                     "E_S": 0.1,
                     "E_diff": E_diff,
                     "D_0": D_0,
-                    "nu_0": nu_0,
                     "id": 1
                     }
                     ],
             "traps": [
                 {
-                    "energy": E_t,
+                    "E_k": E_k,
+                    "k_0": k_0,
+                    "E_p": E_p,
+                    "p_0": p_0,
                     "density": n_trap,
                     "materials": 1,
                     "source_term": g
@@ -504,9 +494,6 @@ def test_run_MMS_soret(tmpdir):
     def parameters(h, dt, final_time, u):
         size = 0.1
         T = 2 + sp.cos(2*fenics.pi*FESTIM.x)*sp.cos(FESTIM.t)
-        density = 1
-        beta = 6
-        alpha = 1.1e-10
         E_diff = 0
         D_0 = 2
         k_B = FESTIM.k_B
@@ -523,9 +510,6 @@ def test_run_MMS_soret(tmpdir):
         parameters = {
             "materials": [
                 {
-                    "alpha": alpha,  # lattice constant ()
-                    "beta": beta,  # number of solute sites per atom (6 for W)
-                    "density": density,
                     "borders": [0, size],
                     "E_diff": E_diff,
                     "H": {
@@ -632,40 +616,38 @@ def test_run_MMS_steady_state(tmpdir):
 
     def parameters(h, u, v):
         size = 1
-        nu_0 = 2
-        E_t = 1.5
+        k_0 = 2
+        E_k = 1.5
+        p_0 = 0.2
+        E_p = 0.1
         T = 700 + 30*FESTIM.x
-        density = 1
-        beta = 1
-        alpha = 2
         n_trap = 1
         E_diff = 0.1
         D_0 = 2
         k_B = 8.6e-5
         D = D_0 * sp.exp(-E_diff/k_B/T)
-        nu_i = nu_0 * sp.exp(-E_t/k_B/T)
-        nu_m = D/alpha/alpha/beta
+        p = p_0 * sp.exp(-E_p/k_B/T)
+        k = k_0 * sp.exp(-E_k/k_B/T)
 
         f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
             D * sp.diff(u, FESTIM.x, 2) - \
             sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-        g = sp.diff(v, FESTIM.t) + nu_i*v - nu_m * u * (n_trap-v)
+        g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
-                    "alpha": alpha,  # lattice constant ()
-                    "beta": beta,  # number of solute sites per atom (6 for W)
-                    "density": density,
                     "borders": [0, size],
                     "E_diff": E_diff,
                     "D_0": D_0,
-                    "nu_0": nu_0,
                     "id": 1
                     }
                     ],
             "traps": [
                 {
-                    "energy": E_t,
+                    "E_k": E_k,
+                    "k_0": k_0,
+                    "E_p": E_p,
+                    "p_0": p_0,
                     "density": n_trap,
                     "materials": 1,
                     "source_term": g
@@ -730,7 +712,7 @@ def test_run_MMS_steady_state(tmpdir):
         }
         return parameters
 
-    tol_u = 1e-12
+    tol_u = 1e-10
     tol_v = 1e-7
     sizes = [1/1600, 1/1700]
     for h in sizes:
