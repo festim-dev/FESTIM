@@ -219,29 +219,29 @@ def test_run_MMS(tmpdir):
     Test function run() for several refinements
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + FESTIM.x**2 + FESTIM.t
-    v = u*FESTIM.t
+    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t
+    v = 1 + sp.cos(2*fenics.pi*FESTIM.x)*FESTIM.t
 
     def parameters(h, dt, final_time, u, v):
         size = 1
-        v_0 = 1e13
+        nu_0 = 2
         E_t = 1.5
         T = 700 + 30*FESTIM.x
-        density = 1 * 6.3e28
-        beta = 6*density
-        alpha = 1.1e-10
-        n_trap = 1e-1*density
-        E_diff = 0.39
-        D_0 = 4.1e-7
+        density = 1
+        beta = 1
+        alpha = 2
+        n_trap = 1
+        E_diff = 0.1
+        D_0 = 2
         k_B = 8.6e-5
         D = D_0 * sp.exp(-E_diff/k_B/T)
-        v_i = v_0 * sp.exp(-E_t/k_B/T)
-        v_m = D/alpha/alpha/beta
+        nu_i = nu_0 * sp.exp(-E_t/k_B/T)
+        nu_m = D/alpha/alpha/beta
 
         f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
             D * sp.diff(u, FESTIM.x, 2) - \
             sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-        g = sp.diff(v, FESTIM.t) + v_i*v - v_m * u * (n_trap-v)
+        g = sp.diff(v, FESTIM.t) + nu_i*v - nu_m * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
@@ -251,6 +251,7 @@ def test_run_MMS(tmpdir):
                     "borders": [0, size],
                     "E_diff": E_diff,
                     "D_0": D_0,
+                    "nu_0": nu_0,
                     "id": 1
                     }
                     ],
@@ -335,7 +336,7 @@ def test_run_MMS(tmpdir):
         return parameters
 
     tol_u = 1e-7
-    tol_v = 1e-3
+    tol_v = 1e-6
     sizes = [1/1600, 1/1700]
     dt = 0.1/50
     final_time = 0.1
@@ -357,29 +358,29 @@ def test_run_MMS_chemical_pot(tmpdir):
     Test function run() with conservation of chemical potential (1 material)
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + FESTIM.x**2 + FESTIM.t
-    v = u*FESTIM.t
+    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t
+    v = 1 + sp.cos(2*fenics.pi*FESTIM.x)*FESTIM.t
 
     def parameters(h, dt, final_time, u, v):
         size = 1
-        v_0 = 1e13
+        nu_0 = 2
         E_t = 1.5
-        T = 700 + 30*FESTIM.x + FESTIM.t
-        density = 1 * 6.3e28
-        beta = 6*density
-        alpha = 1.1e-10
-        n_trap = 1e-1*density
-        E_diff = 0.39
-        D_0 = 4.1e-7
+        T = 700 + 30*FESTIM.x
+        density = 1
+        beta = 1
+        alpha = 2
+        n_trap = 1
+        E_diff = 0.1
+        D_0 = 2
         k_B = 8.6e-5
         D = D_0 * sp.exp(-E_diff/k_B/T)
-        v_i = v_0 * sp.exp(-E_t/k_B/T)
-        v_m = D/alpha/alpha/beta
+        nu_i = nu_0 * sp.exp(-E_t/k_B/T)
+        nu_m = D/alpha/alpha/beta
 
         f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
             D * sp.diff(u, FESTIM.x, 2) - \
             sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-        g = sp.diff(v, FESTIM.t) + v_i*v - v_m * u * (n_trap-v)
+        g = sp.diff(v, FESTIM.t) + nu_i*v - nu_m * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
@@ -391,6 +392,7 @@ def test_run_MMS_chemical_pot(tmpdir):
                     "E_S": 0.1,
                     "E_diff": E_diff,
                     "D_0": D_0,
+                    "nu_0": nu_0,
                     "id": 1
                     }
                     ],
@@ -475,7 +477,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         return parameters
 
     tol_u = 1e-7
-    tol_v = 1e-3
+    tol_v = 1e-6
     sizes = [1/1600]
     dt = 0.1/50
     final_time = 0.1
@@ -630,31 +632,34 @@ def test_run_MMS_steady_state(tmpdir):
 
     def parameters(h, u, v):
         size = 1
-        v_0 = 1e13
+        nu_0 = 2
         E_t = 1.5
         T = 700 + 30*FESTIM.x
         density = 1
-        beta = 6*density
-        alpha = 1
-        n_trap = 1e-1*density
-        E_diff = 0
-        D_0 = 1
+        beta = 1
+        alpha = 2
+        n_trap = 1
+        E_diff = 0.1
+        D_0 = 2
         k_B = 8.6e-5
         D = D_0 * sp.exp(-E_diff/k_B/T)
-        v_i = v_0 * sp.exp(-E_t/k_B/T)
-        v_m = D/alpha/alpha/beta
-        f = sp.diff(v, FESTIM.t) - D * sp.diff(u, FESTIM.x, 2) - \
-            sp.diff(D, FESTIM.x, 1)*sp.diff(u, FESTIM.x, 1)
-        g = v_i*v - v_m * u * (n_trap-v)
+        nu_i = nu_0 * sp.exp(-E_t/k_B/T)
+        nu_m = D/alpha/alpha/beta
+
+        f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
+            D * sp.diff(u, FESTIM.x, 2) - \
+            sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
+        g = sp.diff(v, FESTIM.t) + nu_i*v - nu_m * u * (n_trap-v)
         parameters = {
             "materials": [
                 {
                     "alpha": alpha,  # lattice constant ()
-                    "beta": beta,  # number of solute sites pe
+                    "beta": beta,  # number of solute sites per atom (6 for W)
                     "density": density,
                     "borders": [0, size],
                     "E_diff": E_diff,
                     "D_0": D_0,
+                    "nu_0": nu_0,
                     "id": 1
                     }
                     ],
