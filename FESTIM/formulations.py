@@ -83,7 +83,11 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             trap_density = Expression(trap_density, degree=2, t=0)
             expressions.append(trap_density)
 
-        energy = trap['energy']
+        E_k = trap['E_k']
+        k_0 = trap['k_0']
+        E_p = trap['E_p']
+        p_0 = trap['p_0']
+
         material = trap['materials']
         if transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
@@ -94,10 +98,6 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             corresponding_material = \
                 FESTIM.helpers.find_material_from_id(
                     parameters["materials"], subdomain)
-            D_0 = corresponding_material['D_0']
-            E_diff = corresponding_material['E_diff']
-            alpha = corresponding_material['alpha']
-            beta = corresponding_material['beta']
             c_0 = solutions[0]
             if chemical_pot is True:
                 S_0 = corresponding_material['S_0']
@@ -107,10 +107,10 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
                 nu_0 = corresponding_material['nu_0']
             else:
                 nu_0 = nu_0_default
-            F += - D_0 * exp(-E_diff/k_B/T)/alpha/alpha/beta * \
-                c_0 * (trap_density - solutions[i]) * \
+            F += - k_0 * exp(-E_k/k_B/T) * c_0 \
+                * (trap_density - solutions[i]) * \
                 testfunctions[i]*dx(subdomain)
-            F += nu_0*exp(-energy/k_B/T)*solutions[i] * \
+            F += p_0*exp(-E_p/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
         # if a source term is set then add it to the form
         if 'source_term' in trap.keys():
