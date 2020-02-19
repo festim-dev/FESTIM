@@ -89,7 +89,7 @@ parameters = {
                 id must correspond to the volume_markers_file",
             "unit": "None"
             },
-    }
+    },
     "traps": {
         "E_k": {
             "description": "Trapping rate activation energy",
