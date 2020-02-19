@@ -125,7 +125,7 @@ def test_create_properties():
     materials = [
         {
             "D_0": 1,
-            "E_diff": 0,
+            "E_D": 0,
             "thermal_cond": 4,
             "heat_capacity": 5,
             "rho": 6,
@@ -139,7 +139,7 @@ def test_create_properties():
             },
         {
             "D_0": 2,
-            "E_diff": 0,
+            "E_D": 0,
             "thermal_cond": 5,
             "heat_capacity": 6,
             "rho": 7,

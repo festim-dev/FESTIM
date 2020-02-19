@@ -16,14 +16,14 @@ def test_run_post_processing(tmpdir):
     parameters = {
         "materials": [{
                 "borders": [0, 0.5],
-                "E_diff": 4,
+                "E_D": 4,
                 "D_0": 5,
                 "thermal_cond": 1,
                 "id": 1
                 },
                 {
                 "borders": [0.5, 1],
-                "E_diff": 5,
+                "E_D": 5,
                 "D_0": 6,
                 "thermal_cond": 1,
                 "id": 2
@@ -125,13 +125,13 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     parameters = {
         "materials": [{
                 "borders": [0, 0.5],
-                "E_diff": 4,
+                "E_D": 4,
                 "D_0": 5,
                 "id": 1
                 },
                 {
                 "borders": [0.5, 1],
-                "E_diff": 5,
+                "E_D": 5,
                 "D_0": 6,
                 "id": 2
                 }],
@@ -207,14 +207,14 @@ def test_run_post_processing_flux(tmpdir):
     parameters = {
         "materials": [{
                 "borders": [0, 0.5],
-                "E_diff": 0.4,
+                "E_D": 0.4,
                 "D_0": 5,
                 "thermal_cond": 3,
                 "id": 1
                 },
                 {
                 "borders": [0.5, 1],
-                "E_diff": 0.5,
+                "E_D": 0.5,
                 "D_0": 6,
                 "thermal_cond": 5,
                 "id": 2
