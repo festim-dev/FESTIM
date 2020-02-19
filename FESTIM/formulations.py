@@ -226,12 +226,12 @@ def define_variational_problem_heat_transfers(
 
     # Boundary conditions
     for bc in parameters["temperature"]["boundary_conditions"]:
-        if type(bc["surface"]) is list:
-            surfaces = bc["surface"]
+        if type(bc["surfaces"]) is list:
+            surfaces = bc["surfaces"]
         else:
-            surfaces = [bc["surface"]]
+            surfaces = [bc["surfaces"]]
         for surf in surfaces:
-            if bc["type"] == "neumann":
+            if bc["type"] == "flux":
                 value = sp.printing.ccode(bc["value"])
                 value = Expression(value, degree=2, t=0)
                 # Surface flux term

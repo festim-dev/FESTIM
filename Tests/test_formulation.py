@@ -469,12 +469,12 @@ def test_formulation_heat_transfer():
                 {
                     "type": "dirichlet",
                     "value": u,
-                    "surface": [1]
+                    "surfaces": [1]
                 },
                 {
-                    "type": "neumann",
+                    "type": "flux",
                     "value": 2,
-                    "surface": [2]
+                    "surfaces": [2]
                 },
                 ],
             "source_term": [

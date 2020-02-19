@@ -32,10 +32,10 @@ def define_dirichlet_bcs_T(parameters, V, boundaries):
             value = sp.printing.ccode(bc["value"])
             value = Expression(value, degree=2, t=0)
             expressions.append(value)
-            if type(bc["surface"]) is list:
-                surfaces = bc["surface"]
+            if type(bc["surfaces"]) is list:
+                surfaces = bc["surfaces"]
             else:
-                surfaces = [bc["surface"]]
+                surfaces = [bc["surfaces"]]
             for surf in surfaces:
                 bci = DirichletBC(V, value, boundaries, surf)
                 bcs.append(bci)
@@ -82,10 +82,10 @@ def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=0):
                 Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/k_B/T)
                 flux = -Kr*solute**bc["order"]
 
-            if type(bc['surface']) is not list:
-                surfaces = [bc['surface']]
+            if type(bc['surfaces']) is not list:
+                surfaces = [bc['surfaces']]
             else:
-                surfaces = bc['surface']
+                surfaces = bc['surfaces']
             for surf in surfaces:
                 F += -test_solute*flux*ds(surf)
     return F, expressions
@@ -184,10 +184,10 @@ def apply_boundary_conditions(parameters, V,
                     value_BC, volume_markers.mesh(), parameters["materials"],
                     volume_markers, temp)
             expressions.append(value_BC)
-            if type(BC['surface']) is not list:
-                surfaces = [BC['surface']]
+            if type(BC['surfaces']) is not list:
+                surfaces = [BC['surfaces']]
             else:
-                surfaces = BC['surface']
+                surfaces = BC['surfaces']
             if V.num_sub_spaces() == 0:
                 funspace = V
             else:  # if only one component, use subspace

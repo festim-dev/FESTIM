@@ -121,6 +121,44 @@ parameters = {
             "description": "Volumetric source term for the trapped population",
             "unit": "m^-3.s^-1"
             },
+        "boundary_conditions": {
+            "type": {
+                "dc": "Dirichlet boundary condition",
+                "flux": "Pure Neumann boundary condition",
+                "recomb": "Recombination flux",
+                "convective_flux": "Convective exchange (for heat transfer)",
+                "solubility": "Dirichlet boundary condition based on solubility and pressure c=S*P^0.5",
+                "table": "Dirichlet boundary condition based on interpolated values from 2D table (t, c(t))."
+                },
+            "surfaces": {
+                "description": "List of surfaces on which the boundary condition is applied",
+                "unit": "None"
+                },
+            "value": {
+                        "description": "Value of boundary conditions only needed for types dc and flux",
+                        "unit": "m^-3 or m^-2.s^-1"
+                    },
+            "Kr_0": {
+                        "description": "Value of recombination coefficient pre-exponential factor",
+                        "unit": "m^(-2+3*n).s^-1 , where n is the order of recombination"
+                    },
+            "E_Kr": {
+                        "description": "Value of recombination coefficient activation energy",
+                        "unit": "eV"
+                    },
+            "S_0": {
+                        "description": "Value of solubility coefficient pre-exponential factor",
+                        "unit": "m^-3.Pa^-0.5"
+                    },
+            "E_S": {
+                        "description": "Value of solubility coefficient activation energy",
+                        "unit": "eV"
+                    },
+            "pressure": {
+                        "description": "Value of pressure",
+                        "unit": "Pa"
+            }
+        }
         },
     }
 

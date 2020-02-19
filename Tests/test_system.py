@@ -34,7 +34,7 @@ def test_run_temperature_stationary(tmpdir):
             },
         "boundary_conditions": [
                     {
-                        "surface": [1],
+                        "surfaces": [1],
                         "value": 1,
                         "component": 0,
                         "type": "dc"
@@ -46,7 +46,7 @@ def test_run_temperature_stationary(tmpdir):
                 {
                     "type": "dc",
                     "value": u,
-                    "surface": [1, 2]
+                    "surfaces": [1, 2]
                 }
                 ],
             "source_term": [
@@ -140,7 +140,7 @@ def test_run_temperature_transient(tmpdir):
             },
         "boundary_conditions": [
                     {
-                        "surface": [1],
+                        "surfaces": [1],
                         "value": 1,
                         "component": 0,
                         "type": "dc"
@@ -152,7 +152,7 @@ def test_run_temperature_transient(tmpdir):
                 {
                     "type": "dc",
                     "value": u,
-                    "surface": [1, 2]
+                    "surfaces": [1, 2]
                 }
                 ],
             "source_term": [
@@ -274,13 +274,13 @@ def test_run_MMS(tmpdir):
                 },
             "boundary_conditions": [
                     {
-                        "surface": [1, 2],
+                        "surfaces": [1, 2],
                         "value": u,
                         "component": 0,
                         "type": "dc"
                     },
                     {
-                        "surface": [1, 2],
+                        "surfaces": [1, 2],
                         "value": v,
                         "component": 1,
                         "type": "dc"
@@ -413,13 +413,13 @@ def test_run_MMS_chemical_pot(tmpdir):
                 },
             "boundary_conditions": [
                     {
-                        "surface": [1, 2],
+                        "surfaces": [1, 2],
                         "value": u,
                         "component": 0,
                         "type": "dc"
                     },
                     {
-                        "surface": [1, 2],
+                        "surfaces": [1, 2],
                         "value": v,
                         "component": 1,
                         "type": "dc"
@@ -536,7 +536,7 @@ def test_run_MMS_soret(tmpdir):
                 },
             "boundary_conditions": [
                     {
-                       "surface": [1, 2],
+                       "surfaces": [1, 2],
                        "value": u,
                        "component": 0,
                        "type": "dc"
@@ -661,13 +661,13 @@ def test_run_MMS_steady_state(tmpdir):
                 },
             "boundary_conditions": [
                     {
-                        "surface": [1, 2],
+                        "surfaces": [1, 2],
                         "value": u,
                         "component": 0,
                         "type": "dc"
                     },
                     {
-                        "surface": [1, 2],
+                        "surfaces": [1, 2],
                         "value": v,
                         "component": 1,
                         "type": "dc"

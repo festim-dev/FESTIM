@@ -27,12 +27,12 @@ def test_fluxes_chemical_pot():
                 "Kr_0": Kr_0,
                 "E_Kr": E_Kr,
                 "order": order,
-                "surface": 1,
+                "surfaces": 1,
             },
             {
                 "type": "flux",
                 "value": 2*FESTIM.x + FESTIM.t,
-                "surface": [1, 2],
+                "surfaces": [1, 2],
             },
         ]
     }
@@ -71,12 +71,12 @@ def test_fluxes():
             "Kr_0": Kr_0,
             "E_Kr": E_Kr,
             "order": order,
-            "surface": 1,
+            "surfaces": 1,
             },
         {
            "type": "flux",
            "value": 2*FESTIM.x + FESTIM.t,
-           "surface": [1, 2],
+           "surfaces": [1, 2],
         },
     ]
     mesh = fenics.UnitIntervalMesh(10)
@@ -135,7 +135,7 @@ def test_apply_boundary_conditions_theta():
             {
                 "type": "dc",
                 "value": 200 + FESTIM.t,
-                "surface": [1, 2]
+                "surfaces": [1, 2]
             },
         ]
     }
