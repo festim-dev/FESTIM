@@ -168,7 +168,7 @@ parameters = {
             "initial_number_of_cells": {
                 "description": "Number of cells in the domain before refinement",
                 "unit": "cells"
-            }
+            },
             "mesh_file": {},
             "cells_file": {},
             "facets_file": {},
