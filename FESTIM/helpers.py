@@ -135,7 +135,7 @@ parameters = {
                 "unit": "None"
                 },
             "value": {
-                        "description": "Value of boundary conditions only needed for types dc and flux",
+                        "description": "Value of boundary conditions only needed for types dc and flux. Can be float or an expression (ex: (1 + FESTIM.x)*FESTIM.t<100)",
                         "unit": "m^-3 or m^-2.s^-1"
                     },
             "Kr_0": {
@@ -158,6 +158,22 @@ parameters = {
                         "description": "Value of pressure",
                         "unit": "Pa"
             }
+        },
+        "mesh_parameters": {
+            "refinements": {},
+            "size": {
+                "description": "Size of the 1D problem",
+                "unit": "m"
+            },
+            "initial_number_of_cells": {
+                "description": "Number of cells in the domain before refinement",
+                "unit": "cells"
+            }
+            "mesh_file": {},
+            "cells_file": {},
+            "facets_file": {},
+            "meshfunction_cells": {},
+            "meshfunction_facets": {},
         }
         },
     }
