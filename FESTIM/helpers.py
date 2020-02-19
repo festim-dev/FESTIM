@@ -121,7 +121,7 @@ parameters = {
             "description": "Volumetric source term for the trapped population",
             "unit": "m^-3.s^-1"
             },
-        }
+        },
     "boundary_conditions": {
         "type": {
             "dc": "Dirichlet boundary condition",
