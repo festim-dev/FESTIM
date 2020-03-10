@@ -116,31 +116,39 @@ def test_export_profiles(tmpdir):
         FESTIM.export.export_profiles(functions, exports, t, dt, V)
 
 
-def test_create_flux_functions():
+def test_create_properties():
     '''
-    Test the function FESTIM.create_flux_functions()
+    Test the function FESTIM.create_properties()
     '''
     mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
+    DG_1 = fenics.FunctionSpace(mesh, 'DG', 1)
     materials = [
         {
-            "D_0": 2,
-            "E_diff": 3,
+            "D_0": 1,
+            "E_D": 0,
             "thermal_cond": 4,
+            "heat_capacity": 5,
+            "rho": 6,
             "H": {
                 "free_enthalpy": 5,
                 "entropy": 6
             },
+            "S_0": 7,
+            "E_S": 0,
             "id": 1
             },
         {
-            "D_0": 3,
-            "E_diff": 4,
+            "D_0": 2,
+            "E_D": 0,
             "thermal_cond": 5,
+            "heat_capacity": 6,
+            "rho": 7,
             "H": {
-                "free_enthalpy": 6,
+                "free_enthalpy": 5,
                 "entropy": 7
             },
+            "S_0": 8,
+            "E_S": 0,
             "id": 2
             }
             ]
@@ -151,15 +159,23 @@ def test_create_flux_functions():
             mf[cell] = 1
         else:
             mf[cell] = 2
-    A, B, C, D, E = \
-        FESTIM.post_processing.create_flux_functions(mesh, materials, mf)
+    T = fenics.Expression("1", degree=1)
+    A, B, C, D, E, F = \
+        FESTIM.post_processing.create_properties(mesh, materials, mf, T)
+    A = fenics.interpolate(A, DG_1)
+    B = fenics.interpolate(B, DG_1)
+    C = fenics.interpolate(C, DG_1)
+    D = fenics.interpolate(D, DG_1)
+    E = fenics.interpolate(E, DG_1)
+    F = fenics.interpolate(F, DG_1)
+
     for cell in fenics.cells(mesh):
-        cell_no = cell.index()
-        assert A.vector()[cell_no] == mf[cell]+1
-        assert B.vector()[cell_no] == mf[cell]+2
-        assert C.vector()[cell_no] == mf[cell]+3
-        assert D.vector()[cell_no] == mf[cell]+4
-        assert E.vector()[cell_no] == mf[cell]+5
+        assert A(cell.midpoint().x()) == mf[cell]
+        assert B(cell.midpoint().x()) == mf[cell] + 3
+        assert C(cell.midpoint().x()) == mf[cell] + 4
+        assert D(cell.midpoint().x()) == mf[cell] + 5
+        assert E(cell.midpoint().x()) == mf[cell] + 10
+        assert F(cell.midpoint().x()) == mf[cell] + 6
 
 
 def test_derived_quantities():
@@ -269,7 +285,7 @@ def test_derived_quantities():
     thermal_cond = fenics.interpolate(thermal_cond, V)
     tab = FESTIM.post_processing.derived_quantities(
         parameters, [u_, u_, T_], [volume_markers, surface_markers],
-        [D, thermal_cond, D])
+        [D, thermal_cond, None, None])
 
     # Compare
     assert len(tab) == len(expected)
@@ -389,11 +405,110 @@ def test_derived_quantities_soret():
     Q = fenics.interpolate(Q, V)
     tab = FESTIM.post_processing.derived_quantities(
         parameters, [u_, u_, T_], [volume_markers, surface_markers],
-        [D, thermal_cond, Q])
+        [D, thermal_cond, Q, None])
 
     # Compare
     assert len(tab) == len(expected)
     for i in range(0, len(tab)):
+        assert abs(tab[i] - expected[i])/expected[i] < 1e-3
+
+
+def test_derived_quantities_chemical_pot():
+    '''
+    Test the function FESTIM.derived_quantities()
+    with soret effect
+    '''
+    T = 2*FESTIM.x**2 + 1
+    u = 2*FESTIM.x**2
+    D = 2*T
+    thermal_cond = T**2
+    S = 2 + T
+    R = 8.314
+    theta = u/S
+    # Create Functions
+    mesh = fenics.UnitIntervalMesh(10000)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
+    u_ = fenics.Expression(sp.printing.ccode(u), degree=3)
+    u_ = fenics.interpolate(u_, V)
+    theta_ = fenics.Expression(sp.printing.ccode(theta), degree=3)
+    theta_ = fenics.interpolate(theta_, V)
+    T_ = fenics.Expression(sp.printing.ccode(T), degree=3)
+    T_ = fenics.interpolate(T_, V)
+
+    surface_markers = fenics.MeshFunction("size_t", mesh, 0, 1)
+    domain = fenics.CompiledSubDomain('x[0] > 0.99999999')
+    domain.mark(surface_markers, 2)
+
+    volume_markers = fenics.MeshFunction("size_t", mesh, 1, 1)
+    domain = fenics.CompiledSubDomain('x[0] > 0.75')
+    domain.mark(volume_markers, 2)
+    # Set parameters for derived quantities
+    parameters = {
+        "temperature": {
+        },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    },
+                ],
+                "minimum_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [2]
+                    }
+                ],
+                "total_volume": [
+                    {
+                        "field": 'solute',
+                        "volumes": [1, 2]
+                    }
+                ],
+                "total_surface": [
+                    {
+                        "field": 'solute',
+                        "surfaces": [2]
+                    }
+                ],
+                "file": "derived_quantities",
+                "folder": "",
+            }
+        }
+    }
+
+    # Expected result
+    flux_u = D*(sp.diff(u, FESTIM.x))
+    total_u_1 = sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0.75) - \
+        sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0)
+    total_u_2 = sp.integrate(u, FESTIM.x).subs(FESTIM.x, 1) - \
+        sp.integrate(u, FESTIM.x).subs(FESTIM.x, 0.75)
+    total_surf_u_2 = u.subs(FESTIM.x, 1)
+    min_u_2 = u.subs(FESTIM.x, 0.75)
+    expected = [
+        flux_u.subs(FESTIM.x, 1),
+        min_u_2,
+        total_u_1,
+        total_u_2,
+        total_surf_u_2]
+
+    # Compute
+    D = fenics.Expression(sp.printing.ccode(D), degree=3)
+    D = fenics.interpolate(D, V)
+    thermal_cond = fenics.Expression(sp.printing.ccode(thermal_cond), degree=3)
+    thermal_cond = fenics.interpolate(thermal_cond, V)
+    S = fenics.Expression(sp.printing.ccode(S), degree=3)
+    S = fenics.interpolate(S, V_DG1)
+    tab = FESTIM.post_processing.derived_quantities(
+        parameters, [fenics.project(S*theta_, V_DG1), theta_, T_], [volume_markers, surface_markers],
+        [D, thermal_cond, None])
+
+    # Compare
+    assert len(tab) == len(expected)
+    for i in range(0, len(tab)):
+        print(i)
         assert abs(tab[i] - expected[i])/expected[i] < 1e-3
 
 

@@ -4,8 +4,9 @@ import numpy as np
 import FESTIM
 
 
-def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
-                        append, flux_fonctions, derived_quantities_global):
+def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
+                        files, append, flux_fonctions,
+                        derived_quantities_global):
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
@@ -16,23 +17,28 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
         res.append(interpolate(T, W))
     else:
         res.append(T)
+    D, thermal_cond, cp, rho, H, S = flux_fonctions
+    D_ = interpolate(D, V_DG1)
+    thermal_cond_ = None
+    if thermal_cond is not None:
+        thermal_cond_ = interpolate(thermal_cond, V_DG1)
+    H_ = None
+    if H is not None:
+        H_ = interpolate(H, V_DG1)
+    if S is not None:
+        # this is costly ...
+        solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
+        res[0] = solute
 
     if "derived_quantities" in parameters["exports"].keys():
-        D_0, E_diff, thermal_cond, G, S = flux_fonctions
-        if D_0 is not None:
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    markers,
-                    [D_0*exp(-E_diff/FESTIM.k_B/T), thermal_cond, G+T*S]
-                    )
-        else:
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    markers)
+        derived_quantities_t = \
+            FESTIM.post_processing.derived_quantities(
+                parameters,
+                res,
+                markers,
+                [D_, thermal_cond_, H_]
+                )
+
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
@@ -104,34 +110,102 @@ def compute_retention(u, W):
     return retention
 
 
-def create_flux_functions(mesh, materials, volume_markers):
-    '''
-    Returns Function() objects for fluxes computation
-    '''
-    D0 = FunctionSpace(mesh, 'DG', 0)
-    D_0 = Function(D0, name="D_0")
-    E_diff = Function(D0, name="E_diff")
-    thermal_cond = Function(D0, name="thermal_cond")
-    G = Function(D0, name="G")
-    S = Function(D0, name="S")
+class ArheniusCoeff(UserExpression):
+    def __init__(self, mesh, materials, vm, T, pre_exp, E, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._vm = vm
+        self._T = T
+        self._materials = materials
+        self._pre_exp = pre_exp
+        self._E = E
 
-    # Update coefficient D_0 and E_diff
-    for cell in cells(mesh):
-
-        subdomain_id = volume_markers[cell]
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
-            materials, subdomain_id)
-        value_D0 = material["D_0"]
-        value_E_diff = material["E_diff"]
-        cell_no = cell.index()
-        if "thermal_cond" in material:
-            thermal_cond.vector()[cell_no] = material["thermal_cond"]
-        if "H" in material:
-            G.vector()[cell_no] = material["H"]["free_enthalpy"]
-            S.vector()[cell_no] = material["H"]["entropy"]
-        D_0.vector()[cell_no] = value_D0
-        E_diff.vector()[cell_no] = value_E_diff
-    return D_0, E_diff, thermal_cond, G, S
+            self._materials, subdomain_id)
+        D_0 = material[self._pre_exp]
+        E_D = material[self._E]
+        value[0] = D_0*exp(-E_D/FESTIM.k_B/self._T(x))
+
+    def value_shape(self):
+        return ()
+
+
+class ThermalProp(UserExpression):
+    def __init__(self, mesh, materials, vm, T, key, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+        self._key = key
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = FESTIM.helpers.find_material_from_id(
+            self._materials, subdomain_id)
+        if callable(material[self._key]):
+            value[0] = material[self._key](self._T(x))
+        else:
+            value[0] = material[self._key]
+
+    def value_shape(self):
+        return ()
+
+
+class HCoeff(UserExpression):
+    def __init__(self, mesh, materials, vm, T, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = FESTIM.helpers.find_material_from_id(
+            self._materials, subdomain_id)
+
+        value[0] = material["H"]["free_enthalpy"] + \
+            self._T(x)*material["H"]["entropy"]
+
+    def value_shape(self):
+        return ()
+
+
+def create_properties(mesh, materials, vm, T):
+    '''
+    Arguments:
+    - mesh
+    - materials : parameters["materials"]
+    - vm : MeshFunction()
+    - T : fenics.Expression() or fenics.Function()
+    Returns UserExpression classes for D, thermal_cond, and H
+    '''
+    D = ArheniusCoeff(mesh, materials, vm, T, "D_0", "E_D", degree=2)
+    thermal_cond = None
+    cp = None
+    rho = None
+    H = None
+    S = None
+    for mat in materials:
+        if "S_0" in mat.keys():
+            S = ArheniusCoeff(mesh, materials, vm, T, "S_0", "E_S", degree=2)
+        if "thermal_cond" in mat.keys():
+            thermal_cond = ThermalProp(mesh, materials, vm, T,
+                                       'thermal_cond', degree=2)
+            cp = ThermalProp(mesh, materials, vm, T,
+                             'heat_capacity', degree=2)
+            rho = ThermalProp(mesh, materials, vm, T,
+                              'rho', degree=2)
+        if "H" in mat.keys():
+            H = HCoeff(mesh, materials, vm, T, degree=2)
+
+    return D, thermal_cond, cp, rho, H, S
 
 
 def calculate_maximum_volume(f, subdomains, subd_id):
@@ -206,7 +280,7 @@ def header_derived_quantities(parameters):
 
 
 def derived_quantities(parameters, solutions,
-                       markers, properties=[None, None, None]):
+                       markers, properties):
     '''
     Computes all the derived_quantities and store it into list
     '''
@@ -228,11 +302,11 @@ def derived_quantities(parameters, solutions,
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
-    solute = solutions[0]
+
     ret = solutions[len(solutions)-2]
     T = solutions[len(solutions)-1]
     field_to_sol = {
-        'solute': solute,
+        'solute': solutions[0],
         'retention': ret,
         'T': T,
     }
