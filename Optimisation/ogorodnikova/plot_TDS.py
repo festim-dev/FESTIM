@@ -29,7 +29,7 @@ trap2 = []
 trap3 = []
 solute = []
 t = []
-with open('optimisation_trap3/derived_quantities/1.41310524454_4.82892447131_8.69682813914.csv', 'r') as csvfile:
+with open('optimisation_5D/Solution/0.83581592495_1.11364004069_0.961486991697_6.24247419296_1.38985867586.csv', 'r') as csvfile:
     plots = csv.reader(csvfile, delimiter=',')
     for row in plots:
         if 't(s)' not in row:
