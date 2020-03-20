@@ -95,7 +95,6 @@ def export_profiles(res, exports, t, dt, W):
             else:
                 end = True
             for i in range(len(functions)):
-                print(functions[i])
                 if functions[i].isdigit() is True:
                     solution = res[int(functions[i])]
                 elif functions[i] in solution_dict:
