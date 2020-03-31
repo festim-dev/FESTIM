@@ -83,7 +83,8 @@ def export_profiles(res, exports, t, dt, W):
                         "in txt exports")
     solution_dict = {
         'solute': res[0],
-        'retention': res[len(res)-1]
+        'retention': res[len(res)-2],
+        'T': res[len(res)-1],
     }
     times = sorted(exports['txt']['times'])
     end = True
