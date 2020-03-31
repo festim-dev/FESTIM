@@ -4,7 +4,7 @@ import FESTIM
 
 
 def formulation(parameters, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, T, transient):
+                previous_solutions, dt, dx, T, T_n=None, transient=True):
     ''' Creates formulation for trapping MRE model.
     Parameters:
     - traps : dict, contains the energy, density and domains
@@ -17,38 +17,60 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     - expressions: list, contains Expression() to be updated
     '''
     k_B = FESTIM.k_B  # Boltzmann constant
-    v_0 = 1e13  # frequency factor s-1
+    nu_0_default = 1e13  # frequency factor s-1
     expressions = []
     F = 0
 
+    chemical_pot = False
     soret = False
     if "temperature" in parameters.keys():
         if "soret" in parameters["temperature"].keys():
             if parameters["temperature"]["soret"] is True:
                 soret = True
-
-    if transient:
-        F += ((solutions[0]-previous_solutions[0])/dt)*testfunctions[0]*dx
+    c_0 = solutions[0]
+    c_0_n = previous_solutions[0]
 
     for material in parameters["materials"]:
         D_0 = material['D_0']
-        E_diff = material['E_diff']
+        E_D = material['E_D']
+        if "S_0" in material.keys() or "E_S" in material.keys():
+            chemical_pot = True
+            E_S = material['E_S']
+            S_0 = material['S_0']
+            c_0 = solutions[0]*S_0*exp(-E_S/k_B/T)
+            c_0_n = previous_solutions[0]*S_0*exp(-E_S/k_B/T_n)
+
         subdomain = material['id']
-        F += dot(D_0 * exp(-E_diff/k_B/T)*grad(solutions[0]),
+        if transient:
+            F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
+        F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                  grad(testfunctions[0]))*dx(subdomain)
         if soret is True:
             Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
-            F += dot(D_0 * exp(-E_diff/k_B/T) *
-                     Q * solutions[0] / (FESTIM.R * T**2) * grad(T),
+            F += dot(D_0 * exp(-E_D/k_B/T) *
+                     Q * c_0 / (FESTIM.R * T**2) * grad(T),
                      grad(testfunctions[0]))*dx(subdomain)
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
-        source = Expression(
-            sp.printing.ccode(
-                parameters["source_term"]["value"]), t=0, degree=2)
-        F += - source*testfunctions[0]*dx
-        expressions.append(source)
+        if isinstance(parameters["source_term"], dict):
+            source = Expression(
+                sp.printing.ccode(
+                    parameters["source_term"]["value"]), t=0, degree=2)
+            F += - source*testfunctions[0]*dx
+            expressions.append(source)
+        elif isinstance(parameters["source_term"], list):
+            for source_dict in parameters["source_term"]:
+                source = Expression(
+                    sp.printing.ccode(
+                        source_dict["value"]), t=0, degree=2)
+                if isinstance(source_dict["volumes"], int):
+                    volumes = [source_dict["volumes"]]
+                else:
+                    volumes = source_dict["volumes"]
+                for vol in volumes:
+                    F += - source*testfunctions[0]*dx(vol)
+                expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
@@ -61,7 +83,11 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             trap_density = Expression(trap_density, degree=2, t=0)
             expressions.append(trap_density)
 
-        energy = trap['energy']
+        E_k = trap['E_k']
+        k_0 = trap['k_0']
+        E_p = trap['E_p']
+        p_0 = trap['p_0']
+
         material = trap['materials']
         if transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
@@ -72,22 +98,27 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
             corresponding_material = \
                 FESTIM.helpers.find_material_from_id(
                     parameters["materials"], subdomain)
-            D_0 = corresponding_material['D_0']
-            E_diff = corresponding_material['E_diff']
-            alpha = corresponding_material['alpha']
-            beta = corresponding_material['beta']
-            F += - D_0 * exp(-E_diff/k_B/T)/alpha/alpha/beta * \
-                solutions[0] * (trap_density - solutions[i]) * \
+            c_0 = solutions[0]
+            if chemical_pot is True:
+                S_0 = corresponding_material['S_0']
+                E_S = corresponding_material['E_S']
+                c_0 = solutions[0]*S_0*exp(-E_S/k_B/T)
+            if 'nu_0' in corresponding_material.keys():
+                nu_0 = corresponding_material['nu_0']
+            else:
+                nu_0 = nu_0_default
+            F += - k_0 * exp(-E_k/k_B/T) * c_0 \
+                * (trap_density - solutions[i]) * \
                 testfunctions[i]*dx(subdomain)
-            F += v_0*exp(-energy/k_B/T)*solutions[i] * \
+            F += p_0*exp(-E_p/k_B/T)*solutions[i] * \
                 testfunctions[i]*dx(subdomain)
-        try:  # if a source term is set then add it to the form
+        # if a source term is set then add it to the form
+        if 'source_term' in trap.keys():
             source = sp.printing.ccode(trap['source_term'])
             source = Expression(source, t=0, degree=2)
             F += -source*testfunctions[i]*dx
             expressions.append(source)
-        except:
-            pass
+
         if transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[0]*dx
@@ -195,12 +226,12 @@ def define_variational_problem_heat_transfers(
 
     # Boundary conditions
     for bc in parameters["temperature"]["boundary_conditions"]:
-        if type(bc["surface"]) is list:
-            surfaces = bc["surface"]
+        if type(bc["surfaces"]) is list:
+            surfaces = bc["surfaces"]
         else:
-            surfaces = [bc["surface"]]
+            surfaces = [bc["surfaces"]]
         for surf in surfaces:
-            if bc["type"] == "neumann":
+            if bc["type"] == "flux":
                 value = sp.printing.ccode(bc["value"])
                 value = Expression(value, degree=2, t=0)
                 # Surface flux term

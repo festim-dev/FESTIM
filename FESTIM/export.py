@@ -25,10 +25,10 @@ def write_to_csv(dict, desorption):
                     writer = csv.writer(f, lineterminator='\n')
                     for val in desorption:
                         writer.writerows([val])
-            except:
-                print("The file " + file_export +
-                      " might currently be busy."
-                      "Please close the application then press any key")
+            except OSError as err:
+                print("OS error: {0}".format(err))
+                print("The file " + filename + ".txt might currently be busy."
+                      "Please close the application then press any key.")
                 input()
 
     return True
@@ -54,7 +54,8 @@ def export_txt(filename, function, W):
             np.savetxt(filename + '.txt', np.transpose(
                         [x.vector()[:], export.vector()[:]]))
             return True
-        except:
+        except OSError as err:
+            print("OS error: {0}".format(err))
             print("The file " + filename + ".txt might currently be busy."
                   "Please close the application then press any key.")
             input()
@@ -94,14 +95,16 @@ def export_profiles(res, exports, t, dt, W):
             else:
                 end = True
             for i in range(len(functions)):
-                try:
-                    nb = int(exports["xdmf"]["functions"][i])
-                    solution = res[nb]
-                except:
+                if functions[i].isdigit() is True:
+                    solution = res[int(functions[i])]
+                elif functions[i] in solution_dict:
                     solution = solution_dict[functions[i]]
+                else:
+                    raise ValueError(
+                        "function " + functions[i] + " is unknown")
                 label = labels[i]
                 export_txt(
-                    exports["xdmf"]["folder"] + '/' + label + '_' +
+                    exports["txt"]["folder"] + '/' + label + '_' +
                     str(t) + 's',
                     solution, W)
             break
@@ -158,16 +161,31 @@ def export_xdmf(res, exports, files, t, append):
     }
     for i in range(0, len(exports["xdmf"]["functions"])):
         label = exports["xdmf"]["labels"][i]
-        try:
-            nb = int(exports["xdmf"]["functions"][i])
-            solution = res[nb]
-        except:
-            try:
-                solution = solution_dict[exports["xdmf"]["functions"][i]]
-            except:
-                raise KeyError(
-                    "The key " + exports["xdmf"]["functions"][i] +
+        fun = exports["xdmf"]["functions"][i]
+        if type(fun) is int:
+            if fun <= len(res):
+                solution = res[fun]
+            else:
+                raise ValueError(
+                    "The value " + str(fun) +
                     " is unknown.")
+        elif type(fun) is str:
+            if fun.isdigit():
+                fun = int(fun)
+                if fun <= len(res):
+                    solution = res[fun]
+                else:
+                    raise ValueError(
+                        "The value " + str(fun) +
+                        " is unknown.")
+            elif fun in solution_dict.keys():
+                solution = solution_dict[fun]
+            else:
+                raise ValueError(
+                    "The value " + fun +
+                    " is unknown.")
+        else:
+            raise TypeError('Unexpected' + str(type(fun)) + 'type')
 
         solution.rename(label, "label")
         files[i].write_checkpoint(

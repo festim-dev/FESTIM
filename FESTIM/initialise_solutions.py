@@ -3,17 +3,21 @@ import sympy as sp
 import FESTIM
 
 
-def initialising_solutions(V, initial_conditions):
+def initialising_solutions(parameters, V, S=None):
     '''
     Returns the prievious solutions Function() objects for formulation
     and initialise them (0 by default).
     Arguments:
+    - parameters: list, contains values and components
     - V: FunctionSpace(), function space of concentrations
-    - initial_conditions: list, contains values and components
+    - S=None: UserExpression(), solubility
     '''
     print('Defining initial values')
     u_n, components = FESTIM.functionspaces_and_functions.define_functions(V)
-
+    if "initial_conditions" in parameters.keys():
+        initial_conditions = parameters["initial_conditions"]
+    else:
+        initial_conditions = []
     check_no_duplicates(initial_conditions)
 
     for ini in initial_conditions:
@@ -36,8 +40,19 @@ def initialising_solutions(V, initial_conditions):
             value = ini["value"]
             value = sp.printing.ccode(value)
             comp = Expression(value, degree=3, t=0)
+        chemical_pot = False
+        if S is not None:  # Is multiplication by S needed ?
+            for mat in parameters["materials"]:
+                if "S_0" in mat.keys() or "E_S" in mat.keys():
+                    chemical_pot = True
+        if ini["component"] == 0 and chemical_pot is True:
+            comp = comp/S  # variable change
         if V.num_sub_spaces() > 0:
-            comp = interpolate(comp, V.sub(ini["component"]).collapse())
+            if ini["component"] == 0 and chemical_pot is True:
+                # Product must be projected
+                comp = project(comp, V.sub(ini["component"]).collapse())
+            else:
+                comp = interpolate(comp, V.sub(ini["component"]).collapse())
             assign(u_n.sub(ini["component"]), comp)
         else:
             u_n = interpolate(comp, V)

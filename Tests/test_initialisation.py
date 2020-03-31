@@ -48,7 +48,7 @@ def test_initialisation_from_xdmf(tmpdir):
         ],
     }
     w, components = initialise_solutions.initialising_solutions(
-        V, parameters["initial_conditions"])
+        parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -77,7 +77,7 @@ def test_fail_initialisation_from_xdmf():
     }
     with pytest.raises(KeyError, match=r'time_step'):
         initialise_solutions.initialising_solutions(
-            V, parameters["initial_conditions"])
+            parameters, V)
 
     parameters = {
         "initial_conditions": [
@@ -95,7 +95,7 @@ def test_fail_initialisation_from_xdmf():
     }
     with pytest.raises(KeyError, match=r'label'):
         initialise_solutions.initialising_solutions(
-            V, parameters["initial_conditions"])
+            parameters, V)
 
 
 def test_initialisation_with_expression():
@@ -127,7 +127,40 @@ def test_initialisation_with_expression():
         ],
     }
     w, components = initialise_solutions.initialising_solutions(
-        V, parameters["initial_conditions"])
+        parameters, V)
+    assert fenics.errornorm(u, w) == 0
+
+
+def test_initialisation_with_expression_chemical_pot():
+    '''
+    Test that initialising_solutions interpolates correctly
+    from an expression with conservation of chemical potential
+    '''
+    mesh = fenics.UnitSquareMesh(8, 8)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    u = fenics.Function(V)
+    w = fenics.Function(V)
+    ini_u = fenics.Expression("1+x[0] + x[1]", degree=1)
+    ini_u = fenics.interpolate(ini_u, V.sub(0).collapse())
+    fenics.assign(u.sub(0), ini_u)
+    ini_u = fenics.Expression("1+x[0]", degree=1)
+    ini_u = fenics.interpolate(ini_u, V.sub(1).collapse())
+    fenics.assign(u.sub(1), ini_u)
+
+    parameters = {
+        "initial_conditions": [
+            {
+                "value": 1+FESTIM.x + FESTIM.y,
+                "component": 0,
+            },
+            {
+                "value": 1+FESTIM.x,
+                "component": 1,
+            },
+        ],
+    }
+    w, components = initialise_solutions.initialising_solutions(
+        parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -142,7 +175,7 @@ def test_initialisation_default():
     w = fenics.Function(V)
 
     w, components = initialise_solutions.initialising_solutions(
-        V, [])
+        {"initial_conditions": []}, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -166,7 +199,7 @@ def test_initialisation_solute_only():
         ],
     }
     w, components = initialise_solutions.initialising_solutions(
-        V, parameters["initial_conditions"])
+        parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -191,7 +224,7 @@ def test_initialisation_no_component():
         ],
     }
     w, components = initialise_solutions.initialising_solutions(
-        V, parameters["initial_conditions"])
+        parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -217,4 +250,4 @@ def test_initialisation_duplicates():
     }
     with pytest.raises(ValueError, match=r'Duplicate'):
         initialise_solutions.initialising_solutions(
-            V, parameters["initial_conditions"])
+            parameters, V)

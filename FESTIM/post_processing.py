@@ -4,8 +4,9 @@ import numpy as np
 import FESTIM
 
 
-def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
-                        append, flux_fonctions, derived_quantities_global):
+def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
+                        files, append, flux_fonctions,
+                        derived_quantities_global):
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
@@ -17,8 +18,21 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
         res.append(interpolate(T, W))
     else:
         res.append(T)
+    D, thermal_cond, cp, rho, H, S = flux_fonctions
+    D_ = interpolate(D, V_DG1)
+    thermal_cond_ = None
+    if thermal_cond is not None:
+        thermal_cond_ = interpolate(thermal_cond, V_DG1)
+    H_ = None
+    if H is not None:
+        H_ = interpolate(H, V_DG1)
+    if S is not None:
+        # this is costly ...
+        solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
+        res[0] = solute
 
     if "derived_quantities" in parameters["exports"].keys():
+<<<<<<< HEAD
         D_0, E_diff, thermal_cond, G, S, solubility = flux_fonctions
         if D_0 is not None:
             derived_quantities_t = \
@@ -34,6 +48,15 @@ def run_post_processing(parameters, transient, u, T, markers, W, t, dt, files,
                     parameters,
                     res,
                     markers)
+=======
+        derived_quantities_t = \
+            FESTIM.post_processing.derived_quantities(
+                parameters,
+                res,
+                markers,
+                [D_, thermal_cond_, H_]
+                )
+>>>>>>> master
 
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
@@ -74,17 +97,20 @@ def compute_error(parameters, t, res, mesh):
                 error["exact_solutions"][i]),
                 degree=error["degree"],
                 t=t)
-            try:
-                nb = int(error["computed_solutions"][i])
-                computed_sol = res[nb]
-            except:
-                try:
-                    computed_sol = solution_dict[
-                        error["computed_solutions"][i]]
-                except:
-                    raise KeyError(
-                        "The key " + error["computed_solutions"][i] +
-                        " is unknown.")
+            err = error["computed_solutions"][i]
+            if type(err) is str:
+                if err.isdigit():
+                    nb = int(err)
+                    computed_sol = res[nb]
+                else:
+                    if err in solution_dict.keys():
+                        computed_sol = solution_dict[
+                            err]
+                    else:
+                        raise KeyError(
+                            "The key " + err + " is unknown.")
+            elif type(err) is int:
+                computed_sol = res[err]
 
             if error["norm"] == "error_max":
                 vertex_values_u = computed_sol.compute_vertex_values(mesh)
@@ -110,34 +136,102 @@ def compute_retention(u, W, S):
     return retention
 
 
-def create_flux_functions(mesh, materials, volume_markers):
-    '''
-    Returns Function() objects for fluxes computation
-    '''
-    D0 = FunctionSpace(mesh, 'DG', 0)
-    D_0 = Function(D0, name="D_0")
-    E_diff = Function(D0, name="E_diff")
-    thermal_cond = Function(D0, name="thermal_cond")
-    G = Function(D0, name="G")
-    S = Function(D0, name="S")
+class ArheniusCoeff(UserExpression):
+    def __init__(self, mesh, materials, vm, T, pre_exp, E, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._vm = vm
+        self._T = T
+        self._materials = materials
+        self._pre_exp = pre_exp
+        self._E = E
 
-    # Update coefficient D_0 and E_diff
-    for cell in cells(mesh):
-
-        subdomain_id = volume_markers[cell]
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
-            materials, subdomain_id)
-        value_D0 = material["D_0"]
-        value_E_diff = material["E_diff"]
-        cell_no = cell.index()
-        if "thermal_cond" in material:
-            thermal_cond.vector()[cell_no] = material["thermal_cond"]
-        if "H" in material:
-            G.vector()[cell_no] = material["H"]["free_enthalpy"]
-            S.vector()[cell_no] = material["H"]["entropy"]
-        D_0.vector()[cell_no] = value_D0
-        E_diff.vector()[cell_no] = value_E_diff
-    return D_0, E_diff, thermal_cond, G, S
+            self._materials, subdomain_id)
+        D_0 = material[self._pre_exp]
+        E_D = material[self._E]
+        value[0] = D_0*exp(-E_D/FESTIM.k_B/self._T(x))
+
+    def value_shape(self):
+        return ()
+
+
+class ThermalProp(UserExpression):
+    def __init__(self, mesh, materials, vm, T, key, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+        self._key = key
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = FESTIM.helpers.find_material_from_id(
+            self._materials, subdomain_id)
+        if callable(material[self._key]):
+            value[0] = material[self._key](self._T(x))
+        else:
+            value[0] = material[self._key]
+
+    def value_shape(self):
+        return ()
+
+
+class HCoeff(UserExpression):
+    def __init__(self, mesh, materials, vm, T, **kwargs):
+        super().__init__(kwargs)
+        self._mesh = mesh
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = Cell(self._mesh, ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = FESTIM.helpers.find_material_from_id(
+            self._materials, subdomain_id)
+
+        value[0] = material["H"]["free_enthalpy"] + \
+            self._T(x)*material["H"]["entropy"]
+
+    def value_shape(self):
+        return ()
+
+
+def create_properties(mesh, materials, vm, T):
+    '''
+    Arguments:
+    - mesh
+    - materials : parameters["materials"]
+    - vm : MeshFunction()
+    - T : fenics.Expression() or fenics.Function()
+    Returns UserExpression classes for D, thermal_cond, and H
+    '''
+    D = ArheniusCoeff(mesh, materials, vm, T, "D_0", "E_D", degree=2)
+    thermal_cond = None
+    cp = None
+    rho = None
+    H = None
+    S = None
+    for mat in materials:
+        if "S_0" in mat.keys():
+            S = ArheniusCoeff(mesh, materials, vm, T, "S_0", "E_S", degree=2)
+        if "thermal_cond" in mat.keys():
+            thermal_cond = ThermalProp(mesh, materials, vm, T,
+                                       'thermal_cond', degree=2)
+            cp = ThermalProp(mesh, materials, vm, T,
+                             'heat_capacity', degree=2)
+            rho = ThermalProp(mesh, materials, vm, T,
+                              'rho', degree=2)
+        if "H" in mat.keys():
+            H = HCoeff(mesh, materials, vm, T, degree=2)
+
+    return D, thermal_cond, cp, rho, H, S
 
 
 def calculate_maximum_volume(f, subdomains, subd_id):
@@ -172,43 +266,51 @@ def header_derived_quantities(parameters):
     '''
 
     check_keys_derived_quantities(parameters)
-
+    derived_quant_dict = parameters["exports"]["derived_quantities"]
     header = ['t(s)']
-    if "surface_flux" in parameters["exports"]["derived_quantities"].keys():
-        for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+    if "surface_flux" in derived_quant_dict.keys():
+        for flux in derived_quant_dict["surface_flux"]:
             for surf in flux["surfaces"]:
-                header.append("Flux surface " + str(surf) + ": " + str(flux['field']))
-    if "average_volume" in parameters["exports"]["derived_quantities"].keys():
+                header.append(
+                    "Flux surface " + str(surf) + ": " + str(flux['field']))
+    if "average_volume" in derived_quant_dict.keys():
         for average in parameters[
                         "exports"]["derived_quantities"]["average_volume"]:
             for vol in average["volumes"]:
                 header.append(
                     "Average " + str(average['field']) + " volume " + str(vol))
-    if "minimum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "minimum_volume" in derived_quant_dict.keys():
         for minimum in parameters[
                         "exports"]["derived_quantities"]["minimum_volume"]:
             for vol in minimum["volumes"]:
                 header.append(
                     "Minimum " + str(minimum["field"]) + " volume " + str(vol))
-    if "maximum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "maximum_volume" in derived_quant_dict.keys():
         for maximum in parameters[
                         "exports"]["derived_quantities"]["maximum_volume"]:
             for vol in maximum["volumes"]:
                 header.append(
                     "Maximum " + str(maximum["field"]) + " volume " + str(vol))
-    if "total_volume" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+    if "total_volume" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_volume"]:
             for vol in total["volumes"]:
-                header.append("Total " + str(total["field"]) + " volume " + str(vol))
-    if "total_surface" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+                header.append(
+                    "Total " + str(total["field"]) + " volume " + str(vol))
+    if "total_surface" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_surface"]:
             for surf in total["surfaces"]:
-                header.append("Total " + str(total["field"]) + " surface " + str(surf))
+                header.append(
+                    "Total " + str(total["field"]) + " surface " + str(surf))
 
     return header
 
 
+<<<<<<< HEAD
 def derived_quantities(parameters, solutions, markers, properties=[None, None, None, None]):
+=======
+def derived_quantities(parameters, solutions,
+                       markers, properties):
+>>>>>>> master
     '''
     Computes all the derived_quantities and store it into list
     '''
@@ -231,11 +333,15 @@ def derived_quantities(parameters, solutions, markers, properties=[None, None, N
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
+<<<<<<< HEAD
     solute = solutions[0]*solubility
+=======
+
+>>>>>>> master
     ret = solutions[len(solutions)-2]
     T = solutions[len(solutions)-1]
     field_to_sol = {
-        'solute': solute,
+        'solute': solutions[0],
         'retention': ret,
         'T': T,
     }
@@ -252,8 +358,9 @@ def derived_quantities(parameters, solutions, markers, properties=[None, None, N
             field_to_sol[key] = val
     tab = []
     # Compute quantities
-    if "surface_flux" in parameters["exports"]["derived_quantities"].keys():
-        for flux in parameters["exports"]["derived_quantities"]["surface_flux"]:
+    derived_quant_dict = parameters["exports"]["derived_quantities"]
+    if "surface_flux" in derived_quant_dict.keys():
+        for flux in derived_quant_dict["surface_flux"]:
             sol = field_to_sol[str(flux["field"])]
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
@@ -262,32 +369,32 @@ def derived_quantities(parameters, solutions, markers, properties=[None, None, N
                     phi += assemble(
                         prop*sol*Q/(FESTIM.R*T**2)*dot(grad(T), n)*ds(surf))
                 tab.append(phi)
-    if "average_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "average_volume" in derived_quant_dict.keys():
         for average in parameters[
                         "exports"]["derived_quantities"]["average_volume"]:
             sol = field_to_sol[str(average["field"])]
             for vol in average["volumes"]:
                 val = assemble(sol*dx(vol))/assemble(1*dx(vol))
                 tab.append(val)
-    if "minimum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "minimum_volume" in derived_quant_dict.keys():
         for minimum in parameters[
                         "exports"]["derived_quantities"]["minimum_volume"]:
             sol = field_to_sol[str(minimum["field"])]
             for vol in minimum["volumes"]:
                 tab.append(calculate_minimum_volume(sol, volume_markers, vol))
-    if "maximum_volume" in parameters["exports"]["derived_quantities"].keys():
+    if "maximum_volume" in derived_quant_dict.keys():
         for maximum in parameters[
                         "exports"]["derived_quantities"]["maximum_volume"]:
             sol = field_to_sol[str(maximum["field"])]
             for vol in maximum["volumes"]:
                 tab.append(calculate_maximum_volume(sol, volume_markers, vol))
-    if "total_volume" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_volume"]:
+    if "total_volume" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_volume"]:
             sol = field_to_sol[str(total["field"])]
             for vol in total["volumes"]:
                 tab.append(assemble(sol*dx(vol)))
-    if "total_surface" in parameters["exports"]["derived_quantities"].keys():
-        for total in parameters["exports"]["derived_quantities"]["total_surface"]:
+    if "total_surface" in derived_quant_dict.keys():
+        for total in derived_quant_dict["total_surface"]:
             sol = field_to_sol[str(total["field"])]
             for surf in total["surfaces"]:
                 tab.append(assemble(sol*ds(surf)))
@@ -304,15 +411,21 @@ def check_keys_derived_quantities(parameters):
                     raise KeyError("Missing key 'field'")
                 else:
                     if type(f["field"]) is int:
-                        if f["field"] > len(parameters["traps"]) or f["field"] < 0:
-                            raise ValueError("Unknown field: " + str(f["field"]))
+                        if f["field"] > len(parameters["traps"]) or \
+                           f["field"] < 0:
+                            raise ValueError(
+                                "Unknown field: " + str(f["field"]))
                     elif type(f["field"]) is str:
                         if f["field"] not in FESTIM.helpers.field_types:
-                            try:
-                                if int(f["field"]) > len(parameters["traps"]) or int(f["field"])  < 0:
-                                    raise ValueError("Unknown field: " + f["field"])
-                            except:
-                                raise ValueError("Unknown field: " + str(f["field"]))
+                            if f["field"].isdigit():
+                                if int(f["field"]) > len(parameters["traps"]) \
+                                    or \
+                                   int(f["field"]) < 0:
+                                    raise ValueError(
+                                        "Unknown field: " + f["field"])
+                            else:
+                                raise ValueError(
+                                    "Unknown field: " + str(f["field"]))
 
                 if "surfaces" not in f.keys() and "volumes" not in f.keys():
                     raise KeyError("Missing key 'surfaces' or 'volumes'")
