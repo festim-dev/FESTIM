@@ -1,4 +1,64 @@
 from fenics import *
+from operator import itemgetter
+
+
+def create_mesh(mesh_parameters):
+    if "mesh_file" in mesh_parameters.keys():
+        # Read volumetric mesh
+        mesh = Mesh()
+        XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
+    elif ("mesh" in mesh_parameters.keys() and
+            isinstance(mesh_parameters["mesh"], type(Mesh()))):
+            mesh = mesh_parameters["mesh"]
+    else:
+        mesh = mesh_and_refine(mesh_parameters)
+    return mesh
+
+
+def subdomains(mesh, parameters):
+    mesh_parameters = parameters["mesh_parameters"]
+    if "cells_file" in mesh_parameters.keys():
+        volume_markers, surface_markers = \
+            read_subdomains_from_xdmf(
+                mesh,
+                mesh_parameters["cells_file"],
+                mesh_parameters["facets_file"])
+    elif ("meshfunction_cells" in mesh_parameters.keys() and
+            isinstance(
+                mesh_parameters["meshfunction_cells"],
+                type(MeshFunction("size_t", mesh, mesh.topology().dim())))):
+        volume_markers = mesh_parameters["meshfunction_cells"]
+        surface_markers = mesh_parameters["meshfunction_facets"]
+    else:
+        size = parameters["mesh_parameters"]["size"]
+        check_borders(size, parameters["materials"])
+        volume_markers, surface_markers = \
+            subdomains_1D(mesh, parameters["materials"], size)
+    return volume_markers, surface_markers
+
+
+def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
+
+    # Read tags for volume elements
+    volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
+    try:
+        XDMFFile(volumetric_file).read(volume_markers, "f")
+    except:
+        raise ValueError('Attribute should be named "f" in ' + volumetric_file)
+    # f is the attribute name carreful
+
+    # Read tags for surface elements
+    # (can also be used for applying DirichletBC)
+    surface_markers = \
+        MeshValueCollection("size_t", mesh, mesh.topology().dim() - 1)
+    try:
+        XDMFFile(boundary_file).read(surface_markers, "f")
+    except:
+        raise ValueError('Attribute should be named "f" in ' + boundary_file)
+    surface_markers = MeshFunction("size_t", mesh, surface_markers)
+
+    print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
+    return volume_markers, surface_markers
 
 
 def mesh_and_refine(mesh_parameters):
@@ -38,7 +98,7 @@ def mesh_and_refine(mesh_parameters):
     return mesh
 
 
-def subdomains(mesh, materials, size):
+def subdomains_1D(mesh, materials, size):
     '''
     Iterates through the mesh and mark them
     based on their position in the domain
@@ -71,3 +131,19 @@ def subdomains(mesh, materials, size):
         if near(x0.x(), size):
             surface_markers[f] = 2
     return volume_markers, surface_markers
+
+
+def check_borders(size, materials):
+    check = True
+    all_borders = []
+    for m in materials:
+        all_borders.append(m["borders"])
+    all_borders = sorted(all_borders, key=itemgetter(0))
+    if all_borders[0][0] is not 0:
+        raise ValueError("Borders don't begin at zero")
+    for i in range(0, len(all_borders)-1):
+        if all_borders[i][1] != all_borders[i+1][0]:
+            raise ValueError("Borders don't match to each other")
+    if all_borders[len(all_borders) - 1][1] != size:
+        raise ValueError("Borders don't match with size")
+    return True

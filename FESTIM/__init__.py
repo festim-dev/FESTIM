@@ -15,3 +15,5 @@ from . import generic_simulation
 
 import sympy as sp
 x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
+R = 8.314  # Gas constant
+k_B = 8.6e-5  # Boltzmann constant
