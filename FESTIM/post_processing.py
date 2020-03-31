@@ -32,23 +32,6 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         res[0] = solute
 
     if "derived_quantities" in parameters["exports"].keys():
-<<<<<<< HEAD
-        D_0, E_diff, thermal_cond, G, S, solubility = flux_fonctions
-        if D_0 is not None:
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    markers,
-                    [D_0*exp(-E_diff/T), thermal_cond, G+T*S, solubility]
-                    )
-        else:
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    markers)
-=======
         derived_quantities_t = \
             FESTIM.post_processing.derived_quantities(
                 parameters,
@@ -56,7 +39,6 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
                 markers,
                 [D_, thermal_cond_, H_]
                 )
->>>>>>> master
 
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
