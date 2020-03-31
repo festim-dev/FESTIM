@@ -287,12 +287,8 @@ def header_derived_quantities(parameters):
     return header
 
 
-<<<<<<< HEAD
-def derived_quantities(parameters, solutions, markers, properties=[None, None, None, None]):
-=======
 def derived_quantities(parameters, solutions,
                        markers, properties):
->>>>>>> master
     '''
     Computes all the derived_quantities and store it into list
     '''
@@ -315,11 +311,6 @@ def derived_quantities(parameters, solutions,
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
-<<<<<<< HEAD
-    solute = solutions[0]*solubility
-=======
-
->>>>>>> master
     ret = solutions[len(solutions)-2]
     T = solutions[len(solutions)-1]
     field_to_sol = {
