@@ -179,6 +179,7 @@ parameters = {
             "stepsize_stop_max": 1e7,
             "dt_min": 1e-8,
             },
+        "times": [],
         "newton_solver": {
             "absolute_tolerance": 1e11,
             "relative_tolerance": 1e-10,
