@@ -11,8 +11,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         res = [u]
     else:
         res = list(u.split())
-    DG1 = FunctionSpace(u.function_space().mesh(), 'DG', 1)
-    retention = FESTIM.post_processing.compute_retention(u, DG1, flux_fonctions[5])
+    retention = FESTIM.post_processing.compute_retention(u, W)
     res.append(retention)
     if isinstance(T, function.expression.Expression):
         res.append(interpolate(T, W))
@@ -43,15 +42,8 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
-
-        if parameters["exports"]["xdmf"]["all_timesteps"] is False:
-            if t in parameters["solving_parameters"]["times"]:
-                FESTIM.export.export_xdmf(
-                    res, parameters["exports"], files, t, append=append)
-        else:
-            FESTIM.export.export_xdmf(
-                res, parameters["exports"], files, t, append=append)
-
+        FESTIM.export.export_xdmf(
+            res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
             res, parameters["exports"], t, dt, W)
@@ -108,11 +100,11 @@ def compute_error(parameters, t, res, mesh):
     return tab
 
 
-def compute_retention(u, W, S):
+def compute_retention(u, W):
     res = list(split(u))
     if not res:  # if u is non-vector
         res = [u]
-    retention = project(S*res[0], W)
+    retention = project(res[0])
     for i in range(1, len(res)):
         retention = project(retention + res[i], W)
     return retention
@@ -294,7 +286,6 @@ def derived_quantities(parameters, solutions,
     '''
     D = properties[0]
     thermal_cond = properties[1]
-    solubility = properties[3]
     soret = False
     if "temperature" in parameters.keys():
         if "soret" in parameters["temperature"].keys():
@@ -311,6 +302,7 @@ def derived_quantities(parameters, solutions,
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
+
     ret = solutions[len(solutions)-2]
     T = solutions[len(solutions)-1]
     field_to_sol = {
