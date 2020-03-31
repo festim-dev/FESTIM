@@ -83,7 +83,8 @@ def export_profiles(res, exports, t, dt, W):
                         "in txt exports")
     solution_dict = {
         'solute': res[0],
-        'retention': res[len(res)-1]
+        'retention': res[len(res)-2],
+        'T': res[len(res)-1],
     }
     times = sorted(exports['txt']['times'])
     end = True
@@ -188,8 +189,9 @@ def export_xdmf(res, exports, files, t, append):
             raise TypeError('Unexpected' + str(type(fun)) + 'type')
 
         solution.rename(label, "label")
-        files[i].write_checkpoint(
-            solution, label, t, XDMFFile.Encoding.HDF5, append=append)
+        files[i].write(solution, t)
+        # files[i].write_checkpoint(
+        #     solution, label, t, XDMFFile.Encoding.HDF5, append=append)
     return
 
 
