@@ -6,12 +6,7 @@ import sympy as sp
 def bc_top_H(t_implantation, t_rest, t_baking):
     t = FESTIM.t
     implantation = (t <= t_implantation) * \
-        1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) / \
-        (1.3e-4 * atom_density_W * sp.exp(-0.34/FESTIM.k_B/1200))
-    #
-    #implantation = (t <= t_implantation) * \
-    #    1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) # S=1.0
-    #
+       1e23*2.5e-9/(2.9e-7*sp.exp(-0.39/FESTIM.k_B/1200)) # S=1.0
     expression = implantation
 
     return expression
@@ -57,20 +52,20 @@ t_rest = 47696400-t_implantation
 t_baking = 50648400-t_rest-t_implantation
 
 # Storage folder
-folder = 'results/05_ITER_case_theta_sol2_99950/'
+folder = 'results/temp/'
 
 # Dict parameters
 parameters = {
-    "mesh_parameters": {
-        "mesh_file": "maillages/Mesh_ITER_99950/mesh_domains.xdmf",
-        "cells_file": "maillages/Mesh_ITER_99950/mesh_domains.xdmf",
-        "facets_file": "maillages/Mesh_ITER_99950/mesh_boundaries.xdmf",
+    "mesh_parameters": { # à vérifier pour que ça fonctionne chez toi
+        "mesh_file": "maillages/Mesh_ITER_58734/mesh_domains_58734.xdmf",
+        "cells_file": "maillages/Mesh_ITER_58734/mesh_domains_58734.xdmf",
+        "facets_file": "maillages/Mesh_ITER_58734/mesh_lines_58734.xdmf",
         },
     "materials": [
         {
             # Tungsten
             "D_0": 2.9e-7,
-            "E_diff": 0.39,
+            "E_D": 0.39,
             "S_0": atom_density_W*1.3e-4,  # at/m3.Pa0.5 (from Grislia 2015)
             "E_S": 0.34,  # eV
             #"S_0": 1.0,  # case without solubility
@@ -85,7 +80,7 @@ parameters = {
         {
             # Cu
             "D_0": 6.6e-7,
-            "E_diff": 0.387,
+            "E_D": 0.387,
             "S_0": 3.12e28,  # at/m3.Pa0.5 (from ITER)
             "E_S": 0.572,  # eV
             #"S_0": 1.0,  # case without solubility
@@ -100,7 +95,7 @@ parameters = {
         {
             # CuCrZr
             "D_0": 3.92e-7,
-            "E_diff": 0.418,
+            "E_D": 0.418,
             "S_0": 4.28e23,  # at/m3.Pa0.5 (from ITER)
             "E_S": 0.387,  # eV
             #"S_0": 1.0,  # case without solubility
@@ -114,48 +109,69 @@ parameters = {
         },
         ],
     "traps": [
-        {
-            "density": 5e-4*atom_density_W,
-            "energy": 1,
-            "materials": [id_W]
-        },
-        {
-            "density": 5e-3*atom_density_W*(FESTIM.y > 0.014499),
-            "energy": 1.4,
-            "materials": [id_W]
-        },
-        {
-            "density": 5e-5*atom_density_Cu,
-            "energy": 0.5,
-            "materials": [id_Cu]
-        },
-        {
-            "density": 5e-5*atom_density_CuCrZr,
-            "energy": 0.85,
-            "materials": [id_CuCrZr]
-        },
+        # {
+        #     "E_k": 0.39, # OK TMAP eq (3)
+        #     "k_0": 2.9e12*0.8165/atom_density_W, # OK TMAP eq (3)
+        #     #"k_0": 2.9e-7/(1.1e-10**2)*0.8165/atom_density_W, 
+        #     "E_p": 1.2, # OK TMAP eq (4)
+        #     "p_0": 8.4e12, # OK TMAP eq (4)
+        #     "density": 5e-4*atom_density_W, # OK TMAP ligne (72)
+        #     "materials": [id_W]
+        # },
+        # {
+        #      "E_k": 0.39, # OK TMAP eq (3)
+        #      "k_0": 2.9e12*0.8165/atom_density_W, # OK TMAP eq (3)
+        #      "E_p": 1.4, # OK TMAP eq (5)
+        #      "p_0": 8.4e12, # OK TMAP eq (5)
+        #      "density": 5e-3*atom_density_W*(FESTIM.y < 1e-6), # OK TMAP ligne (75)
+        #      "materials": [id_W]
+        #  },
+        # {
+        #     "E_k": 0.387, # OK TMAP eq (10)
+        #     "k_0": 6.6e-7/(3.61e-10**2)/atom_density_Cu, # OK TMAP eq (10)
+        #     "E_p": 0.5, # OK TMAP eq (11)
+        #     "p_0": 7.98e13, # OK TMAP eq (11)
+        #     "density": 5e-5*atom_density_Cu, # OK TMAP ligne (89)
+        #     "materials": [id_Cu]
+        # },
+        # {
+        #     "E_k": 0.418, # OK TMAP eq (15)
+        #     "k_0": 3.92e-7/(3.61e-10**2)/atom_density_CuCrZr,  # OK TMAP eq (15)
+        #     "E_p": 0.5,  # OK TMAP eq (11)
+        #     "p_0": 7.98e13,  # OK TMAP eq (11)
+        #     "density": 5e-5*atom_density_CuCrZr, # OK TMAP ligne (103)
+        #     "materials": [id_CuCrZr]
+        # },
+        #         {
+        #     "E_k": 0.418, # OK TMAP eq (15)
+        #     "k_0": 3.92e-7/(3.61e-10**2)/atom_density_CuCrZr,  # OK TMAP eq (15)
+        #     "E_p": 0.83,  # OK TMAP eq (16)
+        #     "p_0": 7.98e13,  # OK TMAP eq (16)
+        #     "density": 0.04*atom_density_CuCrZr, # OK TMAP ligne (104)
+        #     "materials": [id_CuCrZr]
+        # },
         ],
     "boundary_conditions": [
         {
             "type": "dc",
-            "surface": id_top_surf,
+            "surfaces": id_top_surf,
             "value": bc_top_H(t_implantation, t_rest, t_baking)
         },
         {
             "type": "recomb",
-            "surface": id_coolant_surf,
+            "surfaces": id_coolant_surf,
             "Kr_0": 2.9e-14,
             "E_Kr": 1.92,
             "order": 2,
         },
         # {
         #     "type": "dc",
-        #     "surface": id_left_surf,
+        #     "surfaces": id_left_surf,
         #     "value": 0
         # },
         {
             "type": "recomb",
-            "surface": [id_left_surf],
+            "surfaces": [id_left_surf],
             "Kr_0": 2.9e-18,
             "E_Kr": 1.16,
             "order": 2,
@@ -165,14 +181,14 @@ parameters = {
         "type": "solve_transient",
         "boundary_conditions": [
             {
-                "type": "dirichlet",
+                "type": "dc",
                 "value": bc_top_HT(t_implantation, t_rest, t_baking),
-                "surface": id_top_surf
+                "surfaces": id_top_surf
             },
             {
-                "type": "dirichlet",
+                "type": "dc",
                 "value": bc_coolant_HT(t_implantation, t_rest, t_baking),
-                "surface": id_coolant_surf
+                "surfaces": id_coolant_surf
             }
             ],
         "source_term": [
@@ -199,46 +215,48 @@ parameters = {
         },
     "exports": {
         "xdmf": {
-            "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
-            "labels": ['T', 'theta', '1', '2', '3', '4', 'retention'],
+            "functions": ['T', '0', 'retention'],
+            # "functions": ['T', '0', '1', '2', '3', '4', 'retention'],
+            # "labels": ['T', 'solute', '1', '2', '3', '4', 'retention'],
+            "labels": ['T', 'solute', 'retention'],
             "folder": folder,
-            "all_timesteps": False,
+            "all_timesteps": True,
         },
-        "derived_quantities": {
-            "total_volume": [
-                {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
-                    "field": "solute"
-                },
-                {
-                    "volumes": [id_W],
-                    "field": "1"
-                },
-                {
-                    "volumes": [id_W],
-                    "field": "2"
-                },
-                {
-                    "volumes": [id_Cu],
-                    "field": "3"
-                },
-                {
-                    "volumes": [id_CuCrZr],
-                    "field": "4"
-                },
-                {
-                    "volumes": [id_W, id_Cu, id_CuCrZr],
-                    "field": "retention"
-                },
-            ],
-            "surface_flux": [
-                {
-                    "surfaces": [id_coolant_surf, id_left_surf],
-                    "field": "solute"
-                }
-            ],
-            "file": "derived_quantities.csv",
-            "folder": folder
-        }
+        # "derived_quantities": {
+        #     "total_volume": [
+        #         {
+        #             "volumes": [id_W, id_Cu, id_CuCrZr],
+        #             "field": "solute"
+        #         },
+        #         {
+        #             "volumes": [id_W],
+        #             "field": "1"
+        #         },
+        #         {
+        #             "volumes": [id_W],
+        #             "field": "2"
+        #         },
+        #         {
+        #             "volumes": [id_Cu],
+        #             "field": "3"
+        #         },
+        #         {
+        #             "volumes": [id_CuCrZr],
+        #             "field": "4"
+        #         },
+        #         {
+        #             "volumes": [id_W, id_Cu, id_CuCrZr],
+        #             "field": "retention"
+        #         },
+        #     ],
+        #     "surface_flux": [
+        #         {
+        #             "surfaces": [id_coolant_surf, id_left_surf],
+        #             "field": "solute"
+        #         }
+        #     ],
+        #     "file": "derived_quantities.csv",
+        #     "folder": folder
+        # }
     }
 }
