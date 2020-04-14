@@ -73,7 +73,7 @@ parameters = {
             "thermal_cond": thermal_cond_Cu,
             "heat_capacity": 1,
             "rho": rhoCp_Cu,
-            "borders": [7e-3, size], # OK TMAP
+            "borders": [6e-3, 7e-3], # OK TMAP
             "id": id_Cu,
         },
         {
@@ -87,7 +87,7 @@ parameters = {
             "thermal_cond": thermal_cond_CuCrZr,
             "heat_capacity": 1,
             "rho": rhoCp_CuCrZr,
-            "borders": [6e-3, 7e-3], # OK TMAP
+            "borders": [7e-3, size], # OK TMAP
             "id": id_CuCrZr,
         },
         ],
