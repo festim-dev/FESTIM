@@ -95,13 +95,13 @@ def export_profiles(res, exports, t, dt, W):
                 end = True
             for i in range(len(functions)):
                 try:
-                    nb = int(exports["xdmf"]["functions"][i])
+                    nb = int(exports["txt"]["functions"][i])
                     solution = res[nb]
                 except:
                     solution = solution_dict[functions[i]]
                 label = labels[i]
                 export_txt(
-                    exports["xdmf"]["folder"] + '/' + label + '_' +
+                    exports["txt"]["folder"] + '/' + label + '_' +
                     str(t) + 's',
                     solution, W)
             break
@@ -170,8 +170,9 @@ def export_xdmf(res, exports, files, t, append):
                     " is unknown.")
 
         solution.rename(label, "label")
-        files[i].write_checkpoint(
-            solution, label, t, XDMFFile.Encoding.HDF5, append=append)
+        # files[i].write_checkpoint(
+        #     solution, label, t, XDMFFile.Encoding.HDF5, append=append)
+        files[i].write(solution, t)
     return
 
 
