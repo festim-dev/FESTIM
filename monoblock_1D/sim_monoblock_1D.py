@@ -52,7 +52,7 @@ size = 8.5e-3  # OK TMAP
 parameters = {
     "mesh_parameters": {
         "size": size,
-        "initial_number_of_cells": 10000,
+        "initial_number_of_cells": 15000,
         "refinements": [
             {
                 "cells": 500,
@@ -69,8 +69,8 @@ parameters = {
             # Tungsten
             "D_0": 2.9e-7*0.8165,  # OK TMAP eq(6)
             "E_D": 0.39,  # OK TMAP eq(6)
-            "S_0": 1.87e24,  # OK MUYI mais attention units ? at/m3.Pa0.5
-            "E_S": 1.04,  # OK MUYI (eV)
+            # "S_0": 1.87e24,  # OK MUYI mais attention units ? at/m3.Pa0.5
+            # "E_S": 1.04,  # OK MUYI (eV)
             #"S_0": 1.0,  # case without solubility
             #"E_S": 0.0,  # case without solubility
             "thermal_cond": thermal_cond_W,
@@ -83,8 +83,8 @@ parameters = {
             # Cu
             "D_0": 6.6e-7,  # OK TMAP eq(9)
             "E_D": 0.387,  # OK TMAP eq(9)
-            "S_0": 3.14e24,  # OK TMAP eq(8) at/m3.Pa0.5
-            "E_S": 0.572,  # OK TMAP eq(8) eV
+            # "S_0": 3.14e24,  # OK TMAP eq(8) at/m3.Pa0.5
+            # "E_S": 0.572,  # OK TMAP eq(8) eV
             #"S_0": 1.0,  # case without solubility
             #"E_S": 0.0,  # case without solubility
             "thermal_cond": thermal_cond_Cu,
@@ -97,8 +97,8 @@ parameters = {
             # CuCrZr
             "D_0": 3.92e-7,  # OK TMAP eq(13)
             "E_D": 0.418,  # OK TMAP eq(13)
-            "S_0": 4.28e23,  # OK TMAP eq(12) at/m3.Pa0.5 (from ITER)
-            "E_S": 0.387,  # OK TMAP eq(12) eV
+            # "S_0": 4.28e23,  # OK TMAP eq(12) at/m3.Pa0.5 (from ITER)
+            # "E_S": 0.387,  # OK TMAP eq(12) eV
             #"S_0": 1.0,  # case without solubility
             #"E_S": 0.0,  # case without solubility
             "thermal_cond": thermal_cond_CuCrZr,
@@ -211,16 +211,16 @@ parameters = {
         "final_time": 2400000, # OK TMAP ligne 183
         "initial_stepsize": 0.0001,
         "adaptive_stepsize": {
-            "stepsize_change_ratio": 1.2,
+            "stepsize_change_ratio": 1.15,
             "t_stop": 1e8,
             "stepsize_stop_max": 1e7,
             "dt_min": 1e-8,
             },
         #"times": [],
         "newton_solver": {
-            "absolute_tolerance": 1e16,
+            "absolute_tolerance": 1e11,
             "relative_tolerance": 1e-10,
-            "maximum_iterations": 10,
+            "maximum_iterations": 20,
         }
         },
     "exports": {
