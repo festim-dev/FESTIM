@@ -52,19 +52,15 @@ size = 8.5e-3  # OK TMAP
 parameters = {
     "mesh_parameters": {
         "size": size,
-        "initial_number_of_cells": 2000,
+        "initial_number_of_cells": 10000,
         "refinements": [
             {
                 "cells": 500,
                 "x": 3e-6,
             },
             {
-                "cells": 1000,
-                "x": 30e-9,
-            },
-            {
                 "cells": 100,
-                "x": 10e-9,
+                "x": 30e-9,
             },
             ]
         },
@@ -215,7 +211,7 @@ parameters = {
         "final_time": 2400000, # OK TMAP ligne 183
         "initial_stepsize": 0.0001,
         "adaptive_stepsize": {
-            "stepsize_change_ratio": 1.05,
+            "stepsize_change_ratio": 1.2,
             "t_stop": 1e8,
             "stepsize_stop_max": 1e7,
             "dt_min": 1e-8,
