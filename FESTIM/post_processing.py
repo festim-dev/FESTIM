@@ -17,14 +17,14 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         res.append(interpolate(T, W))
     else:
         res.append(T)
-    D, thermal_cond, cp, rho, H, S = flux_fonctions
-    D_ = interpolate(D, V_DG1)
-    thermal_cond_ = None
-    if thermal_cond is not None:
-        thermal_cond_ = interpolate(thermal_cond, V_DG1)
-    H_ = None
-    if H is not None:
-        H_ = interpolate(H, V_DG1)
+    D_, thermal_cond_, cp, rho, H_, S = flux_fonctions
+    # D_ = interpolate(D, V_DG1)
+    # thermal_cond_ = None
+    # if thermal_cond is not None:
+    #     thermal_cond_ = interpolate(thermal_cond, V_DG1)
+    # H_ = None
+    # if H is not None:
+    #     H_ = interpolate(H, V_DG1)
     if S is not None:
         # this is costly ...
         solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
