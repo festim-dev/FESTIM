@@ -45,8 +45,18 @@ size = 8.5e-3 # OK TMAP
 parameters = {
     "mesh_parameters": {
         "size": size,
-        "initial_number_of_cells": 60000,
-    },
+        "initial_number_of_cells": 200,
+        "refinements" : [
+            {
+                "cells": 300,
+                "x": 3e-6,
+            },
+            {
+                "cells": 120,
+                "x": 30e-9,
+            },
+            ]
+        },
     "materials": [
         {
             # Tungsten
@@ -134,11 +144,26 @@ parameters = {
             "materials": [id_CuCrZr]
         },
         ],
+     #"source": [
+     #   {
+     #      "center": "dc",
+     #      "width": id_top_surf,
+      #      "distribution": 3.2e-15, 
+     #       "E_Kr": 1.16, 
+     #       "order": 2,
+     #   },
+    #    ],    
     "boundary_conditions": [
         {
-            "type": "dc",
-            "surfaces": id_top_surf,
-            "value": 5e23 (flux) + recombinaison (kr0=3.2e-15 : Ekr=-1.16 ) + pression (ligne 168)
+           # "type": "dc",
+           # "surfaces": id_top_surf,
+           # "value": 5e23 (flux) + recombinaison (kr0=3.2e-15 : Ekr=-1.16 ) + pression (ligne 168)
+
+           "type": "recomb",
+           "surfaces": id_top_surf,
+            "Kr_0": 3.2e-15, 
+            "E_Kr": 1.16, 
+            "order": 2,
         },
         {
             "type": "recomb",
