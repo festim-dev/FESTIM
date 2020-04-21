@@ -132,10 +132,10 @@ parameters = {
          },
         {
             "E_k": 0.387,  # OK TMAP eq (10)
-            "k_0": 6.6e-7/(3.61e-10**2)/atom_density_Cu, # OK TMAP eq (10)
-            "E_p": 0.5, # OK TMAP eq (11)
+            "k_0": 6.6e-7/(3.61e-10**2)/atom_density_Cu,  # OK TMAP eq (10)
+            "E_p": 0.5,  # OK TMAP eq (11)
             "p_0": 7.98e13,  # OK TMAP eq (11)
-            "density": 5e-5*atom_density_Cu, # OK TMAP ligne (89)
+            "density": 5e-5*atom_density_Cu,  # OK TMAP ligne (89)
             "materials": [id_Cu]
         },
         {
@@ -143,7 +143,7 @@ parameters = {
             "k_0": 3.92e-7/(3.61e-10**2)/atom_density_CuCrZr,  # OK TMAP eq (15)
             "E_p": 0.5,  # OK TMAP eq (11)
             "p_0": 7.98e13,  # OK TMAP eq (11)
-            "density": 5e-5*atom_density_CuCrZr, # OK TMAP ligne (103)
+            "density": 5e-5*atom_density_CuCrZr,  # OK TMAP ligne (103)
             "materials": [id_CuCrZr]
         },
         {
@@ -157,7 +157,7 @@ parameters = {
         ],
     "source_term": [
        {
-            'value': 5e23 * 1/2.5e-9 * (FESTIM.x < 2.5e-9), #* (FESTIM.t <= 400)
+            'value': 5e23 * 1/2.5e-9 * (FESTIM.x < 2.5e-9),  #* (FESTIM.t <= 400)
             'volumes': [id_W]
        },
        ],    
@@ -213,7 +213,7 @@ parameters = {
     "solving_parameters": {
         # "type": "solve_stationary",
         "final_time": 2400000, # OK TMAP ligne 183
-        "initial_stepsize": 1e-4,
+        "initial_stepsize": 0.0001,
         "adaptive_stepsize": {
             "stepsize_change_ratio": 1.05,
             "t_stop": 1e8,
@@ -251,12 +251,20 @@ parameters = {
                     "field": "1"
                 },
                 {
-                    "volumes": [id_Cu],
+                    "volumes": [id_W],
                     "field": "2"
                 },
                 {
-                    "volumes": [id_CuCrZr],
+                    "volumes": [id_Cu],
                     "field": "3"
+                },
+                {
+                    "volumes": [id_CuCrZr],
+                    "field": "4"
+                },
+                {
+                    "volumes": [id_CuCrZr],
+                    "field": "5"
                 },
                 {
                     "volumes": [id_W, id_Cu, id_CuCrZr],
