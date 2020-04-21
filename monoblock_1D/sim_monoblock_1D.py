@@ -45,7 +45,7 @@ size = 8.5e-3 # OK TMAP
 parameters = {
     "mesh_parameters": {
         "size": size,
-        "initial_number_of_cells": 200,
+        "initial_number_of_cells": 2000,
         "refinements" : [
             {
                 "cells": 300,
@@ -135,7 +135,7 @@ parameters = {
             "density": 5e-5*atom_density_CuCrZr, # OK TMAP ligne (103)
             "materials": [id_CuCrZr]
         },
-                {
+        {
             "E_k": 0.418, # OK TMAP eq (15)
             "k_0": 3.92e-7/(3.61e-10**2)/atom_density_CuCrZr,  # OK TMAP eq (15)
             "E_p": 0.83,  # OK TMAP eq (16)
@@ -144,15 +144,11 @@ parameters = {
             "materials": [id_CuCrZr]
         },
         ],
-     #"source": [
-     #   {
-     #      "center": "dc",
-     #      "width": id_top_surf,
-      #      "distribution": 3.2e-15, 
-     #       "E_Kr": 1.16, 
-     #       "order": 2,
-     #   },
-    #    ],    
+     "source": [
+       {
+            'value': 5e23 * 1/2.5e-9 * (FESTIM.x < 2.5e-9) #* (FESTIM.t <= 400)
+       },
+       ],    
     "boundary_conditions": [
         {
            # "type": "dc",
