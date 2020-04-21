@@ -33,7 +33,7 @@ plt.figure(1)
 CF = plt.contourf(xi, yi, zi, levels=100)
 plt.colorbar(CF, label='Rationalised error')
 
-CS = plt.contour(xi, yi, zi, levels=10, colors="black", linewidths=0.75)
+CS = plt.contour(xi, yi, zi, levels=10, colors="white", linewidths=0.75)
 plt.clabel(CS, inline=1, fontsize=10)
 # plt.plot(E, n, 'ko', ms=1, alpha=0.5)
 for c in CF.collections:  # for avoiding white lines in pdf
