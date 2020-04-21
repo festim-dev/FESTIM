@@ -18,7 +18,10 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     '''
     k_B = FESTIM.k_B  # Boltzmann constant
     v_0 = 1e13  # frequency factor s-1
+    # for quiros
     v_0 = 2.45e13
+    # for hollingsworth
+    v_0 = 1e13
     print("Warning: modified value for nu_0")
     expressions = []
     F = 0
