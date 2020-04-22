@@ -65,8 +65,6 @@ def test_run_temperature_stationary(tmpdir):
             "initial_stepsize": 0.5,
             "adaptive_stepsize": {
                 "stepsize_change_ratio": 1,
-                "t_stop": 40,
-                "stepsize_stop_max": 0.5,
                 "dt_min": 1e-5
                 },
             "newton_solver": {
