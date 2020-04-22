@@ -11,7 +11,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         res = [u]
     else:
         res = list(u.split())
-    retention = FESTIM.post_processing.compute_retention(u, W)
+    retention = sum(res)
     res.append(retention)
     if isinstance(T, function.expression.Expression):
         res.append(interpolate(T, W))
@@ -304,6 +304,10 @@ def derived_quantities(parameters, solutions,
     # Create dicts
 
     ret = solutions[len(solutions)-2]
+    print(len(solutions))
+    for e in solutions:
+        print(e)
+    # assert False
     T = solutions[len(solutions)-1]
     field_to_sol = {
         'solute': solutions[0],
@@ -344,15 +348,29 @@ def derived_quantities(parameters, solutions,
     if "minimum_volume" in derived_quant_dict.keys():
         for minimum in parameters[
                         "exports"]["derived_quantities"]["minimum_volume"]:
-            sol = field_to_sol[str(minimum["field"])]
-            for vol in minimum["volumes"]:
-                tab.append(calculate_minimum_volume(sol, volume_markers, vol))
+            if str(minimum["field"]) == "retention":
+                for vol in minimum["volumes"]:
+                    val = 0
+                    for f in solutions[0:-2]:
+                        val += calculate_minimum_volume(f, volume_markers, vol)
+                    tab.append(val)
+            else:
+                sol = field_to_sol[str(minimum["field"])]
+                for vol in minimum["volumes"]:
+                    tab.append(calculate_minimum_volume(sol, volume_markers, vol))
     if "maximum_volume" in derived_quant_dict.keys():
         for maximum in parameters[
                         "exports"]["derived_quantities"]["maximum_volume"]:
-            sol = field_to_sol[str(maximum["field"])]
-            for vol in maximum["volumes"]:
-                tab.append(calculate_maximum_volume(sol, volume_markers, vol))
+            if str(maximum["field"]) == "retention":
+                for vol in maximum["volumes"]:
+                    val = 0
+                    for f in solutions[0:-2]:
+                        val += calculate_maximum_volume(f, volume_markers, vol)
+                    tab.append(val)
+            else:
+                sol = field_to_sol[str(maximum["field"])]
+                for vol in maximum["volumes"]:
+                    tab.append(calculate_maximum_volume(sol, volume_markers, vol))
     if "total_volume" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_volume"]:
             sol = field_to_sol[str(total["field"])]
