@@ -240,7 +240,7 @@ def test_derived_quantities():
                 ],
                 "total_volume": [
                     {
-                        "field": 'solute',
+                        "field": 'retention',
                         "volumes": [1, 2]
                     }
                 ],
