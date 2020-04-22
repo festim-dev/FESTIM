@@ -17,6 +17,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         res.append(interpolate(T, W))
     else:
         res.append(T)
+
     D, thermal_cond, cp, rho, H, S = flux_fonctions
 
     if S is not None:
