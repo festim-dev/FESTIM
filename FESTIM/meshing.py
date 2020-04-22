@@ -9,7 +9,7 @@ def create_mesh(mesh_parameters):
         XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
     elif ("mesh" in mesh_parameters.keys() and
             isinstance(mesh_parameters["mesh"], type(Mesh()))):
-            mesh = mesh_parameters["mesh"]
+        mesh = mesh_parameters["mesh"]
     else:
         mesh = mesh_and_refine(mesh_parameters)
     return mesh
@@ -31,7 +31,8 @@ def subdomains(mesh, parameters):
         surface_markers = mesh_parameters["meshfunction_facets"]
     else:
         size = parameters["mesh_parameters"]["size"]
-        check_borders(size, parameters["materials"])
+        if len(parameters["materials"]) > 1:
+            check_borders(size, parameters["materials"])
         volume_markers, surface_markers = \
             subdomains_1D(mesh, parameters["materials"], size)
     return volume_markers, surface_markers
@@ -115,9 +116,12 @@ def subdomains_1D(mesh, materials, size):
     volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
     for cell in cells(mesh):
         for material in materials:
-            if cell.midpoint().x() >= material['borders'][0] \
-             and cell.midpoint().x() <= material['borders'][1]:
+            if len(materials) == 1:
                 volume_markers[cell] = material['id']
+            else:
+                if cell.midpoint().x() >= material['borders'][0] \
+                 and cell.midpoint().x() <= material['borders'][1]:
+                    volume_markers[cell] = material['id']
     surface_markers = MeshFunction(
         "size_t", mesh, mesh.topology().dim()-1, 0)
     surface_markers.set_all(0)
