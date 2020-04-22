@@ -55,7 +55,6 @@ def test_run_temperature_stationary(tmpdir):
                     "volume": 1
                 }
             ],
-            "initial_condition": u
         },
         "source_term": {
             'value': 0
