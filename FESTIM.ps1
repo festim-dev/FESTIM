@@ -1,1 +1,0 @@
-docker run -ti -v ${PWD}:/home/fenics/shared quay.io/fenicsproject/stable

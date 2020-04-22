@@ -15,11 +15,7 @@ def create_function_spaces(mesh, nb_traps, element1='P', order1=1,
     if nb_traps == 0:
         V = FunctionSpace(mesh, element1, order1)
     else:
-        P1 = FiniteElement("CG", mesh.ufl_cell(), 1)
-        DG1 = FiniteElement("DG", mesh.ufl_cell(), 1)
-        element = [P1] + [DG1]*nb_traps
-        V = FunctionSpace(mesh, MixedElement(element))
-        # V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
+        V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
     W = FunctionSpace(mesh, element2, degree2)
     return V, W
 
