@@ -6,6 +6,11 @@ import numpy as np
 
 
 def test_fluxes_chemical_pot():
+    '''
+    This test that the function boundary_conditions.apply_fluxes()
+    returns the correct formulation in the case of conservation
+    of chemical potential
+    '''
     Kr_0 = 2
     E_Kr = 3
     S_0 = 2
@@ -19,6 +24,11 @@ def test_fluxes_chemical_pot():
                 "S_0": S_0,
                 "E_S": E_S,
                 "id": 1
+            },
+            {
+                "S_0": S_0,
+                "E_S": E_S,
+                "id": 2
             }
         ],
         "boundary_conditions": [
@@ -54,7 +64,6 @@ def test_fluxes_chemical_pot():
     expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(2)
-    # assert expressions[0]
     assert expected_form.equals(F) is True
 
 
