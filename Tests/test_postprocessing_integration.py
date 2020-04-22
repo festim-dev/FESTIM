@@ -66,7 +66,7 @@ def test_run_post_processing(tmpdir):
                 ],
                 "maximum_volume": [
                     {
-                        "field": 'T',
+                        "field": 'retention',
                         "volumes": [1]
                     }
                 ],
@@ -135,7 +135,9 @@ def test_run_post_processing_pure_diffusion(tmpdir):
                 "D_0": 6,
                 "id": 2
                 }],
-        "traps": [],
+        "traps": [
+            {}
+        ],
         "exports": {
             "xdmf": {
                     "functions": ['solute', 'T'],
@@ -157,6 +159,16 @@ def test_run_post_processing_pure_diffusion(tmpdir):
                         "volumes": [2]
                     },
                     ],
+                "minimum_volume": [
+                    {
+                        "field": "retention",
+                        "volumes": [1]
+                    },
+                    {
+                        "field": "1",
+                        "volumes": [1]
+                    },
+                ],
                 "file": "derived_quantities",
                 "folder": str(Path(d)),
                 },
@@ -164,10 +176,13 @@ def test_run_post_processing_pure_diffusion(tmpdir):
         }
 
     mesh = fenics.UnitIntervalMesh(20)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    W = fenics.FunctionSpace(mesh, 'P', 1)
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
-    u = fenics.interpolate(fenics.Constant(10), V)
-    T = fenics.interpolate(fenics.Constant(20), V)
+    u = fenics.Function(V)
+    fenics.assign(u.sub(0), fenics.interpolate(fenics.Constant(10), V.sub(0).collapse()))
+    fenics.assign(u.sub(1), fenics.interpolate(fenics.Constant(1), V.sub(1).collapse()))
+    T = fenics.interpolate(fenics.Constant(20), W)
 
     volume_markers, surface_markers = \
         FESTIM.meshing.subdomains_1D(mesh, parameters["materials"], size=1)
@@ -188,7 +203,7 @@ def test_run_post_processing_pure_diffusion(tmpdir):
         t += dt
         derived_quantities_global, dt = \
             FESTIM.post_processing.run_post_processing(
-                parameters, transient, u, T, markers, V, V_DG1, t, dt, files,
+                parameters, transient, u, T, markers, W, V_DG1, t, dt, files,
                 append=append, flux_fonctions=flux_fonctions,
                 derived_quantities_global=tab)
         append = True
@@ -196,7 +211,9 @@ def test_run_post_processing_pure_diffusion(tmpdir):
         assert derived_quantities_global[i][0] == t
         assert derived_quantities_global[i][1] == 10
         assert derived_quantities_global[i][2] == 20
-        assert round(derived_quantities_global[i][3]) == 10
+        assert round(derived_quantities_global[i][3]) == 11
+        assert derived_quantities_global[i][4] == 11
+        assert derived_quantities_global[i][5] == 1
 
 
 def test_run_post_processing_flux(tmpdir):
