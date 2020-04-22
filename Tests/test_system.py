@@ -18,7 +18,7 @@ def test_run_temperature_stationary(tmpdir):
         "materials": [
             {
                 "thermal_cond": 1,
-                "borders": [0, size],
+                # "borders": [0, size],
                 "E_D": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
