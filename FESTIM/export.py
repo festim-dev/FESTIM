@@ -27,7 +27,7 @@ def write_to_csv(dict, desorption):
                         writer.writerows([val])
             except OSError as err:
                 print("OS error: {0}".format(err))
-                print("The file " + filename + ".txt might currently be busy."
+                print("The file " + file_export + ".txt might currently be busy."
                       "Please close the application then press any key.")
                 input()
 
