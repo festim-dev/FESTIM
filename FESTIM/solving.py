@@ -67,7 +67,7 @@ def adaptive_stepsize(nb_it, converged, dt, dt_min,
         dt.assign(float(dt)*stepsize_change_ratio)
     else:
         dt.assign(float(dt)/stepsize_change_ratio)
-    if t > t_stop:
+    if t >= t_stop:
         if float(dt) > stepsize_stop_max:
             dt.assign(stepsize_stop_max)
     return
