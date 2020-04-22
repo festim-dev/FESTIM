@@ -217,34 +217,36 @@ def define_variational_problem_heat_transfers(
         F += dot(thermal_cond*grad(T), grad(vT))*dx(vol)
 
     # Source terms
-    for source in parameters["temperature"]["source_term"]:
-        src = sp.printing.ccode(source["value"])
-        src = Expression(src, degree=2, t=0)
-        expressions.append(src)
-        # Source term
-        F += - src*vT*dx(source["volume"])
+    if "source_term" in parameters["temperature"].keys():
+        for source in parameters["temperature"]["source_term"]:
+            src = sp.printing.ccode(source["value"])
+            src = Expression(src, degree=2, t=0)
+            expressions.append(src)
+            # Source term
+            F += - src*vT*dx(source["volume"])
 
     # Boundary conditions
-    for bc in parameters["temperature"]["boundary_conditions"]:
-        if type(bc["surfaces"]) is list:
-            surfaces = bc["surfaces"]
-        else:
-            surfaces = [bc["surfaces"]]
-        for surf in surfaces:
-            if bc["type"] == "flux":
-                value = sp.printing.ccode(bc["value"])
-                value = Expression(value, degree=2, t=0)
-                # Surface flux term
-                F += - value*vT*ds(surf)
-                expressions.append(value)
-            elif bc["type"] == "convective_flux":
-                h = sp.printing.ccode(bc["h_coeff"])
-                h = Expression(h, degree=2, t=0)
-                T_ext = sp.printing.ccode(bc["T_ext"])
-                T_ext = Expression(T_ext, degree=2, t=0)
-                # Surface convective flux term
-                F += h * (T - T_ext)*vT*ds(surf)
-                expressions.append(h)
-                expressions.append(T_ext)
+    if "boundary_conditions" in parameters["temperature"].keys():
+        for bc in parameters["temperature"]["boundary_conditions"]:
+            if type(bc["surfaces"]) is list:
+                surfaces = bc["surfaces"]
+            else:
+                surfaces = [bc["surfaces"]]
+            for surf in surfaces:
+                if bc["type"] == "flux":
+                    value = sp.printing.ccode(bc["value"])
+                    value = Expression(value, degree=2, t=0)
+                    # Surface flux term
+                    F += - value*vT*ds(surf)
+                    expressions.append(value)
+                elif bc["type"] == "convective_flux":
+                    h = sp.printing.ccode(bc["h_coeff"])
+                    h = Expression(h, degree=2, t=0)
+                    T_ext = sp.printing.ccode(bc["T_ext"])
+                    T_ext = Expression(T_ext, degree=2, t=0)
+                    # Surface convective flux term
+                    F += h * (T - T_ext)*vT*ds(surf)
+                    expressions.append(h)
+                    expressions.append(T_ext)
 
     return F, expressions

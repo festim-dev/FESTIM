@@ -18,7 +18,7 @@ def test_run_temperature_stationary(tmpdir):
         "materials": [
             {
                 "thermal_cond": 1,
-                "borders": [0, size],
+                # "borders": [0, size],
                 "E_D": 0.39,
                 "D_0": 4.1e-7,
                 "id": 1
@@ -55,7 +55,6 @@ def test_run_temperature_stationary(tmpdir):
                     "volume": 1
                 }
             ],
-            "initial_condition": u
         },
         "source_term": {
             'value': 0
@@ -65,8 +64,6 @@ def test_run_temperature_stationary(tmpdir):
             "initial_stepsize": 0.5,
             "adaptive_stepsize": {
                 "stepsize_change_ratio": 1,
-                "t_stop": 40,
-                "stepsize_stop_max": 0.5,
                 "dt_min": 1e-5
                 },
             "newton_solver": {
