@@ -51,7 +51,7 @@ def test_fluxes_chemical_pot():
     F, expressions = FESTIM.boundary_conditions.apply_fluxes(
         parameters, solutions, testfunctions, fenics.ds, T, S)
     expected_form = 0
-    expected_form += -test_sol * (Kr*(sol/S)**order)*fenics.ds(1)
+    expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(2)
     # assert expressions[0]

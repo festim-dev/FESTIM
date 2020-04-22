@@ -60,6 +60,7 @@ def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=0):
     F = 0
     k_B = FESTIM.k_B
     boundary_conditions = parameters["boundary_conditions"]
+    conservation_chemic_pot = False
     if S != 0:
         for mat in parameters["materials"]:
             if "S_0" in mat.keys() or "E_S" in mat.keys():
