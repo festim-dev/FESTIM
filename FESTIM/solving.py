@@ -10,9 +10,6 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
         u.assign(u_)
         u, nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
         if "adaptive_stepsize" in solving_parameters.keys():
-            t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
-            stepsize_stop_max = \
-                solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
             stepsize_change_ratio = \
                 solving_parameters[
                     "adaptive_stepsize"]["stepsize_change_ratio"]
@@ -20,8 +17,14 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
             adaptive_stepsize(
                 nb_it=nb_it, converged=converged, dt=dt,
                 stepsize_change_ratio=stepsize_change_ratio,
-                dt_min=dt_min, t=t, t_stop=t_stop,
-                stepsize_stop_max=stepsize_stop_max)
+                dt_min=dt_min, t=t)
+            if "t_stop" in solving_parameters["adaptive_stepsize"].keys():
+                t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
+                stepsize_stop_max = \
+                    solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
+                if t >= t_stop:
+                    if float(dt) > stepsize_stop_max:
+                        dt.assign(stepsize_stop_max)
     return u, dt
 
 
@@ -41,8 +44,7 @@ def solve_once(F, u, J, bcs, solving_parameters):
 
 
 def adaptive_stepsize(nb_it, converged, dt, dt_min,
-                      stepsize_change_ratio, t, t_stop,
-                      stepsize_stop_max):
+                      stepsize_change_ratio, t):
     '''
     Adapts the stepsize as function of the number of iterations of the
     solver.
@@ -67,7 +69,4 @@ def adaptive_stepsize(nb_it, converged, dt, dt_min,
         dt.assign(float(dt)*stepsize_change_ratio)
     else:
         dt.assign(float(dt)/stepsize_change_ratio)
-    if t >= t_stop:
-        if float(dt) > stepsize_stop_max:
-            dt.assign(stepsize_stop_max)
     return
