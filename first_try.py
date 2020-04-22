@@ -125,11 +125,33 @@ parameters["solving_parameters"] = solving_parameters
 folder = "Solution_ogorodnikova"
 
 exports = {
-        "txt" : {
-            "functions": ["retention"],
-            "times":[],
-            "labels":["retention"],
-            "folder":folder
+        "derived_quantities":{
+            "folder":folder,
+            "file":"derived_quantities.csv",
+            "total_volume":[
+                {
+                    "field":"solute",
+                    "volumes":[1]
+                },
+                {
+                    "field":2,
+                    "volumes":[1]
+                },
+                {
+                    "field":3,
+                    "volumes":[1]
+                },
+                {
+                    "field":"retention",
+                    "volumes":[1]
+                }
+                ],
+            "surface_flux":[
+                {
+                    "field":"solute",
+                    "surfaces":[1,1]
+                }
+                ]
             },
         "xdmf": {
             "functions":["solute","1","2","3","retention"],
