@@ -11,7 +11,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         res = [u]
     else:
         res = list(u.split())
-    retention = sum(res)
+    retention = FESTIM.post_processing.compute_retention(u, W)
     res.append(retention)
     if isinstance(T, function.expression.Expression):
         res.append(interpolate(T, W))
@@ -298,10 +298,7 @@ def derived_quantities(parameters, solutions,
     # Create dicts
 
     ret = solutions[len(solutions)-2]
-    print(len(solutions))
-    for e in solutions:
-        print(e)
-    # assert False
+
     T = solutions[len(solutions)-1]
     field_to_sol = {
         'solute': solutions[0],
