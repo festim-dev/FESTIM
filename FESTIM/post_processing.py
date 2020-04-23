@@ -299,7 +299,6 @@ def derived_quantities(parameters, solutions,
 
     ret = solutions[len(solutions)-2]
 
-    # assert False
     T = solutions[len(solutions)-1]
     field_to_sol = {
         'solute': solutions[0],
