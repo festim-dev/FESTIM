@@ -10,8 +10,29 @@ def create_mesh(mesh_parameters):
     elif ("mesh" in mesh_parameters.keys() and
             isinstance(mesh_parameters["mesh"], type(Mesh()))):
         mesh = mesh_parameters["mesh"]
+    elif "coordinates" in mesh_parameters.keys():
+        mesh = generate_mesh_from_coordinates(mesh_parameters)
     else:
         mesh = mesh_and_refine(mesh_parameters)
+    return mesh
+
+
+def generate_mesh_from_coordinates(mesh_parameters):
+    points = mesh_parameters["coordinates"]
+    nb_points = len(points)
+    nb_cells = nb_points - 1
+    editor = MeshEditor()
+    mesh = Mesh()
+    editor.open(mesh, "interval", 1, 1)  # top. and geom. dimension are both 1
+    editor.init_vertices(nb_points)  # number of vertices
+    editor.init_cells(nb_cells)     # number of cells
+    i = 0
+    for v in points:
+        editor.add_vertex(i, np.array([points[i]]))
+        i += 1
+    for j in range(0, nb_cells):
+        editor.add_cell(j, np.array([j, j+1]))
+    editor.close()
     return mesh
 
 
