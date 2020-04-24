@@ -544,6 +544,10 @@ def test_run_chemical_pot_mass_balance(tmpdir):
                         "field": "solute",
                         "volumes": [1]
                     },
+                    {
+                        "field": "retention",
+                        "volumes": [1]
+                    },
                     ],
             },
             },
@@ -555,6 +559,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
     tolerance = 1e-2
     for e in derived_quantities:
         assert abs(float(e[1])-1) < tolerance
+        assert abs(float(e[2])-1) < tolerance
 
 
 def test_run_MMS_soret(tmpdir):
