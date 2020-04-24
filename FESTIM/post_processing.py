@@ -351,7 +351,8 @@ def derived_quantities(parameters, solutions,
             else:
                 sol = field_to_sol[str(minimum["field"])]
                 for vol in minimum["volumes"]:
-                    tab.append(calculate_minimum_volume(sol, volume_markers, vol))
+                    tab.append(calculate_minimum_volume(
+                        sol, volume_markers, vol))
     if "maximum_volume" in derived_quant_dict.keys():
         for maximum in parameters[
                         "exports"]["derived_quantities"]["maximum_volume"]:
@@ -364,7 +365,8 @@ def derived_quantities(parameters, solutions,
             else:
                 sol = field_to_sol[str(maximum["field"])]
                 for vol in maximum["volumes"]:
-                    tab.append(calculate_maximum_volume(sol, volume_markers, vol))
+                    tab.append(calculate_maximum_volume(
+                        sol, volume_markers, vol))
     if "total_volume" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_volume"]:
             sol = field_to_sol[str(total["field"])]
