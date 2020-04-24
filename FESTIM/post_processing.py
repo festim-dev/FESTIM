@@ -7,22 +7,25 @@ import FESTIM
 def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
                         files, append, flux_fonctions,
                         derived_quantities_global):
+
+    D, thermal_cond, cp, rho, H, S = flux_fonctions
+
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
         res = list(u.split())
-    retention = FESTIM.post_processing.compute_retention(u, W)
-    res.append(retention)
-    if isinstance(T, function.expression.Expression):
-        res.append(interpolate(T, W))
-    else:
-        res.append(T)
-    D, thermal_cond, cp, rho, H, S = flux_fonctions
-
     if S is not None:
         # this is costly ...
         solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
         res[0] = solute
+
+    retention = sum(res)
+    res.append(retention)
+
+    if isinstance(T, function.expression.Expression):
+        res.append(interpolate(T, W))
+    else:
+        res.append(T)
 
     if "derived_quantities" in parameters["exports"].keys():
         derived_quantities_t = \
