@@ -164,6 +164,7 @@ def run(parameters, log_level=40):
             if thermal_cond is not None:
                 thermal_cond._T = T
             if S is not None:
+                S._T = T
                 for expr in expressions:
                     if "_bci" in expr.__dict__.keys():
                         expr._bci.t = t
