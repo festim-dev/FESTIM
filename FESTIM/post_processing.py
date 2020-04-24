@@ -7,22 +7,25 @@ import FESTIM
 def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
                         files, append, flux_fonctions,
                         derived_quantities_global):
+
+    D, thermal_cond, cp, rho, H, S = flux_fonctions
+
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
         res = list(u.split())
-    retention = FESTIM.post_processing.compute_retention(u, W)
-    res.append(retention)
-    if isinstance(T, function.expression.Expression):
-        res.append(interpolate(T, W))
-    else:
-        res.append(T)
-    D, thermal_cond, cp, rho, H, S = flux_fonctions
-
     if S is not None:
         # this is costly ...
         solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
         res[0] = solute
+
+    retention = sum(res)
+    res.append(retention)
+
+    if isinstance(T, function.expression.Expression):
+        res.append(interpolate(T, W))
+    else:
+        res.append(T)
 
     if "derived_quantities" in parameters["exports"].keys():
         derived_quantities_t = \
@@ -348,7 +351,8 @@ def derived_quantities(parameters, solutions,
             else:
                 sol = field_to_sol[str(minimum["field"])]
                 for vol in minimum["volumes"]:
-                    tab.append(calculate_minimum_volume(sol, volume_markers, vol))
+                    tab.append(calculate_minimum_volume(
+                        sol, volume_markers, vol))
     if "maximum_volume" in derived_quant_dict.keys():
         for maximum in parameters[
                         "exports"]["derived_quantities"]["maximum_volume"]:
@@ -361,7 +365,8 @@ def derived_quantities(parameters, solutions,
             else:
                 sol = field_to_sol[str(maximum["field"])]
                 for vol in maximum["volumes"]:
-                    tab.append(calculate_maximum_volume(sol, volume_markers, vol))
+                    tab.append(calculate_maximum_volume(
+                        sol, volume_markers, vol))
     if "total_volume" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_volume"]:
             sol = field_to_sol[str(total["field"])]
