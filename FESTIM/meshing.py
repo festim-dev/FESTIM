@@ -13,12 +13,14 @@ def create_mesh(mesh_parameters):
     elif "coordinates" in mesh_parameters.keys():
         mesh = generate_mesh_from_coordinates(mesh_parameters)
     else:
-        mesh = mesh_and_refine(mesh_parameters)
+        mesh = mesh_and_refine(mesh_parameters["coordinates"])
     return mesh
 
 
-def generate_mesh_from_coordinates(mesh_parameters):
-    points = mesh_parameters["coordinates"]
+def generate_mesh_from_coordinates(points):
+    '''
+    Generates a 1D mesh from a list of points
+    '''
     nb_points = len(points)
     nb_cells = nb_points - 1
     editor = MeshEditor()
