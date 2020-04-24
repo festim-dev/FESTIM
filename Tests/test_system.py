@@ -536,6 +536,11 @@ def test_run_chemical_pot_mass_balance(tmpdir):
             }
             },
         "exports": {
+            "xdmf": {
+                "functions": ["retention"],
+                "labels": ["retention"],
+                "folder": str(Path(d))
+            },
             "derived_quantities": {
                 "file": "derived_quantities.csv",
                 "folder": str(Path(d)),
