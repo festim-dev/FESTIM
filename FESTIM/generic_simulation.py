@@ -26,7 +26,7 @@ def run(parameters, log_level=40):
     if transient:
         Time = parameters["solving_parameters"]["final_time"]
         initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
-        dt = Constant(initial_stepsize)  # time step size
+        dt = Constant(initial_stepsize, name="dt")  # time step size
     set_log_level(log_level)
 
     # Mesh and refinement
@@ -42,23 +42,23 @@ def run(parameters, log_level=40):
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
     # Define temperature
+    T = Function(W, name="T")
+    T_n = Function(W, name="T_n")
     if parameters["temperature"]["type"] == "expression":
         T_expr = Expression(
             sp.printing.ccode(
                 parameters["temperature"]['value']), t=0, degree=2)
-        T = interpolate(T_expr, W)
-        T_n = Function(W)
+        T.assign(interpolate(T_expr, W))
         T_n.assign(T)
     else:
         # Define variational problem for heat transfers
-        T = Function(W, name="T")
-        T_n = Function(W)
+
         vT = TestFunction(W)
         if parameters["temperature"]["type"] == "solve_transient":
-            T_n = sp.printing.ccode(
+            T_ini = sp.printing.ccode(
                 parameters["temperature"]["initial_condition"])
-            T_n = Expression(T_n, degree=2, t=0)
-            T_n = interpolate(T_n, W)
+            T_ini = Expression(T_ini, degree=2, t=0)
+            T_n.assign(interpolate(T_ini, W))
         bcs_T, expressions_bcs_T = \
             FESTIM.boundary_conditions.define_dirichlet_bcs_T(
                 parameters, W, surface_markers)
@@ -164,6 +164,7 @@ def run(parameters, log_level=40):
             if thermal_cond is not None:
                 thermal_cond._T = T
             if S is not None:
+                S._T = T
                 for expr in expressions:
                     if "_bci" in expr.__dict__.keys():
                         expr._bci.t = t
