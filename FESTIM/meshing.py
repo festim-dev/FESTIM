@@ -11,28 +11,27 @@ def create_mesh(mesh_parameters):
     elif ("mesh" in mesh_parameters.keys() and
             isinstance(mesh_parameters["mesh"], type(Mesh()))):
         mesh = mesh_parameters["mesh"]
-    elif "coordinates" in mesh_parameters.keys():
-        mesh = generate_mesh_from_coordinates(mesh_parameters["coordinates"])
+    elif "vertices" in mesh_parameters.keys():
+        mesh = generate_mesh_from_vertices(mesh_parameters["vertices"])
     else:
         mesh = mesh_and_refine(mesh_parameters)
     return mesh
 
 
-def generate_mesh_from_coordinates(points):
+def generate_mesh_from_vertices(vertices):
     '''
-    Generates a 1D mesh from a list of points
+    Generates a 1D mesh from a list of vertices
     '''
-    nb_points = len(points)
+    vertices = sorted(np.unique(vertices))
+    nb_points = len(vertices)
     nb_cells = nb_points - 1
     editor = MeshEditor()
     mesh = Mesh()
     editor.open(mesh, "interval", 1, 1)  # top. and geom. dimension are both 1
     editor.init_vertices(nb_points)  # number of vertices
     editor.init_cells(nb_cells)     # number of cells
-    i = 0
-    for v in points:
-        editor.add_vertex(i, np.array([points[i]]))
-        i += 1
+    for i in range(0, nb_points):
+        editor.add_vertex(i, np.array([vertices[i]]))
     for j in range(0, nb_cells):
         editor.add_cell(j, np.array([j, j+1]))
     editor.close()
