@@ -11,9 +11,9 @@ def create_mesh(mesh_parameters):
             isinstance(mesh_parameters["mesh"], type(Mesh()))):
         mesh = mesh_parameters["mesh"]
     elif "coordinates" in mesh_parameters.keys():
-        mesh = generate_mesh_from_coordinates(mesh_parameters)
+        mesh = generate_mesh_from_coordinates(mesh_parameters["coordinates"])
     else:
-        mesh = mesh_and_refine(mesh_parameters["coordinates"])
+        mesh = mesh_and_refine(mesh_parameters)
     return mesh
 
 
