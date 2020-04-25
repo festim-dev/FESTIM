@@ -232,3 +232,32 @@ def test_subdomains_inbuilt():
     for cell in fenics.cells(mesh):
         assert mf_cells[cell] == mf_cells_2[cell]
         assert mf_facets[cell] == mf_facets_2[cell]
+
+
+def test_generate_mesh_from_coordinates():
+    '''
+    Test the function generate_mesh_from_vertices
+    '''
+    points = [0, 1, 2, 3, 5]
+    mesh = meshing.generate_mesh_from_vertices(points)
+    assert mesh.num_vertices() == len(points)
+    assert mesh.num_edges() == len(points) - 1
+    assert mesh.num_cells() == len(points) - 1
+
+
+def test_create_mesh_coordinates():
+    '''
+    Test the function create_mesh with vertices key
+    '''
+    points = [0, 1, 2, 5, 12, 24]
+    mesh_parameters = {
+        "vertices": points
+    }
+    mesh = meshing.create_mesh(mesh_parameters)
+    assert mesh.num_vertices() == len(points)
+    assert mesh.num_edges() == len(points) - 1
+    assert mesh.num_cells() == len(points) - 1
+    for cell in fenics.cells(mesh):
+        for v in fenics.vertices(cell):
+            print(v.point().x())
+            assert v.point().x() in points
