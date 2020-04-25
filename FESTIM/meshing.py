@@ -1,6 +1,6 @@
 from fenics import *
 from operator import itemgetter
-
+import numpy as np
 
 def create_mesh(mesh_parameters):
     if "mesh_file" in mesh_parameters.keys():
