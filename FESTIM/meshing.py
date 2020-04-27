@@ -1,5 +1,6 @@
 from fenics import *
 from operator import itemgetter
+import numpy as np
 
 
 def create_mesh(mesh_parameters):
@@ -10,8 +11,30 @@ def create_mesh(mesh_parameters):
     elif ("mesh" in mesh_parameters.keys() and
             isinstance(mesh_parameters["mesh"], type(Mesh()))):
         mesh = mesh_parameters["mesh"]
+    elif "vertices" in mesh_parameters.keys():
+        mesh = generate_mesh_from_vertices(mesh_parameters["vertices"])
     else:
         mesh = mesh_and_refine(mesh_parameters)
+    return mesh
+
+
+def generate_mesh_from_vertices(vertices):
+    '''
+    Generates a 1D mesh from a list of vertices
+    '''
+    vertices = sorted(np.unique(vertices))
+    nb_points = len(vertices)
+    nb_cells = nb_points - 1
+    editor = MeshEditor()
+    mesh = Mesh()
+    editor.open(mesh, "interval", 1, 1)  # top. and geom. dimension are both 1
+    editor.init_vertices(nb_points)  # number of vertices
+    editor.init_cells(nb_cells)     # number of cells
+    for i in range(0, nb_points):
+        editor.add_vertex(i, np.array([vertices[i]]))
+    for j in range(0, nb_cells):
+        editor.add_cell(j, np.array([j, j+1]))
+    editor.close()
     return mesh
 
 
@@ -30,7 +53,10 @@ def subdomains(mesh, parameters):
         volume_markers = mesh_parameters["meshfunction_cells"]
         surface_markers = mesh_parameters["meshfunction_facets"]
     else:
-        size = parameters["mesh_parameters"]["size"]
+        if "vertices" in mesh_parameters.keys():
+            size = max(mesh_parameters["vertices"])
+        else:
+            size = parameters["mesh_parameters"]["size"]
         if len(parameters["materials"]) > 1:
             check_borders(size, parameters["materials"])
         volume_markers, surface_markers = \

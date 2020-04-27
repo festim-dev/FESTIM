@@ -189,9 +189,19 @@ def export_xdmf(res, exports, files, t, append):
             raise TypeError('Unexpected' + str(type(fun)) + 'type')
 
         solution.rename(label, "label")
-        # files[i].write_checkpoint(
-        #     solution, label, t, XDMFFile.Encoding.HDF5, append=append)
-        files[i].write(solution, t)
+        checkpoint = True  # Default value
+        if "checkpoint" in exports["xdmf"].keys():
+            if type(exports["xdmf"]["checkpoint"]) != bool:
+                raise TypeError(
+                    "Unknown value for XDMF checkpoint (True or False)")
+            if exports["xdmf"]["checkpoint"] is False:
+                checkpoint = False
+
+        if checkpoint:
+            files[i].write_checkpoint(
+                solution, label, t, XDMFFile.Encoding.HDF5, append=append)
+        else:
+            files[i].write(solution, t)
     return
 
 

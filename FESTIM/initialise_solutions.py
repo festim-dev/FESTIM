@@ -55,7 +55,10 @@ def initialising_solutions(parameters, V, S=None):
                 comp = interpolate(comp, V.sub(ini["component"]).collapse())
             assign(u_n.sub(ini["component"]), comp)
         else:
-            u_n = interpolate(comp, V)
+            if ini["component"] == 0 and chemical_pot is True:
+                u_n = project(comp, V)
+            else:
+                u_n = interpolate(comp, V)
 
     components = split(u_n)
     return u_n, components

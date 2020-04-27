@@ -232,3 +232,71 @@ def test_subdomains_inbuilt():
     for cell in fenics.cells(mesh):
         assert mf_cells[cell] == mf_cells_2[cell]
         assert mf_facets[cell] == mf_facets_2[cell]
+
+
+def test_generate_mesh_from_vertices():
+    '''
+    Test the function generate_mesh_from_vertices
+    '''
+    points = [0, 1, 2, 3, 5]
+    mesh = meshing.generate_mesh_from_vertices(points)
+    assert mesh.num_vertices() == len(points)
+    assert mesh.num_edges() == len(points) - 1
+    assert mesh.num_cells() == len(points) - 1
+
+
+def test_create_mesh_vertices():
+    '''
+    Test the function create_mesh with vertices key
+    '''
+    points = [0, 1, 2, 5, 12, 24]
+    mesh_parameters = {
+        "vertices": points
+    }
+    mesh = meshing.create_mesh(mesh_parameters)
+    assert mesh.num_vertices() == len(points)
+    assert mesh.num_edges() == len(points) - 1
+    assert mesh.num_cells() == len(points) - 1
+    for cell in fenics.cells(mesh):
+        for v in fenics.vertices(cell):
+            assert v.point().x() in points
+
+
+def test_integration_mesh_from_vertices_subdomains():
+    '''
+    Integration test for meshing and subdomain 1D
+    when parsing a list of vertices
+    Checks that the cells are marked correctly
+    '''
+    points = [0, 1, 2, 5, 12, 24]
+    mesh_parameters = {
+        "vertices": points
+    }
+    materials = [
+        {
+            "borders": [0, 2],
+            "id": 1
+        },
+        {
+            "borders": [2, 24],
+            "id": 2
+        }
+    ]
+    parameters = {
+        "mesh_parameters": mesh_parameters,
+        "materials": materials
+    }
+    mesh = meshing.create_mesh(mesh_parameters)
+    vm, sm = meshing.subdomains(mesh, parameters)
+
+    # Testing
+    for cell in fenics.cells(mesh):
+        if cell.midpoint().x() < 2:
+            assert vm[cell] == 1
+        elif cell.midpoint().x() > 2:
+            assert vm[cell] == 2
+    for facet in fenics.facets(mesh):
+        if facet.midpoint().x() == 0:
+            assert sm[facet] == 1
+        if facet.midpoint().x() == max(points):
+            assert sm[facet] == 2
