@@ -53,7 +53,10 @@ def subdomains(mesh, parameters):
         volume_markers = mesh_parameters["meshfunction_cells"]
         surface_markers = mesh_parameters["meshfunction_facets"]
     else:
-        size = parameters["mesh_parameters"]["size"]
+        if "vertices" in mesh_parameters.keys():
+            size = max(mesh_parameters["vertices"])
+        else:
+            size = parameters["mesh_parameters"]["size"]
         if len(parameters["materials"]) > 1:
             check_borders(size, parameters["materials"])
         volume_markers, surface_markers = \
