@@ -259,7 +259,6 @@ def test_create_mesh_vertices():
     assert mesh.num_cells() == len(points) - 1
     for cell in fenics.cells(mesh):
         for v in fenics.vertices(cell):
-            print(v.point().x())
             assert v.point().x() in points
 
 
