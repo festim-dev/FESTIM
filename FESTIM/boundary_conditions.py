@@ -1,4 +1,5 @@
 from FESTIM import *
+import FESTIM
 from fenics import *
 import sympy as sp
 import numpy as np
@@ -71,7 +72,7 @@ def apply_fluxes(boundary_conditions, solutions, testfunctions, ds, T):
                                   degree=2)
                 expressions.append(flux)
             elif bc["type"] == "recomb":
-                Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/k_B/T)
+                Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/FESTIM.k_B/T)
                 flux = -Kr*solute**bc["order"]
 
             if type(bc['surface']) is not list:
