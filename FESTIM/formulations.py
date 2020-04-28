@@ -22,6 +22,8 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     v_0 = 2.45e13
     # for hollingsworth
     v_0 = 1e13
+    # for Baldwin
+    v_0 = 4e12
     print("Warning: modified value for nu_0")
     expressions = []
     F = 0
