@@ -306,10 +306,9 @@ def test_run_MMS(tmpdir):
                 }
                 },
             "exports": {
-                "txt": {
-                    "functions": [],
-                    "times": [],
-                    "labels": [],
+                "xdmf": {
+                    "functions": ['retention'],
+                    "labels": ['retention'],
                     "folder": str(Path(d))
                 },
                 "error": [
