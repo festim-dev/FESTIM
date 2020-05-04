@@ -768,7 +768,8 @@ def test_run_MMS_steady_state(tmpdir):
                     "relative_tolerance": 1e-9,
                     "maximum_iterations": 50,
                 },
-                "type": "solve_stationary"
+                "type": "solve_stationary",
+                "traps_finite_element": 'DG'
                 },
             "exports": {
                 "txt": {
@@ -778,8 +779,8 @@ def test_run_MMS_steady_state(tmpdir):
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": ['solute', '1', 'T'],
-                    "labels":  ['solute', '1', 'temp'],
+                    "functions": ['solute', '1', 'T', 'retention'],
+                    "labels":  ['solute', '1', 'temp', 'retention'],
                     "folder": str(Path(d))
                 },
                 "error": [
