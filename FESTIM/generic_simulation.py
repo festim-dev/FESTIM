@@ -32,8 +32,13 @@ def run(parameters, log_level=40):
     # Mesh and refinement
     mesh = FESTIM.meshing.create_mesh(parameters["mesh_parameters"])
     # Define function space for system of concentrations and properties
-    V, W = FESTIM.functionspaces_and_functions.create_function_spaces(
-        mesh, len(parameters["traps"]))
+    if "traps_finite_element" in parameters["solving_parameters"].keys():
+        trap_element = parameters["solving_parameters"]["traps_finite_element"]
+    else:
+        trap_element = "CG"  # Default is CG
+    V = FESTIM.functionspaces_and_functions.create_function_space(
+        mesh, len(parameters["traps"]), element_trap=trap_element)
+    W = FunctionSpace(mesh, 'CG', 1)  # function space for T and ext trap dens
     V_DG1 = FunctionSpace(mesh, 'DG', 1)
     # Define and mark subdomains
     volume_markers, surface_markers = \
