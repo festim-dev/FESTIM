@@ -1,23 +1,27 @@
 from fenics import *
 
 
-def create_function_spaces(mesh, nb_traps, element1='P', order1=1,
-                           element2='P', degree2=1):
+def create_function_space(mesh, nb_traps, element_solute='CG', order_solute=1,
+                          element_trap='CG', order_trap=1):
     ''' Returns FuncionSpaces for concentration and dynamic trap densities
     Arguments:
     - mesh: Mesh(), mesh of the functionspaces
     - nb_traps: int, number of traps
-    - element1='P': string, the element of concentrations
-    - order1=1: int, the order of the element of concentrations
-    - element2='P': string, the element of dynamic trap densities
-    - order1=2: int, the order of the element of dynamic trap densities
+    - element_solute='CG': string, the element of solute concentration
+    - order_solute=1: int, the order of the element of solute concentration
+    - element_trap='CG': string, the element of traps concentrations
+    - order_trap=1: int, the order of the element of traps concentrations
+    Returns:
+    - V: fenics.FunctionSpace(), the function space of concentrations
     '''
     if nb_traps == 0:
-        V = FunctionSpace(mesh, element1, order1)
+        V = FunctionSpace(mesh, element_solute, order_solute)
     else:
-        V = VectorFunctionSpace(mesh, element1, order1, nb_traps + 1)
-    W = FunctionSpace(mesh, element2, degree2)
-    return V, W
+        solute = FiniteElement(element_solute, mesh.ufl_cell(), order_solute)
+        traps = FiniteElement(element_trap, mesh.ufl_cell(), order_trap)
+        element = [solute] + [traps]*nb_traps
+        V = FunctionSpace(mesh, MixedElement(element))
+    return V
 
 
 def define_test_functions(V, W, number_ext_traps):
@@ -26,7 +30,6 @@ def define_test_functions(V, W, number_ext_traps):
     Arguments:
     - V, W: FunctionSpace(), functionspaces of concentrations and
     trap densities
-    - number_int_traps: int, number of intrisic traps
     - number_ext_traps: int, number of extrinsic traps
     '''
     v = TestFunction(V)
