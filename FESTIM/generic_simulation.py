@@ -32,8 +32,8 @@ def run(parameters, log_level=40):
     # Mesh and refinement
     mesh = FESTIM.meshing.create_mesh(parameters["mesh_parameters"])
     # Define function space for system of concentrations and properties
-    if "traps_finite_element" in parameters["solving_parameters"].keys():
-        trap_element = parameters["solving_parameters"]["traps_finite_element"]
+    if "traps_element_type" in parameters["solving_parameters"].keys():
+        trap_element = parameters["solving_parameters"]["traps_element_type"]
     else:
         trap_element = "CG"  # Default is CG
     V = FESTIM.functionspaces_and_functions.create_function_space(

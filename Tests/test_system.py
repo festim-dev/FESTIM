@@ -769,7 +769,7 @@ def test_run_MMS_steady_state(tmpdir):
                     "maximum_iterations": 50,
                 },
                 "type": "solve_stationary",
-                "traps_finite_element": 'DG'
+                "traps_element_type": 'DG'
                 },
             "exports": {
                 "txt": {
