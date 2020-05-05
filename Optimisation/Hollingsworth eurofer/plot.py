@@ -7,6 +7,11 @@ from matplotlib import rc
 import numpy as np
 import csv
 
+try:
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+except:
+    pass
 
 flux = 3e17
 implantation_time = 1e23/flux
@@ -74,8 +79,8 @@ for i in range(0, 3):
 plt.minorticks_on()
 plt.grid(which='minor', alpha=0.3)
 plt.grid(which='major', alpha=0.7)
-plt.xlim(right=900)
-plt.xlabel('T (K)')
+plt.xlim(left=300, right=900)
+plt.xlabel(r'$T$ (K)')
 plt.ylabel(r'Desorption flux (D m$^{-2}$ s $^{-1}$)')
 # plt.title('TDS')
 plt.legend()
