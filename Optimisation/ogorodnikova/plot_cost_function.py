@@ -3,7 +3,6 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 import numpy as np
-from scipy.interpolate import griddata
 import matplotlib.animation as animation
 
 E = []
@@ -31,7 +30,7 @@ zi = (zi - zi_min)/(zi_max - zi_min)
 
 plt.figure(1)
 CF = plt.contourf(xi, yi, zi, levels=100)
-plt.colorbar(CF, label='Rationalised error')
+plt.colorbar(CF, label=r'Rationalised $f$')
 
 CS = plt.contour(xi, yi, zi, levels=10, colors="white", linewidths=0.75)
 plt.clabel(CS, inline=1, fontsize=10)
@@ -43,6 +42,9 @@ min_coordinates = np.unravel_index(zi.argmin(), zi.shape)
 
 
 plt.plot(xi[min_coordinates[1]], yi[min_coordinates[0]], '*', ms=10, label="Global minimum")
+plt.scatter([0.85], [1e-3], color='tab:blue')
+plt.scatter([0.75], [3e-3], color='tab:orange')
+plt.scatter([1], [3e-3], color='tab:green')
 plt.xlabel(r"$E_1$ (eV)")
 plt.ylabel(r"$n_1$ (at.fr.)")
 plt.ticklabel_format(style='sci', axis='y', scilimits=(0, 0))
@@ -58,7 +60,7 @@ ax.plot_surface(xv, yv, zi, cmap='viridis', edgecolor='none')
 plt.xlabel(r"$E_1$ (eV)")
 plt.ylabel(r"$n_1$ (at.fr.)")
 ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
-ax.set_zlabel(r"Rationalised error")
+ax.set_zlabel(r"Rationalised $f$")
 
 plt.savefig("cost_function_pondered_average/cost_function_3D.svg", bbox_inches='tight')
 plt.savefig("cost_function_pondered_average/cost_function_3D.pdf", bbox_inches='tight')
