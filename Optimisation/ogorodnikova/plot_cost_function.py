@@ -5,6 +5,12 @@ from mpl_toolkits import mplot3d
 import numpy as np
 import matplotlib.animation as animation
 
+try:
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+except:
+    pass
+
 E = []
 n = []
 error = []
@@ -33,7 +39,7 @@ CF = plt.contourf(xi, yi, zi, levels=100)
 plt.colorbar(CF, label=r'Rationalised $f$')
 
 CS = plt.contour(xi, yi, zi, levels=10, colors="white", linewidths=0.75)
-plt.clabel(CS, inline=1, fontsize=10)
+plt.clabel(CS, inline=1, fontsize=10, fmt='%1.1f')
 # plt.plot(E, n, 'ko', ms=1, alpha=0.5)
 for c in CF.collections:  # for avoiding white lines in pdf
     c.set_edgecolor("face")
