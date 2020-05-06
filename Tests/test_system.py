@@ -223,7 +223,7 @@ def test_run_MMS(tmpdir):
         n_trap = 1
         E_D = 0.1
         D_0 = 2
-        k_B = 8.6e-5
+        k_B = FESTIM.k_B
         D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
@@ -359,7 +359,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         n_trap = 1
         E_D = 0.1
         D_0 = 2
-        k_B = 8.6e-5
+        k_B = FESTIM.k_B
         D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
@@ -706,7 +706,7 @@ def test_run_MMS_steady_state(tmpdir):
         n_trap = 1
         E_D = 0.1
         D_0 = 2
-        k_B = 8.6e-5
+        k_B = FESTIM.k_B
         D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
