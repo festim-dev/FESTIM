@@ -7,6 +7,13 @@ from matplotlib import rc
 import numpy as np
 import csv
 
+try:
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+except:
+    pass
+
+
 T_exp = []
 d_exp = []
 
@@ -29,7 +36,7 @@ trap2 = []
 trap3 = []
 solute = []
 t = []
-with open('optimisation_5D/Solution/0.83581592495_1.11364004069_0.961486991697_6.24247419296_1.38985867586.csv', 'r') as csvfile:
+with open('optimisation_5D_correct_thickness/derived_quantities/last.csv', 'r') as csvfile:
     plots = csv.reader(csvfile, delimiter=',')
     for row in plots:
         if 't(s)' not in row:
@@ -65,7 +72,7 @@ for i in range(0, len(derivatives)):
         plt.plot(T_sim, derivatives[i], linewidth=width, linestyle=style, label=legends[i], alpha=1, color=color)
 
 
-plt.xlabel('T (K)')
+plt.xlabel(r'$T$ (K)')
 plt.ylabel(r'Desorption flux (m$^{-2}$ s$^{-1}$)')
 plt.minorticks_on()
 plt.grid(which='minor', alpha=0.3)
