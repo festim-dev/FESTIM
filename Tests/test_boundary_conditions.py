@@ -71,7 +71,7 @@ def test_fluxes():
     Kr_0 = 2
     E_Kr = 3
     order = 2
-    k_B = 8.6e-5
+    k_B = FESTIM.k_B
     T = 1000
     boundary_conditions = [
 
