@@ -3,6 +3,13 @@ from matplotlib import rc
 import numpy as np
 import csv
 
+try:
+    plt.rc('text', usetex=True)
+    plt.rc('font', family='serif')
+except:
+    pass
+
+
 T_exp = []
 d_exp = []
 
