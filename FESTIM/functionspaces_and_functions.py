@@ -22,35 +22,3 @@ def create_function_space(mesh, nb_traps, element_solute='CG', order_solute=1,
         element = [solute] + [traps]*nb_traps
         V = FunctionSpace(mesh, MixedElement(element))
     return V
-
-
-def define_test_functions(V, W, number_ext_traps):
-    '''
-    Returns the testfunctions for formulation
-    Arguments:
-    - V, W: FunctionSpace(), functionspaces of concentrations and
-    trap densities
-    - number_ext_traps: int, number of extrinsic traps
-    '''
-    v = TestFunction(V)
-    testfunctions_concentrations = list(split(v))
-    testfunctions_extrinsic_traps = list()
-    for i in range(number_ext_traps):
-        testfunctions_extrinsic_traps.append(TestFunction(W))
-    return testfunctions_concentrations, testfunctions_extrinsic_traps
-
-
-def define_functions_extrinsic_traps(W, traps):
-    '''
-    Returns a list of Function(W)
-    Arguments:
-    -W: FunctionSpace, functionspace of trap densities
-    -traps: dict, contains the traps infos
-    '''
-    extrinsic_traps = []
-
-    for trap in traps:
-        if 'type' in trap.keys():  # Default is intrinsic
-            if trap['type'] == 'extrinsic':
-                extrinsic_traps.append(Function(W))  # density
-    return extrinsic_traps
