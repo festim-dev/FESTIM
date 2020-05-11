@@ -16,15 +16,18 @@ class ExpressionFromInterpolatedData(UserExpression):
 
 
 def define_dirichlet_bcs_T(parameters, V, boundaries):
-    '''
+    """Creates a list of BCs for thermal problem
+
     Arguments:
-    - parameters: dict, contains materials and temperature parameters
-    - V: FEniCS FunctionSpace(), functionspace of temperature
-    - boundaries: FEniCS MeshFunction(), markers for facets.
+        parameters {dict} -- contains temperature parameters
+        V {fenics.FunctionSpace} -- functionspace of temperature
+        boundaries {fenics.MeshFunction} -- markers for facets
+
     Returns:
-    - bcs: list, contains FEniCS DirichletBC()
-    - expressions: list, contains FEniCS Expression() to be updated
-    '''
+        list -- contains fenics.DirichletBC
+        list -- contains fenics.Expression to be updated
+    """
+
     bcs = []
     expressions = []
     for bc in parameters["temperature"]["boundary_conditions"]:
@@ -50,10 +53,28 @@ def solubility_BC(P, S):
     return P**0.5*S
 
 
-def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=0):
-    ''' Modifies the formulation and adds fluxes based
+def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=None):
+    """Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
-    '''
+
+    Arguments:
+        parameters {dict} -- contains materials and BCs parameters
+        solutions {list} -- contains fenics.Function for concentrations
+        testfunctions {list} -- contains fenics.TestFunction for concentrations
+        ds {fenics.Measurement} -- measurement ds
+        T {fenics.Expression, fenics.Function} -- temperature
+
+    Keyword Arguments:
+        S {fenics.UserExpression} -- solubility (default: {None})
+
+    Raises:
+        NameError: if boundary condition type is unknown
+
+    Returns:
+        fenics.Form() -- formulation for BCs
+        list -- contains all the fenics.Expression() to be updated
+    """
+
     expressions = []
     solute = solutions[0]
     test_solute = testfunctions[0]
@@ -61,7 +82,7 @@ def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=0):
     k_B = FESTIM.k_B
     boundary_conditions = parameters["boundary_conditions"]
     conservation_chemic_pot = False
-    if S != 0:
+    if S is not None:
         for mat in parameters["materials"]:
             if "S_0" in mat.keys() or "E_S" in mat.keys():
                 conservation_chemic_pot = True
@@ -116,20 +137,24 @@ class BoundaryConditionTheta(UserExpression):
 
 
 def apply_boundary_conditions(parameters, V,
-                              markers, temp):
-    '''
-    Create a list of DirichletBCs.
+                              markers, T):
+    """Create a list of DirichletBCs.
+
     Arguments:
-    - boundary_conditions: list, parameters for bcs
-    - V: FunctionSpace,
-    - surface_marker: MeshFunction, contains the markers for
-    the different surfaces
-    - temp: Expression, temperature.
+        parameters {dict} -- materials and bcs parameters
+        V {[type]} -- functionspace for concentrations
+        markers {[type]} -- contains fenics.MeshFunction() ([volume, surface])
+        T {fenics.Expression(), fenics.Function()} -- temperature
+
+    Raises:
+        KeyError: [description]
+        NameError: [description]
+
     Returns:
-    - bcs: list, contains fenics DirichletBC
-    - expression: list, contains the fenics Expression
-    to be updated.
-    '''
+        list -- contains fenics DirichletBC
+        list -- contains the fenics.Expression() to be updated
+    """
+
     bcs = list()
     expressions = list()
     boundary_conditions = parameters["boundary_conditions"]
@@ -184,7 +209,7 @@ def apply_boundary_conditions(parameters, V,
             if component == 0 and conservation_chemic_pot is True:
                 value_BC = BoundaryConditionTheta(
                     value_BC, volume_markers.mesh(), parameters["materials"],
-                    volume_markers, temp)
+                    volume_markers, T)
             expressions.append(value_BC)
             if type(BC['surfaces']) is not list:
                 surfaces = [BC['surfaces']]

@@ -5,7 +5,7 @@ def create_function_space(mesh, nb_traps, element_solute='CG', order_solute=1,
                           element_trap='CG', order_trap=1):
     ''' Returns FuncionSpaces for concentration and dynamic trap densities
     Arguments:
-    - mesh: Mesh(), mesh of the functionspaces
+    - mesh: fenics.Mesh(), mesh of the functionspaces
     - nb_traps: int, number of traps
     - element_solute='CG': string, the element of solute concentration
     - order_solute=1: int, the order of the element of solute concentration
@@ -31,6 +31,9 @@ def define_test_functions(V, W, number_ext_traps):
     - V, W: FunctionSpace(), functionspaces of concentrations and
     trap densities
     - number_ext_traps: int, number of extrinsic traps
+    Returns:
+    - testfunctions_concentrations: list, contains fenics.TestFunction()
+    - testfunctions_extrinsic_traps: list, contains fenics.TestFunction()
     '''
     v = TestFunction(V)
     testfunctions_concentrations = list(split(v))
@@ -43,6 +46,11 @@ def define_test_functions(V, W, number_ext_traps):
 def define_functions(V):
     '''
     Returns Function() objects for formulation
+    Arguments:
+    - V: fenics.FunctionSpace()
+    Returns:
+    - u: fenics.Function()
+    - solutions: list, components of u
     '''
     u = Function(V)
     # Split system functions to access components
@@ -54,8 +62,10 @@ def define_functions_extrinsic_traps(W, traps):
     '''
     Returns a list of Function(W)
     Arguments:
-    -W: FunctionSpace, functionspace of trap densities
+    -W: fenics.FunctionSpace, functionspace of trap densities
     -traps: dict, contains the traps infos
+    Returns:
+    - extrinsic_traps: list, contains fenics.Function()
     '''
     extrinsic_traps = []
 

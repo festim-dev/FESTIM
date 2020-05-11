@@ -7,23 +7,32 @@ import json
 import numpy as np
 
 
-def write_to_csv(dict, desorption):
-    if "file" in dict.keys():
+def write_to_csv(derived_quantities_dict, data):
+    '''
+    Exports data to csv according to parameters in derived_quantities_dict
+
+    Arguments:
+    - derived_quantities_dict: dict, contains derived quantities parameters
+    - data: list, contains the data to be exported
+    Returns:
+    - True
+    '''
+    if "file" in derived_quantities_dict.keys():
         file_export = ''
-        if "folder" in dict.keys():
-            file_export += dict["folder"] + '/'
+        if "folder" in derived_quantities_dict.keys():
+            file_export += derived_quantities_dict["folder"] + '/'
             os.makedirs(os.path.dirname(file_export), exist_ok=True)
-        if dict["file"].endswith(".csv"):
-            file_export += dict["file"]
+        if derived_quantities_dict["file"].endswith(".csv"):
+            file_export += derived_quantities_dict["file"]
         else:
-            file_export += dict["file"] + ".csv"
+            file_export += derived_quantities_dict["file"] + ".csv"
         busy = True
         while busy is True:
             try:
                 with open(file_export, "w+") as f:
                     busy = False
                     writer = csv.writer(f, lineterminator='\n')
-                    for val in desorption:
+                    for val in data:
                         writer.writerows([val])
             except OSError as err:
                 print("OS error: {0}".format(err))
@@ -39,8 +48,9 @@ def export_txt(filename, function, W):
     Exports a 1D function into a txt file.
     Arguments:
     - filemame : str
-    - function : FEniCS Function
-    - W : FunctionSpace on which the solution will be projected.
+    - function : fenics.Function()
+    - W : fenics.FunctionSpace(), Functionspace on which the solution will be
+    projected.
     Returns:
     - True on sucess,
     - False on failure
@@ -66,12 +76,12 @@ def export_profiles(res, exports, t, dt, W):
     '''
     Exports 1D profiles in txt files.
     Arguments:
-    - res: list, contains FEniCS Functions
-    - exports: dict, dict, contains parameters
+    - res: list, contains fenics.Functions
+    - exports: dict, contains parameters
     - t: float, time
-    - dt: FEniCS Constant(), stepsize
+    - dt: fenics.Constant(), stepsize
     Returns:
-    - dt: FEniCS Constant(), stepsize
+    - dt: fenics.Constant(), stepsize
     '''
     functions = exports['txt']['functions']
     labels = exports['txt']['labels']
@@ -124,6 +134,8 @@ def define_xdmf_files(exports):
     Returns a list of XDMFFile
     Arguments:
     - exports: dict, contains parameters
+    Returns:
+    - files: list, contains the fenics.XDMFFile() objects
     '''
     if len(exports['xdmf']['functions']) != len(exports['xdmf']['labels']):
         raise NameError("Number of functions to be exported "
@@ -146,10 +158,10 @@ def export_xdmf(res, exports, files, t, append):
     '''
     Exports the solutions fields in xdmf files.
     Arguments:
-    - res: list, contains FEniCS Functions
+    - res: list, contains fenics.Function()
     - exports: dict, contains parameters
-    - files: list, contains XDMFFile
-    - t: float
+    - files: list, contains fenics.XDMFFile()
+    - t: float, time
     - append: bool, erase the previous file or not
     '''
     if len(exports['xdmf']['functions']) > len(res):
@@ -209,6 +221,7 @@ def treat_value(d):
     '''
     Recursively converts as string the sympy objects in d
     Arguments: d, dict
+    Returns: d, dict
     '''
     T = sp.symbols('T')
     if type(d) is dict:
