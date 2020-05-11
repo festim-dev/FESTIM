@@ -36,7 +36,8 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
             if "t_stop" in solving_parameters["adaptive_stepsize"].keys():
                 t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
                 stepsize_stop_max = \
-                    solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
+                    solving_parameters["adaptive_stepsize"][
+                            "stepsize_stop_max"]
                 if t >= t_stop:
                     if float(dt) > stepsize_stop_max:
                         dt.assign(stepsize_stop_max)
