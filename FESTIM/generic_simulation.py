@@ -4,6 +4,22 @@ import sympy as sp
 
 
 def run(parameters, log_level=40):
+    '''
+    Main FESTIM function for complete simulations
+    Arguments:
+    - parameters: dict, contains simulation parameters
+    - log_level=40: int, set what kind of messsages are displayed
+        CRITICAL  = 50, errors that may lead to data corruption and suchlike
+        ERROR     = 40, errors
+        WARNING   = 30, warnings
+        INFO      = 20, information of general interest
+        PROGRESS  = 16, what's happening (broadly)
+        TRACE     = 13,  what's happening (in detail)
+        DBG       = 10  sundry
+    Returns:
+    - output: dict, contains derived quantities, parameters and errors
+    '''
+
     # Export parameters
     try:  # if parameters are in the export key
         FESTIM.export.export_parameters(parameters)
