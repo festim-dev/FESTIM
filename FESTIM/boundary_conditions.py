@@ -16,15 +16,18 @@ class ExpressionFromInterpolatedData(UserExpression):
 
 
 def define_dirichlet_bcs_T(parameters, V, boundaries):
-    '''
+    """Creates a list of BCs for thermal problem
+
     Arguments:
-    - parameters: dict, contains temperature parameters
-    - V: FEniCS FunctionSpace(), functionspace of temperature
-    - boundaries: FEniCS MeshFunction(), markers for facets.
+        parameters {dict} -- contains temperature parameters
+        V {fenics.FunctionSpace} -- functionspace of temperature
+        boundaries {fenics.MeshFunction} -- markers for facets
+
     Returns:
-    - bcs: list, contains FEniCS DirichletBC()
-    - expressions: list, contains FEniCS Expression() to be updated
-    '''
+        list -- contains fenics.DirichletBC
+        list -- contains fenics.Expression to be updated
+    """
+
     bcs = []
     expressions = []
     for bc in parameters["temperature"]["boundary_conditions"]:
@@ -51,19 +54,27 @@ def solubility_BC(P, S):
 
 
 def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=None):
-    ''' Modifies the formulation and adds fluxes based
+    """Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
+
     Arguments:
-    - parameters: dict, contains materials and BCs parameters
-    - solutions: list, contains fenics.Function() for concentrations
-    - testfunctions: list, contains fenics.TestFunction() for concentrations
-    - ds: fenics.Measurement, measurement ds
-    - T: (fenics.Expression(), fenics.Function()), temperature
-    - S=None: fenics.UserExpression(), solubility
+        parameters {dict} -- contains materials and BCs parameters
+        solutions {list} -- contains fenics.Function for concentrations
+        testfunctions {list} -- contains fenics.TestFunction for concentrations
+        ds {fenics.Measurement} -- measurement ds
+        T {fenics.Expression, fenics.Function} -- temperature
+
+    Keyword Arguments:
+        S {fenics.UserExpression} -- solubility (default: {None})
+
+    Raises:
+        NameError: if boundary condition type is unknown
+
     Returns:
-    - F: fenics.Form(), formulation for BCs
-    - expressions: list, contains all the fenics.Expression() to be updated
-    '''
+        fenics.Form() -- formulation for BCs
+        list -- contains all the fenics.Expression() to be updated
+    """
+
     expressions = []
     solute = solutions[0]
     test_solute = testfunctions[0]
@@ -127,18 +138,23 @@ class BoundaryConditionTheta(UserExpression):
 
 def apply_boundary_conditions(parameters, V,
                               markers, T):
-    '''
-    Create a list of DirichletBCs.
+    """Create a list of DirichletBCs.
+
     Arguments:
-    - parameters: dict, materials and bcs parameters
-    - V: fenics.FunctionSpace(), functionspace for concentrations
-    - markers: list, contains fenics.MeshFunction() ([volume, surface])
-    - T: Expression, temperature.
+        parameters {dict} -- materials and bcs parameters
+        V {[type]} -- functionspace for concentrations
+        markers {[type]} -- contains fenics.MeshFunction() ([volume, surface])
+        T {fenics.Expression(), fenics.Function()} -- temperature
+
+    Raises:
+        KeyError: [description]
+        NameError: [description]
+
     Returns:
-    - bcs: list, contains fenics DirichletBC
-    - expression: list, contains the fenics Expression
-    to be updated.
-    '''
+        list -- contains fenics DirichletBC
+        list -- contains the fenics.Expression() to be updated
+    """
+
     bcs = list()
     expressions = list()
     boundary_conditions = parameters["boundary_conditions"]
