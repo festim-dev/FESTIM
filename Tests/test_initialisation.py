@@ -47,7 +47,7 @@ def test_initialisation_from_xdmf(tmpdir):
             },
         ],
     }
-    w, components = initialise_solutions.initialise_solutions(
+    w = initialise_solutions.initialise_solutions(
         parameters, V)
     assert fenics.errornorm(u, w) == 0
 
@@ -126,7 +126,7 @@ def test_initialisation_with_expression():
             },
         ],
     }
-    w, components = initialise_solutions.initialise_solutions(
+    w = initialise_solutions.initialise_solutions(
         parameters, V)
     assert fenics.errornorm(u, w) == 0
 
@@ -159,7 +159,7 @@ def test_initialisation_with_expression_chemical_pot():
             },
         ],
     }
-    w, components = initialise_solutions.initialise_solutions(
+    w = initialise_solutions.initialise_solutions(
         parameters, V)
     assert fenics.errornorm(u, w) == 0
 
@@ -174,7 +174,7 @@ def test_initialisation_default():
     u = fenics.Function(V)
     w = fenics.Function(V)
 
-    w, components = initialise_solutions.initialise_solutions(
+    w = initialise_solutions.initialise_solutions(
         {"initial_conditions": []}, V)
     assert fenics.errornorm(u, w) == 0
 
@@ -198,7 +198,7 @@ def test_initialisation_solute_only():
             },
         ],
     }
-    w, components = initialise_solutions.initialise_solutions(
+    w = initialise_solutions.initialise_solutions(
         parameters, V)
     assert fenics.errornorm(u, w) == 0
 
@@ -223,7 +223,7 @@ def test_initialisation_no_component():
             },
         ],
     }
-    w, components = initialise_solutions.initialise_solutions(
+    w = initialise_solutions.initialise_solutions(
         parameters, V)
     assert fenics.errornorm(u, w) == 0
 

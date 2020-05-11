@@ -73,7 +73,7 @@ def test_initialise_and_export_xdmf(tmpdir):
             },
         ],
     }
-    v, components = initialise_solutions.initialise_solutions(
+    v = initialise_solutions.initialise_solutions(
         parameters, V)
 
     # Write

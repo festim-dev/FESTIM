@@ -51,8 +51,7 @@ def initialise_solutions(parameters, V, S=None):
             else:
                 u_n = interpolate(comp, V)
 
-    components = split(u_n)
-    return u_n, components
+    return u_n
 
 
 def read_from_xdmf(ini, V):
