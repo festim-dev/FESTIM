@@ -7,7 +7,30 @@ import FESTIM
 def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
                         files, append, flux_fonctions,
                         derived_quantities_global):
+    """Main post processing FESTIM function.
 
+    Arguments:
+        parameters {dict} -- main parameters dict
+        transient {bool} -- True if the simulation is transient, False else
+        u {fenics.Function()} -- function for concentrations
+        T {fenics.Expression() or fenics.Function()} -- temperature
+        markers {list} -- contains volume markers and surface markers
+        W {fenics.FunctionSpace()} -- function space for T
+        V_DG1 {fenics.FunctionSpace()} -- function space for mobile
+            concentration (chemical pot)
+        t {float} -- time
+        dt {fenics.Constant()} -- stepsize
+        files {list} -- list of fenics.XDMFFiles()
+        append {bool} -- if True will append to existing XDMFFiles, will
+            overwrite otherwise
+        flux_fonctions {list} -- contains properties
+        derived_quantities_global {list} -- contains the computed derived
+            quantities
+
+    Returns:
+        list -- updated derived quantities list
+        fenics.Constant() -- updated stepsize
+    """
     D, thermal_cond, cp, rho, H, S = flux_fonctions
 
     if u.function_space().num_sub_spaces() == 0:
@@ -51,9 +74,20 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
 
 
 def compute_error(parameters, t, res, mesh):
-    '''
-    Returns a list containing the errors
-    '''
+    """Returns a list containing the errors
+
+    Arguments:
+        parameters {dict} -- error parameters dict
+        t {float} -- time
+        res {list} -- contains the solutions
+        mesh {fenics.Mesh()} -- the mesh
+
+    Raises:
+        KeyError: if key is not found in dict
+
+    Returns:
+        list -- list of errors
+    """
     tab = []
 
     solution_dict = {
@@ -100,6 +134,16 @@ def compute_error(parameters, t, res, mesh):
 
 
 def compute_retention(u, W):
+    """Computes retention projected on FunctionSpace W
+
+    Arguments:
+        u {fenics.Function()} -- concentrations function
+        W {fenics.FunctionSpace()} -- function space onto which the retention
+            is projected
+
+    Returns:
+        fenics.Function() -- retention field
+    """
     res = list(split(u))
     if not res:  # if u is non-vector
         res = [u]
@@ -177,14 +221,23 @@ class HCoeff(UserExpression):
 
 
 def create_properties(mesh, materials, vm, T):
-    '''
+    """Creates the properties fields needed for post processing
+
     Arguments:
-    - mesh
-    - materials : parameters["materials"]
-    - vm : MeshFunction()
-    - T : fenics.Expression() or fenics.Function()
-    Returns UserExpression classes for D, thermal_cond, and H
-    '''
+        mesh {fenics.Mesh()} -- the mesh
+        materials {dict} -- contains materials parameters
+        vm {fenics.MeshFunction()} -- volume markers
+        T {fenics.Function()} -- temperature
+
+    Returns:
+        ArheniusCoeff -- diffusion coefficient (SI)
+        ThermalProp -- thermal conductivity (SI)
+        ThermalProp -- heat capactiy (SI)
+        ThermalProp -- density (kg/m3)
+        HCoeff -- enthalpy (SI)
+        ArheniusCoeff -- solubility coefficient (SI)
+    """
+
     D = ArheniusCoeff(mesh, materials, vm, T, "D_0", "E_D", degree=2)
     thermal_cond = None
     cp = None
@@ -280,9 +333,19 @@ def header_derived_quantities(parameters):
 
 def derived_quantities(parameters, solutions,
                        markers, properties):
-    '''
-    Computes all the derived_quantities and store it into list
-    '''
+    """Computes all the derived_quantities and stores it into list
+
+    Arguments:
+        parameters {dict} -- main parameters dict
+        solutions {list} -- contains fenics.Function
+        markers {list} -- contains volume and surface markers
+        properties {list} -- contains properties
+            [D, thermal_cond, cp, rho, H, S]
+
+    Returns:
+        list -- list of derived quantities
+    """
+
     D = properties[0]
     thermal_cond = properties[1]
     soret = False
@@ -383,6 +446,19 @@ def derived_quantities(parameters, solutions,
 
 
 def check_keys_derived_quantities(parameters):
+    """Checks the keys in derived quantities dict
+
+    Arguments:
+        parameters {dict} -- main parameters dict
+
+    Raises:
+        ValueError: if quantity is unknown
+        KeyError: if the field key is missing
+        ValueError: if a field is unknown
+        ValueError: if a field is unknown
+        ValueError: if a field is unknown
+        KeyError: if surfaces or volumes key is missing
+    """
     for quantity in parameters["exports"]["derived_quantities"].keys():
         if quantity not in [*FESTIM.helpers.quantity_types, "file", "folder"]:
             raise ValueError("Unknown quantity: " + quantity)
