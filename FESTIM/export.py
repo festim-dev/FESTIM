@@ -17,22 +17,22 @@ def write_to_csv(derived_quantities_dict, data):
     Returns:
     - True
     '''
-    if "file" in dict.keys():
+    if "file" in derived_quantities_dict.keys():
         file_export = ''
-        if "folder" in dict.keys():
-            file_export += dict["folder"] + '/'
+        if "folder" in derived_quantities_dict.keys():
+            file_export += derived_quantities_dict["folder"] + '/'
             os.makedirs(os.path.dirname(file_export), exist_ok=True)
-        if dict["file"].endswith(".csv"):
-            file_export += dict["file"]
+        if derived_quantities_dict["file"].endswith(".csv"):
+            file_export += derived_quantities_dict["file"]
         else:
-            file_export += dict["file"] + ".csv"
+            file_export += derived_quantities_dict["file"] + ".csv"
         busy = True
         while busy is True:
             try:
                 with open(file_export, "w+") as f:
                     busy = False
                     writer = csv.writer(f, lineterminator='\n')
-                    for val in desorption:
+                    for val in data:
                         writer.writerows([val])
             except OSError as err:
                 print("OS error: {0}".format(err))
