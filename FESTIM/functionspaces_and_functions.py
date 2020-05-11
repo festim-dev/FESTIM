@@ -40,16 +40,6 @@ def define_test_functions(V, W, number_ext_traps):
     return testfunctions_concentrations, testfunctions_extrinsic_traps
 
 
-def define_functions(V):
-    '''
-    Returns Function() objects for formulation
-    '''
-    u = Function(V)
-    # Split system functions to access components
-    solutions = list(split(u))
-    return u, solutions
-
-
 def define_functions_extrinsic_traps(W, traps):
     '''
     Returns a list of Function(W)

@@ -13,7 +13,8 @@ def initialising_solutions(parameters, V, S=None):
     - S=None: UserExpression(), solubility
     '''
     print('Defining initial values')
-    u_n, components = FESTIM.functionspaces_and_functions.define_functions(V)
+    u_n = Function(V)
+    components = list(split(u_n))
     if "initial_conditions" in parameters.keys():
         initial_conditions = parameters["initial_conditions"]
     else:

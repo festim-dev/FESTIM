@@ -32,6 +32,13 @@ def run(parameters, log_level=40):
 
     # Mesh and refinement
     mesh = FESTIM.meshing.create_mesh(parameters["mesh_parameters"])
+
+    # Define and mark subdomains
+    volume_markers, surface_markers = \
+        FESTIM.meshing.subdomains(mesh, parameters)
+    ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
+
     # Define function space for system of concentrations and properties
     if "traps_element_type" in parameters["solving_parameters"].keys():
         trap_element = parameters["solving_parameters"]["traps_element_type"]
@@ -41,11 +48,6 @@ def run(parameters, log_level=40):
         mesh, len(parameters["traps"]), element_trap=trap_element)
     W = FunctionSpace(mesh, 'CG', 1)  # function space for T and ext trap dens
     V_DG1 = FunctionSpace(mesh, 'DG', 1)
-    # Define and mark subdomains
-    volume_markers, surface_markers = \
-        FESTIM.meshing.subdomains(mesh, parameters)
-    ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
-    dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
     # Define temperature
     T = Function(W, name="T")
@@ -75,20 +77,22 @@ def run(parameters, log_level=40):
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
 
-    # Create functions for flux computation
+    # Create functions for properties
     D, thermal_cond, cp, rho, H, S =\
         FESTIM.post_processing.create_properties(
             mesh, parameters["materials"], volume_markers, T)
 
     # Define functions
-    u, solutions = FESTIM.functionspaces_and_functions.define_functions(V)
+    u = Function(V)
+    concentrations = list(split(u))
     extrinsic_traps = \
         FESTIM.functionspaces_and_functions.define_functions_extrinsic_traps(
             W, parameters["traps"])
     testfunctions_concentrations, testfunctions_traps = \
         FESTIM.functionspaces_and_functions.define_test_functions(
             V, W, len(extrinsic_traps))
-
+    v = TestFunction(V)
+    testfunctions_concentrations
     # Initialising the solutions
     if "initial_conditions" in parameters.keys():
         initial_conditions = parameters["initial_conditions"]
@@ -106,13 +110,13 @@ def run(parameters, log_level=40):
     bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
         parameters, V, [volume_markers, surface_markers], T)
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
-        parameters, solutions, testfunctions_concentrations, ds, T, S)
+        parameters, concentrations, testfunctions_concentrations, ds, T, S)
 
     # Define variational problem H transport
     print('Defining variational problem')
     F, expressions_F = FESTIM.formulations.formulation(
         parameters, extrinsic_traps,
-        solutions, testfunctions_concentrations,
+        concentrations, testfunctions_concentrations,
         previous_solutions_concentrations, dt, dx, T, T_n, transient=transient)
     F += fluxes
 
