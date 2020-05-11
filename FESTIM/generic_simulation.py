@@ -5,10 +5,11 @@ import sympy as sp
 
 def run(parameters, log_level=40):
     # Export parameters
-    try:  # if parameters are in the export key
-        FESTIM.export.export_parameters(parameters)
-    except:
-        pass
+    if "parameters" in parameters["exports"].keys():
+        try:
+            FESTIM.export.export_parameters(parameters)
+        except TypeError:
+            pass
 
     set_log_level(log_level)
 
@@ -85,14 +86,14 @@ def run(parameters, log_level=40):
     # Define functions
     u = Function(V)
     concentrations = list(split(u))
-    extrinsic_traps = \
-        FESTIM.functionspaces_and_functions.define_functions_extrinsic_traps(
-            W, parameters["traps"])
-    testfunctions_concentrations, testfunctions_traps = \
-        FESTIM.functionspaces_and_functions.define_test_functions(
-            V, W, len(extrinsic_traps))
+    extrinsic_traps = [Function(W) for d in parameters["traps"]
+                       if "type" in d.keys() if d["type"] == "extrinsic"]
+    testfunctions_traps = [TestFunction(W) for d in parameters["traps"]
+                           if "type" in d.keys() if d["type"] == "extrinsic"]
+
     v = TestFunction(V)
-    testfunctions_concentrations
+    testfunctions_concentrations = list(split(v))
+
     # Initialising the solutions
     if "initial_conditions" in parameters.keys():
         initial_conditions = parameters["initial_conditions"]
