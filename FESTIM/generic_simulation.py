@@ -10,6 +10,8 @@ def run(parameters, log_level=40):
     except:
         pass
 
+    set_log_level(log_level)
+
     # Check if transient
     transient = True
     if "type" in parameters["solving_parameters"].keys():
@@ -24,10 +26,9 @@ def run(parameters, log_level=40):
     # Declaration of variables
     dt = 0
     if transient:
-        Time = parameters["solving_parameters"]["final_time"]
+        final_time = parameters["solving_parameters"]["final_time"]
         initial_stepsize = parameters["solving_parameters"]["initial_stepsize"]
         dt = Constant(initial_stepsize, name="dt")  # time step size
-    set_log_level(log_level)
 
     # Mesh and refinement
     mesh = FESTIM.meshing.create_mesh(parameters["mesh_parameters"])
@@ -142,7 +143,7 @@ def run(parameters, log_level=40):
     if transient:
         #  Time-stepping
         print('Time stepping...')
-        while t < Time:
+        while t < final_time:
             # Update current time
             t += float(dt)
             expressions = FESTIM.helpers.update_expressions(
@@ -174,7 +175,7 @@ def run(parameters, log_level=40):
                     if "_bci" in expr.__dict__.keys():
                         expr._bci.t = t
             # Display time
-            print(str(round(t/Time*100, 2)) + ' %        ' +
+            print(str(round(t/final_time*100, 2)) + ' %        ' +
                   str(round(t, 1)) + ' s' +
                   "    Ellapsed time so far: %s s" %
                   round(timer.elapsed()[0], 1),
