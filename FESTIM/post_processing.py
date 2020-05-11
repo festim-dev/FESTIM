@@ -5,10 +5,10 @@ import FESTIM
 
 
 def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
-                        files, append, flux_fonctions,
+                        files, append, properties,
                         derived_quantities_global):
 
-    D, thermal_cond, cp, rho, H, S = flux_fonctions
+    D, thermal_cond, cp, rho, H, S = properties
 
     if u.function_space().num_sub_spaces() == 0:
         res = [u]

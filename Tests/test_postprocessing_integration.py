@@ -101,7 +101,7 @@ def test_run_post_processing(tmpdir):
     files = FESTIM.export.define_xdmf_files(parameters["exports"])
     tab = \
         [FESTIM.post_processing.header_derived_quantities(parameters)]
-    flux_fonctions = \
+    properties = \
         FESTIM.post_processing.create_properties(
             mesh, parameters["materials"], volume_markers, T)
     for i in range(1, 3):
@@ -109,7 +109,7 @@ def test_run_post_processing(tmpdir):
         derived_quantities_global, dt = \
             FESTIM.post_processing.run_post_processing(
                 parameters, transient, u, T, markers, W, V_DG1, t, dt, files,
-                append=append, flux_fonctions=flux_fonctions,
+                append=append, properties=properties,
                 derived_quantities_global=tab)
         append = True
     assert len(derived_quantities_global) == i + 1
@@ -196,7 +196,7 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     files = FESTIM.export.define_xdmf_files(parameters["exports"])
     tab = \
         [FESTIM.post_processing.header_derived_quantities(parameters)]
-    flux_fonctions = \
+    properties = \
         FESTIM.post_processing.create_properties(
             mesh, parameters["materials"], volume_markers, T)
     for i in range(1, 3):
@@ -204,7 +204,7 @@ def test_run_post_processing_pure_diffusion(tmpdir):
         derived_quantities_global, dt = \
             FESTIM.post_processing.run_post_processing(
                 parameters, transient, u, T, markers, W, V_DG1, t, dt, files,
-                append=append, flux_fonctions=flux_fonctions,
+                append=append, properties=properties,
                 derived_quantities_global=tab)
         append = True
         assert len(derived_quantities_global) == i + 1
@@ -274,14 +274,14 @@ def test_run_post_processing_flux(tmpdir):
 
     # files = FESTIM.export.define_xdmf_files(parameters["exports"])
     tab = [FESTIM.post_processing.header_derived_quantities(parameters)]
-    flux_fonctions = \
+    properties = \
         FESTIM.post_processing.create_properties(
             mesh, parameters["materials"], volume_markers, T)
     t += dt
     derived_quantities_global, dt = \
         FESTIM.post_processing.run_post_processing(
             parameters, transient, u, T, markers, V, V_DG1, t, dt, None,
-            append=append, flux_fonctions=flux_fonctions,
+            append=append, properties=properties,
             derived_quantities_global=tab)
     print(derived_quantities_global[0])
     print(derived_quantities_global[1])
