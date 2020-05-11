@@ -1,5 +1,5 @@
 def find_material_from_id(materials, id):
-    ''' Returns the material from a given id
+    '''Returns the material from a given id
     Parameters:
     - materials : list of dicts
     - id : int
@@ -13,8 +13,8 @@ def find_material_from_id(materials, id):
 
 
 def update_expressions(expressions, t):
-    '''
-    Update all FEniCS Expression() in expressions.
+    '''Update all FEniCS Expression() in expressions.
+
     Arguments:
     - expressions: list, contains the fenics Expression
     to be updated.
