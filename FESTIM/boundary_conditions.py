@@ -61,7 +61,7 @@ def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=None):
     - T: (fenics.Expression(), fenics.Function()), temperature
     - S=None: fenics.UserExpression(), solubility
     Returns:
-    - F: fenics.Formulation(), formulation for BCs
+    - F: fenics.Form(), formulation for BCs
     - expressions: list, contains all the fenics.Expression() to be updated
     '''
     expressions = []
