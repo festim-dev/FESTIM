@@ -53,6 +53,7 @@ def run(parameters, log_level=40):
     # Define temperature
     T = Function(W, name="T")
     T_n = Function(W, name="T_n")
+    expressions = []
     if parameters["temperature"]["type"] == "expression":
         T_expr = Expression(
             sp.printing.ccode(
@@ -74,6 +75,8 @@ def run(parameters, log_level=40):
         FT, expressions_FT = \
             FESTIM.formulations.define_variational_problem_heat_transfers(
                 parameters, [T, vT, T_n], [dx, ds], dt)
+        expressions += expressions_bcs_T + expressions_FT
+
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
@@ -106,12 +109,6 @@ def run(parameters, log_level=40):
         FESTIM.initialise_solutions.initialise_extrinsic_traps(
             W, len(extrinsic_traps))
     concentrations_n = list(split(u_n))
-    # Boundary conditions
-    print('Defining boundary conditions')
-    bcs, expressions = FESTIM.boundary_conditions.apply_boundary_conditions(
-        parameters, V, [volume_markers, surface_markers], T)
-    fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
-        parameters, concentrations, testfunctions_concentrations, ds, T, S)
 
     # Define variational problem H transport
     print('Defining variational problem')
@@ -119,17 +116,27 @@ def run(parameters, log_level=40):
         parameters, extrinsic_traps,
         concentrations, testfunctions_concentrations,
         concentrations_n, dt, dx, T, T_n, transient=transient)
+    expressions += expressions_F
+
+    # Boundary conditions
+    print('Defining boundary conditions')
+    bcs, expressions_BC = FESTIM.boundary_conditions.apply_boundary_conditions(
+        parameters, V, [volume_markers, surface_markers], T)
+    fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
+        parameters, concentrations, testfunctions_concentrations, ds, T, S)
     F += fluxes
+    expressions += expressions_BC + expressions_fluxes
 
     du = TrialFunction(u.function_space())
     J = derivative(F, u, du)  # Define the Jacobian
 
     # Define variational problem for extrinsic traps
     if transient:
-        extrinsic_formulations, expressions_form = \
+        extrinsic_formulations, expressions_extrinsic = \
             FESTIM.formulations.formulation_extrinsic_traps(
                 parameters["traps"], extrinsic_traps, testfunctions_traps,
                 previous_solutions_traps, dt)
+        expressions.extend(expressions_extrinsic)
 
     # Solution files
     files = []
@@ -153,19 +160,8 @@ def run(parameters, log_level=40):
             t += float(dt)
             FESTIM.helpers.update_expressions(
                 expressions, t)
-            FESTIM.helpers.update_expressions(
-                expressions_form, t)
-            FESTIM.helpers.update_expressions(
-                expressions_F, t)
-            FESTIM.helpers.update_expressions(
-                expressions_fluxes, t)
-            if parameters["temperature"]["type"] != "expression":
-                FESTIM.helpers.update_expressions(
-                    expressions_FT, t)
-                FESTIM.helpers.update_expressions(
-                    expressions_bcs_T, t)
 
-            else:
+            if parameters["temperature"]["type"] == "expression":
                 T_n.assign(T)
                 T_expr.t = t
                 T.assign(interpolate(T_expr, W))
