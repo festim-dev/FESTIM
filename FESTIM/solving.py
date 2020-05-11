@@ -8,7 +8,7 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
     u_.assign(u)
     while converged is False:
         u.assign(u_)
-        u, nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
+        nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
         if "adaptive_stepsize" in solving_parameters.keys():
             stepsize_change_ratio = \
                 solving_parameters[
@@ -25,7 +25,7 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
                 if t >= t_stop:
                     if float(dt) > stepsize_stop_max:
                         dt.assign(stepsize_stop_max)
-    return u, dt
+    return
 
 
 def solve_once(F, u, J, bcs, solving_parameters):
@@ -40,7 +40,7 @@ def solve_once(F, u, J, bcs, solving_parameters):
         solving_parameters['newton_solver']['maximum_iterations']
     nb_it, converged = solver.solve()
 
-    return u, nb_it, converged
+    return nb_it, converged
 
 
 def adaptive_stepsize(nb_it, converged, dt, dt_min,
