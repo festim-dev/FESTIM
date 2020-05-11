@@ -25,24 +25,14 @@ def initialising_solutions(parameters, V, S=None):
         if 'component' not in ini.keys():
             ini["component"] = 0
         if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
-
-            if V.num_sub_spaces() > 0:
-                comp = Function(V.sub(ini["component"]).collapse())
-            else:
-                comp = Function(V)
-            if "label" not in ini.keys():
-                raise KeyError("label key not found")
-            if "time_step" not in ini.keys():
-                raise KeyError("time_step key not found")
-            with XDMFFile(ini["value"]) as f:
-                f.read_checkpoint(comp, ini["label"], ini["time_step"])
-            #  only works if meshes are the same
+            comp = read_from_xdmf(ini, V)
         else:
             value = ini["value"]
             value = sp.printing.ccode(value)
             comp = Expression(value, degree=3, t=0)
+
         chemical_pot = False
-        if S is not None:  # Is multiplication by S needed ?
+        if S is not None:
             for mat in parameters["materials"]:
                 if "S_0" in mat.keys() or "E_S" in mat.keys():
                     chemical_pot = True
@@ -63,6 +53,35 @@ def initialising_solutions(parameters, V, S=None):
 
     components = split(u_n)
     return u_n, components
+
+
+def read_from_xdmf(ini, V):
+    """Reads component from XDMF
+
+    Arguments:
+        ini {dict} -- contains XDMF file info ("value", "label", "time_step")
+            and "component"
+        V {fenics.FunctionSpace} -- solution's functionspace
+
+    Raises:
+        KeyError: if label key is not found
+        KeyError: if time_step key is not found
+
+    Returns:
+        [fenics.Function] -- fenics.Function(V) that will be projected
+    """
+    if V.num_sub_spaces() > 0:
+        comp = Function(V.sub(ini["component"]).collapse())
+    else:
+        comp = Function(V)
+    if "label" not in ini.keys():
+        raise KeyError("label key not found")
+    if "time_step" not in ini.keys():
+        raise KeyError("time_step key not found")
+    with XDMFFile(ini["value"]) as f:
+        f.read_checkpoint(comp, ini["label"], ini["time_step"])
+        #  only works if meshes are the same
+    return comp
 
 
 def initialising_extrinsic_traps(W, number_of_traps):
