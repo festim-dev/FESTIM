@@ -34,8 +34,8 @@ def initialising_solutions(parameters, V, S=None):
                 raise KeyError("label key not found")
             if "time_step" not in ini.keys():
                 raise KeyError("time_step key not found")
-            with XDMFFile(ini["value"]) as file:
-                file.read_checkpoint(comp, ini["label"], ini["time_step"])
+            with XDMFFile(ini["value"]) as f:
+                f.read_checkpoint(comp, ini["label"], ini["time_step"])
             #  only works if meshes are the same
         else:
             value = ini["value"]
