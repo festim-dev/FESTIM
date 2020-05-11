@@ -14,11 +14,11 @@ def find_material_from_id(materials, id):
 
 def update_expressions(expressions, t):
     '''
+    Update all FEniCS Expression() in expressions.
     Arguments:
     - expressions: list, contains the fenics Expression
     to be updated.
     - t: float, time.
-    Update all FEniCS Expression() in expressions.
     '''
     for expression in expressions:
         expression.t = t

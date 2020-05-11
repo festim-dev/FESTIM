@@ -9,8 +9,11 @@ def initialising_solutions(parameters, V, S=None):
     and initialise them (0 by default).
     Arguments:
     - parameters: list, contains values and components
-    - V: FunctionSpace(), function space of concentrations
-    - S=None: UserExpression(), solubility
+    - V: fenics.FunctionSpace(), function space of concentrations
+    - S=None: fenics.UserExpression(), solubility
+    Returns:
+    - u_n: fenics.Function(), previous solution
+    - components: list, components of u_n
     '''
     print('Defining initial values')
     u_n, components = FESTIM.functionspaces_and_functions.define_functions(V)
@@ -70,6 +73,8 @@ def initialising_extrinsic_traps(W, number_of_traps):
     Arguments:
     - W: FunctionSpace, functionspace of the extrinsic traps
     - number_of_traps: int, number of traps
+    Returns:
+    - previous_solutions: list, contains fenics.Function()
     '''
     previous_solutions = []
     for i in range(number_of_traps):
