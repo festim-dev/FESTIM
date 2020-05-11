@@ -146,18 +146,18 @@ def run(parameters, log_level=40):
         while t < final_time:
             # Update current time
             t += float(dt)
-            expressions = FESTIM.helpers.update_expressions(
+            FESTIM.helpers.update_expressions(
                 expressions, t)
-            expressions_form = FESTIM.helpers.update_expressions(
+            FESTIM.helpers.update_expressions(
                 expressions_form, t)
-            expressions_F = FESTIM.helpers.update_expressions(
+            FESTIM.helpers.update_expressions(
                 expressions_F, t)
-            expressions_fluxes = FESTIM.helpers.update_expressions(
+            FESTIM.helpers.update_expressions(
                 expressions_fluxes, t)
             if parameters["temperature"]["type"] != "expression":
-                expressions_FT = FESTIM.helpers.update_expressions(
+                FESTIM.helpers.update_expressions(
                     expressions_FT, t)
-                expressions_bcs_T = FESTIM.helpers.update_expressions(
+                FESTIM.helpers.update_expressions(
                     expressions_bcs_T, t)
 
             else:
