@@ -4,14 +4,25 @@ import FESTIM
 
 
 def initialise_solutions(parameters, V, S=None):
-    '''
-    Returns the prievious solutions Function() objects for formulation
-    and initialise them (0 by default).
+    """Returns the prievious solutions Function() objects for formulation
+    and initialise them (0 by default)
+
     Arguments:
-    - parameters: list, contains values and components
-    - V: FunctionSpace(), function space of concentrations
-    - S=None: UserExpression(), solubility
-    '''
+        parameters {dict} -- main parameters dict
+        V {fenics.FunctionSpace} -- function space of concentrations
+
+    Keyword Arguments:
+        S {fenics.UserExpression} -- solubility (default: {None})
+
+    Raises:
+        KeyError: if label key is not found
+        KeyError: if time_step key is not found
+
+    Returns:
+        fenics.Function -- previous solution
+        list -- components of the previous solution
+    """
+
     print('Defining initial values')
     u_n = Function(V)
     components = list(split(u_n))
@@ -84,12 +95,17 @@ def read_from_xdmf(ini, V):
 
 
 def initialise_extrinsic_traps(W, number_of_traps):
-    '''
-    Returns a list of Function(W)
+    """Returns a list of fenics.Function(W)
+
     Arguments:
-    - W: FunctionSpace, functionspace of the extrinsic traps
-    - number_of_traps: int, number of traps
-    '''
+        W {fenics.FunctionSpace} -- functionspace of the extrinsic traps
+            densities
+        number_of_traps {int} -- number of traps
+
+    Returns:
+        list -- contains fenics.Function
+    """
+
     previous_solutions = []
     for i in range(number_of_traps):
         ini = Expression("0", degree=2)

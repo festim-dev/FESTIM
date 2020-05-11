@@ -5,7 +5,7 @@ def create_function_space(mesh, nb_traps, element_solute='CG', order_solute=1,
                           element_trap='CG', order_trap=1):
     ''' Returns FuncionSpaces for concentration and dynamic trap densities
     Arguments:
-    - mesh: Mesh(), mesh of the functionspaces
+    - mesh: fenics.Mesh(), mesh of the functionspaces
     - nb_traps: int, number of traps
     - element_solute='CG': string, the element of solute concentration
     - order_solute=1: int, the order of the element of solute concentration
