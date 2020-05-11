@@ -100,10 +100,10 @@ def run(parameters, log_level=40):
     else:
         initial_conditions = []
     u_n, concentrations_n = \
-        FESTIM.initialise_solutions.initialising_solutions(
+        FESTIM.initialise_solutions.initialise_solutions(
             parameters, V, S)
     previous_solutions_traps = \
-        FESTIM.initialise_solutions.initialising_extrinsic_traps(
+        FESTIM.initialise_solutions.initialise_extrinsic_traps(
             W, len(extrinsic_traps))
 
     # Boundary conditions

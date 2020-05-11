@@ -3,7 +3,7 @@ import sympy as sp
 import FESTIM
 
 
-def initialising_solutions(parameters, V, S=None):
+def initialise_solutions(parameters, V, S=None):
     '''
     Returns the prievious solutions Function() objects for formulation
     and initialise them (0 by default).
@@ -84,7 +84,7 @@ def read_from_xdmf(ini, V):
     return comp
 
 
-def initialising_extrinsic_traps(W, number_of_traps):
+def initialise_extrinsic_traps(W, number_of_traps):
     '''
     Returns a list of Function(W)
     Arguments:
