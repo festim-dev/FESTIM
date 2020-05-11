@@ -98,7 +98,7 @@ def run(parameters, log_level=40):
         initial_conditions = parameters["initial_conditions"]
     else:
         initial_conditions = []
-    u_n, previous_solutions_concentrations = \
+    u_n, concentrations_n = \
         FESTIM.initialise_solutions.initialising_solutions(
             parameters, V, S)
     previous_solutions_traps = \
@@ -117,7 +117,7 @@ def run(parameters, log_level=40):
     F, expressions_F = FESTIM.formulations.formulation(
         parameters, extrinsic_traps,
         concentrations, testfunctions_concentrations,
-        previous_solutions_concentrations, dt, dx, T, T_n, transient=transient)
+        concentrations_n, dt, dx, T, T_n, transient=transient)
     F += fluxes
 
     du = TrialFunction(u.function_space())
