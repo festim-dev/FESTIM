@@ -3,6 +3,24 @@ from fenics import *
 import sympy as sp
 
 
+def define_functions_and_initialise(V, parameters, S=None):
+    # Define functions
+    u = Function(V)
+
+    v = TestFunction(V)
+
+    # Initialising the solutions
+    if "initial_conditions" in parameters.keys():
+        initial_conditions = parameters["initial_conditions"]
+    else:
+        initial_conditions = []
+    u_n = \
+        FESTIM.initialise_solutions.initialise_solutions(
+            parameters, V, S)
+
+    return u, u_n, v
+
+
 def run(parameters, log_level=40):
     """Main FESTIM function for complete simulations
 
@@ -109,36 +127,21 @@ def run(parameters, log_level=40):
         FESTIM.post_processing.create_properties(
             mesh, parameters["materials"], volume_markers, T)
 
-    # Define functions
-    u = Function(V)
-    concentrations = list(split(u))
+    u, u_n, v = define_functions_and_initialise(V, parameters, S)
     extrinsic_traps = [Function(W) for d in parameters["traps"]
                        if "type" in d.keys() if d["type"] == "extrinsic"]
     testfunctions_traps = [TestFunction(W) for d in parameters["traps"]
                            if "type" in d.keys() if d["type"] == "extrinsic"]
-
-    v = TestFunction(V)
-    testfunctions_concentrations = list(split(v))
-
-    # Initialising the solutions
-    if "initial_conditions" in parameters.keys():
-        initial_conditions = parameters["initial_conditions"]
-    else:
-        initial_conditions = []
-    u_n = \
-        FESTIM.initialise_solutions.initialise_solutions(
-            parameters, V, S)
     previous_solutions_traps = \
         FESTIM.initialise_solutions.initialise_extrinsic_traps(
             W, len(extrinsic_traps))
-    concentrations_n = list(split(u_n))
 
     # Define variational problem H transport
     print('Defining variational problem')
     F, expressions_F = FESTIM.formulations.formulation(
         parameters, extrinsic_traps,
-        concentrations, testfunctions_concentrations,
-        concentrations_n, dt, dx, T, T_n, transient=transient)
+        list(split(u)), list(split(v)),
+        list(split(u_n)), dt, dx, T, T_n, transient=transient)
     expressions += expressions_F
 
     # Boundary conditions
@@ -146,7 +149,7 @@ def run(parameters, log_level=40):
     bcs, expressions_BC = FESTIM.boundary_conditions.apply_boundary_conditions(
         parameters, V, [volume_markers, surface_markers], T)
     fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
-        parameters, concentrations, testfunctions_concentrations, ds, T, S)
+        parameters, list(split(u)), list(split(v)), ds, T, S)
     F += fluxes
     expressions += expressions_BC + expressions_fluxes
 
