@@ -120,7 +120,7 @@ def run(parameters, log_level=40):
     else:
         initial_conditions = []
     u_n = \
-        FESTIM.initialise_solutions.initialise_solutions(
+        FESTIM.initialising.initialise_solutions(
             parameters, V, S)
 
     extrinsic_traps = [Function(W) for d in parameters["traps"]
@@ -128,7 +128,7 @@ def run(parameters, log_level=40):
     testfunctions_traps = [TestFunction(W) for d in parameters["traps"]
                            if "type" in d.keys() if d["type"] == "extrinsic"]
     previous_solutions_traps = \
-        FESTIM.initialise_solutions.initialise_extrinsic_traps(
+        FESTIM.initialising.initialise_extrinsic_traps(
             W, len(extrinsic_traps))
 
     # Define variational problem H transport

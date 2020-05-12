@@ -2,7 +2,7 @@ from . import helpers
 
 from . import meshing
 from . import functionspaces_and_functions
-from . import initialise_solutions
+from . import initialising
 from . import formulations
 
 from . import boundary_conditions

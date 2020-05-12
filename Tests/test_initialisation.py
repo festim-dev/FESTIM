@@ -1,5 +1,5 @@
 import FESTIM
-from FESTIM import initialise_solutions
+from FESTIM.initialising import initialise_solutions
 import pytest
 import fenics
 import os
@@ -47,8 +47,7 @@ def test_initialisation_from_xdmf(tmpdir):
             },
         ],
     }
-    w = initialise_solutions.initialise_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -76,8 +75,7 @@ def test_fail_initialisation_from_xdmf():
         ],
     }
     with pytest.raises(KeyError, match=r'time_step'):
-        initialise_solutions.initialise_solutions(
-            parameters, V)
+        initialise_solutions(parameters, V)
 
     parameters = {
         "initial_conditions": [
@@ -94,8 +92,7 @@ def test_fail_initialisation_from_xdmf():
         ],
     }
     with pytest.raises(KeyError, match=r'label'):
-        initialise_solutions.initialise_solutions(
-            parameters, V)
+        initialise_solutions(parameters, V)
 
 
 def test_initialisation_with_expression():
@@ -126,8 +123,7 @@ def test_initialisation_with_expression():
             },
         ],
     }
-    w = initialise_solutions.initialise_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -159,8 +155,7 @@ def test_initialisation_with_expression_chemical_pot():
             },
         ],
     }
-    w = initialise_solutions.initialise_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -174,8 +169,7 @@ def test_initialisation_default():
     u = fenics.Function(V)
     w = fenics.Function(V)
 
-    w = initialise_solutions.initialise_solutions(
-        {"initial_conditions": []}, V)
+    w = initialise_solutions({"initial_conditions": []}, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -198,8 +192,7 @@ def test_initialisation_solute_only():
             },
         ],
     }
-    w = initialise_solutions.initialise_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -223,8 +216,7 @@ def test_initialisation_no_component():
             },
         ],
     }
-    w = initialise_solutions.initialise_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -249,5 +241,4 @@ def test_initialisation_duplicates():
         ],
     }
     with pytest.raises(ValueError, match=r'Duplicate'):
-        initialise_solutions.initialise_solutions(
-            parameters, V)
+        initialise_solutions(parameters, V)

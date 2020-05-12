@@ -1,6 +1,6 @@
 import FESTIM
 from FESTIM import export
-from FESTIM import initialise_solutions
+from FESTIM.initialising import initialise_solutions
 import fenics
 import pytest
 import sympy as sp
@@ -43,8 +43,7 @@ def test_export_and_initialise_xdmf(tmpdir):
             },
         ],
     }
-    assert initialise_solutions.initialise_solutions(
-        parameters, V)
+    assert initialise_solutions(parameters, V)
 
 
 def test_initialise_and_export_xdmf(tmpdir):
@@ -73,8 +72,7 @@ def test_initialise_and_export_xdmf(tmpdir):
             },
         ],
     }
-    v = initialise_solutions.initialise_solutions(
-        parameters, V)
+    v = initialise_solutions(parameters, V)
 
     # Write
     exports = {
