@@ -53,14 +53,14 @@ def solubility_BC(P, S):
     return P**0.5*S
 
 
-def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=None):
+def apply_fluxes(parameters, u, v, ds, T, S=None):
     """Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
 
     Arguments:
         parameters {dict} -- contains materials and BCs parameters
-        solutions {list} -- contains fenics.Function for concentrations
-        testfunctions {list} -- contains fenics.TestFunction for concentrations
+        u {fenics.Function} -- concentrations Function
+        v {fenics.TestFunction} -- concentrations TestFunction
         ds {fenics.Measurement} -- measurement ds
         T {fenics.Expression, fenics.Function} -- temperature
 
@@ -76,6 +76,8 @@ def apply_fluxes(parameters, solutions, testfunctions, ds, T, S=None):
     """
 
     expressions = []
+    solutions = split(u)
+    testfunctions = split(v)
     solute = solutions[0]
     test_solute = testfunctions[0]
     F = 0

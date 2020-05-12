@@ -21,7 +21,7 @@ def test_run_temperature_stationary(tmpdir):
                 # "borders": [0, size],
                 "E_D": 0.39,
                 "D_0": 4.1e-7,
-                "id": 1
+                "id": 1,
                 }
                 ],
         "traps": [
@@ -73,6 +73,7 @@ def test_run_temperature_stationary(tmpdir):
             }
             },
         "exports": {
+            "parameters":  str(Path(d)) + "/param.json",
             "txt": {
                 "functions": ['retention'],
                 "times": [100],
@@ -346,7 +347,7 @@ def test_run_MMS_chemical_pot(tmpdir):
     Test function run() with conservation of chemical potential (1 material)
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t
+    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t + FESTIM.t
     v = 1 + sp.cos(2*fenics.pi*FESTIM.x)*FESTIM.t
 
     def parameters(h, dt, final_time, u, v):

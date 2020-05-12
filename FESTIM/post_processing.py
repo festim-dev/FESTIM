@@ -5,7 +5,7 @@ import FESTIM
 
 
 def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
-                        files, append, flux_fonctions,
+                        files, append, properties,
                         derived_quantities_global):
     """Main post processing FESTIM function.
 
@@ -23,7 +23,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         files {list} -- list of fenics.XDMFFiles()
         append {bool} -- if True will append to existing XDMFFiles, will
             overwrite otherwise
-        flux_fonctions {list} -- contains properties
+        properties {list} -- contains properties
         derived_quantities_global {list} -- contains the computed derived
             quantities
 
@@ -31,7 +31,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         list -- updated derived quantities list
         fenics.Constant() -- updated stepsize
     """
-    D, thermal_cond, cp, rho, H, S = flux_fonctions
+    D, thermal_cond, cp, rho, H, S = properties
 
     if u.function_space().num_sub_spaces() == 0:
         res = [u]

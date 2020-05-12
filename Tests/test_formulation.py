@@ -7,6 +7,7 @@ from ufl.core.multiindex import Index
 
 k_B = FESTIM.k_B
 
+
 def test_formulation_no_trap_1_material():
     '''
     Test function formulation() with 0 intrinsic trap
@@ -33,18 +34,20 @@ def test_formulation_no_trap_1_material():
     u_n = fenics.Function(V)
     v = fenics.TestFunction(V)
 
-    solutions = list(fenics.split(u))
-    previous_solutions = list(fenics.split(u_n))
-    testfunctions = list(fenics.split(v))
+
 
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
 
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, temp, transient=True)
+        parameters, extrinsic_traps, u, v,
+        u_n, dt, dx, temp, transient=True)
 
+
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
     Index._globalcount = 8
     flux_ = expressions[0]
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
@@ -96,8 +99,8 @@ def test_formulation_1_trap_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions,
-        testfunctions, previous_solutions, dt, dx, temp, transient=True)
+        parameters, extrinsic_traps, u,
+        v, u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
     Index._globalcount = 8
     # take density Expression() from formulation()
@@ -170,8 +173,8 @@ def test_formulation_2_traps_1_material():
     temp = fenics.Expression("300", degree=0)
 
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, temp, transient=True)
+        parameters, extrinsic_traps, u, v,
+        u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
 
     Index._globalcount = 8
@@ -279,8 +282,8 @@ def test_formulation_1_trap_2_materials():
     temp = fenics.Expression("300", degree=0)
 
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, temp, transient=True)
+        parameters, extrinsic_traps, u, v,
+        u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
     Index._globalcount = 8
     # Density from formulation()
@@ -364,8 +367,8 @@ def test_formulation_1_extrap_1_material():
     temp = fenics.Expression("300", degree=0)
 
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, temp, transient=True)
+        parameters, extrinsic_traps, u, v,
+        u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
     Index._globalcount = 8
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
@@ -427,8 +430,8 @@ def test_formulation_steady_state():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions,
-        testfunctions, previous_solutions, 0, dx, temp, transient=False)
+        parameters, extrinsic_traps, u,
+        v, u_n, 0, dx, temp, transient=False)
     Index._globalcount = 8
     print(F)
     flux_ = expressions[0]
@@ -584,8 +587,8 @@ def test_formulation_soret():
     temp = fenics.interpolate(temp, V)
     dt = 2
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, temp, transient=True)
+        parameters, extrinsic_traps, u, v,
+        u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
     Index._globalcount = 8
 
@@ -653,8 +656,8 @@ def test_formulation_no_trap_1_material_chemical_pot():
     temp_n = fenics.Expression("200", degree=0)
 
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions, testfunctions,
-        previous_solutions, dt, dx, temp, T_n=temp_n, transient=True)
+        parameters, extrinsic_traps, u, v,
+        u_n, dt, dx, temp, T_n=temp_n, transient=True)
 
     Index._globalcount = 8
     flux_ = expressions[0]
@@ -721,8 +724,8 @@ def test_formulation_1_trap_1_material_chemical_pot():
     temp = fenics.Expression("300", degree=0)
     temp_n = fenics.Expression("200", degree=0)
     F, expressions = FESTIM.formulations.formulation(
-        parameters, extrinsic_traps, solutions,
-        testfunctions, previous_solutions,
+        parameters, extrinsic_traps, u,
+        v, u_n,
         dt, dx, temp, temp_n, transient=True)
     Index._globalcount = 8
     # take density Expression() from formulation()
