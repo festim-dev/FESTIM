@@ -1,4 +1,7 @@
 import FESTIM
+from FESTIM.export import define_xdmf_files, export_profiles, export_xdmf
+from FESTIM.post_processing import derived_quantities, create_properties,\
+    header_derived_quantities
 import fenics
 import pytest
 import sympy as sp
@@ -17,7 +20,7 @@ def test_define_xdmf_files():
             "folder": folder
         }
         }
-    assert len(expected) == len(FESTIM.export.define_xdmf_files(exports))
+    assert len(expected) == len(define_xdmf_files(exports))
 
     # Test an int type for folder
     with pytest.raises(TypeError, match=r'str'):
@@ -29,7 +32,7 @@ def test_define_xdmf_files():
                 "folder": folder
             }
             }
-        FESTIM.export.define_xdmf_files(exports)
+        define_xdmf_files(exports)
 
     # Test an empty string for folder
     with pytest.raises(ValueError, match=r'empty string'):
@@ -41,7 +44,7 @@ def test_define_xdmf_files():
                 "folder": folder
             }
             }
-        FESTIM.export.define_xdmf_files(exports)
+        define_xdmf_files(exports)
 
 
 def test_export_xdmf(tmpdir):
@@ -58,19 +61,19 @@ def test_export_xdmf(tmpdir):
     files = [fenics.XDMFFile(str(Path(d.join("a.xdmf")))),
              fenics.XDMFFile(str(Path(d.join("b.xdmf"))))]
 
-    assert FESTIM.export.export_xdmf([fenics.Function(V), fenics.Function(V)],
-                                     exports, files, 20, append=True) is None
+    assert export_xdmf([fenics.Function(V), fenics.Function(V)],
+                       exports, files, 20, append=True) is None
 
     exports["xdmf"]["functions"] = ['solute', 'foo']
 
     with pytest.raises(ValueError, match=r'foo'):
-        FESTIM.export.export_xdmf(
+        export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
             exports, files, 20, append=True)
 
     exports["xdmf"]["functions"] = ['solute', '13']
     with pytest.raises(ValueError, match=r'13'):
-        FESTIM.export.export_xdmf(
+        export_xdmf(
             [fenics.Function(V), fenics.Function(V)],
             exports, files, 20, append=True)
 
@@ -96,7 +99,7 @@ def test_export_profiles(tmpdir):
     dt = fenics.Constant(2)
     while t < 4:
         dt_old = dt
-        dt = FESTIM.export.export_profiles(functions, exports, t, dt, V)
+        dt = export_profiles(functions, exports, t, dt, V)
         # Test that dt is not changed if not on time
         if True not in np.isclose(t, exports["txt"]["times"]):
             assert np.isclose(float(dt_old), float(dt)) is True
@@ -113,7 +116,7 @@ def test_export_profiles(tmpdir):
     t = 1
     exports["txt"]["functions"][0] = "foo"
     with pytest.raises(ValueError):
-        FESTIM.export.export_profiles(functions, exports, t, dt, V)
+        export_profiles(functions, exports, t, dt, V)
 
 
 def test_create_properties():
@@ -161,7 +164,7 @@ def test_create_properties():
             mf[cell] = 2
     T = fenics.Expression("1", degree=1)
     A, B, C, D, E, F = \
-        FESTIM.post_processing.create_properties(mesh, materials, mf, T)
+        create_properties(mesh, materials, mf, T)
     A = fenics.interpolate(A, DG_1)
     B = fenics.interpolate(B, DG_1)
     C = fenics.interpolate(C, DG_1)
@@ -283,7 +286,7 @@ def test_derived_quantities():
     D = fenics.interpolate(D, V)
     thermal_cond = fenics.Expression(sp.printing.ccode(thermal_cond), degree=3)
     thermal_cond = fenics.interpolate(thermal_cond, V)
-    tab = FESTIM.post_processing.derived_quantities(
+    tab = derived_quantities(
         parameters, [u_, u_, T_], [volume_markers, surface_markers],
         [D, thermal_cond, None, None])
 
@@ -403,7 +406,7 @@ def test_derived_quantities_soret():
     thermal_cond = fenics.interpolate(thermal_cond, V)
     Q = fenics.Expression(sp.printing.ccode(Q), degree=3)
     Q = fenics.interpolate(Q, V)
-    tab = FESTIM.post_processing.derived_quantities(
+    tab = derived_quantities(
         parameters, [u_, u_, T_], [volume_markers, surface_markers],
         [D, thermal_cond, Q, None])
 
@@ -501,8 +504,9 @@ def test_derived_quantities_chemical_pot():
     thermal_cond = fenics.interpolate(thermal_cond, V)
     S = fenics.Expression(sp.printing.ccode(S), degree=3)
     S = fenics.interpolate(S, V_DG1)
-    tab = FESTIM.post_processing.derived_quantities(
-        parameters, [fenics.project(S*theta_, V_DG1), theta_, T_], [volume_markers, surface_markers],
+    tab = derived_quantities(
+        parameters, [fenics.project(S*theta_, V_DG1), theta_, T_],
+        [volume_markers, surface_markers],
         [D, thermal_cond, None])
 
     # Compare
@@ -563,7 +567,7 @@ def test_header_derived_quantities():
         }
     }
 
-    tab = FESTIM.post_processing.header_derived_quantities(parameters)
+    tab = header_derived_quantities(parameters)
     expected = ["t(s)",
                 "Flux surface 2: solute", "Flux surface 2: T",
                 "Average T volume 1",
@@ -620,8 +624,8 @@ def test_header_derived_quantities_wrong_key():
         }
     }
     with pytest.raises(ValueError, match=r'quantity'):
-        tab = FESTIM.post_processing.header_derived_quantities(
+        tab = header_derived_quantities(
             parameters_quantity)
     with pytest.raises(ValueError, match=r'field'):
-        tab = FESTIM.post_processing.header_derived_quantities(
+        tab = header_derived_quantities(
             parameters_field)
