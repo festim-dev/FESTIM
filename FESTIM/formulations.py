@@ -3,19 +3,30 @@ import sympy as sp
 import FESTIM
 
 
-def formulation(parameters, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, T, T_n=None, transient=True):
-    ''' Creates formulation for trapping MRE model.
-    Parameters:
-    - traps : dict, contains the energy, density and domains
-    of the traps
-    - solutions : list, contains the solution fields
-    - testfunctions : list, contains the testfunctions
-    - previous_solutions : list, contains the previous solution fields
+def formulation(parameters, extrinsic_traps, u, v,
+                u_n, dt, dx, T, T_n=None, transient=True):
+    """Creates formulation for trapping MRE model
+
+    Arguments:
+        parameters {dict} -- contains simulation parameters
+        extrinsic_traps {list} -- contains fenics.Function for extrinsic traps
+        u {fenics.Function} -- concentrations Function
+        v {fenics.TestFunction} -- concentrations TestFunction
+        u_n {fenics.Function} -- concentrations Function (previous step)
+        dt {fenics.Constan} -- stepsize
+        dx {fenics.Measure} -- dx measure
+        T {fenics.Expression, fenics.Function} -- temperature
+
+    Keyword Arguments:
+        T_n {fenics.Function} -- previous step temperature needed if chemical
+            potential conservation is set (default: {None})
+        transient {bool} -- True if simulation is transient, False else (default: {True})
+
     Returns:
-    - F : variational formulation
-    - expressions: list, contains Expression() to be updated
-    '''
+        fenics.Form() -- global formulation
+        list -- contains fenics.Expression() to be updated
+    """
+
     k_B = FESTIM.k_B  # Boltzmann constant
     nu_0_default = 1e13  # frequency factor s-1
     expressions = []
@@ -27,6 +38,9 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         if "soret" in parameters["temperature"].keys():
             if parameters["temperature"]["soret"] is True:
                 soret = True
+    solutions = split(u)
+    previous_solutions = split(u_n)
+    testfunctions = split(v)
     c_0 = solutions[0]
     c_0_n = previous_solutions[0]
 
@@ -128,16 +142,22 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
 
 def formulation_extrinsic_traps(traps, solutions, testfunctions,
                                 previous_solutions, dt):
-    '''
-    Creates a list that contains formulations to be solved during
+    """Creates a list that contains formulations to be solved during
     time stepping.
+
     Arguments:
-    - solutions: list, contains the solutions fields
-    - testfunctions: list, contains the testfunctions
-    - previous_solutions: list, contains fields
-    - dt: Constant(), stepsize
-    - flux_, f: Expression() #todo, make this generic
-    '''
+        traps {list} -- contains dicts containing trap parameters
+        solutions {list} -- contains fenics.Function for traps densities
+        testfunctions {list} -- contains fenics.TestFunction for traps
+            densities
+        previous_solutions {list} -- contains fenics.Function for traps
+            densities (previous step)
+        dt {fenics.Constant} -- stepsize
+
+    Returns:
+        fenics.Form -- formulation to be solved for extrinsic trap density
+        list -- contains fenics.Expression to be updated
+    """
 
     formulations = []
     expressions = []
@@ -173,17 +193,27 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
 
 def define_variational_problem_heat_transfers(
         parameters, functions, measurements, dt):
-    '''
-    Parameters:
-    - parameters: dict, contains materials and temperature parameters
-    - functions: list, [0]: current solution, [1]: TestFunction,
-        [2]: previous solution
-    - measurements: list, [0] dx, [1]: ds
-    - dt: FEniCS Constant(), time step size
+    """Create a variational form for heat transfer problem
+
+    Arguments:
+        parameters {dict} -- contains materials and temperature parameters
+        functions {list} -- [fenics.Function, fenics.TestFunction,
+            fenics.Function] ([current solution, TestFunction,
+            previous_solution])
+        measurements {list} -- [fenics.Measurement, fenics.Measurement]
+            ([dx, ds])
+        dt {fenics.Constant} -- stepsize
+
+    Raises:
+        NameError: if thermal_cond is not in keys
+        NameError: if heat_capacity is not in keys
+        NameError: if rho is not in keys
+
     Returns:
-    - F: FEniCS Form(), the formulation for heat transfers problem
-    - expressions: list, contains all the Expression() for later update
-    '''
+        fenics.Form -- the formulation for heat transfers problem
+        list -- contains the fenics.Expression to be updated
+    """
+
     print('Defining variational problem heat transfers')
     expressions = []
     dx = measurements[0]

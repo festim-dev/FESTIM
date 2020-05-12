@@ -59,7 +59,7 @@ def test_fluxes_chemical_pot():
     S = S_0*fenics.exp(-E_S/k_B/T)
     Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
     F, expressions = FESTIM.boundary_conditions.apply_fluxes(
-        parameters, solutions, testfunctions, fenics.ds, T, S)
+        parameters, u, v, fenics.ds, T, S)
     expected_form = 0
     expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(1)
@@ -71,7 +71,7 @@ def test_fluxes():
     Kr_0 = 2
     E_Kr = 3
     order = 2
-    k_B = 8.6e-5
+    k_B = FESTIM.k_B
     T = 1000
     boundary_conditions = [
 
@@ -100,8 +100,8 @@ def test_fluxes():
     sol = solutions[0]
     test_sol = testfunctions[0]
     F, expressions = FESTIM.boundary_conditions.apply_fluxes(
-        {"boundary_conditions": boundary_conditions}, solutions,
-        testfunctions, fenics.ds, T)
+        {"boundary_conditions": boundary_conditions}, u,
+        v, fenics.ds, T)
     expected_form = 0
     expected_form += -test_sol * (-Kr_0 * fenics.exp(-E_Kr/k_B/T) *
                                   sol**order)*fenics.ds(1)

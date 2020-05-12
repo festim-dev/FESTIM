@@ -21,7 +21,7 @@ def test_run_temperature_stationary(tmpdir):
                 # "borders": [0, size],
                 "E_D": 0.39,
                 "D_0": 4.1e-7,
-                "id": 1
+                "id": 1,
                 }
                 ],
         "traps": [
@@ -73,6 +73,7 @@ def test_run_temperature_stationary(tmpdir):
             }
             },
         "exports": {
+            "parameters":  str(Path(d)) + "/param.json",
             "txt": {
                 "functions": ['retention'],
                 "times": [100],
@@ -223,7 +224,7 @@ def test_run_MMS(tmpdir):
         n_trap = 1
         E_D = 0.1
         D_0 = 2
-        k_B = 8.6e-5
+        k_B = FESTIM.k_B
         D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
@@ -306,10 +307,9 @@ def test_run_MMS(tmpdir):
                 }
                 },
             "exports": {
-                "txt": {
-                    "functions": [],
-                    "times": [],
-                    "labels": [],
+                "xdmf": {
+                    "functions": ['retention'],
+                    "labels": ['retention'],
                     "folder": str(Path(d))
                 },
                 "error": [
@@ -347,7 +347,7 @@ def test_run_MMS_chemical_pot(tmpdir):
     Test function run() with conservation of chemical potential (1 material)
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t
+    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t + FESTIM.t
     v = 1 + sp.cos(2*fenics.pi*FESTIM.x)*FESTIM.t
 
     def parameters(h, dt, final_time, u, v):
@@ -360,7 +360,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         n_trap = 1
         E_D = 0.1
         D_0 = 2
-        k_B = 8.6e-5
+        k_B = FESTIM.k_B
         D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
@@ -479,6 +479,92 @@ def test_run_MMS_chemical_pot(tmpdir):
             with dt = ' + str(dt)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
+
+
+def test_run_chemical_pot_mass_balance(tmpdir):
+    '''
+    Test that when applying conservation of chemical potential
+    the mass balance is ensured
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    size = 1
+    parameters = {
+        "materials": [
+            {
+                "borders": [0, size],
+                "S_0": 2,
+                "E_S": 0.1,
+                "E_D": 0.1,
+                "D_0": 1,
+                "id": 1
+                }
+                ],
+        "traps": [
+            ],
+        "initial_conditions": [
+            {
+                "value": 1,
+                "component": 0
+            }
+        ],
+
+        "mesh_parameters": {
+                "initial_number_of_cells": 5,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+                'type': "expression",
+                'value': 700 + 210*FESTIM.t
+            },
+        "solving_parameters": {
+            "final_time": 100,
+            "initial_stepsize": 2,
+            "adaptive_stepsize": {
+                "stepsize_change_ratio": 1,
+                "t_stop": 0,
+                "stepsize_stop_max": 100,
+                "dt_min": 1e-5
+                },
+            "newton_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "xdmf": {
+                "functions": ["retention"],
+                "labels": ["retention"],
+                "folder": str(Path(d))
+            },
+            "derived_quantities": {
+                "file": "derived_quantities.csv",
+                "folder": str(Path(d)),
+                "total_volume": [
+                    {
+                        "field": "solute",
+                        "volumes": [1]
+                    },
+                    {
+                        "field": "retention",
+                        "volumes": [1]
+                    },
+                    ],
+            },
+            },
+    }
+
+    output = FESTIM.generic_simulation.run(parameters)
+    derived_quantities = output["derived_quantities"]
+    derived_quantities.pop(0)  # remove header
+    tolerance = 1e-2
+    for e in derived_quantities:
+        assert abs(float(e[1])-1) < tolerance
+        assert abs(float(e[2])-1) < tolerance
 
 
 def test_run_MMS_soret(tmpdir):
@@ -621,7 +707,7 @@ def test_run_MMS_steady_state(tmpdir):
         n_trap = 1
         E_D = 0.1
         D_0 = 2
-        k_B = 8.6e-5
+        k_B = FESTIM.k_B
         D = D_0 * sp.exp(-E_D/k_B/T)
         p = p_0 * sp.exp(-E_p/k_B/T)
         k = k_0 * sp.exp(-E_k/k_B/T)
@@ -683,7 +769,8 @@ def test_run_MMS_steady_state(tmpdir):
                     "relative_tolerance": 1e-9,
                     "maximum_iterations": 50,
                 },
-                "type": "solve_stationary"
+                "type": "solve_stationary",
+                "traps_element_type": 'DG'
                 },
             "exports": {
                 "txt": {
@@ -693,8 +780,8 @@ def test_run_MMS_steady_state(tmpdir):
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": ['solute', '1', 'T'],
-                    "labels":  ['solute', '1', 'temp'],
+                    "functions": ['solute', '1', 'T', 'retention'],
+                    "labels":  ['solute', '1', 'temp', 'retention'],
                     "folder": str(Path(d))
                 },
                 "error": [

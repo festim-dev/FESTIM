@@ -1,5 +1,5 @@
 import FESTIM
-from FESTIM import initialise_solutions
+from FESTIM.initialising import initialise_solutions
 import pytest
 import fenics
 import os
@@ -47,14 +47,13 @@ def test_initialisation_from_xdmf(tmpdir):
             },
         ],
     }
-    w, components = initialise_solutions.initialising_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
 def test_fail_initialisation_from_xdmf():
     '''
-    Test that the function fails initialising_solutions if
+    Test that the function fails initialise_solutions if
     there's a missing key
     '''
     mesh = fenics.UnitSquareMesh(5, 5)
@@ -76,8 +75,7 @@ def test_fail_initialisation_from_xdmf():
         ],
     }
     with pytest.raises(KeyError, match=r'time_step'):
-        initialise_solutions.initialising_solutions(
-            parameters, V)
+        initialise_solutions(parameters, V)
 
     parameters = {
         "initial_conditions": [
@@ -94,13 +92,12 @@ def test_fail_initialisation_from_xdmf():
         ],
     }
     with pytest.raises(KeyError, match=r'label'):
-        initialise_solutions.initialising_solutions(
-            parameters, V)
+        initialise_solutions(parameters, V)
 
 
 def test_initialisation_with_expression():
     '''
-    Test that initialising_solutions interpolates correctly
+    Test that initialise_solutions interpolates correctly
     from an expression
     '''
     mesh = fenics.UnitSquareMesh(8, 8)
@@ -126,14 +123,13 @@ def test_initialisation_with_expression():
             },
         ],
     }
-    w, components = initialise_solutions.initialising_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
 def test_initialisation_with_expression_chemical_pot():
     '''
-    Test that initialising_solutions interpolates correctly
+    Test that initialise_solutions interpolates correctly
     from an expression with conservation of chemical potential
     '''
     mesh = fenics.UnitSquareMesh(8, 8)
@@ -159,14 +155,13 @@ def test_initialisation_with_expression_chemical_pot():
             },
         ],
     }
-    w, components = initialise_solutions.initialising_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
 def test_initialisation_default():
     '''
-    Test that initialising_solutions interpolates correctly
+    Test that initialise_solutions interpolates correctly
     if nothing is given (default is 0)
     '''
     mesh = fenics.UnitSquareMesh(8, 8)
@@ -174,14 +169,13 @@ def test_initialisation_default():
     u = fenics.Function(V)
     w = fenics.Function(V)
 
-    w, components = initialise_solutions.initialising_solutions(
-        {"initial_conditions": []}, V)
+    w = initialise_solutions({"initial_conditions": []}, V)
     assert fenics.errornorm(u, w) == 0
 
 
 def test_initialisation_solute_only():
     '''
-    Test that initialising_solutions interpolates correctly
+    Test that initialise_solutions interpolates correctly
     if solution has only 1 component (ie solute)
     '''
     mesh = fenics.UnitSquareMesh(8, 8)
@@ -198,14 +192,13 @@ def test_initialisation_solute_only():
             },
         ],
     }
-    w, components = initialise_solutions.initialising_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
 def test_initialisation_no_component():
     '''
-    Test that initialising_solutions set component at 0
+    Test that initialise_solutions set component at 0
     by default
     '''
     mesh = fenics.UnitSquareMesh(8, 8)
@@ -223,14 +216,13 @@ def test_initialisation_no_component():
             },
         ],
     }
-    w, components = initialise_solutions.initialising_solutions(
-        parameters, V)
+    w = initialise_solutions(parameters, V)
     assert fenics.errornorm(u, w) == 0
 
 
 def test_initialisation_duplicates():
     '''
-    Test that initialising_solutions set component at 0
+    Test that initialise_solutions set component at 0
     by default
     '''
     mesh = fenics.UnitSquareMesh(8, 8)
@@ -249,5 +241,4 @@ def test_initialisation_duplicates():
         ],
     }
     with pytest.raises(ValueError, match=r'Duplicate'):
-        initialise_solutions.initialising_solutions(
-            parameters, V)
+        initialise_solutions(parameters, V)

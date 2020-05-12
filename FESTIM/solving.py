@@ -3,12 +3,27 @@ from fenics import *
 
 
 def solve_it(F, u, J, bcs, t, dt, solving_parameters):
+    """Solves the problem during time stepping.
+
+    Arguments:
+        F {fenics.Form()} -- Formulation to be solved
+        u {fenics.Function()} -- Function for concentrations
+        J {fenics.Function()} -- Jacobian
+        bcs {list} -- contains boundary conditions (fenics.DirichletBC())
+        t {float} -- time
+        dt {fenics.Constant()} -- stepsize
+        solving_parameters {dict} -- solving parameters
+
+    Returns:
+        fenics.Function() -- function for concentrations
+        fenics.Constant() -- stepsize
+    """
     converged = False
     u_ = Function(u.function_space())
     u_.assign(u)
     while converged is False:
         u.assign(u_)
-        u, nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
+        nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
         if "adaptive_stepsize" in solving_parameters.keys():
             stepsize_change_ratio = \
                 solving_parameters[
@@ -21,14 +36,29 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
             if "t_stop" in solving_parameters["adaptive_stepsize"].keys():
                 t_stop = solving_parameters["adaptive_stepsize"]["t_stop"]
                 stepsize_stop_max = \
-                    solving_parameters["adaptive_stepsize"]["stepsize_stop_max"]
+                    solving_parameters["adaptive_stepsize"][
+                            "stepsize_stop_max"]
                 if t >= t_stop:
                     if float(dt) > stepsize_stop_max:
                         dt.assign(stepsize_stop_max)
-    return u, dt
+    return
 
 
 def solve_once(F, u, J, bcs, solving_parameters):
+    """Solves non linear problem
+
+    Arguments:
+        F {fenics.Form()} -- Formulation to be solved
+        u {fenics.Function()} -- Function for concentrations
+        J {fenics.Function()} -- Jacobian
+        bcs {list} -- contains boundary conditions (fenics.DirichletBC())
+        solving_parameters {dict} -- solving parameters
+
+    Returns:
+        fenics.Function() -- function for concentrations
+        int -- number of iterations for reaching convergence
+        bool -- True if converged, else False
+    """
     problem = NonlinearVariationalProblem(F, u, bcs, J)
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
@@ -40,26 +70,24 @@ def solve_once(F, u, J, bcs, solving_parameters):
         solving_parameters['newton_solver']['maximum_iterations']
     nb_it, converged = solver.solve()
 
-    return u, nb_it, converged
+    return nb_it, converged
 
 
 def adaptive_stepsize(nb_it, converged, dt, dt_min,
                       stepsize_change_ratio, t):
-    '''
-    Adapts the stepsize as function of the number of iterations of the
+    """Adapts the stepsize as function of the number of iterations of the
     solver.
+
     Arguments:
-    - solver : FEniCS NonlinearVariationalSolver
-    - nb_it : int, number of iterations
-    - dt : Constant(), fenics object
-    - dt_min : float, stepsize minimum value
-    - stepsize_change_ration : float, stepsize change ratio
-    - t : float, time
-    - t_stop : float, time where adaptive time step stops
-    - stepsize_stop_max : float, maximum stepsize after stop
-    Returns:
-    - dt : Constant(), fenics object
-    '''
+        nb_it {int} -- number of iterations
+        converged {bool} -- True if converged, else False
+        dt {fenics.Constant()} -- stepsize
+        dt_min {float} -- minimum stepsize
+        stepsize_change_ratio {float} -- stepsize change ratio for adaptive
+            stepsize
+        t {float} -- time
+    """
+
     if converged is False:
         dt.assign(float(dt)/stepsize_change_ratio)
         if float(dt) < dt_min:
