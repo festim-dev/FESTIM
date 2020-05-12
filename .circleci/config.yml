@@ -6,6 +6,14 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run Tests
+          name: Run Unit tests
           command: |
-            pytest-3 Tests/
+            pytest-3 Tests/unit/
+      - run:
+          name: Run Integration tests
+          command: |
+            pytest-3 Tests/integration/
+      - run:
+          name: Run System tests
+          command: |
+            pytest-3 Tests/system/
