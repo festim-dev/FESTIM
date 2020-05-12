@@ -3,18 +3,16 @@ import sympy as sp
 import FESTIM
 
 
-def formulation(parameters, extrinsic_traps, solutions, testfunctions,
-                previous_solutions, dt, dx, T, T_n=None, transient=True):
+def formulation(parameters, extrinsic_traps, u, v,
+                u_n, dt, dx, T, T_n=None, transient=True):
     """Creates formulation for trapping MRE model
 
     Arguments:
         parameters {dict} -- contains simulation parameters
         extrinsic_traps {list} -- contains fenics.Function for extrinsic traps
-        solutions {list} -- contains fenics.Function() for concentrations
-        testfunctions {list} -- contains fenics.TestFunction() for
-            concentrations
-        previous_solutions {list} -- contains fenics.Function() for
-            concentrations (previous step)
+        u {fenics.Function} -- concentrations Function
+        v {fenics.TestFunction} -- concentrations TestFunction
+        u_n {fenics.Function} -- concentrations Function (previous step)
         dt {fenics.Constan} -- stepsize
         dx {fenics.Measure} -- dx measure
         T {fenics.Expression, fenics.Function} -- temperature
@@ -40,6 +38,9 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
         if "soret" in parameters["temperature"].keys():
             if parameters["temperature"]["soret"] is True:
                 soret = True
+    solutions = split(u)
+    previous_solutions = split(u_n)
+    testfunctions = split(v)
     c_0 = solutions[0]
     c_0_n = previous_solutions[0]
 
