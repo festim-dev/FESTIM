@@ -1,4 +1,8 @@
 import FESTIM
+from FESTIM.meshing import subdomains_1D
+from FESTIM.post_processing import header_derived_quantities,\
+    create_properties, run_post_processing
+from FESTIM.export import define_xdmf_files
 import fenics
 import pytest
 import sympy as sp
@@ -90,7 +94,7 @@ def test_run_post_processing(tmpdir):
     T = fenics.interpolate(fenics.Constant(100), W)
 
     volume_markers, surface_markers = \
-        FESTIM.meshing.subdomains_1D(mesh, parameters["materials"], size=1)
+        subdomains_1D(mesh, parameters["materials"], size=1)
 
     t = 0
     dt = 1
@@ -98,16 +102,16 @@ def test_run_post_processing(tmpdir):
     append = True
     markers = [volume_markers, surface_markers]
 
-    files = FESTIM.export.define_xdmf_files(parameters["exports"])
+    files = define_xdmf_files(parameters["exports"])
     tab = \
-        [FESTIM.post_processing.header_derived_quantities(parameters)]
+        [header_derived_quantities(parameters)]
     properties = \
-        FESTIM.post_processing.create_properties(
+        create_properties(
             mesh, parameters["materials"], volume_markers, T)
     for i in range(1, 3):
         t += dt
         derived_quantities_global, dt = \
-            FESTIM.post_processing.run_post_processing(
+            run_post_processing(
                 parameters, transient, u, T, markers, W, V_DG1, t, dt, files,
                 append=append, properties=properties,
                 derived_quantities_global=tab)
@@ -185,7 +189,7 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     T = fenics.interpolate(fenics.Constant(20), W)
 
     volume_markers, surface_markers = \
-        FESTIM.meshing.subdomains_1D(mesh, parameters["materials"], size=1)
+        subdomains_1D(mesh, parameters["materials"], size=1)
 
     t = 0
     dt = 1
@@ -193,16 +197,16 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     append = True
     markers = [volume_markers, surface_markers]
 
-    files = FESTIM.export.define_xdmf_files(parameters["exports"])
+    files = define_xdmf_files(parameters["exports"])
     tab = \
-        [FESTIM.post_processing.header_derived_quantities(parameters)]
+        [header_derived_quantities(parameters)]
     properties = \
-        FESTIM.post_processing.create_properties(
+        create_properties(
             mesh, parameters["materials"], volume_markers, T)
     for i in range(1, 3):
         t += dt
         derived_quantities_global, dt = \
-            FESTIM.post_processing.run_post_processing(
+            run_post_processing(
                 parameters, transient, u, T, markers, W, V_DG1, t, dt, files,
                 append=append, properties=properties,
                 derived_quantities_global=tab)
@@ -264,7 +268,7 @@ def test_run_post_processing_flux(tmpdir):
     T = fenics.interpolate(T, V)
 
     volume_markers, surface_markers = \
-        FESTIM.meshing.subdomains_1D(mesh, parameters["materials"], size=1)
+        subdomains_1D(mesh, parameters["materials"], size=1)
 
     t = 0
     dt = 1
@@ -272,14 +276,14 @@ def test_run_post_processing_flux(tmpdir):
     append = True
     markers = [volume_markers, surface_markers]
 
-    # files = FESTIM.export.define_xdmf_files(parameters["exports"])
-    tab = [FESTIM.post_processing.header_derived_quantities(parameters)]
+    # files = define_xdmf_files(parameters["exports"])
+    tab = [header_derived_quantities(parameters)]
     properties = \
-        FESTIM.post_processing.create_properties(
+        create_properties(
             mesh, parameters["materials"], volume_markers, T)
     t += dt
     derived_quantities_global, dt = \
-        FESTIM.post_processing.run_post_processing(
+        run_post_processing(
             parameters, transient, u, T, markers, V, V_DG1, t, dt, None,
             append=append, properties=properties,
             derived_quantities_global=tab)
