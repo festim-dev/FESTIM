@@ -1,4 +1,5 @@
 import FESTIM
+from FESTIM.boundary_conditions import apply_boundary_conditions, apply_fluxes
 import fenics
 import pytest
 import sympy as sp
@@ -58,7 +59,7 @@ def test_fluxes_chemical_pot():
 
     S = S_0*fenics.exp(-E_S/k_B/T)
     Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
-    F, expressions = FESTIM.boundary_conditions.apply_fluxes(
+    F, expressions = apply_fluxes(
         parameters, u, v, fenics.ds, T, S)
     expected_form = 0
     expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
@@ -99,7 +100,7 @@ def test_fluxes():
     testfunctions = list(fenics.split(v))
     sol = solutions[0]
     test_sol = testfunctions[0]
-    F, expressions = FESTIM.boundary_conditions.apply_fluxes(
+    F, expressions = apply_fluxes(
         {"boundary_conditions": boundary_conditions}, u,
         v, fenics.ds, T)
     expected_form = 0
@@ -167,7 +168,7 @@ def test_apply_boundary_conditions_theta():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
     bcs, expressions = \
-        FESTIM.boundary_conditions.apply_boundary_conditions(
+        apply_boundary_conditions(
             parameters, V, [vm, sm], temp)
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx

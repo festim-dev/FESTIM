@@ -1,5 +1,7 @@
 # Unit tests meshing
-from FESTIM import meshing
+from FESTIM.meshing import mesh_and_refine, subdomains_1D, create_mesh,\
+    read_subdomains_from_xdmf, subdomains, check_borders,\
+    generate_mesh_from_vertices
 import fenics
 import pytest
 import sympy as sp
@@ -30,7 +32,7 @@ def test_mesh_and_refine_meets_refinement_conditions():
     refinements = [[[2, 3], [0.5, 0.25]], [[3, 11], [0.5, 0.25]]]
     for i in range(len(refinements)):
         param = mesh_parameters(2, 1, refinements[i][0], refinements[i][1])
-        mesh = meshing.mesh_and_refine(param)
+        mesh = mesh_and_refine(param)
 
         mf1 = fenics.MeshFunction('size_t', mesh, 1)
         mf2 = fenics.MeshFunction('size_t', mesh, 1)
@@ -66,7 +68,7 @@ def test_subdomains_1D():
             "id": 2,
             }
             ]
-    volume_markers, surface_markers = meshing.subdomains_1D(mesh, materials, 1)
+    volume_markers, surface_markers = subdomains_1D(mesh, materials, 1)
     for cell in fenics.cells(mesh):
         if cell.midpoint().x() < 0.5:
             assert volume_markers[cell] == 1
@@ -86,7 +88,7 @@ def test_check_borders():
             }
             ]
     size = 0.7
-    assert meshing.check_borders(size, materials) is True
+    assert check_borders(size, materials) is True
 
     with pytest.raises(ValueError, match=r'zero'):
         size = 0.7
@@ -100,7 +102,7 @@ def test_check_borders():
                 "id": 2,
                 }
                 ]
-        meshing.check_borders(size, materials)
+        check_borders(size, materials)
 
     with pytest.raises(ValueError, match=r'each other'):
         materials = [
@@ -118,7 +120,7 @@ def test_check_borders():
                 }
                 ]
         size = 1
-        meshing.check_borders(size, materials)
+        check_borders(size, materials)
 
     with pytest.raises(ValueError, match=r'size'):
         materials = [
@@ -128,7 +130,7 @@ def test_check_borders():
                 }
                 ]
         size = 3
-        meshing.check_borders(size, materials)
+        check_borders(size, materials)
 
 
 def test_create_mesh_xdmf(tmpdir):
@@ -143,7 +145,7 @@ def test_create_mesh_xdmf(tmpdir):
     mesh_parameters = {
         "mesh_file": str(Path(file1)),
         }
-    mesh2 = meshing.create_mesh(mesh_parameters)
+    mesh2 = create_mesh(mesh_parameters)
 
     # check that vertices are the same
     vertices_mesh = []
@@ -172,7 +174,7 @@ def test_subdomains_from_xdmf(tmpdir):
     fenics.XDMFFile(str(Path(file1))).write(mf_cells)
     fenics.XDMFFile(str(Path(file2))).write(mf_facets)
     # read files
-    mf_cells_2, mf_facets_2 = meshing.read_subdomains_from_xdmf(
+    mf_cells_2, mf_facets_2 = read_subdomains_from_xdmf(
         mesh, str(Path(file1)), str(Path(file2)))
 
     # check
@@ -192,7 +194,7 @@ def test_create_mesh_inbuilt():
     mesh_parameters = {
         "mesh": mesh
         }
-    mesh2 = meshing.create_mesh(mesh_parameters)
+    mesh2 = create_mesh(mesh_parameters)
 
     # check that vertices are the same
     vertices_mesh = []
@@ -227,7 +229,7 @@ def test_subdomains_inbuilt():
         }
     }
     # read
-    mf_cells_2, mf_facets_2 = meshing.subdomains(mesh, mesh_parameters)
+    mf_cells_2, mf_facets_2 = subdomains(mesh, mesh_parameters)
     # check
     for cell in fenics.cells(mesh):
         assert mf_cells[cell] == mf_cells_2[cell]
@@ -239,7 +241,7 @@ def test_generate_mesh_from_vertices():
     Test the function generate_mesh_from_vertices
     '''
     points = [0, 1, 2, 3, 5]
-    mesh = meshing.generate_mesh_from_vertices(points)
+    mesh = generate_mesh_from_vertices(points)
     assert mesh.num_vertices() == len(points)
     assert mesh.num_edges() == len(points) - 1
     assert mesh.num_cells() == len(points) - 1
@@ -253,7 +255,7 @@ def test_create_mesh_vertices():
     mesh_parameters = {
         "vertices": points
     }
-    mesh = meshing.create_mesh(mesh_parameters)
+    mesh = create_mesh(mesh_parameters)
     assert mesh.num_vertices() == len(points)
     assert mesh.num_edges() == len(points) - 1
     assert mesh.num_cells() == len(points) - 1
@@ -286,8 +288,8 @@ def test_integration_mesh_from_vertices_subdomains():
         "mesh_parameters": mesh_parameters,
         "materials": materials
     }
-    mesh = meshing.create_mesh(mesh_parameters)
-    vm, sm = meshing.subdomains(mesh, parameters)
+    mesh = create_mesh(mesh_parameters)
+    vm, sm = subdomains(mesh, parameters)
 
     # Testing
     for cell in fenics.cells(mesh):

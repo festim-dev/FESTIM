@@ -22,14 +22,14 @@ def test_initialisation_from_xdmf(tmpdir):
     file1 = d.join("u_1out.xdmf")
     file2 = d.join("u_2out.xdmf")
     print(Path(file1))
-    with fenics.XDMFFile(str(Path(file1))) as file:
-        file.write_checkpoint(u.sub(0), "1", 2, fenics.XDMFFile.Encoding.HDF5,
-                              append=False)
-    with fenics.XDMFFile(str(Path(file2))) as file:
-        file.write_checkpoint(u.sub(1), "2", 2, fenics.XDMFFile.Encoding.HDF5,
-                              append=False)
-        file.write_checkpoint(u.sub(1), "2", 4, fenics.XDMFFile.Encoding.HDF5,
-                              append=True)
+    with fenics.XDMFFile(str(Path(file1))) as f:
+        f.write_checkpoint(u.sub(0), "1", 2, fenics.XDMFFile.Encoding.HDF5,
+                           append=False)
+    with fenics.XDMFFile(str(Path(file2))) as f:
+        f.write_checkpoint(u.sub(1), "2", 2, fenics.XDMFFile.Encoding.HDF5,
+                           append=False)
+        f.write_checkpoint(u.sub(1), "2", 4, fenics.XDMFFile.Encoding.HDF5,
+                           append=True)
 
     parameters = {
         "initial_conditions": [
