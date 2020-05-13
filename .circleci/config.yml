@@ -6,6 +6,7 @@ jobs:
     steps:
       - checkout
       # Run tests and upload to codecov
+      - run: pip3 install --user pytest-cov
       - run:
           name: Run Unit tests
           command: |
