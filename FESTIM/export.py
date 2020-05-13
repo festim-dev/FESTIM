@@ -223,6 +223,7 @@ def treat_value(d):
     '''
 
     T = sp.symbols('T')
+    print(d)
     if type(d) is dict:
         d2 = {}
         for key, value in d.items():
@@ -240,6 +241,8 @@ def treat_value(d):
         for e in d:
             e2 = treat_value(e)
             d2.append(e2)
+    else:
+        d2 = d
 
     return d2
 
