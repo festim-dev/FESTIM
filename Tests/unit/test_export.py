@@ -1,4 +1,5 @@
-from FESTIM.export import write_to_csv, export_xdmf, export_parameters
+from FESTIM.export import write_to_csv, export_xdmf, export_parameters, \
+                          treat_value
 from FESTIM import x
 import fenics
 from pathlib import Path
@@ -53,6 +54,9 @@ def test_export_xdmf(tmpdir):
             }
         }
         export_xdmf(res, exports, files, t=1, append=False)
+
+    exports["xdmf"].update({"checkpoint": False})
+    export_xdmf(res, exports, files, t=1, append=False)
 
     with pytest.raises(ValueError, match=r'trap1'):
         exports = {
@@ -115,3 +119,43 @@ def test_export_parameters(tmpdir):
         "thermal_cond": thermal_cond
     }
     assert export_parameters(parameters)
+
+
+def test_treat_value():
+    """Tests that the function export.treat_value() returns the correct dict
+    """
+    d = {
+        "a": {
+            "a1": x,
+            "a2": 3
+        },
+        "b": [
+            {
+                "b11": 'a',
+                "b12": 'b'
+            },
+            {
+                "b21": 'a',
+                "b22": 'b'
+            },
+        ],
+        "thermal_cond": 2
+    }
+    d_expected = {
+        "a": {
+            "a1": 'x[0]',
+            "a2": 3
+        },
+        "b": [
+            {
+                "b11": 'a',
+                "b12": 'b'
+            },
+            {
+                "b21": 'a',
+                "b22": 'b'
+            },
+        ],
+        "thermal_cond": 2
+    }
+    assert treat_value(d) == d_expected

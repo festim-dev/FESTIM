@@ -52,8 +52,7 @@ def export_txt(filename, function, W):
     - W : fenics.FunctionSpace(), Functionspace on which the solution will be
     projected.
     Returns:
-    - True on sucess,
-    - False on failure
+    - True on sucess
     '''
     export = Function(W)
     export = project(function)
@@ -69,7 +68,6 @@ def export_txt(filename, function, W):
             print("The file " + filename + ".txt might currently be busy."
                   "Please close the application then press any key.")
             input()
-    return False
 
 
 def export_profiles(res, exports, t, dt, W):
@@ -223,9 +221,10 @@ def treat_value(d):
     Arguments: d, dict
     Returns: d, dict
     '''
-    d2 = {}
+
     T = sp.symbols('T')
     if type(d) is dict:
+        d2 = {}
         for key, value in d.items():
             if isinstance(value, tuple(sp.core.all_classes)):
                 value = str(sp.printing.ccode(value))
@@ -234,9 +233,14 @@ def treat_value(d):
                 d2[key] = str(sp.printing.ccode(value(T)))
             elif type(value) is dict or type(value) is list:
                 d2[key] = treat_value(value)
+            else:
+                d2[key] = value
     elif type(d) is list:
-        for e in d2:
-            e = treat_value(e)
+        d2 = []
+        for e in d:
+            e2 = treat_value(e)
+            d2.append(e2)
+
     return d2
 
 
