@@ -5,15 +5,19 @@ jobs:
       - image: quay.io/fenicsproject/stable:latest
     steps:
       - checkout
+      # Run tests and upload to codecov
       - run:
           name: Run Unit tests
           command: |
-            pytest-3 Tests/unit/
+            python3 -m pytest Tests/unit/ --cov FESTIM --cov-report xml
+            bash <(curl -s https://codecov.io/bash) -t cf160fda-091b-4d7f-a22d-a9509c36720c
       - run:
           name: Run Integration tests
           command: |
-            pytest-3 Tests/integration/
+            python3 -m pytest Tests/integration/ --cov FESTIM --cov-report xml
+            bash <(curl -s https://codecov.io/bash) -t cf160fda-091b-4d7f-a22d-a9509c36720c
       - run:
           name: Run System tests
           command: |
-            pytest-3 Tests/system/
+            python3 -m pytest Tests/system/ --cov FESTIM --cov-report xml
+            bash <(curl -s https://codecov.io/bash) -t cf160fda-091b-4d7f-a22d-a9509c36720c
