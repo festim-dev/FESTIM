@@ -151,8 +151,13 @@ def test_run_temperature_transient(tmpdir):
                 {
                     "type": "dc",
                     "value": u,
-                    "surfaces": [1, 2]
-                }
+                    "surfaces": 1
+                },
+                {
+                    "type": "dc",
+                    "value": u,
+                    "surfaces": 2
+                },
                 ],
             "source_term": [
                 {

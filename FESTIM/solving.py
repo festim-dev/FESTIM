@@ -1,5 +1,6 @@
 from FESTIM import *
 from fenics import *
+import sys
 
 
 def solve_it(F, u, J, bcs, t, dt, solving_parameters):
