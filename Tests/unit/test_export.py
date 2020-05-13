@@ -1,4 +1,5 @@
 from FESTIM.export import write_to_csv, export_xdmf, export_parameters
+from FESTIM import x
 import fenics
 from pathlib import Path
 import pytest
@@ -98,7 +99,7 @@ def test_export_parameters(tmpdir):
             "parameters": str(Path(d)) + "/parameters"
         },
         "a": {
-            "a1": 2,
+            "a1": x,
             "a2": 3
         },
         "b": [
