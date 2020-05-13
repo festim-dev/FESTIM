@@ -635,7 +635,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
             "id": 1
             }],
         "traps": [],
-        "source_term": {"value": "1"},
+        "source_term": [{"value": "1", "volumes": 1}],
     }
     extrinsic_traps = []
     mesh = fenics.UnitIntervalMesh(10)
@@ -665,7 +665,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
     expected_form += fenics.dot(
         5 * fenics.exp(-4/k_B/temp) * fenics.grad(theta),
         fenics.grad(testfunctions[0]))*dx(1)
-    expected_form += -flux_*testfunctions[0]*dx
+    expected_form += -flux_*testfunctions[0]*dx(1)
 
     assert expected_form.equals(F) is True
 

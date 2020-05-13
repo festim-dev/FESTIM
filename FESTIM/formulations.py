@@ -78,10 +78,9 @@ def formulation(parameters, extrinsic_traps, u, v,
                 source = Expression(
                     sp.printing.ccode(
                         source_dict["value"]), t=0, degree=2)
-                if isinstance(source_dict["volumes"], int):
-                    volumes = [source_dict["volumes"]]
-                else:
-                    volumes = source_dict["volumes"]
+                volumes = source_dict["volumes"]
+                if isinstance(volumes, int):
+                    volumes = [volumes]
                 for vol in volumes:
                     F += - source*testfunctions[0]*dx(vol)
                 expressions.append(source)
