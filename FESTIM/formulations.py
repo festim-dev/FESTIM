@@ -155,10 +155,9 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
         dt {fenics.Constant} -- stepsize
 
     Returns:
-        fenics.Form -- formulation to be solved for extrinsic trap density
+        list -- contains fenics.Form to be solved for extrinsic trap density
         list -- contains fenics.Expression to be updated
     """
-
     formulations = []
     expressions = []
     i = 0
