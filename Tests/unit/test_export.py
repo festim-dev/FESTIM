@@ -1,4 +1,4 @@
-from FESTIM.export import write_to_csv, export_xdmf
+from FESTIM.export import write_to_csv, export_xdmf, export_parameters
 import fenics
 from pathlib import Path
 import pytest
@@ -83,3 +83,34 @@ def test_export_xdmf(tmpdir):
         }
         export_xdmf(res, exports, files, t=1, append=False)
     return
+
+
+def test_export_parameters(tmpdir):
+    """Tests the function export parameters
+    """
+    d = tmpdir.mkdir("out")
+
+    def thermal_cond(T):
+        return 2*T
+
+    parameters = {
+        "exports": {
+            "parameters": str(Path(d)) + "/parameters"
+        },
+        "a": {
+            "a1": 2,
+            "a2": 3
+        },
+        "b": [
+            {
+                "b11": 'a',
+                "b12": 'b'
+            },
+            {
+                "b21": 'a',
+                "b22": 'b'
+            },
+        ],
+        "thermal_cond": thermal_cond
+    }
+    assert export_parameters(parameters)
