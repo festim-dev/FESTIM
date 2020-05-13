@@ -1,6 +1,6 @@
 # FESTIM
 
-[![CircleCI](https://circleci.com/gh/RemiTheWarrior/FESTIM.svg?style=svg&circle-token=<ecc5a4a8c75955af6c238d255465bc04dfaaaf8e>)](https://circleci.com/gh/RemiTheWarrior/FESTIM)
+[![CircleCI](https://circleci.com/gh/RemiTheWarrior/FESTIM.svg?style=svg&circle-token=ecc5a4a8c75955af6c238d255465bc04dfaaaf8e)](https://circleci.com/gh/RemiTheWarrior/FESTIM)
 [![codecov](https://img.shields.io/codecov/c/github/RemiTheWarrior/FESTIM.svg?style=flat-square)](https://codecov.io/gh/RemiTheWarrior/FESTIM)
 [![PEP8](https://img.shields.io/badge/code%20style-pep8-violet.svg)](https://www.python.org/dev/peps/pep-0008/)
 ![GitHub stars](https://img.shields.io/github/stars/RemiTheWarrior/FESTIM.svg?logo=github&label=Stars&logoColor=white)
