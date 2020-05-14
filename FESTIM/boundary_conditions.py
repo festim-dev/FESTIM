@@ -5,16 +5,6 @@ import sympy as sp
 import numpy as np
 
 
-class ExpressionFromInterpolatedData(UserExpression):
-    def __init__(self, t, fun, **kwargs):
-        self.t = t
-        self._fun = fun
-        UserExpression.__init__(self, **kwargs)
-
-    def eval(self, values, x):
-        values[:] = float(self._fun(self.t))
-
-
 def define_dirichlet_bcs_T(parameters, V, boundaries):
     """Creates a list of BCs for thermal problem
 
@@ -43,14 +33,6 @@ def define_dirichlet_bcs_T(parameters, V, boundaries):
                 bci = DirichletBC(V, value, boundaries, surf)
                 bcs.append(bci)
     return bcs, expressions
-
-
-def solubility(S_0, E_S, k_B, T):
-    return S_0*exp(-E_S/k_B/T)
-
-
-def solubility_BC(P, S):
-    return P**0.5*S
 
 
 def apply_fluxes(parameters, u, v, ds, T, S=None):
@@ -172,25 +154,13 @@ def apply_boundary_conditions(parameters, V,
             value_BC = Expression(value_BC, t=0, degree=4)
         elif type_BC == "solubility":
             pressure = BC["pressure"]
-            value_BC = solubility_BC(
-                    pressure, BC["density"]*solubility(
-                        BC["S_0"], BC["E_S"],
-                        k_B, T))
+            value_BC = pressure**0.5*BC["density"]*BC["S_0"]*sp.exp(
+                -BC["E_S"]/k_B/T)
             value_BC = Expression(sp.printing.ccode(value_BC), t=0,
                                   degree=2)
             print("WARNING: solubility BC. \
                 If temperature is type solve_transient\
                      initial temperature will be considered.")
-        elif type_BC == "table":
-            table = BC["value"]
-            # Interpolate table
-            interpolant = interp1d(
-                list(np.array(table)[:, 0]),
-                list(np.array(table)[:, 1]),
-                fill_value='extrapolate')
-            # create UserExpression based on interpolant and t
-            value_BC = ExpressionFromInterpolatedData(
-                t=0, fun=interpolant, element=V.ufl_element())
 
         if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
            BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
