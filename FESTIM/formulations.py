@@ -28,7 +28,6 @@ def formulation(parameters, extrinsic_traps, u, v,
     """
 
     k_B = FESTIM.k_B  # Boltzmann constant
-    nu_0_default = 1e13  # frequency factor s-1
     expressions = []
     F = 0
 
@@ -78,10 +77,9 @@ def formulation(parameters, extrinsic_traps, u, v,
                 source = Expression(
                     sp.printing.ccode(
                         source_dict["value"]), t=0, degree=2)
-                if isinstance(source_dict["volumes"], int):
-                    volumes = [source_dict["volumes"]]
-                else:
-                    volumes = source_dict["volumes"]
+                volumes = source_dict["volumes"]
+                if isinstance(volumes, int):
+                    volumes = [volumes]
                 for vol in volumes:
                     F += - source*testfunctions[0]*dx(vol)
                 expressions.append(source)
@@ -117,10 +115,6 @@ def formulation(parameters, extrinsic_traps, u, v,
                 S_0 = corresponding_material['S_0']
                 E_S = corresponding_material['E_S']
                 c_0 = solutions[0]*S_0*exp(-E_S/k_B/T)
-            if 'nu_0' in corresponding_material.keys():
-                nu_0 = corresponding_material['nu_0']
-            else:
-                nu_0 = nu_0_default
             F += - k_0 * exp(-E_k/k_B/T) * c_0 \
                 * (trap_density - solutions[i]) * \
                 testfunctions[i]*dx(subdomain)
@@ -155,10 +149,9 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
         dt {fenics.Constant} -- stepsize
 
     Returns:
-        fenics.Form -- formulation to be solved for extrinsic trap density
+        list -- contains fenics.Form to be solved for extrinsic trap density
         list -- contains fenics.Expression to be updated
     """
-
     formulations = []
     expressions = []
     i = 0

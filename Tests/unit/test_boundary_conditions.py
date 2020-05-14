@@ -1,4 +1,6 @@
 import FESTIM
+from FESTIM.boundary_conditions import apply_boundary_conditions, \
+    apply_fluxes
 import fenics
 import pytest
 import sympy as sp
@@ -58,7 +60,7 @@ def test_fluxes_chemical_pot():
 
     S = S_0*fenics.exp(-E_S/k_B/T)
     Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
-    F, expressions = FESTIM.boundary_conditions.apply_fluxes(
+    F, expressions = apply_fluxes(
         parameters, u, v, fenics.ds, T, S)
     expected_form = 0
     expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
@@ -99,7 +101,7 @@ def test_fluxes():
     testfunctions = list(fenics.split(v))
     sol = solutions[0]
     test_sol = testfunctions[0]
-    F, expressions = FESTIM.boundary_conditions.apply_fluxes(
+    F, expressions = apply_fluxes(
         {"boundary_conditions": boundary_conditions}, u,
         v, fenics.ds, T)
     expected_form = 0
@@ -109,6 +111,13 @@ def test_fluxes():
     expected_form += -test_sol*expressions[0]*fenics.ds(2)
 
     assert expected_form.equals(F) is True
+
+    # Test error raise
+    with pytest.raises(NameError, match=r'Unknown boundary condition type'):
+        boundary_conditions[0].update({"type": "foo"})
+        apply_fluxes(
+            {"boundary_conditions": boundary_conditions}, u,
+            v, fenics.ds, T)
 
 
 def test_apply_boundary_conditions_theta():
@@ -167,7 +176,7 @@ def test_apply_boundary_conditions_theta():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
     bcs, expressions = \
-        FESTIM.boundary_conditions.apply_boundary_conditions(
+        apply_boundary_conditions(
             parameters, V, [vm, sm], temp)
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
@@ -196,3 +205,24 @@ def test_apply_boundary_conditions_theta():
         assert np.isclose(
             u(0.75, 0.5),
             (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))))
+
+
+def test_apply_boundary_conditions_fail():
+    boundary_conditions = [
+        {
+            "type": "foo"
+        }
+    ]
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    T = fenics.Expression("300", degree=0)
+    markers = ["foo", "foo"]  # not needed here since only failing is testing
+    with pytest.raises(KeyError, match=r'Missing boundary condition type key'):
+        apply_boundary_conditions(
+            {"boundary_conditions": [{}]}, V,
+            markers, T)
+
+    with pytest.raises(NameError, match=r'Unknown boundary condition type'):
+        apply_boundary_conditions(
+            {"boundary_conditions": boundary_conditions}, V,
+            markers, T)

@@ -1,5 +1,6 @@
 # Unit tests formulation
 import FESTIM
+from FESTIM.formulations import formulation, formulation_extrinsic_traps
 import fenics
 import pytest
 import sympy as sp
@@ -34,16 +35,13 @@ def test_formulation_no_trap_1_material():
     u_n = fenics.Function(V)
     v = fenics.TestFunction(V)
 
-
-
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
 
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u, v,
         u_n, dt, dx, temp, transient=True)
-
 
     solutions = list(fenics.split(u))
     previous_solutions = list(fenics.split(u_n))
@@ -98,7 +96,7 @@ def test_formulation_1_trap_1_material():
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u,
         v, u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
@@ -172,7 +170,7 @@ def test_formulation_2_traps_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
 
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u, v,
         u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
@@ -281,7 +279,7 @@ def test_formulation_1_trap_2_materials():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
 
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u, v,
         u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
@@ -366,7 +364,7 @@ def test_formulation_1_extrap_1_material():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
 
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u, v,
         u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
@@ -429,7 +427,7 @@ def test_formulation_steady_state():
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u,
         v, u_n, 0, dx, temp, transient=False)
     Index._globalcount = 8
@@ -586,7 +584,7 @@ def test_formulation_soret():
     # temp must be a function and not an expression in that case
     temp = fenics.interpolate(temp, V)
     dt = 2
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u, v,
         u_n, dt, dx, temp, transient=True)
     flux_ = expressions[0]
@@ -600,18 +598,18 @@ def test_formulation_soret():
     # Diffusion sol mat 1
     H = 4*temp + 3
     expected_form += fenics.dot(
-        5 * fenics.exp(-4/FESTIM.k_B/temp) * fenics.grad(solutions[0]),
+        5 * fenics.exp(-4/k_B/temp) * fenics.grad(solutions[0]),
         fenics.grad(testfunctions[0]))*dx(1)
     expected_form += fenics.dot(
-        5 * fenics.exp(-4/FESTIM.k_B/temp) * H * solutions[0] /
+        5 * fenics.exp(-4/k_B/temp) * H * solutions[0] /
         (FESTIM.R*temp**2)*fenics.grad(temp),
         fenics.grad(testfunctions[0]))*dx(1)
     # Diffusion sol mat 2
     expected_form += fenics.dot(
-        5 * fenics.exp(-4/FESTIM.k_B/temp) * fenics.grad(solutions[0]),
+        5 * fenics.exp(-4/k_B/temp) * fenics.grad(solutions[0]),
         fenics.grad(testfunctions[0]))*dx(2)
     expected_form += fenics.dot(
-        5 * fenics.exp(-4/FESTIM.k_B/temp) * H * solutions[0] /
+        5 * fenics.exp(-4/k_B/temp) * H * solutions[0] /
         (FESTIM.R*temp**2)*fenics.grad(temp),
         fenics.grad(testfunctions[0]))*dx(2)
     # Source sol
@@ -637,7 +635,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
             "id": 1
             }],
         "traps": [],
-        "source_term": {"value": "1"},
+        "source_term": [{"value": "1", "volumes": 1}],
     }
     extrinsic_traps = []
     mesh = fenics.UnitIntervalMesh(10)
@@ -655,7 +653,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
     temp = fenics.Expression("300", degree=0)
     temp_n = fenics.Expression("200", degree=0)
 
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u, v,
         u_n, dt, dx, temp, T_n=temp_n, transient=True)
 
@@ -667,7 +665,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
     expected_form += fenics.dot(
         5 * fenics.exp(-4/k_B/temp) * fenics.grad(theta),
         fenics.grad(testfunctions[0]))*dx(1)
-    expected_form += -flux_*testfunctions[0]*dx
+    expected_form += -flux_*testfunctions[0]*dx(1)
 
     assert expected_form.equals(F) is True
 
@@ -723,7 +721,7 @@ def test_formulation_1_trap_1_material_chemical_pot():
     dx = fenics.dx(subdomain_data=mf)
     temp = fenics.Expression("300", degree=0)
     temp_n = fenics.Expression("200", degree=0)
-    F, expressions = FESTIM.formulations.formulation(
+    F, expressions = formulation(
         parameters, extrinsic_traps, u,
         v, u_n,
         dt, dx, temp, temp_n, transient=True)
@@ -759,3 +757,52 @@ def test_formulation_1_trap_1_material_chemical_pot():
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[0]*dx
     assert expected_form.equals(F) is True
+
+
+def test_formulation_extrinsic_traps():
+    """Tests the function formulations.formulation_extrinsic_traps()
+    """
+    dt = 2
+    n_amax = 1e-1*6.3e28
+    n_bmax = 1e-2*6.3e28
+    eta_a = 6e-4
+    eta_b = 2e-4
+    parameters = {
+        "traps": [{
+            "k_0": 1,
+            "E_k": 2,
+            "p_0": 3,
+            "E_p": 4,
+            "materials": [1],
+            "type": "extrinsic",
+            "form_parameters":{
+                "phi_0": 2.5e19 * (FESTIM.t <= 400),
+                "n_amax": n_amax,
+                "f_a": (FESTIM.x < 1e-8) * (FESTIM.x > 0) * (1/1e-8),
+                "eta_a": eta_a,
+                "n_bmax": n_bmax,
+                "f_b": (FESTIM.x < 1e-6) * (FESTIM.x > 0) * (1/1e-6),
+                "eta_b": eta_b,
+            }
+            }],
+    }
+
+    mesh = fenics.UnitIntervalMesh(10)
+    W = fenics.FunctionSpace(mesh, 'P', 1)
+    extrinsic_traps = [fenics.Function(W)]
+    extrinsic_traps_n = [fenics.Function(W)]
+    test_functions = [fenics.TestFunction(W)]
+
+    forms, expressions = formulation_extrinsic_traps(
+        parameters["traps"], extrinsic_traps,
+        test_functions, extrinsic_traps_n,  dt)
+
+    phi_0, f_a, f_b = expressions
+    expected_form = ((extrinsic_traps[0] - extrinsic_traps_n[0])/dt) * \
+        test_functions[0]*fenics.dx
+    expected_form += -phi_0*(
+        (1 - extrinsic_traps[0]/n_amax)*eta_a*f_a +
+        (1 - extrinsic_traps[0]/n_bmax)*eta_b*f_b) * \
+        test_functions[0]*fenics.dx
+
+    assert expected_form.equals(forms[0])

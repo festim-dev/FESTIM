@@ -1,4 +1,5 @@
 import FESTIM
+from FESTIM.generic_simulation import run
 import fenics
 import pytest
 import sympy as sp
@@ -105,7 +106,7 @@ def test_run_temperature_stationary(tmpdir):
             },
 
     }
-    output = FESTIM.generic_simulation.run(parameters)
+    output = run(parameters)
     assert output["error"][0][1] < 1e-9
 
 
@@ -150,8 +151,13 @@ def test_run_temperature_transient(tmpdir):
                 {
                     "type": "dc",
                     "value": u,
-                    "surfaces": [1, 2]
-                }
+                    "surfaces": 1
+                },
+                {
+                    "type": "dc",
+                    "value": u,
+                    "surfaces": 2
+                },
                 ],
             "source_term": [
                 {
@@ -201,7 +207,7 @@ def test_run_temperature_transient(tmpdir):
             },
 
     }
-    output = FESTIM.generic_simulation.run(parameters)
+    output = run(parameters)
 
     assert output["error"][0][1] < 1e-9
 
@@ -330,7 +336,7 @@ def test_run_MMS(tmpdir):
     dt = 0.1/50
     final_time = 0.1
     for h in sizes:
-        output = FESTIM.generic_simulation.run(
+        output = run(
             parameters(h, dt, final_time, u, v))
         error_max_u = output["error"][0][1]
         error_max_v = output["error"][0][2]
@@ -469,7 +475,7 @@ def test_run_MMS_chemical_pot(tmpdir):
     dt = 0.1/50
     final_time = 0.1
     for h in sizes:
-        output = FESTIM.generic_simulation.run(
+        output = run(
             parameters(h, dt, final_time, u, v))
         error_max_u = output["error"][0][1]
         error_max_v = output["error"][0][2]
@@ -558,7 +564,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
             },
     }
 
-    output = FESTIM.generic_simulation.run(parameters)
+    output = run(parameters)
     derived_quantities = output["derived_quantities"]
     derived_quantities.pop(0)  # remove header
     tolerance = 1e-2
@@ -677,7 +683,7 @@ def test_run_MMS_soret(tmpdir):
     dt = 0.1/50
     final_time = 0.1
     for h in sizes:
-        output = FESTIM.generic_simulation.run(
+        output = run(
             parameters(h, dt, final_time, u))
         error_max_u = output["error"][0][1]
         msg = 'L2 error on u is:' + str(error_max_u) + '\n \
@@ -800,7 +806,7 @@ def test_run_MMS_steady_state(tmpdir):
     tol_v = 1e-7
     sizes = [1/1600, 1/1700]
     for h in sizes:
-        output = FESTIM.generic_simulation.run(
+        output = run(
             parameters(h, u, v))
         error_max_u = output["error"][0][1]
         error_max_v = output["error"][0][2]

@@ -1,5 +1,5 @@
 import FESTIM
-from FESTIM import export
+from FESTIM.export import export_xdmf
 from FESTIM.initialising import initialise_solutions
 import fenics
 import pytest
@@ -28,7 +28,7 @@ def test_export_and_initialise_xdmf(tmpdir):
     d = tmpdir.mkdir("Initial solutions")
     file1 = d.join("u_1out.xdmf")
     files = [fenics.XDMFFile(str(Path(file1)))]
-    export.export_xdmf(
+    export_xdmf(
         [u],
         exports, files, 20, append=False)
 
@@ -86,6 +86,4 @@ def test_initialise_and_export_xdmf(tmpdir):
     d2 = tmpdir.mkdir("Output")
     file2 = d.join("u_1out.xdmf")
     files = [fenics.XDMFFile(str(Path(file2)))]
-    assert export.export_xdmf(
-        [v],
-        exports, files, 20, append=False) is None
+    assert export_xdmf([v], exports, files, 20, append=False) is None
