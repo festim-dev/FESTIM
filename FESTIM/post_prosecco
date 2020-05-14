@@ -1,0 +1,48 @@
+from fenics import *
+import h5py
+import numpy as np
+
+def post_prosecco(K_0, E_K, xdmf_solute, k_B, T): 
+'''
+#Post-processing of the C/K h5 file, converting it into C.
+To be used at the end of the program.
+Warning : the solute.h5 file containing C/K will be overwritten.
+The concentration at the interface is arbitrarily assigned to material 1.
+- K_0: array, with K_0[1] the pre-exp factor of solubility for material 1 and so on for K_0[2] (unit : mol/m3/Pa-1/2)
+- E_K: array, E_K[1] the solubility energy for material 1 and so on for E_K[2] (unit : eV)
+- xdmf_solute: the xdmf file previously written on
+- k_B: Boltzmann constant (unit: eV/K)
+- T: User expression for temperature in K. Mine only depends on x (no time dependency) -> this could need updating
+'''   
+    xdmf_solute.close()
+    h = h5py.File('solute.h5', 'r+')
+    mesh = h['Mesh']
+    vizvector = h['VisualisationVector']
+    sol = None
+    mesh_coord = None
+
+    def mesh_visitor(name, mesh): 
+        global mesh_coord
+        if 'geometry' in mesh.name:
+            mesh_coord = mesh[:]
+
+    def vector_visitor(name, obj):
+        global sol, mesh_coord
+        mesh[name].visititems(mesh_visitor)
+        sol = obj[:]            
+        for i in range(len(mesh_coord)):
+            x = mesh_coord[i,0]
+            if float(x) <= 2e-3:
+                #Conversion material 1
+                sol[i] = sol[i]*K_0[1]*exp(-E_K[1]/k_B/T(float(x)))
+            else:
+                #Conversion material 2
+                sol[i] = sol[i]*K_0[2]*exp(-E_K[2]/k_B/T(float(x)))
+            
+        obj[:] = sol
+
+    vizvector.visititems(vector_visitor)
+    h.flush()
+    h.close()
+
+    print('File has been post-prosecco\'d')   
