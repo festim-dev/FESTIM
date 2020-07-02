@@ -172,8 +172,8 @@ def apply_boundary_conditions(parameters, V,
         T {fenics.Expression(), fenics.Function()} -- temperature
 
     Raises:
-        KeyError: [description]
-        NameError: [description]
+        KeyError: Raised if the type key of bc is missing
+        NameError: Raised if type is unknown
 
     Returns:
         list -- contains fenics DirichletBC
