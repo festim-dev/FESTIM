@@ -98,7 +98,22 @@ def apply_fluxes(parameters, u, v, ds, T, S=None):
 
 
 class BoundaryConditionTheta(UserExpression):
+    """Creates an Expression for converting dirichlet bcs in the case
+    of chemical potential conservation
+
+    Args:
+        UserExpression (fenics.UserExpression):
+    """
     def __init__(self, bci, mesh, materials, vm, T, **kwargs):
+        """initialisation
+
+        Args:
+            bci (fenics.Expression): value of BC
+            mesh (fenics.mesh): mesh
+            materials (list): contains dicts for materials
+            vm (fenics.MeshFunction): volume markers
+            T (fenics.Function): Temperature
+        """
         super().__init__(kwargs)
         self._bci = bci
         self._mesh = mesh
@@ -167,8 +182,8 @@ def apply_boundary_conditions(parameters, V,
 
     Arguments:
         parameters {dict} -- materials and bcs parameters
-        V {[type]} -- functionspace for concentrations
-        markers {[type]} -- contains fenics.MeshFunction() ([volume, surface])
+        V {fenics.FunctionSpace()} -- functionspace for concentrations
+        markers {list} -- contains fenics.MeshFunction() ([volume, surface])
         T {fenics.Expression(), fenics.Function()} -- temperature
 
     Raises:
