@@ -1,4 +1,3 @@
-# from FESTIM import *
 import FESTIM
 from fenics import *
 import sympy as sp
@@ -120,6 +119,48 @@ class BoundaryConditionTheta(UserExpression):
         return ()
 
 
+class BoundaryConditionRecomb(UserExpression):
+    """Creates an Expression for converting implanted flux in surface
+    concentration
+
+    Args:
+        UserExpression (fenics.UserExpression): value of surface concentration
+    """
+    def __init__(self, phi, R_p, K_0, E_K, D_0, E_D, T, **kwargs):
+        """initialisation
+
+        Args:
+            phi (float): implanted particle flux
+            R_p (float): implantation depth
+            K_0 (float): Recombination coefficient pre-exponential factor
+            E_K (float): Recombination energy
+            D_0 (float): Diffusion coefficient pre-exponential factor
+            E_D (float): Diffusion energy
+            T (fenics.Function(), fenics.Expression()): Temperature
+        """
+        super().__init__(kwargs)
+        self._phi = phi
+        self._R_p = R_p
+
+        self._D_0 = D_0
+        self._E_D = E_D
+        self._K_0 = K_0
+        self._E_K = E_K
+
+        self._T = T
+
+    def eval(self, value, x):
+        D = self._D_0*exp(-self._E_D/FESTIM.k_B/self._T(x))
+        val = self._phi*self._R_p/D
+        if self._K_0 is not None:
+            K = self._K_0*exp(-self._E_K/FESTIM.k_B/self._T(x))
+            val += (self._phi/K)**0.5
+        value[0] = val
+
+    def value_shape(self):
+        return ()
+
+
 def apply_boundary_conditions(parameters, V,
                               markers, T):
     """Create a list of DirichletBCs.
@@ -161,6 +202,14 @@ def apply_boundary_conditions(parameters, V,
             print("WARNING: solubility BC. \
                 If temperature is type solve_transient\
                      initial temperature will be considered.")
+        elif type_BC == "dc_recomb":
+            phi = BC["implanted_flux"]
+            R_p = BC["implantation_depth"]
+            D_0, E_D = BC["D_0"], BC["E_D"]
+            K_0, E_K = None, None
+            if "K_0" in BC.keys() and "E_K" in BC.keys():
+                K_0, E_K = BC["K_0"], BC["E_K"]
+            value_BC = BoundaryConditionRecomb(phi, R_p, K_0, E_K, D_0, E_D, T)
 
         if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
            BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
