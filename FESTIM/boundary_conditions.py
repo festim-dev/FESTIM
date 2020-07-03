@@ -166,10 +166,10 @@ class BoundaryConditionRecomb(UserExpression):
 
     def eval(self, value, x):
         D = self._D_0*exp(-self._E_D/FESTIM.k_B/self._T(x))
-        val = self._phi*self._R_p/D
-        if self._K_0 is not None:
+        val = self._phi(x)*self._R_p(x)/D
+        if self._K_0 is not None:  # non-instantaneous recomb
             K = self._K_0*exp(-self._E_K/FESTIM.k_B/self._T(x))
-            val += (self._phi/K)**0.5
+            val += (self._phi(x)/K)**0.5
         value[0] = val
 
     def value_shape(self):
@@ -218,12 +218,19 @@ def apply_boundary_conditions(parameters, V,
                 If temperature is type solve_transient\
                      initial temperature will be considered.")
         elif type_BC == "dc_recomb":
-            phi = BC["implanted_flux"]
-            R_p = BC["implantation_depth"]
+            # Create 2 Expressions for phi and R_p
+            phi = Expression(sp.printing.ccode(BC["implanted_flux"]),
+                             t=0,
+                             degree=1)
+            R_p = Expression(sp.printing.ccode(BC["implantation_depth"]),
+                             t=0,
+                             degree=1)
+            expressions.append(phi)  # add to the expressions to be updated
+            expressions.append(R_p)
             D_0, E_D = BC["D_0"], BC["E_D"]
-            K_0, E_K = None, None
+            K_0, E_K = None, None  # instantaneous recomb
             if "K_0" in BC.keys() and "E_K" in BC.keys():
-                K_0, E_K = BC["K_0"], BC["E_K"]
+                K_0, E_K = BC["K_0"], BC["E_K"]  # non-instantaneous recomb
             value_BC = BoundaryConditionRecomb(phi, R_p, K_0, E_K, D_0, E_D, T)
 
         if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
@@ -243,14 +250,17 @@ def apply_boundary_conditions(parameters, V,
                 if "S_0" in mat.keys():
                     conservation_chemic_pot = True
             if component == 0 and conservation_chemic_pot is True:
+                # Store the non modified BC to be updated
+                expressions.append(value_BC)
+                # create modified BC based on solubility
                 value_BC = BoundaryConditionTheta(
                     value_BC, volume_markers.mesh(), parameters["materials"],
                     volume_markers, T)
             expressions.append(value_BC)
-            if type(BC['surfaces']) is not list:
-                surfaces = [BC['surfaces']]
-            else:
-                surfaces = BC['surfaces']
+
+            surfaces = BC['surfaces']
+            if type(surfaces) is not list:
+                surfaces = [surfaces]
             if V.num_sub_spaces() == 0:
                 funspace = V
             else:  # if only one component, use subspace
