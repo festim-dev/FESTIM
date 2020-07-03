@@ -183,10 +183,11 @@ def test_apply_boundary_conditions_theta():
 
     for i in range(0, 3):
         temp.t = i
-        expressions[0]._bci.t = i
+        expressions[0].t = i
+        expressions[1].t = i
 
         # Test that the expression is correct at vertices
-        expr = fenics.interpolate(expressions[0], V)
+        expr = fenics.interpolate(expressions[1], V)
         assert np.isclose(
             expr(0.25, 0.5),
             (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/temp(0.25, 0.5))))
@@ -200,7 +201,6 @@ def test_apply_boundary_conditions_theta():
         assert np.isclose(
             u(0.25, 0.5),
             (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/temp(0, 0.5))))
-
         fenics.solve(F == 0, u, bcs[1])
         assert np.isclose(
             u(0.75, 0.5),
@@ -232,8 +232,8 @@ def test_bc_recomb():
     """Test the function boundary_conditions.apply_boundary_conditions
     with bc type dc_recomb
     """
-    phi = 3
-    R_p = 5
+    phi = 3 + 10*FESTIM.t
+    R_p = 5 + FESTIM.x
     D_0 = 2
     E_D = 0.5
     K_0 = 2
@@ -263,8 +263,8 @@ def test_bc_recomb():
 
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
-    u = fenics.Function(V)
-    temp = fenics.Expression("200 + (x[0] + 1)*t", t=1, degree=1)
+    T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
+    temp = fenics.Expression(sp.printing.ccode(T_expr), t=0, degree=1)
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
     left = fenics.CompiledSubDomain('x[0] < 0.0001')
@@ -275,36 +275,32 @@ def test_bc_recomb():
     bcs, expressions = \
         apply_boundary_conditions(
             parameters, V, [None, sm], temp)
-    for i in range(0, 3):
-        temp.t = i
-        expressions[0].t = i
+    for current_time in range(0, 3):
+        temp.t = current_time
+        expressions[0].t = current_time
+        expressions[1].t = current_time
 
-        T_left = 200 + i
-        T_right = 200 + 2*i
-        D_left = D_0*np.exp(-E_D/FESTIM.k_B/T_left)
-        D_right = D_0*np.exp(-E_D/FESTIM.k_B/T_right)
-        K_left = K_0*np.exp(-E_K/FESTIM.k_B/T_left)
-        K_right = K_0*np.exp(-E_K/FESTIM.k_B/T_right)
-        # Test that the expression is correct at vertices
-        expr = fenics.interpolate(expressions[0], V)
-
-        assert np.isclose(
-            expr(0, 0.5),
-            phi*R_p/D_left + (phi/K_left)**0.5)
-
-        assert np.isclose(
-            expr(1, 0.5),
-            phi*R_p/D_right + (phi/K_right)**0.5)
+        for x_ in [0, 1]:
+            T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
+            D = D_0*np.exp(-E_D/FESTIM.k_B/T)
+            K = K_0*np.exp(-E_K/FESTIM.k_B/T)
+            # Test that the expression is correct at vertices
+            val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
+            val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
+            assert np.isclose(
+                expressions[2](x_, 0.5),
+                float(val_phi*val_R_p/D +
+                      (val_phi/K)**0.5))
 
 
-def test_bc_recomb():
+def test_bc_recomb_instant_recomb():
     """Test the function boundary_conditions.apply_boundary_conditions
     with bc type dc_recomb (with instantaneous recombination)
     """
-    phi = 3
-    R_p = 5
-    D_0 = 2
-    E_D = 0.5
+    phi = 3 + 10*FESTIM.t
+    R_p = 5 + FESTIM.x
+    D_0 = 200
+    E_D = 0.25
     parameters = {
         "materials": [
             {
@@ -328,7 +324,8 @@ def test_bc_recomb():
     # Set up
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
-    temp = fenics.Expression("200 + (x[0] + 1)*t", t=1, degree=1)
+    T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
+    temp = fenics.Expression(sp.printing.ccode(T_expr), t=0, degree=1)
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
     left = fenics.CompiledSubDomain('x[0] < 0.0001')
@@ -339,24 +336,20 @@ def test_bc_recomb():
     bcs, expressions = \
         apply_boundary_conditions(
             parameters, V, [None, sm], temp)
-    for i in range(0, 3):
-        temp.t = i
-        expressions[0].t = i
+    for current_time in range(0, 3):
+        temp.t = current_time
+        expressions[0].t = current_time
+        expressions[1].t = current_time
 
-        T_left = 200 + i
-        T_right = 200 + 2*i
-        D_left = D_0*np.exp(-E_D/FESTIM.k_B/T_left)
-        D_right = D_0*np.exp(-E_D/FESTIM.k_B/T_right)
-        # Test that the expression is correct at vertices
-        expr = fenics.interpolate(expressions[0], V)
-
-        assert np.isclose(
-            expr(0, 0.5),
-            phi*R_p/D_left)
-
-        assert np.isclose(
-            expr(1, 0.5),
-            phi*R_p/D_right)
+        for x_ in [0, 1]:
+            T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
+            D = D_0*np.exp(-E_D/FESTIM.k_B/T)
+            # Test that the expression is correct at vertices
+            val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
+            val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
+            assert np.isclose(
+                expressions[2](x_, 0.5),
+                float(val_phi*val_R_p/D))
 
 
 def test_bc_recomb_chemical_pot():
@@ -428,7 +421,8 @@ def test_bc_recomb_chemical_pot():
 
     for i in range(0, 3):
         temp.t = i
-        expressions[0]._bci.t = i
+        expressions[0].t = i
+        expressions[1].t = i
 
         T_left = 200 + i
         T_right = 200 + 2*i
