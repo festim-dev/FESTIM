@@ -1,4 +1,3 @@
-# from FESTIM import *
 import FESTIM
 from fenics import *
 import sympy as sp
@@ -99,7 +98,22 @@ def apply_fluxes(parameters, u, v, ds, T, S=None):
 
 
 class BoundaryConditionTheta(UserExpression):
+    """Creates an Expression for converting dirichlet bcs in the case
+    of chemical potential conservation
+
+    Args:
+        UserExpression (fenics.UserExpression):
+    """
     def __init__(self, bci, mesh, materials, vm, T, **kwargs):
+        """initialisation
+
+        Args:
+            bci (fenics.Expression): value of BC
+            mesh (fenics.mesh): mesh
+            materials (list): contains dicts for materials
+            vm (fenics.MeshFunction): volume markers
+            T (fenics.Function): Temperature
+        """
         super().__init__(kwargs)
         self._bci = bci
         self._mesh = mesh
@@ -120,19 +134,61 @@ class BoundaryConditionTheta(UserExpression):
         return ()
 
 
+class BoundaryConditionRecomb(UserExpression):
+    """Creates an Expression for converting implanted flux in surface
+    concentration
+
+    Args:
+        UserExpression (fenics.UserExpression): value of surface concentration
+    """
+    def __init__(self, phi, R_p, K_0, E_K, D_0, E_D, T, **kwargs):
+        """initialisation
+
+        Args:
+            phi (float): implanted particle flux
+            R_p (float): implantation depth
+            K_0 (float): Recombination coefficient pre-exponential factor
+            E_K (float): Recombination energy
+            D_0 (float): Diffusion coefficient pre-exponential factor
+            E_D (float): Diffusion energy
+            T (fenics.Function(), fenics.Expression()): Temperature
+        """
+        super().__init__(kwargs)
+        self._phi = phi
+        self._R_p = R_p
+
+        self._D_0 = D_0
+        self._E_D = E_D
+        self._K_0 = K_0
+        self._E_K = E_K
+
+        self._T = T
+
+    def eval(self, value, x):
+        D = self._D_0*exp(-self._E_D/FESTIM.k_B/self._T(x))
+        val = self._phi(x)*self._R_p(x)/D
+        if self._K_0 is not None:  # non-instantaneous recomb
+            K = self._K_0*exp(-self._E_K/FESTIM.k_B/self._T(x))
+            val += (self._phi(x)/K)**0.5
+        value[0] = val
+
+    def value_shape(self):
+        return ()
+
+
 def apply_boundary_conditions(parameters, V,
                               markers, T):
     """Create a list of DirichletBCs.
 
     Arguments:
         parameters {dict} -- materials and bcs parameters
-        V {[type]} -- functionspace for concentrations
-        markers {[type]} -- contains fenics.MeshFunction() ([volume, surface])
+        V {fenics.FunctionSpace()} -- functionspace for concentrations
+        markers {list} -- contains fenics.MeshFunction() ([volume, surface])
         T {fenics.Expression(), fenics.Function()} -- temperature
 
     Raises:
-        KeyError: [description]
-        NameError: [description]
+        KeyError: Raised if the type key of bc is missing
+        NameError: Raised if type is unknown
 
     Returns:
         list -- contains fenics DirichletBC
@@ -161,6 +217,21 @@ def apply_boundary_conditions(parameters, V,
             print("WARNING: solubility BC. \
                 If temperature is type solve_transient\
                      initial temperature will be considered.")
+        elif type_BC == "dc_imp":
+            # Create 2 Expressions for phi and R_p
+            phi = Expression(sp.printing.ccode(BC["implanted_flux"]),
+                             t=0,
+                             degree=1)
+            R_p = Expression(sp.printing.ccode(BC["implantation_depth"]),
+                             t=0,
+                             degree=1)
+            expressions.append(phi)  # add to the expressions to be updated
+            expressions.append(R_p)
+            D_0, E_D = BC["D_0"], BC["E_D"]
+            K_0, E_K = None, None  # instantaneous recomb
+            if "K_0" in BC.keys() and "E_K" in BC.keys():
+                K_0, E_K = BC["K_0"], BC["E_K"]  # non-instantaneous recomb
+            value_BC = BoundaryConditionRecomb(phi, R_p, K_0, E_K, D_0, E_D, T)
 
         if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
            BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
@@ -179,14 +250,17 @@ def apply_boundary_conditions(parameters, V,
                 if "S_0" in mat.keys():
                     conservation_chemic_pot = True
             if component == 0 and conservation_chemic_pot is True:
+                # Store the non modified BC to be updated
+                expressions.append(value_BC)
+                # create modified BC based on solubility
                 value_BC = BoundaryConditionTheta(
                     value_BC, volume_markers.mesh(), parameters["materials"],
                     volume_markers, T)
             expressions.append(value_BC)
-            if type(BC['surfaces']) is not list:
-                surfaces = [BC['surfaces']]
-            else:
-                surfaces = BC['surfaces']
+
+            surfaces = BC['surfaces']
+            if type(surfaces) is not list:
+                surfaces = [surfaces]
             if V.num_sub_spaces() == 0:
                 funspace = V
             else:  # if only one component, use subspace
