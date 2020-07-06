@@ -230,7 +230,7 @@ def test_apply_boundary_conditions_fail():
 
 def test_bc_recomb():
     """Test the function boundary_conditions.apply_boundary_conditions
-    with bc type dc_recomb
+    with bc type dc_imp
     """
     phi = 3 + 10*FESTIM.t
     R_p = 5 + FESTIM.x
@@ -249,7 +249,7 @@ def test_bc_recomb():
         ],
         "boundary_conditions": [
             {
-                "type": "dc_recomb",
+                "type": "dc_imp",
                 "implanted_flux": phi,
                 "implantation_depth": R_p,
                 "D_0": D_0,
@@ -295,7 +295,7 @@ def test_bc_recomb():
 
 def test_bc_recomb_instant_recomb():
     """Test the function boundary_conditions.apply_boundary_conditions
-    with bc type dc_recomb (with instantaneous recombination)
+    with bc type dc_imp (with instantaneous recombination)
     """
     phi = 3 + 10*FESTIM.t
     R_p = 5 + FESTIM.x
@@ -312,7 +312,7 @@ def test_bc_recomb_instant_recomb():
         ],
         "boundary_conditions": [
             {
-                "type": "dc_recomb",
+                "type": "dc_imp",
                 "implanted_flux": phi,
                 "implantation_depth": R_p,
                 "D_0": D_0,
@@ -354,7 +354,7 @@ def test_bc_recomb_instant_recomb():
 
 def test_bc_recomb_chemical_pot():
     """Tests the function boundary_conditions.apply_boundary_conditions()
-    with type dc_recomb and conservation of chemical potential
+    with type dc_imp and conservation of chemical potential
     """
     phi = 3
     R_p = 5
@@ -381,7 +381,7 @@ def test_bc_recomb_chemical_pot():
         ],
         "boundary_conditions": [
             {
-                "type": "dc_recomb",
+                "type": "dc_imp",
                 "implanted_flux": phi,
                 "implantation_depth": R_p,
                 "D_0": D_0,

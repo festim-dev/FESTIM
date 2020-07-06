@@ -217,7 +217,7 @@ def apply_boundary_conditions(parameters, V,
             print("WARNING: solubility BC. \
                 If temperature is type solve_transient\
                      initial temperature will be considered.")
-        elif type_BC == "dc_recomb":
+        elif type_BC == "dc_imp":
             # Create 2 Expressions for phi and R_p
             phi = Expression(sp.printing.ccode(BC["implanted_flux"]),
                              t=0,
