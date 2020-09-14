@@ -815,3 +815,84 @@ def test_run_MMS_steady_state(tmpdir):
             with h = ' + str(h)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
+
+
+def test_chemical_pot_T_solve_stationary():
+    """checks that the chemical potential conservation is well computed with
+    type solve_stationary for temperature
+    """
+    parameters = {
+        "mesh_parameters": {
+            "size": 1,
+            "initial_number_of_cells": 10,
+            "refinements": [
+            ]
+
+            },
+        "materials": [
+            {
+                "D_0": 1,
+                "E_D": 0.1,
+                "S_0": 2,
+                "E_S": 0.2,
+                "thermal_cond": 1,
+                "heat_capacity": 1,
+                "rho": 1,
+                "id": 1,
+            },
+            ],
+        "traps": [
+            ],
+        "boundary_conditions": [
+            {
+                "type": "dc",
+                "surfaces": 1,
+                "value": 1
+            },
+            ],
+        "temperature": {
+            "type": "solve_stationary",
+            "boundary_conditions": [
+                {
+                    "type": "dc",
+                    "value": 300,
+                    "surfaces": 1
+                },
+                {
+                    "type": "dc",
+                    "value": 300,
+                    "surfaces": 2
+                }
+                ],
+            "source_term": [
+            ],
+            },
+        "solving_parameters": {
+            "final_time": 100,
+            "initial_stepsize": 10,
+            "adaptive_stepsize": {
+                "stepsize_change_ratio": 1.2,
+                "t_stop": 1e8,
+                "stepsize_stop_max": 1e7,
+                "dt_min": 1e-8,
+                },
+            "newton_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 1e-10,
+                "maximum_iterations": 20,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "total_surface": [
+                    {
+                        "field": "solute",
+                        "surfaces": [2]
+                    }
+                ]
+            }
+
+        }
+    }
+    out = run(parameters)
+    assert out["derived_quantities"][-1][1] > 0.97

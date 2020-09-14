@@ -103,6 +103,7 @@ def run(parameters, log_level=40):
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
+            T_n.assign(T)
 
     # Create functions for properties
     D, thermal_cond, cp, rho, H, S =\
