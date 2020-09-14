@@ -63,7 +63,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
         if "retention" in parameters["exports"]["xdmf"]["functions"]:
-            res[-2] = compute_retention(u, W)
+            res[-2] = project(res[-2], W)
         FESTIM.export.export_xdmf(
             res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
@@ -131,26 +131,6 @@ def compute_error(parameters, t, res, mesh):
 
         tab.append(er)
     return tab
-
-
-def compute_retention(u, W):
-    """Computes retention projected on FunctionSpace W
-
-    Arguments:
-        u {fenics.Function()} -- concentrations function
-        W {fenics.FunctionSpace()} -- function space onto which the retention
-            is projected
-
-    Returns:
-        fenics.Function() -- retention field
-    """
-    res = list(split(u))
-    if not res:  # if u is non-vector
-        res = [u]
-    retention = project(res[0])
-    for i in range(1, len(res)):
-        retention = project(retention + res[i], W)
-    return retention
 
 
 class ArheniusCoeff(UserExpression):
