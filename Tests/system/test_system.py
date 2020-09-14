@@ -824,7 +824,7 @@ def test_chemical_pot_T_solve_stationary():
     parameters = {
         "mesh_parameters": {
             "size": 1,
-            "initial_number_of_cells": 100,
+            "initial_number_of_cells": 10,
             "refinements": [
             ]
 
