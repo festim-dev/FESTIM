@@ -62,8 +62,6 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
-        if "retention" in parameters["exports"]["xdmf"]["functions"]:
-            res[-2] = compute_retention(u, W)
         FESTIM.export.export_xdmf(
             res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
