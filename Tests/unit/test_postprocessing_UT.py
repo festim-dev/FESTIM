@@ -1,7 +1,7 @@
 import FESTIM
 from FESTIM.export import define_xdmf_files, export_profiles, export_xdmf
-from FESTIM.post_processing import derived_quantities, create_properties,\
-    header_derived_quantities
+from FESTIM.post_processing import run_post_processing, derived_quantities, \
+    create_properties, header_derived_quantities
 import fenics
 import pytest
 import sympy as sp
@@ -629,3 +629,37 @@ def test_header_derived_quantities_wrong_key():
     with pytest.raises(ValueError, match=r'field'):
         tab = header_derived_quantities(
             parameters_field)
+
+
+def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
+    """this test checks that the computation of retention is correctly made
+    with conservation of chemical pot
+    """
+    # build
+    d = tmpdir.mkdir("out")
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    val_theta = 2
+    theta_out = fenics.interpolate(fenics.Constant(val_theta), V)
+    files = [fenics.XDMFFile(str(Path(d)) + "/retention.xdmf")]
+    exports = {
+            "xdmf": {
+                "functions": ['retention'],
+                "labels": ['retention'],
+                "folder": str(Path(d))
+            }
+        }
+    val_S = 3  # solubility
+    S = fenics.Constant(val_S)
+
+    # run
+    run_post_processing(
+        {"exports": exports}, True, theta_out, T=fenics.Constant(500),
+        markers=None, W=V, V_DG1=None, t=0, dt=1, files=files, append=False,
+        properties=[None]*5 + [S], derived_quantities_global=[])
+
+    # check
+    u_in = fenics.Function(V)
+    files[0].read_checkpoint(u_in, "retention", -1)
+    for i in range(10):
+        assert np.isclose(u_in(i/10), val_theta*val_S)

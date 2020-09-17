@@ -26,7 +26,7 @@ def update_expressions(expressions, t):
 
 
 bc_types = {
-    "dc": ["dc", "solubility", "table"],
+    "dc": ["dc", "solubility", "dc_imp"],
     "neumann": ["flux"],
     "robin": ["recomb"]
 }
@@ -129,7 +129,8 @@ parameters = {
             "recomb": "Recombination flux",
             "convective_flux": "Convective exchange (for heat transfer)",
             "solubility": "Dirichlet boundary condition based on solubility and pressure c=S*P^0.5",
-            "table": "Dirichlet boundary condition based on interpolated values from 2D table (t, c(t))."
+            "table": "Dirichlet boundary condition based on interpolated values from 2D table (t, c(t)).",
+            "dc_imp": "Dirichlet boundary condition based on triangular model for volumetric implantation"
             },
         "surfaces": {
             "description": "List of surfaces on which the boundary condition is applied",

@@ -103,6 +103,7 @@ def run(parameters, log_level=40):
         if parameters["temperature"]["type"] == "solve_stationary":
             print("Solving stationary heat equation")
             solve(FT == 0, T, bcs_T)
+            T_n.assign(T)
 
     # Create functions for properties
     D, thermal_cond, cp, rho, H, S =\
@@ -193,9 +194,7 @@ def run(parameters, log_level=40):
                 thermal_cond._T = T
             if S is not None:
                 S._T = T
-                for expr in expressions:
-                    if "_bci" in expr.__dict__.keys():
-                        expr._bci.t = t
+
             # Display time
             print(str(round(t/final_time*100, 2)) + ' %        ' +
                   str(round(t, 1)) + ' s' +
