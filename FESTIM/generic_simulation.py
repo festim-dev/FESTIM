@@ -143,10 +143,7 @@ class Simulation():
 
     def define_variational_problem_H_transport(self):
         print('Defining variational problem')
-        self.F, expressions_F = FESTIM.formulations.formulation(
-            self.parameters, self.extrinsic_traps,
-            self.u, self.v,
-            self.u_n, self.dt, self.dx, self.T, self.T_n, transient=self.transient)
+        self.F, expressions_F = FESTIM.formulations.formulation(self)
         self.expressions += expressions_F
 
         # Boundary conditions
@@ -165,9 +162,7 @@ class Simulation():
         # Define variational problem for extrinsic traps
         if self.transient:
             self.extrinsic_formulations, expressions_extrinsic = \
-                FESTIM.formulations.formulation_extrinsic_traps(
-                    self.parameters["traps"], self.extrinsic_traps, self.testfunctions_traps,
-                    self.previous_solutions_traps, self.dt)
+                FESTIM.formulations.formulation_extrinsic_traps(self)
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
