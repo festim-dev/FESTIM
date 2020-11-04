@@ -1,10 +1,9 @@
-from fenics import *
+from fenics import split, grad, dot, Expression, exp, dx
 import sympy as sp
 import FESTIM
 
 
-def formulation(parameters, extrinsic_traps, u, v,
-                u_n, dt, dx, T, T_n=None, transient=True):
+def formulation(simulation):
     """Creates formulation for trapping MRE model
 
     Arguments:
@@ -26,7 +25,12 @@ def formulation(parameters, extrinsic_traps, u, v,
         fenics.Form() -- global formulation
         list -- contains fenics.Expression() to be updated
     """
-
+    u, u_n = simulation.u, simulation.u_n
+    v = simulation.v
+    parameters = simulation.parameters
+    T, T_n = simulation.T, simulation.T_n
+    dt = simulation.dt
+    dx = simulation.dx
     k_B = FESTIM.k_B  # Boltzmann constant
     expressions = []
     F = 0
@@ -54,7 +58,7 @@ def formulation(parameters, extrinsic_traps, u, v,
             c_0_n = previous_solutions[0]*S_0*exp(-E_S/k_B/T_n)
 
         subdomain = material['id']
-        if transient:
+        if simulation.transient:
             F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
         F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                  grad(testfunctions[0]))*dx(subdomain)
@@ -88,7 +92,7 @@ def formulation(parameters, extrinsic_traps, u, v,
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
         if 'type' in trap.keys() and trap['type'] == 'extrinsic':
-            trap_density = extrinsic_traps[j]
+            trap_density = simulation.extrinsic_traps[j]
             j += 1
         else:
             trap_density = sp.printing.ccode(trap['density'])
@@ -101,7 +105,7 @@ def formulation(parameters, extrinsic_traps, u, v,
         p_0 = trap['p_0']
 
         material = trap['materials']
-        if transient:
+        if simulation.transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[i]*dx
         if type(material) is not list:
@@ -127,7 +131,7 @@ def formulation(parameters, extrinsic_traps, u, v,
             F += -source*testfunctions[i]*dx
             expressions.append(source)
 
-        if transient:
+        if simulation.transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[0]*dx
         i += 1
