@@ -40,11 +40,7 @@ def apply_fluxes(simulation):
     on parameters in boundary_conditions
 
     Arguments:
-        parameters {dict} -- contains materials and BCs parameters
-        u {fenics.Function} -- concentrations Function
-        v {fenics.TestFunction} -- concentrations TestFunction
-        ds {fenics.Measurement} -- measurement ds
-        T {fenics.Expression, fenics.Function} -- temperature
+
 
     Keyword Arguments:
         S {fenics.UserExpression} -- solubility (default: {None})
@@ -183,8 +179,7 @@ class BoundaryConditionRecomb(UserExpression):
         return ()
 
 
-def apply_boundary_conditions(parameters, V,
-                              markers, T):
+def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
     Arguments:
@@ -201,12 +196,16 @@ def apply_boundary_conditions(parameters, V,
         list -- contains fenics DirichletBC
         list -- contains the fenics.Expression() to be updated
     """
+    parameters = simulation.parameters
+    V = simulation.V
+    boundary_conditions = parameters["boundary_conditions"]
+    volume_markers = simulation.volume_markers
+    surface_markers = simulation.surface_markers
+    T = simulation.T
 
     bcs = list()
     expressions = list()
-    boundary_conditions = parameters["boundary_conditions"]
-    volume_markers = markers[0]
-    surface_markers = markers[1]
+
     for BC in boundary_conditions:
         if "type" in BC.keys():
             type_BC = BC["type"]

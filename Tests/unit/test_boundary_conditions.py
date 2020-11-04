@@ -182,9 +182,13 @@ def test_apply_boundary_conditions_theta():
     left.mark(sm, 1)
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [vm, sm], temp)
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = vm
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
@@ -221,18 +225,18 @@ def test_apply_boundary_conditions_fail():
         }
     ]
     mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
-    T = fenics.Expression("300", degree=0)
-    markers = ["foo", "foo"]  # not needed here since only failing is testing
+
+    my_sim = FESTIM.Simulation({"boundary_conditions": [{}]})
+    my_sim.V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    my_sim.volume_markers = "foo"
+    my_sim.surface_markers = "foo"
+    my_sim.T = fenics.Expression("300", degree=0)
     with pytest.raises(KeyError, match=r'Missing boundary condition type key'):
-        apply_boundary_conditions(
-            {"boundary_conditions": [{}]}, V,
-            markers, T)
+        bcs, expressions = apply_boundary_conditions(my_sim)
 
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        apply_boundary_conditions(
-            {"boundary_conditions": boundary_conditions}, V,
-            markers, T)
+        my_sim.parameters["boundary_conditions"] = boundary_conditions
+        bcs, expressions = apply_boundary_conditions(my_sim)
 
 
 def test_bc_recomb():
@@ -279,9 +283,12 @@ def test_bc_recomb():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [None, sm], temp)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = None
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
     for current_time in range(0, 3):
         temp.t = current_time
         expressions[0].t = current_time
@@ -340,9 +347,13 @@ def test_bc_recomb_instant_recomb():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [None, sm], temp)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = None
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
+
     for current_time in range(0, 3):
         temp.t = current_time
         expressions[0].t = current_time
@@ -417,9 +428,12 @@ def test_bc_recomb_chemical_pot():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [vm, sm], temp)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = vm
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
 
     # Set up formulation
     u = fenics.Function(V)
