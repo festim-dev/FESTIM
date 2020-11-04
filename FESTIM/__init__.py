@@ -12,6 +12,7 @@ from . import export
 from . import post_processing
 
 from . import generic_simulation
+from .generic_simulation import Simulation
 
 import sympy as sp
 x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
