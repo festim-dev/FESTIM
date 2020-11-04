@@ -167,9 +167,6 @@ def run(parameters, log_level=40):
         files = FESTIM.export.define_xdmf_files(parameters["exports"])
 
     derived_quantities_global = []
-    if "derived_quantities" in parameters["exports"].keys():
-        derived_quantities_global = \
-            [FESTIM.post_processing.header_derived_quantities(parameters)]
 
     t = 0  # Initialising time to 0s
     timer = Timer()  # start timer

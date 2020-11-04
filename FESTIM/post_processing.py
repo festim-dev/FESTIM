@@ -31,6 +31,10 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         list -- updated derived quantities list
         fenics.Constant() -- updated stepsize
     """
+    if not append:
+        if "derived_quantities" in parameters["exports"].keys():
+            derived_quantities_global = \
+                [FESTIM.post_processing.header_derived_quantities(parameters)]
     D, thermal_cond, cp, rho, H, S = properties
 
     if u.function_space().num_sub_spaces() == 0:
