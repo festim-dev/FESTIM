@@ -60,8 +60,12 @@ def test_fluxes_chemical_pot():
 
     S = S_0*fenics.exp(-E_S/k_B/T)
     Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
-    F, expressions = apply_fluxes(
-        parameters, u, v, fenics.ds, T, S)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.u, my_sim.v = u, v
+    my_sim.ds = fenics.ds
+    my_sim.T = T
+    my_sim.S = S
+    F, expressions = apply_fluxes(my_sim)
     expected_form = 0
     expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(1)
@@ -101,9 +105,14 @@ def test_fluxes():
     testfunctions = list(fenics.split(v))
     sol = solutions[0]
     test_sol = testfunctions[0]
-    F, expressions = apply_fluxes(
-        {"boundary_conditions": boundary_conditions}, u,
-        v, fenics.ds, T)
+
+    my_sim = FESTIM.Simulation({"boundary_conditions": boundary_conditions})
+    my_sim.u, my_sim.v = u, v
+    my_sim.ds = fenics.ds
+    my_sim.T = T
+    my_sim.S = None
+    F, expressions = apply_fluxes(my_sim)
+
     expected_form = 0
     expected_form += -test_sol * (-Kr_0 * fenics.exp(-E_Kr/k_B/T) *
                                   sol**order)*fenics.ds(1)
@@ -114,10 +123,8 @@ def test_fluxes():
 
     # Test error raise
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        boundary_conditions[0].update({"type": "foo"})
-        apply_fluxes(
-            {"boundary_conditions": boundary_conditions}, u,
-            v, fenics.ds, T)
+        my_sim.parameters["boundary_conditions"][0].update({"type": "foo"})
+        apply_fluxes(my_sim)
 
 
 def test_apply_boundary_conditions_theta():

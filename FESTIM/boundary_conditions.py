@@ -35,7 +35,7 @@ def define_dirichlet_bcs_T(simulation):
     return bcs, expressions
 
 
-def apply_fluxes(parameters, u, v, ds, T, S=None):
+def apply_fluxes(simulation):
     """Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
 
@@ -56,6 +56,12 @@ def apply_fluxes(parameters, u, v, ds, T, S=None):
         fenics.Form() -- formulation for BCs
         list -- contains all the fenics.Expression() to be updated
     """
+    parameters = simulation.parameters
+    u = simulation.u
+    v = simulation.v
+    ds = simulation.ds
+    T = simulation.T
+    S = simulation.S
 
     expressions = []
     solutions = split(u)
