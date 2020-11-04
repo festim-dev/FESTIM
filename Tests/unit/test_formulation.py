@@ -823,9 +823,12 @@ def test_formulation_extrinsic_traps():
     extrinsic_traps_n = [fenics.Function(W)]
     test_functions = [fenics.TestFunction(W)]
 
-    forms, expressions = formulation_extrinsic_traps(
-        parameters["traps"], extrinsic_traps,
-        test_functions, extrinsic_traps_n,  dt)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.dt = dt
+    my_sim.extrinsic_traps = extrinsic_traps
+    my_sim.previous_solutions_traps = extrinsic_traps_n
+    my_sim.testfunctions_traps = test_functions
+    forms, expressions = formulation_extrinsic_traps(my_sim)
 
     phi_0, f_a, f_b = expressions
     expected_form = ((extrinsic_traps[0] - extrinsic_traps_n[0])/dt) * \

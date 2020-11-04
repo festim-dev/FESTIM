@@ -7,19 +7,7 @@ def formulation(simulation):
     """Creates formulation for trapping MRE model
 
     Arguments:
-        parameters {dict} -- contains simulation parameters
-        extrinsic_traps {list} -- contains fenics.Function for extrinsic traps
-        u {fenics.Function} -- concentrations Function
-        v {fenics.TestFunction} -- concentrations TestFunction
-        u_n {fenics.Function} -- concentrations Function (previous step)
-        dt {fenics.Constan} -- stepsize
-        dx {fenics.Measure} -- dx measure
-        T {fenics.Expression, fenics.Function} -- temperature
 
-    Keyword Arguments:
-        T_n {fenics.Function} -- previous step temperature needed if chemical
-            potential conservation is set (default: {None})
-        transient {bool} -- True if simulation is transient, False else (default: {True})
 
     Returns:
         fenics.Form() -- global formulation
@@ -138,24 +126,23 @@ def formulation(simulation):
     return F, expressions
 
 
-def formulation_extrinsic_traps(traps, solutions, testfunctions,
-                                previous_solutions, dt):
+def formulation_extrinsic_traps(simulation):
     """Creates a list that contains formulations to be solved during
     time stepping.
 
     Arguments:
-        traps {list} -- contains dicts containing trap parameters
-        solutions {list} -- contains fenics.Function for traps densities
-        testfunctions {list} -- contains fenics.TestFunction for traps
-            densities
-        previous_solutions {list} -- contains fenics.Function for traps
-            densities (previous step)
-        dt {fenics.Constant} -- stepsize
+
 
     Returns:
         list -- contains fenics.Form to be solved for extrinsic trap density
         list -- contains fenics.Expression to be updated
     """
+    traps = simulation.parameters["traps"]
+    solutions = simulation.extrinsic_traps
+    previous_solutions = simulation.previous_solutions_traps
+    testfunctions = simulation.testfunctions_traps
+    dt = simulation.dt
+
     formulations = []
     expressions = []
     i = 0
