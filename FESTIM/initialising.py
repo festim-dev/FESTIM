@@ -3,7 +3,7 @@ import sympy as sp
 import FESTIM
 
 
-def initialise_solutions(parameters, V, S=None):
+def initialise_solutions(simulation):
     """Returns the prievious solutions Function() objects for formulation
     and initialise them (0 by default)
 
@@ -22,8 +22,13 @@ def initialise_solutions(parameters, V, S=None):
         fenics.Function -- previous solution
         list -- components of the previous solution
     """
-
+    parameters = simulation.parameters
+    if hasattr(simulation, "S"):
+        S = simulation.S
+    else:
+        S = None
     print('Defining initial values')
+    V = simulation.V
     u_n = Function(V)
     components = list(split(u_n))
     if "initial_conditions" in parameters.keys():

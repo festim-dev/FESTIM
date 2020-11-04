@@ -47,7 +47,9 @@ def test_initialisation_from_xdmf(tmpdir):
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    w = initialise_solutions(my_sim)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -74,8 +76,10 @@ def test_fail_initialisation_from_xdmf():
             },
         ],
     }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
     with pytest.raises(KeyError, match=r'time_step'):
-        initialise_solutions(parameters, V)
+        w = initialise_solutions(my_sim)
 
     parameters = {
         "initial_conditions": [
@@ -91,8 +95,10 @@ def test_fail_initialisation_from_xdmf():
             },
         ],
     }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
     with pytest.raises(KeyError, match=r'label'):
-        initialise_solutions(parameters, V)
+        w = initialise_solutions(my_sim)
 
 
 def test_initialisation_with_expression():
@@ -123,7 +129,9 @@ def test_initialisation_with_expression():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    w = initialise_solutions(my_sim)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -155,7 +163,9 @@ def test_initialisation_with_expression_chemical_pot():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    w = initialise_solutions(my_sim)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -168,8 +178,9 @@ def test_initialisation_default():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-
-    w = initialise_solutions({"initial_conditions": []}, V)
+    my_sim = FESTIM.Simulation({"initial_conditions": []})
+    my_sim.V = V
+    w = initialise_solutions(my_sim)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -192,7 +203,9 @@ def test_initialisation_solute_only():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    w = initialise_solutions(my_sim)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -216,7 +229,9 @@ def test_initialisation_no_component():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    w = initialise_solutions(my_sim)
     assert fenics.errornorm(u, w) == 0
 
 
@@ -240,5 +255,7 @@ def test_initialisation_duplicates():
             },
         ],
     }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
     with pytest.raises(ValueError, match=r'Duplicate'):
-        initialise_solutions(parameters, V)
+        initialise_solutions(my_sim)

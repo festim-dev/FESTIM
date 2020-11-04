@@ -4,7 +4,7 @@ import sympy as sp
 
 
 class Simulation():
-    def __init__(self, parameters, log_level):
+    def __init__(self, parameters, log_level=40):
         self.parameters = parameters
         self.log_level = log_level
 
@@ -130,8 +130,7 @@ class Simulation():
         else:
             initial_conditions = []
         self.u_n = \
-            FESTIM.initialising.initialise_solutions(
-                self.parameters, self.V, self.S)
+            FESTIM.initialising.initialise_solutions(self)
 
     def initialise_extrinsic_traps(self):
         self.extrinsic_traps = [Function(self.W) for d in self.parameters["traps"]

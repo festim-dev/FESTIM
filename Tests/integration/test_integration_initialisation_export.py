@@ -43,7 +43,9 @@ def test_export_and_initialise_xdmf(tmpdir):
             },
         ],
     }
-    assert initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    assert initialise_solutions(my_sim)
 
 
 def test_initialise_and_export_xdmf(tmpdir):
@@ -72,7 +74,9 @@ def test_initialise_and_export_xdmf(tmpdir):
             },
         ],
     }
-    v = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    v = initialise_solutions(my_sim)
 
     # Write
     exports = {
