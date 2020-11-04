@@ -4,38 +4,34 @@ import numpy as np
 import FESTIM
 
 
-def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
-                        files, append, properties,
-                        derived_quantities_global):
+def run_post_processing(simulation):
     """Main post processing FESTIM function.
 
     Arguments:
-        parameters {dict} -- main parameters dict
-        transient {bool} -- True if the simulation is transient, False else
-        u {fenics.Function()} -- function for concentrations
-        T {fenics.Expression() or fenics.Function()} -- temperature
-        markers {list} -- contains volume markers and surface markers
-        W {fenics.FunctionSpace()} -- function space for T
-        V_DG1 {fenics.FunctionSpace()} -- function space for mobile
-            concentration (chemical pot)
-        t {float} -- time
-        dt {fenics.Constant()} -- stepsize
-        files {list} -- list of fenics.XDMFFiles()
-        append {bool} -- if True will append to existing XDMFFiles, will
-            overwrite otherwise
-        properties {list} -- contains properties
-        derived_quantities_global {list} -- contains the computed derived
-            quantities
 
     Returns:
         list -- updated derived quantities list
         fenics.Constant() -- updated stepsize
     """
+    parameters = simulation.parameters
+    transient = simulation.transient
+    u = simulation.u
+    T = simulation.T
+    markers = [simulation.volume_markers, simulation.surface_markers]
+    V_DG1, V_CG1 = simulation.V_DG1, simulation.V_CG1
+    t = simulation.t
+    dt = simulation.dt
+    files = simulation.files
+    append = simulation.append
+    D, thermal_cond, cp, rho, H, S = \
+        simulation.D, simulation.thermal_cond, simulation.cp, simulation.rho, \
+        simulation.H, simulation.S
+    derived_quantities_global = simulation.derived_quantities_global
+
     if not append:
         if "derived_quantities" in parameters["exports"].keys():
             derived_quantities_global = \
                 [FESTIM.post_processing.header_derived_quantities(parameters)]
-    D, thermal_cond, cp, rho, H, S = properties
 
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
@@ -50,7 +46,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
     res.append(retention)
 
     if isinstance(T, function.expression.Expression):
-        res.append(interpolate(T, W))
+        res.append(interpolate(T, V_CG1))
     else:
         res.append(T)
 
@@ -67,12 +63,12 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
         if "retention" in parameters["exports"]["xdmf"]["functions"]:
-            res[-2] = project(res[-2], W)
+            res[-2] = project(res[-2], V_CG1)
         FESTIM.export.export_xdmf(
             res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
-            res, parameters["exports"], t, dt, W)
+            res, parameters["exports"], t, dt, V_CG1)
 
     return derived_quantities_global, dt
 

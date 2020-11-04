@@ -15,7 +15,7 @@ def define_dirichlet_bcs_T(simulation):
         list -- contains fenics.Expression to be updated
     """
     parameters = simulation.parameters
-    V = simulation.W
+    V = simulation.V_CG1
     boundaries = simulation.surface_markers
 
     bcs = []

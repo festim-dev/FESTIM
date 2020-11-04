@@ -653,10 +653,21 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     S = fenics.Constant(val_S)
 
     # run
-    run_post_processing(
-        {"exports": exports}, True, theta_out, T=fenics.Constant(500),
-        markers=None, W=V, V_DG1=None, t=0, dt=1, files=files, append=False,
-        properties=[None]*5 + [S], derived_quantities_global=[])
+    my_sim = FESTIM.Simulation({"exports": exports})
+    my_sim.transient = True
+    my_sim.u = theta_out
+    my_sim.T = fenics.Constant(500)
+    my_sim.volume_markers, my_sim.surface_markers = None, None
+    my_sim.V_CG1, my_sim.V_DG1 = V, None
+    my_sim.t = 0
+    my_sim.dt = 1
+    my_sim.files = files
+    my_sim.append = False
+    my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
+        my_sim.H, my_sim.S = *[None]*5, S
+    my_sim.derived_quantities_global = []
+
+    run_post_processing(my_sim)
 
     # check
     u_in = fenics.Function(V)
