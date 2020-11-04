@@ -183,10 +183,7 @@ def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
     Arguments:
-        parameters {dict} -- materials and bcs parameters
-        V {fenics.FunctionSpace()} -- functionspace for concentrations
-        markers {list} -- contains fenics.MeshFunction() ([volume, surface])
-        T {fenics.Expression(), fenics.Function()} -- temperature
+
 
     Raises:
         KeyError: Raised if the type key of bc is missing
