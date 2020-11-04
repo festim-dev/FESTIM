@@ -532,9 +532,12 @@ def test_formulation_heat_transfer():
     ds = fenics.Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = fenics.Measure('dx', domain=mesh, subdomain_data=volume_markers)
     # Run function
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.transient = True
+    my_sim.T, my_sim.T_n, my_sim.vT = T, T_n, v
+    my_sim.dt, my_sim.dx, my_sim.ds = dt, dx, ds
     F, expressions = \
-        FESTIM.formulations.define_variational_problem_heat_transfers(
-            parameters, functions, [dx, ds], dt=dt)
+        FESTIM.formulations.define_variational_problem_heat_transfers(my_sim)
     Index._globalcount = 8
     source = expressions[0]
     expected_form = 5*4*(T - T_n)/dt * v * dx(1) + \

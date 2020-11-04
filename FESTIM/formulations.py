@@ -175,18 +175,10 @@ def formulation_extrinsic_traps(simulation):
     return formulations, expressions
 
 
-def define_variational_problem_heat_transfers(
-        parameters, functions, measurements, dt):
+def define_variational_problem_heat_transfers(simulation):
     """Create a variational form for heat transfer problem
 
     Arguments:
-        parameters {dict} -- contains materials and temperature parameters
-        functions {list} -- [fenics.Function, fenics.TestFunction,
-            fenics.Function] ([current solution, TestFunction,
-            previous_solution])
-        measurements {list} -- [fenics.Measurement, fenics.Measurement]
-            ([dx, ds])
-        dt {fenics.Constant} -- stepsize
 
     Raises:
         NameError: if thermal_cond is not in keys
@@ -200,10 +192,12 @@ def define_variational_problem_heat_transfers(
 
     print('Defining variational problem heat transfers')
     expressions = []
-    dx = measurements[0]
-    ds = measurements[1]
-    T = functions[0]
-    vT = functions[1]
+    parameters = simulation.parameters
+    dx = simulation.dx
+    ds = simulation.ds
+    dt = simulation.dt
+    T, T_n = simulation.T, simulation.T_n
+    vT = simulation.vT
 
     F = 0
     for mat in parameters["materials"]:
@@ -214,7 +208,6 @@ def define_variational_problem_heat_transfers(
             thermal_cond = thermal_cond(T)
         vol = mat["id"]
         if parameters["temperature"]["type"] == "solve_transient":
-            T_n = functions[2]
             if "heat_capacity" not in mat.keys():
                 raise NameError("Missing heat_capacity key in material")
             if "rho" not in mat.keys():

@@ -100,7 +100,7 @@ class Simulation():
         else:
             # Define variational problem for heat transfers
 
-            vT = TestFunction(self.W)
+            self.vT = TestFunction(self.W)
             if self.parameters["temperature"]["type"] == "solve_transient":
                 T_ini = sp.printing.ccode(
                     self.parameters["temperature"]["initial_condition"])
@@ -110,8 +110,7 @@ class Simulation():
                 FESTIM.boundary_conditions.define_dirichlet_bcs_T(
                     self.parameters, self.W, self.surface_markers)
             self.FT, expressions_FT = \
-                FESTIM.formulations.define_variational_problem_heat_transfers(
-                    self.parameters, [self.T, vT, self.T_n], [self.dx, self.ds], self.dt)
+                FESTIM.formulations.define_variational_problem_heat_transfers(self)
             self.expressions += expressions_bcs_T + expressions_FT
 
             if self.parameters["temperature"]["type"] == "solve_stationary":
