@@ -11,14 +11,12 @@ jobs:
           name: Run Unit tests
           command: |
             python3 -m pytest Tests/unit/ --cov FESTIM --cov-report xml --cov-report term
-            bash <(curl -s https://codecov.io/bash) -t cf160fda-091b-4d7f-a22d-a9509c36720c
       - run:
           name: Run Integration tests
           command: |
-            python3 -m pytest Tests/integration/ --cov FESTIM --cov-report xml --cov-report term
-            bash <(curl -s https://codecov.io/bash) -t cf160fda-091b-4d7f-a22d-a9509c36720c
+            python3 -m pytest Tests/integration/ --cov FESTIM --cov-append --cov-report xml --cov-report term
       - run:
           name: Run System tests
           command: |
-            python3 -m pytest Tests/system/ --cov FESTIM --cov-report xml --cov-report term
+            python3 -m pytest Tests/system/ --cov FESTIM --cov-append --cov-report xml --cov-report term
             bash <(curl -s https://codecov.io/bash) -t cf160fda-091b-4d7f-a22d-a9509c36720c
