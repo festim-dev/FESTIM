@@ -1,10 +1,10 @@
 # FESTIM
 
-[![CircleCI](https://circleci.com/gh/RemiTheWarrior/FESTIM.svg?style=svg&circle-token=ecc5a4a8c75955af6c238d255465bc04dfaaaf8e)](https://circleci.com/gh/RemiTheWarrior/FESTIM)
-[![codecov](https://codecov.io/gh/RemiTheWarrior/FESTIM/branch/master/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/RemiTheWarrior/FESTIM)
+[![CircleCI](https://circleci.com/gh/RemDelaporteMathurin/FESTIM.svg?style=svg&circle-token=ecc5a4a8c75955af6c238d255465bc04dfaaaf8e)](https://circleci.com/gh/RemDelaporteMathurin/FESTIM)
+[![codecov](https://codecov.io/gh/RemDelaporteMathurin/FESTIM/branch/master/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/RemDelaporteMathurin/FESTIM)
 [![PEP8](https://img.shields.io/badge/code%20style-pep8-violet.svg)](https://www.python.org/dev/peps/pep-0008/)
-![GitHub stars](https://img.shields.io/github/stars/RemiTheWarrior/FESTIM.svg?logo=github&label=Stars&logoColor=white)
-![GitHub forks](https://img.shields.io/github/forks/RemiTheWarrior/FESTIM.svg?logo=github&label=Forks&logoColor=white)
+![GitHub stars](https://img.shields.io/github/stars/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Stars&logoColor=white)
+![GitHub forks](https://img.shields.io/github/forks/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Forks&logoColor=white)
 
 FESTIM (Finite Elements Simulation of Tritium in Materials) is a tool for modeling Hydrogen Isotopes (HIs) transport in materials. 
 The governing equations are composed of:
@@ -39,7 +39,7 @@ Pull the Docker image and run the container, sharing a folder between the host a
 
 Clone FESTIM's git repository:
 
-    git clone https://github.com/RemiTheWarrior/FESTIM
+    git clone https://github.com/RemDelaporteMathurin/FESTIM
     
 Run the tests:
 
