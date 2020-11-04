@@ -148,8 +148,7 @@ class Simulation():
         print('Defining boundary conditions')
         self.bcs, expressions_BC = FESTIM.boundary_conditions.apply_boundary_conditions(
             self.parameters, self.V, [self.volume_markers, self.surface_markers], self.T)
-        fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(
-            self.parameters, self.u, self.v, self.ds, self.T, self.S)
+        fluxes, expressions_fluxes = FESTIM.boundary_conditions.apply_fluxes(self)
         self.F += fluxes
         self.expressions += expressions_BC + expressions_fluxes
 
