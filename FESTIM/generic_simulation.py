@@ -107,8 +107,7 @@ class Simulation():
                 T_ini = Expression(T_ini, degree=2, t=0)
                 self.T_n.assign(interpolate(T_ini, self.W))
             self.bcs_T, expressions_bcs_T = \
-                FESTIM.boundary_conditions.define_dirichlet_bcs_T(
-                    self.parameters, self.W, self.surface_markers)
+                FESTIM.boundary_conditions.define_dirichlet_bcs_T(self)
             self.FT, expressions_FT = \
                 FESTIM.formulations.define_variational_problem_heat_transfers(self)
             self.expressions += expressions_bcs_T + expressions_FT

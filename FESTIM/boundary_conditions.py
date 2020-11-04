@@ -4,18 +4,19 @@ import sympy as sp
 import numpy as np
 
 
-def define_dirichlet_bcs_T(parameters, V, boundaries):
+def define_dirichlet_bcs_T(simulation):
     """Creates a list of BCs for thermal problem
 
     Arguments:
-        parameters {dict} -- contains temperature parameters
-        V {fenics.FunctionSpace} -- functionspace of temperature
-        boundaries {fenics.MeshFunction} -- markers for facets
+
 
     Returns:
         list -- contains fenics.DirichletBC
         list -- contains fenics.Expression to be updated
     """
+    parameters = simulation.parameters
+    V = simulation.W
+    boundaries = simulation.surface_markers
 
     bcs = []
     expressions = []
