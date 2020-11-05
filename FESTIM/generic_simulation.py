@@ -7,6 +7,7 @@ class Simulation():
     def __init__(self, parameters, log_level=40):
         self.parameters = parameters
         self.log_level = log_level
+        # Define internal methods
         Simulation.initialise_solutions = \
             FESTIM.initialising.initialise_solutions
         Simulation.define_variational_problem_heat_transfers = \
@@ -34,21 +35,22 @@ class Simulation():
 
         # Check if transient
         transient = True
-        if "type" in self.parameters["solving_parameters"].keys():
-            if self.parameters["solving_parameters"]["type"] == "solve_transient":
+        solving_parameters = self.parameters["solving_parameters"]
+        if "type" in solving_parameters.keys():
+            if solving_parameters["type"] == "solve_transient":
                 transient = True
-            elif self.parameters["solving_parameters"]["type"] == "solve_stationary":
+            elif solving_parameters["type"] == "solve_stationary":
                 transient = False
-            elif "type" in self.parameters["solving_parameters"].keys():
+            else:
                 raise ValueError(
-                    str(self.parameters["solving_parameters"]["type"]) + ' unkown')
+                    str(solving_parameters["type"]) + ' unkown')
         self.transient = transient
 
         # Declaration of variables
         dt = 0
         if transient:
-            self.final_time = self.parameters["solving_parameters"]["final_time"]
-            initial_stepsize = self.parameters["solving_parameters"]["initial_stepsize"]
+            self.final_time = solving_parameters["final_time"]
+            initial_stepsize = solving_parameters["initial_stepsize"]
             dt = Constant(initial_stepsize, name="dt")  # time step size
         self.dt = dt
         # create mesh and markers
@@ -63,7 +65,8 @@ class Simulation():
         # Create functions for properties
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
             FESTIM.post_processing.create_properties(
-                self.mesh, self.parameters["materials"], self.volume_markers, self.T)
+                self.mesh, self.parameters["materials"],
+                self.volume_markers, self.T)
 
         # Define functions
         self.initialise_concentrations()
@@ -83,22 +86,29 @@ class Simulation():
 
     def define_mesh_and_markers(self):
         # Mesh and refinement
-        self.mesh = FESTIM.meshing.create_mesh(self.parameters["mesh_parameters"])
+        self.mesh = FESTIM.meshing.create_mesh(
+            self.parameters["mesh_parameters"])
 
         # Define and mark subdomains
         self.volume_markers, self.surface_markers = \
             FESTIM.meshing.subdomains(self.mesh, self.parameters)
-        self.ds = Measure('ds', domain=self.mesh, subdomain_data=self.surface_markers)
-        self.dx = Measure('dx', domain=self.mesh, subdomain_data=self.volume_markers)
+        self.ds = Measure(
+            'ds', domain=self.mesh, subdomain_data=self.surface_markers)
+        self.dx = Measure(
+            'dx', domain=self.mesh, subdomain_data=self.volume_markers)
 
     def define_function_spaces(self):
-        if "traps_element_type" in self.parameters["solving_parameters"].keys():
-            trap_element = self.parameters["solving_parameters"]["traps_element_type"]
+        solving_parameters = self.parameters["solving_parameters"]
+        if "traps_element_type" in solving_parameters.keys():
+            trap_element = solving_parameters["traps_element_type"]
         else:
             trap_element = "CG"  # Default is CG
+        # function space for H concentrations
         self.V = FESTIM.functionspaces_and_functions.create_function_space(
-            self.mesh, len(self.parameters["traps"]), element_trap=trap_element)
-        self.V_CG1 = FunctionSpace(self.mesh, 'CG', 1)  # function space for T and ext trap dens
+            self.mesh, len(self.parameters["traps"]),
+            element_trap=trap_element)
+        # function space for T and ext trap dens
+        self.V_CG1 = FunctionSpace(self.mesh, 'CG', 1)
         self.V_DG1 = FunctionSpace(self.mesh, 'DG', 1)
 
     def define_temperature(self):
@@ -143,10 +153,13 @@ class Simulation():
         self.u_n = self.initialise_solutions()
 
     def initialise_extrinsic_traps(self):
-        self.extrinsic_traps = [Function(self.V_CG1) for d in self.parameters["traps"]
-                           if "type" in d.keys() if d["type"] == "extrinsic"]
-        self.testfunctions_traps = [TestFunction(W) for d in self.parameters["traps"]
-                               if "type" in d.keys() if d["type"] == "extrinsic"]
+        traps = self.parameters["traps"]
+        self.extrinsic_traps = [Function(self.V_CG1) for d in traps
+                                if "type" in d.keys() if
+                                d["type"] == "extrinsic"]
+        self.testfunctions_traps = [TestFunction(W) for d in traps
+                                    if "type" in d.keys() if
+                                    d["type"] == "extrinsic"]
         self.previous_solutions_traps = \
             FESTIM.initialising.initialise_extrinsic_traps(
                 self.V_CG1, len(self.extrinsic_traps))
@@ -199,22 +212,25 @@ class Simulation():
                     self.S._T = self.T
 
                 # Display time
-                print(str(round(self.t/self.final_time*100, 2)) + ' %        ' +
-                      str(round(self.t, 1)) + ' s' +
-                      "    Ellapsed time so far: %s s" %
-                      round(timer.elapsed()[0], 1),
-                      end="\r")
+                simulation_percentage = round(self.t/self.final_time*100, 2)
+                simulation_time = round(self.t, 1)
+                elapsed_time = round(timer.elapsed()[0], 1)
+                msg = '{} %        '.format(simulation_percentage)
+                msg += '{} s'.format(simulation_time)
+                msg += "    Ellapsed time so far: {} s".format(elapsed_time)
+
+                print(msg, end="\r")
 
                 # Solve heat transfers
                 if self.parameters["temperature"]["type"] == "solve_transient":
                     dT = TrialFunction(self.T.function_space())
                     JT = derivative(self.FT, self.T, dT)  # Define the Jacobian
-                    problem = NonlinearVariationalProblem(self.FT, self.T, self.bcs_T, JT)
+                    problem = NonlinearVariationalProblem(
+                        self.FT, self.T, self.bcs_T, JT)
                     solver = NonlinearVariationalSolver(problem)
-                    solver.parameters["newton_solver"]["absolute_tolerance"] = \
-                        1e-3
-                    solver.parameters["newton_solver"]["relative_tolerance"] = \
-                        1e-10
+                    newton_solver_prm = solver.parameters["newton_solver"]
+                    newton_solver_prm["absolute_tolerance"] = 1e-3
+                    newton_solver_prm["relative_tolerance"] = 1e-10
                     solver.solve()
                     self.T_n.assign(self.T)
 
@@ -224,8 +240,8 @@ class Simulation():
                     self.dt, self.parameters["solving_parameters"])
 
                 # Solve extrinsic traps formulation
-                for j in range(len(self.extrinsic_formulations)):
-                    solve(self.extrinsic_formulations[j] == 0, self.extrinsic_traps[j], [])
+                for j, form in enumerate(self.extrinsic_formulations):
+                    solve(form == 0, self.extrinsic_traps[j], [])
 
                 # Post processing
                 self.run_post_processing()
@@ -233,15 +249,16 @@ class Simulation():
 
                 # Update previous solutions
                 self.u_n.assign(self.u)
-                for j in range(len(self.previous_solutions_traps)):
-                    self.previous_solutions_traps[j].assign(self.extrinsic_traps[j])
+                for j, prev_sol in enumerate(self.previous_solutions_traps):
+                    self.prev_sol.assign(self.extrinsic_traps[j])
         else:
             # Solve steady state
             print('Solving steady state problem...')
 
             du = TrialFunction(self.u.function_space())
             FESTIM.solving.solve_once(
-                self.F, self.u, self.J, self.bcs, self.parameters["solving_parameters"])
+                self.F, self.u, self.J,
+                self.bcs, self.parameters["solving_parameters"])
 
             # Post processing
             self.run_post_processing()
@@ -259,14 +276,16 @@ class Simulation():
                 solute = project(res[0]*self.S, self.V_DG1)
                 res[0] = solute
             error = FESTIM.post_processing.compute_error(
-                self.parameters["exports"]["error"], self.t, [*res, self.T], self.mesh)
+                self.parameters["exports"]["error"], self.t,
+                [*res, self.T], self.mesh)
             output["error"] = error
         output["parameters"] = self.parameters
         output["mesh"] = self.mesh
         if "derived_quantities" in self.parameters["exports"].keys():
             output["derived_quantities"] = self.derived_quantities_global
-            FESTIM.export.write_to_csv(self.parameters["exports"]["derived_quantities"],
-                                    self.derived_quantities_global)
+            FESTIM.export.write_to_csv(
+                self.parameters["exports"]["derived_quantities"],
+                self.derived_quantities_global)
 
         # End
         print('\007s')
