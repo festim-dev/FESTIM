@@ -7,6 +7,20 @@ class Simulation():
     def __init__(self, parameters, log_level=40):
         self.parameters = parameters
         self.log_level = log_level
+        Simulation.initialise_solutions = \
+            FESTIM.initialising.initialise_solutions
+        Simulation.define_variational_problem_heat_transfers = \
+            FESTIM.formulations.define_variational_problem_heat_transfers
+        Simulation.define_dirichlet_bcs_T = \
+            FESTIM.boundary_conditions.define_dirichlet_bcs_T
+        Simulation.formulation = FESTIM.formulations.formulation
+        Simulation.apply_boundary_conditions = \
+            FESTIM.boundary_conditions.apply_boundary_conditions
+        Simulation.apply_fluxes = FESTIM.boundary_conditions.apply_fluxes
+        Simulation.formulation_extrinsic_traps = \
+            FESTIM.formulations.formulation_extrinsic_traps
+        Simulation.run_post_processing = \
+            FESTIM.post_processing.run_post_processing
 
     def initialise(self):
         # Export parameters
@@ -106,10 +120,9 @@ class Simulation():
                     self.parameters["temperature"]["initial_condition"])
                 T_ini = Expression(T_ini, degree=2, t=0)
                 self.T_n.assign(interpolate(T_ini, self.V_CG1))
-            self.bcs_T, expressions_bcs_T = \
-                FESTIM.boundary_conditions.define_dirichlet_bcs_T(self)
+            self.bcs_T, expressions_bcs_T = self.define_dirichlet_bcs_T()
             self.FT, expressions_FT = \
-                FESTIM.formulations.define_variational_problem_heat_transfers(self)
+                self.define_variational_problem_heat_transfers()
             self.expressions += expressions_bcs_T + expressions_FT
 
             if self.parameters["temperature"]["type"] == "solve_stationary":
@@ -127,8 +140,7 @@ class Simulation():
             initial_conditions = self.parameters["initial_conditions"]
         else:
             initial_conditions = []
-        self.u_n = \
-            FESTIM.initialising.initialise_solutions(self)
+        self.u_n = self.initialise_solutions()
 
     def initialise_extrinsic_traps(self):
         self.extrinsic_traps = [Function(self.V_CG1) for d in self.parameters["traps"]
@@ -141,15 +153,13 @@ class Simulation():
 
     def define_variational_problem_H_transport(self):
         print('Defining variational problem')
-        self.F, expressions_F = FESTIM.formulations.formulation(self)
+        self.F, expressions_F = self.formulation()
         self.expressions += expressions_F
 
         # Boundary conditions
         print('Defining boundary conditions')
-        self.bcs, expressions_BC = \
-            FESTIM.boundary_conditions.apply_boundary_conditions(self)
-        fluxes, expressions_fluxes = \
-            FESTIM.boundary_conditions.apply_fluxes(self)
+        self.bcs, expressions_BC = self.apply_boundary_conditions()
+        fluxes, expressions_fluxes = self.apply_fluxes()
         self.F += fluxes
         self.expressions += expressions_BC + expressions_fluxes
 
@@ -160,7 +170,7 @@ class Simulation():
         # Define variational problem for extrinsic traps
         if self.transient:
             self.extrinsic_formulations, expressions_extrinsic = \
-                FESTIM.formulations.formulation_extrinsic_traps(self)
+                self.formulation_extrinsic_traps()
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
@@ -218,7 +228,7 @@ class Simulation():
                     solve(self.extrinsic_formulations[j] == 0, self.extrinsic_traps[j], [])
 
                 # Post processing
-                FESTIM.post_processing.run_post_processing(self)
+                self.run_post_processing()
                 self.append = True
 
                 # Update previous solutions
@@ -234,7 +244,7 @@ class Simulation():
                 self.F, self.u, self.J, self.bcs, self.parameters["solving_parameters"])
 
             # Post processing
-            FESTIM.post_processing.run_post_processing(self)
+            self.run_post_processing()
 
         # Store data in output
         output = dict()  # Final output
