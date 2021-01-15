@@ -68,7 +68,7 @@ def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
             res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
-            res, parameters["exports"], t, dt, V_DG1)
+            res, parameters["exports"], t, dt)
 
     return derived_quantities_global, dt
 

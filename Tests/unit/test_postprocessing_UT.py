@@ -99,7 +99,7 @@ def test_export_profiles(tmpdir):
     dt = fenics.Constant(2)
     while t < 4:
         dt_old = dt
-        dt = export_profiles(functions, exports, t, dt, V)
+        dt = export_profiles(functions, exports, t, dt)
         # Test that dt is not changed if not on time
         if True not in np.isclose(t, exports["txt"]["times"]):
             assert np.isclose(float(dt_old), float(dt)) is True
@@ -116,7 +116,7 @@ def test_export_profiles(tmpdir):
     t = 1
     exports["txt"]["functions"][0] = "foo"
     with pytest.raises(ValueError):
-        export_profiles(functions, exports, t, dt, V)
+        export_profiles(functions, exports, t, dt)
 
 
 def test_create_properties():
