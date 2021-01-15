@@ -54,8 +54,8 @@ def export_txt(filename, function, W):
     Returns:
     - True on sucess
     '''
-    export = Function(W)
-    export = project(function)
+
+    export = project(function, W)
     busy = True
     x = interpolate(Expression('x[0]', degree=1), W)
     while busy is True:
@@ -78,6 +78,7 @@ def export_profiles(res, exports, t, dt, W):
     - exports: dict, contains parameters
     - t: float, time
     - dt: fenics.Constant(), stepsize
+    - W: fenics.FunctionSpace()
     Returns:
     - dt: fenics.Constant(), stepsize
     '''
