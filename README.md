@@ -24,7 +24,7 @@ The following features are included in this tool:
 - Wide range of built-in boundary conditions (Sievert's law, recombination flux, experimental data, user-defined expression...)
 - **Derived quantities** computation (surface fluxes, volume integrations, extrema over domains, mean values over domains...)
 
-FESTIM spatially discretises the PDEs using the Finite Element Methods. At this extent, we chose to use the C++/Python library [FEniCS](https://fenicsproject.org). 
+FESTIM spatially discretises the PDEs using the Finite Element Methods. To this extent, we chose to use the C++/Python library [FEniCS](https://fenicsproject.org). 
 The implicit time discretisation method is backward Euler.
 PDEs are solved using FEniCS' Newton nonlinear solver. A library of generic functions is provided so that users can run custom simulations in addition to the flexibility of [FEniCS](https://fenicsproject.org) built-in functions.
 

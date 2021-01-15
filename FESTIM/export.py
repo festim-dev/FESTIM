@@ -43,21 +43,19 @@ def write_to_csv(derived_quantities_dict, data):
     return True
 
 
-def export_txt(filename, function, W):
+def export_txt(filename, function, functionspace):
     '''
     Exports a 1D function into a txt file.
     Arguments:
     - filemame : str
     - function : fenics.Function()
-    - W : fenics.FunctionSpace(), Functionspace on which the solution will be
-    projected.
+    - functionspace: fenics.FunctionSpace()
     Returns:
     - True on sucess
     '''
-    export = Function(W)
-    export = project(function)
+    export = project(function, functionspace)
     busy = True
-    x = interpolate(Expression('x[0]', degree=1), W)
+    x = interpolate(Expression('x[0]', degree=1), functionspace)
     while busy is True:
         try:
             np.savetxt(filename + '.txt', np.transpose(
@@ -70,7 +68,7 @@ def export_txt(filename, function, W):
             input()
 
 
-def export_profiles(res, exports, t, dt, W):
+def export_profiles(res, exports, t, dt, functionspace):
     '''
     Exports 1D profiles in txt files.
     Arguments:
@@ -78,6 +76,7 @@ def export_profiles(res, exports, t, dt, W):
     - exports: dict, contains parameters
     - t: float, time
     - dt: fenics.Constant(), stepsize
+    - functionspace: fenics.FunctionSpace()
     Returns:
     - dt: fenics.Constant(), stepsize
     '''
@@ -115,7 +114,7 @@ def export_profiles(res, exports, t, dt, W):
                 export_txt(
                     exports["txt"]["folder"] + '/' + label + '_' +
                     str(t) + 's',
-                    solution, W)
+                    solution, functionspace)
             break
         if t < time:
             next_time = time
