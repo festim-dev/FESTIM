@@ -21,5 +21,5 @@ from .generic_simulation import Simulation, run
 
 import sympy as sp
 x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
-R = 8.314  # Gas constant
-k_B = 8.617e-5  # Boltzmann constant
+R = 8.314462618  # Gas constant J.mol-1.K-1
+k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
