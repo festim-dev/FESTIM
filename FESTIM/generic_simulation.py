@@ -10,6 +10,9 @@ class Simulation():
         self.chemical_pot = False
         self.transient = True
         self.expressions = []
+        self.files = []
+        self.derived_quantities_global = []
+        self.dt = 0
 
     def initialise(self):
         # Export parameters
@@ -33,12 +36,11 @@ class Simulation():
                     str(solving_parameters["type"]) + ' unkown')
 
         # Declaration of variables
-        dt = 0
         if self.transient:
             self.final_time = solving_parameters["final_time"]
             initial_stepsize = solving_parameters["initial_stepsize"]
-            dt = Constant(initial_stepsize, name="dt")  # time step size
-        self.dt = dt
+            self.dt = Constant(initial_stepsize, name="dt")  # time step size
+
         # create mesh and markers
         self.define_mesh()
         self.define_markers()
@@ -66,12 +68,9 @@ class Simulation():
         self.define_variational_problem_extrinsic_traps()
 
         # Solution files
-        files = []
         self.append = False
         if "xdmf" in self.parameters["exports"].keys():
-            files = FESTIM.define_xdmf_files(self.parameters["exports"])
-        self.files = files
-        self.derived_quantities_global = []
+            self.files = FESTIM.define_xdmf_files(self.parameters["exports"])
 
     def define_mesh(self):
 
