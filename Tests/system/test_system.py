@@ -847,7 +847,7 @@ def test_chemical_pot_T_solve_stationary():
         "boundary_conditions": [
             {
                 "type": "dc",
-                "surfaces": 1,
+                "surfaces": [1, 2],
                 "value": 1
             },
             ],
