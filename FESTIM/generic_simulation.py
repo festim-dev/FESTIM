@@ -57,7 +57,6 @@ class Simulation():
         if self.S is not None:
             self.chemical_pot = True
 
-
         # Define functions
         self.initialise_concentrations()
         self.initialise_extrinsic_traps()
