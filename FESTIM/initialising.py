@@ -99,25 +99,6 @@ def read_from_xdmf(ini, V):
     return comp
 
 
-def initialise_extrinsic_traps(W, number_of_traps):
-    """Returns a list of fenics.Function(W)
-
-    Arguments:
-        W {fenics.FunctionSpace} -- functionspace of the extrinsic traps
-            densities
-        number_of_traps {int} -- number of traps
-
-    Returns:
-        list -- contains fenics.Function
-    """
-
-    previous_solutions = []
-    for i in range(number_of_traps):
-        ini = Expression("0", degree=2)
-        previous_solutions.append(interpolate(ini, W))
-    return previous_solutions
-
-
 def check_no_duplicates(initial_conditions):
     components = []
     for e in initial_conditions:

@@ -212,9 +212,11 @@ class Simulation():
         self.testfunctions_traps = [TestFunction(W) for d in traps
                                     if "type" in d.keys() if
                                     d["type"] == "extrinsic"]
-        self.previous_solutions_traps = \
-            FESTIM.initialising.initialise_extrinsic_traps(
-                self.V_CG1, len(self.extrinsic_traps))
+
+        self.previous_solutions_traps = []
+        for i in range(len(self.extrinsic_traps)):
+            ini = Expression("0", degree=2)
+            self.previous_solutions_traps.append(interpolate(ini, self.V_CG1))
 
     def define_variational_problem_H_transport(self):
         print('Defining variational problem')
