@@ -15,6 +15,7 @@ class Simulation():
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.nb_iterations_between_exports = 1
+        self.export_xdmf_last_only = False
 
     def initialise(self):
         # Export parameters
@@ -73,6 +74,8 @@ class Simulation():
         self.append = False
         exports = self.parameters["exports"]
         if "xdmf" in exports.keys():
+            if "last_timestep_only" in exports["xdmf"].keys():
+                self.export_xdmf_last_only = True
             self.files = FESTIM.define_xdmf_files(exports)
             if "nb_iterations_between_exports" in exports["xdmf"]:
                 self.nb_iterations_between_exports = \

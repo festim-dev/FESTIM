@@ -1,3 +1,5 @@
+import os.path
+from os import path
 import FESTIM
 from FESTIM.meshing import subdomains_1D
 from FESTIM.post_processing import header_derived_quantities,\
@@ -326,8 +328,7 @@ def test_run_post_processing_flux(tmpdir):
 
 def test_performance_xdmf_export_every_N_iterations(tmpdir):
     '''
-    Test the integration of post processing functions.
-    In the pure diffusion case
+    Test the postprocessing runs faster when exporting to XDMF less often
     '''
     d = tmpdir.mkdir("Solution_Test")
     parameters = {
@@ -390,3 +391,52 @@ def test_performance_xdmf_export_every_N_iterations(tmpdir):
     print(short_time)
 
     assert short_time < long_time
+
+
+def test_performance_xdmf_export_only_last_timestep(tmpdir):
+    '''
+    Test that the XDMF export isn't done until the last timestep
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [{
+                "borders": [0, 0.5],
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+                }],
+        "traps": [
+            {}
+        ],
+        "exports": {
+            "xdmf": {
+                    "functions": ['solute', 'T'],
+                    "labels":  ['solute', 'temperature'],
+                    "folder": str(Path(d)),
+                    },
+            }
+        }
+    mesh = fenics.UnitSquareMesh(16, 16)
+    V_CG1 = fenics.FunctionSpace(mesh, 'CG', 1)
+    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.T = fenics.Function(V_CG1)
+    my_sim.u = fenics.Function(V_CG1)
+    my_sim.V_CG1 = V_CG1
+    my_sim.V_DG1 = V_DG1
+    my_sim.volume_markers, my_sim.surface_markers = 'foo', 'foo'
+    my_sim.t = 0
+    my_sim.final_time = 100
+    my_sim.append = False
+    my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
+        my_sim.H, my_sim.S = 0, 0, 0, 0, 0, None,
+    my_sim.files = FESTIM.define_xdmf_files(parameters["exports"])
+    my_sim.export_xdmf_last_only = True
+
+    run_post_processing(my_sim)
+    assert not path.exists(str(Path(d)) + '/solute.xdmf')
+
+    my_sim.t = my_sim.final_time
+    run_post_processing(my_sim)
+    assert path.exists(str(Path(d)) + '/solute.xdmf')

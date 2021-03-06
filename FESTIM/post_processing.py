@@ -58,12 +58,15 @@ def run_post_processing(simulation):
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
-        if simulation.nb_iterations % \
-                simulation.nb_iterations_between_exports == 0:
-            if "retention" in parameters["exports"]["xdmf"]["functions"]:
-                res[-2] = project(res[-2], V_CG1)
-            FESTIM.export.export_xdmf(
-                res, parameters["exports"], files, t, append=append)
+        if (simulation.export_xdmf_last_only and
+            simulation.t >= simulation.final_time) or \
+                not simulation.export_xdmf_last_only:
+            if simulation.nb_iterations % \
+                    simulation.nb_iterations_between_exports == 0:
+                if "retention" in parameters["exports"]["xdmf"]["functions"]:
+                    res[-2] = project(res[-2], V_CG1)
+                FESTIM.export.export_xdmf(
+                    res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
             res, parameters["exports"], t, dt, V_DG1)
