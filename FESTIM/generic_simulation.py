@@ -9,26 +9,24 @@ class Simulation():
         self.log_level = log_level
         self.chemical_pot = False
         # Define internal methods
-        # Simulation.initialise_solutions = \
-        #     FESTIM.initialising.initialise_solutions
         Simulation.define_variational_problem_heat_transfers = \
-            FESTIM.formulations.define_variational_problem_heat_transfers
+            FESTIM.define_variational_problem_heat_transfers
         Simulation.define_dirichlet_bcs_T = \
-            FESTIM.boundary_conditions.define_dirichlet_bcs_T
-        Simulation.formulation = FESTIM.formulations.formulation
+            FESTIM.define_dirichlet_bcs_T
+        Simulation.formulation = FESTIM.formulation
         Simulation.apply_boundary_conditions = \
-            FESTIM.boundary_conditions.apply_boundary_conditions
-        Simulation.apply_fluxes = FESTIM.boundary_conditions.apply_fluxes
+            FESTIM.apply_boundary_conditions
+        Simulation.apply_fluxes = FESTIM.apply_fluxes
         Simulation.formulation_extrinsic_traps = \
-            FESTIM.formulations.formulation_extrinsic_traps
+            FESTIM.formulation_extrinsic_traps
         Simulation.run_post_processing = \
-            FESTIM.post_processing.run_post_processing
+            FESTIM.run_post_processing
 
     def initialise(self):
         # Export parameters
         if "parameters" in self.parameters["exports"].keys():
             try:
-                FESTIM.export.export_parameters(self.parameters)
+                FESTIM.export_parameters(self.parameters)
             except TypeError:
                 pass
 
@@ -66,7 +64,7 @@ class Simulation():
 
         # Create functions for properties
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
-            FESTIM.post_processing.create_properties(
+            FESTIM.create_properties(
                 self.mesh, self.parameters["materials"],
                 self.volume_markers, self.T)
         if self.S is not None:
@@ -85,7 +83,7 @@ class Simulation():
         files = []
         self.append = False
         if "xdmf" in self.parameters["exports"].keys():
-            files = FESTIM.export.define_xdmf_files(self.parameters["exports"])
+            files = FESTIM.define_xdmf_files(self.parameters["exports"])
         self.files = files
         self.derived_quantities_global = []
 
@@ -102,10 +100,10 @@ class Simulation():
             mesh = mesh_parameters["mesh"]
         elif "vertices" in mesh_parameters.keys():
             # mesh from list of vertices
-            mesh = FESTIM.meshing.generate_mesh_from_vertices(
+            mesh = FESTIM.generate_mesh_from_vertices(
                 mesh_parameters["vertices"])
         else:
-            mesh = FESTIM.meshing.mesh_and_refine(mesh_parameters)
+            mesh = FESTIM.mesh_and_refine(mesh_parameters)
         self.mesh = mesh
 
     def define_markers(self):
@@ -114,7 +112,7 @@ class Simulation():
         mesh_parameters = self.parameters["mesh_parameters"]
         if "cells_file" in mesh_parameters.keys():
             volume_markers, surface_markers = \
-                FESTIM.meshing.read_subdomains_from_xdmf(
+                FESTIM.read_subdomains_from_xdmf(
                     mesh,
                     mesh_parameters["cells_file"],
                     mesh_parameters["facets_file"])
@@ -127,10 +125,10 @@ class Simulation():
             else:
                 size = mesh_parameters["size"]
             if len(self.parameters["materials"]) > 1:
-                FESTIM.meshing.check_borders(
+                FESTIM.check_borders(
                     size, self.parameters["materials"])
             volume_markers, surface_markers = \
-                FESTIM.meshing.subdomains_1D(
+                FESTIM.subdomains_1D(
                     self.mesh, self.parameters["materials"], size)
 
         self.volume_markers, self.surface_markers = \
@@ -216,13 +214,13 @@ class Simulation():
             initial_conditions = parameters["initial_conditions"]
         else:
             initial_conditions = []
-        FESTIM.initialising.check_no_duplicates(initial_conditions)
+        FESTIM.check_no_duplicates(initial_conditions)
 
         for ini in initial_conditions:
             if 'component' not in ini.keys():
                 ini["component"] = 0
             if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
-                comp = FESTIM.initialising.read_from_xdmf(ini, V)
+                comp = FESTIM.read_from_xdmf(ini, V)
             else:
                 value = ini["value"]
                 value = sp.printing.ccode(value)
@@ -371,7 +369,7 @@ class Simulation():
             if self.S is not None:
                 solute = project(res[0]*self.S, self.V_DG1)
                 res[0] = solute
-            error = FESTIM.post_processing.compute_error(
+            error = FESTIM.compute_error(
                 self.parameters["exports"]["error"], self.t,
                 [*res, self.T], self.mesh)
             output["error"] = error
@@ -379,7 +377,7 @@ class Simulation():
         output["mesh"] = self.mesh
         if "derived_quantities" in self.parameters["exports"].keys():
             output["derived_quantities"] = self.derived_quantities_global
-            FESTIM.export.write_to_csv(
+            FESTIM.write_to_csv(
                 self.parameters["exports"]["derived_quantities"],
                 self.derived_quantities_global)
 
