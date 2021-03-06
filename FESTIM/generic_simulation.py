@@ -278,7 +278,6 @@ class Simulation():
             # Solve steady state
             print('Solving steady state problem...')
 
-            du = TrialFunction(self.u.function_space())
             FESTIM.solving.solve_once(
                 self.F, self.u, self.J,
                 self.bcs, self.parameters["solving_parameters"])
