@@ -68,6 +68,10 @@ class Simulation():
             FESTIM.post_processing.create_properties(
                 self.mesh, self.parameters["materials"],
                 self.volume_markers, self.T)
+        if self.S is not None:
+            self.chemical_pot = True
+        else:
+            self.chemical_pot = False
 
         # Define functions
         self.initialise_concentrations()
@@ -224,15 +228,10 @@ class Simulation():
                 value = sp.printing.ccode(value)
                 comp = Expression(value, degree=3, t=0)
 
-            chemical_pot = False
-            if S is not None:
-                for mat in parameters["materials"]:
-                    if "S_0" in mat.keys() or "E_S" in mat.keys():
-                        chemical_pot = True
-            if ini["component"] == 0 and chemical_pot is True:
+            if ini["component"] == 0 and self.chemical_pot:
                 comp = comp/S  # variable change
             if V.num_sub_spaces() > 0:
-                if ini["component"] == 0 and chemical_pot is True:
+                if ini["component"] == 0 and self.chemical_pot:
                     # Product must be projected
                     comp = project(
                         comp, V.sub(ini["component"]).collapse())
@@ -241,7 +240,7 @@ class Simulation():
                         comp, V.sub(ini["component"]).collapse())
                 assign(u_n.sub(ini["component"]), comp)
             else:
-                if ini["component"] == 0 and chemical_pot is True:
+                if ini["component"] == 0 and self.chemical_pot:
                     u_n = project(comp, V)
                 else:
                     u_n = interpolate(comp, V)
