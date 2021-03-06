@@ -54,7 +54,8 @@ class Simulation():
             dt = Constant(initial_stepsize, name="dt")  # time step size
         self.dt = dt
         # create mesh and markers
-        self.define_mesh_and_markers()
+        self.define_mesh()
+        self.define_markers()
 
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
@@ -84,14 +85,53 @@ class Simulation():
         self.files = files
         self.derived_quantities_global = []
 
-    def define_mesh_and_markers(self):
-        # Mesh and refinement
-        self.mesh = FESTIM.meshing.create_mesh(
-            self.parameters["mesh_parameters"])
+    def define_mesh(self):
 
+        mesh_parameters = self.parameters["mesh_parameters"]
+        if "mesh_file" in mesh_parameters.keys():
+            # Read volumetric mesh
+            mesh = Mesh()
+            XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
+        elif ("mesh" in mesh_parameters.keys() and
+                isinstance(mesh_parameters["mesh"], type(Mesh()))):
+            # use provided fenics mesh
+            mesh = mesh_parameters["mesh"]
+        elif "vertices" in mesh_parameters.keys():
+            # mesh from list of vertices
+            mesh = FESTIM.meshing.generate_mesh_from_vertices(
+                mesh_parameters["vertices"])
+        else:
+            mesh = FESTIM.meshing.mesh_and_refine(mesh_parameters)
+        self.mesh = mesh
+
+    def define_markers(self):
         # Define and mark subdomains
+
+        mesh_parameters = self.parameters["mesh_parameters"]
+        if "cells_file" in mesh_parameters.keys():
+            volume_markers, surface_markers = \
+                FESTIM.meshing.read_subdomains_from_xdmf(
+                    mesh,
+                    mesh_parameters["cells_file"],
+                    mesh_parameters["facets_file"])
+        elif "meshfunction_cells" in mesh_parameters.keys():
+            volume_markers = mesh_parameters["meshfunction_cells"]
+            surface_markers = mesh_parameters["meshfunction_facets"]
+        else:
+            if "vertices" in mesh_parameters.keys():
+                size = max(mesh_parameters["vertices"])
+            else:
+                size = mesh_parameters["size"]
+            if len(self.parameters["materials"]) > 1:
+                FESTIM.meshing.check_borders(
+                    size, self.parameters["materials"])
+            volume_markers, surface_markers = \
+                FESTIM.meshing.subdomains_1D(
+                    self.mesh, self.parameters["materials"], size)
+
         self.volume_markers, self.surface_markers = \
-            FESTIM.meshing.subdomains(self.mesh, self.parameters)
+            volume_markers, surface_markers
+
         self.ds = Measure(
             'ds', domain=self.mesh, subdomain_data=self.surface_markers)
         self.dx = Measure(
@@ -300,7 +340,7 @@ class Simulation():
                 self.derived_quantities_global)
 
         # End
-        print('\007s')
+        print('\007')
         return output
 
 
