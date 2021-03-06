@@ -1,7 +1,6 @@
 from . import helpers
 
 from . import meshing
-from . import functionspaces_and_functions
 from . import initialising
 from . import formulations
 

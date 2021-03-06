@@ -103,10 +103,22 @@ class Simulation():
             trap_element = solving_parameters["traps_element_type"]
         else:
             trap_element = "CG"  # Default is CG
+        order_trap = 1
+        element_solute, order_solute = "CG", 1
+
         # function space for H concentrations
-        self.V = FESTIM.functionspaces_and_functions.create_function_space(
-            self.mesh, len(self.parameters["traps"]),
-            element_trap=trap_element)
+        nb_traps = len(self.parameters["traps"])
+
+        if nb_traps == 0:
+            V = FunctionSpace(self.mesh, element_solute, order_solute)
+        else:
+            solute = FiniteElement(
+                element_solute, self.mesh.ufl_cell(), order_solute)
+            traps = FiniteElement(
+                trap_element, self.mesh.ufl_cell(), order_trap)
+            element = [solute] + [traps]*nb_traps
+            V = FunctionSpace(self.mesh, MixedElement(element))
+        self.V = V
         # function space for T and ext trap dens
         self.V_CG1 = FunctionSpace(self.mesh, 'CG', 1)
         self.V_DG1 = FunctionSpace(self.mesh, 'DG', 1)
