@@ -278,7 +278,7 @@ class Simulation():
             # Solve steady state
             print('Solving steady state problem...')
 
-            FESTIM.solving.solve_once(
+            FESTIM.solve_once(
                 self.F, self.u, self.J,
                 self.bcs, self.parameters["solving_parameters"])
 
@@ -318,7 +318,7 @@ class Simulation():
     def iterate(self):
         # Update current time
         self.t += float(self.dt)
-        FESTIM.helpers.update_expressions(
+        FESTIM.update_expressions(
             self.expressions, self.t)
 
         if self.parameters["temperature"]["type"] == "expression":
@@ -357,7 +357,7 @@ class Simulation():
             self.T_n.assign(self.T)
 
         # Solve main problem
-        FESTIM.solving.solve_it(
+        FESTIM.solve_it(
             self.F, self.u, self.J, self.bcs, self.t,
             self.dt, self.parameters["solving_parameters"])
 
