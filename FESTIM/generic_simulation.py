@@ -8,8 +8,8 @@ class Simulation():
         self.parameters = parameters
         self.log_level = log_level
         # Define internal methods
-        Simulation.initialise_solutions = \
-            FESTIM.initialising.initialise_solutions
+        # Simulation.initialise_solutions = \
+        #     FESTIM.initialising.initialise_solutions
         Simulation.define_variational_problem_heat_transfers = \
             FESTIM.formulations.define_variational_problem_heat_transfers
         Simulation.define_dirichlet_bcs_T = \
@@ -193,16 +193,59 @@ class Simulation():
                 self.T_n.assign(self.T)
 
     def initialise_concentrations(self):
-        self.u = Function(self.V)
+        self.u = Function(self.V)  # Function for concentrations
 
-        self.v = TestFunction(self.V)
+        self.v = TestFunction(self.V)  # TestFunction for concentrations
 
-        # Initialising the solutions
-        if "initial_conditions" in self.parameters.keys():
-            initial_conditions = self.parameters["initial_conditions"]
+        if hasattr(self, "S"):
+            S = self.S
+        else:
+            S = None
+
+        print('Defining initial values')
+        V = self.V
+        u_n = Function(V)
+        components = list(split(u_n))
+
+        parameters = self.parameters
+        if "initial_conditions" in parameters.keys():
+            initial_conditions = parameters["initial_conditions"]
         else:
             initial_conditions = []
-        self.u_n = self.initialise_solutions()
+        FESTIM.initialising.check_no_duplicates(initial_conditions)
+
+        for ini in initial_conditions:
+            if 'component' not in ini.keys():
+                ini["component"] = 0
+            if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
+                comp = FESTIM.initialising.read_from_xdmf(ini, V)
+            else:
+                value = ini["value"]
+                value = sp.printing.ccode(value)
+                comp = Expression(value, degree=3, t=0)
+
+            chemical_pot = False
+            if S is not None:
+                for mat in parameters["materials"]:
+                    if "S_0" in mat.keys() or "E_S" in mat.keys():
+                        chemical_pot = True
+            if ini["component"] == 0 and chemical_pot is True:
+                comp = comp/S  # variable change
+            if V.num_sub_spaces() > 0:
+                if ini["component"] == 0 and chemical_pot is True:
+                    # Product must be projected
+                    comp = project(
+                        comp, V.sub(ini["component"]).collapse())
+                else:
+                    comp = interpolate(
+                        comp, V.sub(ini["component"]).collapse())
+                assign(u_n.sub(ini["component"]), comp)
+            else:
+                if ini["component"] == 0 and chemical_pot is True:
+                    u_n = project(comp, V)
+                else:
+                    u_n = interpolate(comp, V)
+        self.u_n = u_n
 
     def initialise_extrinsic_traps(self):
         traps = self.parameters["traps"]
