@@ -294,9 +294,9 @@ class Simulation():
                 simulation_percentage = round(self.t/self.final_time*100, 2)
                 simulation_time = round(self.t, 1)
                 elapsed_time = round(timer.elapsed()[0], 1)
-                msg = '{} %        '.format(simulation_percentage)
-                msg += '{} s'.format(simulation_time)
-                msg += "    Ellapsed time so far: {} s".format(elapsed_time)
+                msg = '{:.1f} %        '.format(simulation_percentage)
+                msg += '{:.1e} s'.format(simulation_time)
+                msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
 
                 print(msg, end="\r")
 
