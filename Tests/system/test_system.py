@@ -171,6 +171,7 @@ def test_run_temperature_transient(tmpdir):
             'value': 0
             },
         "solving_parameters": {
+            "type": "solve_transient",
             "final_time": 30,
             "initial_stepsize": 0.5,
             "adaptive_stepsize": {
