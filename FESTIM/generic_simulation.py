@@ -284,6 +284,8 @@ class Simulation():
 
             # Post processing
             FESTIM.run_post_processing(self)
+            elapsed_time = round(self.timer.elapsed()[0], 1)
+            print("Solved problem in {:.2f} s".format(elapsed_time))
 
         # Store data in output
         output = dict()  # Final output
