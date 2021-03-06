@@ -28,43 +28,6 @@ def generate_mesh_from_vertices(vertices):
     return mesh
 
 
-# def subdomains(mesh, parameters):
-#     """Returns two fenics.MeshFunction() for volume and surfaces entities
-
-#     Arguments:
-#         mesh {fenics.Mesh()} -- domain mesh
-#         parameters {dict} -- contains meshing and materials parameters
-
-#     Returns:
-#         fenics.MeshFunction() -- cell markers
-#         fenics.MeshFunction() -- facet markers
-#     """
-
-#     mesh_parameters = parameters["mesh_parameters"]
-#     if "cells_file" in mesh_parameters.keys():
-#         volume_markers, surface_markers = \
-#             read_subdomains_from_xdmf(
-#                 mesh,
-#                 mesh_parameters["cells_file"],
-#                 mesh_parameters["facets_file"])
-#     elif ("meshfunction_cells" in mesh_parameters.keys() and
-#             isinstance(
-#                 mesh_parameters["meshfunction_cells"],
-#                 type(MeshFunction("size_t", mesh, mesh.topology().dim())))):
-#         volume_markers = mesh_parameters["meshfunction_cells"]
-#         surface_markers = mesh_parameters["meshfunction_facets"]
-#     else:
-#         if "vertices" in mesh_parameters.keys():
-#             size = max(mesh_parameters["vertices"])
-#         else:
-#             size = parameters["mesh_parameters"]["size"]
-#         if len(parameters["materials"]) > 1:
-#             check_borders(size, parameters["materials"])
-#         volume_markers, surface_markers = \
-#             subdomains_1D(mesh, parameters["materials"], size)
-#     return volume_markers, surface_markers
-
-
 def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
     """Reads volume and surface entities from XDMF files
 
