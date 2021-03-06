@@ -374,6 +374,10 @@ class Simulation():
         for j, prev_sol in enumerate(self.previous_solutions_traps):
             self.prev_sol.assign(self.extrinsic_traps[j])
 
+        # avoid t > final_time
+        if self.t + float(self.dt) > self.final_time:
+            self.dt.assign(self.final_time - self.t)
+
 
 def run(parameters, log_level=40):
     """Main FESTIM function for complete simulations
