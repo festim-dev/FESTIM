@@ -267,69 +267,13 @@ class Simulation():
 
     def run(self):
         self.t = 0  # Initialising time to 0s
-        timer = Timer()  # start timer
+        self.timer = Timer()  # start timer
 
         if self.transient:
             #  Time-stepping
             print('Time stepping...')
             while self.t < self.final_time:
-                # Update current time
-                self.t += float(self.dt)
-                FESTIM.helpers.update_expressions(
-                    self.expressions, self.t)
-
-                if self.parameters["temperature"]["type"] == "expression":
-                    self.T_n.assign(self.T)
-                    self.T_expr.t = self.t
-                    self.T.assign(interpolate(self.T_expr, self.V_CG1))
-                self.D._T = self.T
-                if self.H is not None:
-                    self.H._T = self.T
-                if self.thermal_cond is not None:
-                    self.thermal_cond._T = self.T
-                if self.S is not None:
-                    self.S._T = self.T
-
-                # Display time
-                simulation_percentage = round(self.t/self.final_time*100, 2)
-                simulation_time = round(self.t, 1)
-                elapsed_time = round(timer.elapsed()[0], 1)
-                msg = '{:.1f} %        '.format(simulation_percentage)
-                msg += '{:.1e} s'.format(simulation_time)
-                msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-
-                print(msg, end="\r")
-
-                # Solve heat transfers
-                if self.parameters["temperature"]["type"] == "solve_transient":
-                    dT = TrialFunction(self.T.function_space())
-                    JT = derivative(self.FT, self.T, dT)  # Define the Jacobian
-                    problem = NonlinearVariationalProblem(
-                        self.FT, self.T, self.bcs_T, JT)
-                    solver = NonlinearVariationalSolver(problem)
-                    newton_solver_prm = solver.parameters["newton_solver"]
-                    newton_solver_prm["absolute_tolerance"] = 1e-3
-                    newton_solver_prm["relative_tolerance"] = 1e-10
-                    solver.solve()
-                    self.T_n.assign(self.T)
-
-                # Solve main problem
-                FESTIM.solving.solve_it(
-                    self.F, self.u, self.J, self.bcs, self.t,
-                    self.dt, self.parameters["solving_parameters"])
-
-                # Solve extrinsic traps formulation
-                for j, form in enumerate(self.extrinsic_formulations):
-                    solve(form == 0, self.extrinsic_traps[j], [])
-
-                # Post processing
-                FESTIM.run_post_processing(self)
-                self.append = True
-
-                # Update previous solutions
-                self.u_n.assign(self.u)
-                for j, prev_sol in enumerate(self.previous_solutions_traps):
-                    self.prev_sol.assign(self.extrinsic_traps[j])
+                self.iterate()
         else:
             # Solve steady state
             print('Solving steady state problem...')
@@ -369,6 +313,65 @@ class Simulation():
         # End
         print('\007')
         return output
+
+    def iterate(self):
+        # Update current time
+        self.t += float(self.dt)
+        FESTIM.helpers.update_expressions(
+            self.expressions, self.t)
+
+        if self.parameters["temperature"]["type"] == "expression":
+            self.T_n.assign(self.T)
+            self.T_expr.t = self.t
+            self.T.assign(interpolate(self.T_expr, self.V_CG1))
+        self.D._T = self.T
+        if self.H is not None:
+            self.H._T = self.T
+        if self.thermal_cond is not None:
+            self.thermal_cond._T = self.T
+        if self.S is not None:
+            self.S._T = self.T
+
+        # Display time
+        simulation_percentage = round(self.t/self.final_time*100, 2)
+        simulation_time = round(self.t, 1)
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+        msg = '{:.1f} %        '.format(simulation_percentage)
+        msg += '{:.1e} s'.format(simulation_time)
+        msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
+
+        print(msg, end="\r")
+
+        # Solve heat transfers
+        if self.parameters["temperature"]["type"] == "solve_transient":
+            dT = TrialFunction(self.T.function_space())
+            JT = derivative(self.FT, self.T, dT)  # Define the Jacobian
+            problem = NonlinearVariationalProblem(
+                self.FT, self.T, self.bcs_T, JT)
+            solver = NonlinearVariationalSolver(problem)
+            newton_solver_prm = solver.parameters["newton_solver"]
+            newton_solver_prm["absolute_tolerance"] = 1e-3
+            newton_solver_prm["relative_tolerance"] = 1e-10
+            solver.solve()
+            self.T_n.assign(self.T)
+
+        # Solve main problem
+        FESTIM.solving.solve_it(
+            self.F, self.u, self.J, self.bcs, self.t,
+            self.dt, self.parameters["solving_parameters"])
+
+        # Solve extrinsic traps formulation
+        for j, form in enumerate(self.extrinsic_formulations):
+            solve(form == 0, self.extrinsic_traps[j], [])
+
+        # Post processing
+        FESTIM.run_post_processing(self)
+        self.append = True
+
+        # Update previous solutions
+        self.u_n.assign(self.u)
+        for j, prev_sol in enumerate(self.previous_solutions_traps):
+            self.prev_sol.assign(self.extrinsic_traps[j])
 
 
 def run(parameters, log_level=40):
