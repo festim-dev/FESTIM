@@ -9,6 +9,7 @@ class Simulation():
         self.log_level = log_level
         self.chemical_pot = False
         self.transient = True
+        self.expressions = []
 
     def initialise(self):
         # Export parameters
@@ -153,7 +154,7 @@ class Simulation():
     def define_temperature(self):
         self.T = Function(self.V_CG1, name="T")
         self.T_n = Function(self.V_CG1, name="T_n")
-        self.expressions = []
+
         if self.parameters["temperature"]["type"] == "expression":
             self.T_expr = Expression(
                 sp.printing.ccode(
