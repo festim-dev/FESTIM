@@ -8,6 +8,7 @@ class Simulation():
         self.parameters = parameters
         self.log_level = log_level
         self.chemical_pot = False
+        self.transient = True
 
     def initialise(self):
         # Export parameters
@@ -20,21 +21,19 @@ class Simulation():
         set_log_level(self.log_level)
 
         # Check if transient
-        transient = True
         solving_parameters = self.parameters["solving_parameters"]
         if "type" in solving_parameters.keys():
             if solving_parameters["type"] == "solve_transient":
-                transient = True
+                self.transient = True
             elif solving_parameters["type"] == "solve_stationary":
-                transient = False
+                self.transient = False
             else:
                 raise ValueError(
                     str(solving_parameters["type"]) + ' unkown')
-        self.transient = transient
 
         # Declaration of variables
         dt = 0
-        if transient:
+        if self.transient:
             self.final_time = solving_parameters["final_time"]
             initial_stepsize = solving_parameters["initial_stepsize"]
             dt = Constant(initial_stepsize, name="dt")  # time step size
