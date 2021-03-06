@@ -8,6 +8,7 @@ import pytest
 import sympy as sp
 import numpy as np
 from pathlib import Path
+import timeit
 
 
 def test_run_post_processing(tmpdir):
@@ -321,3 +322,70 @@ def test_run_post_processing_flux(tmpdir):
                       -1*-2*6*fenics.exp(-0.5/FESTIM.k_B/T(1)))
     assert np.isclose(derived_quantities_global[1][3], -1*100*3)
     assert np.isclose(derived_quantities_global[1][4], -1*-100*5)
+
+
+def test_performance_xdmf_export_every_N_iterations(tmpdir):
+    '''
+    Test the integration of post processing functions.
+    In the pure diffusion case
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [{
+                "borders": [0, 0.5],
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+                }],
+        "traps": [
+            {}
+        ],
+        "exports": {
+            "xdmf": {
+                    "functions": ['solute', 'T'],
+                    "labels":  ['solute', 'temperature'],
+                    "folder": str(Path(d)),
+                    },
+
+            }
+        }
+    mesh = fenics.UnitSquareMesh(16, 16)
+    V_CG1 = fenics.FunctionSpace(mesh, 'CG', 1)
+    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.T = fenics.Function(V_CG1)
+    my_sim.u = fenics.Function(V_CG1)
+    my_sim.V_CG1 = V_CG1
+    my_sim.V_DG1 = V_DG1
+    my_sim.volume_markers, my_sim.surface_markers = 'foo', 'foo'
+    my_sim.t = 0
+    my_sim.append = False
+    my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
+        my_sim.H, my_sim.S = 0, 0, 0, 0, 0, None,
+    my_sim.files = FESTIM.define_xdmf_files(parameters["exports"])
+
+    # export every time
+    my_sim.nb_iterations_between_exports = 1
+    start = timeit.default_timer()
+    for i in range(30):
+        my_sim.nb_iterations += 1
+        FESTIM.run_post_processing(my_sim)
+
+    stop = timeit.default_timer()
+    time_1 = stop - start
+    print(time_1)
+    # export every 10 iterations
+    my_sim.nb_iterations = 0
+    my_sim.append = False
+    my_sim.nb_iterations_between_exports = 20
+    start = timeit.default_timer()
+    for i in range(30):
+        my_sim.nb_iterations += 1
+        FESTIM.run_post_processing(my_sim)
+
+    stop = timeit.default_timer()
+    time_2 = stop - start
+    print(time_2)
+
+    assert time_2/time_1 < 0.1

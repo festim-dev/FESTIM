@@ -13,6 +13,8 @@ class Simulation():
         self.files = []
         self.derived_quantities_global = []
         self.dt = Constant(0, name="dt")
+        self.nb_iterations = 0
+        self.nb_iterations_between_exports = 1
 
     def initialise(self):
         # Export parameters
@@ -69,8 +71,12 @@ class Simulation():
 
         # Solution files
         self.append = False
-        if "xdmf" in self.parameters["exports"].keys():
-            self.files = FESTIM.define_xdmf_files(self.parameters["exports"])
+        exports = self.parameters["exports"]
+        if "xdmf" in exports.keys():
+            self.files = FESTIM.define_xdmf_files(exports)
+            if "nb_iterations_between_exports" in exports["xdmf"]:
+                self.nb_iterations_between_exports = \
+                   exports["xdmf"]["nb_iterations_between_exports"]
 
     def define_mesh(self):
 
@@ -373,6 +379,7 @@ class Simulation():
         self.u_n.assign(self.u)
         for j, prev_sol in enumerate(self.previous_solutions_traps):
             self.prev_sol.assign(self.extrinsic_traps[j])
+        self.nb_iterations += 1
 
 
 def run(parameters, log_level=40):
