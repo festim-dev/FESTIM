@@ -44,11 +44,7 @@ def run_post_processing(simulation):
 
     retention = sum(res)
     res.append(retention)
-
-    if isinstance(T, function.expression.Expression):
-        res.append(interpolate(T, V_CG1))
-    else:
-        res.append(T)
+    res.append(T)
 
     if "derived_quantities" in parameters["exports"].keys():
         derived_quantities_t = \
