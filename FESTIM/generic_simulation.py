@@ -12,7 +12,7 @@ class Simulation():
         self.expressions = []
         self.files = []
         self.derived_quantities_global = []
-        self.dt = 0
+        self.dt = Constant(0, name="dt")
 
     def initialise(self):
         # Export parameters
@@ -39,7 +39,7 @@ class Simulation():
         if self.transient:
             self.final_time = solving_parameters["final_time"]
             initial_stepsize = solving_parameters["initial_stepsize"]
-            self.dt = Constant(initial_stepsize, name="dt")  # time step size
+            self.dt.assign(initial_stepsize)  # time step size
 
         # create mesh and markers
         self.define_mesh()
