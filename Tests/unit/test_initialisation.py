@@ -141,11 +141,13 @@ def test_initialisation_with_expression_chemical_pot():
     Test that initialise_solutions interpolates correctly
     from an expression with conservation of chemical potential
     '''
+
+    S = 2
     mesh = fenics.UnitSquareMesh(8, 8)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-    ini_u = fenics.Expression("1+x[0] + x[1]", degree=1)
+    ini_u = fenics.Expression("(1+x[0] + x[1])/S", S=S, degree=1)
     ini_u = fenics.interpolate(ini_u, V.sub(0).collapse())
     fenics.assign(u.sub(0), ini_u)
     ini_u = fenics.Expression("1+x[0]", degree=1)
@@ -166,9 +168,11 @@ def test_initialisation_with_expression_chemical_pot():
     }
     my_sim = FESTIM.Simulation(parameters)
     my_sim.V = V
+    my_sim.S = S
+    my_sim.chemical_pot = True
     my_sim.initialise_concentrations()
     w = my_sim.u_n
-    assert fenics.errornorm(u, w) == 0
+    assert fenics.errornorm(u, w) == pytest.approx(0)
 
 
 def test_initialisation_default():

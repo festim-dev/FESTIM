@@ -7,6 +7,7 @@ class Simulation():
     def __init__(self, parameters, log_level=40):
         self.parameters = parameters
         self.log_level = log_level
+        self.chemical_pot = False
         # Define internal methods
         # Simulation.initialise_solutions = \
         #     FESTIM.initialising.initialise_solutions
@@ -70,8 +71,7 @@ class Simulation():
                 self.volume_markers, self.T)
         if self.S is not None:
             self.chemical_pot = True
-        else:
-            self.chemical_pot = False
+
 
         # Define functions
         self.initialise_concentrations()
