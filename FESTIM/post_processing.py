@@ -332,9 +332,7 @@ def derived_quantities(parameters, solutions,
                 Q = properties[2]
     volume_markers = markers[0]
     surface_markers = markers[1]
-    V = solutions[0].function_space()
-    mesh = V.mesh()
-    W = FunctionSpace(mesh, 'P', 1)
+    mesh = solutions[-1].function_space().mesh()
     n = FacetNormal(mesh)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
@@ -356,10 +354,6 @@ def derived_quantities(parameters, solutions,
     for i in range(1, len(solutions)-2):
         field_to_sol[str(i)] = solutions[i]
 
-    for key, val in field_to_sol.items():
-        if isinstance(val, function.expression.Expression):
-            val = interpolate(val, W)
-            field_to_sol[key] = val
     tab = []
     # Compute quantities
     derived_quant_dict = parameters["exports"]["derived_quantities"]
