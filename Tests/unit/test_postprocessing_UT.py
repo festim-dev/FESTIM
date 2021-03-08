@@ -713,7 +713,7 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
         my_sim.H, my_sim.S = *[None]*5, S
     my_sim.derived_quantities_global = []
-
+    my_sim.chemical_pot = True
     run_post_processing(my_sim)
 
     # check
