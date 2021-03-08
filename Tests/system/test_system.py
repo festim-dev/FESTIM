@@ -4,6 +4,7 @@ import fenics
 import pytest
 import sympy as sp
 from pathlib import Path
+import timeit
 
 
 # System tests
@@ -897,3 +898,127 @@ def test_chemical_pot_T_solve_stationary():
     }
     out = run(parameters)
     assert out["derived_quantities"][-1][1] > 0.97
+
+
+def test_performance_xdmf(tmpdir):
+    '''
+    Check that the computation time when exporting every 10 iterations to XDMF
+    is reduced
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 4,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "xdmf": {
+                    "functions": ['retention', 'T'],
+                    "labels":  ['retention', 'temperature'],
+                    "folder": str(Path(d))
+            },
+            },
+    }
+
+    # long simulation
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    long_time = stop - start
+
+    # short simulation
+    parameters["exports"]["xdmf"]["nb_iterations_between_exports"] = 10
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    short_time = stop - start
+    assert short_time < long_time
+
+
+def test_performance_xdmf_last_timestep(tmpdir):
+    '''
+    Check that the computation time when exporting only the last timestep to
+    XDMF is reduced
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 3,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "xdmf": {
+                    "functions": ['retention', 'T'],
+                    "labels":  ['retention', 'temperature'],
+                    "folder": str(Path(d))
+            },
+            },
+    }
+
+    # long simulation
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    long_time = stop - start
+
+    # short simulation
+    parameters["exports"]["xdmf"]["last_timestep_only"] = True
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    short_time = stop - start
+    assert short_time < long_time

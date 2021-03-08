@@ -37,9 +37,8 @@ def run_post_processing(simulation):
         res = [u]
     else:
         res = list(u.split())
-    if S is not None:
-        # this is costly ...
-        solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
+    if simulation.chemical_pot:
+        solute = res[0]*S
         res[0] = solute
 
     retention = sum(res)
@@ -58,10 +57,24 @@ def run_post_processing(simulation):
         derived_quantities_t.insert(0, t)
         derived_quantities_global.append(derived_quantities_t)
     if "xdmf" in parameters["exports"].keys():
-        if "retention" in parameters["exports"]["xdmf"]["functions"]:
-            res[-2] = project(res[-2], V_CG1)
-        FESTIM.export.export_xdmf(
-            res, parameters["exports"], files, t, append=append)
+        if (simulation.export_xdmf_last_only and
+            simulation.t >= simulation.final_time) or \
+                not simulation.export_xdmf_last_only:
+            if simulation.nb_iterations % \
+                    simulation.nb_iterations_between_exports == 0:
+                functions_to_exports = \
+                    parameters["exports"]["xdmf"]["functions"]
+                # if solute or retention needs to be exported,
+                # project it onto V_DG1
+                if any(x in functions_to_exports for x in ['0', 'solute']):
+                    if simulation.chemical_pot:
+                        # this is costly ...
+                        res[0] = project(res[0], V_DG1)
+                if 'retention' in functions_to_exports:
+                    res[-2] = project(retention, V_DG1)
+
+                FESTIM.export.export_xdmf(
+                    res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
             res, parameters["exports"], t, dt, V_DG1)

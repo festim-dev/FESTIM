@@ -688,11 +688,14 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     V = fenics.FunctionSpace(mesh, 'P', 1)
     val_theta = 2
     theta_out = fenics.interpolate(fenics.Constant(val_theta), V)
-    files = [fenics.XDMFFile(str(Path(d)) + "/retention.xdmf")]
+    files = [
+        fenics.XDMFFile(str(Path(d)) + "/retention.xdmf"),
+        fenics.XDMFFile(str(Path(d)) + "/solute.xdmf")
+    ]
     exports = {
             "xdmf": {
-                "functions": ['retention'],
-                "labels": ['retention'],
+                "functions": ['retention', 'solute'],
+                "labels": ['retention', 'solute'],
                 "folder": str(Path(d))
             }
         }
@@ -713,11 +716,15 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
         my_sim.H, my_sim.S = *[None]*5, S
     my_sim.derived_quantities_global = []
-
+    my_sim.chemical_pot = True
     run_post_processing(my_sim)
 
     # check
     u_in = fenics.Function(V)
     files[0].read_checkpoint(u_in, "retention", -1)
+    for i in range(10):
+        assert np.isclose(u_in(i/10), val_theta*val_S)
+
+    files[1].read_checkpoint(u_in, "solute", -1)
     for i in range(10):
         assert np.isclose(u_in(i/10), val_theta*val_S)
