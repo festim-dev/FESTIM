@@ -39,7 +39,7 @@ def run_post_processing(simulation):
         res = list(u.split())
     if S is not None:
         # this is costly ...
-        solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
+        solute = res[0]*S
         res[0] = solute
 
     retention = sum(res)
@@ -63,8 +63,14 @@ def run_post_processing(simulation):
                 not simulation.export_xdmf_last_only:
             if simulation.nb_iterations % \
                     simulation.nb_iterations_between_exports == 0:
-                if "retention" in parameters["exports"]["xdmf"]["functions"]:
-                    res[-2] = project(res[-2], V_CG1)
+                functions_to_exports = \
+                    parameters["exports"]["xdmf"]["functions"]
+                # if solute or retention needs to be exported,
+                # project it onto V_DG1
+                if any(x in functions_to_exports for x in ['0', 'retention', 'solute']):
+                    res[0] = project(res[0], V_DG1)
+                    res[-2] = project(retention, V_DG1)
+
                 FESTIM.export.export_xdmf(
                     res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
@@ -337,7 +343,7 @@ def derived_quantities(parameters, solutions,
                 Q = properties[2]
     volume_markers = markers[0]
     surface_markers = markers[1]
-    V = solutions[0].function_space()
+    V = solutions[-1].function_space()
     mesh = V.mesh()
     W = FunctionSpace(mesh, 'P', 1)
     n = FacetNormal(mesh)
