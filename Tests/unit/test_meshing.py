@@ -1,7 +1,8 @@
 # Unit tests meshing
-from FESTIM.meshing import mesh_and_refine, subdomains_1D, create_mesh,\
-    read_subdomains_from_xdmf, subdomains, check_borders,\
+from FESTIM.meshing import mesh_and_refine, subdomains_1D,\
+    read_subdomains_from_xdmf, check_borders,\
     generate_mesh_from_vertices
+from FESTIM import Simulation
 import fenics
 import pytest
 import sympy as sp
@@ -145,7 +146,9 @@ def test_create_mesh_xdmf(tmpdir):
     mesh_parameters = {
         "mesh_file": str(Path(file1)),
         }
-    mesh2 = create_mesh(mesh_parameters)
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.define_mesh()
+    mesh2 = my_model.mesh
 
     # check that vertices are the same
     vertices_mesh = []
@@ -194,7 +197,9 @@ def test_create_mesh_inbuilt():
     mesh_parameters = {
         "mesh": mesh
         }
-    mesh2 = create_mesh(mesh_parameters)
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.define_mesh()
+    mesh2 = my_model.mesh
 
     # check that vertices are the same
     vertices_mesh = []
@@ -222,14 +227,18 @@ def test_subdomains_inbuilt():
     mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
     mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
     mesh_parameters = {
-        "mesh_parameters": {
             "mesh": mesh,
             "meshfunction_cells": mf_cells,
             "meshfunction_facets": mf_facets
-        }
     }
     # read
-    mf_cells_2, mf_facets_2 = subdomains(mesh, mesh_parameters)
+
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.mesh = mesh
+    my_model.define_markers()
+
+    mf_cells_2, mf_facets_2 = \
+        my_model.volume_markers, my_model.surface_markers
     # check
     for cell in fenics.cells(mesh):
         assert mf_cells[cell] == mf_cells_2[cell]
@@ -255,7 +264,9 @@ def test_create_mesh_vertices():
     mesh_parameters = {
         "vertices": points
     }
-    mesh = create_mesh(mesh_parameters)
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.define_mesh()
+    mesh = my_model.mesh
     assert mesh.num_vertices() == len(points)
     assert mesh.num_edges() == len(points) - 1
     assert mesh.num_cells() == len(points) - 1
@@ -288,8 +299,11 @@ def test_integration_mesh_from_vertices_subdomains():
         "mesh_parameters": mesh_parameters,
         "materials": materials
     }
-    mesh = create_mesh(mesh_parameters)
-    vm, sm = subdomains(mesh, parameters)
+    my_model = Simulation(parameters)
+    my_model.define_mesh()
+    mesh = my_model.mesh
+    my_model.define_markers()
+    vm, sm = my_model.volume_markers, my_model.surface_markers
 
     # Testing
     for cell in fenics.cells(mesh):

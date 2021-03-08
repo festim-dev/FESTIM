@@ -4,18 +4,19 @@ import sympy as sp
 import numpy as np
 
 
-def define_dirichlet_bcs_T(parameters, V, boundaries):
+def define_dirichlet_bcs_T(simulation):
     """Creates a list of BCs for thermal problem
 
     Arguments:
-        parameters {dict} -- contains temperature parameters
-        V {fenics.FunctionSpace} -- functionspace of temperature
-        boundaries {fenics.MeshFunction} -- markers for facets
+
 
     Returns:
         list -- contains fenics.DirichletBC
         list -- contains fenics.Expression to be updated
     """
+    parameters = simulation.parameters
+    V = simulation.V_CG1
+    boundaries = simulation.surface_markers
 
     bcs = []
     expressions = []
@@ -34,16 +35,12 @@ def define_dirichlet_bcs_T(parameters, V, boundaries):
     return bcs, expressions
 
 
-def apply_fluxes(parameters, u, v, ds, T, S=None):
+def apply_fluxes(simulation):
     """Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
 
     Arguments:
-        parameters {dict} -- contains materials and BCs parameters
-        u {fenics.Function} -- concentrations Function
-        v {fenics.TestFunction} -- concentrations TestFunction
-        ds {fenics.Measurement} -- measurement ds
-        T {fenics.Expression, fenics.Function} -- temperature
+
 
     Keyword Arguments:
         S {fenics.UserExpression} -- solubility (default: {None})
@@ -55,6 +52,12 @@ def apply_fluxes(parameters, u, v, ds, T, S=None):
         fenics.Form() -- formulation for BCs
         list -- contains all the fenics.Expression() to be updated
     """
+    parameters = simulation.parameters
+    u = simulation.u
+    v = simulation.v
+    ds = simulation.ds
+    T = simulation.T
+    S = simulation.S
 
     expressions = []
     solutions = split(u)
@@ -176,15 +179,11 @@ class BoundaryConditionRecomb(UserExpression):
         return ()
 
 
-def apply_boundary_conditions(parameters, V,
-                              markers, T):
+def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
     Arguments:
-        parameters {dict} -- materials and bcs parameters
-        V {fenics.FunctionSpace()} -- functionspace for concentrations
-        markers {list} -- contains fenics.MeshFunction() ([volume, surface])
-        T {fenics.Expression(), fenics.Function()} -- temperature
+
 
     Raises:
         KeyError: Raised if the type key of bc is missing
@@ -194,12 +193,16 @@ def apply_boundary_conditions(parameters, V,
         list -- contains fenics DirichletBC
         list -- contains the fenics.Expression() to be updated
     """
+    parameters = simulation.parameters
+    V = simulation.V
+    boundary_conditions = parameters["boundary_conditions"]
+    volume_markers = simulation.volume_markers
+    surface_markers = simulation.surface_markers
+    T = simulation.T
 
     bcs = list()
     expressions = list()
-    boundary_conditions = parameters["boundary_conditions"]
-    volume_markers = markers[0]
-    surface_markers = markers[1]
+
     for BC in boundary_conditions:
         if "type" in BC.keys():
             type_BC = BC["type"]

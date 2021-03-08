@@ -1,5 +1,4 @@
 import FESTIM
-from FESTIM.initialising import initialise_solutions
 import pytest
 import fenics
 import os
@@ -47,7 +46,10 @@ def test_initialisation_from_xdmf(tmpdir):
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.initialise_concentrations()
+    w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -74,8 +76,10 @@ def test_fail_initialisation_from_xdmf():
             },
         ],
     }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
     with pytest.raises(KeyError, match=r'time_step'):
-        initialise_solutions(parameters, V)
+        my_sim.initialise_concentrations()
 
     parameters = {
         "initial_conditions": [
@@ -91,8 +95,10 @@ def test_fail_initialisation_from_xdmf():
             },
         ],
     }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
     with pytest.raises(KeyError, match=r'label'):
-        initialise_solutions(parameters, V)
+        my_sim.initialise_concentrations()
 
 
 def test_initialisation_with_expression():
@@ -123,7 +129,10 @@ def test_initialisation_with_expression():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.initialise_concentrations()
+    w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -132,11 +141,13 @@ def test_initialisation_with_expression_chemical_pot():
     Test that initialise_solutions interpolates correctly
     from an expression with conservation of chemical potential
     '''
+
+    S = 2
     mesh = fenics.UnitSquareMesh(8, 8)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-    ini_u = fenics.Expression("1+x[0] + x[1]", degree=1)
+    ini_u = fenics.Expression("(1+x[0] + x[1])/S", S=S, degree=1)
     ini_u = fenics.interpolate(ini_u, V.sub(0).collapse())
     fenics.assign(u.sub(0), ini_u)
     ini_u = fenics.Expression("1+x[0]", degree=1)
@@ -155,8 +166,13 @@ def test_initialisation_with_expression_chemical_pot():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
-    assert fenics.errornorm(u, w) == 0
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.S = S
+    my_sim.chemical_pot = True
+    my_sim.initialise_concentrations()
+    w = my_sim.u_n
+    assert fenics.errornorm(u, w) == pytest.approx(0)
 
 
 def test_initialisation_default():
@@ -168,8 +184,10 @@ def test_initialisation_default():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-
-    w = initialise_solutions({"initial_conditions": []}, V)
+    my_sim = FESTIM.Simulation({"initial_conditions": []})
+    my_sim.V = V
+    my_sim.initialise_concentrations()
+    w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -192,7 +210,10 @@ def test_initialisation_solute_only():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.initialise_concentrations()
+    w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -216,7 +237,10 @@ def test_initialisation_no_component():
             },
         ],
     }
-    w = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.initialise_concentrations()
+    w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -240,5 +264,7 @@ def test_initialisation_duplicates():
             },
         ],
     }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
     with pytest.raises(ValueError, match=r'Duplicate'):
-        initialise_solutions(parameters, V)
+        my_sim.initialise_concentrations()

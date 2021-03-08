@@ -3,30 +3,6 @@ from operator import itemgetter
 import numpy as np
 
 
-def create_mesh(mesh_parameters):
-    """Main meshing function.
-
-    Arguments:
-        mesh_parameters {dict} -- contains the meshing parameters
-
-    Returns:
-        fenics.Mesh() -- the simulation mesh
-    """
-
-    if "mesh_file" in mesh_parameters.keys():
-        # Read volumetric mesh
-        mesh = Mesh()
-        XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
-    elif ("mesh" in mesh_parameters.keys() and
-            isinstance(mesh_parameters["mesh"], type(Mesh()))):
-        mesh = mesh_parameters["mesh"]
-    elif "vertices" in mesh_parameters.keys():
-        mesh = generate_mesh_from_vertices(mesh_parameters["vertices"])
-    else:
-        mesh = mesh_and_refine(mesh_parameters)
-    return mesh
-
-
 def generate_mesh_from_vertices(vertices):
     '''Generates a 1D mesh from a list of vertices
 
@@ -50,43 +26,6 @@ def generate_mesh_from_vertices(vertices):
         editor.add_cell(j, np.array([j, j+1]))
     editor.close()
     return mesh
-
-
-def subdomains(mesh, parameters):
-    """Returns two fenics.MeshFunction() for volume and surfaces entities
-
-    Arguments:
-        mesh {fenics.Mesh()} -- domain mesh
-        parameters {dict} -- contains meshing and materials parameters
-
-    Returns:
-        fenics.MeshFunction() -- cell markers
-        fenics.MeshFunction() -- facet markers
-    """
-
-    mesh_parameters = parameters["mesh_parameters"]
-    if "cells_file" in mesh_parameters.keys():
-        volume_markers, surface_markers = \
-            read_subdomains_from_xdmf(
-                mesh,
-                mesh_parameters["cells_file"],
-                mesh_parameters["facets_file"])
-    elif ("meshfunction_cells" in mesh_parameters.keys() and
-            isinstance(
-                mesh_parameters["meshfunction_cells"],
-                type(MeshFunction("size_t", mesh, mesh.topology().dim())))):
-        volume_markers = mesh_parameters["meshfunction_cells"]
-        surface_markers = mesh_parameters["meshfunction_facets"]
-    else:
-        if "vertices" in mesh_parameters.keys():
-            size = max(mesh_parameters["vertices"])
-        else:
-            size = parameters["mesh_parameters"]["size"]
-        if len(parameters["materials"]) > 1:
-            check_borders(size, parameters["materials"])
-        volume_markers, surface_markers = \
-            subdomains_1D(mesh, parameters["materials"], size)
-    return volume_markers, surface_markers
 
 
 def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):

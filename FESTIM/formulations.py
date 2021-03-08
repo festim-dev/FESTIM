@@ -1,32 +1,24 @@
-from fenics import *
+from fenics import split, grad, dot, Expression, exp, dx
 import sympy as sp
 import FESTIM
 
 
-def formulation(parameters, extrinsic_traps, u, v,
-                u_n, dt, dx, T, T_n=None, transient=True):
+def formulation(simulation):
     """Creates formulation for trapping MRE model
 
     Arguments:
-        parameters {dict} -- contains simulation parameters
-        extrinsic_traps {list} -- contains fenics.Function for extrinsic traps
-        u {fenics.Function} -- concentrations Function
-        v {fenics.TestFunction} -- concentrations TestFunction
-        u_n {fenics.Function} -- concentrations Function (previous step)
-        dt {fenics.Constan} -- stepsize
-        dx {fenics.Measure} -- dx measure
-        T {fenics.Expression, fenics.Function} -- temperature
 
-    Keyword Arguments:
-        T_n {fenics.Function} -- previous step temperature needed if chemical
-            potential conservation is set (default: {None})
-        transient {bool} -- True if simulation is transient, False else (default: {True})
 
     Returns:
         fenics.Form() -- global formulation
         list -- contains fenics.Expression() to be updated
     """
-
+    u, u_n = simulation.u, simulation.u_n
+    v = simulation.v
+    parameters = simulation.parameters
+    T, T_n = simulation.T, simulation.T_n
+    dt = simulation.dt
+    dx = simulation.dx
     k_B = FESTIM.k_B  # Boltzmann constant
     expressions = []
     F = 0
@@ -54,7 +46,7 @@ def formulation(parameters, extrinsic_traps, u, v,
             c_0_n = previous_solutions[0]*S_0*exp(-E_S/k_B/T_n)
 
         subdomain = material['id']
-        if transient:
+        if simulation.transient:
             F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
         F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                  grad(testfunctions[0]))*dx(subdomain)
@@ -88,7 +80,7 @@ def formulation(parameters, extrinsic_traps, u, v,
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
         if 'type' in trap.keys() and trap['type'] == 'extrinsic':
-            trap_density = extrinsic_traps[j]
+            trap_density = simulation.extrinsic_traps[j]
             j += 1
         else:
             trap_density = sp.printing.ccode(trap['density'])
@@ -101,7 +93,7 @@ def formulation(parameters, extrinsic_traps, u, v,
         p_0 = trap['p_0']
 
         material = trap['materials']
-        if transient:
+        if simulation.transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[i]*dx
         if type(material) is not list:
@@ -127,31 +119,30 @@ def formulation(parameters, extrinsic_traps, u, v,
             F += -source*testfunctions[i]*dx
             expressions.append(source)
 
-        if transient:
+        if simulation.transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[0]*dx
         i += 1
     return F, expressions
 
 
-def formulation_extrinsic_traps(traps, solutions, testfunctions,
-                                previous_solutions, dt):
+def formulation_extrinsic_traps(simulation):
     """Creates a list that contains formulations to be solved during
     time stepping.
 
     Arguments:
-        traps {list} -- contains dicts containing trap parameters
-        solutions {list} -- contains fenics.Function for traps densities
-        testfunctions {list} -- contains fenics.TestFunction for traps
-            densities
-        previous_solutions {list} -- contains fenics.Function for traps
-            densities (previous step)
-        dt {fenics.Constant} -- stepsize
+
 
     Returns:
         list -- contains fenics.Form to be solved for extrinsic trap density
         list -- contains fenics.Expression to be updated
     """
+    traps = simulation.parameters["traps"]
+    solutions = simulation.extrinsic_traps
+    previous_solutions = simulation.previous_solutions_traps
+    testfunctions = simulation.testfunctions_traps
+    dt = simulation.dt
+
     formulations = []
     expressions = []
     i = 0
@@ -184,18 +175,10 @@ def formulation_extrinsic_traps(traps, solutions, testfunctions,
     return formulations, expressions
 
 
-def define_variational_problem_heat_transfers(
-        parameters, functions, measurements, dt):
+def define_variational_problem_heat_transfers(simulation):
     """Create a variational form for heat transfer problem
 
     Arguments:
-        parameters {dict} -- contains materials and temperature parameters
-        functions {list} -- [fenics.Function, fenics.TestFunction,
-            fenics.Function] ([current solution, TestFunction,
-            previous_solution])
-        measurements {list} -- [fenics.Measurement, fenics.Measurement]
-            ([dx, ds])
-        dt {fenics.Constant} -- stepsize
 
     Raises:
         NameError: if thermal_cond is not in keys
@@ -209,10 +192,12 @@ def define_variational_problem_heat_transfers(
 
     print('Defining variational problem heat transfers')
     expressions = []
-    dx = measurements[0]
-    ds = measurements[1]
-    T = functions[0]
-    vT = functions[1]
+    parameters = simulation.parameters
+    dx = simulation.dx
+    ds = simulation.ds
+    dt = simulation.dt
+    T, T_n = simulation.T, simulation.T_n
+    vT = simulation.vT
 
     F = 0
     for mat in parameters["materials"]:
@@ -223,7 +208,6 @@ def define_variational_problem_heat_transfers(
             thermal_cond = thermal_cond(T)
         vol = mat["id"]
         if parameters["temperature"]["type"] == "solve_transient":
-            T_n = functions[2]
             if "heat_capacity" not in mat.keys():
                 raise NameError("Missing heat_capacity key in material")
             if "rho" not in mat.keys():
