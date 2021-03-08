@@ -37,8 +37,7 @@ def run_post_processing(simulation):
         res = [u]
     else:
         res = list(u.split())
-    if S is not None:
-        # this is costly ...
+    if simulation.chemical_pot:
         solute = res[0]*S
         res[0] = solute
 
@@ -67,8 +66,11 @@ def run_post_processing(simulation):
                     parameters["exports"]["xdmf"]["functions"]
                 # if solute or retention needs to be exported,
                 # project it onto V_DG1
-                if any(x in functions_to_exports for x in ['0', 'retention', 'solute']):
-                    res[0] = project(res[0], V_DG1)
+                if any(x in functions_to_exports for x in ['0', 'solute']):
+                    if simulation.chemical_pot:
+                        # this is costly ...
+                        res[0] = project(res[0], V_DG1)
+                if 'retention' in functions_to_exports:
                     res[-2] = project(retention, V_DG1)
 
                 FESTIM.export.export_xdmf(
