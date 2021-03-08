@@ -287,33 +287,15 @@ class Simulation():
             elapsed_time = round(self.timer.elapsed()[0], 1)
             print("Solved problem in {:.2f} s".format(elapsed_time))
 
-        # Store data in output
-        output = dict()  # Final output
-
-        # Compute error
-        if self.u.function_space().num_sub_spaces() == 0:
-            res = [self.u]
-        else:
-            res = list(self.u.split())
-        if "error" in self.parameters["exports"].keys():
-            if self.S is not None:
-                solute = project(res[0]*self.S, self.V_DG1)
-                res[0] = solute
-            error = FESTIM.compute_error(
-                self.parameters["exports"]["error"], self.t,
-                [*res, self.T], self.mesh)
-            output["error"] = error
-        output["parameters"] = self.parameters
-        output["mesh"] = self.mesh
+        # export derived quantities to CSV
         if "derived_quantities" in self.parameters["exports"].keys():
-            output["derived_quantities"] = self.derived_quantities_global
             FESTIM.write_to_csv(
                 self.parameters["exports"]["derived_quantities"],
                 self.derived_quantities_global)
 
         # End
         print('\007')
-        return output
+        return self.make_output()
 
     def iterate(self):
         # Update current time
@@ -373,6 +355,44 @@ class Simulation():
         self.u_n.assign(self.u)
         for j, prev_sol in enumerate(self.previous_solutions_traps):
             self.prev_sol.assign(self.extrinsic_traps[j])
+
+    def make_output(self):
+
+        if self.u.function_space().num_sub_spaces() == 0:
+            res = [self.u]
+        else:
+            res = list(self.u.split())
+
+        if self.chemical_pot:  # c_m = theta * S
+            solute = project(res[0]*self.S, self.V_DG1)
+            res[0] = solute
+
+        output = dict()  # Final output
+        # Compute error
+        if "error" in self.parameters["exports"].keys():
+            error = FESTIM.compute_error(
+                self.parameters["exports"]["error"], self.t,
+                [*res, self.T], self.mesh)
+            output["error"] = error
+
+        output["parameters"] = self.parameters
+        output["mesh"] = self.mesh
+
+        # add derived quantities to output
+        if "derived_quantities" in self.parameters["exports"].keys():
+            output["derived_quantities"] = self.derived_quantities_global
+
+        # initialise output["solutions"] with solute and temperature
+        output["solutions"] = {
+            "solute": res[0],
+            "T": self.T
+        }
+        # add traps to output
+        for i in range(len(self.parameters["traps"])):
+            output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
+        # compute retention and add it to output
+        output["solutions"]["retention"] = project(sum(res), self.V_DG1)
+        return output
 
 
 def run(parameters, log_level=40):
