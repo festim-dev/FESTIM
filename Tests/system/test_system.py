@@ -35,7 +35,7 @@ def test_run_temperature_stationary(tmpdir):
             },
         "boundary_conditions": [
                     {
-                        "surfaces": [1],
+                        "surfaces": 1,
                         "value": 1,
                         "component": 0,
                         "type": "dc"
