@@ -838,8 +838,6 @@ def test_chemical_pot_T_solve_stationary():
                 "S_0": 2,
                 "E_S": 0.2,
                 "thermal_cond": 1,
-                "heat_capacity": 1,
-                "rho": 1,
                 "id": 1,
             },
             ],
