@@ -1,6 +1,8 @@
 import FESTIM
 from fenics import *
 import sympy as sp
+import numpy as np
+import warnings
 
 
 class Simulation():
@@ -46,6 +48,7 @@ class Simulation():
 
         # create mesh and markers
         self.define_mesh()
+        self.define_materials()
         self.define_markers()
 
         # Define function space for system of concentrations and properties
@@ -80,6 +83,52 @@ class Simulation():
             if "nb_iterations_between_exports" in exports["xdmf"]:
                 self.nb_iterations_between_exports = \
                    exports["xdmf"]["nb_iterations_between_exports"]
+
+    def define_materials(self):
+        materials = self.parameters["materials"]
+        # check the keys in the materials are known
+        for mat in materials:
+            for key in mat.keys():
+                if key not in FESTIM.parameters_helper["materials"]:
+                    warnings.warn(
+                        key + " key in materials is unknown",
+                        UserWarning)
+
+        # check the materials keys match
+        if len(materials) > 1:
+            old = set(materials[0].keys())
+            for mat in materials:
+                if not old == set(mat.keys()):
+                    raise ValueError("Materials dicts keys are not the same")
+                old = set(mat.keys())
+
+        # warn about unused keys
+        transient_properties = ["rho", "heat_capacity"]
+        if self.parameters["temperature"]["type"] != "solve_transient":
+            for key in transient_properties:
+                if key in materials[0].keys():
+                    warnings.warn(key + " key will be ignored", UserWarning)
+
+        if "thermal_cond" in materials[0].keys():
+            warn = True
+            if self.parameters["temperature"]["type"] != "expression":
+                warn = False
+            elif "derived_quantities" in self.parameters["exports"].keys():
+                derived_quantities = \
+                    self.parameters["exports"]["derived_quantities"]
+                if "surface_flux" in derived_quantities:
+                    for surface_flux in derived_quantities["surface_flux"]:
+                        if surface_flux["field"] == "T":
+                            warn = False
+            if warn:
+                warnings.warn("thermal_cond key will be ignored", UserWarning)
+
+        # check that ids are different
+        ids = [mat["id"] for mat in materials]
+        if not len(ids) == len(np.unique(ids)):
+            raise ValueError("Some materials have the same id")
+
+        self.materials = materials
 
     def define_mesh(self):
 

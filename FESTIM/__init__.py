@@ -1,4 +1,5 @@
-from .helpers import find_material_from_id, update_expressions, help_key
+from .helpers import find_material_from_id, update_expressions, help_key, \
+    parameters_helper
 
 from .meshing import generate_mesh_from_vertices, read_subdomains_from_xdmf, \
                         mesh_and_refine, subdomains_1D, check_borders
