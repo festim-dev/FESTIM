@@ -155,12 +155,48 @@ def test_unused_keys():
             UserWarning, match=r"heat_capacity key will be ignored"):
         my_sim.define_materials()
 
-    my_sim.parameters["materials"][0].pop('heat_capacity', None)
-    my_sim.parameters["materials"][0]["thermal_cond"] = 2
+
+def test_unused_thermal_cond():
+    """
+    Checks warnings when some keys are unused
+    """
+    materials = [
+        {
+            "D_0": 1,
+            "E_D": 2,
+            "S_0": 3,
+            "E_S": 4,
+            "thermal_cond": 2,
+            "id": 1,
+            "borders": [0, 1],
+        },
+    ]
+    my_sim = FESTIM.Simulation(
+        {"materials": materials,
+         })
+    my_sim.parameters["temperature"] = {"type": "expression"}
     my_sim.parameters["exports"] = {}
     with pytest.warns(
             UserWarning, match=r"thermal_cond key will be ignored"):
         my_sim.define_materials()
+
+    # this shouldn't throw warnings
+    my_sim.parameters["exports"] = {
+        "derived_quantities": {
+            "surface_flux": [
+                {
+                    "field": "T",
+                    "surfaces": [0, 1]
+                }
+                ]
+            }
+    }
+    # record the warnings
+    with pytest.warns(None) as record:
+        my_sim.define_materials()
+
+    # check that no warning were raised
+    assert len(record) == 0
 
 
 def test_different_ids_in_materials():
