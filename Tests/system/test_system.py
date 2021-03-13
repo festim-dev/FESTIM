@@ -7,7 +7,7 @@ from pathlib import Path
 import timeit
 
 
-# System tests
+System tests
 
 def test_run_temperature_stationary(tmpdir):
     '''
@@ -1022,3 +1022,86 @@ def test_performance_xdmf_last_timestep(tmpdir):
     stop = timeit.default_timer()
     short_time = stop - start
     assert short_time < long_time
+
+
+def test_from_xdmf(tmpdir):
+    """Checks that a simulation can be initialised with XDMF files
+    """
+    build
+    mesh = fenics.UnitSquareMesh(16, 16)
+
+    vm = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
+    for i, cell in enumerate(fenics.cells(mesh)):
+        vm[cell] = 1
+    sm = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    for i, facet in enumerate(fenics.facets(mesh)):
+        sm[facet] = 0
+
+    filename_volume = tmpdir.join("vm.xdmf")
+    fenics.XDMFFile(str(Path(filename_volume))).write(vm)
+    filename_surface = tmpdir.join("sm.xdmf")
+    fenics.XDMFFile(str(Path(filename_surface))).write(sm)
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 2,
+                "E_S": 1,
+                "S_0": 2,
+                "thermal_cond": 2,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "mesh_file": str(Path(filename_volume)),
+                "cells_file": str(Path(filename_volume)),
+                "facets_file": str(Path(filename_surface)),
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 4,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "xdmf": {
+                    "functions": ['retention', 'T'],
+                    "labels":  ['retention', 'temperature'],
+                    "folder": str(Path(d))
+            },
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": "solute",
+                        "surfaces": [0],
+                    },
+                    {
+                        "field": "T",
+                        "surfaces": [0],
+                    }
+                ],
+                "total_volume": [
+                    {
+                        "field": "solute",
+                        "volumes": [1],
+                    },
+                ]
+            }
+            },
+    }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.run()
