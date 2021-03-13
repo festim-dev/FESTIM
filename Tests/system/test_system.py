@@ -1056,11 +1056,9 @@ def test_from_xdmf(tmpdir):
         "traps": [
             ],
         "mesh_parameters": {
-                # "mesh_file": str(Path(filename_volume)),
-                # "cells_file": str(Path(filename_volume)),
-                # "facets_file": str(Path(filename_surface)),
-                "initial_number_of_cells": 10,
-                "size": 1,
+                "mesh_file": str(Path(filename_volume)),
+                "cells_file": str(Path(filename_volume)),
+                "facets_file": str(Path(filename_surface)),
             },
         "boundary_conditions": [
             ],
@@ -1101,6 +1099,69 @@ def test_from_xdmf(tmpdir):
                         "volumes": [1],
                     },
                 ]
+            }
+            },
+    }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.run()
+
+
+def test_export_particle_flux_with_chemical_pot(tmpdir):
+    """Checks that surface particle fluxes can be computed with conservation
+    of chemical potential
+    """
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 2,
+                "E_S": 1,
+                "S_0": 2,
+                "thermal_cond": 2,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 10,
+                "size": 1,
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_stationary",
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": "solute",
+                        "surfaces": [0],
+                    },
+                    {
+                        "field": "T",
+                        "surfaces": [0],
+                    }
+                ],
+                "total_volume": [
+                    {
+                        "field": "retention",
+                        "volumes": [1],
+                    },
+                ],
+                "folder": str(Path(d)),
             }
             },
     }
