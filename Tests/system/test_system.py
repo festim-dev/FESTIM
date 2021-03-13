@@ -7,7 +7,7 @@ from pathlib import Path
 import timeit
 
 
-System tests
+# System tests
 
 def test_run_temperature_stationary(tmpdir):
     '''
@@ -1027,7 +1027,7 @@ def test_performance_xdmf_last_timestep(tmpdir):
 def test_from_xdmf(tmpdir):
     """Checks that a simulation can be initialised with XDMF files
     """
-    build
+    # build
     mesh = fenics.UnitSquareMesh(16, 16)
 
     vm = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
