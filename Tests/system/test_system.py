@@ -466,7 +466,7 @@ def test_run_MMS_chemical_pot(tmpdir):
                         "norm": 'error_max',
                         "degree": 4
                     }
-                ]
+                ],
                 },
         }
         return parameters
@@ -1056,9 +1056,11 @@ def test_from_xdmf(tmpdir):
         "traps": [
             ],
         "mesh_parameters": {
-                "mesh_file": str(Path(filename_volume)),
-                "cells_file": str(Path(filename_volume)),
-                "facets_file": str(Path(filename_surface)),
+                # "mesh_file": str(Path(filename_volume)),
+                # "cells_file": str(Path(filename_volume)),
+                # "facets_file": str(Path(filename_surface)),
+                "initial_number_of_cells": 10,
+                "size": 1,
             },
         "boundary_conditions": [
             ],
@@ -1104,4 +1106,10 @@ def test_from_xdmf(tmpdir):
     }
     my_sim = FESTIM.Simulation(parameters)
     my_sim.initialise()
-    my_sim.run()
+    n = fenics.FacetNormal(my_sim.mesh)
+    ds = my_sim.ds
+    assemble, dot, grad = fenics.assemble, fenics.dot, fenics.grad
+
+    solute = my_sim.u*my_sim.S
+    print(assemble(my_sim.D*dot(grad(solute), n)*ds(1)))
+    # my_sim.run()
