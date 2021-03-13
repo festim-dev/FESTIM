@@ -1106,10 +1106,4 @@ def test_from_xdmf(tmpdir):
     }
     my_sim = FESTIM.Simulation(parameters)
     my_sim.initialise()
-    n = fenics.FacetNormal(my_sim.mesh)
-    ds = my_sim.ds
-    assemble, dot, grad = fenics.assemble, fenics.dot, fenics.grad
-
-    solute = my_sim.u*my_sim.S
-    print(assemble(my_sim.D*dot(grad(solute), n)*ds(1)))
-    # my_sim.run()
+    my_sim.run()
