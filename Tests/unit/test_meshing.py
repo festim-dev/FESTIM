@@ -168,14 +168,54 @@ def test_create_mesh_xdmf(tmpdir):
 
 def test_subdomains_from_xdmf(tmpdir):
 
-    # write files
+    # create mesh functions
     mesh = fenics.UnitCubeMesh(6, 6, 6)
     mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
     mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+
+    # assign values for cells and facets
+    for i, c in enumerate(fenics.cells(mesh)):
+        mf_cells[c] = i
+    for i, f in enumerate(fenics.facets(mesh)):
+        mf_facets[c] = i
+
+    # write files
     file1 = tmpdir.join("cell_file.xdmf")
     file2 = tmpdir.join("facet_file.xdmf")
     fenics.XDMFFile(str(Path(file1))).write(mf_cells)
     fenics.XDMFFile(str(Path(file2))).write(mf_facets)
+
+    # read files
+    mf_cells_2, mf_facets_2 = read_subdomains_from_xdmf(
+        mesh, str(Path(file1)), str(Path(file2)))
+
+    # check
+    for cell in fenics.cells(mesh):
+        assert mf_cells[cell] == mf_cells_2[cell]
+        assert mf_facets[cell] == mf_facets_2[cell]
+
+
+def test_subdomains_from_xdmf_with_non_default_attribute_name(tmpdir):
+
+    # create mesh functions
+    mesh = fenics.UnitCubeMesh(6, 6, 6)
+    mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
+    mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    mf_cells.rename("a", "a")
+    mf_facets.rename("a", "a")
+
+    # assign values for cells and facets
+    for i, c in enumerate(fenics.cells(mesh)):
+        mf_cells[c] = i
+    for i, f in enumerate(fenics.facets(mesh)):
+        mf_facets[c] = i
+
+    # write files
+    file1 = tmpdir.join("cell_file.xdmf")
+    file2 = tmpdir.join("facet_file.xdmf")
+    fenics.XDMFFile(str(Path(file1))).write(mf_cells)
+    fenics.XDMFFile(str(Path(file2))).write(mf_facets)
+
     # read files
     mf_cells_2, mf_facets_2 = read_subdomains_from_xdmf(
         mesh, str(Path(file1)), str(Path(file2)))

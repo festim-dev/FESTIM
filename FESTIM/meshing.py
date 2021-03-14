@@ -49,21 +49,12 @@ def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
 
     # Read tags for volume elements
     volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
-    try:
-        XDMFFile(volumetric_file).read(volume_markers, "f")
-    except:
-        raise ValueError('Attribute should be named "f" in ' + volumetric_file)
-    # f is the attribute name carreful
+    XDMFFile(volumetric_file).read(volume_markers)
 
     # Read tags for surface elements
     # (can also be used for applying DirichletBC)
-    surface_markers = \
-        MeshValueCollection("size_t", mesh, mesh.topology().dim() - 1)
-    try:
-        XDMFFile(boundary_file).read(surface_markers, "f")
-    except:
-        raise ValueError('Attribute should be named "f" in ' + boundary_file)
-    surface_markers = MeshFunction("size_t", mesh, surface_markers)
+    surface_markers = MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    XDMFFile(boundary_file).read(surface_markers)
 
     print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
     return volume_markers, surface_markers
