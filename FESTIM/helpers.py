@@ -46,8 +46,12 @@ field_types = [
     "retention",
     "T"
 ]
-parameters = {
+parameters_helper = {
     "materials": {
+        "H": {
+            "description": "[insert description]",
+            "unit": "[insert unit]"
+        },
         "E_D": {
             "description": "Diffusion coefficient activation energy",
             "unit": "eV"
@@ -196,6 +200,6 @@ def help_key(key):
                 if type(var[k]) == dict:
                     find_dict(key, var=var[k], res=res)
         return res
-    d = find_dict(key, parameters)
+    d = find_dict(key, parameters_helper)
     for k in d:
         print(k)
