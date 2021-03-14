@@ -156,7 +156,7 @@ class Simulation():
         if "cells_file" in mesh_parameters.keys():
             volume_markers, surface_markers = \
                 FESTIM.read_subdomains_from_xdmf(
-                    mesh,
+                    self.mesh,
                     mesh_parameters["cells_file"],
                     mesh_parameters["facets_file"])
         elif "meshfunction_cells" in mesh_parameters.keys():

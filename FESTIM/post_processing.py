@@ -1,4 +1,5 @@
 from fenics import *
+from ufl.algebra import Product
 import sympy as sp
 import numpy as np
 import FESTIM
@@ -353,6 +354,7 @@ def derived_quantities(parameters, solutions,
     # Create dicts
 
     ret = solutions[len(solutions)-2]
+    V_DG1 = FunctionSpace(mesh, "DG", 1)
 
     T = solutions[len(solutions)-1]
     field_to_sol = {
@@ -373,6 +375,9 @@ def derived_quantities(parameters, solutions,
     if "surface_flux" in derived_quant_dict.keys():
         for flux in derived_quant_dict["surface_flux"]:
             sol = field_to_sol[str(flux["field"])]
+            # TODO: find an alternative for this is costly
+            if isinstance(sol, Product):
+                sol = project(sol, V_DG1)
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
                 phi = assemble(prop*dot(grad(sol), n)*ds(surf))

@@ -466,7 +466,7 @@ def test_run_MMS_chemical_pot(tmpdir):
                         "norm": 'error_max',
                         "degree": 4
                     }
-                ]
+                ],
                 },
         }
         return parameters
@@ -1020,3 +1020,66 @@ def test_performance_xdmf_last_timestep(tmpdir):
     stop = timeit.default_timer()
     short_time = stop - start
     assert short_time < long_time
+
+
+def test_export_particle_flux_with_chemical_pot(tmpdir):
+    """Checks that surface particle fluxes can be computed with conservation
+    of chemical potential
+    """
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 2,
+                "E_S": 1,
+                "S_0": 2,
+                "thermal_cond": 2,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 10,
+                "size": 1,
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_stationary",
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": "solute",
+                        "surfaces": [0],
+                    },
+                    {
+                        "field": "T",
+                        "surfaces": [0],
+                    }
+                ],
+                "total_volume": [
+                    {
+                        "field": "retention",
+                        "volumes": [1],
+                    },
+                ],
+                "folder": str(Path(d)),
+            }
+            },
+    }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.run()
