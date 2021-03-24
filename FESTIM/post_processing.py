@@ -31,8 +31,8 @@ def run_post_processing(simulation):
 
     if not append:
         if "derived_quantities" in parameters["exports"].keys():
-            derived_quantities_global = \
-                [FESTIM.post_processing.header_derived_quantities(parameters)]
+            derived_quantities_global.append(
+                FESTIM.post_processing.header_derived_quantities(parameters))
 
     if u.function_space().num_sub_spaces() == 0:
         res = [u]

@@ -440,3 +440,52 @@ def test_performance_xdmf_export_only_last_timestep(tmpdir):
     my_sim.t = my_sim.final_time
     run_post_processing(my_sim)
     assert path.exists(str(Path(d)) + '/solute.xdmf')
+
+
+def test_derived_quantities_global():
+
+    parameters = {
+        "mesh_parameters": {
+            "initial_number_of_cells": 10,
+            "size": 1,
+        },
+        "materials": [
+            {
+                "D_0": 1,
+                "E_D": 1,
+                "id": 1,
+            },
+            ],
+        "traps": [
+            ],
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+            },
+        "solving_parameters": {
+            "final_time": 1,
+            "initial_stepsize": 0.01,
+          },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "surfaces": [1, 2],
+                        "field": "solute"
+                    }
+                ],
+                "file": "derived_quantities.csv",
+                "folder": 'out'
+            }
+        }
+
+    }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.t = 0
+    for i in range(10):
+        run_post_processing(my_sim)
+        assert len(my_sim.derived_quantities_global) == i + 2
+        my_sim.append = True
