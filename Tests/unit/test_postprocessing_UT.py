@@ -101,15 +101,15 @@ def test_export_profiles(tmpdir):
         dt_old = dt
         dt = export_profiles(functions, exports, t, dt, V)
         # Test that dt is not changed if not on time
-        if True not in np.isclose(t, exports["txt"]["times"]):
-            assert np.isclose(float(dt_old), float(dt)) is True
+        if np.allclose(t, exports["txt"]["times"]):
+            assert np.isclose(float(dt_old), float(dt)) 
         # Test that dt has the right value
         elif t < 2:
-            assert np.isclose(float(dt), 1) is True
+            assert np.isclose(float(dt), 1) 
         elif t < 3:
-            assert np.isclose(float(dt), 0.5) is True
+            assert np.isclose(float(dt), 0.5) 
         else:
-            assert np.isclose(float(dt), 0.2) is True
+            assert np.isclose(float(dt), 0.2) 
         t += float(dt)
 
     # Test that a ValueError is raised if wrong function
@@ -148,15 +148,15 @@ def test_export_profiles_with_vectors(tmpdir):
         dt_old = dt
         dt = export_profiles(functions, exports, t, dt, V_DG1)
         # Test that dt is not changed if not on time
-        if True not in np.isclose(t, exports["txt"]["times"]):
-            assert np.isclose(float(dt_old), float(dt)) is True
+        if np.allclose(t, exports["txt"]["times"]):
+            assert np.isclose(float(dt_old), float(dt)) 
         # Test that dt has the right value
         elif t < 2:
-            assert np.isclose(float(dt), 1) is True
+            assert np.isclose(float(dt), 1) 
         elif t < 3:
-            assert np.isclose(float(dt), 0.5) is True
+            assert np.isclose(float(dt), 0.5)
         else:
-            assert np.isclose(float(dt), 0.2) is True
+            assert np.isclose(float(dt), 0.2) 
         t += float(dt)
 
     # Test that a ValueError is raised if wrong function
