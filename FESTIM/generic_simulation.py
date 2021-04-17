@@ -293,7 +293,7 @@ class Simulation():
         self.extrinsic_traps = [Function(self.V_CG1) for d in traps
                                 if "type" in d.keys() if
                                 d["type"] == "extrinsic"]
-        self.testfunctions_traps = [TestFunction(W) for d in traps
+        self.testfunctions_traps = [TestFunction(self.V_CG1) for d in traps
                                     if "type" in d.keys() if
                                     d["type"] == "extrinsic"]
 
@@ -413,7 +413,7 @@ class Simulation():
         # Update previous solutions
         self.u_n.assign(self.u)
         for j, prev_sol in enumerate(self.previous_solutions_traps):
-            self.prev_sol.assign(self.extrinsic_traps[j])
+            prev_sol.assign(self.extrinsic_traps[j])
         self.nb_iterations += 1
 
         # avoid t > final_time
