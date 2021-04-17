@@ -30,4 +30,5 @@ jobs:
       - name: Run the notebooks
         run: |
           jupyter-nbconvert --to python demos/demo_multi_materials.ipynb
+          mkdir outputs
           python3 -m demos.demo_multi_materials
