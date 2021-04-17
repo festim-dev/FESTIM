@@ -38,3 +38,5 @@ jobs:
           python3 -m demos.demo_derived_quantities
           jupyter-nbconvert --to python demos/demo_Ogorodnikova.ipynb
           python3 -m demos.demo_Ogorodnikova
+          jupyter-nbconvert --to python demos/demo_coupled_heat_transfer.ipynb
+          python3 -m demos.demo_coupled_heat_transfer
