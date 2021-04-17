@@ -34,4 +34,5 @@ jobs:
           python3 -m demos.demo_multi_materials
           jupyter-nbconvert --to python demos/demo_meshes.ipynb
           python3 -m demos.demo_meshes
-          
+          jupyter-nbconvert --to python demos/demo_derived_quantities.ipynb
+          python3 -m demos.demo_derived_quantities
