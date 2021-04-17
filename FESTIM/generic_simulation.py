@@ -148,6 +148,7 @@ class Simulation():
         else:
             mesh = FESTIM.mesh_and_refine(mesh_parameters)
         self.mesh = mesh
+        return mesh
 
     def define_markers(self):
         # Define and mark subdomains
