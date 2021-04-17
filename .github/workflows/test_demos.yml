@@ -32,3 +32,6 @@ jobs:
           jupyter-nbconvert --to python demos/demo_multi_materials.ipynb
           mkdir outputs
           python3 -m demos.demo_multi_materials
+          jupyter-nbconvert --to python demos/demo_meshes.ipynb
+          python3 -m demos.demo_meshes
+          
