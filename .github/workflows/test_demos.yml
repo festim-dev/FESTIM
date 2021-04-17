@@ -29,5 +29,5 @@ jobs:
       # Runs a single command using the runners shell
       - name: Run the notebooks
         run: |
-          jupyter-nbconvert --to python demo_multi_materials.ipynb
+          jupyter-nbconvert --to python demos/demo_multi_materials.ipynb
           python3 -m demos.demo_multi_materials
