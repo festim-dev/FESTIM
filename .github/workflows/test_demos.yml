@@ -36,3 +36,5 @@ jobs:
           python3 -m demos.demo_meshes
           jupyter-nbconvert --to python demos/demo_derived_quantities.ipynb
           python3 -m demos.demo_derived_quantities
+          jupyter-nbconvert --to python demos/demo_Ogorodnikova.ipynb
+          python3 -m demos.demo_Ogorodnikova
