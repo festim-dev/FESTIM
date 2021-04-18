@@ -1,17 +1,17 @@
 Formulation
-=================
+===========
 
 
 
 formulation()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^
 
 .. automodule:: FESTIM.formulations.formulation
    :members:
    :show-inheritance:
 
-   formulation_extrinsic_traps()
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+formulation_extrinsic_traps()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: FESTIM.formulations.formulation_extrinsic_traps
    :members:
