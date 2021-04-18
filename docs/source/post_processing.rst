@@ -61,7 +61,7 @@ calculate_minimum_volume()
 
 
 header_derived_quantities()
-^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
    
 .. automodule:: FESTIM.post_processing.header_derived_quantities
    :members:
