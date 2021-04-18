@@ -8,12 +8,13 @@ import FESTIM
 def run_post_processing(simulation):
     """Main post processing FESTIM function.
 
-    Arguments:
+    Args:
+        simulation (FESTIM.Simulation()): Simulation object
 
     Returns:
-        list -- updated derived quantities list
-        fenics.Constant() -- updated stepsize
+        list, fenics.Constant(): derived quantities list, stepsize
     """
+
     parameters = simulation.parameters
     transient = simulation.transient
     u = simulation.u
@@ -83,20 +84,29 @@ def run_post_processing(simulation):
     return derived_quantities_global, dt
 
 
-def compute_error(parameters, t, res, mesh):
+def compute_error(errors, t, res, mesh):
     """Returns a list containing the errors
 
-    Arguments:
-        parameters {dict} -- error parameters dict
-        t {float} -- time
-        res {list} -- contains the solutions
-        mesh {fenics.Mesh()} -- the mesh
+    Args:
+        errors (list): list of dicts
+            {"exact_solutions: ...,
+              "computed_solutions": ...,
+              "degree": ...,
+              "norm": ...}
+            The value of "exact_solutions" is a list of sympy expressions
+            The value of "computed_solutions" is a list of sympy expressions
+            The value of "degree" is an int
+            The value of "norm" can be "error_max" or "L2"
+        t (float): time (s)
+        res (list): list of fenics.Function()
+            [solute, trap1, trap2, ..., retention, temperature]
+        mesh (fenics.Mesh()): simulation mesh
 
     Raises:
         KeyError: if key is not found in dict
 
     Returns:
-        list -- list of errors
+        list: list of lists of floats containing the errors
     """
     tab = []
 
@@ -106,7 +116,7 @@ def compute_error(parameters, t, res, mesh):
         'T': res[len(res)-1],
     }
 
-    for error in parameters:
+    for error in errors_dict:
         er = []
         er.append(t)
         for i in range(len(error["exact_solutions"])):
@@ -144,6 +154,19 @@ def compute_error(parameters, t, res, mesh):
 
 
 class ArheniusCoeff(UserExpression):
+    """Expression for an Arhenius coefficient
+
+    Args:
+        mesh (fenics.Mesh()): the mesh
+        materials (list): list of dicts
+        vm (fenics.MeshFunction()): mesh function containing tags for
+            subdomains
+        T (fenics.Function()): Temperature (K)
+        pre_exp (str): key corresponding to the pre-exponential factor of the
+            coefficient in the material dict
+        E (str): key corresponding to the activation energy of the
+            coefficient in the material dict
+    """
     def __init__(self, mesh, materials, vm, T, pre_exp, E, **kwargs):
         super().__init__(kwargs)
         self._mesh = mesh
@@ -167,6 +190,17 @@ class ArheniusCoeff(UserExpression):
 
 
 class ThermalProp(UserExpression):
+    """Expression for a thermal property
+
+    Args:
+        mesh (fenics.Mesh()): the mesh
+        materials (list): list of dicts
+        vm (fenics.MeshFunction()): mesh function containing tags for
+            subdomains
+        T (fenics.Function()): Temperature (K)
+        key (str): key corresponding to the property in the material dict
+    """
+
     def __init__(self, mesh, materials, vm, T, key, **kwargs):
         super().__init__(kwargs)
         self._mesh = mesh
@@ -190,6 +224,15 @@ class ThermalProp(UserExpression):
 
 
 class HCoeff(UserExpression):
+    """Expression for the heat of transport
+
+    Args:
+        mesh (fenics.Mesh()): the mesh
+        materials (list): list of dicts
+        vm (fenics.MeshFunction()): mesh function containing tags for
+            subdomains
+        T (fenics.Function()): Temperature (K)
+    """
     def __init__(self, mesh, materials, vm, T, **kwargs):
         super().__init__(kwargs)
         self._mesh = mesh
@@ -213,19 +256,16 @@ class HCoeff(UserExpression):
 def create_properties(mesh, materials, vm, T):
     """Creates the properties fields needed for post processing
 
-    Arguments:
-        mesh {fenics.Mesh()} -- the mesh
-        materials {dict} -- contains materials parameters
-        vm {fenics.MeshFunction()} -- volume markers
-        T {fenics.Function()} -- temperature
+    Args:
+        mesh (fenics.Mesh()): the mesh
+        materials (list): list of dicts
+        vm (fenics.MeshFunction()): mesh function containing tags for
+            subdomains
+        T (fenics.Function()): Temperature (K)
 
     Returns:
-        ArheniusCoeff -- diffusion coefficient (SI)
-        ThermalProp -- thermal conductivity (SI)
-        ThermalProp -- heat capactiy (SI)
-        ThermalProp -- density (kg/m3)
-        HCoeff -- enthalpy (SI)
-        ArheniusCoeff -- solubility coefficient (SI)
+        tuple of UserExpression: Diffusion coefficient, thermal conductivity,
+            heat capacity, density, heat of transport, solubility
     """
 
     D = ArheniusCoeff(mesh, materials, vm, T, "D_0", "E_D", degree=2)
@@ -251,7 +291,16 @@ def create_properties(mesh, materials, vm, T):
 
 
 def calculate_maximum_volume(f, subdomains, subd_id):
-    '''Minimum of f over subdomains cells marked with subd_id'''
+    """Maximum of a function f on a given subdomain
+
+    Args:
+        f (fenics.Function()): the function
+        subdomains (fenics.MeshFunction()): MeshFunction containing the physical entities
+        subd_id (int): The tag of the subdomain
+
+    Returns:
+        float: the maximum value of f over the subdomain subd_id
+    """
     V = f.function_space()
 
     dm = V.dofmap()
@@ -264,7 +313,16 @@ def calculate_maximum_volume(f, subdomains, subd_id):
 
 
 def calculate_minimum_volume(f, subdomains, subd_id):
-    '''Minimum of f over subdomains cells marked with subd_id'''
+    """Minimum of a function f on a given subdomain
+
+    Args:
+        f (fenics.Function()): the function
+        subdomains (fenics.MeshFunction()): MeshFunction containing the physical entities
+        subd_id (int): The tag of the subdomain
+
+    Returns:
+        float: the minimum value of f over the subdomain subd_id
+    """
     V = f.function_space()
 
     dm = V.dofmap()
@@ -277,46 +335,48 @@ def calculate_minimum_volume(f, subdomains, subd_id):
 
 
 def header_derived_quantities(parameters):
-    '''
-    Creates the header for derived_quantities list
-    '''
+    """Creates the header for derived_quantities list
+
+    Args:
+        parameters (dict): maint parameters dict
+
+    Returns:
+        list: header of the derived quantities list
+    """
 
     check_keys_derived_quantities(parameters)
     derived_quant_dict = parameters["exports"]["derived_quantities"]
     header = ['t(s)']
     if "surface_flux" in derived_quant_dict.keys():
         for flux in derived_quant_dict["surface_flux"]:
-            for surf in flux["surfaces"]:
+            for id_subdomain in flux["surfaces"]:
                 header.append(
-                    "Flux surface " + str(surf) + ": " + str(flux['field']))
+                    "Flux surface " + str(id_subdomain) + ": " + str(flux['field']))
     if "average_volume" in derived_quant_dict.keys():
-        for average in parameters[
-                        "exports"]["derived_quantities"]["average_volume"]:
-            for vol in average["volumes"]:
+        for average in derived_quant_dict["average_volume"]:
+            for id_subdomain in average["volumes"]:
                 header.append(
-                    "Average " + str(average['field']) + " volume " + str(vol))
+                    "Average " + str(average['field']) + " volume " + str(id_subdomain))
     if "minimum_volume" in derived_quant_dict.keys():
-        for minimum in parameters[
-                        "exports"]["derived_quantities"]["minimum_volume"]:
-            for vol in minimum["volumes"]:
+        for minimum in derived_quant_dict["minimum_volume"]:
+            for id_subdomain in minimum["volumes"]:
                 header.append(
-                    "Minimum " + str(minimum["field"]) + " volume " + str(vol))
+                    "Minimum " + str(minimum["field"]) + " volume " + str(id_subdomain))
     if "maximum_volume" in derived_quant_dict.keys():
-        for maximum in parameters[
-                        "exports"]["derived_quantities"]["maximum_volume"]:
-            for vol in maximum["volumes"]:
+        for maximum in derived_quant_dict["maximum_volume"]:
+            for id_subdomain in maximum["volumes"]:
                 header.append(
-                    "Maximum " + str(maximum["field"]) + " volume " + str(vol))
+                    "Maximum " + str(maximum["field"]) + " volume " + str(id_subdomain))
     if "total_volume" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_volume"]:
-            for vol in total["volumes"]:
+            for id_subdomain in total["volumes"]:
                 header.append(
-                    "Total " + str(total["field"]) + " volume " + str(vol))
+                    "Total " + str(total["field"]) + " volume " + str(id_subdomain))
     if "total_surface" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_surface"]:
-            for surf in total["surfaces"]:
+            for id_subdomain in total["surfaces"]:
                 header.append(
-                    "Total " + str(total["field"]) + " surface " + str(surf))
+                    "Total " + str(total["field"]) + " surface " + str(id_subdomain))
 
     return header
 
@@ -325,15 +385,15 @@ def derived_quantities(parameters, solutions,
                        markers, properties):
     """Computes all the derived_quantities and stores it into list
 
-    Arguments:
-        parameters {dict} -- main parameters dict
-        solutions {list} -- contains fenics.Function
-        markers {list} -- contains volume and surface markers
-        properties {list} -- contains properties
-            [D, thermal_cond, cp, rho, H, S]
+    Args:
+        parameters (dict): main parameters dict
+        solutions (list): contains fenics.Function
+        markers ((fenics.MeshFunction, fenics.MeshFunction)):
+            (volume markers, surface markers)
+        properties (list of fenics.Function): [D, thermal_cond, cp, rho, H, S]
 
     Returns:
-        list -- list of derived quantities
+        list: list of derived quantities
     """
 
     D = properties[0]
@@ -436,41 +496,37 @@ def derived_quantities(parameters, solutions,
 def check_keys_derived_quantities(parameters):
     """Checks the keys in derived quantities dict
 
-    Arguments:
-        parameters {dict} -- main parameters dict
+    Args:
+        parameters ([type]): [description]
 
     Raises:
         ValueError: if quantity is unknown
         KeyError: if the field key is missing
         ValueError: if a field is unknown
-        ValueError: if a field is unknown
-        ValueError: if a field is unknown
         KeyError: if surfaces or volumes key is missing
     """
-    for quantity in parameters["exports"]["derived_quantities"].keys():
+    derived_quantities = parameters["exports"]["derived_quantities"]
+    for quantity in derived_quantities.keys():
         if quantity not in [*FESTIM.helpers.quantity_types, "file", "folder"]:
             raise ValueError("Unknown quantity: " + quantity)
         if quantity not in ["file", "folder"]:
-            for f in parameters["exports"]["derived_quantities"][quantity]:
+            for f in derived_quantities[quantity]:
                 if "field" not in f.keys():
                     raise KeyError("Missing key 'field'")
-                else:
-                    if type(f["field"]) is int:
-                        if f["field"] > len(parameters["traps"]) or \
-                           f["field"] < 0:
-                            raise ValueError(
-                                "Unknown field: " + str(f["field"]))
-                    elif type(f["field"]) is str:
-                        if f["field"] not in FESTIM.helpers.field_types:
-                            if f["field"].isdigit():
-                                if int(f["field"]) > len(parameters["traps"]) \
-                                    or \
-                                   int(f["field"]) < 0:
-                                    raise ValueError(
-                                        "Unknown field: " + f["field"])
-                            else:
-                                raise ValueError(
-                                    "Unknown field: " + str(f["field"]))
-
                 if "surfaces" not in f.keys() and "volumes" not in f.keys():
                     raise KeyError("Missing key 'surfaces' or 'volumes'")
+
+                field = f["field"]
+                unknown_field = False
+                if type(field) is str:
+                    if field.isdigit():
+                        field = int(field)
+                    elif field not in FESTIM.helpers.field_types:
+                        unknown_field = True
+
+                if type(field) is int:
+                    if field not in range(len(parameters["traps"])):
+                        unknown_field = True
+
+                if unknown_field:
+                    raise ValueError("Unknown field: " + str(field))
