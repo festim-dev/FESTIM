@@ -525,7 +525,7 @@ def check_keys_derived_quantities(parameters):
                         unknown_field = True
 
                 if type(field) is int:
-                    if field not in range(len(parameters["traps"])):
+                    if field not in range(len(parameters["traps"]) + 1):
                         unknown_field = True
 
                 if unknown_field:
