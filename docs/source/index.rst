@@ -9,6 +9,7 @@ Welcome to FESTIM's documentation!
 .. toctree::
    :maxdepth: 1
 
+   README
    meshing
    formulations
    initialising
