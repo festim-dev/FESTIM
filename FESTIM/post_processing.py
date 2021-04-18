@@ -295,7 +295,8 @@ def calculate_maximum_volume(f, subdomains, subd_id):
 
     Args:
         f (fenics.Function()): the function
-        subdomains (fenics.MeshFunction()): MeshFunction containing the physical entities
+        subdomains (fenics.MeshFunction()): MeshFunction containing the
+            physical entities
         subd_id (int): The tag of the subdomain
 
     Returns:
@@ -317,7 +318,8 @@ def calculate_minimum_volume(f, subdomains, subd_id):
 
     Args:
         f (fenics.Function()): the function
-        subdomains (fenics.MeshFunction()): MeshFunction containing the physical entities
+        subdomains (fenics.MeshFunction()): MeshFunction containing the
+            physical entities
         subd_id (int): The tag of the subdomain
 
     Returns:
@@ -351,32 +353,38 @@ def header_derived_quantities(parameters):
         for flux in derived_quant_dict["surface_flux"]:
             for id_subdomain in flux["surfaces"]:
                 header.append(
-                    "Flux surface " + str(id_subdomain) + ": " + str(flux['field']))
+                    "Flux surface " + str(id_subdomain) + ": " +
+                    str(flux['field']))
     if "average_volume" in derived_quant_dict.keys():
         for average in derived_quant_dict["average_volume"]:
             for id_subdomain in average["volumes"]:
                 header.append(
-                    "Average " + str(average['field']) + " volume " + str(id_subdomain))
+                    "Average " + str(average['field']) + " volume " +
+                    str(id_subdomain))
     if "minimum_volume" in derived_quant_dict.keys():
         for minimum in derived_quant_dict["minimum_volume"]:
             for id_subdomain in minimum["volumes"]:
                 header.append(
-                    "Minimum " + str(minimum["field"]) + " volume " + str(id_subdomain))
+                    "Minimum " + str(minimum["field"]) + " volume " +
+                    str(id_subdomain))
     if "maximum_volume" in derived_quant_dict.keys():
         for maximum in derived_quant_dict["maximum_volume"]:
             for id_subdomain in maximum["volumes"]:
                 header.append(
-                    "Maximum " + str(maximum["field"]) + " volume " + str(id_subdomain))
+                    "Maximum " + str(maximum["field"]) + " volume " +
+                    str(id_subdomain))
     if "total_volume" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_volume"]:
             for id_subdomain in total["volumes"]:
                 header.append(
-                    "Total " + str(total["field"]) + " volume " + str(id_subdomain))
+                    "Total " + str(total["field"]) + " volume " +
+                    str(id_subdomain))
     if "total_surface" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_surface"]:
             for id_subdomain in total["surfaces"]:
                 header.append(
-                    "Total " + str(total["field"]) + " surface " + str(id_subdomain))
+                    "Total " + str(total["field"]) + " surface " +
+                    str(id_subdomain))
 
     return header
 
