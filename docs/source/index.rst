@@ -9,11 +9,13 @@ Welcome to FESTIM's documentation!
 .. toctree::
    :maxdepth: 1
 
-   FESTIM.meshing
-   FESTIM.formulations
-   FESTIM.initialising
-   FESTIM.boundary_conditions
-   FESTIM.export
+   meshing
+   formulations
+   initialising
+   boundary_conditions
+   solving
+   export
+   post_processing
 
 
 
