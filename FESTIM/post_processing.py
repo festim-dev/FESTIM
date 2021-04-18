@@ -84,11 +84,11 @@ def run_post_processing(simulation):
     return derived_quantities_global, dt
 
 
-def compute_error(errors, t, res, mesh):
+def compute_error(errors_dict, t, res, mesh):
     """Returns a list containing the errors
 
     Args:
-        errors (list): list of dicts
+        errors_dict (list): list of dicts
             {"exact_solutions: ...,
               "computed_solutions": ...,
               "degree": ...,
