@@ -179,6 +179,39 @@ class BoundaryConditionRecomb(UserExpression):
         return ()
 
 
+class BoundaryConditionSolubility(UserExpression):
+    """Class based on UserExpression to create a Sievert law boundary
+    condition where c = sqrt(P)*S(T)
+
+    Args:
+        UserExpression (fenics.UserExpression):
+    """
+    def __init__(self, S_0, E_S, pressure, T, **kwargs):
+        """initialisation
+
+        Args:
+            S_0 (float): Solubility pre activation factor (m^-3 Pa^-0.5)
+            E_S (float): Solubility activation energy (eV)
+            pressure (fenics.Expression): Hydrogen pressure (Pa)
+            T (fenics.Function): Temperature (K)
+        """
+        super().__init__(kwargs)
+        self._pressure = pressure
+
+        self._S_0 = S_0
+        self._E_S = E_S
+
+        self._T = T
+
+    def eval(self, value, x):
+        S = self._S_0*exp(-self._E_S/FESTIM.k_B/self._T(x))
+        val = S*self._pressure(x)**0.5
+        value[0] = val
+
+    def value_shape(self):
+        return ()
+
+
 def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
@@ -212,14 +245,15 @@ def apply_boundary_conditions(simulation):
             value_BC = sp.printing.ccode(BC['value'])
             value_BC = Expression(value_BC, t=0, degree=4)
         elif type_BC == "solubility":
-            pressure = BC["pressure"]
-            value_BC = pressure**0.5*BC["density"]*BC["S_0"]*sp.exp(
-                -BC["E_S"]/k_B/T)
-            value_BC = Expression(sp.printing.ccode(value_BC), t=0,
+            # create a time dependent expression for pressure
+            pressure = Expression(sp.printing.ccode(BC["pressure"]), t=0,
                                   degree=2)
-            print("WARNING: solubility BC. \
-                If temperature is type solve_transient\
-                     initial temperature will be considered.")
+            expressions.append(pressure)  # add it to the list of exprs
+
+            # create a custom expression
+            value_BC = BoundaryConditionSolubility(
+                BC["S_0"], BC["E_S"],
+                pressure, T)
         elif type_BC == "dc_imp":
             # Create 2 Expressions for phi and R_p
             phi = Expression(sp.printing.ccode(BC["implanted_flux"]),
