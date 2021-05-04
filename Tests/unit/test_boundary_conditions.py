@@ -467,6 +467,9 @@ def test_bc_recomb_chemical_pot():
 
 
 def test_sievert_bc_varying_time():
+    """Creates a Simulation object with a solubility type bc and checks that
+    the correct value is applied
+    """
     parameters = {
         "mesh_parameters": {
             "size": 1,
@@ -502,21 +505,25 @@ def test_sievert_bc_varying_time():
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.initialise()
-
     u = my_sim.u
     bc = my_sim.bcs[0]
+
+    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
     bc.apply(u.vector())
-    val_1 = u(0)
+    assert u(0) == expected
 
     for expr in my_sim.expressions:
         expr.t = 10000
-    bc.apply(u.vector())
-    val_2 = u(0)
 
-    assert val_1 != val_2
+    expected = (1e5*(1 + 10000))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
+    bc.apply(u.vector())
+    assert u(0) == expected
 
 
 def test_sievert_bc_varying_temperature():
+    """Creates a Simulation object with a solubility type bc and checks that
+    the correct value is applied
+    """
     parameters = {
         "mesh_parameters": {
             "size": 1,
@@ -555,11 +562,13 @@ def test_sievert_bc_varying_temperature():
 
     u = my_sim.u
     bc = my_sim.bcs[0]
+
+    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
     bc.apply(u.vector())
-    val_1 = u(0)
+    assert u(0) == expected
 
     my_sim.T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
+    
+    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/1000)
     bc.apply(u.vector())
-    val_2 = u(0)
-
-    assert val_1 != val_2
+    assert u(0) == expected
