@@ -464,3 +464,102 @@ def test_bc_recomb_chemical_pot():
         assert np.isclose(
             u(0.25, 0.5),
             (phi*R_p/D_right + (phi/K_right)**0.5)/S_right)
+
+
+def test_sievert_bc_varying_time():
+    parameters = {
+        "mesh_parameters": {
+            "size": 1,
+            "initial_number_of_cells": 10
+        },
+        "materials": [
+            {
+                "D_0": 1,
+                "E_D": 0,
+                "id": 1
+            }
+        ],
+        "traps": [],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "boundary_conditions": [
+            {
+                "type": "solubility",
+                "surfaces": 1,
+                "pressure": 1e5*(1 + FESTIM.t),
+                "S_0": 100,
+                "E_S": 0.5,
+            }
+        ],
+        "solving_parameters": {
+            "initial_stepsize": 1,
+            "final_time": 10
+        },
+        "exports": {}
+    }
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+
+    u = my_sim.u
+    bc = my_sim.bcs[0]
+    bc.apply(u.vector())
+    val_1 = u(0)
+
+    for expr in my_sim.expressions:
+        expr.t = 10000
+    bc.apply(u.vector())
+    val_2 = u(0)
+
+    assert val_1 != val_2
+
+
+def test_sievert_bc_varying_temperature():
+    parameters = {
+        "mesh_parameters": {
+            "size": 1,
+            "initial_number_of_cells": 10
+        },
+        "materials": [
+            {
+                "D_0": 1,
+                "E_D": 0,
+                "id": 1
+            }
+        ],
+        "traps": [],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "boundary_conditions": [
+            {
+                "type": "solubility",
+                "surfaces": 1,
+                "pressure": 1e5*(1 + FESTIM.t),
+                "S_0": 100,
+                "E_S": 0.5,
+            }
+        ],
+        "solving_parameters": {
+            "initial_stepsize": 1,
+            "final_time": 10
+        },
+        "exports": {}
+    }
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+
+    u = my_sim.u
+    bc = my_sim.bcs[0]
+    bc.apply(u.vector())
+    val_1 = u(0)
+
+    my_sim.T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
+    bc.apply(u.vector())
+    val_2 = u(0)
+
+    assert val_1 != val_2
