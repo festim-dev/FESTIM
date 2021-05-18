@@ -76,6 +76,9 @@ def formulation(simulation):
                     F += - source*testfunctions[0]*dx(vol)
                 expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
+
+    all_mat_ids = [mat["id"] for mat in simulation.parameters["materials"]]
+
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
@@ -95,8 +98,6 @@ def formulation(simulation):
         trap_mat = trap['materials']
         if type(trap_mat) is not list:
             trap_mat = [trap_mat]
-
-        all_mat_ids = [mat["id"] for mat in simulation.parameters["materials"]]
 
         if simulation.transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
