@@ -93,11 +93,18 @@ def formulation(simulation):
         p_0 = trap['p_0']
 
         material = trap['materials']
+        if type(material) is not list:
+            material = [material]
+
+        all_ids = [mat["id"] for mat in simulation.parameters["materials"]]
+        materials_without_this_trap = [mat_id for mat_id in all_ids if mat_id not in material]
+
         if simulation.transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[i]*dx
-        if type(material) is not list:
-            material = [material]
+        else:
+            for mat_id in materials_without_this_trap:
+                F += solutions[i]*testfunctions[i]*dx(mat_id)
         for subdomain in material:
             corresponding_material = \
                 FESTIM.helpers.find_material_from_id(
