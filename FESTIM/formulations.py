@@ -103,9 +103,13 @@ def formulation(simulation):
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[i]*dx
         else:
+            # if the sim is steady state and
+            # if a trap is not defined in one subdomain
+            # add c_t = 0 to the form in this subdomain
             for mat_id in all_mat_ids:
                 if mat_id not in trap_mat:
                     F += solutions[i]*testfunctions[i]*dx(mat_id)
+
         for subdomain in trap_mat:
             corresponding_material = \
                 FESTIM.helpers.find_material_from_id(
