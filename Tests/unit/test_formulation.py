@@ -842,3 +842,79 @@ def test_formulation_extrinsic_traps():
         test_functions[0]*fenics.dx
 
     assert expected_form.equals(forms[0])
+
+
+def test_formulation_with_several_ids_per_material():
+    """ Tests that the expected form is produced when one material dict has 2
+    ids
+    """
+    # build
+    Index._globalcount = 8
+
+    def create_subdomains(x1, x2):
+        class domain(fenics.SubDomain):
+            def inside(self, x, on_boundary):
+                return x[0] >= x1 and x[0] <= x2
+        domain = domain()
+        return domain
+    dt = 1
+    parameters = {
+        "traps": [],
+        "materials": [{
+
+                "borders": [0, 0.5],
+                "E_D": 4,
+                "D_0": 5,
+                "id": [1, 2]
+                }],
+        "source_term": {"value": 1},
+    }
+    mesh = fenics.UnitIntervalMesh(10)
+    mf = fenics.MeshFunction("size_t", mesh, 1, 1)
+    mat1 = create_subdomains(0, 0.5)
+    mat2 = create_subdomains(0.5, 1)
+    mat1.mark(mf, 1)
+    mat2.mark(mf, 2)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
+
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
+
+    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
+    dx = fenics.dx(subdomain_data=mf)
+    temp = fenics.Expression("300", degree=0)
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.transient = True
+    my_sim.u, my_sim.u_n = u, u_n
+    my_sim.v = v
+    my_sim.T, my_sim.T_n = temp, temp
+    my_sim.dt, my_sim.dx = dt, dx
+
+    # run
+    F, expressions = formulation(my_sim)
+
+    # test
+    flux_ = expressions[0]
+    Index._globalcount = 8
+    # Transient sol
+    expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
+        testfunctions[0]*dx(1)
+    expected_form += ((solutions[0] - previous_solutions[0]) / dt) * \
+        testfunctions[0]*dx(2)
+    # Diffusion sol mat 1
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/k_B/temp)*fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(1)
+    # Diffusion sol mat 2
+    expected_form += fenics.dot(
+        5 * fenics.exp(-4/k_B/temp)*fenics.grad(solutions[0]),
+        fenics.grad(testfunctions[0]))*dx(2)
+    # Source sol
+    expected_form += -flux_*testfunctions[0]*dx
+
+    assert expected_form.equals(F) is True
