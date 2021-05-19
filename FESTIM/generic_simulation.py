@@ -124,8 +124,14 @@ class Simulation():
                 warnings.warn("thermal_cond key will be ignored", UserWarning)
 
         # check that ids are different
-        ids = [mat["id"] for mat in materials]
-        if not len(ids) == len(np.unique(ids)):
+        mat_ids = []
+        for mat in materials:
+            if type(mat["id"]) is list:
+                mat_ids += mat["id"]
+            else:
+                mat_ids.append(mat["id"])
+
+        if len(mat_ids) != len(np.unique(mat_ids)):
             raise ValueError("Some materials have the same id")
 
         self.materials = materials
