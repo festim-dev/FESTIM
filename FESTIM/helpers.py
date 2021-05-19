@@ -1,14 +1,17 @@
-def find_material_from_id(materials, id):
+def find_material_from_id(materials, mat_id):
     '''Returns the material from a given id
     Parameters:
     - materials : list of dicts
     - id : int
     '''
     for material in materials:
-        if material['id'] == id:
+        mat_ids = material['id']
+        if type(mat_ids) is not list:
+            mat_ids = [mat_ids]
+        if mat_id in mat_ids:
             return material
             break
-    print("Couldn't find ID " + str(id) + " in materials list")
+    print("Couldn't find ID " + str(mat_id) + " in materials list")
     return
 
 
