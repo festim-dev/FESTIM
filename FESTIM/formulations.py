@@ -45,16 +45,21 @@ def formulation(simulation):
             c_0 = solutions[0]*S_0*exp(-E_S/k_B/T)
             c_0_n = previous_solutions[0]*S_0*exp(-E_S/k_B/T_n)
 
-        subdomain = material['id']
-        if simulation.transient:
-            F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
-        F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
-                 grad(testfunctions[0]))*dx(subdomain)
-        if soret is True:
-            Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
-            F += dot(D_0 * exp(-E_D/k_B/T) *
-                     Q * c_0 / (FESTIM.R * T**2) * grad(T),
+        subdomains = material['id']  # list of subdomains with this material
+        if type(subdomains) is not list:
+            subdomains = [subdomains]  # make sure subdomains is a list
+
+        # add to the formulation F for every subdomain
+        for subdomain in subdomains:
+            if simulation.transient:
+                F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
+            F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                      grad(testfunctions[0]))*dx(subdomain)
+            if soret is True:
+                Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
+                F += dot(D_0 * exp(-E_D/k_B/T) *
+                         Q * c_0 / (FESTIM.R * T**2) * grad(T),
+                         grad(testfunctions[0]))*dx(subdomain)
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
