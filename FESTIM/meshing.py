@@ -91,7 +91,7 @@ def mesh_and_refine(mesh_parameters):
                 for cell in cells(mesh):
                     if cell.midpoint().x() < refinement_point:
                         cell_markers[cell] = True
-                        coarse_mesh = True
+                        coarse_mesh = False
                 mesh = refine(mesh, cell_markers)
                 if coarse_mesh:
                     msg = "Infinite loop: Initial number " + \
