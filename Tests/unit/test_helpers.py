@@ -12,7 +12,7 @@ def test_help_key():
     help_key("E_p")
 
 
-def test_material_idenfication_key():
+def test_find_material_from_id_unfound_id():
     """
     Tests the function find_material_from_id with a list of materials
     without the searched ID
