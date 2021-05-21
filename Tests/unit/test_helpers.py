@@ -14,8 +14,9 @@ def test_help_key():
 
 def test_material_idenfication_key():
     """
-    Tests the material and if not previously defined
-        - raise an error
+    Tests the function find_material_from_id with a list of materials
+    without the searched ID
+        - check that an error is rasied
     """
     materials = [
         {"id": 5},
@@ -23,5 +24,6 @@ def test_material_idenfication_key():
         {"id": -1},
     ]
     id_test = 1
-    with pytest.raises(ValueError, match="Couldn't find ID {}".format(id_test)):
+    with pytest.raises(ValueError,
+                       match="Couldn't find ID {}".format(id_test)):
         find_material_from_id(materials, id_test)
