@@ -1,14 +1,13 @@
 def find_material_from_id(materials, id):
     '''Returns the material from a given id
     Parameters:
-    - materials : list of dicts
+    - materials : list of dicts ex: [{"id": 2}, {"id": 3}, {"id": 5}]
     - id : int
     '''
     for material in materials:
         if material['id'] == id:
             return material
-            break
-    print("Couldn't find ID " + str(id) + " in materials list")
+    raise ValueError("Couldn't find ID " + str(id) + " in materials list")
     return
 
 
