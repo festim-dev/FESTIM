@@ -144,14 +144,14 @@ class BoundaryConditionRecomb(UserExpression):
     Args:
         UserExpression (fenics.UserExpression): value of surface concentration
     """
-    def __init__(self, phi, R_p, K_0, E_K, D_0, E_D, T, **kwargs):
+    def __init__(self, phi, R_p, Kr_0, E_Kr, D_0, E_D, T, **kwargs):
         """initialisation
 
         Args:
             phi (float): implanted particle flux
             R_p (float): implantation depth
-            K_0 (float): Recombination coefficient pre-exponential factor
-            E_K (float): Recombination energy
+            Kr_0 (float): Recombination coefficient pre-exponential factor
+            E_Kr (float): Recombination energy
             D_0 (float): Diffusion coefficient pre-exponential factor
             E_D (float): Diffusion energy
             T (fenics.Function(), fenics.Expression()): Temperature
@@ -162,16 +162,16 @@ class BoundaryConditionRecomb(UserExpression):
 
         self._D_0 = D_0
         self._E_D = E_D
-        self._K_0 = K_0
-        self._E_K = E_K
+        self._Kr_0 = Kr_0
+        self._E_Kr = E_Kr
 
         self._T = T
 
     def eval(self, value, x):
         D = self._D_0*exp(-self._E_D/FESTIM.k_B/self._T(x))
         val = self._phi(x)*self._R_p(x)/D
-        if self._K_0 is not None:  # non-instantaneous recomb
-            K = self._K_0*exp(-self._E_K/FESTIM.k_B/self._T(x))
+        if self._Kr_0 is not None:  # non-instantaneous recomb
+            K = self._Kr_0*exp(-self._E_Kr/FESTIM.k_B/self._T(x))
             val += (self._phi(x)/K)**0.5
         value[0] = val
 
@@ -265,10 +265,10 @@ def apply_boundary_conditions(simulation):
             expressions.append(phi)  # add to the expressions to be updated
             expressions.append(R_p)
             D_0, E_D = BC["D_0"], BC["E_D"]
-            K_0, E_K = None, None  # instantaneous recomb
-            if "K_0" in BC.keys() and "E_K" in BC.keys():
-                K_0, E_K = BC["K_0"], BC["E_K"]  # non-instantaneous recomb
-            value_BC = BoundaryConditionRecomb(phi, R_p, K_0, E_K, D_0, E_D, T)
+            Kr_0, E_Kr = None, None  # instantaneous recomb
+            if "Kr_0" in BC.keys() and "E_Kr" in BC.keys():
+                Kr_0, E_Kr = BC["Kr_0"], BC["E_Kr"]  # non-instantaneous recomb
+            value_BC = BoundaryConditionRecomb(phi, R_p, Kr_0, E_Kr, D_0, E_D, T)
 
         if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
            BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
