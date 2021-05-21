@@ -93,7 +93,7 @@ def mesh_and_refine(mesh_parameters):
                         cell_markers[cell] = True
                         coarse_mesh = True
                 mesh = refine(mesh, cell_markers)
-                if not coarse_mesh:
+                if coarse_mesh:
                     msg = "Infinite loop: Initial number " + \
                         "of cells might be too small"
                     raise ValueError(msg)
