@@ -8,7 +8,6 @@ def find_material_from_id(materials, id):
         if material['id'] == id:
             return material
     raise ValueError("Couldn't find ID " + str(id) + " in materials list")
-    return
 
 
 def update_expressions(expressions, t):
