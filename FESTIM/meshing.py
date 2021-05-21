@@ -82,7 +82,7 @@ def mesh_and_refine(mesh_parameters):
             refinement_point = refinement["x"]
             print("Mesh size before local refinement is " +
                   str(len(mesh.cells())))
-            coarse_mesh = False
+            coarse_mesh = True
             while len(mesh.cells()) < \
                     initial_number_of_cells + nb_cells_ref:
                 cell_markers = MeshFunction(
