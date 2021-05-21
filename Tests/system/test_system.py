@@ -3,6 +3,7 @@ from FESTIM.generic_simulation import run
 import fenics
 import pytest
 import sympy as sp
+import numpy as np
 from pathlib import Path
 import timeit
 
@@ -1161,3 +1162,72 @@ def test_extrinsic_trap(tmpdir):
     my_sim = FESTIM.Simulation(parameters)
     my_sim.initialise()
     my_sim.run()
+
+
+def test_steady_state_traps_not_everywhere():
+    """Creates a simulation problem with a trap not set in all subdomains runs
+    the sim and check that the value is not NaN
+    """
+    parameters = {}
+    mat1 = {
+        "borders": [0, 0.25],
+        "E_D": 0,
+        "D_0": 1,
+        "id": 1
+    }
+    mat2 = {
+        "borders": [0.25, 0.5],
+        "E_D": 0,
+        "D_0": 1,
+        "id": 2
+    }
+    mat3 = {
+        "borders": [0.5, 1],
+        "E_D": 0,
+        "D_0": 1,
+        "id": 3
+    }
+    parameters["materials"] = [mat1, mat2, mat3]
+
+    parameters["mesh_parameters"] = {
+        "initial_number_of_cells": 100,
+        "size": 1
+    }
+
+    trap = {
+        "k_0": 1,
+        "E_k": 0,
+        "p_0": 1,
+        "E_p": 0,
+        "density": 1,
+        "materials": [1, 3]
+    }
+    parameters["traps"] = [trap]
+    parameters["temperature"] = {
+        "type": "expression",
+        "value": 1,
+    }
+    parameters["boundary_conditions"] = [
+        {
+            "type": "dc",
+            "value": 1,
+            "surfaces": 1
+        }
+    ]
+    parameters["exports"] = {}
+    solving_parameters = {
+        "type": "solve_stationary",
+        "traps_element_type": "DG",
+        "newton_solver": {
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": 1e-10,
+            "maximum_iterations": 5,
+        }
+    }
+
+    parameters["solving_parameters"] = solving_parameters
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.run()
+    assert not np.isnan(my_sim.u.split()[1](0.5))
