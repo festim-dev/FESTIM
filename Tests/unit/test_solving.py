@@ -48,4 +48,4 @@ def test_default_dt_min_value():
         }
     }
     # run & test
-    solve_it(F, u, J, bcs, t, dt, solving_parameters)
+    solve_it(F, u, bcs, t, dt, solving_parameters, J=J)
