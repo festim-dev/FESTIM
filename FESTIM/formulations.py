@@ -23,11 +23,6 @@ def formulation(simulation):
     expressions = []
     F = 0
 
-    soret = False
-    if "temperature" in parameters:
-        if "soret" in parameters["temperature"]:
-            if parameters["temperature"]["soret"] is True:
-                soret = True
     solutions = split(u)
     previous_solutions = split(u_n)
     testfunctions = split(v)
@@ -53,7 +48,7 @@ def formulation(simulation):
             F += ((c_0-c_0_n)/dt)*solute_object.test_function*dx(subdomain)
         F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                  grad(solute_object.test_function))*dx(subdomain)
-        if soret:
+        if simulation.soret:
             Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
             F += dot(D_0 * exp(-E_D/k_B/T) *
                      Q * c_0 / (FESTIM.R * T**2) * grad(T),

@@ -610,6 +610,7 @@ def test_formulation_soret():
     dt = 2
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
+    my_sim.soret = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
     my_sim.T, my_sim.T_n = temp, temp
