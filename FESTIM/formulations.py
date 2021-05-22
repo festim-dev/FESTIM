@@ -82,7 +82,7 @@ def formulation(simulation):
         solutions[0], previous_solutions[0], testfunctions[0])
 
     extrinsic_counter = 0  # index in extrinsic_traps
-    for i, trap_dict in enumerate(parameters["traps"]):
+    for i, trap_dict in enumerate(parameters["traps"], 1):
 
         trap_object = Trap(
             trap_dict, simulation, extrinsic_counter, solution=solutions[i],
