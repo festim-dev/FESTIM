@@ -81,20 +81,20 @@ def formulation(simulation):
     solute_object = Concentration(
         solutions[0], previous_solutions[0], testfunctions[0])
 
-    i = 1  # index in traps
     extrinsic_counter = 0  # index in extrinsic_traps
-    for trap_dict in parameters["traps"]:
+    for i, trap_dict in enumerate(parameters["traps"]):
 
         trap_object = Trap(
             trap_dict, simulation, extrinsic_counter, solution=solutions[i],
             prev_solution=previous_solutions[i],
             test_function=testfunctions[i])
 
-        # incrementing extrinsic_counter
+        # increment extrinsic_counter
         if hasattr(trap_object, "type"):
             extrinsic_counter += 1
         expressions.append(trap_object.density)
 
+        # add to the global form
         F += create_trap_form(
             trap_object, solute_object, T,
             dt, dx, simulation.transient, chemical_pot,
@@ -106,7 +106,7 @@ def formulation(simulation):
             source = Expression(source, t=0, degree=2)
             F += -source*testfunctions[i]*dx
             expressions.append(source)
-        i += 1
+
     return F, expressions
 
 
