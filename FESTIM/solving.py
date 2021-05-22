@@ -19,8 +19,13 @@ def solve_it(F, u, bcs, t, dt, solving_parameters, J=None):
                     "dt_min": 1e-5,  # optionnal
                     "t_stop": 100,  # optionnal
                     "stepsize_stop_max": 10,  # only needed if "t_stop"
+                },
+                "newton_solver": {
+                    "absolute_tolerance": 1e-10,
+                    "relative_tolerance": 1e-10,
+                    "maximum_iterations": 50,
                 }
-                }
+            }
         J (fenics.Function(), optional): The jacobian. Defaults to None.
     """
     converged = False
@@ -72,9 +77,10 @@ def solve_once(F, u, bcs, solving_parameters, J=None):
             computed. Defaults to None.
 
     Returns:
-        int -- number of iterations for reaching convergence
-        bool -- True if converged, else False
+        int, bool: number of iterations for reaching convergence, True if
+            converged else False
     """
+
     if J is None:  # Define the Jacobian
         du = TrialFunction(u.function_space())
         J = derivative(F, u, du)
