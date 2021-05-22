@@ -1231,3 +1231,52 @@ def test_steady_state_traps_not_everywhere():
     my_sim.initialise()
     my_sim.run()
     assert not np.isnan(my_sim.u.split()[1](0.5))
+
+
+def test_no_jacobian_update():
+    """Runs a transient sim and with the flag "update_jacobian" set to False.
+    """
+
+    parameters = {
+        "materials": [
+            {
+                "E_D": 0,
+                "D_0": 1,
+                "id": 1
+                }
+                ],
+        "traps": [
+            ],
+        "initial_conditions": [
+        ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 10,
+                "size": 1,
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+                'type': "expression",
+                'value': 300
+            },
+        "source_term": {
+            'value': 1
+            },
+        "solving_parameters": {
+            "final_time": 10,
+            "initial_stepsize": 1,
+            "adaptive_stepsize": {
+                "stepsize_change_ratio": 1,
+                },
+            "newton_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            },
+            "update_jacobian": False
+            },
+        "exports": {
+            },
+    }
+
+    FESTIM.run(parameters)
