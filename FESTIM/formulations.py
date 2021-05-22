@@ -1,4 +1,4 @@
-from fenics import split, grad, dot, Expression, exp, dx
+from fenics import split, grad, dot, Expression, exp
 import sympy as sp
 import FESTIM
 
