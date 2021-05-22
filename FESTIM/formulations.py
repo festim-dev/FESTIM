@@ -25,8 +25,8 @@ def formulation(simulation):
 
     chemical_pot = False
     soret = False
-    if "temperature" in parameters.keys():
-        if "soret" in parameters["temperature"].keys():
+    if "temperature" in parameters:
+        if "soret" in parameters["temperature"]:
             if parameters["temperature"]["soret"] is True:
                 soret = True
     solutions = split(u)
@@ -38,7 +38,7 @@ def formulation(simulation):
     for material in parameters["materials"]:
         D_0 = material['D_0']
         E_D = material['E_D']
-        if "S_0" in material.keys() or "E_S" in material.keys():
+        if "S_0" in material or "E_S" in material:
             chemical_pot = True
             E_S = material['E_S']
             S_0 = material['S_0']
@@ -56,7 +56,7 @@ def formulation(simulation):
                      Q * c_0 / (FESTIM.R * T**2) * grad(T),
                      grad(testfunctions[0]))*dx(subdomain)
     # Define flux
-    if "source_term" in parameters.keys():
+    if "source_term" in parameters:
         print('Defining source terms')
         if isinstance(parameters["source_term"], dict):
             source = Expression(
@@ -77,13 +77,13 @@ def formulation(simulation):
                 expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
 
-
     # Add traps
-    solute_object = Concentration(solutions[0], previous_solutions[0], testfunctions[0])
+    solute_object = Concentration(
+        solutions[0], previous_solutions[0], testfunctions[0])
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
-        if 'type' in trap.keys() and trap['type'] == 'extrinsic':
+        if 'type' in trap and trap['type'] == 'extrinsic':
             trap_density = simulation.extrinsic_traps[j]
             j += 1
         else:
@@ -103,13 +103,13 @@ def formulation(simulation):
             k_0, E_k, p_0, E_p, trap_density, trap_mat,
             solution=solutions[i], prev_solution=previous_solutions[i],
             test_function=testfunctions[i])
-        F = add_trap_to_form(
-            F, trap_object, solute_object, T,
+        F += create_trap_form(
+            trap_object, solute_object, T,
             dt, dx, simulation.transient, chemical_pot,
             parameters["materials"])
 
         # if a source term is set then add it to the form
-        if 'source_term' in trap.keys():
+        if 'source_term' in trap:
             source = sp.printing.ccode(trap['source_term'])
             source = Expression(source, t=0, degree=2)
             F += -source*testfunctions[i]*dx
@@ -137,10 +137,10 @@ class Trap(Concentration):
         self.material = material
 
 
-def add_trap_to_form(
-        F, trap, solute, T, dt, dx, transient,
+def create_trap_form(
+        trap, solute, T, dt, dx, transient,
         chemical_pot, materials):
-    k_B = FESTIM.k_B
+    k_B = FESTIM.k_B  # Boltzmann constant
 
     solution = trap.solution
     prev_solution = trap.prev_solution
@@ -151,7 +151,7 @@ def add_trap_to_form(
     p_0 = trap.p_0
     E_p = trap.E_p
     density = trap.density
-
+    F = 0
     if transient:
         F += ((solution - prev_solution) / dt) * \
             test_function*dx
