@@ -3,6 +3,36 @@ import sympy as sp
 import FESTIM
 
 
+class Concentration:
+    def __init__(self, solution, prev_solution, test_function):
+        self.solution = solution
+        self.prev_solution = prev_solution
+        self.test_function = test_function
+
+
+class Trap(Concentration):
+    def __init__(
+            self, trap_dict, simulation, extrinsic_counter, **kwargs):
+        super().__init__(**kwargs)
+
+        self.k_0 = trap_dict["k_0"]
+        self.E_k = trap_dict["E_k"]
+        self.p_0 = trap_dict["p_0"]
+        self.E_p = trap_dict["E_p"]
+
+        if 'type' in trap_dict and trap_dict['type'] == 'extrinsic':
+            self.type = "extrinsic"
+            density = simulation.extrinsic_traps[extrinsic_counter]
+        else:
+            density = sp.printing.ccode(trap_dict['density'])
+            density = Expression(density, degree=2, t=0)
+        self.density = density
+        if type(trap_dict['materials']) is not list:
+            self.materials = [trap_dict['materials']]
+        else:
+            self.materials = trap_dict['materials']
+
+
 def formulation(simulation):
     """Creates formulation for trapping MRE model
 
@@ -123,36 +153,6 @@ def create_source_form(simulation, solute_object):
             expressions_source.append(source)
 
     return F_source, expressions_source
-
-
-class Concentration:
-    def __init__(self, solution, prev_solution, test_function):
-        self.solution = solution
-        self.prev_solution = prev_solution
-        self.test_function = test_function
-
-
-class Trap(Concentration):
-    def __init__(
-            self, trap_dict, simulation, extrinsic_counter, **kwargs):
-        super().__init__(**kwargs)
-
-        self.k_0 = trap_dict["k_0"]
-        self.E_k = trap_dict["E_k"]
-        self.p_0 = trap_dict["p_0"]
-        self.E_p = trap_dict["E_p"]
-
-        if 'type' in trap_dict and trap_dict['type'] == 'extrinsic':
-            self.type = "extrinsic"
-            density = simulation.extrinsic_traps[extrinsic_counter]
-        else:
-            density = sp.printing.ccode(trap_dict['density'])
-            density = Expression(density, degree=2, t=0)
-        self.density = density
-        if type(trap_dict['materials']) is not list:
-            self.materials = [trap_dict['materials']]
-        else:
-            self.materials = trap_dict['materials']
 
 
 def create_trap_form(
