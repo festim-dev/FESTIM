@@ -29,7 +29,11 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
             stepsize_change_ratio = \
                 solving_parameters[
                     "adaptive_stepsize"]["stepsize_change_ratio"]
-            dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
+            if "dt_min" in solving_parameters["adaptive_stepsize"].keys():
+                dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
+            else:
+                # default value
+                dt_min = 1e-5
             adaptive_stepsize(
                 nb_it=nb_it, converged=converged, dt=dt,
                 stepsize_change_ratio=stepsize_change_ratio,
