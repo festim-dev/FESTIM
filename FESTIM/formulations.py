@@ -1,4 +1,4 @@
-from fenics import split, grad, dot, Expression, exp, dx
+from fenics import split, grad, dot, Expression, exp, dx, Function
 import sympy as sp
 import FESTIM
 
@@ -73,7 +73,6 @@ def formulation(simulation):
                 for vol in volumes:
                     F += - source*solute_object.test_function*dx(vol)
                 expressions.append(source)
-    expressions.append(T)  # Add it to the expressions to be updated
 
     # Add traps
     extrinsic_counter = 0  # index for extrinsic_traps
