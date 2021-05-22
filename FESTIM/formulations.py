@@ -64,7 +64,7 @@ def formulation(simulation):
     # Add traps
     if "traps" in simulation.parameters:
         F_traps, expressions_traps = \
-            create_traps_form(simulation, solute_object)
+            create_all_traps_form(simulation, solute_object)
         F += F_traps
         expressions += expressions_traps
 
@@ -155,7 +155,7 @@ def create_source_form(simulation, solute_object):
     return F_source, expressions_source
 
 
-def create_trap_form(
+def create_one_trap_form(
         trap, solute, T, dt, dx, transient,
         chemical_pot, materials):
     """Creates a sub-form for a trap to be added to the general formulation.
@@ -236,7 +236,7 @@ def create_trap_form(
     return F
 
 
-def create_traps_form(simulation, solute):
+def create_all_traps_form(simulation, solute):
     """Creates a sub-form for all traps to be added to the general formulation.
 
     Args:
@@ -270,7 +270,7 @@ def create_traps_form(simulation, solute):
         expressions_traps.append(trap_object.density)
 
         # add to the global form
-        F_trap = create_trap_form(
+        F_trap = create_one_trap_form(
             trap_object, solute, simulation.T,
             simulation.dt, simulation.dx, simulation.transient,
             simulation.chemical_pot, parameters["materials"])
