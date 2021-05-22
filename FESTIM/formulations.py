@@ -50,7 +50,7 @@ def formulation(simulation):
             F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
         F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                  grad(testfunctions[0]))*dx(subdomain)
-        if soret is True:
+        if soret:
             Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
             F += dot(D_0 * exp(-E_D/k_B/T) *
                      Q * c_0 / (FESTIM.R * T**2) * grad(T),
@@ -82,20 +82,18 @@ def formulation(simulation):
         solutions[0], previous_solutions[0], testfunctions[0])
 
     i = 1  # index in traps
-    j = 0  # index in extrinsic_traps
-    for trap in parameters["traps"]:
-        if 'type' in trap and trap['type'] == 'extrinsic':
-            trap_density = simulation.extrinsic_traps[j]
-            j += 1
-        else:
-            trap_density = sp.printing.ccode(trap['density'])
-            trap_density = Expression(trap_density, degree=2, t=0)
-            expressions.append(trap_density)
+    extrinsic_counter = 0  # index in extrinsic_traps
+    for trap_dict in parameters["traps"]:
 
         trap_object = Trap(
-            trap['k_0'], trap['E_k'], trap['p_0'], trap['E_p'], trap_density, trap['materials'],
-            solution=solutions[i], prev_solution=previous_solutions[i],
+            trap_dict, simulation, extrinsic_counter, solution=solutions[i],
+            prev_solution=previous_solutions[i],
             test_function=testfunctions[i])
+
+        # incrementing extrinsic_counter
+        if hasattr(trap_object, "type"):
+            extrinsic_counter += 1
+        expressions.append(trap_object.density)
 
         F += create_trap_form(
             trap_object, solute_object, T,
@@ -103,8 +101,8 @@ def formulation(simulation):
             parameters["materials"])
 
         # if a source term is set then add it to the form
-        if 'source_term' in trap:
-            source = sp.printing.ccode(trap['source_term'])
+        if 'source_term' in trap_dict:
+            source = sp.printing.ccode(trap_dict['source_term'])
             source = Expression(source, t=0, degree=2)
             F += -source*testfunctions[i]*dx
             expressions.append(source)
@@ -121,17 +119,25 @@ class Concentration:
 
 class Trap(Concentration):
     def __init__(
-            self, k_0, E_k, p_0, E_p, density, material, **kwargs):
+            self, trap_dict, simulation, extrinsic_counter, **kwargs):
         super().__init__(**kwargs)
-        self.k_0 = k_0
-        self.E_k = E_k
-        self.p_0 = p_0
-        self.E_p = E_p
-        self.density = density
-        if type(material) is not list:
-            self.material = [material]
+
+        self.k_0 = trap_dict["k_0"]
+        self.E_k = trap_dict["E_k"]
+        self.p_0 = trap_dict["p_0"]
+        self.E_p = trap_dict["E_p"]
+
+        if 'type' in trap_dict and trap_dict['type'] == 'extrinsic':
+            self.type = "extrinsic"
+            density = simulation.extrinsic_traps[extrinsic_counter]
         else:
-            self.material = material
+            density = sp.printing.ccode(trap_dict['density'])
+            density = Expression(density, degree=2, t=0)
+        self.density = density
+        if type(trap_dict['materials']) is not list:
+            self.materials = [trap_dict['materials']]
+        else:
+            self.materials = trap_dict['materials']
 
 
 def create_trap_form(
@@ -170,7 +176,7 @@ def create_trap_form(
     solution = trap.solution
     prev_solution = trap.prev_solution
     test_function = trap.test_function
-    trap_mat = trap.material
+    trap_materials = trap.materials
 
     F = 0  # initialise the form
     if transient:
@@ -186,10 +192,10 @@ def create_trap_form(
         # add c_t = 0 to the form in this subdomain
         all_mat_ids = [mat["id"] for mat in materials]
         for mat_id in all_mat_ids:
-            if mat_id not in trap_mat:
+            if mat_id not in trap_materials:
                 F += solution*test_function*dx(mat_id)
 
-    for mat_id in trap_mat:
+    for mat_id in trap_materials:
         k_0 = trap.k_0
         E_k = trap.E_k
         p_0 = trap.p_0
