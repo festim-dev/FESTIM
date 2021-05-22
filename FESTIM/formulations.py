@@ -80,6 +80,7 @@ def formulation(simulation):
     # Add traps
     solute_object = Concentration(
         solutions[0], previous_solutions[0], testfunctions[0])
+
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
@@ -91,18 +92,11 @@ def formulation(simulation):
             trap_density = Expression(trap_density, degree=2, t=0)
             expressions.append(trap_density)
 
-        E_k = trap['E_k']
-        k_0 = trap['k_0']
-        E_p = trap['E_p']
-        p_0 = trap['p_0']
-
-        trap_mat = trap['materials']
-        if type(trap_mat) is not list:
-            trap_mat = [trap_mat]
         trap_object = Trap(
-            k_0, E_k, p_0, E_p, trap_density, trap_mat,
+            trap['k_0'], trap['E_k'], trap['p_0'], trap['E_p'], trap_density, trap['materials'],
             solution=solutions[i], prev_solution=previous_solutions[i],
             test_function=testfunctions[i])
+
         F += create_trap_form(
             trap_object, solute_object, T,
             dt, dx, simulation.transient, chemical_pot,
@@ -134,7 +128,10 @@ class Trap(Concentration):
         self.p_0 = p_0
         self.E_p = E_p
         self.density = density
-        self.material = material
+        if type(material) is not list:
+            self.material = [material]
+        else:
+            self.material = material
 
 
 def create_trap_form(
@@ -174,11 +171,6 @@ def create_trap_form(
     prev_solution = trap.prev_solution
     test_function = trap.test_function
     trap_mat = trap.material
-    k_0 = trap.k_0
-    E_k = trap.E_k
-    p_0 = trap.p_0
-    E_p = trap.E_p
-    density = trap.density
 
     F = 0  # initialise the form
     if transient:
@@ -197,10 +189,15 @@ def create_trap_form(
             if mat_id not in trap_mat:
                 F += solution*test_function*dx(mat_id)
 
-    for subdomain in trap_mat:
+    for mat_id in trap_mat:
+        k_0 = trap.k_0
+        E_k = trap.E_k
+        p_0 = trap.p_0
+        E_p = trap.E_p
+        density = trap.density
         corresponding_material = \
             FESTIM.helpers.find_material_from_id(
-                materials, subdomain)
+                materials, mat_id)
         c_0 = solute.solution
         if chemical_pot is True:
             # change of variable
@@ -211,9 +208,9 @@ def create_trap_form(
         # k(T)*c_m*(n - c_t) - p(T)*c_t
         F += - k_0 * exp(-E_k/k_B/T) * c_0 \
             * (density - solution) * \
-            test_function*dx(subdomain)
+            test_function*dx(mat_id)
         F += p_0*exp(-E_p/k_B/T)*solution * \
-            test_function*dx(subdomain)
+            test_function*dx(mat_id)
 
     return F
 
