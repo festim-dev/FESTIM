@@ -62,14 +62,14 @@ class Trap(Concentration):
 
 
 def formulation(simulation):
-    """Creates formulation for trapping MRE model
+    """Creates the variational formulation for the H transport problem
 
-    Arguments:
-
+    Args:
+        simulation (FESTIM.Simulation): main simulation instance
 
     Returns:
-        fenics.Form() -- global formulation
-        list -- contains fenics.Expression() to be updated
+        fenics.Form, list: problem variational formulation, contains
+            fenics.Expression() to be updated
     """
     expressions = []
     F = 0
