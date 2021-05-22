@@ -55,41 +55,22 @@ def formulation(simulation):
 
     # Define flux
     if "source_term" in parameters:
-        F_source, expressions_source = add_source_terms(simulation, solute_object)
+        F_source, expressions_source = \
+            create_source_form(simulation, solute_object)
         F += F_source
         expressions += expressions_source
 
     # Add traps
-    extrinsic_counter = 0  # index for extrinsic_traps
-    for i, trap_dict in enumerate(parameters["traps"], 1):
-
-        trap_object = Trap(
-            trap_dict, simulation, extrinsic_counter, solution=solutions[i],
-            prev_solution=previous_solutions[i],
-            test_function=testfunctions[i])
-
-        # increment extrinsic_counter
-        if hasattr(trap_object, "type"):
-            extrinsic_counter += 1
-        expressions.append(trap_object.density)
-
-        # add to the global form
-        F += create_trap_form(
-            trap_object, solute_object, T,
-            dt, dx, simulation.transient, simulation.chemical_pot,
-            parameters["materials"])
-
-        # if a source term is set then add it to the form
-        if 'source_term' in trap_dict:
-            source = sp.printing.ccode(trap_dict['source_term'])
-            source = Expression(source, t=0, degree=2)
-            F += -source*testfunctions[i]*dx
-            expressions.append(source)
+    if "traps" in parameters:
+        F_traps, expressions_traps = \
+            create_traps_form(simulation, solute_object)
+        F += F_traps
+        expressions += expressions_traps
 
     return F, expressions
 
 
-def add_source_terms(simulation, solute_object):
+def create_source_form(simulation, solute_object):
     """Creates a form for the solute source terms
 
     Args:
@@ -240,6 +221,55 @@ def create_trap_form(
             test_function*dx(mat_id)
 
     return F
+
+
+def create_traps_form(simulation, solute):
+    """Creates a sub-form for all traps to be added to the general formulation.
+
+    Args:
+        simulation (FESTIM.Simulation): the main simulation object
+        solute (Concentration): an instance of the Concentration() class for
+            the solute concentration
+
+    Returns:
+        fenics.Form, list: formulation for the trapping terms, list containing
+            densities and sources as fenics.Expression
+    """
+    F_traps = 0
+    expressions_traps = []
+
+    parameters = simulation.parameters
+    solutions = split(simulation.u)
+    previous_solutions = split(simulation.u_n)
+    testfunctions = split(simulation.v)
+
+    extrinsic_counter = 0  # index for extrinsic_traps
+    for i, trap_dict in enumerate(parameters["traps"], 1):
+
+        trap_object = Trap(
+            trap_dict, simulation, extrinsic_counter, solution=solutions[i],
+            prev_solution=previous_solutions[i],
+            test_function=testfunctions[i])
+
+        # increment extrinsic_counter
+        if hasattr(trap_object, "type"):
+            extrinsic_counter += 1
+        expressions_traps.append(trap_object.density)
+
+        # add to the global form
+        F_trap = create_trap_form(
+            trap_object, solute, simulation.T,
+            simulation.dt, simulation.dx, simulation.transient,
+            simulation.chemical_pot, parameters["materials"])
+        F_traps += F_trap
+
+        # if a source term is set then add it to the form
+        if 'source_term' in trap_dict:
+            source = sp.printing.ccode(trap_dict['source_term'])
+            source = Expression(source, t=0, degree=2)
+            F_traps += -source*testfunctions[i]*simulation.dx
+            expressions_traps.append(source)
+    return F_traps, expressions_traps
 
 
 def formulation_extrinsic_traps(simulation):
