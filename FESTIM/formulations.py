@@ -77,6 +77,9 @@ def formulation(simulation):
                 expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
 
+
+    # Add traps
+    solute_object = Concentration(solutions[0], previous_solutions[0], testfunctions[0])
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
@@ -96,28 +99,59 @@ def formulation(simulation):
         trap_mat = trap['materials']
         if type(trap_mat) is not list:
             trap_mat = [trap_mat]
+        trap_object = Trap(
+            k_0, E_k, p_0, E_p, trap_density, trap_mat,
+            solution=solutions[i], prev_solution=previous_solutions[i],
+            test_function=testfunctions[i])
         F = add_trap_to_form(
-            F, trap_mat, k_0, E_k, p_0, E_p, trap_density, T,
+            F, trap_object, solute_object, T,
             dt, dx, simulation.transient, chemical_pot,
-            solutions[0], testfunctions[0],
-            solutions[i], previous_solutions[i], testfunctions[i],
             parameters["materials"])
 
         # if a source term is set then add it to the form
         if 'source_term' in trap.keys():
             source = sp.printing.ccode(trap['source_term'])
             source = Expression(source, t=0, degree=2)
-            F += -source*test_function*dx
+            F += -source*testfunctions[i]*dx
             expressions.append(source)
         i += 1
     return F, expressions
 
 
+class Concentration:
+    def __init__(self, solution, prev_solution, test_function):
+        self.solution = solution
+        self.prev_solution = prev_solution
+        self.test_function = test_function
+
+
+class Trap(Concentration):
+    def __init__(
+            self, k_0, E_k, p_0, E_p, density, material, **kwargs):
+        super().__init__(**kwargs)
+        self.k_0 = k_0
+        self.E_k = E_k
+        self.p_0 = p_0
+        self.E_p = E_p
+        self.density = density
+        self.material = material
+
+
 def add_trap_to_form(
-        F, trap_mat, k_0, E_k, p_0, E_p, density, T, dt, dx, transient,
-        chemical_pot, solute, test_function_solute, solution, prev_solution,
-        test_function, materials):
+        F, trap, solute, T, dt, dx, transient,
+        chemical_pot, materials):
     k_B = FESTIM.k_B
+
+    solution = trap.solution
+    prev_solution = trap.prev_solution
+    test_function = trap.test_function
+    trap_mat = trap.material
+    k_0 = trap.k_0
+    E_k = trap.E_k
+    p_0 = trap.p_0
+    E_p = trap.E_p
+    density = trap.density
+
     if transient:
         F += ((solution - prev_solution) / dt) * \
             test_function*dx
@@ -134,11 +168,11 @@ def add_trap_to_form(
         corresponding_material = \
             FESTIM.helpers.find_material_from_id(
                 materials, subdomain)
-        c_0 = solute
+        c_0 = solute.solution
         if chemical_pot is True:
             S_0 = corresponding_material['S_0']
             E_S = corresponding_material['E_S']
-            c_0 = solute*S_0*exp(-E_S/k_B/T)
+            c_0 = c_0*S_0*exp(-E_S/k_B/T)
         F += - k_0 * exp(-E_k/k_B/T) * c_0 \
             * (density - solution) * \
             test_function*dx(subdomain)
@@ -147,7 +181,7 @@ def add_trap_to_form(
 
     if transient:
         F += ((solution - prev_solution) / dt) * \
-            test_function_solute*dx
+            solute.test_function*dx
     return F
 
 
