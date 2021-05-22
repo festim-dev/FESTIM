@@ -155,6 +155,8 @@ def add_trap_to_form(
     if transient:
         F += ((solution - prev_solution) / dt) * \
             test_function*dx
+        F += ((solution - prev_solution) / dt) * \
+            solute.test_function*dx
     else:
         # if the sim is steady state and
         # if a trap is not defined in one subdomain
@@ -179,9 +181,6 @@ def add_trap_to_form(
         F += p_0*exp(-E_p/k_B/T)*solution * \
             test_function*dx(subdomain)
 
-    if transient:
-        F += ((solution - prev_solution) / dt) * \
-            solute.test_function*dx
     return F
 
 
