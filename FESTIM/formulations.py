@@ -16,12 +16,10 @@ def formulation(simulation):
     expressions = []
     F = 0
 
-    solutions = split(simulation.u)
-    previous_solutions = split(simulation.u_n)
-    testfunctions = split(simulation.v)
-
     solute_object = Concentration(
-        solutions[0], previous_solutions[0], testfunctions[0])
+        solution=split(simulation.u)[0],
+        prev_solution=split(simulation.u_n)[0],
+        test_function=split(simulation.v)[0])
 
     # diffusion + transient terms
     F += create_diffusion_form(simulation, solute_object)
