@@ -183,9 +183,7 @@ def create_source_form(simulation, solute_object):
     return F_source, expressions_source
 
 
-def create_one_trap_form(
-        trap, solute, T, dt, dx, transient,
-        chemical_pot, materials):
+def create_one_trap_form(simulation, trap, solute):
     """Creates a sub-form for a trap to be added to the general formulation.
 
     The global equation for trapping is:
@@ -193,23 +191,10 @@ def create_one_trap_form(
     - p_0*exp(-E_p/k_B T)*c_t
 
     Args:
+        simulation (FESTIM.Simulation): the main simulation object
         trap (Trap): an instance of the Trap() class
         solute (Concentration): an instance of the Concentration() class for
             the solute concentration
-        T (fenics.Function): the temperature
-        dt (fenics.Constant): the stepsize
-        dx (fenics.Measure): the measure dx
-        transient (bool): If True, transient terms (dc/dt) will be added.
-        chemical_pot (bool): If True, the variable change
-            solute = solute * S(T) will be made
-        materials (list): Contains dicts. Ex:
-            [
-                {
-                    "S_0": 0.2  # only needed if chemical_pot is True
-                    "E_S": 0.5  # only needed if chemical_pot is True
-                    "id": 1
-                }
-            ]
 
     Returns:
         fenics.Form: the form related to the trap
@@ -221,8 +206,13 @@ def create_one_trap_form(
     test_function = trap.test_function
     trap_materials = trap.materials
 
+    materials = simulation.parameters["materials"]
+    dt = simulation.dt
+    dx = simulation.dx
+    T = simulation.T
+
     F = 0  # initialise the form
-    if transient:
+    if simulation.transient:
         # d(c_t)/dt in trapping equation
         F += ((solution - prev_solution) / dt) * \
             test_function*dx
@@ -248,7 +238,7 @@ def create_one_trap_form(
             FESTIM.helpers.find_material_from_id(
                 materials, mat_id)
         c_0 = solute.solution
-        if chemical_pot:
+        if simulation.chemical_pot:
             # change of variable
             S_0 = corresponding_material['S_0']
             E_S = corresponding_material['E_S']
@@ -298,10 +288,7 @@ def create_all_traps_form(simulation, solute):
         expressions_traps.append(trap_object.density)
 
         # add to the global form
-        F_trap = create_one_trap_form(
-            trap_object, solute, simulation.T,
-            simulation.dt, simulation.dx, simulation.transient,
-            simulation.chemical_pot, parameters["materials"])
+        F_trap = create_one_trap_form(simulation, trap_object, solute)
         F_traps += F_trap
 
         # if a source term is set then add it to the form
