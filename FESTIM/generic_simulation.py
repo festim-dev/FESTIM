@@ -60,8 +60,8 @@ class Simulation():
         self.define_temperature()
 
         # check if the soret effect has to be taken into account
-        if "soret" in parameters["temperature"]:
-            if parameters["temperature"]["soret"]:
+        if "soret" in self.parameters["temperature"]:
+            if self.parameters["temperature"]["soret"]:
                 self.soret = True
 
         # Create functions for properties
