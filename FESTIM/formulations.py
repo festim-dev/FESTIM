@@ -13,19 +13,18 @@ def formulation(simulation):
         fenics.Form() -- global formulation
         list -- contains fenics.Expression() to be updated
     """
-    u, u_n = simulation.u, simulation.u_n
-    v = simulation.v
+    expressions = []
+    F = 0
+
     parameters = simulation.parameters
     T, T_n = simulation.T, simulation.T_n
     dt = simulation.dt
     dx = simulation.dx
     k_B = FESTIM.k_B  # Boltzmann constant
-    expressions = []
-    F = 0
 
-    solutions = split(u)
-    previous_solutions = split(u_n)
-    testfunctions = split(v)
+    solutions = split(simulation.u)
+    previous_solutions = split(simulation.u_n)
+    testfunctions = split(simulation.v)
 
     solute_object = Concentration(
         solutions[0], previous_solutions[0], testfunctions[0])
@@ -53,26 +52,12 @@ def formulation(simulation):
             F += dot(D_0 * exp(-E_D/k_B/T) *
                      Q * c_0 / (FESTIM.R * T**2) * grad(T),
                      grad(solute_object.test_function))*dx(subdomain)
+
     # Define flux
     if "source_term" in parameters:
-        print('Defining source terms')
-        if isinstance(parameters["source_term"], dict):
-            source = Expression(
-                sp.printing.ccode(
-                    parameters["source_term"]["value"]), t=0, degree=2)
-            F += - source*solute_object.test_function*dx
-            expressions.append(source)
-        elif isinstance(parameters["source_term"], list):
-            for source_dict in parameters["source_term"]:
-                source = Expression(
-                    sp.printing.ccode(
-                        source_dict["value"]), t=0, degree=2)
-                volumes = source_dict["volumes"]
-                if isinstance(volumes, int):
-                    volumes = [volumes]
-                for vol in volumes:
-                    F += - source*solute_object.test_function*dx(vol)
-                expressions.append(source)
+        F_source, expressions_source = add_source_terms(simulation, solute_object)
+        F += F_source
+        expressions += expressions_source
 
     # Add traps
     extrinsic_counter = 0  # index for extrinsic_traps
@@ -102,6 +87,48 @@ def formulation(simulation):
             expressions.append(source)
 
     return F, expressions
+
+
+def add_source_terms(simulation, solute_object):
+    """Creates a form for the solute source terms
+
+    Args:
+        simulation (FESTIM.Simulation): the main simulation object
+        solute_object (Concentration): the instance of Concentration() for the
+            solute concentration
+
+    Returns:
+        fenics.Form, list: formulation for the solute source terms, list of
+            sources as fenics.Expression
+    """
+    F_source = 0
+    expressions_source = []
+
+    source_term = simulation.parameters["source_term"]
+    dx = simulation.dx
+
+    print('Defining source terms')
+
+    if isinstance(source_term, dict):
+        source = Expression(
+            sp.printing.ccode(
+                source_term["value"]), t=0, degree=2)
+        F_source += - source*solute_object.test_function*dx
+        expressions_source.append(source)
+
+    elif isinstance(source_term, list):
+        for source_dict in source_term:
+            source = Expression(
+                sp.printing.ccode(
+                    source_dict["value"]), t=0, degree=2)
+            volumes = source_dict["volumes"]
+            if isinstance(volumes, int):
+                volumes = [volumes]
+            for vol in volumes:
+                F_source += - source*solute_object.test_function*dx(vol)
+            expressions_source.append(source)
+
+    return F_source, expressions_source
 
 
 class Concentration:
