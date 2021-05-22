@@ -682,6 +682,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
+    my_sim.chemical_pot = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
     my_sim.T, my_sim.T_n = temp, temp_n
@@ -753,6 +754,7 @@ def test_formulation_1_trap_1_material_chemical_pot():
     temp_n = fenics.Expression("200", degree=0)
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
+    my_sim.chemical_pot = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
     my_sim.T, my_sim.T_n = temp, temp_n

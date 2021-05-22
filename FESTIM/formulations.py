@@ -23,7 +23,6 @@ def formulation(simulation):
     expressions = []
     F = 0
 
-    chemical_pot = False
     soret = False
     if "temperature" in parameters:
         if "soret" in parameters["temperature"]:
@@ -32,29 +31,33 @@ def formulation(simulation):
     solutions = split(u)
     previous_solutions = split(u_n)
     testfunctions = split(v)
-    c_0 = solutions[0]
-    c_0_n = previous_solutions[0]
 
+    solute_object = Concentration(
+        solutions[0], previous_solutions[0], testfunctions[0])
+
+    c_0 = solute_object.solution
+    c_0_n = solute_object.prev_solution
+
+    # diffusion + transient terms
     for material in parameters["materials"]:
         D_0 = material['D_0']
         E_D = material['E_D']
-        if "S_0" in material or "E_S" in material:
-            chemical_pot = True
+        if simulation.chemical_pot:
             E_S = material['E_S']
             S_0 = material['S_0']
-            c_0 = solutions[0]*S_0*exp(-E_S/k_B/T)
-            c_0_n = previous_solutions[0]*S_0*exp(-E_S/k_B/T_n)
+            c_0 = solute_object.solution*S_0*exp(-E_S/k_B/T)
+            c_0_n = solute_object.prev_solution*S_0*exp(-E_S/k_B/T_n)
 
         subdomain = material['id']
         if simulation.transient:
-            F += ((c_0-c_0_n)/dt)*testfunctions[0]*dx(subdomain)
+            F += ((c_0-c_0_n)/dt)*solute_object.test_function*dx(subdomain)
         F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
-                 grad(testfunctions[0]))*dx(subdomain)
+                 grad(solute_object.test_function))*dx(subdomain)
         if soret:
             Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
             F += dot(D_0 * exp(-E_D/k_B/T) *
                      Q * c_0 / (FESTIM.R * T**2) * grad(T),
-                     grad(testfunctions[0]))*dx(subdomain)
+                     grad(solute_object.test_function))*dx(subdomain)
     # Define flux
     if "source_term" in parameters:
         print('Defining source terms')
@@ -62,7 +65,7 @@ def formulation(simulation):
             source = Expression(
                 sp.printing.ccode(
                     parameters["source_term"]["value"]), t=0, degree=2)
-            F += - source*testfunctions[0]*dx
+            F += - source*solute_object.test_function*dx
             expressions.append(source)
         elif isinstance(parameters["source_term"], list):
             for source_dict in parameters["source_term"]:
@@ -73,15 +76,12 @@ def formulation(simulation):
                 if isinstance(volumes, int):
                     volumes = [volumes]
                 for vol in volumes:
-                    F += - source*testfunctions[0]*dx(vol)
+                    F += - source*solute_object.test_function*dx(vol)
                 expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
 
     # Add traps
-    solute_object = Concentration(
-        solutions[0], previous_solutions[0], testfunctions[0])
-
-    extrinsic_counter = 0  # index in extrinsic_traps
+    extrinsic_counter = 0  # index for extrinsic_traps
     for i, trap_dict in enumerate(parameters["traps"], 1):
 
         trap_object = Trap(
@@ -97,7 +97,7 @@ def formulation(simulation):
         # add to the global form
         F += create_trap_form(
             trap_object, solute_object, T,
-            dt, dx, simulation.transient, chemical_pot,
+            dt, dx, simulation.transient, simulation.chemical_pot,
             parameters["materials"])
 
         # if a source term is set then add it to the form
@@ -205,7 +205,7 @@ def create_trap_form(
             FESTIM.helpers.find_material_from_id(
                 materials, mat_id)
         c_0 = solute.solution
-        if chemical_pot is True:
+        if chemical_pot:
             # change of variable
             S_0 = corresponding_material['S_0']
             E_S = corresponding_material['E_S']
