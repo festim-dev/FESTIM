@@ -140,6 +140,34 @@ class Trap(Concentration):
 def create_trap_form(
         trap, solute, T, dt, dx, transient,
         chemical_pot, materials):
+    """Creates a sub-form for a trap to be added to the general formulation.
+
+    The global equation for trapping is:
+    d(c_t)/dt = k_0*exp(-E_k/k_B T) * c_m * (n - c _t)
+    - p_0*exp(-E_p/k_B T)*c_t
+
+    Args:
+        trap (Trap): an instance of the Trap() class
+        solute (Concentration): an instance of the Concentration() class for
+            the solute concentration
+        T (fenics.Function): the temperature
+        dt (fenics.Constant): the stepsize
+        dx (fenics.Measure): the measure dx
+        transient (bool): If True, transient terms (dc/dt) will be added.
+        chemical_pot (bool): If True, the variable change
+            solute = solute * S(T) will be made
+        materials (list): Contains dicts. Ex:
+            [
+                {
+                    "S_0": 0.2  # only needed if chemical_pot is True
+                    "E_S": 0.5  # only needed if chemical_pot is True
+                    "id": 1
+                }
+            ]
+
+    Returns:
+        fenics.Form: the form related to the trap
+    """
     k_B = FESTIM.k_B  # Boltzmann constant
 
     solution = trap.solution
@@ -151,10 +179,13 @@ def create_trap_form(
     p_0 = trap.p_0
     E_p = trap.E_p
     density = trap.density
-    F = 0
+
+    F = 0  # initialise the form
     if transient:
+        # d(c_t)/dt in trapping equation
         F += ((solution - prev_solution) / dt) * \
             test_function*dx
+        # d(c_t)/dt in mobile equation
         F += ((solution - prev_solution) / dt) * \
             solute.test_function*dx
     else:
@@ -172,9 +203,12 @@ def create_trap_form(
                 materials, subdomain)
         c_0 = solute.solution
         if chemical_pot is True:
+            # change of variable
             S_0 = corresponding_material['S_0']
             E_S = corresponding_material['E_S']
             c_0 = c_0*S_0*exp(-E_S/k_B/T)
+
+        # k(T)*c_m*(n - c_t) - p(T)*c_t
         F += - k_0 * exp(-E_k/k_B/T) * c_0 \
             * (density - solution) * \
             test_function*dx(subdomain)
