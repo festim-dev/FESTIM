@@ -829,6 +829,7 @@ def test_formulation_extrinsic_traps():
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.dt = dt
+    my_sim.dx = fenics.dx
     my_sim.extrinsic_traps = extrinsic_traps
     my_sim.previous_solutions_traps = extrinsic_traps_n
     my_sim.testfunctions_traps = test_functions
