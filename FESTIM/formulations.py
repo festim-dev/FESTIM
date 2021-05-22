@@ -77,8 +77,6 @@ def formulation(simulation):
                 expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
 
-    all_mat_ids = [mat["id"] for mat in simulation.parameters["materials"]]
-
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
@@ -98,44 +96,59 @@ def formulation(simulation):
         trap_mat = trap['materials']
         if type(trap_mat) is not list:
             trap_mat = [trap_mat]
+        F = add_trap_to_form(
+            F, trap_mat, k_0, E_k, p_0, E_p, trap_density, T,
+            dt, dx, simulation.transient, chemical_pot,
+            solutions[0], testfunctions[0],
+            solutions[i], previous_solutions[i], testfunctions[i],
+            parameters["materials"])
 
-        if simulation.transient:
-            F += ((solutions[i] - previous_solutions[i]) / dt) * \
-                testfunctions[i]*dx
-        else:
-            # if the sim is steady state and
-            # if a trap is not defined in one subdomain
-            # add c_t = 0 to the form in this subdomain
-            for mat_id in all_mat_ids:
-                if mat_id not in trap_mat:
-                    F += solutions[i]*testfunctions[i]*dx(mat_id)
-
-        for subdomain in trap_mat:
-            corresponding_material = \
-                FESTIM.helpers.find_material_from_id(
-                    parameters["materials"], subdomain)
-            c_0 = solutions[0]
-            if chemical_pot is True:
-                S_0 = corresponding_material['S_0']
-                E_S = corresponding_material['E_S']
-                c_0 = solutions[0]*S_0*exp(-E_S/k_B/T)
-            F += - k_0 * exp(-E_k/k_B/T) * c_0 \
-                * (trap_density - solutions[i]) * \
-                testfunctions[i]*dx(subdomain)
-            F += p_0*exp(-E_p/k_B/T)*solutions[i] * \
-                testfunctions[i]*dx(subdomain)
         # if a source term is set then add it to the form
         if 'source_term' in trap.keys():
             source = sp.printing.ccode(trap['source_term'])
             source = Expression(source, t=0, degree=2)
-            F += -source*testfunctions[i]*dx
+            F += -source*test_function*dx
             expressions.append(source)
-
-        if simulation.transient:
-            F += ((solutions[i] - previous_solutions[i]) / dt) * \
-                testfunctions[0]*dx
         i += 1
     return F, expressions
+
+
+def add_trap_to_form(
+        F, trap_mat, k_0, E_k, p_0, E_p, density, T, dt, dx, transient,
+        chemical_pot, solute, test_function_solute, solution, prev_solution,
+        test_function, materials):
+    k_B = FESTIM.k_B
+    if transient:
+        F += ((solution - prev_solution) / dt) * \
+            test_function*dx
+    else:
+        # if the sim is steady state and
+        # if a trap is not defined in one subdomain
+        # add c_t = 0 to the form in this subdomain
+        all_mat_ids = [mat["id"] for mat in materials]
+        for mat_id in all_mat_ids:
+            if mat_id not in trap_mat:
+                F += solution*test_function*dx(mat_id)
+
+    for subdomain in trap_mat:
+        corresponding_material = \
+            FESTIM.helpers.find_material_from_id(
+                materials, subdomain)
+        c_0 = solute
+        if chemical_pot is True:
+            S_0 = corresponding_material['S_0']
+            E_S = corresponding_material['E_S']
+            c_0 = solute*S_0*exp(-E_S/k_B/T)
+        F += - k_0 * exp(-E_k/k_B/T) * c_0 \
+            * (density - solution) * \
+            test_function*dx(subdomain)
+        F += p_0*exp(-E_p/k_B/T)*solution * \
+            test_function*dx(subdomain)
+
+    if transient:
+        F += ((solution - prev_solution) / dt) * \
+            test_function_solute*dx
+    return F
 
 
 def formulation_extrinsic_traps(simulation):
