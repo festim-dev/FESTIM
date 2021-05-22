@@ -4,6 +4,17 @@ import FESTIM
 
 
 class Concentration:
+    """Class for concentrations (solute or traps) with attributed
+    fenics.Function objects for the solution and the previous solution and a
+    fenics.TestFunction
+
+    Args:
+        solution (fenics.Function or ufl.Indexed): Solution for "current"
+            timestep
+        prev_solution (fenics.Function or ufl.Indexed): Solution for "previous"
+            timestep
+        test_function (fenics.TestFunction or ufl.Indexed): test function
+    """
     def __init__(self, solution, prev_solution, test_function):
         self.solution = solution
         self.prev_solution = prev_solution
@@ -11,6 +22,23 @@ class Concentration:
 
 
 class Trap(Concentration):
+    """Class for traps inheriting from Concentration() which has usefull
+    additional attributes (k_0, E_k, p_0, E_p, density, type, materials)
+
+        Args:
+            trap_dict (dict): contains the trap properties. Ex:
+                {
+                    "k_0": 1,
+                    "E_k": 2,
+                    "p_0": 3,
+                    "E_p": 4,
+                    "density": 5,
+                    "materials": [1, 2]
+                }
+            simulation (FESTIM.Simulation): main simulation instance
+            extrinsic_counter (int): counter for extrinsic traps usefull to
+                attribute the correct function for trap density
+    """
     def __init__(
             self, trap_dict, simulation, extrinsic_counter, **kwargs):
         super().__init__(**kwargs)
