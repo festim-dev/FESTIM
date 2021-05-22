@@ -25,7 +25,6 @@ def test_formulation_no_trap_1_material():
             "D_0": 5,
             "id": 1
             }],
-        "traps": [],
         "source_term": {"value": "1"},
     }
     mesh = fenics.UnitIntervalMesh(10)
@@ -560,7 +559,6 @@ def test_formulation_soret():
         domain = domain()
         return domain
     parameters = {
-        "traps": [],
         "materials": [{
                 "borders": [0, 0.5],
                 "E_D": 4,
