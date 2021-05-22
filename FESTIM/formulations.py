@@ -316,6 +316,7 @@ def formulation_extrinsic_traps(simulation):
     previous_solutions = simulation.previous_solutions_traps
     testfunctions = simulation.testfunctions_traps
     dt = simulation.dt
+    dx = simulation.dx
 
     formulations = []
     expressions = []
