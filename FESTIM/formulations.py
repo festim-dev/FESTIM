@@ -16,12 +16,6 @@ def formulation(simulation):
     expressions = []
     F = 0
 
-    parameters = simulation.parameters
-    T, T_n = simulation.T, simulation.T_n
-    dt = simulation.dt
-    dx = simulation.dx
-    k_B = FESTIM.k_B  # Boltzmann constant
-
     solutions = split(simulation.u)
     previous_solutions = split(simulation.u_n)
     testfunctions = split(simulation.v)
@@ -29,11 +23,47 @@ def formulation(simulation):
     solute_object = Concentration(
         solutions[0], previous_solutions[0], testfunctions[0])
 
+    # diffusion + transient terms
+    F += create_diffusion_form(simulation, solute_object)
+
+    # Define flux
+    if "source_term" in simulation.parameters:
+        F_source, expressions_source = \
+            create_source_form(simulation, solute_object)
+        F += F_source
+        expressions += expressions_source
+
+    # Add traps
+    if "traps" in simulation.parameters:
+        F_traps, expressions_traps = \
+            create_traps_form(simulation, solute_object)
+        F += F_traps
+        expressions += expressions_traps
+
+    return F, expressions
+
+
+def create_diffusion_form(simulation, solute_object):
+    """Creates a form for the solute diffusion terms
+
+    Args:
+        simulation (FESTIM.Simulation): the main simulation object
+        solute_object (Concentration): the instance of Concentration() for the
+            solute concentration
+
+    Returns:
+        fenics.Form: formulation for the diffusion terms
+    """
+    F = 0
+
     c_0 = solute_object.solution
     c_0_n = solute_object.prev_solution
+    k_B = FESTIM.k_B
+    T, T_n = simulation.T, simulation.T_n
+    dt = simulation.dt
+    dx = simulation.dx
 
-    # diffusion + transient terms
-    for material in parameters["materials"]:
+    for material in simulation.parameters["materials"]:
         D_0 = material['D_0']
         E_D = material['E_D']
         if simulation.chemical_pot:
@@ -52,22 +82,7 @@ def formulation(simulation):
             F += dot(D_0 * exp(-E_D/k_B/T) *
                      Q * c_0 / (FESTIM.R * T**2) * grad(T),
                      grad(solute_object.test_function))*dx(subdomain)
-
-    # Define flux
-    if "source_term" in parameters:
-        F_source, expressions_source = \
-            create_source_form(simulation, solute_object)
-        F += F_source
-        expressions += expressions_source
-
-    # Add traps
-    if "traps" in parameters:
-        F_traps, expressions_traps = \
-            create_traps_form(simulation, solute_object)
-        F += F_traps
-        expressions += expressions_traps
-
-    return F, expressions
+    return F
 
 
 def create_source_form(simulation, solute_object):
