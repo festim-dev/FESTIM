@@ -327,6 +327,13 @@ class Simulation():
         self.timer = Timer()  # start timer
 
         if self.transient:
+            # compute Jacobian before iterating if required
+            solving_params = self.parameters["solving_parameters"]
+            if "update_jacobian" in solving_params.keys():
+                if not solving_params["update_jacobian"]:
+                    du = TrialFunction(self.u.function_space())
+                    self.J = derivative(self.F, self.u, du)
+
             #  Time-stepping
             print('Time stepping...')
             while self.t < self.final_time:
