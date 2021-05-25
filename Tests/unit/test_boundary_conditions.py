@@ -247,8 +247,8 @@ def test_bc_recomb():
     R_p = 5 + FESTIM.x
     D_0 = 2
     E_D = 0.5
-    K_0 = 2
-    E_K = 0.35
+    Kr_0 = 2
+    E_Kr = 0.35
     parameters = {
         "materials": [
             {
@@ -265,8 +265,8 @@ def test_bc_recomb():
                 "implantation_depth": R_p,
                 "D_0": D_0,
                 "E_D": E_D,
-                "K_0": K_0,
-                "E_K": E_K,
+                "Kr_0": Kr_0,
+                "E_Kr": E_Kr,
                 "surfaces": [1, 2]
             },
         ]
@@ -297,7 +297,7 @@ def test_bc_recomb():
         for x_ in [0, 1]:
             T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
             D = D_0*np.exp(-E_D/FESTIM.k_B/T)
-            K = K_0*np.exp(-E_K/FESTIM.k_B/T)
+            K = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T)
             # Test that the expression is correct at vertices
             val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
@@ -378,8 +378,8 @@ def test_bc_recomb_chemical_pot():
     R_p = 5
     D_0 = 2
     E_D = 0.5
-    K_0 = 2
-    E_K = 0.5
+    Kr_0 = 2
+    E_Kr = 0.5
     S_01 = 2
     S_02 = 3
     E_S1 = 0.1
@@ -404,8 +404,8 @@ def test_bc_recomb_chemical_pot():
                 "implantation_depth": R_p,
                 "D_0": D_0,
                 "E_D": E_D,
-                "K_0": K_0,
-                "E_K": E_K,
+                "Kr_0": Kr_0,
+                "E_Kr": E_Kr,
                 "surfaces": [1, 2]
             },
         ]
@@ -449,8 +449,8 @@ def test_bc_recomb_chemical_pot():
         T_right = 200 + 2*i
         D_left = D_0*np.exp(-E_D/FESTIM.k_B/T_left)
         D_right = D_0*np.exp(-E_D/FESTIM.k_B/T_right)
-        K_left = K_0*np.exp(-E_K/FESTIM.k_B/T_left)
-        K_right = K_0*np.exp(-E_K/FESTIM.k_B/T_right)
+        K_left = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_left)
+        K_right = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_right)
         S_left = S_01*np.exp(-E_S1/FESTIM.k_B/temp(0, 0.5))
         S_right = S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))
 

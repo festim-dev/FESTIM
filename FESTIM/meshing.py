@@ -82,6 +82,7 @@ def mesh_and_refine(mesh_parameters):
             refinement_point = refinement["x"]
             print("Mesh size before local refinement is " +
                   str(len(mesh.cells())))
+            coarse_mesh = True
             while len(mesh.cells()) < \
                     initial_number_of_cells + nb_cells_ref:
                 cell_markers = MeshFunction(
@@ -90,7 +91,12 @@ def mesh_and_refine(mesh_parameters):
                 for cell in cells(mesh):
                     if cell.midpoint().x() < refinement_point:
                         cell_markers[cell] = True
+                        coarse_mesh = False
                 mesh = refine(mesh, cell_markers)
+                if coarse_mesh:
+                    msg = "Infinite loop: Initial number " + \
+                        "of cells might be too small"
+                    raise ValueError(msg)
             print("Mesh size after local refinement is " +
                   str(len(mesh.cells())))
             initial_number_of_cells = len(mesh.cells())

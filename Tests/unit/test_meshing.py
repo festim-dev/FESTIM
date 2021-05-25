@@ -6,6 +6,7 @@ from FESTIM import Simulation
 import fenics
 import pytest
 import sympy as sp
+import numpy as np
 from pathlib import Path
 
 
@@ -356,3 +357,26 @@ def test_integration_mesh_from_vertices_subdomains():
             assert sm[facet] == 1
         if facet.midpoint().x() == max(points):
             assert sm[facet] == 2
+
+
+def test_mesh_and_refine_course_mesh():
+    '''
+    Test for mesh_and_refine, when mesh too coarse for refinement
+        - return error
+    '''
+    vertices = np.linspace(1, 4, num=4)
+    mesh_parameters = {
+        "initial_number_of_cells": 2,
+        "size": 10,
+        "refinements": [
+            {
+                "cells": 3,
+                "x": 0.00001
+            },
+        ],
+    }
+
+    with pytest.raises(ValueError,
+                       match="Infinite loop: Initial number " +
+                             "of cells might be too small"):
+        mesh_and_refine(mesh_parameters)

@@ -81,6 +81,9 @@ def formulation(simulation):
                     F += - source*testfunctions[0]*dx(vol)
                 expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
+
+    all_mat_ids = [mat["id"] for mat in simulation.parameters["materials"]]
+
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
     for trap in parameters["traps"]:
@@ -97,13 +100,22 @@ def formulation(simulation):
         E_p = trap['E_p']
         p_0 = trap['p_0']
 
-        material = trap['materials']
+        trap_mat = trap['materials']
+        if type(trap_mat) is not list:
+            trap_mat = [trap_mat]
+
         if simulation.transient:
             F += ((solutions[i] - previous_solutions[i]) / dt) * \
                 testfunctions[i]*dx
-        if type(material) is not list:
-            material = [material]
-        for subdomain in material:
+        else:
+            # if the sim is steady state and
+            # if a trap is not defined in one subdomain
+            # add c_t = 0 to the form in this subdomain
+            for mat_id in all_mat_ids:
+                if mat_id not in trap_mat:
+                    F += solutions[i]*testfunctions[i]*dx(mat_id)
+
+        for subdomain in trap_mat:
             corresponding_material = \
                 FESTIM.helpers.find_material_from_id(
                     parameters["materials"], subdomain)
