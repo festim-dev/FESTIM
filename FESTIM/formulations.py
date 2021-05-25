@@ -256,7 +256,11 @@ def create_one_trap_form(simulation, trap, solute):
             p_0 = trap.p_0
             E_p = trap.E_p
             density = trap.density[0]
+
+        # add the density to the list of
+        # expressions to be updated
         expressions_trap.append(density)
+
         corresponding_material = \
             FESTIM.helpers.find_material_from_id(
                 materials, mat_id)
