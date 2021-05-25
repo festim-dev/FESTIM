@@ -1,6 +1,5 @@
 import FESTIM
 from FESTIM.export import export_xdmf
-from FESTIM.initialising import initialise_solutions
 import fenics
 import pytest
 import sympy as sp
@@ -43,7 +42,9 @@ def test_export_and_initialise_xdmf(tmpdir):
             },
         ],
     }
-    assert initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.initialise_concentrations()
 
 
 def test_initialise_and_export_xdmf(tmpdir):
@@ -72,7 +73,10 @@ def test_initialise_and_export_xdmf(tmpdir):
             },
         ],
     }
-    v = initialise_solutions(parameters, V)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.initialise_concentrations()
+    v = my_sim.u_n
 
     # Write
     exports = {

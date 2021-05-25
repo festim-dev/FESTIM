@@ -3,30 +3,6 @@ from operator import itemgetter
 import numpy as np
 
 
-def create_mesh(mesh_parameters):
-    """Main meshing function.
-
-    Arguments:
-        mesh_parameters {dict} -- contains the meshing parameters
-
-    Returns:
-        fenics.Mesh() -- the simulation mesh
-    """
-
-    if "mesh_file" in mesh_parameters.keys():
-        # Read volumetric mesh
-        mesh = Mesh()
-        XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
-    elif ("mesh" in mesh_parameters.keys() and
-            isinstance(mesh_parameters["mesh"], type(Mesh()))):
-        mesh = mesh_parameters["mesh"]
-    elif "vertices" in mesh_parameters.keys():
-        mesh = generate_mesh_from_vertices(mesh_parameters["vertices"])
-    else:
-        mesh = mesh_and_refine(mesh_parameters)
-    return mesh
-
-
 def generate_mesh_from_vertices(vertices):
     '''Generates a 1D mesh from a list of vertices
 
@@ -52,43 +28,6 @@ def generate_mesh_from_vertices(vertices):
     return mesh
 
 
-def subdomains(mesh, parameters):
-    """Returns two fenics.MeshFunction() for volume and surfaces entities
-
-    Arguments:
-        mesh {fenics.Mesh()} -- domain mesh
-        parameters {dict} -- contains meshing and materials parameters
-
-    Returns:
-        fenics.MeshFunction() -- cell markers
-        fenics.MeshFunction() -- facet markers
-    """
-
-    mesh_parameters = parameters["mesh_parameters"]
-    if "cells_file" in mesh_parameters.keys():
-        volume_markers, surface_markers = \
-            read_subdomains_from_xdmf(
-                mesh,
-                mesh_parameters["cells_file"],
-                mesh_parameters["facets_file"])
-    elif ("meshfunction_cells" in mesh_parameters.keys() and
-            isinstance(
-                mesh_parameters["meshfunction_cells"],
-                type(MeshFunction("size_t", mesh, mesh.topology().dim())))):
-        volume_markers = mesh_parameters["meshfunction_cells"]
-        surface_markers = mesh_parameters["meshfunction_facets"]
-    else:
-        if "vertices" in mesh_parameters.keys():
-            size = max(mesh_parameters["vertices"])
-        else:
-            size = parameters["mesh_parameters"]["size"]
-        if len(parameters["materials"]) > 1:
-            check_borders(size, parameters["materials"])
-        volume_markers, surface_markers = \
-            subdomains_1D(mesh, parameters["materials"], size)
-    return volume_markers, surface_markers
-
-
 def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
     """Reads volume and surface entities from XDMF files
 
@@ -110,21 +49,12 @@ def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
 
     # Read tags for volume elements
     volume_markers = MeshFunction("size_t", mesh, mesh.topology().dim())
-    try:
-        XDMFFile(volumetric_file).read(volume_markers, "f")
-    except:
-        raise ValueError('Attribute should be named "f" in ' + volumetric_file)
-    # f is the attribute name carreful
+    XDMFFile(volumetric_file).read(volume_markers)
 
     # Read tags for surface elements
     # (can also be used for applying DirichletBC)
-    surface_markers = \
-        MeshValueCollection("size_t", mesh, mesh.topology().dim() - 1)
-    try:
-        XDMFFile(boundary_file).read(surface_markers, "f")
-    except:
-        raise ValueError('Attribute should be named "f" in ' + boundary_file)
-    surface_markers = MeshFunction("size_t", mesh, surface_markers)
+    surface_markers = MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    XDMFFile(boundary_file).read(surface_markers)
 
     print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
     return volume_markers, surface_markers
@@ -152,6 +82,7 @@ def mesh_and_refine(mesh_parameters):
             refinement_point = refinement["x"]
             print("Mesh size before local refinement is " +
                   str(len(mesh.cells())))
+            coarse_mesh = True
             while len(mesh.cells()) < \
                     initial_number_of_cells + nb_cells_ref:
                 cell_markers = MeshFunction(
@@ -160,7 +91,12 @@ def mesh_and_refine(mesh_parameters):
                 for cell in cells(mesh):
                     if cell.midpoint().x() < refinement_point:
                         cell_markers[cell] = True
+                        coarse_mesh = False
                 mesh = refine(mesh, cell_markers)
+                if coarse_mesh:
+                    msg = "Infinite loop: Initial number " + \
+                        "of cells might be too small"
+                    raise ValueError(msg)
             print("Mesh size after local refinement is " +
                   str(len(mesh.cells())))
             initial_number_of_cells = len(mesh.cells())

@@ -3,7 +3,9 @@ from FESTIM.generic_simulation import run
 import fenics
 import pytest
 import sympy as sp
+import numpy as np
 from pathlib import Path
+import timeit
 
 
 # System tests
@@ -35,7 +37,7 @@ def test_run_temperature_stationary(tmpdir):
             },
         "boundary_conditions": [
                     {
-                        "surfaces": [1],
+                        "surfaces": 1,
                         "value": 1,
                         "component": 0,
                         "type": "dc"
@@ -171,6 +173,7 @@ def test_run_temperature_transient(tmpdir):
             'value': 0
             },
         "solving_parameters": {
+            "type": "solve_transient",
             "final_time": 30,
             "initial_stepsize": 0.5,
             "adaptive_stepsize": {
@@ -464,7 +467,7 @@ def test_run_MMS_chemical_pot(tmpdir):
                         "norm": 'error_max',
                         "degree": 4
                     }
-                ]
+                ],
                 },
         }
         return parameters
@@ -836,8 +839,6 @@ def test_chemical_pot_T_solve_stationary():
                 "S_0": 2,
                 "E_S": 0.2,
                 "thermal_cond": 1,
-                "heat_capacity": 1,
-                "rho": 1,
                 "id": 1,
             },
             ],
@@ -846,7 +847,7 @@ def test_chemical_pot_T_solve_stationary():
         "boundary_conditions": [
             {
                 "type": "dc",
-                "surfaces": 1,
+                "surfaces": [1, 2],
                 "value": 1
             },
             ],
@@ -896,3 +897,579 @@ def test_chemical_pot_T_solve_stationary():
     }
     out = run(parameters)
     assert out["derived_quantities"][-1][1] > 0.97
+
+
+def test_performance_xdmf(tmpdir):
+    '''
+    Check that the computation time when exporting every 10 iterations to XDMF
+    is reduced
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 4,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "xdmf": {
+                    "functions": ['retention', 'T'],
+                    "labels":  ['retention', 'temperature'],
+                    "folder": str(Path(d))
+            },
+            },
+    }
+
+    # long simulation
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    long_time = stop - start
+
+    # short simulation
+    parameters["exports"]["xdmf"]["nb_iterations_between_exports"] = 10
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    short_time = stop - start
+    assert short_time < long_time
+
+
+def test_performance_xdmf_last_timestep(tmpdir):
+    '''
+    Check that the computation time when exporting only the last timestep to
+    XDMF is reduced
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 3,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "xdmf": {
+                    "functions": ['retention', 'T'],
+                    "labels":  ['retention', 'temperature'],
+                    "folder": str(Path(d))
+            },
+            },
+    }
+
+    # long simulation
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    long_time = stop - start
+
+    # short simulation
+    parameters["exports"]["xdmf"]["last_timestep_only"] = True
+    start = timeit.default_timer()
+    output = run(parameters)
+    stop = timeit.default_timer()
+    short_time = stop - start
+    assert short_time < long_time
+
+
+def test_export_particle_flux_with_chemical_pot(tmpdir):
+    """Checks that surface particle fluxes can be computed with conservation
+    of chemical potential
+    """
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 2,
+                "E_S": 1,
+                "S_0": 2,
+                "thermal_cond": 2,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 10,
+                "size": 1,
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_stationary",
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": "solute",
+                        "surfaces": [0],
+                    },
+                    {
+                        "field": "T",
+                        "surfaces": [0],
+                    }
+                ],
+                "total_volume": [
+                    {
+                        "field": "retention",
+                        "volumes": [1],
+                    },
+                ],
+                "folder": str(Path(d)),
+            }
+            },
+    }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.run()
+
+
+def test_extrinsic_trap(tmpdir):
+    """Runs a FESTIM sim with an extrinsic trap
+    """
+
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 2,
+                "id": 1
+            }
+            ],
+        "traps": [
+            {
+                "k_0": 4.1e-7/(1.1e-10**2*6*6.3e28),
+                "E_k": 0.39,
+                "p_0": 1e13,
+                "E_p": 1.5,
+                "materials": [1],
+                "type": 'extrinsic',
+                "form_parameters":{
+                    "phi_0": 2.5e19,
+                    "n_amax": 1e-1*6.3e28,
+                    "f_a": 1,
+                    "eta_a": 6e-4,
+                    "n_bmax": 1e-2*6.3e28,
+                    "f_b": 2,
+                    "eta_b": 2e-4,
+                }
+            }
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 10,
+                "size": 1,
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "final_time": 1,
+            "initial_stepsize": 0.5,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 10,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [
+                    {
+                        "field": "solute",
+                        "surfaces": [0],
+                    },
+                ],
+                "total_volume": [
+                    {
+                        "field": "retention",
+                        "volumes": [1],
+                    },
+                    {
+                        "field": 1,
+                        "volumes": [1],
+                    },
+                ],
+                "folder": str(Path(d)),
+            }
+            },
+    }
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.run()
+
+
+def test_steady_state_with_2_materials():
+    """Runs a sim with several materials and checks that the produced value is
+    not zero at the centre
+    """
+    # build
+    parameters = {}
+    mat1 = {
+        "E_D": 0,
+        "D_0": 1,
+        "id": [1, 2]
+    }
+
+    mat2 = {
+        "E_D": 0,
+        "D_0": 0.25,
+        "id": 3
+    }
+
+    parameters["materials"] = [mat1, mat2]
+
+    N = 16
+    mesh = fenics.UnitSquareMesh(N, N)
+    vm = fenics.MeshFunction("size_t", mesh, 2, 0)
+    sm = fenics.MeshFunction("size_t", mesh, 1, 0)
+
+    tol = 1E-14
+    subdomain_1 = fenics.CompiledSubDomain('x[1] <= 0.5 + tol', tol=tol)
+    subdomain_2 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] >= 0.5 - tol', tol=tol)
+    subdomain_3 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] <= 0.5 + tol', tol=tol)
+    subdomain_1.mark(vm, 1)
+    subdomain_2.mark(vm, 2)
+    subdomain_3.mark(vm, 3)
+
+    surfaces = fenics.CompiledSubDomain('on_boundary')
+    surfaces.mark(sm, 1)
+
+    parameters["mesh_parameters"] = {
+        "mesh": mesh,
+        "meshfunction_cells": vm,
+        "meshfunction_facets": sm,
+    }
+
+    parameters["traps"] = [
+    ]
+
+    parameters["temperature"] = {
+        "type": "expression",
+        "value": 30,
+    }
+    parameters["source_term"] = {
+        "type": "expression",
+        "value": 1,
+    }
+    parameters["boundary_conditions"] = [
+        {
+            "type": "dc",
+            "value": 0,
+            "surfaces": 1
+        }
+
+    ]
+    parameters["exports"] = {
+    }
+    solving_parameters = {
+        "type": "solve_stationary",
+        "newton_solver": {
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": 1e-10,
+            "maximum_iterations": 5,
+        }
+    }
+
+    parameters["solving_parameters"] = solving_parameters
+
+    # run
+    my_sim = FESTIM.Simulation(parameters, log_level=20)
+    my_sim.initialise()
+    my_sim.run()
+
+    # test
+
+    assert my_sim.u(0.5, 0.5) != 0
+
+
+def test_steady_state_traps_not_everywhere():
+    """Creates a simulation problem with a trap not set in all subdomains runs
+    the sim and check that the value is not NaN
+    """
+    parameters = {}
+    mat1 = {
+        "borders": [0, 0.25],
+        "E_D": 0,
+        "D_0": 1,
+        "id": 1
+    }
+    mat2 = {
+        "borders": [0.25, 0.5],
+        "E_D": 0,
+        "D_0": 1,
+        "id": 2
+    }
+    mat3 = {
+        "borders": [0.5, 1],
+        "E_D": 0,
+        "D_0": 1,
+        "id": 3
+    }
+    parameters["materials"] = [mat1, mat2, mat3]
+
+    parameters["mesh_parameters"] = {
+        "initial_number_of_cells": 100,
+        "size": 1
+    }
+
+    trap = {
+        "k_0": 1,
+        "E_k": 0,
+        "p_0": 1,
+        "E_p": 0,
+        "density": 1,
+        "materials": [1, 3]
+    }
+    parameters["traps"] = [trap]
+    parameters["temperature"] = {
+        "type": "expression",
+        "value": 1,
+    }
+    parameters["boundary_conditions"] = [
+        {
+            "type": "dc",
+            "value": 1,
+            "surfaces": 1
+        }
+    ]
+    parameters["exports"] = {}
+    solving_parameters = {
+        "type": "solve_stationary",
+        "traps_element_type": "DG",
+        "newton_solver": {
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": 1e-10,
+            "maximum_iterations": 5,
+        }
+    }
+
+    parameters["solving_parameters"] = solving_parameters
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.run()
+    assert not np.isnan(my_sim.u.split()[1](0.5))
+
+
+def test_no_jacobian_update():
+    """Runs a transient sim and with the flag "update_jacobian" set to False.
+    """
+
+    parameters = {
+        "materials": [
+            {
+                "E_D": 0,
+                "D_0": 1,
+                "id": 1
+                }
+                ],
+        "traps": [
+            ],
+        "initial_conditions": [
+        ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 10,
+                "size": 1,
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+                'type': "expression",
+                'value': 300
+            },
+        "source_term": {
+            'value': 1
+            },
+        "solving_parameters": {
+            "final_time": 10,
+            "initial_stepsize": 1,
+            "adaptive_stepsize": {
+                "stepsize_change_ratio": 1,
+                },
+            "newton_solver": {
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            },
+            "update_jacobian": False
+            },
+        "exports": {
+            },
+    }
+
+    FESTIM.run(parameters)
+
+
+def test_nb_iterations_bewteen_derived_quantities_compute(tmpdir):
+    """Checks that "nb_iterations_between_compute" has an influence on the
+    number of entries in derived quantities
+    """
+    d = tmpdir.mkdir("temp")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 4,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "total_volume": [{
+                    "field": 'retention',
+                    "volumes":  [1],
+                }],
+                "folder": str(Path(d)),
+                "nb_iterations_between_compute": 2
+            },
+            },
+    }
+    output = FESTIM.run(parameters)
+    short_derived_quantities = output["derived_quantities"]
+
+    parameters["exports"]["derived_quantities"]["nb_iterations_between_compute"] = 1
+    output = FESTIM.run(parameters)
+    long_derived_quantities = output["derived_quantities"]
+
+    assert len(long_derived_quantities) > len(short_derived_quantities)
+
+
+def test_nb_iterations_bewteen_derived_quantities_export(tmpdir):
+    """Checks that a simulation with "nb_iterations_between_exports" key for
+    derived quantities doesn't raise an error
+    """
+    d = tmpdir.mkdir("temp")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 4,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "total_volume": [{
+                    "field": 'retention',
+                    "volumes":  [1],
+                }],
+                "folder": str(Path(d)),
+                "nb_iterations_between_exports": 2
+            },
+            },
+    }
+    output = FESTIM.run(parameters)

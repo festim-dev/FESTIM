@@ -3,33 +3,46 @@ from fenics import *
 import sys
 
 
-def solve_it(F, u, J, bcs, t, dt, solving_parameters):
+def solve_it(F, u, bcs, t, dt, solving_parameters, J=None):
     """Solves the problem during time stepping.
 
-    Arguments:
-        F {fenics.Form()} -- Formulation to be solved
-        u {fenics.Function()} -- Function for concentrations
-        J {fenics.Function()} -- Jacobian
-        bcs {list} -- contains boundary conditions (fenics.DirichletBC())
-        t {float} -- time
-        dt {fenics.Constant()} -- stepsize
-        solving_parameters {dict} -- solving parameters
-
-    Returns:
-        fenics.Function() -- function for concentrations
-        fenics.Constant() -- stepsize
+    Args:
+        F (fenics.Form()): Formulation to be solved (F=0)
+        u (fenics.Function()): Function for concentrations
+        bcs (list): contains boundary conditions (list of fenics.DirichletBC())
+        t (float): time
+        dt (fenics.Constant()): stepsize
+        solving_parameters (dict): solving parameters. Ex:
+            {
+                "adaptive_stepsize": {
+                    "stepsize_change_ratio": 1.1,
+                    "dt_min": 1e-5,  # optional
+                    "t_stop": 100,  # optional
+                    "stepsize_stop_max": 10,  # only needed if "t_stop"
+                },
+                "newton_solver": {
+                    "absolute_tolerance": 1e-10,
+                    "relative_tolerance": 1e-10,
+                    "maximum_iterations": 50,
+                }
+            }
+        J (fenics.Function(), optional): The jacobian. Defaults to None.
     """
     converged = False
     u_ = Function(u.function_space())
     u_.assign(u)
     while converged is False:
         u.assign(u_)
-        nb_it, converged = solve_once(F, u, J, bcs, solving_parameters)
+        nb_it, converged = solve_once(F, u, bcs, solving_parameters, J=J)
         if "adaptive_stepsize" in solving_parameters.keys():
             stepsize_change_ratio = \
                 solving_parameters[
                     "adaptive_stepsize"]["stepsize_change_ratio"]
-            dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
+            if "dt_min" in solving_parameters["adaptive_stepsize"].keys():
+                dt_min = solving_parameters["adaptive_stepsize"]["dt_min"]
+            else:
+                # default value
+                dt_min = 1e-5
             adaptive_stepsize(
                 nb_it=nb_it, converged=converged, dt=dt,
                 stepsize_change_ratio=stepsize_change_ratio,
@@ -45,21 +58,32 @@ def solve_it(F, u, J, bcs, t, dt, solving_parameters):
     return
 
 
-def solve_once(F, u, J, bcs, solving_parameters):
+def solve_once(F, u, bcs, solving_parameters, J=None):
     """Solves non linear problem
 
-    Arguments:
-        F {fenics.Form()} -- Formulation to be solved
-        u {fenics.Function()} -- Function for concentrations
-        J {fenics.Function()} -- Jacobian
-        bcs {list} -- contains boundary conditions (fenics.DirichletBC())
-        solving_parameters {dict} -- solving parameters
+    Args:
+        F (fenics.Form()): Formulation to be solved (F=0)
+        u (fenics.Function()): Function for concentrations
+        bcs (list): contains boundary conditions (list of fenics.DirichletBC())
+        solving_parameters (dict): solving parameters. Ex:
+            {
+                "newton_solver": {
+                    "absolute_tolerance": 1e-10,
+                    "relative_tolerance": 1e-10,
+                    "maximum_iterations": 50,
+                }
+                }
+        J (fenics.Function(), optional): The jacobian. If None, it will be
+            computed. Defaults to None.
 
     Returns:
-        fenics.Function() -- function for concentrations
-        int -- number of iterations for reaching convergence
-        bool -- True if converged, else False
+        int, bool: number of iterations for reaching convergence, True if
+            converged else False
     """
+
+    if J is None:  # Define the Jacobian
+        du = TrialFunction(u.function_space())
+        J = derivative(F, u, du)
     problem = NonlinearVariationalProblem(F, u, bcs, J)
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False

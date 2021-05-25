@@ -1,76 +1,119 @@
 from fenics import *
+from ufl.algebra import Product
 import sympy as sp
 import numpy as np
 import FESTIM
 
 
-def run_post_processing(parameters, transient, u, T, markers, W, V_DG1, t, dt,
-                        files, append, properties,
-                        derived_quantities_global):
+def run_post_processing(simulation):
     """Main post processing FESTIM function.
 
     Arguments:
-        parameters {dict} -- main parameters dict
-        transient {bool} -- True if the simulation is transient, False else
-        u {fenics.Function()} -- function for concentrations
-        T {fenics.Expression() or fenics.Function()} -- temperature
-        markers {list} -- contains volume markers and surface markers
-        W {fenics.FunctionSpace()} -- function space for T
-        V_DG1 {fenics.FunctionSpace()} -- function space for mobile
-            concentration (chemical pot)
-        t {float} -- time
-        dt {fenics.Constant()} -- stepsize
-        files {list} -- list of fenics.XDMFFiles()
-        append {bool} -- if True will append to existing XDMFFiles, will
-            overwrite otherwise
-        properties {list} -- contains properties
-        derived_quantities_global {list} -- contains the computed derived
-            quantities
 
     Returns:
         list -- updated derived quantities list
         fenics.Constant() -- updated stepsize
     """
-    D, thermal_cond, cp, rho, H, S = properties
+    parameters = simulation.parameters
+    transient = simulation.transient
+    u = simulation.u
+    T = simulation.T
+    markers = [simulation.volume_markers, simulation.surface_markers]
+    V_DG1, V_CG1 = simulation.V_DG1, simulation.V_CG1
+    t = simulation.t
+    dt = simulation.dt
+    files = simulation.files
+    append = simulation.append
+    D, thermal_cond, cp, rho, H, S = \
+        simulation.D, simulation.thermal_cond, simulation.cp, simulation.rho, \
+        simulation.H, simulation.S
+    derived_quantities_global = simulation.derived_quantities_global
+
+    if not append:
+        if "derived_quantities" in parameters["exports"].keys():
+            derived_quantities_global.append(
+                FESTIM.post_processing.header_derived_quantities(parameters))
 
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
         res = list(u.split())
-    if S is not None:
-        # this is costly ...
-        solute = project(res[0]*S, V_DG1)  # TODO: find alternative solution
+    if simulation.chemical_pot:
+        solute = res[0]*S
         res[0] = solute
 
     retention = sum(res)
     res.append(retention)
-
-    if isinstance(T, function.expression.Expression):
-        res.append(interpolate(T, W))
-    else:
-        res.append(T)
+    res.append(T)
 
     if "derived_quantities" in parameters["exports"].keys():
-        derived_quantities_t = \
-            FESTIM.post_processing.derived_quantities(
-                parameters,
-                res,
-                markers,
-                [D, thermal_cond, H]
-                )
 
-        derived_quantities_t.insert(0, t)
-        derived_quantities_global.append(derived_quantities_t)
+        # compute derived quantities
+        if simulation.nb_iterations % \
+             simulation.nb_iterations_between_compute_derived_quantities == 0:
+            derived_quantities_t = \
+                FESTIM.post_processing.derived_quantities(
+                    parameters,
+                    res,
+                    markers,
+                    [D, thermal_cond, H]
+                    )
+            derived_quantities_t.insert(0, t)
+            derived_quantities_global.append(derived_quantities_t)
+        # export derived quantities
+        if is_export_derived_quantities(simulation):
+            FESTIM.write_to_csv(
+                simulation.parameters["exports"]["derived_quantities"],
+                simulation.derived_quantities_global)
+
     if "xdmf" in parameters["exports"].keys():
-        if "retention" in parameters["exports"]["xdmf"]["functions"]:
-            res[-2] = project(res[-2], W)
-        FESTIM.export.export_xdmf(
-            res, parameters["exports"], files, t, append=append)
+        if (simulation.export_xdmf_last_only and
+            simulation.t >= simulation.final_time) or \
+                not simulation.export_xdmf_last_only:
+            if simulation.nb_iterations % \
+                    simulation.nb_iterations_between_exports == 0:
+                functions_to_exports = \
+                    parameters["exports"]["xdmf"]["functions"]
+                # if solute or retention needs to be exported,
+                # project it onto V_DG1
+                if any(x in functions_to_exports for x in ['0', 'solute']):
+                    if simulation.chemical_pot:
+                        # this is costly ...
+                        res[0] = project(res[0], V_DG1)
+                if 'retention' in functions_to_exports:
+                    res[-2] = project(retention, V_DG1)
+
+                FESTIM.export.export_xdmf(
+                    res, parameters["exports"], files, t, append=append)
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
             res, parameters["exports"], t, dt, V_DG1)
 
     return derived_quantities_global, dt
+
+
+def is_export_derived_quantities(simulation):
+    """Checks if the derived quantities should be exported or not based on the
+    key simulation.nb_iterations_between_export_derived_quantities
+
+    Args:
+        simulation (FESTIM.Simulation): the main Simulation instance
+
+    Returns:
+        bool: True if the derived quantities should be exported, else False
+    """
+    if simulation.transient:
+        nb_its_between_exports = \
+            simulation.nb_iterations_between_export_derived_quantities
+        if nb_its_between_exports is None:
+            # export at the end
+            return simulation.t >= simulation.final_time
+        else:
+            # export every N iterations
+            return simulation.nb_iterations % nb_its_between_exports == 0
+    else:
+        # if steady state, export
+        return True
 
 
 def compute_error(parameters, t, res, mesh):
@@ -336,9 +379,7 @@ def derived_quantities(parameters, solutions,
                 Q = properties[2]
     volume_markers = markers[0]
     surface_markers = markers[1]
-    V = solutions[0].function_space()
-    mesh = V.mesh()
-    W = FunctionSpace(mesh, 'P', 1)
+    mesh = solutions[-1].function_space().mesh()
     n = FacetNormal(mesh)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
@@ -346,6 +387,7 @@ def derived_quantities(parameters, solutions,
     # Create dicts
 
     ret = solutions[len(solutions)-2]
+    V_DG1 = FunctionSpace(mesh, "DG", 1)
 
     T = solutions[len(solutions)-1]
     field_to_sol = {
@@ -360,16 +402,15 @@ def derived_quantities(parameters, solutions,
     for i in range(1, len(solutions)-2):
         field_to_sol[str(i)] = solutions[i]
 
-    for key, val in field_to_sol.items():
-        if isinstance(val, function.expression.Expression):
-            val = interpolate(val, W)
-            field_to_sol[key] = val
     tab = []
     # Compute quantities
     derived_quant_dict = parameters["exports"]["derived_quantities"]
     if "surface_flux" in derived_quant_dict.keys():
         for flux in derived_quant_dict["surface_flux"]:
             sol = field_to_sol[str(flux["field"])]
+            # TODO: find an alternative for this is costly
+            if isinstance(sol, Product):
+                sol = project(sol, V_DG1)
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
                 phi = assemble(prop*dot(grad(sol), n)*ds(surf))
@@ -440,9 +481,13 @@ def check_keys_derived_quantities(parameters):
         KeyError: if surfaces or volumes key is missing
     """
     for quantity in parameters["exports"]["derived_quantities"].keys():
-        if quantity not in [*FESTIM.helpers.quantity_types, "file", "folder"]:
+        non_quantity_types = [
+            "file", "folder",
+            "nb_iterations_between_compute", "nb_iterations_between_exports"]
+        if quantity not in \
+                [*FESTIM.helpers.quantity_types] + non_quantity_types:
             raise ValueError("Unknown quantity: " + quantity)
-        if quantity not in ["file", "folder"]:
+        if quantity not in non_quantity_types:
             for f in parameters["exports"]["derived_quantities"][quantity]:
                 if "field" not in f.keys():
                     raise KeyError("Missing key 'field'")

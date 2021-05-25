@@ -1,10 +1,12 @@
 # Unit tests meshing
-from FESTIM.meshing import mesh_and_refine, subdomains_1D, create_mesh,\
-    read_subdomains_from_xdmf, subdomains, check_borders,\
+from FESTIM.meshing import mesh_and_refine, subdomains_1D,\
+    read_subdomains_from_xdmf, check_borders,\
     generate_mesh_from_vertices
+from FESTIM import Simulation
 import fenics
 import pytest
 import sympy as sp
+import numpy as np
 from pathlib import Path
 
 
@@ -145,7 +147,9 @@ def test_create_mesh_xdmf(tmpdir):
     mesh_parameters = {
         "mesh_file": str(Path(file1)),
         }
-    mesh2 = create_mesh(mesh_parameters)
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.define_mesh()
+    mesh2 = my_model.mesh
 
     # check that vertices are the same
     vertices_mesh = []
@@ -165,14 +169,54 @@ def test_create_mesh_xdmf(tmpdir):
 
 def test_subdomains_from_xdmf(tmpdir):
 
-    # write files
+    # create mesh functions
     mesh = fenics.UnitCubeMesh(6, 6, 6)
     mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
     mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+
+    # assign values for cells and facets
+    for i, c in enumerate(fenics.cells(mesh)):
+        mf_cells[c] = i
+    for i, f in enumerate(fenics.facets(mesh)):
+        mf_facets[c] = i
+
+    # write files
     file1 = tmpdir.join("cell_file.xdmf")
     file2 = tmpdir.join("facet_file.xdmf")
     fenics.XDMFFile(str(Path(file1))).write(mf_cells)
     fenics.XDMFFile(str(Path(file2))).write(mf_facets)
+
+    # read files
+    mf_cells_2, mf_facets_2 = read_subdomains_from_xdmf(
+        mesh, str(Path(file1)), str(Path(file2)))
+
+    # check
+    for cell in fenics.cells(mesh):
+        assert mf_cells[cell] == mf_cells_2[cell]
+        assert mf_facets[cell] == mf_facets_2[cell]
+
+
+def test_subdomains_from_xdmf_with_non_default_attribute_name(tmpdir):
+
+    # create mesh functions
+    mesh = fenics.UnitCubeMesh(6, 6, 6)
+    mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
+    mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    mf_cells.rename("a", "a")
+    mf_facets.rename("a", "a")
+
+    # assign values for cells and facets
+    for i, c in enumerate(fenics.cells(mesh)):
+        mf_cells[c] = i
+    for i, f in enumerate(fenics.facets(mesh)):
+        mf_facets[c] = i
+
+    # write files
+    file1 = tmpdir.join("cell_file.xdmf")
+    file2 = tmpdir.join("facet_file.xdmf")
+    fenics.XDMFFile(str(Path(file1))).write(mf_cells)
+    fenics.XDMFFile(str(Path(file2))).write(mf_facets)
+
     # read files
     mf_cells_2, mf_facets_2 = read_subdomains_from_xdmf(
         mesh, str(Path(file1)), str(Path(file2)))
@@ -194,7 +238,9 @@ def test_create_mesh_inbuilt():
     mesh_parameters = {
         "mesh": mesh
         }
-    mesh2 = create_mesh(mesh_parameters)
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.define_mesh()
+    mesh2 = my_model.mesh
 
     # check that vertices are the same
     vertices_mesh = []
@@ -222,14 +268,18 @@ def test_subdomains_inbuilt():
     mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
     mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
     mesh_parameters = {
-        "mesh_parameters": {
             "mesh": mesh,
             "meshfunction_cells": mf_cells,
             "meshfunction_facets": mf_facets
-        }
     }
     # read
-    mf_cells_2, mf_facets_2 = subdomains(mesh, mesh_parameters)
+
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.mesh = mesh
+    my_model.define_markers()
+
+    mf_cells_2, mf_facets_2 = \
+        my_model.volume_markers, my_model.surface_markers
     # check
     for cell in fenics.cells(mesh):
         assert mf_cells[cell] == mf_cells_2[cell]
@@ -255,7 +305,9 @@ def test_create_mesh_vertices():
     mesh_parameters = {
         "vertices": points
     }
-    mesh = create_mesh(mesh_parameters)
+    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model.define_mesh()
+    mesh = my_model.mesh
     assert mesh.num_vertices() == len(points)
     assert mesh.num_edges() == len(points) - 1
     assert mesh.num_cells() == len(points) - 1
@@ -288,8 +340,11 @@ def test_integration_mesh_from_vertices_subdomains():
         "mesh_parameters": mesh_parameters,
         "materials": materials
     }
-    mesh = create_mesh(mesh_parameters)
-    vm, sm = subdomains(mesh, parameters)
+    my_model = Simulation(parameters)
+    my_model.define_mesh()
+    mesh = my_model.mesh
+    my_model.define_markers()
+    vm, sm = my_model.volume_markers, my_model.surface_markers
 
     # Testing
     for cell in fenics.cells(mesh):
@@ -302,3 +357,26 @@ def test_integration_mesh_from_vertices_subdomains():
             assert sm[facet] == 1
         if facet.midpoint().x() == max(points):
             assert sm[facet] == 2
+
+
+def test_mesh_and_refine_course_mesh():
+    '''
+    Test for mesh_and_refine, when mesh too coarse for refinement
+        - return error
+    '''
+    vertices = np.linspace(1, 4, num=4)
+    mesh_parameters = {
+        "initial_number_of_cells": 2,
+        "size": 10,
+        "refinements": [
+            {
+                "cells": 3,
+                "x": 0.00001
+            },
+        ],
+    }
+
+    with pytest.raises(ValueError,
+                       match="Infinite loop: Initial number " +
+                             "of cells might be too small"):
+        mesh_and_refine(mesh_parameters)

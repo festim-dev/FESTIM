@@ -1,15 +1,16 @@
-def find_material_from_id(materials, id):
+def find_material_from_id(materials, mat_id):
     '''Returns the material from a given id
     Parameters:
-    - materials : list of dicts
+    - materials : list of dicts ex: [{"id": 2}, {"id": 3}, {"id": 5}]
     - id : int
     '''
     for material in materials:
-        if material['id'] == id:
+        mat_ids = material['id']
+        if type(mat_ids) is not list:
+            mat_ids = [mat_ids]
+        if mat_id in mat_ids:
             return material
-            break
-    print("Couldn't find ID " + str(id) + " in materials list")
-    return
+    raise ValueError("Couldn't find ID " + str(mat_id) + " in materials list")
 
 
 def update_expressions(expressions, t):
@@ -46,8 +47,12 @@ field_types = [
     "retention",
     "T"
 ]
-parameters = {
+parameters_helper = {
     "materials": {
+        "H": {
+            "description": "[insert description]",
+            "unit": "[insert unit]"
+        },
         "E_D": {
             "description": "Diffusion coefficient activation energy",
             "unit": "eV"
@@ -196,6 +201,6 @@ def help_key(key):
                 if type(var[k]) == dict:
                     find_dict(key, var=var[k], res=res)
         return res
-    d = find_dict(key, parameters)
+    d = find_dict(key, parameters_helper)
     for k in d:
         print(k)

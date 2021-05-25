@@ -60,8 +60,12 @@ def test_fluxes_chemical_pot():
 
     S = S_0*fenics.exp(-E_S/k_B/T)
     Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
-    F, expressions = apply_fluxes(
-        parameters, u, v, fenics.ds, T, S)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.u, my_sim.v = u, v
+    my_sim.ds = fenics.ds
+    my_sim.T = T
+    my_sim.S = S
+    F, expressions = apply_fluxes(my_sim)
     expected_form = 0
     expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(1)
@@ -101,9 +105,14 @@ def test_fluxes():
     testfunctions = list(fenics.split(v))
     sol = solutions[0]
     test_sol = testfunctions[0]
-    F, expressions = apply_fluxes(
-        {"boundary_conditions": boundary_conditions}, u,
-        v, fenics.ds, T)
+
+    my_sim = FESTIM.Simulation({"boundary_conditions": boundary_conditions})
+    my_sim.u, my_sim.v = u, v
+    my_sim.ds = fenics.ds
+    my_sim.T = T
+    my_sim.S = None
+    F, expressions = apply_fluxes(my_sim)
+
     expected_form = 0
     expected_form += -test_sol * (-Kr_0 * fenics.exp(-E_Kr/k_B/T) *
                                   sol**order)*fenics.ds(1)
@@ -114,10 +123,8 @@ def test_fluxes():
 
     # Test error raise
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        boundary_conditions[0].update({"type": "foo"})
-        apply_fluxes(
-            {"boundary_conditions": boundary_conditions}, u,
-            v, fenics.ds, T)
+        my_sim.parameters["boundary_conditions"][0].update({"type": "foo"})
+        apply_fluxes(my_sim)
 
 
 def test_apply_boundary_conditions_theta():
@@ -175,9 +182,13 @@ def test_apply_boundary_conditions_theta():
     left.mark(sm, 1)
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [vm, sm], temp)
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = vm
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
@@ -214,18 +225,18 @@ def test_apply_boundary_conditions_fail():
         }
     ]
     mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
-    T = fenics.Expression("300", degree=0)
-    markers = ["foo", "foo"]  # not needed here since only failing is testing
+
+    my_sim = FESTIM.Simulation({"boundary_conditions": [{}]})
+    my_sim.V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    my_sim.volume_markers = "foo"
+    my_sim.surface_markers = "foo"
+    my_sim.T = fenics.Expression("300", degree=0)
     with pytest.raises(KeyError, match=r'Missing boundary condition type key'):
-        apply_boundary_conditions(
-            {"boundary_conditions": [{}]}, V,
-            markers, T)
+        bcs, expressions = apply_boundary_conditions(my_sim)
 
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        apply_boundary_conditions(
-            {"boundary_conditions": boundary_conditions}, V,
-            markers, T)
+        my_sim.parameters["boundary_conditions"] = boundary_conditions
+        bcs, expressions = apply_boundary_conditions(my_sim)
 
 
 def test_bc_recomb():
@@ -236,8 +247,8 @@ def test_bc_recomb():
     R_p = 5 + FESTIM.x
     D_0 = 2
     E_D = 0.5
-    K_0 = 2
-    E_K = 0.35
+    Kr_0 = 2
+    E_Kr = 0.35
     parameters = {
         "materials": [
             {
@@ -254,8 +265,8 @@ def test_bc_recomb():
                 "implantation_depth": R_p,
                 "D_0": D_0,
                 "E_D": E_D,
-                "K_0": K_0,
-                "E_K": E_K,
+                "Kr_0": Kr_0,
+                "E_Kr": E_Kr,
                 "surfaces": [1, 2]
             },
         ]
@@ -272,9 +283,12 @@ def test_bc_recomb():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [None, sm], temp)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = None
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
     for current_time in range(0, 3):
         temp.t = current_time
         expressions[0].t = current_time
@@ -283,7 +297,7 @@ def test_bc_recomb():
         for x_ in [0, 1]:
             T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
             D = D_0*np.exp(-E_D/FESTIM.k_B/T)
-            K = K_0*np.exp(-E_K/FESTIM.k_B/T)
+            K = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T)
             # Test that the expression is correct at vertices
             val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
@@ -333,9 +347,13 @@ def test_bc_recomb_instant_recomb():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [None, sm], temp)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = None
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
+
     for current_time in range(0, 3):
         temp.t = current_time
         expressions[0].t = current_time
@@ -360,8 +378,8 @@ def test_bc_recomb_chemical_pot():
     R_p = 5
     D_0 = 2
     E_D = 0.5
-    K_0 = 2
-    E_K = 0.5
+    Kr_0 = 2
+    E_Kr = 0.5
     S_01 = 2
     S_02 = 3
     E_S1 = 0.1
@@ -386,8 +404,8 @@ def test_bc_recomb_chemical_pot():
                 "implantation_depth": R_p,
                 "D_0": D_0,
                 "E_D": E_D,
-                "K_0": K_0,
-                "E_K": E_K,
+                "Kr_0": Kr_0,
+                "E_Kr": E_Kr,
                 "surfaces": [1, 2]
             },
         ]
@@ -410,9 +428,12 @@ def test_bc_recomb_chemical_pot():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    bcs, expressions = \
-        apply_boundary_conditions(
-            parameters, V, [vm, sm], temp)
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.V = V
+    my_sim.volume_markers = vm
+    my_sim.surface_markers = sm
+    my_sim.T = temp
+    bcs, expressions = apply_boundary_conditions(my_sim)
 
     # Set up formulation
     u = fenics.Function(V)
@@ -428,8 +449,8 @@ def test_bc_recomb_chemical_pot():
         T_right = 200 + 2*i
         D_left = D_0*np.exp(-E_D/FESTIM.k_B/T_left)
         D_right = D_0*np.exp(-E_D/FESTIM.k_B/T_right)
-        K_left = K_0*np.exp(-E_K/FESTIM.k_B/T_left)
-        K_right = K_0*np.exp(-E_K/FESTIM.k_B/T_right)
+        K_left = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_left)
+        K_right = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_right)
         S_left = S_01*np.exp(-E_S1/FESTIM.k_B/temp(0, 0.5))
         S_right = S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))
 
@@ -443,3 +464,111 @@ def test_bc_recomb_chemical_pot():
         assert np.isclose(
             u(0.25, 0.5),
             (phi*R_p/D_right + (phi/K_right)**0.5)/S_right)
+
+
+def test_sievert_bc_varying_time():
+    """Creates a Simulation object with a solubility type bc and checks that
+    the correct value is applied
+    """
+    parameters = {
+        "mesh_parameters": {
+            "size": 1,
+            "initial_number_of_cells": 10
+        },
+        "materials": [
+            {
+                "D_0": 1,
+                "E_D": 0,
+                "id": 1
+            }
+        ],
+        "traps": [],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "boundary_conditions": [
+            {
+                "type": "solubility",
+                "surfaces": 1,
+                "pressure": 1e5*(1 + FESTIM.t),
+                "S_0": 100,
+                "E_S": 0.5,
+            }
+        ],
+        "solving_parameters": {
+            "initial_stepsize": 1,
+            "final_time": 10
+        },
+        "exports": {}
+    }
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    u = my_sim.u
+    bc = my_sim.bcs[0]
+
+    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
+    bc.apply(u.vector())
+    assert u(0) == expected
+
+    for expr in my_sim.expressions:
+        expr.t = 10000
+
+    expected = (1e5*(1 + 10000))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
+    bc.apply(u.vector())
+    assert u(0) == expected
+
+
+def test_sievert_bc_varying_temperature():
+    """Creates a Simulation object with a solubility type bc and checks that
+    the correct value is applied
+    """
+    parameters = {
+        "mesh_parameters": {
+            "size": 1,
+            "initial_number_of_cells": 10
+        },
+        "materials": [
+            {
+                "D_0": 1,
+                "E_D": 0,
+                "id": 1
+            }
+        ],
+        "traps": [],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "boundary_conditions": [
+            {
+                "type": "solubility",
+                "surfaces": 1,
+                "pressure": 1e5*(1 + FESTIM.t),
+                "S_0": 100,
+                "E_S": 0.5,
+            }
+        ],
+        "solving_parameters": {
+            "initial_stepsize": 1,
+            "final_time": 10
+        },
+        "exports": {}
+    }
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+
+    u = my_sim.u
+    bc = my_sim.bcs[0]
+
+    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
+    bc.apply(u.vector())
+    assert u(0) == expected
+
+    my_sim.T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
+    
+    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/1000)
+    bc.apply(u.vector())
+    assert u(0) == expected
