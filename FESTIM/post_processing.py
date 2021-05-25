@@ -48,7 +48,8 @@ def run_post_processing(simulation):
 
     if "derived_quantities" in parameters["exports"].keys():
 
-        if is_compute_derived_quantities(simulation):
+        if simulation.nb_iterations % \
+             simulation.nb_iterations_between_compute_derived_quantities == 0:
             derived_quantities_t = \
                 FESTIM.post_processing.derived_quantities(
                     parameters,
@@ -89,22 +90,6 @@ def run_post_processing(simulation):
     return derived_quantities_global, dt
 
 
-def is_compute_derived_quantities(simulation):
-    """Checks if the derived quantities should be computed or not based on the
-    key "nb_iterations_between_compute"
-
-    Args:
-        simulation (FESTIM.Simulation): the main Simulation instance
-
-    Returns:
-        bool: True if the derived quantities should be computed, else False
-    """
-    if simulation.nb_iterations % \
-            simulation.nb_iterations_between_compute_derived_quantities == 0:
-        return True
-    return False
-
-
 def is_export_derived_quantities(simulation):
     """Checks if the derived quantities should be exported or not based on the
     key "nb_iterations_between_export"
@@ -116,15 +101,12 @@ def is_export_derived_quantities(simulation):
         bool: True if the derived quantities should be exported, else False
     """
     if simulation.transient:
-        if simulation.nb_iterations_between_export_derived_quantities is None:
-            if simulation.t >= simulation.final_time:
-                return True
-        elif simulation.nb_iterations % \
-                simulation.nb_iterations_between_export_derived_quantities == \
-                0:
-            return True
+        nb_its_between_exports = \
+            simulation.nb_iterations_between_export_derived_quantities
+        if nb_its_between_exports is None:
+            return simulation.t >= simulation.final_time
         else:
-            return False
+            return simulation.nb_iterations % nb_its_between_exports == 0
     else:
         return True
 
