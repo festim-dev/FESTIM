@@ -26,7 +26,6 @@ def test_find_material_from_id():
     ]
     assert find_material_from_id(materials, 1) == materials[0]
     assert find_material_from_id(materials, 2) == materials[1]
-    assert find_material_from_id(materials, 3) is None
 
 
 def test_find_material_from_id_with_several_ids():
@@ -40,7 +39,6 @@ def test_find_material_from_id_with_several_ids():
     ]
     assert find_material_from_id(materials, 1) == materials[0]
     assert find_material_from_id(materials, 2) == materials[0]
-    assert find_material_from_id(materials, 3) is None
 
 
 def test_find_material_from_id_unfound_id():
