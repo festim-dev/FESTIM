@@ -115,6 +115,14 @@ def is_export_derived_quantities(simulation):
     Returns:
         bool: True if the derived quantities should be exported, else False
     """
+    if simulation.transient:
+        if (simulation.nb_iterations_between_export_derived_quantities is None
+                and simulation.t >= simulation.final_time):
+            return True
+        else:
+            return False
+    else:
+        return True
     if simulation.nb_iterations % \
             simulation.nb_iterations_between_export_derived_quantities == 0:
         return True

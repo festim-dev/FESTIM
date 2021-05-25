@@ -17,7 +17,7 @@ class Simulation():
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.nb_iterations_between_exports = 1
-        self.nb_iterations_between_export_derived_quantities = 1
+        self.nb_iterations_between_export_derived_quantities = None
         self.nb_iterations_between_compute_derived_quantities = 1
         self.export_xdmf_last_only = False
         self.J = None
