@@ -119,14 +119,13 @@ def is_export_derived_quantities(simulation):
         if (simulation.nb_iterations_between_export_derived_quantities is None
                 and simulation.t >= simulation.final_time):
             return True
+        elif simulation.nb_iterations % \
+                simulation.nb_iterations_between_export_derived_quantities == 0:
+            return True
         else:
             return False
     else:
         return True
-    if simulation.nb_iterations % \
-            simulation.nb_iterations_between_export_derived_quantities == 0:
-        return True
-    return False
 
 
 def compute_error(parameters, t, res, mesh):
