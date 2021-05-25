@@ -496,7 +496,7 @@ def check_keys_derived_quantities(parameters):
     for quantity in parameters["exports"]["derived_quantities"].keys():
         non_quantity_types = [
             "file", "folder",
-            "nb_iterations_between_compute", "nb_iterations_between_export"]
+            "nb_iterations_between_compute", "nb_iterations_between_exports"]
         if quantity not in \
                 [*FESTIM.helpers.quantity_types] + non_quantity_types:
             raise ValueError("Unknown quantity: " + quantity)
