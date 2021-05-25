@@ -17,6 +17,8 @@ class Simulation():
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.nb_iterations_between_exports = 1
+        self.nb_iterations_between_export_derived_quantities = 1
+        self.nb_iterations_between_compute_derived_quantities = 1
         self.export_xdmf_last_only = False
         self.J = None
 
@@ -91,6 +93,15 @@ class Simulation():
             if "nb_iterations_between_exports" in exports["xdmf"]:
                 self.nb_iterations_between_exports = \
                    exports["xdmf"]["nb_iterations_between_exports"]
+
+        if "derived_quantities" in exports:
+            derived_quant = exports["derived_quantities"]
+            if "nb_iterations_between_exports" in derived_quant:
+                self.nb_iterations_between_export_derived_quantities = \
+                   derived_quant["nb_iterations_between_exports"]
+            if "nb_iterations_between_compute" in derived_quant:
+                self.nb_iterations_between_compute_derived_quantities = \
+                   derived_quant["nb_iterations_between_compute"]
 
     def define_materials(self):
         materials = self.parameters["materials"]
