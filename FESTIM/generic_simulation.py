@@ -18,6 +18,7 @@ class Simulation():
         self.nb_iterations = 0
         self.nb_iterations_between_exports = 1
         self.export_xdmf_last_only = False
+        self.J = None
 
         self.soret = False
 
@@ -327,9 +328,6 @@ class Simulation():
         self.F += fluxes
         self.expressions += expressions_BC + expressions_fluxes
 
-        du = TrialFunction(self.u.function_space())
-        self.J = derivative(self.F, self.u, du)  # Define the Jacobian
-
     def define_variational_problem_extrinsic_traps(self):
         # Define variational problem for extrinsic traps
         if self.transient:
@@ -342,6 +340,13 @@ class Simulation():
         self.timer = Timer()  # start timer
 
         if self.transient:
+            # compute Jacobian before iterating if required
+            solving_params = self.parameters["solving_parameters"]
+            if "update_jacobian" in solving_params:
+                if not solving_params["update_jacobian"]:
+                    du = TrialFunction(self.u.function_space())
+                    self.J = derivative(self.F, self.u, du)
+
             #  Time-stepping
             print('Time stepping...')
             while self.t < self.final_time:
@@ -351,8 +356,8 @@ class Simulation():
             print('Solving steady state problem...')
 
             FESTIM.solve_once(
-                self.F, self.u, self.J,
-                self.bcs, self.parameters["solving_parameters"])
+                self.F, self.u,
+                self.bcs, self.parameters["solving_parameters"], J=self.J)
 
             # Post processing
             FESTIM.run_post_processing(self)
@@ -412,8 +417,8 @@ class Simulation():
 
         # Solve main problem
         FESTIM.solve_it(
-            self.F, self.u, self.J, self.bcs, self.t,
-            self.dt, self.parameters["solving_parameters"])
+            self.F, self.u, self.bcs, self.t,
+            self.dt, self.parameters["solving_parameters"], J=self.J)
 
         # Solve extrinsic traps formulation
         for j, form in enumerate(self.extrinsic_formulations):
