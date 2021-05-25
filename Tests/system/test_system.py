@@ -1462,7 +1462,7 @@ def test_nb_iterations_bewteen_derived_quantities_export(tmpdir):
                     "volumes":  [1],
                 }],
                 "folder": str(Path(d)),
-                "nb_iterations_between_export": 2
+                "nb_iterations_between_exports": 2
             },
             },
     }
