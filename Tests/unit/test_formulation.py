@@ -25,7 +25,6 @@ def test_formulation_no_trap_1_material():
             "D_0": 5,
             "id": 1
             }],
-        "traps": [],
         "source_term": {"value": "1"},
     }
     mesh = fenics.UnitIntervalMesh(10)
@@ -109,7 +108,7 @@ def test_formulation_1_trap_1_material():
     flux_ = expressions[0]
     Index._globalcount = 8
     # take density Expression() from formulation()
-    density = expressions[2]
+    density = expressions[1]
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx(1)
     expected_form += fenics.dot(
@@ -188,8 +187,8 @@ def test_formulation_2_traps_1_material():
 
     Index._globalcount = 8
     # Densities from formulation()
-    density1 = expressions[2]
-    density2 = expressions[3]
+    density1 = expressions[1]
+    density2 = expressions[2]
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx(1)
@@ -299,7 +298,7 @@ def test_formulation_1_trap_2_materials():
     flux_ = expressions[0]
     Index._globalcount = 8
     # Density from formulation()
-    density = expressions[2]
+    density = expressions[1]
     # Transient sol
     expected_form = ((solutions[0] - previous_solutions[0]) / dt) * \
         testfunctions[0]*dx(1)
@@ -455,7 +454,7 @@ def test_formulation_steady_state():
     Index._globalcount = 8
     print(F)
     flux_ = expressions[0]
-    density = expressions[2]
+    density = expressions[1]
     expected_form = -flux_*testfunctions[0]*dx
     expected_form += fenics.dot(
         5 * fenics.exp(-4/k_B/temp) * fenics.grad(solutions[0]),
@@ -560,7 +559,6 @@ def test_formulation_soret():
         domain = domain()
         return domain
     parameters = {
-        "traps": [],
         "materials": [{
                 "borders": [0, 0.5],
                 "E_D": 4,
@@ -610,6 +608,7 @@ def test_formulation_soret():
     dt = 2
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
+    my_sim.soret = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
     my_sim.T, my_sim.T_n = temp, temp
@@ -682,6 +681,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
+    my_sim.chemical_pot = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
     my_sim.T, my_sim.T_n = temp, temp_n
@@ -753,6 +753,7 @@ def test_formulation_1_trap_1_material_chemical_pot():
     temp_n = fenics.Expression("200", degree=0)
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
+    my_sim.chemical_pot = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
     my_sim.T, my_sim.T_n = temp, temp_n
@@ -761,7 +762,7 @@ def test_formulation_1_trap_1_material_chemical_pot():
     Index._globalcount = 8
     # take density Expression() from formulation()
     print(expressions)
-    density = expressions[1]
+    density = expressions[0]
 
     theta1 = solutions[0]*2*fenics.exp(-2/k_B/temp)
     theta1_n = previous_solutions[0]*2*fenics.exp(-2/k_B/temp_n)
@@ -828,6 +829,7 @@ def test_formulation_extrinsic_traps():
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.dt = dt
+    my_sim.dx = fenics.dx
     my_sim.extrinsic_traps = extrinsic_traps
     my_sim.previous_solutions_traps = extrinsic_traps_n
     my_sim.testfunctions_traps = test_functions
