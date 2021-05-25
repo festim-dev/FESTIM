@@ -47,14 +47,22 @@ class Trap(Concentration):
         self.E_k = trap_dict["E_k"]
         self.p_0 = trap_dict["p_0"]
         self.E_p = trap_dict["E_p"]
+        self.density = []
 
         if 'type' in trap_dict and trap_dict['type'] == 'extrinsic':
             self.type = "extrinsic"
             density = simulation.extrinsic_traps[extrinsic_counter]
+            self.density.append(density)
         else:
-            density = sp.printing.ccode(trap_dict['density'])
-            density = Expression(density, degree=2, t=0)
-        self.density = density
+            # make sure .density is a list
+            if type(trap_dict['density']) is not list:
+                densities = [trap_dict['density']]
+            else:
+                densities = trap_dict['density']
+
+            for density in densities:
+                density_expr = sp.printing.ccode(density)
+                self.density.append(Expression(density_expr, degree=2, t=0))
         if type(trap_dict['materials']) is not list:
             self.materials = [trap_dict['materials']]
         else:
@@ -202,7 +210,8 @@ def create_one_trap_form(simulation, trap, solute):
             the solute concentration
 
     Returns:
-        fenics.Form: the form related to the trap
+        fenics.Form, list: the form related to the trap, list of
+            sources as fenics.Expression
     """
     k_B = FESTIM.k_B  # Boltzmann constant
 
@@ -216,6 +225,7 @@ def create_one_trap_form(simulation, trap, solute):
     dx = simulation.dx
     T = simulation.T
 
+    expressions_trap = []
     F = 0  # initialise the form
     if simulation.transient:
         # d(c_t)/dt in trapping equation
@@ -233,12 +243,24 @@ def create_one_trap_form(simulation, trap, solute):
             if mat_id not in trap_materials:
                 F += solution*test_function*dx(mat_id)
 
-    for mat_id in trap_materials:
-        k_0 = trap.k_0
-        E_k = trap.E_k
-        p_0 = trap.p_0
-        E_p = trap.E_p
-        density = trap.density
+    for i, mat_id in enumerate(trap_materials):
+        if type(trap.k_0) is list:
+            k_0 = trap.k_0[i]
+            E_k = trap.E_k[i]
+            p_0 = trap.p_0[i]
+            E_p = trap.E_p[i]
+            density = trap.density[i]
+        else:
+            k_0 = trap.k_0
+            E_k = trap.E_k
+            p_0 = trap.p_0
+            E_p = trap.E_p
+            density = trap.density[0]
+
+        # add the density to the list of
+        # expressions to be updated
+        expressions_trap.append(density)
+
         corresponding_material = \
             FESTIM.helpers.find_material_from_id(
                 materials, mat_id)
@@ -255,8 +277,7 @@ def create_one_trap_form(simulation, trap, solute):
             test_function*dx(mat_id)
         F += p_0*exp(-E_p/k_B/T)*solution * \
             test_function*dx(mat_id)
-
-    return F
+    return F, expressions_trap
 
 
 def create_all_traps_form(simulation, solute):
@@ -290,11 +311,12 @@ def create_all_traps_form(simulation, solute):
         # increment extrinsic_counter
         if hasattr(trap_object, "type"):
             extrinsic_counter += 1
-        expressions_traps.append(trap_object.density)
 
         # add to the global form
-        F_trap = create_one_trap_form(simulation, trap_object, solute)
+        F_trap, expressions_trap = create_one_trap_form(
+            simulation, trap_object, solute)
         F_traps += F_trap
+        expressions_traps += expressions_trap
 
         # if a source term is set then add it to the form
         if 'source_term' in trap_dict:
