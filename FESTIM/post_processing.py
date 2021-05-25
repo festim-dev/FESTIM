@@ -47,16 +47,25 @@ def run_post_processing(simulation):
     res.append(T)
 
     if "derived_quantities" in parameters["exports"].keys():
-        derived_quantities_t = \
-            FESTIM.post_processing.derived_quantities(
-                parameters,
-                res,
-                markers,
-                [D, thermal_cond, H]
-                )
 
-        derived_quantities_t.insert(0, t)
-        derived_quantities_global.append(derived_quantities_t)
+        # compute derived quantities
+        if simulation.nb_iterations % \
+             simulation.nb_iterations_between_compute_derived_quantities == 0:
+            derived_quantities_t = \
+                FESTIM.post_processing.derived_quantities(
+                    parameters,
+                    res,
+                    markers,
+                    [D, thermal_cond, H]
+                    )
+            derived_quantities_t.insert(0, t)
+            derived_quantities_global.append(derived_quantities_t)
+        # export derived quantities
+        if is_export_derived_quantities(simulation):
+            FESTIM.write_to_csv(
+                simulation.parameters["exports"]["derived_quantities"],
+                simulation.derived_quantities_global)
+
     if "xdmf" in parameters["exports"].keys():
         if (simulation.export_xdmf_last_only and
             simulation.t >= simulation.final_time) or \
@@ -81,6 +90,30 @@ def run_post_processing(simulation):
             res, parameters["exports"], t, dt, V_DG1)
 
     return derived_quantities_global, dt
+
+
+def is_export_derived_quantities(simulation):
+    """Checks if the derived quantities should be exported or not based on the
+    key simulation.nb_iterations_between_export_derived_quantities
+
+    Args:
+        simulation (FESTIM.Simulation): the main Simulation instance
+
+    Returns:
+        bool: True if the derived quantities should be exported, else False
+    """
+    if simulation.transient:
+        nb_its_between_exports = \
+            simulation.nb_iterations_between_export_derived_quantities
+        if nb_its_between_exports is None:
+            # export at the end
+            return simulation.t >= simulation.final_time
+        else:
+            # export every N iterations
+            return simulation.nb_iterations % nb_its_between_exports == 0
+    else:
+        # if steady state, export
+        return True
 
 
 def compute_error(parameters, t, res, mesh):
@@ -448,9 +481,13 @@ def check_keys_derived_quantities(parameters):
         KeyError: if surfaces or volumes key is missing
     """
     for quantity in parameters["exports"]["derived_quantities"].keys():
-        if quantity not in [*FESTIM.helpers.quantity_types, "file", "folder"]:
+        non_quantity_types = [
+            "file", "folder",
+            "nb_iterations_between_compute", "nb_iterations_between_exports"]
+        if quantity not in \
+                [*FESTIM.helpers.quantity_types] + non_quantity_types:
             raise ValueError("Unknown quantity: " + quantity)
-        if quantity not in ["file", "folder"]:
+        if quantity not in non_quantity_types:
             for f in parameters["exports"]["derived_quantities"][quantity]:
                 if "field" not in f.keys():
                     raise KeyError("Missing key 'field'")
