@@ -1364,3 +1364,106 @@ def test_no_jacobian_update():
     }
 
     FESTIM.run(parameters)
+
+
+def test_nb_iterations_bewteen_derived_quantities_compute(tmpdir):
+    d = tmpdir.mkdir("temp")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 4,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "total_volume": [{
+                    "field": 'retention',
+                    "volumes":  [1],
+                }],
+                "folder": str(Path(d)),
+                "nb_iterations_between_compute": 2
+            },
+            },
+    }
+    output = FESTIM.run(parameters)
+    short_derived_quantities = output["derived_quantities"]
+
+    parameters["exports"]["derived_quantities"]["nb_iterations_between_compute"] = 1
+    output = FESTIM.run(parameters)
+    long_derived_quantities = output["derived_quantities"]
+
+    assert len(long_derived_quantities) > len(short_derived_quantities)
+
+
+def test_nb_iterations_bewteen_derived_quantities_export(tmpdir):
+    d = tmpdir.mkdir("temp")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "id": 1
+            }
+            ],
+        "traps": [
+            ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 200,
+                "size": 1,
+                "refinements": [
+                ],
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_transient",
+            "final_time": 30,
+            "initial_stepsize": 4,
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "total_volume": [{
+                    "field": 'retention',
+                    "volumes":  [1],
+                }],
+                "folder": str(Path(d)),
+                "nb_iterations_between_export": 2
+            },
+            },
+    }
+    output = FESTIM.run(parameters)
