@@ -1164,6 +1164,90 @@ def test_extrinsic_trap(tmpdir):
     my_sim.run()
 
 
+def test_steady_state_with_2_materials():
+    """Runs a sim with several materials and checks that the produced value is
+    not zero at the centre
+    """
+    # build
+    parameters = {}
+    mat1 = {
+        "E_D": 0,
+        "D_0": 1,
+        "id": [1, 2]
+    }
+
+    mat2 = {
+        "E_D": 0,
+        "D_0": 0.25,
+        "id": 3
+    }
+
+    parameters["materials"] = [mat1, mat2]
+
+    N = 16
+    mesh = fenics.UnitSquareMesh(N, N)
+    vm = fenics.MeshFunction("size_t", mesh, 2, 0)
+    sm = fenics.MeshFunction("size_t", mesh, 1, 0)
+
+    tol = 1E-14
+    subdomain_1 = fenics.CompiledSubDomain('x[1] <= 0.5 + tol', tol=tol)
+    subdomain_2 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] >= 0.5 - tol', tol=tol)
+    subdomain_3 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] <= 0.5 + tol', tol=tol)
+    subdomain_1.mark(vm, 1)
+    subdomain_2.mark(vm, 2)
+    subdomain_3.mark(vm, 3)
+
+    surfaces = fenics.CompiledSubDomain('on_boundary')
+    surfaces.mark(sm, 1)
+
+    parameters["mesh_parameters"] = {
+        "mesh": mesh,
+        "meshfunction_cells": vm,
+        "meshfunction_facets": sm,
+    }
+
+    parameters["traps"] = [
+    ]
+
+    parameters["temperature"] = {
+        "type": "expression",
+        "value": 30,
+    }
+    parameters["source_term"] = {
+        "type": "expression",
+        "value": 1,
+    }
+    parameters["boundary_conditions"] = [
+        {
+            "type": "dc",
+            "value": 0,
+            "surfaces": 1
+        }
+
+    ]
+    parameters["exports"] = {
+    }
+    solving_parameters = {
+        "type": "solve_stationary",
+        "newton_solver": {
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": 1e-10,
+            "maximum_iterations": 5,
+        }
+    }
+
+    parameters["solving_parameters"] = solving_parameters
+
+    # run
+    my_sim = FESTIM.Simulation(parameters, log_level=20)
+    my_sim.initialise()
+    my_sim.run()
+
+    # test
+
+    assert my_sim.u(0.5, 0.5) != 0
+
+
 def test_steady_state_traps_not_everywhere():
     """Creates a simulation problem with a trap not set in all subdomains runs
     the sim and check that the value is not NaN

@@ -128,16 +128,21 @@ def create_diffusion_form(simulation, solute_object):
             c_0 = solute_object.solution*S_0*exp(-E_S/k_B/T)
             c_0_n = solute_object.prev_solution*S_0*exp(-E_S/k_B/T_n)
 
-        subdomain = material['id']
-        if simulation.transient:
-            F += ((c_0-c_0_n)/dt)*solute_object.test_function*dx(subdomain)
-        F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
-                 grad(solute_object.test_function))*dx(subdomain)
-        if simulation.soret:
-            Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
-            F += dot(D_0 * exp(-E_D/k_B/T) *
-                     Q * c_0 / (FESTIM.R * T**2) * grad(T),
+        subdomains = material['id']  # list of subdomains with this material
+        if type(subdomains) is not list:
+            subdomains = [subdomains]  # make sure subdomains is a list
+
+        # add to the formulation F for every subdomain
+        for subdomain in subdomains:
+            if simulation.transient:
+                F += ((c_0-c_0_n)/dt)*solute_object.test_function*dx(subdomain)
+            F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                      grad(solute_object.test_function))*dx(subdomain)
+            if simulation.soret:
+                Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
+                F += dot(D_0 * exp(-E_D/k_B/T) *
+                         Q * c_0 / (FESTIM.R * T**2) * grad(T),
+                         grad(solute_object.test_function))*dx(subdomain)
     return F
 
 
