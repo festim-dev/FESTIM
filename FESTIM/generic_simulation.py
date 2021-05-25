@@ -19,6 +19,8 @@ class Simulation():
         self.nb_iterations_between_exports = 1
         self.export_xdmf_last_only = False
 
+        self.soret = False
+
     def initialise(self):
         # Export parameters
         if "parameters" in self.parameters["exports"].keys():
@@ -56,6 +58,11 @@ class Simulation():
 
         # Define temperature
         self.define_temperature()
+
+        # check if the soret effect has to be taken into account
+        if "soret" in self.parameters["temperature"]:
+            if self.parameters["temperature"]["soret"]:
+                self.soret = True
 
         # Create functions for properties
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
