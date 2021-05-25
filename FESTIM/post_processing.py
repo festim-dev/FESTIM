@@ -48,6 +48,7 @@ def run_post_processing(simulation):
 
     if "derived_quantities" in parameters["exports"].keys():
 
+        # compute derived quantities
         if simulation.nb_iterations % \
              simulation.nb_iterations_between_compute_derived_quantities == 0:
             derived_quantities_t = \
@@ -59,6 +60,7 @@ def run_post_processing(simulation):
                     )
             derived_quantities_t.insert(0, t)
             derived_quantities_global.append(derived_quantities_t)
+        # export derived quantities
         if is_export_derived_quantities(simulation):
             FESTIM.write_to_csv(
                 simulation.parameters["exports"]["derived_quantities"],
