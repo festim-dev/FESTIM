@@ -1367,6 +1367,9 @@ def test_no_jacobian_update():
 
 
 def test_nb_iterations_bewteen_derived_quantities_compute(tmpdir):
+    """Checks that "nb_iterations_between_compute" has an influence on the
+    number of entries in derived quantities
+    """
     d = tmpdir.mkdir("temp")
     parameters = {
         "materials": [
@@ -1422,6 +1425,9 @@ def test_nb_iterations_bewteen_derived_quantities_compute(tmpdir):
 
 
 def test_nb_iterations_bewteen_derived_quantities_export(tmpdir):
+    """Checks that a simulation with "nb_iterations_between_exports" key for
+    derived quantities doesn't raise an error
+    """
     d = tmpdir.mkdir("temp")
     parameters = {
         "materials": [
