@@ -10,7 +10,7 @@ def find_material_from_id(materials, mat_id):
             mat_ids = [mat_ids]
         if mat_id in mat_ids:
             return material
-    raise ValueError("Couldn't find ID " + str(id) + " in materials list")
+    raise ValueError("Couldn't find ID " + str(mat_id) + " in materials list")
 
 
 def update_expressions(expressions, t):
