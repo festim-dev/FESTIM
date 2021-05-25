@@ -92,7 +92,7 @@ def run_post_processing(simulation):
 
 def is_export_derived_quantities(simulation):
     """Checks if the derived quantities should be exported or not based on the
-    key "nb_iterations_between_export"
+    key simulation.nb_iterations_between_export_derived_quantities
 
     Args:
         simulation (FESTIM.Simulation): the main Simulation instance
@@ -104,10 +104,13 @@ def is_export_derived_quantities(simulation):
         nb_its_between_exports = \
             simulation.nb_iterations_between_export_derived_quantities
         if nb_its_between_exports is None:
+            # export at the end
             return simulation.t >= simulation.final_time
         else:
+            # export every N iterations
             return simulation.nb_iterations % nb_its_between_exports == 0
     else:
+        # if steady state, export
         return True
 
 
