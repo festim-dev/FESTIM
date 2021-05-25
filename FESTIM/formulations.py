@@ -313,7 +313,8 @@ def create_all_traps_form(simulation, solute):
             extrinsic_counter += 1
 
         # add to the global form
-        F_trap, expressions_trap = create_one_trap_form(simulation, trap_object, solute)
+        F_trap, expressions_trap = create_one_trap_form(
+            simulation, trap_object, solute)
         F_traps += F_trap
         expressions_traps += expressions_trap
 
