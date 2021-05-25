@@ -120,7 +120,8 @@ def is_export_derived_quantities(simulation):
                 and simulation.t >= simulation.final_time):
             return True
         elif simulation.nb_iterations % \
-                simulation.nb_iterations_between_export_derived_quantities == 0:
+                simulation.nb_iterations_between_export_derived_quantities == \
+                0:
             return True
         else:
             return False
