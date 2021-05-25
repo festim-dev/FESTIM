@@ -90,6 +90,15 @@ def run_post_processing(simulation):
 
 
 def is_compute_derived_quantities(simulation):
+    """Checks if the derived quantities should be computed or not based on the
+    key "nb_iterations_between_compute"
+
+    Args:
+        simulation (FESTIM.Simulation): the main Simulation instance
+
+    Returns:
+        bool: True if the derived quantities should be computed, else False
+    """
     if simulation.nb_iterations % \
             simulation.nb_iterations_between_compute_derived_quantities == 0:
         return True
@@ -97,6 +106,15 @@ def is_compute_derived_quantities(simulation):
 
 
 def is_export_derived_quantities(simulation):
+    """Checks if the derived quantities should be exported or not based on the
+    key "nb_iterations_between_export"
+
+    Args:
+        simulation (FESTIM.Simulation): the main Simulation instance
+
+    Returns:
+        bool: True if the derived quantities should be exported, else False
+    """
     if simulation.nb_iterations % \
             simulation.nb_iterations_between_export_derived_quantities == 0:
         return True
