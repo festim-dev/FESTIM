@@ -16,8 +16,8 @@ def solve_it(F, u, bcs, t, dt, solving_parameters, J=None):
             {
                 "adaptive_stepsize": {
                     "stepsize_change_ratio": 1.1,
-                    "dt_min": 1e-5,  # optionnal
-                    "t_stop": 100,  # optionnal
+                    "dt_min": 1e-5,  # optional
+                    "t_stop": 100,  # optional
                     "stepsize_stop_max": 10,  # only needed if "t_stop"
                 },
                 "newton_solver": {
