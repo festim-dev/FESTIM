@@ -702,8 +702,15 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     val_S = 3  # solubility
     S = fenics.Constant(val_S)
 
+    parameters = {
+        "exports": exports,
+        "temperature": {
+            "type": "expression",
+            "value": 500}
+    }
+
     # run
-    my_sim = FESTIM.Simulation({"exports": exports})
+    my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u = theta_out
     my_sim.T = fenics.Constant(500)

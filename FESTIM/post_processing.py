@@ -77,8 +77,8 @@ def run_post_processing(simulation):
                 # if solute or retention needs to be exported,
                 # project it onto V_DG1
                 if any(x in functions_to_exports for x in ['0', 'solute']):
-                    if simulation.chemical_pot:
-                        # this is costly ...
+                    if simulation.chemical_pot and \
+                            parameters["temperature"]["type"] == "expression":
                         res[0] = project(res[0], V_DG1)
                 if 'retention' in functions_to_exports:
                     res[-2] = project(retention, V_DG1)
@@ -409,7 +409,8 @@ def derived_quantities(parameters, solutions,
         for flux in derived_quant_dict["surface_flux"]:
             sol = field_to_sol[str(flux["field"])]
             # TODO: find an alternative for this is costly
-            if isinstance(sol, Product):
+            if isinstance(sol, Product) and \
+                    parameters["temperature"]["type"] == "expression":
                 sol = project(sol, V_DG1)
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
