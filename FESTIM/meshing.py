@@ -54,6 +54,7 @@ def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
     # Read tags for surface elements
     # (can also be used for applying DirichletBC)
     surface_markers = MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    XDMFFile(boundary_file).read(surface_markers)
 
     print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
     return volume_markers, surface_markers
