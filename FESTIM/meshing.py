@@ -58,6 +58,9 @@ def read_subdomains_from_xdmf(mesh, volumetric_file, boundary_file):
     XDMFFile(boundary_file).read(surface_markers, "f")
     surface_markers = MeshFunction("size_t", mesh, surface_markers)
 
+    print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
+    return volume_markers, surface_markers
+
 
 def mesh_and_refine(mesh_parameters):
     """Mesh and refine iteratively until meeting the refinement
