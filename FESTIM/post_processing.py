@@ -51,8 +51,21 @@ def run_post_processing(simulation):
             # if temperature is of type "expression" and is time dependent
             if "t" in sp.printing.ccode(parameters["temperature"]["value"]):
                 project_solute = True
-
-        if project_solute:
+        need_solute = False
+        if "derived_quantities" in parameters["exports"].keys():
+            derived_quantities_prm = parameters["exports"]["derived_quantities"]
+            if "surface_flux" in derived_quantities_prm:
+                if any(
+                    x in derived_quantities_prm["surface_flux"]["fields"]
+                        for x in ["0", "solute"]
+                        ):
+                    need_solute = True
+        elif "xdmf" in parameters["exports"].keys():
+            functions_to_exports = \
+                parameters["exports"]["xdmf"]["functions"]
+            if any(x in functions_to_exports for x in ["0", "solute"]):
+                need_solute = True
+        if project_solute and need_solute:
             # project solute on V_DG1
             solute = project(solute, V_DG1)
 
@@ -90,11 +103,6 @@ def run_post_processing(simulation):
                     simulation.nb_iterations_between_exports == 0:
                 functions_to_exports = \
                     parameters["exports"]["xdmf"]["functions"]
-                if 'solute' in functions_to_exports:
-                    # if not a Function, project it onto V_DG1
-                    if not isinstance(res[0], Function):
-                        res[0] = project(res[0], V_DG1)
-
                 if 'retention' in functions_to_exports:
                     # if not a Function, project it onto V_DG1
                     if not isinstance(res[-2], Function):
