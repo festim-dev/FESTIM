@@ -491,3 +491,85 @@ def test_derived_quantities_global():
         run_post_processing(my_sim)
         assert len(my_sim.derived_quantities_global) == i + 2
         my_sim.append = True
+
+
+def test_peformance_temperature_not_an_expression_derived_quantities(tmpdir):
+    """Checks that when running the post_processing (derived_quantities) and
+    the temperature is of type "expression", the execution time is longer.
+    When dealing with xdmf exports the time isn't reduced by much.
+    """
+    # build long
+    d = tmpdir.mkdir("Solution_Test")
+    parameters = {
+        "materials": [
+            {
+                "E_D": 1,
+                "D_0": 1,
+                "S_0": 1,
+                "E_S": 1,
+                "thermal_cond": 1,
+                "id": 1
+            }
+            ],
+        "traps": [],
+        "mesh_parameters": {
+                "initial_number_of_cells": 20,
+                "size": 1,
+                "refinements": [],
+            },
+        "boundary_conditions": [],
+        "temperature": {
+            "type": "expression",
+            "value": 300
+        },
+        "solving_parameters": {
+            "type": "solve_stationary",
+            "newton_solver": {
+                "absolute_tolerance": 1e10,
+                "relative_tolerance": 1e-9,
+                "maximum_iterations": 50,
+            }
+            },
+        "exports": {
+            "derived_quantities": {
+                "surface_flux": [{
+                    "field": 'solute',
+                    "surfaces":  [1],
+                }],
+                "folder": str(Path(d)),
+            },
+            },
+    }
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.t = 0
+
+    # run long
+    start = timeit.default_timer()
+    FESTIM.run_post_processing(my_sim)
+    long_time = timeit.default_timer() - start
+
+    # build short
+    parameters["temperature"] = {
+        "type": "solve_stationary",
+        "boundary_conditions": [
+            {
+                "type": "dc",
+                "value": 300,
+                "surfaces": 1
+            }
+        ]
+    }
+
+    # run short
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.initialise()
+    my_sim.t = 0
+
+    start = timeit.default_timer()
+    FESTIM.run_post_processing(my_sim)
+    short_time = timeit.default_timer() - start
+
+    # test
+    assert short_time < long_time
