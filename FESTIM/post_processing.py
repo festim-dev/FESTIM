@@ -38,12 +38,25 @@ def run_post_processing(simulation):
         res = [u]
     else:
         res = list(u.split())
+
+    # make the change of variable solute = theta*S
     if simulation.chemical_pot:
-        solute = res[0]*S
+        solute = res[0]*S  # solute = theta*S = (solute/S) * S
+
+        project_solute = False  # initialise to False
+        temp_type = parameters["temperature"]["type"]
+        if temp_type == "solve_transient":
+            project_solute = True
+        elif temp_type == "expression":
+            # if temperature is of type "expression" and is time dependent
+            if "t" in sp.printing.ccode(parameters["temperature"]["value"]):
+                project_solute = True
+
+        if project_solute:
+            # project solute on V_DG1
+            solute = project(solute, V_DG1)
+
         res[0] = solute
-        if parameters["temperature"]["type"] in \
-                ["solve_transient", "expression"]:
-            res[0] = project(res[0], V_DG1)
 
     retention = sum(res)
     res.append(retention)
@@ -77,10 +90,15 @@ def run_post_processing(simulation):
                     simulation.nb_iterations_between_exports == 0:
                 functions_to_exports = \
                     parameters["exports"]["xdmf"]["functions"]
-                # if retention needs to be exported,
-                # project it onto V_DG1
+                if 'solute' in functions_to_exports:
+                    # if not a Function, project it onto V_DG1
+                    if not isinstance(res[0], Function):
+                        res[0] = project(res[0], V_DG1)
+
                 if 'retention' in functions_to_exports:
-                    res[-2] = project(retention, V_DG1)
+                    # if not a Function, project it onto V_DG1
+                    if not isinstance(res[-2], Function):
+                        res[-2] = project(retention, V_DG1)
 
                 FESTIM.export.export_xdmf(
                     res, parameters["exports"], files, t, append=append)
