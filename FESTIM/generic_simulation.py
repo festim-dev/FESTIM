@@ -82,7 +82,8 @@ class Simulation():
             if temp_type == "solve_stationary":
                 project_S = True
             elif temp_type == "expression":
-                if "t" not in sp.printing.ccode(self.parameters["temperature"]["value"]):
+                if "t" not in sp.printing.ccode(
+                        self.parameters["temperature"]["value"]):
                     project_S = True
             if project_S:
                 self.S = project(self.S, self.V_DG1)
