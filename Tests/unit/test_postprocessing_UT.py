@@ -686,6 +686,7 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     d = tmpdir.mkdir("out")
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.FunctionSpace(mesh, 'P', 1)
+    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
     val_theta = 2
     theta_out = fenics.interpolate(fenics.Constant(val_theta), V)
     files = [
@@ -715,7 +716,7 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     my_sim.u = theta_out
     my_sim.T = fenics.Constant(500)
     my_sim.volume_markers, my_sim.surface_markers = None, None
-    my_sim.V_CG1, my_sim.V_DG1 = V, None
+    my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
     my_sim.t = 0
     my_sim.dt = 1
     my_sim.files = files
