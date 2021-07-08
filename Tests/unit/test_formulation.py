@@ -1030,3 +1030,61 @@ def test_formulation_material_dependent_trap_properties():
     expected_form += ((solutions[1] - previous_solutions[1]) / dt) * \
         testfunctions[0]*dx
     assert expected_form.equals(F) is True
+
+
+def test_duplicate_material_dependent_trap_error():
+    '''
+    Cheks that the function formulation() raises an error when the key
+    "materials" contains duplicate ids
+    '''
+
+    # BUILD
+    parameters = {
+        "traps": [
+            {
+                "k_0": [1, 1, 6],
+                "E_k": [2, 1, 7],
+                "p_0": [3, 1, 8],
+                "E_p": [4, 1, 9],
+                "density": [5, 5, 10],
+                "materials": [1, 2, 1]
+            }],
+        "materials": [{
+
+                "borders": [0, 0.5],
+                "E_D": 4,
+                "D_0": 5,
+                "id": 1
+                },
+                {
+
+                "borders": [0.5, 1],
+                "E_D": 5,
+                "D_0": 6,
+                "id": 2
+                }],
+    }
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    u = fenics.Function(V)
+    u_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
+
+    solutions = list(fenics.split(u))
+    previous_solutions = list(fenics.split(u_n))
+    testfunctions = list(fenics.split(v))
+
+    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
+    dx = fenics.dx(subdomain_data=mf)
+    temp = fenics.Expression("300", degree=0)
+
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.transient = True
+    my_sim.u, my_sim.u_n = u, u_n
+    my_sim.v = v
+    my_sim.T, my_sim.T_n = temp, temp
+    my_sim.dt, my_sim.dx = fenics.Constant(1), dx
+
+    # RUN
+    with pytest.raises(ValueError):
+        formulation(my_sim)

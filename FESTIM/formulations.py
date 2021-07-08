@@ -60,6 +60,11 @@ class Trap(Concentration):
             else:
                 densities = trap_dict['density']
 
+                # check that there are no duplicate ids
+                if len(set(densities)) != len(densities):
+                    msg = "The key 'density' contains duplicated " + \
+                        "elements ( " + str(densities) + " )"
+                    raise ValueError(msg)
             for density in densities:
                 density_expr = sp.printing.ccode(density)
                 self.density.append(Expression(density_expr, degree=2, t=0))
