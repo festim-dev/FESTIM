@@ -56,8 +56,8 @@ def run_post_processing(simulation):
             derived_quantities_prm = parameters["exports"]["derived_quantities"]
             if "surface_flux" in derived_quantities_prm:
                 if any(
-                    x["field"] in derived_quantities_prm["surface_flux"]
-                        for x in ["0", "solute"]
+                    x["field"] in ["0", "solute"]
+                        for x in derived_quantities_prm["surface_flux"]
                         ):
                     need_solute = True
         if "xdmf" in parameters["exports"].keys():
