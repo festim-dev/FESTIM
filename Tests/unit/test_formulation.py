@@ -1088,3 +1088,84 @@ def test_duplicate_material_dependent_trap_error():
     # RUN
     with pytest.raises(ValueError):
         formulation(my_sim)
+
+
+def test_formulation_heat_transfer_2_ids_per_mat():
+    '''
+    Test function define_variational_problem_heat_transfers
+    '''
+
+    parameters = {}
+    mat1 = {
+        "E_D": 0,
+        "D_0": 1,
+        "thermal_cond": 1,
+        "id": [1, 2]
+    }
+
+    mat2 = {
+        "E_D": 0,
+        "D_0": 0.25,
+        "thermal_cond": 1,
+        "id": 3
+    }
+
+    parameters["materials"] = [mat1, mat2]
+
+    N = 16
+    mesh = fenics.UnitSquareMesh(N, N)
+    vm = fenics.MeshFunction("size_t", mesh, 2, 0)
+    sm = fenics.MeshFunction("size_t", mesh, 1, 0)
+
+    tol = 1E-14
+    subdomain_1 = fenics.CompiledSubDomain('x[1] <= 0.5 + tol', tol=tol)
+    subdomain_2 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] >= 0.5 - tol', tol=tol)
+    subdomain_3 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] <= 0.5 + tol', tol=tol)
+    subdomain_1.mark(vm, 1)
+    subdomain_2.mark(vm, 2)
+    subdomain_3.mark(vm, 3)
+
+    surfaces = fenics.CompiledSubDomain('on_boundary')
+    surfaces.mark(sm, 1)
+
+    parameters["mesh_parameters"] = {
+        "mesh": mesh,
+        "meshfunction_cells": vm,
+        "meshfunction_facets": sm,
+    }
+
+    parameters["traps"] = []
+    parameters["temperature"] = {
+        "type": "solve_stationary",
+    }
+    parameters["boundary_conditions"] = []
+    parameters["exports"] = {}
+    solving_parameters = {
+        "type": "solve_stationary",
+        "newton_solver": {
+            "absolute_tolerance": 1e-10,
+            "relative_tolerance": 1e-10,
+            "maximum_iterations": 5,
+        }
+    }
+
+    parameters["solving_parameters"] = solving_parameters
+    dt = 2
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+
+    T = fenics.Function(V)
+    T_n = fenics.Function(V)
+    v = fenics.TestFunction(V)
+    functions = [T, v, T_n]
+
+    # create mesh functions
+    ds = fenics.ds
+    dx = fenics.dx
+    # Run function
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.transient = True
+    my_sim.T, my_sim.T_n, my_sim.vT = T, T_n, v
+    my_sim.dt, my_sim.dx, my_sim.ds = dt, dx, ds
+    F, expressions = \
+        FESTIM.formulations.define_variational_problem_heat_transfers(my_sim)
