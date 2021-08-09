@@ -38,8 +38,37 @@ def run_post_processing(simulation):
         res = [u]
     else:
         res = list(u.split())
+
+    # make the change of variable solute = theta*S
     if simulation.chemical_pot:
-        solute = res[0]*S
+        solute = res[0]*S  # solute = theta*S = (solute/S) * S
+
+        project_solute = False  # initialise to False
+        temp_type = parameters["temperature"]["type"]
+        if temp_type == "solve_transient":
+            project_solute = True
+        elif temp_type == "expression":
+            # if temperature is of type "expression" and is time dependent
+            if "t" in sp.printing.ccode(parameters["temperature"]["value"]):
+                project_solute = True
+        need_solute = False
+        if "derived_quantities" in parameters["exports"].keys():
+            derived_quantities_prm = parameters["exports"]["derived_quantities"]
+            if "surface_flux" in derived_quantities_prm:
+                if any(
+                    x["field"] in ["0", "solute"]
+                        for x in derived_quantities_prm["surface_flux"]
+                        ):
+                    need_solute = True
+        if "xdmf" in parameters["exports"].keys():
+            functions_to_exports = \
+                parameters["exports"]["xdmf"]["functions"]
+            if any(x in functions_to_exports for x in ["0", "solute"]):
+                need_solute = True
+        if project_solute and need_solute:
+            # project solute on V_DG1
+            solute = project(solute, V_DG1)
+
         res[0] = solute
 
     retention = sum(res)
@@ -74,14 +103,10 @@ def run_post_processing(simulation):
                     simulation.nb_iterations_between_exports == 0:
                 functions_to_exports = \
                     parameters["exports"]["xdmf"]["functions"]
-                # if solute or retention needs to be exported,
-                # project it onto V_DG1
-                if any(x in functions_to_exports for x in ['0', 'solute']):
-                    if simulation.chemical_pot:
-                        # this is costly ...
-                        res[0] = project(res[0], V_DG1)
                 if 'retention' in functions_to_exports:
-                    res[-2] = project(retention, V_DG1)
+                    # if not a Function, project it onto V_DG1
+                    if not isinstance(res[-2], Function):
+                        res[-2] = project(retention, V_DG1)
 
                 FESTIM.export.export_xdmf(
                     res, parameters["exports"], files, t, append=append)
@@ -408,9 +433,6 @@ def derived_quantities(parameters, solutions,
     if "surface_flux" in derived_quant_dict.keys():
         for flux in derived_quant_dict["surface_flux"]:
             sol = field_to_sol[str(flux["field"])]
-            # TODO: find an alternative for this is costly
-            if isinstance(sol, Product):
-                sol = project(sol, V_DG1)
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
                 phi = assemble(prop*dot(grad(sol), n)*ds(surf))

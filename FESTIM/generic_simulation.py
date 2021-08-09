@@ -75,6 +75,19 @@ class Simulation():
         if self.S is not None:
             self.chemical_pot = True
 
+            # if the temperature is of type "solve_stationary" or "expression"
+            # the solubility needs to be projected
+            project_S = False
+            temp_type = self.parameters["temperature"]["type"]
+            if temp_type == "solve_stationary":
+                project_S = True
+            elif temp_type == "expression":
+                if "t" not in sp.printing.ccode(
+                        self.parameters["temperature"]["value"]):
+                    project_S = True
+            if project_S:
+                self.S = project(self.S, self.V_DG1)
+
         # Define functions
         self.initialise_concentrations()
         self.initialise_extrinsic_traps()
@@ -400,7 +413,7 @@ class Simulation():
             self.H._T = self.T
         if self.thermal_cond is not None:
             self.thermal_cond._T = self.T
-        if self.S is not None:
+        if self.chemical_pot:
             self.S._T = self.T
 
         # Display time
