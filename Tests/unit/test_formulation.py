@@ -1093,6 +1093,7 @@ def test_duplicate_material_dependent_trap_error():
 def test_formulation_heat_transfer_2_ids_per_mat():
     '''
     Test function define_variational_problem_heat_transfers
+    catching bug described in issue #305
     '''
 
     parameters = {}
