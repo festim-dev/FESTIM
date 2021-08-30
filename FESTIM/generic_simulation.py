@@ -375,18 +375,31 @@ class Simulation():
             print('Time stepping...')
             while self.t < self.final_time:
                 self.iterate()
+            # print final message
+            elapsed_time = round(self.timer.elapsed()[0], 1)
+            msg = "Solved problem in {:.2f} s".format(elapsed_time)
+            print(msg)
         else:
             # Solve steady state
             print('Solving steady state problem...')
 
-            FESTIM.solve_once(
+            nb_iterations, converged = FESTIM.solve_once(
                 self.F, self.u,
                 self.bcs, self.parameters["solving_parameters"], J=self.J)
 
             # Post processing
             FESTIM.run_post_processing(self)
             elapsed_time = round(self.timer.elapsed()[0], 1)
-            print("Solved problem in {:.2f} s".format(elapsed_time))
+
+            # print final message
+            if converged:
+                msg = "Solved problem in {:.2f} s".format(elapsed_time)
+                print(msg)
+            else:
+                msg = "The solver diverged in "
+                msg += "{:.0f} iteration(s) ({:.2f} s)".format(
+                    nb_iterations, elapsed_time)
+                raise ValueError(msg)
 
         # export derived quantities to CSV
         if "derived_quantities" in self.parameters["exports"].keys():
