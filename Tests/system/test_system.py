@@ -1482,7 +1482,7 @@ def test_error_steady_state_diverges():
     parameters = {
         "materials": [
             {
-                "E_D": 0,
+                "E_D": 1,
                 "D_0": 1,
                 "id": 1
                 }
@@ -1499,20 +1499,13 @@ def test_error_steady_state_diverges():
             ],
         "temperature": {
                 'type': "expression",
-                'value': 300
-            },
-        "source_term": {
-            'value': 1
+                'value': -1
             },
         "solving_parameters": {
-            "final_time": 10,
-            "initial_stepsize": 1,
-            "adaptive_stepsize": {
-                "stepsize_change_ratio": 1,
-                },
+            "type": "solve_stationary",
             "newton_solver": {
-                "absolute_tolerance": 1e-30,
-                "relative_tolerance": 1e-30,
+                "absolute_tolerance": 1e-10,
+                "relative_tolerance": 1e-10,
                 "maximum_iterations": 2,
             },
         },
