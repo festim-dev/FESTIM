@@ -394,11 +394,12 @@ class Simulation():
             # print final message
             if converged:
                 msg = "Solved problem in {:.2f} s".format(elapsed_time)
+                print(msg)
             else:
                 msg = "The solver diverged in "
                 msg += "{:.0f} iteration(s) ({:.2f} s)".format(
                     nb_iterations, elapsed_time)
-            print(msg)
+                raise ValueError(msg)
 
         # export derived quantities to CSV
         if "derived_quantities" in self.parameters["exports"].keys():
