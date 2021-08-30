@@ -1476,7 +1476,9 @@ def test_nb_iterations_bewteen_derived_quantities_export(tmpdir):
 
 
 def test_error_steady_state_diverges():
-
+    """Checks that when a sim doesn't converge in steady state, an error is
+    raised
+    """
     parameters = {
         "materials": [
             {
@@ -1509,8 +1511,8 @@ def test_error_steady_state_diverges():
                 "stepsize_change_ratio": 1,
                 },
             "newton_solver": {
-                "absolute_tolerance": 0,
-                "relative_tolerance": 0,
+                "absolute_tolerance": 1e-30,
+                "relative_tolerance": 1e-30,
                 "maximum_iterations": 2,
             },
         },
