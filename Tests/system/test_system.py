@@ -1473,3 +1473,50 @@ def test_nb_iterations_bewteen_derived_quantities_export(tmpdir):
             },
     }
     output = FESTIM.run(parameters)
+
+
+def test_error_steady_state_diverges():
+
+    parameters = {
+        "materials": [
+            {
+                "E_D": 0,
+                "D_0": 1,
+                "id": 1
+                }
+                ],
+        "traps": [
+            ],
+        "initial_conditions": [
+        ],
+        "mesh_parameters": {
+                "initial_number_of_cells": 10,
+                "size": 1,
+            },
+        "boundary_conditions": [
+            ],
+        "temperature": {
+                'type': "expression",
+                'value': 300
+            },
+        "source_term": {
+            'value': 1
+            },
+        "solving_parameters": {
+            "final_time": 10,
+            "initial_stepsize": 1,
+            "adaptive_stepsize": {
+                "stepsize_change_ratio": 1,
+                },
+            "newton_solver": {
+                "absolute_tolerance": 0,
+                "relative_tolerance": 0,
+                "maximum_iterations": 2,
+            },
+        },
+        "exports": {
+        },
+    }
+    with pytest.raises(ValueError) as err:
+        FESTIM.run(parameters)
+    assert "The solver diverged" in str(err.value)
