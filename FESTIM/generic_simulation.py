@@ -376,6 +376,7 @@ class Simulation():
             while self.t < self.final_time:
                 self.iterate()
             # print final message
+            elapsed_time = round(self.timer.elapsed()[0], 1)
             msg = "Solved problem in {:.2f} s".format(elapsed_time)
             print(msg)
         else:
