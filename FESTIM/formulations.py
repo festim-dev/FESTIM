@@ -60,6 +60,11 @@ class Trap(Concentration):
             else:
                 densities = trap_dict['density']
 
+                # check that there are no duplicate ids
+                if len(set(densities)) != len(densities):
+                    msg = "The key 'density' contains duplicated " + \
+                        "elements ( " + str(densities) + " )"
+                    raise ValueError(msg)
             for density in densities:
                 density_expr = sp.printing.ccode(density)
                 self.density.append(Expression(density_expr, degree=2, t=0))
@@ -408,7 +413,10 @@ def define_variational_problem_heat_transfers(simulation):
         thermal_cond = mat["thermal_cond"]
         if callable(thermal_cond):  # if thermal_cond is a function
             thermal_cond = thermal_cond(T)
-        vol = mat["id"]
+
+        subdomains = mat['id']  # list of subdomains with this material
+        if type(subdomains) is not list:
+            subdomains = [subdomains]  # make sure subdomains is a list
         if parameters["temperature"]["type"] == "solve_transient":
             if "heat_capacity" not in mat.keys():
                 raise NameError("Missing heat_capacity key in material")
@@ -421,9 +429,11 @@ def define_variational_problem_heat_transfers(simulation):
             if callable(rho):
                 rho = rho(T)
             # Transien term
-            F += rho*cp*(T-T_n)/dt*vT*dx(vol)
+            for vol in subdomains:
+                F += rho*cp*(T-T_n)/dt*vT*dx(vol)
         # Diffusion term
-        F += dot(thermal_cond*grad(T), grad(vT))*dx(vol)
+        for vol in subdomains:
+            F += dot(thermal_cond*grad(T), grad(vT))*dx(vol)
 
     # Source terms
     if "source_term" in parameters["temperature"].keys():

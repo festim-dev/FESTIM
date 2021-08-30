@@ -686,6 +686,7 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     d = tmpdir.mkdir("out")
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.FunctionSpace(mesh, 'P', 1)
+    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
     val_theta = 2
     theta_out = fenics.interpolate(fenics.Constant(val_theta), V)
     files = [
@@ -702,13 +703,88 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     val_S = 3  # solubility
     S = fenics.Constant(val_S)
 
+    parameters = {
+        "exports": exports,
+        "temperature": {
+            "type": "expression",
+            "value": 500}
+    }
+
     # run
-    my_sim = FESTIM.Simulation({"exports": exports})
+    my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u = theta_out
     my_sim.T = fenics.Constant(500)
     my_sim.volume_markers, my_sim.surface_markers = None, None
-    my_sim.V_CG1, my_sim.V_DG1 = V, None
+    my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
+    my_sim.t = 0
+    my_sim.dt = 1
+    my_sim.files = files
+    my_sim.append = False
+    my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
+        my_sim.H, my_sim.S = *[None]*5, S
+    my_sim.derived_quantities_global = []
+    my_sim.chemical_pot = True
+    run_post_processing(my_sim)
+
+    # check
+    u_in = fenics.Function(V)
+    files[0].read_checkpoint(u_in, "retention", -1)
+    for i in range(10):
+        assert np.isclose(u_in(i/10), val_theta*val_S)
+
+    files[1].read_checkpoint(u_in, "solute", -1)
+    for i in range(10):
+        assert np.isclose(u_in(i/10), val_theta*val_S)
+
+
+def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
+    """this test checks that the computation of retention is correctly made
+    with conservation of chemical pot and temperature of type "solve_transient"
+    """
+    # build
+    d = tmpdir.mkdir("out")
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, 'P', 1)
+    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
+    val_theta = 2
+    theta_out = fenics.interpolate(fenics.Constant(val_theta), V)
+    files = [
+        fenics.XDMFFile(str(Path(d)) + "/retention.xdmf"),
+        fenics.XDMFFile(str(Path(d)) + "/solute.xdmf")
+    ]
+    exports = {
+            "xdmf": {
+                "functions": ['retention', 'solute'],
+                "labels": ['retention', 'solute'],
+                "folder": str(Path(d))
+            }
+        }
+    val_S = 3  # solubility
+    S = fenics.Constant(val_S)
+
+    parameters = {
+        "exports": exports,
+        "temperature": {
+            "type": "solve_transient",
+            "boundary_conditions": [
+                {
+                    "type": "dc",
+                    "value": 500,
+                    "surfaces": [1, 2]
+                }
+            ],
+            "initial_condition": 500
+            }
+    }
+
+    # run
+    my_sim = FESTIM.Simulation(parameters)
+    my_sim.transient = True
+    my_sim.u = theta_out
+    my_sim.T = fenics.Constant(500)
+    my_sim.volume_markers, my_sim.surface_markers = None, None
+    my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
     my_sim.t = 0
     my_sim.dt = 1
     my_sim.files = files

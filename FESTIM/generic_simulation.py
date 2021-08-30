@@ -75,6 +75,19 @@ class Simulation():
         if self.S is not None:
             self.chemical_pot = True
 
+            # if the temperature is of type "solve_stationary" or "expression"
+            # the solubility needs to be projected
+            project_S = False
+            temp_type = self.parameters["temperature"]["type"]
+            if temp_type == "solve_stationary":
+                project_S = True
+            elif temp_type == "expression":
+                if "t" not in sp.printing.ccode(
+                        self.parameters["temperature"]["value"]):
+                    project_S = True
+            if project_S:
+                self.S = project(self.S, self.V_DG1)
+
         # Define functions
         self.initialise_concentrations()
         self.initialise_extrinsic_traps()
@@ -362,18 +375,31 @@ class Simulation():
             print('Time stepping...')
             while self.t < self.final_time:
                 self.iterate()
+            # print final message
+            elapsed_time = round(self.timer.elapsed()[0], 1)
+            msg = "Solved problem in {:.2f} s".format(elapsed_time)
+            print(msg)
         else:
             # Solve steady state
             print('Solving steady state problem...')
 
-            FESTIM.solve_once(
+            nb_iterations, converged = FESTIM.solve_once(
                 self.F, self.u,
                 self.bcs, self.parameters["solving_parameters"], J=self.J)
 
             # Post processing
             FESTIM.run_post_processing(self)
             elapsed_time = round(self.timer.elapsed()[0], 1)
-            print("Solved problem in {:.2f} s".format(elapsed_time))
+
+            # print final message
+            if converged:
+                msg = "Solved problem in {:.2f} s".format(elapsed_time)
+                print(msg)
+            else:
+                msg = "The solver diverged in "
+                msg += "{:.0f} iteration(s) ({:.2f} s)".format(
+                    nb_iterations, elapsed_time)
+                raise ValueError(msg)
 
         # export derived quantities to CSV
         if "derived_quantities" in self.parameters["exports"].keys():
@@ -400,7 +426,7 @@ class Simulation():
             self.H._T = self.T
         if self.thermal_cond is not None:
             self.thermal_cond._T = self.T
-        if self.S is not None:
+        if self.chemical_pot:
             self.S._T = self.T
 
         # Display time
