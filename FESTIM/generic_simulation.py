@@ -13,7 +13,9 @@ class Simulation():
         self.transient = True
         self.expressions = []
         self.files = []
-        self.derived_quantities_global = []
+        self.derived_quantities_global = [
+            FESTIM.post_processing.header_derived_quantities(self.parameters)
+            ]
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.nb_iterations_between_exports = 1
