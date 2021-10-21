@@ -43,15 +43,7 @@ def run_post_processing(simulation):
     if simulation.chemical_pot:
         solute = res[0]*S  # solute = theta*S = (solute/S) * S
 
-        project_solute = False  # initialise to False
-        temp_type = parameters["temperature"]["type"]
-        if temp_type == "solve_transient":
-            project_solute = True
-        elif temp_type == "expression":
-            # if temperature is of type "expression" and is time dependent
-            if "t" in sp.printing.ccode(parameters["temperature"]["value"]):
-                project_solute = True
-        need_solute = False
+        need_solute = False  # initialises to false
         if "derived_quantities" in parameters["exports"].keys():
             derived_quantities_prm = parameters["exports"]["derived_quantities"]
             if "surface_flux" in derived_quantities_prm:
@@ -65,7 +57,7 @@ def run_post_processing(simulation):
                 parameters["exports"]["xdmf"]["functions"]
             if any(x in functions_to_exports for x in ["0", "solute"]):
                 need_solute = True
-        if project_solute and need_solute:
+        if need_solute:
             # project solute on V_DG1
             solute = project(solute, V_DG1)
 
