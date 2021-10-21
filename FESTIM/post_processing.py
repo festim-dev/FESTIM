@@ -29,11 +29,6 @@ def run_post_processing(simulation):
         simulation.H, simulation.S
     derived_quantities_global = simulation.derived_quantities_global
 
-    if not append:
-        if "derived_quantities" in parameters["exports"].keys():
-            derived_quantities_global.append(
-                FESTIM.post_processing.header_derived_quantities(parameters))
-
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
@@ -340,42 +335,47 @@ def header_derived_quantities(parameters):
     Creates the header for derived_quantities list
     '''
 
-    check_keys_derived_quantities(parameters)
-    derived_quant_dict = parameters["exports"]["derived_quantities"]
     header = ['t(s)']
-    if "surface_flux" in derived_quant_dict.keys():
-        for flux in derived_quant_dict["surface_flux"]:
-            for surf in flux["surfaces"]:
-                header.append(
-                    "Flux surface " + str(surf) + ": " + str(flux['field']))
-    if "average_volume" in derived_quant_dict.keys():
-        for average in parameters[
-                        "exports"]["derived_quantities"]["average_volume"]:
-            for vol in average["volumes"]:
-                header.append(
-                    "Average " + str(average['field']) + " volume " + str(vol))
-    if "minimum_volume" in derived_quant_dict.keys():
-        for minimum in parameters[
-                        "exports"]["derived_quantities"]["minimum_volume"]:
-            for vol in minimum["volumes"]:
-                header.append(
-                    "Minimum " + str(minimum["field"]) + " volume " + str(vol))
-    if "maximum_volume" in derived_quant_dict.keys():
-        for maximum in parameters[
-                        "exports"]["derived_quantities"]["maximum_volume"]:
-            for vol in maximum["volumes"]:
-                header.append(
-                    "Maximum " + str(maximum["field"]) + " volume " + str(vol))
-    if "total_volume" in derived_quant_dict.keys():
-        for total in derived_quant_dict["total_volume"]:
-            for vol in total["volumes"]:
-                header.append(
-                    "Total " + str(total["field"]) + " volume " + str(vol))
-    if "total_surface" in derived_quant_dict.keys():
-        for total in derived_quant_dict["total_surface"]:
-            for surf in total["surfaces"]:
-                header.append(
-                    "Total " + str(total["field"]) + " surface " + str(surf))
+    if "exports" in parameters:
+        if "derived_quantities" in parameters["exports"]:
+            check_keys_derived_quantities(parameters)
+            derived_quant_dict = parameters["exports"]["derived_quantities"]
+            if "surface_flux" in derived_quant_dict.keys():
+                for flux in derived_quant_dict["surface_flux"]:
+                    for surf in flux["surfaces"]:
+                        header.append(
+                            "Flux surface " + str(surf) + ": " +
+                            str(flux['field']))
+            if "average_volume" in derived_quant_dict.keys():
+                for average in derived_quant_dict["average_volume"]:
+                    for vol in average["volumes"]:
+                        header.append(
+                            "Average " + str(average['field']) + " volume " +
+                            str(vol))
+            if "minimum_volume" in derived_quant_dict.keys():
+                for minimum in derived_quant_dict["minimum_volume"]:
+                    for vol in minimum["volumes"]:
+                        header.append(
+                            "Minimum " + str(minimum["field"]) + " volume " +
+                            str(vol))
+            if "maximum_volume" in derived_quant_dict.keys():
+                for maximum in derived_quant_dict["maximum_volume"]:
+                    for vol in maximum["volumes"]:
+                        header.append(
+                            "Maximum " + str(maximum["field"]) + " volume " +
+                            str(vol))
+            if "total_volume" in derived_quant_dict.keys():
+                for total in derived_quant_dict["total_volume"]:
+                    for vol in total["volumes"]:
+                        header.append(
+                            "Total " + str(total["field"]) + " volume " +
+                            str(vol))
+            if "total_surface" in derived_quant_dict.keys():
+                for total in derived_quant_dict["total_surface"]:
+                    for surf in total["surfaces"]:
+                        header.append(
+                            "Total " + str(total["field"]) + " surface " +
+                            str(surf))
 
     return header
 
