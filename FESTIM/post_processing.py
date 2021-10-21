@@ -110,6 +110,7 @@ def run_post_processing(simulation):
 
                 FESTIM.export.export_xdmf(
                     res, parameters["exports"], files, t, append=append)
+                simulation.append = True
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
             res, parameters["exports"], t, dt, V_DG1)

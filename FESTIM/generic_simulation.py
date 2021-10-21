@@ -463,7 +463,6 @@ class Simulation():
 
         # Post processing
         FESTIM.run_post_processing(self)
-        self.append = True
 
         # Update previous solutions
         self.u_n.assign(self.u)
