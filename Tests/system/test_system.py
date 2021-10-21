@@ -823,6 +823,8 @@ def test_run_MMS_steady_state(tmpdir):
 def test_chemical_pot_T_solve_stationary():
     """checks that the chemical potential conservation is well computed with
     type solve_stationary for temperature
+
+    adapted to catch bug described in issue #310
     """
     parameters = {
         "mesh_parameters": {
@@ -891,8 +893,12 @@ def test_chemical_pot_T_solve_stationary():
                         "surfaces": [2]
                     }
                 ]
-            }
-
+            },
+            "xdmf": {
+                "functions": ['solute'],
+                "labels": ["solute"],
+                "folder": 'results',
+            },
         }
     }
     out = run(parameters)

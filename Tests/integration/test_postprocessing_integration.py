@@ -121,7 +121,6 @@ def test_run_post_processing(tmpdir):
     my_sim.append = False
     my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
         my_sim.H, my_sim.S = properties
-    my_sim.derived_quantities_global = []
     for i in range(1, 3):
         t += dt
         my_sim.t = t
@@ -223,7 +222,6 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     my_sim.append = False
     my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
         my_sim.H, my_sim.S = properties
-    my_sim.derived_quantities_global = []
     my_sim.final_time = 20
 
     for i in range(1, 3):
@@ -315,7 +313,6 @@ def test_run_post_processing_flux(tmpdir):
     my_sim.append = False
     my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, \
         my_sim.H, my_sim.S = properties
-    my_sim.derived_quantities_global = []
     derived_quantities_global, dt = \
         run_post_processing(my_sim)
     print(derived_quantities_global[0])
