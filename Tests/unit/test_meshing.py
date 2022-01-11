@@ -147,7 +147,8 @@ def test_create_mesh_xdmf(tmpdir):
     mesh_parameters = {
         "mesh_file": str(Path(file1)),
         }
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model = Simulation(
+        {"boundary_conditions": [], "mesh_parameters": mesh_parameters})
     my_model.define_mesh()
     mesh2 = my_model.mesh
 
@@ -207,7 +208,8 @@ def test_create_mesh_inbuilt():
     mesh_parameters = {
         "mesh": mesh
         }
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model = Simulation(
+        {"boundary_conditions": [], "mesh_parameters": mesh_parameters})
     my_model.define_mesh()
     mesh2 = my_model.mesh
 
@@ -243,7 +245,8 @@ def test_subdomains_inbuilt():
     }
     # read
 
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model = Simulation(
+        {"boundary_conditions": [], "mesh_parameters": mesh_parameters})
     my_model.mesh = mesh
     my_model.define_markers()
 
@@ -274,7 +277,8 @@ def test_create_mesh_vertices():
     mesh_parameters = {
         "vertices": points
     }
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
+    my_model = Simulation(
+        {"boundary_conditions": [], "mesh_parameters": mesh_parameters})
     my_model.define_mesh()
     mesh = my_model.mesh
     assert mesh.num_vertices() == len(points)
@@ -306,6 +310,7 @@ def test_integration_mesh_from_vertices_subdomains():
         }
     ]
     parameters = {
+        "boundary_conditions": [],
         "mesh_parameters": mesh_parameters,
         "materials": materials
     }
