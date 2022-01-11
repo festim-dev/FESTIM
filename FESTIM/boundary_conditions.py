@@ -118,7 +118,7 @@ def define_dirichlet_bcs_T(simulation):
     return bcs, expressions
 
 
-def apply_fluxes(simulation):
+def create_H_fluxes(simulation):
     """Modifies the formulation and adds fluxes based
     on parameters in boundary_conditions
 
@@ -154,20 +154,17 @@ def apply_fluxes(simulation):
     return F, expressions
 
 
-def apply_heat_fluxes(simulation):
+def create_heat_fluxes(simulation):
     F = 0
     expressions = []
-    vT = simulation.vT
-    ds = simulation.ds
-    T = simulation.T
     for bc in simulation.boundary_conditions:
         if bc.component == "T":
             if bc.type not in FESTIM.helpers.T_bc_types["dc"]:
-                bc.create_form_for_flux(T, solute=None)
+                bc.create_form_for_flux(simulation.T, solute=None)
                 expressions += bc.sub_expressions
 
                 for surf in bc.surfaces:
-                    F += -bc.form*vT*ds(surf)
+                    F += -bc.form*simulation.vT*simulation.ds(surf)
     return F, expressions
 
 

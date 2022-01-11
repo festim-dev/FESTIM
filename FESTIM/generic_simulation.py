@@ -375,7 +375,7 @@ class Simulation():
         # Boundary conditions
         print('Defining boundary conditions')
         self.bcs, expressions_BC = FESTIM.define_dirichlet_bcs(self)
-        fluxes, expressions_fluxes = FESTIM.apply_fluxes(self)
+        fluxes, expressions_fluxes = FESTIM.create_H_fluxes(self)
         self.F += fluxes
         self.expressions += expressions_BC + expressions_fluxes
 
@@ -438,7 +438,7 @@ class Simulation():
 
         # Boundary conditions
         if "boundary_conditions" in self.parameters["temperature"].keys():
-            fluxes, fluxes_expressions = FESTIM.apply_heat_fluxes(self)
+            fluxes, fluxes_expressions = FESTIM.create_heat_fluxes(self)
             self.FT += fluxes
             self.expressions_FT += fluxes_expressions
 

@@ -1,7 +1,6 @@
 import FESTIM
-from FESTIM import boundary_conditions
 from FESTIM.boundary_conditions import define_dirichlet_bcs, \
-    apply_fluxes
+    create_H_fluxes
 import fenics
 import pytest
 import sympy as sp
@@ -10,7 +9,7 @@ import numpy as np
 
 def test_fluxes_chemical_pot():
     '''
-    This test that the function boundary_conditions.apply_fluxes()
+    This test that the function boundary_conditions.create_H_fluxes()
     returns the correct formulation in the case of conservation
     of chemical potential
     '''
@@ -67,7 +66,7 @@ def test_fluxes_chemical_pot():
     my_sim.ds = fenics.ds
     my_sim.T = T
     my_sim.S = S
-    F, expressions = apply_fluxes(my_sim)
+    F, expressions = create_H_fluxes(my_sim)
     expected_form = 0
     expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[0]*fenics.ds(1)
@@ -113,7 +112,7 @@ def test_fluxes():
     my_sim.ds = fenics.ds
     my_sim.T = T
     my_sim.S = None
-    F, expressions = apply_fluxes(my_sim)
+    F, expressions = create_H_fluxes(my_sim)
 
     expected_form = 0
     expected_form += -test_sol * (-Kr_0 * fenics.exp(-E_Kr/k_B/T) *
