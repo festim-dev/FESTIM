@@ -497,7 +497,7 @@ def test_formulation_heat_transfer():
             "type": "solve_transient",
             "boundary_conditions": [
                 {
-                    "type": "dirichlet",
+                    "type": "dc",
                     "value": u,
                     "surfaces": [1]
                 },

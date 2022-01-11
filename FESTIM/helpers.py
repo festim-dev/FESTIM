@@ -32,6 +32,12 @@ bc_types = {
     "robin": ["recomb", "flux_custom"]
 }
 
+T_bc_types = {
+    "dc": ["dc", "dc_custom"],
+    "neumann": ["flux", "flux_custom"],
+    "robin": ["flux_custom", "convective_flux"]
+}
+
 quantity_types = [
     "surface_flux",
     "average_volume",

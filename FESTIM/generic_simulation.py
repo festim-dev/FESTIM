@@ -33,9 +33,22 @@ class Simulation():
             if BC["type"] in FESTIM.helpers.bc_types["dc"]:
                 my_BC = FESTIM.DirichletBC(**BC)
             elif BC["type"] not in FESTIM.helpers.bc_types["neumann"] or \
-                 BC["type"] not in FESTIM.helpers.bc_types["robin"]:
+                    BC["type"] not in FESTIM.helpers.bc_types["robin"]:
                 my_BC = FESTIM.FluxBC(**BC)
             BC_objects.append(my_BC)
+
+        if "temperature" in self.parameters:
+            if "boundary_conditions" in self.parameters["temperature"]:
+
+                BCs = self.parameters["temperature"]["boundary_conditions"]
+                for BC in BCs:
+                    if BC["type"] in FESTIM.helpers.T_bc_types["dc"]:
+                        my_BC = FESTIM.DirichletBC(component="T", **BC)
+                    elif BC["type"] not in FESTIM.helpers.T_bc_types["neumann"] or \
+                         BC["type"] not in FESTIM.helpers.T_bc_types["robin"]:
+                        my_BC = FESTIM.FluxBC(component="T", **BC)
+                    BC_objects.append(my_BC)
+
         self.boundary_conditions = BC_objects
         return BC_objects
 
