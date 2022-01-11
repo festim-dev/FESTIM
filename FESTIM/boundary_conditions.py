@@ -74,6 +74,7 @@ class BoundaryCondition:
                     prms[key] = Expression(sp.printing.ccode(val), t=0, degree=1)
             form = self.function(T, solute, prms)
             self.sub_expressions += [expression for expression in prms.values()]
+        self.form = form
         return form
 
 
@@ -133,11 +134,12 @@ def apply_fluxes(simulation):
 
     for bc in simulation.boundary_conditions:
         if bc.type not in FESTIM.helpers.bc_types["dc"]:
-            flux = bc.create_form_for_flux(simulation.T, solute)
+            bc.create_form_for_flux(simulation.T, solute)
+            # TODO : one day we will get rid of this huge expressions list
             expressions += bc.sub_expressions
 
             for surf in bc.surfaces:
-                F += -test_solute*flux*simulation.ds(surf)
+                F += -test_solute*bc.form*simulation.ds(surf)
     return F, expressions
 
 
