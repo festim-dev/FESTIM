@@ -126,7 +126,7 @@ class BoundaryConditionTheta(UserExpression):
         return ()
 
 
-class BoundaryCondition(UserExpression):
+class BoundaryConditionExpression(UserExpression):
     def __init__(self, T, prms, eval_function):
 
         super().__init__()
@@ -261,7 +261,7 @@ def create_bc_expression(BC, T, expressions):
             }
 
         # create a custom expression
-        value_BC = BoundaryCondition(T, prms, eval_function=sieverts_law)
+        value_BC = BoundaryConditionExpression(T, prms, eval_function=sieverts_law)
         expressions.append(value_BC.prms["pressure"])
         expressions.append(value_BC.prms["S_0"])
         expressions.append(value_BC.prms["E_S"])
@@ -276,7 +276,7 @@ def create_bc_expression(BC, T, expressions):
             prms["Kr_0"] = BC["Kr_0"]
             prms["E_Kr"] = BC["E_Kr"]
 
-        value_BC = BoundaryCondition(T, prms, eval_function=dc_imp)
+        value_BC = BoundaryConditionExpression(T, prms, eval_function=dc_imp)
         expressions.append(value_BC.prms["implanted_flux"])
         expressions.append(value_BC.prms["implantation_depth"])
     return value_BC
