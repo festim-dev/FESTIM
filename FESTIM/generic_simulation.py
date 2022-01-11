@@ -30,7 +30,11 @@ class Simulation():
     def create_boundarycondition_objects(self):
         BC_objects = []
         for BC in self.parameters["boundary_conditions"]:
-            my_BC = FESTIM.BoundaryCondition(**BC)
+            if BC["type"] in FESTIM.helpers.bc_types["dc"]:
+                my_BC = FESTIM.DirichletBC(**BC)
+            elif BC["type"] not in FESTIM.helpers.bc_types["neumann"] or \
+                 BC["type"] not in FESTIM.helpers.bc_types["robin"]:
+                my_BC = FESTIM.FluxBC(**BC)
             BC_objects.append(my_BC)
         self.boundary_conditions = BC_objects
         return BC_objects

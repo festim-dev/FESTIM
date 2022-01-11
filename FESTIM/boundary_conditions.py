@@ -1,5 +1,5 @@
 import FESTIM
-from fenics import *
+import fenics as f
 import sympy as sp
 
 
@@ -27,10 +27,15 @@ class BoundaryCondition:
             raise NameError(
                     "Unknown boundary condition type : " + self.type)
 
+
+class DirichletBC(BoundaryCondition):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
     def create_expression(self, T):
         if self.type == "dc":
             value_BC = sp.printing.ccode(self.value)
-            value_BC = Expression(value_BC, t=0, degree=4)
+            value_BC = f.Expression(value_BC, t=0, degree=4)
             # TODO : why degree 4?
         else:
             if self.type == "dc_custom":
@@ -58,10 +63,15 @@ class BoundaryCondition:
         self.expression = expression_BC
         return expression_BC
 
+
+class FluxBC(BoundaryCondition):
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
     def create_form_for_flux(self, T, solute):
         if self.type == "flux":
             form = sp.printing.ccode(self.value)
-            form = Expression(form, t=0, degree=2)
+            form = f.Expression(form, t=0, degree=2)
             self.sub_expressions.append(form)
         elif self.type == "recomb":
             form = recombination_flux(T, solute, self.prms)
@@ -69,9 +79,9 @@ class BoundaryCondition:
             prms = {}
             for key, val in self.prms.items():
                 if isinstance(val, (int, float)):
-                    prms[key] = Constant(val)
+                    prms[key] = f.Constant(val)
                 else:
-                    prms[key] = Expression(sp.printing.ccode(val), t=0, degree=1)
+                    prms[key] = f.Expression(sp.printing.ccode(val), t=0, degree=1)
             form = self.function(T, solute, prms)
             self.sub_expressions += [expression for expression in prms.values()]
         self.form = form
@@ -94,14 +104,14 @@ def define_dirichlet_bcs_T(simulation):
     for bc in simulation.parameters["temperature"]["boundary_conditions"]:
         if bc["type"] == "dc":
             expression_bc = sp.printing.ccode(bc["value"])
-            expression_bc = Expression(expression_bc, degree=2, t=0)
+            expression_bc = f.Expression(expression_bc, degree=2, t=0)
             expressions.append(expression_bc)
             if type(bc["surfaces"]) is list:
                 surfaces = bc["surfaces"]
             else:
                 surfaces = [bc["surfaces"]]
             for surf in surfaces:
-                bci = DirichletBC(
+                bci = f.DirichletBC(
                     simulation.V_CG1, expression_bc,
                     simulation.surface_markers, surf)
                 bcs.append(bci)
@@ -123,8 +133,8 @@ def apply_fluxes(simulation):
     """
 
     expressions = []
-    solutions = split(simulation.u)
-    test_solute = split(simulation.v)[0]
+    solutions = f.split(simulation.u)
+    test_solute = f.split(simulation.v)[0]
     F = 0
 
     if simulation.chemical_pot:
@@ -143,7 +153,7 @@ def apply_fluxes(simulation):
     return F, expressions
 
 
-class BoundaryConditionTheta(UserExpression):
+class BoundaryConditionTheta(f.UserExpression):
     """Creates an Expression for converting dirichlet bcs in the case
     of chemical potential conservation
 
@@ -168,28 +178,28 @@ class BoundaryConditionTheta(UserExpression):
         self._materials = materials
 
     def eval_cell(self, value, x, ufc_cell):
-        cell = Cell(self._mesh, ufc_cell.index)
+        cell = f.Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
         S_0 = material["S_0"]
         E_S = material["E_S"]
-        value[0] = self._bci(x)/(S_0*exp(-E_S/FESTIM.k_B/self._T(x)))
+        value[0] = self._bci(x)/(S_0*f.exp(-E_S/FESTIM.k_B/self._T(x)))
 
     def value_shape(self):
         return ()
 
 
-class BoundaryConditionExpression(UserExpression):
+class BoundaryConditionExpression(f.UserExpression):
     def __init__(self, T, prms, eval_function):
 
         super().__init__()
         # create Expressions or Constant for all parameters
         for key, value in prms.items():
             if isinstance(value, (int, float)):
-                prms[key] = Constant(value)
+                prms[key] = f.Constant(value)
             else:
-                prms[key] = Expression(sp.printing.ccode(value),
+                prms[key] = f.Expression(sp.printing.ccode(value),
                                        t=0,
                                        degree=1)
 
@@ -211,17 +221,17 @@ class BoundaryConditionExpression(UserExpression):
 
 
 def recombination_flux(T, c, prms):
-    Kr = prms["Kr_0"]*exp(-prms["E_Kr"]/FESTIM.k_B/T)
+    Kr = prms["Kr_0"]*f.exp(-prms["E_Kr"]/FESTIM.k_B/T)
     return -Kr*c**prms["order"]
 
 
 def dc_imp(T, prms):
     flux = prms["implanted_flux"]
     implantation_depth = prms["implantation_depth"]
-    D = prms["D_0"]*exp(-prms["E_D"]/FESTIM.k_B/T)
+    D = prms["D_0"]*f.exp(-prms["E_D"]/FESTIM.k_B/T)
     value = flux*implantation_depth/D
     if "Kr_0" in prms:
-        Kr = prms["Kr_0"]*exp(-prms["E_Kr"]/FESTIM.k_B/T)
+        Kr = prms["Kr_0"]*f.exp(-prms["E_Kr"]/FESTIM.k_B/T)
         value += (flux/Kr)**0.5
 
     return value
@@ -229,7 +239,7 @@ def dc_imp(T, prms):
 
 def sieverts_law(T, prms):
     S_0, E_S = prms["S_0"], prms["E_S"]
-    S = S_0*exp(-E_S/FESTIM.k_B/T)
+    S = S_0*f.exp(-E_S/FESTIM.k_B/T)
     return S*prms["pressure"]**0.5
 
 
@@ -277,7 +287,7 @@ def apply_boundary_conditions(simulation):
             else:  # if only one component, use subspace
                 funspace = simulation.V.sub(BC_object.component)
             for surface in BC_object.surfaces:
-                bci = DirichletBC(funspace, BC_object.expression,
+                bci = f.DirichletBC(funspace, BC_object.expression,
                                   simulation.surface_markers, surface)
                 bcs.append(bci)
 

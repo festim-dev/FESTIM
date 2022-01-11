@@ -573,7 +573,7 @@ def test_create_bc_expression_dc_custom():
     T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
     expressions = [T]
     # run
-    my_BC = FESTIM.BoundaryCondition(type="dc_custom", surfaces=[1, 0], function=func, foo=1 + 2*FESTIM.t)
+    my_BC = FESTIM.DirichletBC(type="dc_custom", surfaces=[1, 0], function=func, foo=1 + 2*FESTIM.t)
     value_BC = my_BC.create_expression(T)
     expressions += my_BC.sub_expressions
 
@@ -605,7 +605,7 @@ def test_create_form_for_flux_flux_custom():
     expressions = [T, solute]
 
     # run
-    my_BC = FESTIM.BoundaryCondition(type="flux_custom", surfaces=[1, 0], function=func, foo=expr_foo)
+    my_BC = FESTIM.FluxBC(type="flux_custom", surfaces=[1, 0], function=func, foo=expr_foo)
     value_BC = my_BC.create_form_for_flux(T, solute)
 
     # test
