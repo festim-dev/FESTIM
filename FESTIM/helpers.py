@@ -27,7 +27,7 @@ def update_expressions(expressions, t):
 
 
 bc_types = {
-    "dc": ["dc", "solubility", "dc_imp"],
+    "dc": ["dc", "solubility", "dc_imp", "dc_custom"],
     "neumann": ["flux"],
     "robin": ["recomb"]
 }

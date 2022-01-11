@@ -1,4 +1,5 @@
 import FESTIM
+from FESTIM import boundary_conditions
 from FESTIM.boundary_conditions import apply_boundary_conditions, \
     apply_fluxes
 import fenics
@@ -61,6 +62,7 @@ def test_fluxes_chemical_pot():
     S = S_0*fenics.exp(-E_S/k_B/T)
     Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.chemical_pot = True
     my_sim.u, my_sim.v = u, v
     my_sim.ds = fenics.ds
     my_sim.T = T
@@ -184,6 +186,7 @@ def test_apply_boundary_conditions_theta():
     right.mark(sm, 2)
 
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.chemical_pot = True
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
@@ -302,7 +305,7 @@ def test_bc_recomb():
             val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             assert np.isclose(
-                expressions[2](x_, 0.5),
+                expressions[-1](x_, 0.5),
                 float(val_phi*val_R_p/D +
                       (val_phi/K)**0.5))
 
@@ -366,7 +369,7 @@ def test_bc_recomb_instant_recomb():
             val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             assert np.isclose(
-                expressions[2](x_, 0.5),
+                expressions[-1](x_, 0.5),
                 float(val_phi*val_R_p/D))
 
 
@@ -429,6 +432,7 @@ def test_bc_recomb_chemical_pot():
     right.mark(sm, 2)
 
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.chemical_pot = True
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
@@ -572,3 +576,72 @@ def test_sievert_bc_varying_temperature():
     expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/1000)
     bc.apply(u.vector())
     assert u(0) == expected
+
+
+def test_create_bc_expression_dc_custom():
+    """Creates a dc_custom bc and checks create_bc_expression returns
+    the correct expression
+    """
+    # build
+    def func(T, prms):
+        return 2*T + prms["foo"]
+    boundary_condition = {
+        "type": "dc_custom",
+        "function": func,
+        "foo": 1 + 2*FESTIM.t,
+        "surfaces": [1, 0]
+    }
+    T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
+    expressions = [T]
+    # run
+    value_BC = FESTIM.create_bc_expression(boundary_condition, T, expressions)
+
+    # test
+    expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t
+    expected = fenics.Expression(sp.printing.ccode(expected), t=0, degree=1)
+    for t in range(10):
+        expected.t = t
+        for expr in expressions:
+            expr.t = t
+        for x in range(5):
+            assert expected(x) == value_BC(x)
+
+
+def test_create_form_for_flux_flux_custom():
+    """Creates a flux_custom bc and checks
+    create_form_for_flux returns
+    the correct form
+    """
+    # build
+    def func(T, c, prms):
+        return 2*T + c + prms["foo"]
+    expr_foo = 1 + 2*FESTIM.t + FESTIM.x
+    expr_T = 2 + FESTIM.x + FESTIM.t
+    expr_c = FESTIM.x*FESTIM.x
+    boundary_condition = {
+        "type": "flux_custom",
+        "function": func,
+        "foo": expr_foo,
+        "surfaces": [1, 0]
+    }
+    T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
+    solute = fenics.Expression(sp.printing.ccode(expr_c), degree=1, t=0)
+    expressions = [T, solute]
+
+    # run
+    value_BC = FESTIM.create_form_for_flux(T, expressions, solute, boundary_condition)
+
+    # test
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, "P", 1)
+    expected_expr = 2*expr_T + expr_c + expr_foo
+    expected_expr = fenics.Expression(sp.printing.ccode(expected_expr), t=0, degree=1)
+    for t in range(10):
+
+        expected_expr.t = t
+        for expr in expressions:
+            expr.t = t
+        expected = fenics.project(expected_expr, V)
+        computed = fenics.project(value_BC, V)
+        for x in [0, 0.5, 1]:
+            assert computed(x) == pytest.approx(expected(x))

@@ -1,7 +1,6 @@
 import FESTIM
 from fenics import *
 import sympy as sp
-import numpy as np
 
 
 def define_dirichlet_bcs_T(simulation):
@@ -14,23 +13,22 @@ def define_dirichlet_bcs_T(simulation):
         list -- contains fenics.DirichletBC
         list -- contains fenics.Expression to be updated
     """
-    parameters = simulation.parameters
-    V = simulation.V_CG1
-    boundaries = simulation.surface_markers
 
     bcs = []
     expressions = []
-    for bc in parameters["temperature"]["boundary_conditions"]:
+    for bc in simulation.parameters["temperature"]["boundary_conditions"]:
         if bc["type"] == "dc":
-            value = sp.printing.ccode(bc["value"])
-            value = Expression(value, degree=2, t=0)
-            expressions.append(value)
+            expression_bc = sp.printing.ccode(bc["value"])
+            expression_bc = Expression(expression_bc, degree=2, t=0)
+            expressions.append(expression_bc)
             if type(bc["surfaces"]) is list:
                 surfaces = bc["surfaces"]
             else:
                 surfaces = [bc["surfaces"]]
             for surf in surfaces:
-                bci = DirichletBC(V, value, boundaries, surf)
+                bci = DirichletBC(
+                    simulation.V_CG1, expression_bc,
+                    simulation.surface_markers, surf)
                 bcs.append(bci)
     return bcs, expressions
 
@@ -41,10 +39,6 @@ def apply_fluxes(simulation):
 
     Arguments:
 
-
-    Keyword Arguments:
-        S {fenics.UserExpression} -- solubility (default: {None})
-
     Raises:
         NameError: if boundary condition type is unknown
 
@@ -52,52 +46,55 @@ def apply_fluxes(simulation):
         fenics.Form() -- formulation for BCs
         list -- contains all the fenics.Expression() to be updated
     """
-    parameters = simulation.parameters
-    u = simulation.u
-    v = simulation.v
-    ds = simulation.ds
-    T = simulation.T
-    S = simulation.S
 
     expressions = []
-    solutions = split(u)
-    testfunctions = split(v)
-    solute = solutions[0]
-    test_solute = testfunctions[0]
+    solutions = split(simulation.u)
+    test_solute = split(simulation.v)[0]
     F = 0
-    k_B = FESTIM.k_B
-    boundary_conditions = parameters["boundary_conditions"]
-    conservation_chemic_pot = False
-    if S is not None:
-        for mat in parameters["materials"]:
-            if "S_0" in mat.keys() or "E_S" in mat.keys():
-                conservation_chemic_pot = True
-        if conservation_chemic_pot:
-            solute = solute*S
 
-    for bc in boundary_conditions:
+    if simulation.chemical_pot:
+        solute = solutions[0]*simulation.S
+    else:
+        solute = solutions[0]
+
+    for bc in simulation.parameters["boundary_conditions"]:
         if bc["type"] not in FESTIM.helpers.bc_types["dc"]:
-            if bc["type"] not in FESTIM.helpers.bc_types["neumann"] and \
-               bc["type"] not in FESTIM.helpers.bc_types["robin"]:
-
-                raise NameError(
-                    "Unknown boundary condition type : " + bc["type"])
-            if bc["type"] == "flux":
-                flux = sp.printing.ccode(bc["value"])
-                flux = Expression(flux, t=0,
-                                  degree=2)
-                expressions.append(flux)
-            elif bc["type"] == "recomb":
-                Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/k_B/T)
-                flux = -Kr*solute**bc["order"]
+            check_flux_bc_type(bc)
+            flux = create_form_for_flux(simulation.T, expressions, solute, bc)
 
             if type(bc['surfaces']) is not list:
                 surfaces = [bc['surfaces']]
             else:
                 surfaces = bc['surfaces']
             for surf in surfaces:
-                F += -test_solute*flux*ds(surf)
+                F += -test_solute*flux*simulation.ds(surf)
     return F, expressions
+
+
+def create_form_for_flux(T, expressions, solute, bc):
+    if bc["type"] == "flux":
+        flux = sp.printing.ccode(bc["value"])
+        flux = Expression(flux, t=0, degree=2)
+        expressions.append(flux)
+    elif bc["type"] == "recomb":
+        Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/FESTIM.k_B/T)
+        flux = -Kr*solute**bc["order"]
+    elif bc["type"] == "flux_custom":
+        ignored_keys = ["type", "surfaces", "function"]
+        prms = {}
+        for key, val in bc.items():
+            if key not in ignored_keys:
+                prms[key] = Expression(sp.printing.ccode(val), t=0, degree=1)
+        flux = bc["function"](T, solute, prms)
+        expressions += [expression for expression in prms.values()]
+    return flux
+
+
+def check_flux_bc_type(bc):
+    if bc["type"] not in FESTIM.helpers.bc_types["neumann"] and \
+               bc["type"] not in FESTIM.helpers.bc_types["robin"]:
+        raise NameError(
+                    "Unknown boundary condition type : " + bc["type"])
 
 
 class BoundaryConditionTheta(UserExpression):
@@ -107,7 +104,7 @@ class BoundaryConditionTheta(UserExpression):
     Args:
         UserExpression (fenics.UserExpression):
     """
-    def __init__(self, bci, mesh, materials, vm, T, **kwargs):
+    def __init__(self, bci, materials, vm, T, **kwargs):
         """initialisation
 
         Args:
@@ -119,8 +116,8 @@ class BoundaryConditionTheta(UserExpression):
         """
         super().__init__(kwargs)
         self._bci = bci
-        self._mesh = mesh
         self._vm = vm
+        self._mesh = vm.mesh()
         self._T = T
         self._materials = materials
 
@@ -137,79 +134,58 @@ class BoundaryConditionTheta(UserExpression):
         return ()
 
 
-class BoundaryConditionRecomb(UserExpression):
-    """Creates an Expression for converting implanted flux in surface
-    concentration
+class BoundaryConditionExpression(UserExpression):
+    def __init__(self, T, prms, eval_function):
 
-    Args:
-        UserExpression (fenics.UserExpression): value of surface concentration
-    """
-    def __init__(self, phi, R_p, Kr_0, E_Kr, D_0, E_D, T, **kwargs):
-        """initialisation
+        super().__init__()
+        # create Expressions or Constant for all parameters
+        for key, value in prms.items():
+            if isinstance(value, (int, float)):
+                prms[key] = Constant(value)
+            else:
+                prms[key] = Expression(sp.printing.ccode(value),
+                                       t=0,
+                                       degree=1)
 
-        Args:
-            phi (float): implanted particle flux
-            R_p (float): implantation depth
-            Kr_0 (float): Recombination coefficient pre-exponential factor
-            E_Kr (float): Recombination energy
-            D_0 (float): Diffusion coefficient pre-exponential factor
-            E_D (float): Diffusion energy
-            T (fenics.Function(), fenics.Expression()): Temperature
-        """
-        super().__init__(kwargs)
-        self._phi = phi
-        self._R_p = R_p
-
-        self._D_0 = D_0
-        self._E_D = E_D
-        self._Kr_0 = Kr_0
-        self._E_Kr = E_Kr
-
+        self.prms = prms
         self._T = T
+        self.eval_function = eval_function
 
     def eval(self, value, x):
-        D = self._D_0*exp(-self._E_D/FESTIM.k_B/self._T(x))
-        val = self._phi(x)*self._R_p(x)/D
-        if self._Kr_0 is not None:  # non-instantaneous recomb
-            K = self._Kr_0*exp(-self._E_Kr/FESTIM.k_B/self._T(x))
-            val += (self._phi(x)/K)**0.5
-        value[0] = val
+        # find local value of parameters
+        new_prms = {}
+        for key, prm_val in self.prms.items():
+            new_prms[key] = prm_val(x)
+
+        # evaluate at local point
+        value[0] = self.eval_function(self._T(x), new_prms)
 
     def value_shape(self):
         return ()
 
 
-class BoundaryConditionSolubility(UserExpression):
-    """Class based on UserExpression to create a Sievert law boundary
-    condition where c = sqrt(P)*S(T)
+def dc_imp(T, prms):
+    flux = prms["implanted_flux"]
+    implantation_depth = prms["implantation_depth"]
+    D = prms["D_0"]*exp(-prms["E_D"]/FESTIM.k_B/T)
+    value = flux*implantation_depth/D
+    if "Kr_0" in prms:
+        Kr = prms["Kr_0"]*exp(-prms["E_Kr"]/FESTIM.k_B/T)
+        value += (flux/Kr)**0.5
 
-    Args:
-        UserExpression (fenics.UserExpression):
-    """
-    def __init__(self, S_0, E_S, pressure, T, **kwargs):
-        """initialisation
+    return value
 
-        Args:
-            S_0 (float): Solubility pre activation factor (m^-3 Pa^-0.5)
-            E_S (float): Solubility activation energy (eV)
-            pressure (fenics.Expression): Hydrogen pressure (Pa)
-            T (fenics.Function): Temperature (K)
-        """
-        super().__init__(kwargs)
-        self._pressure = pressure
 
-        self._S_0 = S_0
-        self._E_S = E_S
+def sieverts_law(T, prms):
+    S_0, E_S = prms["S_0"], prms["E_S"]
+    S = S_0*exp(-E_S/FESTIM.k_B/T)
+    return S*prms["pressure"]**0.5
 
-        self._T = T
 
-    def eval(self, value, x):
-        S = self._S_0*exp(-self._E_S/FESTIM.k_B/self._T(x))
-        val = S*self._pressure(x)**0.5
-        value[0] = val
-
-    def value_shape(self):
-        return ()
+type_to_function = {
+    "solubility": sieverts_law,
+    "dc_imp": dc_imp,
+}
 
 
 def apply_boundary_conditions(simulation):
@@ -226,85 +202,81 @@ def apply_boundary_conditions(simulation):
         list -- contains fenics DirichletBC
         list -- contains the fenics.Expression() to be updated
     """
-    parameters = simulation.parameters
-    V = simulation.V
-    boundary_conditions = parameters["boundary_conditions"]
-    volume_markers = simulation.volume_markers
-    surface_markers = simulation.surface_markers
-    T = simulation.T
 
     bcs = list()
     expressions = list()
 
-    for BC in boundary_conditions:
-        if "type" in BC.keys():
-            type_BC = BC["type"]
-        else:
-            raise KeyError("Missing boundary condition type key")
-        if type_BC == "dc":
-            value_BC = sp.printing.ccode(BC['value'])
-            value_BC = Expression(value_BC, t=0, degree=4)
-        elif type_BC == "solubility":
-            # create a time dependent expression for pressure
-            pressure = Expression(sp.printing.ccode(BC["pressure"]), t=0,
-                                  degree=2)
-            expressions.append(pressure)  # add it to the list of exprs
+    for BC in simulation.parameters["boundary_conditions"]:
+        check_type(BC)
 
-            # create a custom expression
-            value_BC = BoundaryConditionSolubility(
-                BC["S_0"], BC["E_S"],
-                pressure, T)
-        elif type_BC == "dc_imp":
-            # Create 2 Expressions for phi and R_p
-            phi = Expression(sp.printing.ccode(BC["implanted_flux"]),
-                             t=0,
-                             degree=1)
-            R_p = Expression(sp.printing.ccode(BC["implantation_depth"]),
-                             t=0,
-                             degree=1)
-            expressions.append(phi)  # add to the expressions to be updated
-            expressions.append(R_p)
-            D_0, E_D = BC["D_0"], BC["E_D"]
-            Kr_0, E_Kr = None, None  # instantaneous recomb
-            if "Kr_0" in BC.keys() and "E_Kr" in BC.keys():
-                Kr_0, E_Kr = BC["Kr_0"], BC["E_Kr"]  # non-instantaneous recomb
-            value_BC = BoundaryConditionRecomb(phi, R_p, Kr_0, E_Kr, D_0, E_D, T)
-
-        if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
-           BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
-           BC["type"] not in FESTIM.helpers.bc_types["dc"]:
-
-            raise NameError("Unknown boundary condition type : " + BC["type"])
-        if type_BC in FESTIM.helpers.bc_types["dc"]:
+        if BC["type"] in FESTIM.helpers.bc_types["dc"]:
+            expression_BC = create_bc_expression(BC, simulation.T, expressions)
+            # By default, component is solute (ie. 0)
+            component = 0
             if "component" in BC.keys():
                 # Fetch the component of the BC
                 component = BC["component"]
-            else:
-                # By default, component is solute (ie. 0)
-                component = 0
-            conservation_chemic_pot = False
-            for mat in parameters["materials"]:
-                if "S_0" in mat.keys():
-                    conservation_chemic_pot = True
-            if component == 0 and conservation_chemic_pot is True:
-                # Store the non modified BC to be updated
-                expressions.append(value_BC)
-                # create modified BC based on solubility
-                value_BC = BoundaryConditionTheta(
-                    value_BC, volume_markers.mesh(), parameters["materials"],
-                    volume_markers, T)
-            expressions.append(value_BC)
 
+            if component == 0 and simulation.chemical_pot:
+                expression_BC = normalise_expression_by_S(
+                    simulation, expressions, expression_BC)
+
+            # add value_BC to expressions for update
+            expressions.append(expression_BC)
+
+            # create a DirichletBC and add it to bcs
             surfaces = BC['surfaces']
             if type(surfaces) is not list:
                 surfaces = [surfaces]
-            if V.num_sub_spaces() == 0:
-                funspace = V
+            if simulation.V.num_sub_spaces() == 0:
+                funspace = simulation.V
             else:  # if only one component, use subspace
-                funspace = V.sub(component)
+                funspace = simulation.V.sub(component)
             for surface in surfaces:
-                bci = DirichletBC(funspace, value_BC,
-                                  surface_markers, surface)
+                bci = DirichletBC(funspace, expression_BC,
+                                  simulation.surface_markers, surface)
                 bcs.append(bci)
 
     return bcs, expressions
+
+
+def normalise_expression_by_S(simulation, expressions, expression_BC):
+    # Store the non modified BC to be updated
+    expressions.append(expression_BC)
+    # create modified BC based on solubility
+    expression_BC = BoundaryConditionTheta(
+                    expression_BC,
+                    simulation.parameters["materials"],
+                    simulation.volume_markers, simulation.T)
+
+    return expression_BC
+
+
+def check_type(BC):
+    if "type" in BC.keys():
+        if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
+               BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
+               BC["type"] not in FESTIM.helpers.bc_types["dc"]:
+            raise NameError(
+                    "Unknown boundary condition type : " + BC["type"])
+    else:
+        raise KeyError("Missing boundary condition type key")
+
+
+def create_bc_expression(BC, T, expressions):
+
+    if BC["type"] == "dc":
+        value_BC = sp.printing.ccode(BC['value'])
+        value_BC = Expression(value_BC, t=0, degree=4)
+    else:
+        if BC["type"] == "dc_custom":
+            function = BC["function"]
+        else:
+            function = type_to_function[BC["type"]]
+
+        ignored_keys = ["type", "surfaces", "function", "component"]
+
+        prms = {key: val for key, val in BC.items() if key not in ignored_keys}
+        value_BC = BoundaryConditionExpression(T, prms, eval_function=function)
+        expressions += [value_BC.prms[key] for key in prms.keys()]
+    return value_BC
