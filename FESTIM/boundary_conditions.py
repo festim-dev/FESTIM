@@ -137,6 +137,36 @@ class BoundaryConditionTheta(UserExpression):
         return ()
 
 
+class BoundaryCondition(UserExpression):
+    def __init__(self, T, prms, eval_function):
+
+        super().__init__()
+        # create Expressions or Constant for all parameters
+        for key, value in prms.items():
+            if isinstance(value, (int, float)):
+                prms[key] = Constant(value)
+            else:
+                prms[key] = Expression(sp.printing.ccode(value),
+                                       t=0,
+                                       degree=1)
+
+        self.prms = prms
+        self._T = T
+        self.eval_function = eval_function
+
+    def eval(self, value, x):
+        # find local value of parameters
+        new_prms = {}
+        for key, prm_val in self.prms.items():
+            new_prms[key] = prm_val(x)
+
+        # evaluate at local point
+        value[0] = self.eval_function(self._T(x), new_prms)
+
+    def value_shape(self):
+        return ()
+
+
 class BoundaryConditionRecomb(UserExpression):
     """Creates an Expression for converting implanted flux in surface
     concentration
@@ -212,6 +242,18 @@ class BoundaryConditionSolubility(UserExpression):
         return ()
 
 
+def dc_imp(T, prms):
+    flux = prms["implanted_flux"]
+    implantation_depth = prms["implantation_depth"]
+    D = prms["D_0"]*exp(-prms["E_D"]/FESTIM.k_B/T)
+    value = flux*implantation_depth/D
+    if "Kr_0" in prms:
+        Kr = prms["Kr_0"]*exp(-prms["E_Kr"]/FESTIM.k_B/T)
+        value += (flux/Kr)**0.5
+
+    return value
+
+
 def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
@@ -255,20 +297,19 @@ def apply_boundary_conditions(simulation):
                 BC["S_0"], BC["E_S"],
                 pressure, T)
         elif type_BC == "dc_imp":
-            # Create 2 Expressions for phi and R_p
-            phi = Expression(sp.printing.ccode(BC["implanted_flux"]),
-                             t=0,
-                             degree=1)
-            R_p = Expression(sp.printing.ccode(BC["implantation_depth"]),
-                             t=0,
-                             degree=1)
-            expressions.append(phi)  # add to the expressions to be updated
-            expressions.append(R_p)
-            D_0, E_D = BC["D_0"], BC["E_D"]
-            Kr_0, E_Kr = None, None  # instantaneous recomb
+            prms = {
+                "implanted_flux": BC["implanted_flux"],
+                "implantation_depth": BC["implantation_depth"],
+                "D_0": BC["D_0"],
+                "E_D": BC["E_D"],
+            }
             if "Kr_0" in BC.keys() and "E_Kr" in BC.keys():
-                Kr_0, E_Kr = BC["Kr_0"], BC["E_Kr"]  # non-instantaneous recomb
-            value_BC = BoundaryConditionRecomb(phi, R_p, Kr_0, E_Kr, D_0, E_D, T)
+                prms["Kr_0"] = BC["Kr_0"]
+                prms["E_Kr"] = BC["E_Kr"]
+
+            value_BC = BoundaryCondition(T, prms, eval_function=dc_imp)
+            expressions.append(value_BC.prms["implanted_flux"])
+            expressions.append(value_BC.prms["implantation_depth"])
 
         if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
            BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
