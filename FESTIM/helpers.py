@@ -28,8 +28,14 @@ def update_expressions(expressions, t):
 
 bc_types = {
     "dc": ["dc", "solubility", "dc_imp", "dc_custom"],
-    "neumann": ["flux"],
-    "robin": ["recomb"]
+    "neumann": ["flux", "flux_custom"],
+    "robin": ["recomb", "flux_custom"]
+}
+
+T_bc_types = {
+    "dc": ["dc", "dc_custom"],
+    "neumann": ["flux", "flux_custom"],
+    "robin": ["flux_custom", "convective_flux"]
 }
 
 quantity_types = [

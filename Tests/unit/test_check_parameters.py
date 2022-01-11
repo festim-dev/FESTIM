@@ -32,7 +32,8 @@ def test_materials_attribute():
         },
     ]
     my_sim = FESTIM.Simulation(
-        {"materials": materials,
+        {   "boundary_conditions": [],
+            "materials": materials,
          "temperature": {"type": "solve_transient"}})
     my_sim.define_materials()
     assert my_sim.materials == materials
@@ -66,7 +67,8 @@ def test_keys_dont_match():
         },
     ]
     my_sim = FESTIM.Simulation(
-        {"materials": materials,
+        {"boundary_conditions": [],
+         "materials": materials,
          "temperature": {"type": "solve_transient"}})
     with pytest.raises(ValueError, match=r"keys are not the same"):
         my_sim.define_materials()
@@ -95,7 +97,8 @@ def test_keys_dont_match():
         },
     ]
     my_sim = FESTIM.Simulation(
-        {"materials": materials,
+        {"boundary_conditions": [],
+         "materials": materials,
          "temperature": {"type": "solve_transient"}})
     with pytest.raises(ValueError, match=r"keys are not the same"):
         my_sim.define_materials()
@@ -119,7 +122,8 @@ def test_unknown_keys():
         },
     ]
     my_sim = FESTIM.Simulation(
-        {"materials": materials,
+        {"boundary_conditions": [],
+         "materials": materials,
          "temperature": {"type": "solve_transient"}})
     with pytest.warns(
             UserWarning, match=r"coucou key in materials is unknown"):
@@ -142,7 +146,8 @@ def test_unused_keys():
         },
     ]
     my_sim = FESTIM.Simulation(
-        {"materials": materials,
+        {"boundary_conditions": [],
+         "materials": materials,
          "temperature": {"type": "expression"},
          })
     with pytest.warns(
@@ -172,7 +177,8 @@ def test_unused_thermal_cond():
         },
     ]
     my_sim = FESTIM.Simulation(
-        {"materials": materials,
+        {"boundary_conditions": [],
+         "materials": materials,
          })
     my_sim.parameters["temperature"] = {"type": "expression"}
     my_sim.parameters["exports"] = {}
@@ -218,7 +224,8 @@ def test_different_ids_in_materials():
         },
     ]
     my_sim = FESTIM.Simulation(
-        {"materials": materials,
+        {"boundary_conditions": [],
+         "materials": materials,
          "temperature": {"type": "expression"}})
     with pytest.raises(ValueError, match=r"Some materials have the same id"):
         my_sim.define_materials()

@@ -35,6 +35,7 @@ def test_run_post_processing(tmpdir):
                 "thermal_cond": 1,
                 "id": 2
                 }],
+        "boundary_conditions": [],
         "traps": [{}, {}],
         "exports": {
             "xdmf": {
@@ -138,6 +139,7 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
                 "borders": [0, 0.5],
                 "E_D": 4,
@@ -245,6 +247,7 @@ def test_run_post_processing_flux(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
                 "borders": [0, 0.5],
                 "E_D": 0.4,
@@ -291,8 +294,6 @@ def test_run_post_processing_flux(tmpdir):
 
     t = 0
     dt = 1
-    append = True
-    markers = [volume_markers, surface_markers]
 
     # files = define_xdmf_files(parameters["exports"])
     tab = [header_derived_quantities(parameters)]
@@ -331,6 +332,7 @@ def test_performance_xdmf_export_every_N_iterations(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
                 "borders": [0, 0.5],
                 "E_D": 1,
@@ -398,6 +400,7 @@ def test_performance_xdmf_export_only_last_timestep(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
                 "borders": [0, 0.5],
                 "E_D": 1,
@@ -444,6 +447,7 @@ def test_performance_xdmf_export_only_last_timestep(tmpdir):
 def test_derived_quantities_global():
 
     parameters = {
+        "boundary_conditions": [],
         "mesh_parameters": {
             "initial_number_of_cells": 10,
             "size": 1,
