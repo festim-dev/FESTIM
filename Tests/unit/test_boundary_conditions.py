@@ -592,7 +592,7 @@ def test_create_bc_expression_dc_custom():
     # run
     my_BC = FESTIM.BoundaryCondition(type="dc_custom", surfaces=[1, 0], function=func, prms={"foo": 1 + 2*FESTIM.t})
     value_BC = my_BC.create_expression(T)
-    expressions += my_BC.expressions
+    expressions += my_BC.sub_expressions
 
     # test
     expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t

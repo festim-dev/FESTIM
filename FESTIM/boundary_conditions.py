@@ -17,7 +17,7 @@ class BoundaryCondition:
         self.component = component
         self.prms = prms
         self.expression = None
-        self.expressions = []
+        self.sub_expressions = []
 
     def check_type(self):
         print(self.type)
@@ -42,20 +42,20 @@ class BoundaryCondition:
 
             prms = {key: val for key, val in self.prms.items() if key not in ignored_keys}
             value_BC = BoundaryConditionExpression(T, prms, eval_function=function)
-            self.expressions = [value_BC.prms[key] for key in prms.keys()]
+            self.sub_expressions = [value_BC.prms[key] for key in prms.keys()]
 
         self.expression = value_BC
         return value_BC
 
     def normalise_by_solubility(self, simulation):
         # Store the non modified BC to be updated
-        self.expressions.append(self.expression)
+        self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
         expression_BC = BoundaryConditionTheta(
                             self.expression,
                             simulation.parameters["materials"],
                             simulation.volume_markers, simulation.T)
-
+        self.expression = expression_BC
         return expression_BC
 
 
@@ -289,17 +289,17 @@ def apply_boundary_conditions(simulation):
 
     #  for BC_object in simulation.boundary_conditions:
     for BC_object in create_boundarycondition_objects(simulation):
-        expression_BC = BC_object.create_expression(simulation.T)
-        expressions += BC_object.expressions
+        BC_object.create_expression(simulation.T)
 
         if BC_object.type in FESTIM.helpers.bc_types["dc"]:
 
             if BC_object.component == 0 and simulation.chemical_pot:
-                expression_BC = BC_object.normalise_by_solubility(simulation)
-                expressions.append(BC_object.expressions[-1])
+                BC_object.normalise_by_solubility(simulation)
 
+            # TODO: one day, we will get rid of this big expressions list
+            expressions += BC_object.sub_expressions
             # add value_BC to expressions for update
-            expressions.append(expression_BC)
+            expressions.append(BC_object.expression)
 
             # create a DirichletBC and add it to bcs
             if simulation.V.num_sub_spaces() == 0:
@@ -307,7 +307,7 @@ def apply_boundary_conditions(simulation):
             else:  # if only one component, use subspace
                 funspace = simulation.V.sub(BC_object.component)
             for surface in BC_object.surfaces:
-                bci = DirichletBC(funspace, expression_BC,
+                bci = DirichletBC(funspace, BC_object.expression,
                                   simulation.surface_markers, surface)
                 bcs.append(bci)
 
