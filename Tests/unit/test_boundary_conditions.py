@@ -1,4 +1,5 @@
 import FESTIM
+from FESTIM import boundary_conditions
 from FESTIM.boundary_conditions import apply_boundary_conditions, \
     apply_fluxes
 import fenics
@@ -575,3 +576,32 @@ def test_sievert_bc_varying_temperature():
     expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/1000)
     bc.apply(u.vector())
     assert u(0) == expected
+
+
+def test_create_bc_expression_dc_custom():
+    """Creates a dc_custom function and checks create_bc_expression returns
+    the correct expression
+    """
+    # build
+    def func(T, prms):
+        return 2*T + prms["foo"]
+    boundary_condition = {
+        "type": "dc_custom",
+        "function": func,
+        "foo": 1 + 2*FESTIM.t,
+        "surfaces": [1, 0]
+    }
+    T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
+    expressions = [T]
+    # run
+    value_BC = FESTIM.create_bc_expression(boundary_condition, T, expressions)
+
+    # test
+    expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t
+    expected = fenics.Expression(sp.printing.ccode(expected), t=0, degree=1)
+    for t in range(10):
+        expected.t = t
+        for expr in expressions:
+            expr.t = t
+        for x in range(5):
+            assert expected(x) == value_BC(x)
