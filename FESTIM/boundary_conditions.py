@@ -20,10 +20,13 @@ class BoundaryCondition:
         self.sub_expressions = []
 
     def check_type(self):
-        print(self.type)
-        if self.type not in FESTIM.helpers.bc_types["neumann"] and \
-           self.type not in FESTIM.helpers.bc_types["robin"] and \
-           self.type not in FESTIM.helpers.bc_types["dc"]:
+        possible_types = FESTIM.helpers.bc_types["neumann"] + \
+            FESTIM.helpers.bc_types["robin"] + \
+            FESTIM.helpers.bc_types["dc"]
+        possible_types += FESTIM.helpers.T_bc_types["neumann"] + \
+            FESTIM.helpers.T_bc_types["robin"] + \
+            FESTIM.helpers.T_bc_types["dc"]
+        if possible_types:
             raise NameError(
                     "Unknown boundary condition type : " + self.type)
 
