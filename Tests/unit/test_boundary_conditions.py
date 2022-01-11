@@ -228,19 +228,9 @@ def test_apply_boundary_conditions_fail():
             "surfaces": [0]
         }
     ]
-    mesh = fenics.UnitIntervalMesh(10)
-
-    my_sim = FESTIM.Simulation({"boundary_conditions": [{}]})
-    my_sim.V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
-    my_sim.volume_markers = "foo"
-    my_sim.surface_markers = "foo"
-    my_sim.T = fenics.Expression("300", degree=0)
-    with pytest.raises(KeyError, match=r'Missing boundary condition type key'):
-        bcs, expressions = apply_boundary_conditions(my_sim)
 
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        my_sim.parameters["boundary_conditions"] = boundary_conditions
-        bcs, expressions = apply_boundary_conditions(my_sim)
+        FESTIM.Simulation({"boundary_conditions": boundary_conditions})
 
 
 def test_bc_recomb():
@@ -590,7 +580,7 @@ def test_create_bc_expression_dc_custom():
     T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
     expressions = [T]
     # run
-    my_BC = FESTIM.BoundaryCondition(type="dc_custom", surfaces=[1, 0], function=func, prms={"foo": 1 + 2*FESTIM.t})
+    my_BC = FESTIM.BoundaryCondition(type="dc_custom", surfaces=[1, 0], function=func, foo=1 + 2*FESTIM.t)
     value_BC = my_BC.create_expression(T)
     expressions += my_BC.sub_expressions
 

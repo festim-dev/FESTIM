@@ -4,7 +4,7 @@ import sympy as sp
 
 
 class BoundaryCondition:
-    def __init__(self, type, surfaces, value=None, function=None, component=0, prms=None) -> None:
+    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
         self.type = type
         self.check_type()
 
@@ -15,7 +15,7 @@ class BoundaryCondition:
         self.value = value
         self.function = function
         self.component = component
-        self.prms = prms
+        self.prms = kwargs
         self.expression = None
         self.sub_expressions = []
 
@@ -244,31 +244,6 @@ type_to_function = {
 }
 
 
-def create_boundarycondition_objects(simulation):
-    BC_objects = []
-    for BC in simulation.parameters["boundary_conditions"]:
-        if "type" not in BC:
-            raise KeyError("Missing boundary condition type key")
-        # By default, component is solute (ie. 0)
-        component = 0
-        if "component" in BC:
-            # Fetch the component of the BC
-            component = BC["component"]
-        if "value" in BC:
-            value = BC["value"]
-        else:
-            value = None
-        if "function" in BC:
-            function = BC["function"]
-        else:
-            function = None
-        prms = {key: val for key, val in BC.items() if key not in ["component", "value", "function", "surfaces"]}
-        my_BC = BoundaryCondition(BC["type"], BC["surfaces"], value=value, function=function, component=component, prms=prms)
-        BC_objects.append(my_BC)
-
-    return BC_objects
-
-
 def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
@@ -288,7 +263,7 @@ def apply_boundary_conditions(simulation):
     expressions = list()
 
     #  for BC_object in simulation.boundary_conditions:
-    for BC_object in create_boundarycondition_objects(simulation):
+    for BC_object in simulation.boundary_conditions:
         BC_object.create_expression(simulation.T)
 
         if BC_object.type in FESTIM.helpers.bc_types["dc"]:

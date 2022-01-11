@@ -25,6 +25,15 @@ class Simulation():
         self.J = None
 
         self.soret = False
+        self.create_boundarycondition_objects()
+
+    def create_boundarycondition_objects(self):
+        BC_objects = []
+        for BC in self.parameters["boundary_conditions"]:
+            my_BC = FESTIM.BoundaryCondition(**BC)
+            BC_objects.append(my_BC)
+        self.boundary_conditions = BC_objects
+        return BC_objects
 
     def initialise(self):
         # Export parameters
