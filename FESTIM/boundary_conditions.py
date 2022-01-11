@@ -279,4 +279,9 @@ def create_bc_expression(BC, T, expressions):
         value_BC = BoundaryConditionExpression(T, prms, eval_function=dc_imp)
         expressions.append(value_BC.prms["implanted_flux"])
         expressions.append(value_BC.prms["implantation_depth"])
+    elif BC["type"] == "dc_custom":
+        ignored_keys = ["type", "surfaces", "function"]
+        prms = {key: val for key, val in BC.items() if key not in ignored_keys}
+        value_BC = BoundaryConditionExpression(T, prms, eval_function=BC["function"])
+        expressions += [value_BC.prms[key] for key in prms.keys()]
     return value_BC
