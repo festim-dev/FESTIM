@@ -167,39 +167,6 @@ class BoundaryCondition(UserExpression):
         return ()
 
 
-class BoundaryConditionSolubility(UserExpression):
-    """Class based on UserExpression to create a Sievert law boundary
-    condition where c = sqrt(P)*S(T)
-
-    Args:
-        UserExpression (fenics.UserExpression):
-    """
-    def __init__(self, S_0, E_S, pressure, T, **kwargs):
-        """initialisation
-
-        Args:
-            S_0 (float): Solubility pre activation factor (m^-3 Pa^-0.5)
-            E_S (float): Solubility activation energy (eV)
-            pressure (fenics.Expression): Hydrogen pressure (Pa)
-            T (fenics.Function): Temperature (K)
-        """
-        super().__init__(kwargs)
-        self._pressure = pressure
-
-        self._S_0 = S_0
-        self._E_S = E_S
-
-        self._T = T
-
-    def eval(self, value, x):
-        S = self._S_0*exp(-self._E_S/FESTIM.k_B/self._T(x))
-        val = S*self._pressure(x)**0.5
-        value[0] = val
-
-    def value_shape(self):
-        return ()
-
-
 def dc_imp(T, prms):
     flux = prms["implanted_flux"]
     implantation_depth = prms["implantation_depth"]
@@ -210,6 +177,12 @@ def dc_imp(T, prms):
         value += (flux/Kr)**0.5
 
     return value
+
+
+def sieverts_law(T, prms):
+    S_0, E_S = prms["S_0"], prms["E_S"]
+    S = S_0*exp(-E_S/FESTIM.k_B/T)
+    return S*prms["pressure"]**0.5
 
 
 def apply_boundary_conditions(simulation):
@@ -245,15 +218,17 @@ def apply_boundary_conditions(simulation):
             value_BC = sp.printing.ccode(BC['value'])
             value_BC = Expression(value_BC, t=0, degree=4)
         elif type_BC == "solubility":
-            # create a time dependent expression for pressure
-            pressure = Expression(sp.printing.ccode(BC["pressure"]), t=0,
-                                  degree=2)
-            expressions.append(pressure)  # add it to the list of exprs
+            prms = {
+                "pressure": BC["pressure"],
+                "S_0": BC["S_0"],
+                "E_S": BC["E_S"],
+            }
 
             # create a custom expression
-            value_BC = BoundaryConditionSolubility(
-                BC["S_0"], BC["E_S"],
-                pressure, T)
+            value_BC = BoundaryCondition(T, prms, eval_function=sieverts_law)
+            expressions.append(value_BC.prms["pressure"])
+            expressions.append(value_BC.prms["S_0"])
+            expressions.append(value_BC.prms["E_S"])
         elif type_BC == "dc_imp":
             prms = {
                 "implanted_flux": BC["implanted_flux"],
