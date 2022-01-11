@@ -31,6 +31,7 @@ def test_initialisation_from_xdmf(tmpdir):
                            append=True)
 
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": str(Path(file1)),
@@ -62,6 +63,7 @@ def test_fail_initialisation_from_xdmf():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
 
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": "Initial solutions/u_1out.xdmf",
@@ -82,6 +84,7 @@ def test_fail_initialisation_from_xdmf():
         my_sim.initialise_concentrations()
 
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": "Initial solutions/u_1out.xdmf",
@@ -118,6 +121,7 @@ def test_initialisation_with_expression():
     fenics.assign(u.sub(1), ini_u)
 
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": 1+FESTIM.x + FESTIM.y,
@@ -155,6 +159,7 @@ def test_initialisation_with_expression_chemical_pot():
     fenics.assign(u.sub(1), ini_u)
 
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": 1+FESTIM.x + FESTIM.y,
@@ -184,7 +189,8 @@ def test_initialisation_default():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-    my_sim = FESTIM.Simulation({"initial_conditions": []})
+    my_sim = FESTIM.Simulation(
+        {"boundary_conditions": [], "initial_conditions": []})
     my_sim.V = V
     my_sim.initialise_concentrations()
     w = my_sim.u_n
@@ -203,6 +209,7 @@ def test_initialisation_solute_only():
     ini_u = fenics.Expression("1 + x[0] + x[1]", degree=1)
     u = fenics.interpolate(ini_u, V)
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": 1+FESTIM.x + FESTIM.y,
@@ -231,6 +238,7 @@ def test_initialisation_no_component():
     fenics.assign(u.sub(0), ini_u)
 
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": 1+FESTIM.x + FESTIM.y,
@@ -253,6 +261,7 @@ def test_initialisation_duplicates():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 3)
 
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": 1+FESTIM.x + FESTIM.y,
