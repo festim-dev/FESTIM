@@ -182,6 +182,12 @@ def sieverts_law(T, prms):
     return S*prms["pressure"]**0.5
 
 
+type_to_function = {
+    "solubility": sieverts_law,
+    "dc_imp": dc_imp,
+}
+
+
 def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
@@ -258,21 +264,19 @@ def check_type(BC):
 
 
 def create_bc_expression(BC, T, expressions):
-    ignored_keys = ["type", "surfaces", "function", "component"]
 
     if BC["type"] == "dc":
         value_BC = sp.printing.ccode(BC['value'])
         value_BC = Expression(value_BC, t=0, degree=4)
-    elif BC["type"] == "solubility":
+    else:
+        if BC["type"] == "dc_custom":
+            function = BC["function"]
+        else:
+            function = type_to_function[BC["type"]]
+
+        ignored_keys = ["type", "surfaces", "function", "component"]
+
         prms = {key: val for key, val in BC.items() if key not in ignored_keys}
-        value_BC = BoundaryConditionExpression(T, prms, eval_function=sieverts_law)
-        expressions += [value_BC.prms[key] for key in prms.keys()]
-    elif BC["type"] == "dc_imp":
-        prms = {key: val for key, val in BC.items() if key not in ignored_keys}
-        value_BC = BoundaryConditionExpression(T, prms, eval_function=dc_imp)
-        expressions += [value_BC.prms[key] for key in prms.keys()]
-    elif BC["type"] == "dc_custom":
-        prms = {key: val for key, val in BC.items() if key not in ignored_keys}
-        value_BC = BoundaryConditionExpression(T, prms, eval_function=BC["function"])
+        value_BC = BoundaryConditionExpression(T, prms, eval_function=function)
         expressions += [value_BC.prms[key] for key in prms.keys()]
     return value_BC
