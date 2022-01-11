@@ -579,7 +579,7 @@ def test_sievert_bc_varying_temperature():
 
 
 def test_create_bc_expression_dc_custom():
-    """Creates a dc_custom function and checks create_bc_expression returns
+    """Creates a dc_custom bc and checks create_bc_expression returns
     the correct expression
     """
     # build
@@ -605,3 +605,43 @@ def test_create_bc_expression_dc_custom():
             expr.t = t
         for x in range(5):
             assert expected(x) == value_BC(x)
+
+
+def test_create_form_for_flux_flux_custom():
+    """Creates a flux_custom bc and checks
+    create_form_for_flux returns
+    the correct form
+    """
+    # build
+    def func(T, c, prms):
+        return 2*T + c + prms["foo"]
+    expr_foo = 1 + 2*FESTIM.t + FESTIM.x
+    expr_T = 2 + FESTIM.x + FESTIM.t
+    expr_c = FESTIM.x*FESTIM.x
+    boundary_condition = {
+        "type": "flux_custom",
+        "function": func,
+        "foo": expr_foo,
+        "surfaces": [1, 0]
+    }
+    T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
+    solute = fenics.Expression(sp.printing.ccode(expr_c), degree=1, t=0)
+    expressions = [T, solute]
+
+    # run
+    value_BC = FESTIM.create_form_for_flux(T, expressions, solute, boundary_condition)
+
+    # test
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, "P", 1)
+    expected_expr = 2*expr_T + expr_c + expr_foo
+    expected_expr = fenics.Expression(sp.printing.ccode(expected_expr), t=0, degree=1)
+    for t in range(10):
+
+        expected_expr.t = t
+        for expr in expressions:
+            expr.t = t
+        expected = fenics.project(expected_expr, V)
+        computed = fenics.project(value_BC, V)
+        for x in [0, 0.5, 1]:
+            assert computed(x) == pytest.approx(expected(x))

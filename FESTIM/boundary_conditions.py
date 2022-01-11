@@ -79,6 +79,14 @@ def create_form_for_flux(T, expressions, solute, bc):
     elif bc["type"] == "recomb":
         Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/FESTIM.k_B/T)
         flux = -Kr*solute**bc["order"]
+    elif bc["type"] == "flux_custom":
+        ignored_keys = ["type", "surfaces", "function"]
+        prms = {}
+        for key, val in bc.items():
+            if key not in ignored_keys:
+                prms[key] = Expression(sp.printing.ccode(val), t=0, degree=1)
+        flux = bc["function"](T, solute, prms)
+        expressions += [expression for expression in prms.values()]
     return flux
 
 
@@ -280,7 +288,7 @@ def create_bc_expression(BC, T, expressions):
         expressions.append(value_BC.prms["implanted_flux"])
         expressions.append(value_BC.prms["implantation_depth"])
     elif BC["type"] == "dc_custom":
-        ignored_keys = ["type", "surfaces", "function"]
+        ignored_keys = ["type", "surfaces", "function", "component"]
         prms = {key: val for key, val in BC.items() if key not in ignored_keys}
         value_BC = BoundaryConditionExpression(T, prms, eval_function=BC["function"])
         expressions += [value_BC.prms[key] for key in prms.keys()]

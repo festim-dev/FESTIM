@@ -8,7 +8,8 @@ from .formulations import formulation, formulation_extrinsic_traps, \
     define_variational_problem_heat_transfers
 
 from .boundary_conditions import define_dirichlet_bcs_T, apply_fluxes, \
-    BoundaryConditionTheta, apply_boundary_conditions, create_bc_expression
+    BoundaryConditionTheta, apply_boundary_conditions, create_bc_expression, \
+    create_form_for_flux
 from .solving import solve_it, solve_once, adaptive_stepsize
 
 from .export import write_to_csv, export_txt, export_profiles, \
