@@ -542,8 +542,9 @@ def test_formulation_heat_transfer():
     my_sim.transient = True
     my_sim.T, my_sim.T_n, my_sim.vT = T, T_n, v
     my_sim.dt, my_sim.dx, my_sim.ds = dt, dx, ds
-    F, expressions = \
-        FESTIM.formulations.define_variational_problem_heat_transfers(my_sim)
+    my_sim.define_variational_problem_heat_transfers()
+    F = my_sim.FT
+    expressions = my_sim.expressions_FT
     Index._globalcount = 8
     source = expressions[0]
     expected_form = 5*4*(T - T_n)/dt * v * dx(1) + \
@@ -1182,5 +1183,4 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     my_sim.transient = True
     my_sim.T, my_sim.T_n, my_sim.vT = T, T_n, v
     my_sim.dt, my_sim.dx, my_sim.ds = dt, dx, ds
-    F, expressions = \
-        FESTIM.formulations.define_variational_problem_heat_transfers(my_sim)
+    my_sim.define_variational_problem_heat_transfers()

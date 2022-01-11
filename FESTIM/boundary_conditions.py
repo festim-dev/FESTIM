@@ -75,6 +75,8 @@ class FluxBC(BoundaryCondition):
             self.sub_expressions.append(form)
         elif self.type == "recomb":
             form = recombination_flux(T, solute, self.prms)
+        elif self.type == "convective_flux":
+            form = convective_flux(T, self.prms)
         elif self.type == "flux_custom":
             prms = {}
             for key, val in self.prms.items():
@@ -141,13 +143,31 @@ def apply_fluxes(simulation):
         solute = solutions[0]
 
     for bc in simulation.boundary_conditions:
-        if bc.type not in FESTIM.helpers.bc_types["dc"]:
-            bc.create_form_for_flux(simulation.T, solute)
-            # TODO : one day we will get rid of this huge expressions list
-            expressions += bc.sub_expressions
+        if bc.component != "T":
+            if bc.type not in FESTIM.helpers.bc_types["dc"]:
+                bc.create_form_for_flux(simulation.T, solute)
+                # TODO : one day we will get rid of this huge expressions list
+                expressions += bc.sub_expressions
 
-            for surf in bc.surfaces:
-                F += -test_solute*bc.form*simulation.ds(surf)
+                for surf in bc.surfaces:
+                    F += -test_solute*bc.form*simulation.ds(surf)
+    return F, expressions
+
+
+def apply_heat_fluxes(simulation):
+    F = 0
+    expressions = []
+    vT = simulation.vT
+    ds = simulation.ds
+    T = simulation.T
+    for bc in simulation.boundary_conditions:
+        if bc.component == "T":
+            if bc.type not in FESTIM.helpers.T_bc_types["dc"]:
+                bc.create_form_for_flux(T, solute=None)
+                expressions += bc.sub_expressions
+
+                for surf in bc.surfaces:
+                    F += -bc.form*vT*ds(surf)
     return F, expressions
 
 
@@ -239,6 +259,10 @@ def sieverts_law(T, prms):
     S_0, E_S = prms["S_0"], prms["E_S"]
     S = S_0*f.exp(-E_S/FESTIM.k_B/T)
     return S*prms["pressure"]**0.5
+
+
+def convective_flux(T, prms):
+    return prms["h_coeff"] * (T - prms["T_ext"])
 
 
 type_to_function = {

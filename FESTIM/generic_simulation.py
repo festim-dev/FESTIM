@@ -295,9 +295,8 @@ class Simulation():
                 T_ini = Expression(T_ini, degree=2, t=0)
                 self.T_n.assign(interpolate(T_ini, self.V_CG1))
             self.bcs_T, expressions_bcs_T = FESTIM.define_dirichlet_bcs_T(self)
-            self.FT, expressions_FT = \
-                FESTIM.define_variational_problem_heat_transfers(self)
-            self.expressions += expressions_bcs_T + expressions_FT
+            self.define_variational_problem_heat_transfers()
+            self.expressions += expressions_bcs_T + self.expressions_FT
 
             if self.parameters["temperature"]["type"] == "solve_stationary":
                 print("Solving stationary heat equation")
@@ -379,6 +378,69 @@ class Simulation():
         fluxes, expressions_fluxes = FESTIM.apply_fluxes(self)
         self.F += fluxes
         self.expressions += expressions_BC + expressions_fluxes
+
+    def define_variational_problem_heat_transfers(self):
+        """Create a variational form for heat transfer problem
+
+        Arguments:
+
+        Raises:
+            NameError: if thermal_cond is not in keys
+            NameError: if heat_capacity is not in keys
+            NameError: if rho is not in keys
+
+        Returns:
+            fenics.Form -- the formulation for heat transfers problem
+            list -- contains the fenics.Expression to be updated
+        """
+
+        print('Defining variational problem heat transfers')
+        T, T_n = self.T, self.T_n
+        vT = self.vT
+        self.expressions_FT = []
+        self.FT = 0
+        for mat in self.parameters["materials"]:
+            if "thermal_cond" not in mat.keys():
+                raise NameError("Missing thermal_cond key in material")
+            thermal_cond = mat["thermal_cond"]
+            if callable(thermal_cond):  # if thermal_cond is a function
+                thermal_cond = thermal_cond(T)
+
+            subdomains = mat['id']  # list of subdomains with this material
+            if type(subdomains) is not list:
+                subdomains = [subdomains]  # make sure subdomains is a list
+            if self.parameters["temperature"]["type"] == "solve_transient":
+                if "heat_capacity" not in mat.keys():
+                    raise NameError("Missing heat_capacity key in material")
+                if "rho" not in mat.keys():
+                    raise NameError("Missing rho key in material")
+                cp = mat["heat_capacity"]
+                rho = mat["rho"]
+                if callable(cp):  # if cp or rho are functions, apply T
+                    cp = cp(T)
+                if callable(rho):
+                    rho = rho(T)
+                # Transien term
+                for vol in subdomains:
+                    self.FT += rho*cp*(T-T_n)/self.dt*vT*self.dx(vol)
+            # Diffusion term
+            for vol in subdomains:
+                self.FT += dot(thermal_cond*grad(T), grad(vT))*self.dx(vol)
+
+        # Source terms
+        if "source_term" in self.parameters["temperature"].keys():
+            for source in self.parameters["temperature"]["source_term"]:
+                src = sp.printing.ccode(source["value"])
+                src = Expression(src, degree=2, t=0)
+                self.expressions_FT.append(src)
+                # Source term
+                self.FT += - src*vT*self.dx(source["volume"])
+
+        # Boundary conditions
+        if "boundary_conditions" in self.parameters["temperature"].keys():
+            fluxes, fluxes_expressions = FESTIM.apply_heat_fluxes(self)
+            self.FT += fluxes
+            self.expressions_FT += fluxes_expressions
 
     def define_variational_problem_extrinsic_traps(self):
         # Define variational problem for extrinsic traps
