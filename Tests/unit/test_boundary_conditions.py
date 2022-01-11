@@ -125,8 +125,8 @@ def test_fluxes():
 
     # Test error raise
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        my_sim.parameters["boundary_conditions"][0].update({"type": "foo"})
-        apply_fluxes(my_sim)
+        boundary_conditions[0].update({"type": "foo"})
+        FESTIM.BoundaryCondition(**boundary_conditions[0])
 
 
 def test_apply_boundary_conditions_theta():
@@ -222,15 +222,8 @@ def test_apply_boundary_conditions_theta():
 
 
 def test_apply_boundary_conditions_fail():
-    boundary_conditions = [
-        {
-            "type": "foo",
-            "surfaces": [0]
-        }
-    ]
-
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        FESTIM.Simulation({"boundary_conditions": boundary_conditions})
+        FESTIM.BoundaryCondition(type="foo", surfaces=0)
 
 
 def test_bc_recomb():
