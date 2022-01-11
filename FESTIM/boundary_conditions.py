@@ -199,87 +199,98 @@ def apply_boundary_conditions(simulation):
         list -- contains fenics DirichletBC
         list -- contains the fenics.Expression() to be updated
     """
-    parameters = simulation.parameters
-    V = simulation.V
-    boundary_conditions = parameters["boundary_conditions"]
-    volume_markers = simulation.volume_markers
-    surface_markers = simulation.surface_markers
-    T = simulation.T
 
     bcs = list()
     expressions = list()
 
-    for BC in boundary_conditions:
-        if "type" in BC.keys():
-            type_BC = BC["type"]
-            if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
-               BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
-               BC["type"] not in FESTIM.helpers.bc_types["dc"]:
-
-                raise NameError(
-                    "Unknown boundary condition type : " + BC["type"])
-        else:
-            raise KeyError("Missing boundary condition type key")
-        if type_BC == "dc":
-            value_BC = sp.printing.ccode(BC['value'])
-            value_BC = Expression(value_BC, t=0, degree=4)
-        elif type_BC == "solubility":
-            prms = {
-                "pressure": BC["pressure"],
-                "S_0": BC["S_0"],
-                "E_S": BC["E_S"],
-            }
-
-            # create a custom expression
-            value_BC = BoundaryCondition(T, prms, eval_function=sieverts_law)
-            expressions.append(value_BC.prms["pressure"])
-            expressions.append(value_BC.prms["S_0"])
-            expressions.append(value_BC.prms["E_S"])
-        elif type_BC == "dc_imp":
-            prms = {
-                "implanted_flux": BC["implanted_flux"],
-                "implantation_depth": BC["implantation_depth"],
-                "D_0": BC["D_0"],
-                "E_D": BC["E_D"],
-            }
-            if "Kr_0" in BC.keys() and "E_Kr" in BC.keys():
-                prms["Kr_0"] = BC["Kr_0"]
-                prms["E_Kr"] = BC["E_Kr"]
-
-            value_BC = BoundaryCondition(T, prms, eval_function=dc_imp)
-            expressions.append(value_BC.prms["implanted_flux"])
-            expressions.append(value_BC.prms["implantation_depth"])
+    for BC in simulation.parameters["boundary_conditions"]:
+        type_BC = check_type(BC)
+        expression_BC = create_bc_expression(BC, simulation.T, expressions)
 
         if type_BC in FESTIM.helpers.bc_types["dc"]:
+            # By default, component is solute (ie. 0)
+            component = 0
             if "component" in BC.keys():
                 # Fetch the component of the BC
                 component = BC["component"]
-            else:
-                # By default, component is solute (ie. 0)
-                component = 0
 
-            if component == 0 and simulation.chemical_pot is True:
-                # Store the non modified BC to be updated
-                expressions.append(value_BC)
-                # create modified BC based on solubility
-                value_BC = BoundaryConditionTheta(
-                    value_BC, volume_markers.mesh(), parameters["materials"],
-                    volume_markers, T)
+            if component == 0 and simulation.chemical_pot:
+                expression_BC = normalise_expression_by_S(
+                    simulation, expressions, expression_BC)
 
             # add value_BC to expressions for update
-            expressions.append(value_BC)
+            expressions.append(expression_BC)
 
             # create a DirichletBC and add it to bcs
             surfaces = BC['surfaces']
             if type(surfaces) is not list:
                 surfaces = [surfaces]
-            if V.num_sub_spaces() == 0:
-                funspace = V
+            if simulation.V.num_sub_spaces() == 0:
+                funspace = simulation.V
             else:  # if only one component, use subspace
-                funspace = V.sub(component)
+                funspace = simulation.V.sub(component)
             for surface in surfaces:
-                bci = DirichletBC(funspace, value_BC,
-                                  surface_markers, surface)
+                bci = DirichletBC(funspace, expression_BC,
+                                  simulation.surface_markers, surface)
                 bcs.append(bci)
 
     return bcs, expressions
+
+
+def normalise_expression_by_S(simulation, expressions, expression_BC):
+    # Store the non modified BC to be updated
+    expressions.append(expression_BC)
+    # create modified BC based on solubility
+    expression_BC = BoundaryConditionTheta(
+                    expression_BC, simulation.volume_markers.mesh(),
+                    simulation.parameters["materials"],
+                    simulation.volume_markers, simulation.T)
+
+    return expression_BC
+
+
+def check_type(BC):
+    if "type" in BC.keys():
+        type_BC = BC["type"]
+        if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
+               BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
+               BC["type"] not in FESTIM.helpers.bc_types["dc"]:
+            raise NameError(
+                    "Unknown boundary condition type : " + BC["type"])
+    else:
+        raise KeyError("Missing boundary condition type key")
+    return type_BC
+
+
+def create_bc_expression(BC, T, expressions):
+    type_BC = BC["type"]
+    if type_BC == "dc":
+        value_BC = sp.printing.ccode(BC['value'])
+        value_BC = Expression(value_BC, t=0, degree=4)
+    elif type_BC == "solubility":
+        prms = {
+                "pressure": BC["pressure"],
+                "S_0": BC["S_0"],
+                "E_S": BC["E_S"],
+            }
+
+        # create a custom expression
+        value_BC = BoundaryCondition(T, prms, eval_function=sieverts_law)
+        expressions.append(value_BC.prms["pressure"])
+        expressions.append(value_BC.prms["S_0"])
+        expressions.append(value_BC.prms["E_S"])
+    elif type_BC == "dc_imp":
+        prms = {
+                "implanted_flux": BC["implanted_flux"],
+                "implantation_depth": BC["implantation_depth"],
+                "D_0": BC["D_0"],
+                "E_D": BC["E_D"],
+            }
+        if "Kr_0" in BC.keys() and "E_Kr" in BC.keys():
+            prms["Kr_0"] = BC["Kr_0"]
+            prms["E_Kr"] = BC["E_Kr"]
+
+        value_BC = BoundaryCondition(T, prms, eval_function=dc_imp)
+        expressions.append(value_BC.prms["implanted_flux"])
+        expressions.append(value_BC.prms["implantation_depth"])
+    return value_BC
