@@ -33,6 +33,7 @@ def test_export_and_initialise_xdmf(tmpdir):
 
     #  Read
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": str(Path(file1)),
@@ -64,6 +65,7 @@ def test_initialise_and_export_xdmf(tmpdir):
                               append=False)
     # Read
     parameters = {
+        "boundary_conditions": [],
         "initial_conditions": [
             {
                 "value": str(Path(file1)),

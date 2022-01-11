@@ -26,7 +26,7 @@ def test_define_markers(tmpdir):
     fenics.XDMFFile(str(Path(filename_surface))).write(sm)
 
     # run
-    my_sim = FESTIM.Simulation(parameters={})
+    my_sim = FESTIM.Simulation(parameters={"boundary_conditions": []})
     my_sim.mesh = mesh
     my_sim.parameters["mesh_parameters"] = {}
     my_sim.parameters["mesh_parameters"]["mesh_file"] = \

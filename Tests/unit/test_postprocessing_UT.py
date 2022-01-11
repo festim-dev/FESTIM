@@ -765,6 +765,7 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
 
     parameters = {
         "exports": exports,
+        "boundary_conditions": [],
         "temperature": {
             "type": "solve_transient",
             "boundary_conditions": [
