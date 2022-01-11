@@ -257,11 +257,8 @@ def apply_boundary_conditions(simulation):
             else:
                 # By default, component is solute (ie. 0)
                 component = 0
-            conservation_chemic_pot = False
-            for mat in parameters["materials"]:
-                if "S_0" in mat.keys():
-                    conservation_chemic_pot = True
-            if component == 0 and conservation_chemic_pot is True:
+
+            if component == 0 and simulation.chemical_pot is True:
                 # Store the non modified BC to be updated
                 expressions.append(value_BC)
                 # create modified BC based on solubility

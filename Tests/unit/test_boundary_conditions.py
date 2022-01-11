@@ -184,6 +184,7 @@ def test_apply_boundary_conditions_theta():
     right.mark(sm, 2)
 
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.chemical_pot = True
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
@@ -429,6 +430,7 @@ def test_bc_recomb_chemical_pot():
     right.mark(sm, 2)
 
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.chemical_pot = True
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
