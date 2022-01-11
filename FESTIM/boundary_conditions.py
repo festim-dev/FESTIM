@@ -258,37 +258,20 @@ def check_type(BC):
 
 
 def create_bc_expression(BC, T, expressions):
+    ignored_keys = ["type", "surfaces", "function", "component"]
+
     if BC["type"] == "dc":
         value_BC = sp.printing.ccode(BC['value'])
         value_BC = Expression(value_BC, t=0, degree=4)
     elif BC["type"] == "solubility":
-        prms = {
-                "pressure": BC["pressure"],
-                "S_0": BC["S_0"],
-                "E_S": BC["E_S"],
-            }
-
-        # create a custom expression
+        prms = {key: val for key, val in BC.items() if key not in ignored_keys}
         value_BC = BoundaryConditionExpression(T, prms, eval_function=sieverts_law)
-        expressions.append(value_BC.prms["pressure"])
-        expressions.append(value_BC.prms["S_0"])
-        expressions.append(value_BC.prms["E_S"])
+        expressions += [value_BC.prms[key] for key in prms.keys()]
     elif BC["type"] == "dc_imp":
-        prms = {
-                "implanted_flux": BC["implanted_flux"],
-                "implantation_depth": BC["implantation_depth"],
-                "D_0": BC["D_0"],
-                "E_D": BC["E_D"],
-            }
-        if "Kr_0" in BC.keys() and "E_Kr" in BC.keys():
-            prms["Kr_0"] = BC["Kr_0"]
-            prms["E_Kr"] = BC["E_Kr"]
-
+        prms = {key: val for key, val in BC.items() if key not in ignored_keys}
         value_BC = BoundaryConditionExpression(T, prms, eval_function=dc_imp)
-        expressions.append(value_BC.prms["implanted_flux"])
-        expressions.append(value_BC.prms["implantation_depth"])
+        expressions += [value_BC.prms[key] for key in prms.keys()]
     elif BC["type"] == "dc_custom":
-        ignored_keys = ["type", "surfaces", "function", "component"]
         prms = {key: val for key, val in BC.items() if key not in ignored_keys}
         value_BC = BoundaryConditionExpression(T, prms, eval_function=BC["function"])
         expressions += [value_BC.prms[key] for key in prms.keys()]

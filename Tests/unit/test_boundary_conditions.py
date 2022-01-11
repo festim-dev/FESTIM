@@ -305,7 +305,7 @@ def test_bc_recomb():
             val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             assert np.isclose(
-                expressions[2](x_, 0.5),
+                expressions[-1](x_, 0.5),
                 float(val_phi*val_R_p/D +
                       (val_phi/K)**0.5))
 
@@ -369,7 +369,7 @@ def test_bc_recomb_instant_recomb():
             val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
             assert np.isclose(
-                expressions[2](x_, 0.5),
+                expressions[-1](x_, 0.5),
                 float(val_phi*val_R_p/D))
 
 
