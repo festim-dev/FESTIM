@@ -19,6 +19,8 @@ from .post_processing import run_post_processing, compute_error, \
     header_derived_quantities, derived_quantities, \
     check_keys_derived_quantities
 
+from .materials import Material
+
 from .generic_simulation import Simulation, run
 
 import sympy as sp
