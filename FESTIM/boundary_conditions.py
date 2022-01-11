@@ -292,7 +292,6 @@ def define_dirichlet_bcs(simulation):
             BC_object.create_expression(simulation.T)
             if BC_object.component == 0 and simulation.chemical_pot:
                 BC_object.normalise_by_solubility(simulation)
-
             # TODO: one day, we will get rid of this big expressions list
             expressions += BC_object.sub_expressions
             # add value_BC to expressions for update
