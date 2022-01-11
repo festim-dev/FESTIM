@@ -208,9 +208,9 @@ def apply_boundary_conditions(simulation):
 
     for BC in simulation.parameters["boundary_conditions"]:
         check_type(BC)
-        expression_BC = create_bc_expression(BC, simulation.T, expressions)
 
         if BC["type"] in FESTIM.helpers.bc_types["dc"]:
+            expression_BC = create_bc_expression(BC, simulation.T, expressions)
             # By default, component is solute (ie. 0)
             component = 0
             if "component" in BC.keys():
