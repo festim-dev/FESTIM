@@ -107,7 +107,7 @@ class BoundaryConditionTheta(UserExpression):
     Args:
         UserExpression (fenics.UserExpression):
     """
-    def __init__(self, bci, mesh, materials, vm, T, **kwargs):
+    def __init__(self, bci, materials, vm, T, **kwargs):
         """initialisation
 
         Args:
@@ -119,8 +119,8 @@ class BoundaryConditionTheta(UserExpression):
         """
         super().__init__(kwargs)
         self._bci = bci
-        self._mesh = mesh
         self._vm = vm
+        self._mesh = vm.mesh()
         self._T = T
         self._materials = materials
 
@@ -242,7 +242,7 @@ def normalise_expression_by_S(simulation, expressions, expression_BC):
     expressions.append(expression_BC)
     # create modified BC based on solubility
     expression_BC = BoundaryConditionTheta(
-                    expression_BC, simulation.volume_markers.mesh(),
+                    expression_BC,
                     simulation.parameters["materials"],
                     simulation.volume_markers, simulation.T)
 
