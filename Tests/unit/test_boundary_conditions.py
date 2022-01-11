@@ -1,6 +1,6 @@
 import FESTIM
 from FESTIM import boundary_conditions
-from FESTIM.boundary_conditions import apply_boundary_conditions, \
+from FESTIM.boundary_conditions import define_dirichlet_bcs, \
     apply_fluxes
 import fenics
 import pytest
@@ -129,7 +129,7 @@ def test_fluxes():
         FESTIM.BoundaryCondition(**boundary_conditions[0])
 
 
-def test_apply_boundary_conditions_theta():
+def test_define_dirichlet_bcs_theta():
     '''
     Test the function apply_boundary_condition()
     when conservation of chemical potential is
@@ -191,7 +191,7 @@ def test_apply_boundary_conditions_theta():
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
     my_sim.T = temp
-    bcs, expressions = apply_boundary_conditions(my_sim)
+    bcs, expressions = define_dirichlet_bcs(my_sim)
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
@@ -221,13 +221,13 @@ def test_apply_boundary_conditions_theta():
             (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))))
 
 
-def test_apply_boundary_conditions_fail():
+def test_define_dirichlet_bcs_fail():
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
         FESTIM.BoundaryCondition(type="foo", surfaces=0)
 
 
 def test_bc_recomb():
-    """Test the function boundary_conditions.apply_boundary_conditions
+    """Test the function boundary_conditions.define_dirichlet_bcs
     with bc type dc_imp
     """
     phi = 3 + 10*FESTIM.t
@@ -275,7 +275,7 @@ def test_bc_recomb():
     my_sim.volume_markers = None
     my_sim.surface_markers = sm
     my_sim.T = temp
-    bcs, expressions = apply_boundary_conditions(my_sim)
+    bcs, expressions = define_dirichlet_bcs(my_sim)
     for current_time in range(0, 3):
         temp.t = current_time
         expressions[0].t = current_time
@@ -295,7 +295,7 @@ def test_bc_recomb():
 
 
 def test_bc_recomb_instant_recomb():
-    """Test the function boundary_conditions.apply_boundary_conditions
+    """Test the function boundary_conditions.define_dirichlet_bcs
     with bc type dc_imp (with instantaneous recombination)
     """
     phi = 3 + 10*FESTIM.t
@@ -339,7 +339,7 @@ def test_bc_recomb_instant_recomb():
     my_sim.volume_markers = None
     my_sim.surface_markers = sm
     my_sim.T = temp
-    bcs, expressions = apply_boundary_conditions(my_sim)
+    bcs, expressions = define_dirichlet_bcs(my_sim)
 
     for current_time in range(0, 3):
         temp.t = current_time
@@ -358,7 +358,7 @@ def test_bc_recomb_instant_recomb():
 
 
 def test_bc_recomb_chemical_pot():
-    """Tests the function boundary_conditions.apply_boundary_conditions()
+    """Tests the function boundary_conditions.define_dirichlet_bcs()
     with type dc_imp and conservation of chemical potential
     """
     phi = 3
@@ -421,7 +421,7 @@ def test_bc_recomb_chemical_pot():
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
     my_sim.T = temp
-    bcs, expressions = apply_boundary_conditions(my_sim)
+    bcs, expressions = define_dirichlet_bcs(my_sim)
 
     # Set up formulation
     u = fenics.Function(V)

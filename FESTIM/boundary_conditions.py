@@ -247,7 +247,7 @@ type_to_function = {
 }
 
 
-def apply_boundary_conditions(simulation):
+def define_dirichlet_bcs(simulation):
     """Create a list of DirichletBCs.
 
     Arguments:

@@ -375,7 +375,7 @@ class Simulation():
 
         # Boundary conditions
         print('Defining boundary conditions')
-        self.bcs, expressions_BC = FESTIM.apply_boundary_conditions(self)
+        self.bcs, expressions_BC = FESTIM.define_dirichlet_bcs(self)
         fluxes, expressions_fluxes = FESTIM.apply_fluxes(self)
         self.F += fluxes
         self.expressions += expressions_BC + expressions_fluxes
