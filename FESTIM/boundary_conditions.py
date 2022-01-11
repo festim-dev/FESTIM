@@ -43,7 +43,20 @@ class BoundaryCondition:
             prms = {key: val for key, val in self.prms.items() if key not in ignored_keys}
             value_BC = BoundaryConditionExpression(T, prms, eval_function=function)
             self.expressions = [value_BC.prms[key] for key in prms.keys()]
+
+        self.expression = value_BC
         return value_BC
+
+    def normalise_by_solubility(self, simulation):
+        # Store the non modified BC to be updated
+        self.expressions.append(self.expression)
+        # create modified BC based on solubility
+        expression_BC = BoundaryConditionTheta(
+                            self.expression,
+                            simulation.parameters["materials"],
+                            simulation.volume_markers, simulation.T)
+
+        return expression_BC
 
 
 def define_dirichlet_bcs_T(simulation):
@@ -274,6 +287,7 @@ def apply_boundary_conditions(simulation):
     bcs = list()
     expressions = list()
 
+    #  for BC_object in simulation.boundary_conditions:
     for BC_object in create_boundarycondition_objects(simulation):
         expression_BC = BC_object.create_expression(simulation.T)
         expressions += BC_object.expressions
@@ -281,8 +295,8 @@ def apply_boundary_conditions(simulation):
         if BC_object.type in FESTIM.helpers.bc_types["dc"]:
 
             if BC_object.component == 0 and simulation.chemical_pot:
-                expression_BC = normalise_expression_by_S(
-                    simulation, expressions, expression_BC)
+                expression_BC = BC_object.normalise_by_solubility(simulation)
+                expressions.append(BC_object.expressions[-1])
 
             # add value_BC to expressions for update
             expressions.append(expression_BC)
@@ -298,26 +312,3 @@ def apply_boundary_conditions(simulation):
                 bcs.append(bci)
 
     return bcs, expressions
-
-
-def normalise_expression_by_S(simulation, expressions, expression_BC):
-    # Store the non modified BC to be updated
-    expressions.append(expression_BC)
-    # create modified BC based on solubility
-    expression_BC = BoundaryConditionTheta(
-                    expression_BC,
-                    simulation.parameters["materials"],
-                    simulation.volume_markers, simulation.T)
-
-    return expression_BC
-
-
-def check_type(BC):
-    if "type" in BC.keys():
-        if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
-               BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
-               BC["type"] not in FESTIM.helpers.bc_types["dc"]:
-            raise NameError(
-                    "Unknown boundary condition type : " + BC["type"])
-    else:
-        raise KeyError("Missing boundary condition type key")
