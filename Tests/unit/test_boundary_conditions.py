@@ -61,6 +61,7 @@ def test_fluxes_chemical_pot():
     S = S_0*fenics.exp(-E_S/k_B/T)
     Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.chemical_pot = True
     my_sim.u, my_sim.v = u, v
     my_sim.ds = fenics.ds
     my_sim.T = T
