@@ -212,6 +212,12 @@ def apply_boundary_conditions(simulation):
     for BC in boundary_conditions:
         if "type" in BC.keys():
             type_BC = BC["type"]
+            if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
+               BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
+               BC["type"] not in FESTIM.helpers.bc_types["dc"]:
+
+                raise NameError(
+                    "Unknown boundary condition type : " + BC["type"])
         else:
             raise KeyError("Missing boundary condition type key")
         if type_BC == "dc":
@@ -244,11 +250,6 @@ def apply_boundary_conditions(simulation):
             expressions.append(value_BC.prms["implanted_flux"])
             expressions.append(value_BC.prms["implantation_depth"])
 
-        if BC["type"] not in FESTIM.helpers.bc_types["neumann"] and \
-           BC["type"] not in FESTIM.helpers.bc_types["robin"] and \
-           BC["type"] not in FESTIM.helpers.bc_types["dc"]:
-
-            raise NameError("Unknown boundary condition type : " + BC["type"])
         if type_BC in FESTIM.helpers.bc_types["dc"]:
             if "component" in BC.keys():
                 # Fetch the component of the BC
@@ -267,8 +268,11 @@ def apply_boundary_conditions(simulation):
                 value_BC = BoundaryConditionTheta(
                     value_BC, volume_markers.mesh(), parameters["materials"],
                     volume_markers, T)
+
+            # add value_BC to expressions for update
             expressions.append(value_BC)
 
+            # create a DirichletBC and add it to bcs
             surfaces = BC['surfaces']
             if type(surfaces) is not list:
                 surfaces = [surfaces]
