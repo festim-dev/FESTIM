@@ -167,48 +167,6 @@ class BoundaryCondition(UserExpression):
         return ()
 
 
-class BoundaryConditionRecomb(UserExpression):
-    """Creates an Expression for converting implanted flux in surface
-    concentration
-
-    Args:
-        UserExpression (fenics.UserExpression): value of surface concentration
-    """
-    def __init__(self, phi, R_p, Kr_0, E_Kr, D_0, E_D, T, **kwargs):
-        """initialisation
-
-        Args:
-            phi (float): implanted particle flux
-            R_p (float): implantation depth
-            Kr_0 (float): Recombination coefficient pre-exponential factor
-            E_Kr (float): Recombination energy
-            D_0 (float): Diffusion coefficient pre-exponential factor
-            E_D (float): Diffusion energy
-            T (fenics.Function(), fenics.Expression()): Temperature
-        """
-        super().__init__(kwargs)
-        self._phi = phi
-        self._R_p = R_p
-
-        self._D_0 = D_0
-        self._E_D = E_D
-        self._Kr_0 = Kr_0
-        self._E_Kr = E_Kr
-
-        self._T = T
-
-    def eval(self, value, x):
-        D = self._D_0*exp(-self._E_D/FESTIM.k_B/self._T(x))
-        val = self._phi(x)*self._R_p(x)/D
-        if self._Kr_0 is not None:  # non-instantaneous recomb
-            K = self._Kr_0*exp(-self._E_Kr/FESTIM.k_B/self._T(x))
-            val += (self._phi(x)/K)**0.5
-        value[0] = val
-
-    def value_shape(self):
-        return ()
-
-
 class BoundaryConditionSolubility(UserExpression):
     """Class based on UserExpression to create a Sievert law boundary
     condition where c = sqrt(P)*S(T)
