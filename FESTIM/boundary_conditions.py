@@ -288,27 +288,24 @@ def define_dirichlet_bcs(simulation):
 
     #  for BC_object in simulation.boundary_conditions:
     for BC_object in simulation.boundary_conditions:
-        if BC_object.component != "T":
+        if BC_object.component != "T" and BC_object.type in FESTIM.helpers.bc_types["dc"]:
             BC_object.create_expression(simulation.T)
+            if BC_object.component == 0 and simulation.chemical_pot:
+                BC_object.normalise_by_solubility(simulation)
 
-            if BC_object.type in FESTIM.helpers.bc_types["dc"]:
+            # TODO: one day, we will get rid of this big expressions list
+            expressions += BC_object.sub_expressions
+            # add value_BC to expressions for update
+            expressions.append(BC_object.expression)
 
-                if BC_object.component == 0 and simulation.chemical_pot:
-                    BC_object.normalise_by_solubility(simulation)
-
-                # TODO: one day, we will get rid of this big expressions list
-                expressions += BC_object.sub_expressions
-                # add value_BC to expressions for update
-                expressions.append(BC_object.expression)
-
-                # create a DirichletBC and add it to bcs
-                if simulation.V.num_sub_spaces() == 0:
-                    funspace = simulation.V
-                else:  # if only one component, use subspace
-                    funspace = simulation.V.sub(BC_object.component)
-                for surface in BC_object.surfaces:
-                    bci = f.DirichletBC(funspace, BC_object.expression,
-                                    simulation.surface_markers, surface)
-                    bcs.append(bci)
+            # create a DirichletBC and add it to bcs
+            if simulation.V.num_sub_spaces() == 0:
+                funspace = simulation.V
+            else:  # if only one component, use subspace
+                funspace = simulation.V.sub(BC_object.component)
+            for surface in BC_object.surfaces:
+                bci = f.DirichletBC(funspace, BC_object.expression,
+                                simulation.surface_markers, surface)
+                bcs.append(bci)
 
     return bcs, expressions
