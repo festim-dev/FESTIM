@@ -26,6 +26,14 @@ class Simulation():
 
         self.soret = False
         self.create_boundarycondition_objects()
+        self.create_materials()
+
+    def create_materials(self):
+        self.materials = []
+        if "materials" in self.parameters:
+            for material in self.parameters["materials"]:
+                my_mat = FESTIM.Material(**material)
+                self.materials.append(my_mat)
 
     def create_boundarycondition_objects(self):
         self.boundary_conditions = []
