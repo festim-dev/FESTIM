@@ -3,6 +3,49 @@ from fenics import *
 import sympy as sp
 
 
+class BoundaryCondition:
+    def __init__(self, type, surfaces, value=None, function=None, component=0, prms=None) -> None:
+        self.type = type
+        self.check_type()
+
+        if not isinstance(surfaces, list):
+            surfaces = [surfaces]
+        self.surfaces = surfaces
+
+        self.value = value
+        self.function = function
+        self.component = component
+        self.prms = prms
+        self.expression = None
+        self.expressions = []
+
+    def check_type(self):
+        print(self.type)
+        if self.type not in FESTIM.helpers.bc_types["neumann"] and \
+           self.type not in FESTIM.helpers.bc_types["robin"] and \
+           self.type not in FESTIM.helpers.bc_types["dc"]:
+            raise NameError(
+                    "Unknown boundary condition type : " + self.type)
+
+    def create_expression(self, T):
+        if self.type == "dc":
+            value_BC = sp.printing.ccode(self.value)
+            value_BC = Expression(value_BC, t=0, degree=4)
+            # TODO : why degree 4?
+        else:
+            if self.type == "dc_custom":
+                function = self.function
+            else:
+                function = type_to_function[self.type]
+
+            ignored_keys = ["type", "surfaces", "function", "component"]
+
+            prms = {key: val for key, val in self.prms.items() if key not in ignored_keys}
+            value_BC = BoundaryConditionExpression(T, prms, eval_function=function)
+            self.expressions = [value_BC.prms[key] for key in prms.keys()]
+        return value_BC
+
+
 def define_dirichlet_bcs_T(simulation):
     """Creates a list of BCs for thermal problem
 
@@ -188,6 +231,31 @@ type_to_function = {
 }
 
 
+def create_boundarycondition_objects(simulation):
+    BC_objects = []
+    for BC in simulation.parameters["boundary_conditions"]:
+        if "type" not in BC:
+            raise KeyError("Missing boundary condition type key")
+        # By default, component is solute (ie. 0)
+        component = 0
+        if "component" in BC:
+            # Fetch the component of the BC
+            component = BC["component"]
+        if "value" in BC:
+            value = BC["value"]
+        else:
+            value = None
+        if "function" in BC:
+            function = BC["function"]
+        else:
+            function = None
+        prms = {key: val for key, val in BC.items() if key not in ["component", "value", "function", "surfaces"]}
+        my_BC = BoundaryCondition(BC["type"], BC["surfaces"], value=value, function=function, component=component, prms=prms)
+        BC_objects.append(my_BC)
+
+    return BC_objects
+
+
 def apply_boundary_conditions(simulation):
     """Create a list of DirichletBCs.
 
@@ -206,18 +274,13 @@ def apply_boundary_conditions(simulation):
     bcs = list()
     expressions = list()
 
-    for BC in simulation.parameters["boundary_conditions"]:
-        check_type(BC)
-        expression_BC = create_bc_expression(BC, simulation.T, expressions)
+    for BC_object in create_boundarycondition_objects(simulation):
+        expression_BC = BC_object.create_expression(simulation.T)
+        expressions += BC_object.expressions
 
-        if BC["type"] in FESTIM.helpers.bc_types["dc"]:
-            # By default, component is solute (ie. 0)
-            component = 0
-            if "component" in BC.keys():
-                # Fetch the component of the BC
-                component = BC["component"]
+        if BC_object.type in FESTIM.helpers.bc_types["dc"]:
 
-            if component == 0 and simulation.chemical_pot:
+            if BC_object.component == 0 and simulation.chemical_pot:
                 expression_BC = normalise_expression_by_S(
                     simulation, expressions, expression_BC)
 
@@ -225,14 +288,11 @@ def apply_boundary_conditions(simulation):
             expressions.append(expression_BC)
 
             # create a DirichletBC and add it to bcs
-            surfaces = BC['surfaces']
-            if type(surfaces) is not list:
-                surfaces = [surfaces]
             if simulation.V.num_sub_spaces() == 0:
                 funspace = simulation.V
             else:  # if only one component, use subspace
-                funspace = simulation.V.sub(component)
-            for surface in surfaces:
+                funspace = simulation.V.sub(BC_object.component)
+            for surface in BC_object.surfaces:
                 bci = DirichletBC(funspace, expression_BC,
                                   simulation.surface_markers, surface)
                 bcs.append(bci)
@@ -261,22 +321,3 @@ def check_type(BC):
                     "Unknown boundary condition type : " + BC["type"])
     else:
         raise KeyError("Missing boundary condition type key")
-
-
-def create_bc_expression(BC, T, expressions):
-
-    if BC["type"] == "dc":
-        value_BC = sp.printing.ccode(BC['value'])
-        value_BC = Expression(value_BC, t=0, degree=4)
-    else:
-        if BC["type"] == "dc_custom":
-            function = BC["function"]
-        else:
-            function = type_to_function[BC["type"]]
-
-        ignored_keys = ["type", "surfaces", "function", "component"]
-
-        prms = {key: val for key, val in BC.items() if key not in ignored_keys}
-        value_BC = BoundaryConditionExpression(T, prms, eval_function=function)
-        expressions += [value_BC.prms[key] for key in prms.keys()]
-    return value_BC

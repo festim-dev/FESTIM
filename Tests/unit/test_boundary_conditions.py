@@ -224,7 +224,8 @@ def test_apply_boundary_conditions_theta():
 def test_apply_boundary_conditions_fail():
     boundary_conditions = [
         {
-            "type": "foo"
+            "type": "foo",
+            "surfaces": [0]
         }
     ]
     mesh = fenics.UnitIntervalMesh(10)
@@ -585,16 +586,13 @@ def test_create_bc_expression_dc_custom():
     # build
     def func(T, prms):
         return 2*T + prms["foo"]
-    boundary_condition = {
-        "type": "dc_custom",
-        "function": func,
-        "foo": 1 + 2*FESTIM.t,
-        "surfaces": [1, 0]
-    }
+
     T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
     expressions = [T]
     # run
-    value_BC = FESTIM.create_bc_expression(boundary_condition, T, expressions)
+    my_BC = FESTIM.BoundaryCondition(type="dc_custom", surfaces=[1, 0], function=func, prms={"foo": 1 + 2*FESTIM.t})
+    value_BC = my_BC.create_expression(T)
+    expressions += my_BC.expressions
 
     # test
     expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t

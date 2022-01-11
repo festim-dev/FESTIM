@@ -7,8 +7,8 @@ from .initialising import read_from_xdmf, check_no_duplicates
 from .formulations import formulation, formulation_extrinsic_traps, \
     define_variational_problem_heat_transfers
 
-from .boundary_conditions import define_dirichlet_bcs_T, apply_fluxes, \
-    BoundaryConditionTheta, apply_boundary_conditions, create_bc_expression, \
+from .boundary_conditions import BoundaryCondition, define_dirichlet_bcs_T, apply_fluxes, \
+    BoundaryConditionTheta, apply_boundary_conditions, \
     create_form_for_flux
 from .solving import solve_it, solve_once, adaptive_stepsize
 
