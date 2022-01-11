@@ -26,7 +26,7 @@ class BoundaryCondition:
         possible_types += FESTIM.helpers.T_bc_types["neumann"] + \
             FESTIM.helpers.T_bc_types["robin"] + \
             FESTIM.helpers.T_bc_types["dc"]
-        if possible_types:
+        if self.type not in possible_types:
             raise NameError(
                     "Unknown boundary condition type : " + self.type)
 
