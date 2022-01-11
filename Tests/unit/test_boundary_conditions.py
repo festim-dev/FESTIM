@@ -59,7 +59,7 @@ def test_fluxes_chemical_pot():
     test_sol = testfunctions[0]
 
     S = S_0*fenics.exp(-E_S/k_B/T)
-    Kr = -Kr_0 * fenics.exp(-E_Kr/k_B/T)
+
     my_sim = FESTIM.Simulation(parameters)
     my_sim.chemical_pot = True
     my_sim.u, my_sim.v = u, v
@@ -67,11 +67,16 @@ def test_fluxes_chemical_pot():
     my_sim.T = T
     my_sim.S = S
     F, expressions = create_H_fluxes(my_sim)
+
+    Kr_0 = expressions[0]
+    E_Kr = expressions[1]
+    order = expressions[2]
+    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/T)
     expected_form = 0
-    expected_form += -test_sol * (Kr*(sol*S)**order)*fenics.ds(1)
-    expected_form += -test_sol*expressions[0]*fenics.ds(1)
-    expected_form += -test_sol*expressions[0]*fenics.ds(2)
-    assert expected_form.equals(F) is True
+    expected_form += -test_sol * (-Kr*(sol*S)**order)*fenics.ds(1)
+    expected_form += -test_sol*expressions[3]*fenics.ds(1)
+    expected_form += -test_sol*expressions[3]*fenics.ds(2)
+    assert expected_form.equals(F)
 
 
 def test_fluxes():
@@ -114,13 +119,15 @@ def test_fluxes():
     my_sim.S = None
     F, expressions = create_H_fluxes(my_sim)
 
+    Kr_0 = expressions[0]
+    E_Kr = expressions[1]
+    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/T)
+    order = expressions[2]
     expected_form = 0
-    expected_form += -test_sol * (-Kr_0 * fenics.exp(-E_Kr/k_B/T) *
-                                  sol**order)*fenics.ds(1)
-    expected_form += -test_sol*expressions[0]*fenics.ds(1)
-    expected_form += -test_sol*expressions[0]*fenics.ds(2)
-
-    assert expected_form.equals(F) is True
+    expected_form += -test_sol * (- Kr* sol**order)*my_sim.ds(1)
+    expected_form += -test_sol*expressions[3]*my_sim.ds(1)
+    expected_form += -test_sol*expressions[3]*my_sim.ds(2)
+    assert expected_form.equals(F)
 
     # Test error raise
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
@@ -621,3 +628,20 @@ def test_create_form_for_flux_flux_custom():
         computed = fenics.project(value_BC, V)
         for x in [0, 0.5, 1]:
             assert computed(x) == pytest.approx(expected(x))
+
+
+def test_convective_flux():
+    expr_T = 2 + FESTIM.x
+    T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
+
+    my_BC = FESTIM.FluxBC(type="convective_flux", surfaces=[0], component="T", h_coeff=expr_T, T_ext=expr_T)
+    my_BC.create_form_for_flux(T, None)
+
+
+def test_recomb_flux():
+    expr = 2 + FESTIM.x
+    T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
+    c = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
+
+    my_BC = FESTIM.FluxBC(type="recomb", surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
+    my_BC.create_form_for_flux(T, c)
