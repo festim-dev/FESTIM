@@ -17,6 +17,7 @@ def test_formulation_no_trap_1_material():
     Index._globalcount = 8
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
             "alpha": 1,
             "beta": 2,
@@ -68,6 +69,7 @@ def test_formulation_1_trap_1_material():
     Index._globalcount = 8
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "traps": [{
             "k_0": 1,
             "E_k": 2,
@@ -136,6 +138,7 @@ def test_formulation_2_traps_1_material():
     # Set parameters
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "traps": [{
             "k_0": 1,
             "E_k": 2,
@@ -244,6 +247,7 @@ def test_formulation_1_trap_2_materials():
         return domain
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "traps": [
             {
                 "k_0": 1,
@@ -345,6 +349,7 @@ def test_formulation_1_extrap_1_material():
     Index._globalcount = 8
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "traps": [{
             "k_0": 1,
             "E_k": 2,
@@ -413,6 +418,7 @@ def test_formulation_steady_state():
     '''
     Index._globalcount = 8
     parameters = {
+        "boundary_conditions": [],
         "traps": [
             {
                 "k_0": 1,
@@ -479,6 +485,7 @@ def test_formulation_heat_transfer():
     Index._globalcount = 8
     u = 1 + 2*FESTIM.x**2
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
             "borders": [0, 1],
             "thermal_cond": thermal_cond,
@@ -559,6 +566,7 @@ def test_formulation_soret():
         domain = domain()
         return domain
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
                 "borders": [0, 0.5],
                 "E_D": 4,
@@ -653,6 +661,7 @@ def test_formulation_no_trap_1_material_chemical_pot():
     Index._globalcount = 8
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "materials": [{
             "borders": [0, 1],
             "E_D": 4,
@@ -709,6 +718,7 @@ def test_formulation_1_trap_1_material_chemical_pot():
     Index._globalcount = 8
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "traps": [
             {
                 "k_0": 1,
@@ -802,6 +812,7 @@ def test_formulation_extrinsic_traps():
     eta_a = 6e-4
     eta_b = 2e-4
     parameters = {
+        "boundary_conditions": [],
         "traps": [{
             "k_0": 1,
             "E_k": 2,
@@ -861,6 +872,7 @@ def test_formulation_with_several_ids_per_material():
         return domain
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "traps": [],
         "materials": [{
 
@@ -938,6 +950,7 @@ def test_formulation_material_dependent_trap_properties():
         return domain
     dt = 1
     parameters = {
+        "boundary_conditions": [],
         "traps": [
             {
                 "k_0": [1, 6],
@@ -1040,6 +1053,7 @@ def test_duplicate_material_dependent_trap_error():
 
     # BUILD
     parameters = {
+        "boundary_conditions": [],
         "traps": [
             {
                 "k_0": [1, 1, 6],
@@ -1096,7 +1110,7 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     catching bug described in issue #305
     '''
 
-    parameters = {}
+    parameters = {"boundary_conditions": [],}
     mat1 = {
         "E_D": 0,
         "D_0": 1,
