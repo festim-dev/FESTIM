@@ -58,6 +58,24 @@ class BoundaryCondition:
         self.expression = expression_BC
         return expression_BC
 
+    def create_form_for_flux(self, T, solute):
+        if self.type == "flux":
+            form = sp.printing.ccode(self.value)
+            form = Expression(form, t=0, degree=2)
+            self.sub_expressions.append(form)
+        elif self.type == "recomb":
+            form = recombination_flux(T, solute, self.prms)
+        elif self.type == "flux_custom":
+            prms = {}
+            for key, val in self.prms.items():
+                if isinstance(val, (int, float)):
+                    prms[key] = Constant(val)
+                else:
+                    prms[key] = Expression(sp.printing.ccode(val), t=0, degree=1)
+            form = self.function(T, solute, prms)
+            self.sub_expressions += [expression for expression in prms.values()]
+        return form
+
 
 def define_dirichlet_bcs_T(simulation):
     """Creates a list of BCs for thermal problem
@@ -113,44 +131,14 @@ def apply_fluxes(simulation):
     else:
         solute = solutions[0]
 
-    for bc in simulation.parameters["boundary_conditions"]:
-        if bc["type"] not in FESTIM.helpers.bc_types["dc"]:
-            check_flux_bc_type(bc)
-            flux = create_form_for_flux(simulation.T, expressions, solute, bc)
+    for bc in simulation.boundary_conditions:
+        if bc.type not in FESTIM.helpers.bc_types["dc"]:
+            flux = bc.create_form_for_flux(simulation.T, solute)
+            expressions += bc.sub_expressions
 
-            if type(bc['surfaces']) is not list:
-                surfaces = [bc['surfaces']]
-            else:
-                surfaces = bc['surfaces']
-            for surf in surfaces:
+            for surf in bc.surfaces:
                 F += -test_solute*flux*simulation.ds(surf)
     return F, expressions
-
-
-def create_form_for_flux(T, expressions, solute, bc):
-    if bc["type"] == "flux":
-        flux = sp.printing.ccode(bc["value"])
-        flux = Expression(flux, t=0, degree=2)
-        expressions.append(flux)
-    elif bc["type"] == "recomb":
-        Kr = bc["Kr_0"]*exp(-bc["E_Kr"]/FESTIM.k_B/T)
-        flux = -Kr*solute**bc["order"]
-    elif bc["type"] == "flux_custom":
-        ignored_keys = ["type", "surfaces", "function"]
-        prms = {}
-        for key, val in bc.items():
-            if key not in ignored_keys:
-                prms[key] = Expression(sp.printing.ccode(val), t=0, degree=1)
-        flux = bc["function"](T, solute, prms)
-        expressions += [expression for expression in prms.values()]
-    return flux
-
-
-def check_flux_bc_type(bc):
-    if bc["type"] not in FESTIM.helpers.bc_types["neumann"] and \
-               bc["type"] not in FESTIM.helpers.bc_types["robin"]:
-        raise NameError(
-                    "Unknown boundary condition type : " + bc["type"])
 
 
 class BoundaryConditionTheta(UserExpression):
@@ -218,6 +206,11 @@ class BoundaryConditionExpression(UserExpression):
 
     def value_shape(self):
         return ()
+
+
+def recombination_flux(T, c, prms):
+    Kr = prms["Kr_0"]*exp(-prms["E_Kr"]/FESTIM.k_B/T)
+    return -Kr*c**prms["order"]
 
 
 def dc_imp(T, prms):

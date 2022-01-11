@@ -599,18 +599,14 @@ def test_create_form_for_flux_flux_custom():
     expr_foo = 1 + 2*FESTIM.t + FESTIM.x
     expr_T = 2 + FESTIM.x + FESTIM.t
     expr_c = FESTIM.x*FESTIM.x
-    boundary_condition = {
-        "type": "flux_custom",
-        "function": func,
-        "foo": expr_foo,
-        "surfaces": [1, 0]
-    }
+
     T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
     solute = fenics.Expression(sp.printing.ccode(expr_c), degree=1, t=0)
     expressions = [T, solute]
 
     # run
-    value_BC = FESTIM.create_form_for_flux(T, expressions, solute, boundary_condition)
+    my_BC = FESTIM.BoundaryCondition(type="flux_custom", surfaces=[1, 0], function=func, foo=expr_foo)
+    value_BC = my_BC.create_form_for_flux(T, solute)
 
     # test
     mesh = fenics.UnitIntervalMesh(10)
@@ -620,7 +616,7 @@ def test_create_form_for_flux_flux_custom():
     for t in range(10):
 
         expected_expr.t = t
-        for expr in expressions:
+        for expr in my_BC.sub_expressions + expressions:
             expr.t = t
         expected = fenics.project(expected_expr, V)
         computed = fenics.project(value_BC, V)
