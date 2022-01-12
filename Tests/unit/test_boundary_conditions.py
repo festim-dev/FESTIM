@@ -186,7 +186,6 @@ def test_define_dirichlet_bcs_theta():
     V = fenics.FunctionSpace(mesh, 'P', 1)
     u = fenics.Function(V)
     v = fenics.TestFunction(V)
-    temp = fenics.Expression("200 + (x[0] + 1)*t", t=1, degree=1)
 
     vm = fenics.MeshFunction("size_t", mesh, 2, 1)
     left = fenics.CompiledSubDomain('x[0] < 0.5')
@@ -205,13 +204,16 @@ def test_define_dirichlet_bcs_theta():
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature(type="expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
+    my_temp.create_functions(V)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
     for i in range(0, 3):
-        temp.t = i
+        my_temp.expression.t = i
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
         expressions[0].t = i
         expressions[1].t = i
 
@@ -219,21 +221,21 @@ def test_define_dirichlet_bcs_theta():
         expr = fenics.interpolate(expressions[1], V)
         assert np.isclose(
             expr(0.25, 0.5),
-            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/temp(0.25, 0.5))))
+            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0.25, 0.5))))
         assert np.isclose(
             expr(0.75, 0.5),
-            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/temp(0.75, 0.5))))
+            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(0.75, 0.5))))
 
         # Test that the BCs can be applied to a problem
         # and gives the correct values
         fenics.solve(F == 0, u, bcs[0])
         assert np.isclose(
             u(0.25, 0.5),
-            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/temp(0, 0.5))))
+            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0, 0.5))))
         fenics.solve(F == 0, u, bcs[1])
         assert np.isclose(
             u(0.75, 0.5),
-            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))))
+            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(1, 0.5))))
 
 
 def test_define_dirichlet_bcs_fail():
@@ -293,10 +295,13 @@ def test_bc_recomb():
     my_sim.V = V
     my_sim.volume_markers = None
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature(type="expression", value=T_expr)
+    my_temp.create_functions(V)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
     for current_time in range(0, 3):
-        temp.t = current_time
+        my_temp.expression.t = current_time
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
         expressions[0].t = current_time
         expressions[1].t = current_time
 
@@ -361,13 +366,15 @@ def test_bc_recomb_instant_recomb():
     my_sim.volume_markers = None
     my_sim.surface_markers = sm
     my_temp = FESTIM.Temperature(type="expression", value=T_expr)
+    my_temp.create_functions(V)
     my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
 
     for current_time in range(0, 3):
-        temp.t = current_time
-        expressions[0].t = current_time
-        expressions[1].t = current_time
+        my_temp.expression.t = current_time
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
+        for expr in expressions:
+            expr.t = current_time
 
         for x_ in [0, 1]:
             T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
