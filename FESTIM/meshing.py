@@ -126,11 +126,11 @@ def subdomains_1D(mesh, materials, size):
     for cell in cells(mesh):
         for material in materials:
             if len(materials) == 1:
-                volume_markers[cell] = material['id']
+                volume_markers[cell] = material.id
             else:
-                if cell.midpoint().x() >= material['borders'][0] \
-                 and cell.midpoint().x() <= material['borders'][1]:
-                    volume_markers[cell] = material['id']
+                if cell.midpoint().x() >= material.borders[0] \
+                 and cell.midpoint().x() <= material.borders[1]:
+                    volume_markers[cell] = material.id
     surface_markers = MeshFunction(
         "size_t", mesh, mesh.topology().dim()-1, 0)
     surface_markers.set_all(0)
@@ -164,7 +164,7 @@ def check_borders(size, materials):
     check = True
     all_borders = []
     for m in materials:
-        all_borders.append(m["borders"])
+        all_borders.append(m.borders)
     all_borders = sorted(all_borders, key=itemgetter(0))
     if all_borders[0][0] is not 0:
         raise ValueError("Borders don't begin at zero")

@@ -1,11 +1,18 @@
 def find_material_from_id(materials, mat_id):
-    '''Returns the material from a given id
-    Parameters:
-    - materials : list of dicts ex: [{"id": 2}, {"id": 3}, {"id": 5}]
-    - id : int
-    '''
+    """Returns the material from a given id
+
+    Args:
+        materials (list): contains FESTIM.Material objects
+        mat_id (int): id of the wanted material
+
+    Raises:
+        ValueError: if the id isn't found
+
+    Returns:
+        FESTIM.Material: the material that has the id mat_id
+    """
     for material in materials:
-        mat_ids = material['id']
+        mat_ids = material.id
         if type(mat_ids) is not list:
             mat_ids = [mat_ids]
         if mat_id in mat_ids:

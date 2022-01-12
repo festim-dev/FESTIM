@@ -73,7 +73,7 @@ class DirichletBC(BoundaryCondition):
         # create modified BC based on solubility
         expression_BC = BoundaryConditionTheta(
                             self.expression,
-                            simulation.parameters["materials"],
+                            simulation.materials,
                             simulation.volume_markers, simulation.T)
         self.expression = expression_BC
         return expression_BC
@@ -190,7 +190,7 @@ class BoundaryConditionTheta(f.UserExpression):
         Args:
             bci (fenics.Expression): value of BC
             mesh (fenics.mesh): mesh
-            materials (list): contains dicts for materials
+            materials (list): contains FESTIM.Material objects
             vm (fenics.MeshFunction): volume markers
             T (fenics.Function): Temperature
         """
@@ -206,8 +206,8 @@ class BoundaryConditionTheta(f.UserExpression):
         subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
-        S_0 = material["S_0"]
-        E_S = material["E_S"]
+        S_0 = material.S_0
+        E_S = material.E_S
         value[0] = self._bci(x)/(S_0*f.exp(-E_S/FESTIM.k_B/self._T(x)))
 
     def value_shape(self):

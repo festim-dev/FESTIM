@@ -204,8 +204,8 @@ class ArheniusCoeff(UserExpression):
         subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
-        D_0 = material[self._pre_exp]
-        E_D = material[self._E]
+        D_0 = getattr(material, self._pre_exp)
+        E_D = getattr(material, self._E)
         value[0] = D_0*exp(-E_D/FESTIM.k_B/self._T(x))
 
     def value_shape(self):
@@ -226,10 +226,11 @@ class ThermalProp(UserExpression):
         subdomain_id = self._vm[cell]
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
-        if callable(material[self._key]):
-            value[0] = material[self._key](self._T(x))
+        attribute = getattr(material, self._key)
+        if callable(attribute):
+            value[0] = attribute(self._T(x))
         else:
-            value[0] = material[self._key]
+            value[0] = attribute
 
     def value_shape(self):
         return ()
@@ -249,8 +250,8 @@ class HCoeff(UserExpression):
         material = FESTIM.helpers.find_material_from_id(
             self._materials, subdomain_id)
 
-        value[0] = material["H"]["free_enthalpy"] + \
-            self._T(x)*material["H"]["entropy"]
+        value[0] = material.free_enthalpy + \
+            self._T(x)*material.entropy
 
     def value_shape(self):
         return ()
@@ -281,16 +282,16 @@ def create_properties(mesh, materials, vm, T):
     H = None
     S = None
     for mat in materials:
-        if "S_0" in mat.keys():
+        if mat.S_0 is not None:
             S = ArheniusCoeff(mesh, materials, vm, T, "S_0", "E_S", degree=2)
-        if "thermal_cond" in mat.keys():
+        if mat.thermal_cond is not None:
             thermal_cond = ThermalProp(mesh, materials, vm, T,
                                        'thermal_cond', degree=2)
             cp = ThermalProp(mesh, materials, vm, T,
                              'heat_capacity', degree=2)
             rho = ThermalProp(mesh, materials, vm, T,
                               'rho', degree=2)
-        if "H" in mat.keys():
+        if mat.H is not None:
             H = HCoeff(mesh, materials, vm, T, degree=2)
 
     return D, thermal_cond, cp, rho, H, S

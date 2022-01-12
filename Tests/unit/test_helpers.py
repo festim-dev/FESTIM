@@ -1,4 +1,5 @@
 from FESTIM.helpers import help_key, find_material_from_id
+from FESTIM.materials import Material
 import pytest
 
 
@@ -17,12 +18,8 @@ def test_find_material_from_id():
     material
     """
     materials = [
-        {
-            "id": 1
-        },
-        {
-            "id": 2
-        },
+        Material(id=1, D_0=None, E_D=None),
+        Material(id=2, D_0=None, E_D=None),
     ]
     assert find_material_from_id(materials, 1) == materials[0]
     assert find_material_from_id(materials, 2) == materials[1]
@@ -33,9 +30,7 @@ def test_find_material_from_id_with_several_ids():
     per material
     """
     materials = [
-        {
-            "id": [1, 2]
-        },
+        Material(id=[1, 2], D_0=None, E_D=None),
     ]
     assert find_material_from_id(materials, 1) == materials[0]
     assert find_material_from_id(materials, 2) == materials[0]
@@ -48,9 +43,9 @@ def test_find_material_from_id_unfound_id():
         - check that an error is rasied
     """
     materials = [
-        {"id": 5},
-        {"id": 2},
-        {"id": -1},
+        Material(id=5, D_0=None, E_D=None),
+        Material(id=2, D_0=None, E_D=None),
+        Material(id=-1, D_0=None, E_D=None),
     ]
     id_test = 1
     with pytest.raises(ValueError,
