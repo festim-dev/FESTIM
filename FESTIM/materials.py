@@ -31,12 +31,11 @@ class Materials:
     def __init__(self, materials=[]):
         self.materials = materials
 
-    def check_borders(self, size, materials):
+    def check_borders(self, size):
         """Checks that the borders given match
 
         Arguments:
             size {float} -- float, size of the domain
-            materials {list} -- contains dicts with materials parameters
 
         Raises:
             ValueError: if the borders don't begin at zero
@@ -47,7 +46,7 @@ class Materials:
             bool -- True if everything's alright
         """
         all_borders = []
-        for m in materials:
+        for m in self.materials:
             all_borders.append(m.borders)
         all_borders = sorted(all_borders, key=itemgetter(0))
         if all_borders[0][0] is not 0:
@@ -61,13 +60,14 @@ class Materials:
 
     def check_materials(self, temp_type, derived_quantities={}):
 
-        self.check_consistency()
+        if len(self.materials) > 0:  # TODO: get rid of this...
+            self.check_consistency()
 
-        self.check_for_unused_properties(temp_type, derived_quantities)
+            self.check_for_unused_properties(temp_type, derived_quantities)
 
-        self.check_unique_ids()
+            self.check_unique_ids()
 
-        self.check_missing_properties(temp_type, derived_quantities)
+            self.check_missing_properties(temp_type, derived_quantities)
 
     def check_unique_ids(self):
         # check that ids are different

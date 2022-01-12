@@ -20,7 +20,6 @@ class Mesh1D(Mesh):
 
         Arguments:
             materials {FESTIM.Materials} -- contains the materials
-            size {float} -- size of the domain
 
         Returns:
             fenics.MeshFunction() -- that contains the subdomains
