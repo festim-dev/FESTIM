@@ -1,7 +1,6 @@
 import os.path
 from os import path
 import FESTIM
-from FESTIM.meshing import subdomains_1D
 from FESTIM.post_processing import header_derived_quantities,\
     create_properties, run_post_processing
 from FESTIM.export import define_xdmf_files
@@ -97,9 +96,10 @@ def test_run_post_processing(tmpdir):
     u = fenics.Function(V)
     T = fenics.interpolate(fenics.Constant(100), W)
     my_sim = FESTIM.Simulation(parameters)
-
-    volume_markers, surface_markers = \
-        subdomains_1D(mesh, my_sim.materials, size=1)
+    my_mesh = FESTIM.Mesh1D()
+    my_mesh.mesh = mesh
+    my_mesh.size = 1
+    my_mesh.define_markers(my_sim.materials)
 
     t = 0
     dt = 1
@@ -109,13 +109,13 @@ def test_run_post_processing(tmpdir):
         [header_derived_quantities(parameters)]
     properties = \
         create_properties(
-            mesh, my_sim.materials, volume_markers, T)
+            mesh, my_sim.materials, my_mesh.volume_markers, T)
     my_sim.final_time = 20
     my_sim.transient = True
     my_sim.u = u
     my_sim.T = T
     my_sim.volume_markers, my_sim.surface_markers = \
-        volume_markers, surface_markers
+        my_mesh.volume_markers, my_mesh.surface_markers
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
     my_sim.dt = dt
     my_sim.files = files
@@ -202,8 +202,10 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     T = fenics.interpolate(fenics.Constant(20), W)
     my_sim = FESTIM.Simulation(parameters)
 
-    volume_markers, surface_markers = \
-        subdomains_1D(mesh, my_sim.materials, size=1)
+    my_mesh = FESTIM.Mesh1D()
+    my_mesh.mesh = mesh
+    my_mesh.size = 1
+    my_mesh.define_markers(my_sim.materials)
 
     t = 0
     dt = 1
@@ -212,12 +214,12 @@ def test_run_post_processing_pure_diffusion(tmpdir):
         [header_derived_quantities(parameters)]
     properties = \
         create_properties(
-            mesh, my_sim.materials, volume_markers, T)
+            mesh, my_sim.materials, my_mesh.volume_markers, T)
     my_sim.transient = True
     my_sim.u = u
     my_sim.T = T
     my_sim.volume_markers, my_sim.surface_markers = \
-        volume_markers, surface_markers
+        my_mesh.volume_markers, my_mesh.surface_markers
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
     my_sim.dt = dt
     my_sim.files = files
@@ -290,8 +292,10 @@ def test_run_post_processing_flux(tmpdir):
     T = fenics.interpolate(T, V)
     my_sim = FESTIM.Simulation(parameters)
 
-    volume_markers, surface_markers = \
-        subdomains_1D(mesh, my_sim.materials, size=1)
+    my_mesh = FESTIM.Mesh1D()
+    my_mesh.mesh = mesh
+    my_mesh.size = 1
+    my_mesh.define_markers(my_sim.materials)
 
     t = 0
     dt = 1
@@ -300,12 +304,13 @@ def test_run_post_processing_flux(tmpdir):
     tab = [header_derived_quantities(parameters)]
     properties = \
         create_properties(
-            mesh, my_sim.materials, volume_markers, T)
+            mesh, my_sim.materials, my_mesh.volume_markers, T)
     t += dt
     my_sim.transient = True
     my_sim.u = u
     my_sim.T = T
-    my_sim.volume_markers, my_sim.surface_markers = volume_markers, surface_markers
+    my_sim.volume_markers, my_sim.surface_markers = \
+        my_mesh.volume_markers, my_mesh.surface_markers
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
     my_sim.dt = dt
     my_sim.t = t

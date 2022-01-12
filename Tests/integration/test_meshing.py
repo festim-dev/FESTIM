@@ -27,7 +27,7 @@ def test_define_markers(tmpdir):
 
     # run
     my_sim = FESTIM.Simulation(parameters={"boundary_conditions": []})
-    my_sim.mesh = mesh
+    my_sim.mesh = FESTIM.Mesh(mesh, vm, sm)
     my_sim.parameters["mesh_parameters"] = {}
     my_sim.parameters["mesh_parameters"]["mesh_file"] = \
         str(Path(filename_volume))
