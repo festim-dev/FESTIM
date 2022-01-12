@@ -67,6 +67,8 @@ class Materials:
 
         self.check_unique_ids()
 
+        self.check_missing_properties(temp_type, derived_quantities)
+
     def check_unique_ids(self):
         # check that ids are different
         mat_ids = []
@@ -117,6 +119,12 @@ class Materials:
                 value.append(getattr(mat, attr))
             if value.count(None) not in [0, len(self.materials)]:
                 raise ValueError("{} is not defined for all materials".format(attr))
+
+    def check_missing_properties(self, temp_type, derived_quantities):
+        if temp_type != "expression" and \
+                self.materials[0].thermal_cond is None:
+            raise NameError("Missing thermal_cond key in materials")
+        # TODO: add check for thermal cond for thermal flux computation
 
     def find_material_from_id(self, mat_id):
         """Returns the material from a given id

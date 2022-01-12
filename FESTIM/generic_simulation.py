@@ -338,14 +338,12 @@ class Simulation():
         vT = self.vT
         self.expressions_FT = []
         self.FT = 0
-        for mat in self.materials:
-            if mat.thermal_cond is None:
-                raise NameError("Missing thermal_cond key in material")
+        for mat in self.materials.materials:
             thermal_cond = mat.thermal_cond
             if callable(thermal_cond):  # if thermal_cond is a function
                 thermal_cond = thermal_cond(T)
 
-            subdomains = mat.id # list of subdomains with this material
+            subdomains = mat.id  # list of subdomains with this material
             if type(subdomains) is not list:
                 subdomains = [subdomains]  # make sure subdomains is a list
             if self.parameters["temperature"]["type"] == "solve_transient":
