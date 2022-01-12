@@ -132,16 +132,16 @@ def create_diffusion_form(simulation, solute_object):
     dt = simulation.dt
     dx = simulation.dx
 
-    for material in simulation.parameters["materials"]:
-        D_0 = material['D_0']
-        E_D = material['E_D']
+    for material in simulation.materials:
+        D_0 = material.D_0
+        E_D = material.E_D
         if simulation.chemical_pot:
-            E_S = material['E_S']
-            S_0 = material['S_0']
+            E_S = material.E_S
+            S_0 = material.S_0
             c_0 = solute_object.solution*S_0*exp(-E_S/k_B/T)
             c_0_n = solute_object.prev_solution*S_0*exp(-E_S/k_B/T_n)
 
-        subdomains = material['id']  # list of subdomains with this material
+        subdomains = material.id  # list of subdomains with this material
         if type(subdomains) is not list:
             subdomains = [subdomains]  # make sure subdomains is a list
 
@@ -152,7 +152,7 @@ def create_diffusion_form(simulation, solute_object):
             F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                      grad(solute_object.test_function))*dx(subdomain)
             if simulation.soret:
-                Q = material["H"]["free_enthalpy"]*T + material["H"]["entropy"]
+                Q = material.free_enthalpy*T + material.entropy
                 F += dot(D_0 * exp(-E_D/k_B/T) *
                          Q * c_0 / (FESTIM.R * T**2) * grad(T),
                          grad(solute_object.test_function))*dx(subdomain)
@@ -225,7 +225,7 @@ def create_one_trap_form(simulation, trap, solute):
     test_function = trap.test_function
     trap_materials = trap.materials
 
-    materials = simulation.parameters["materials"]
+    materials = simulation.materials
     dt = simulation.dt
     dx = simulation.dx
     T = simulation.T
@@ -243,7 +243,7 @@ def create_one_trap_form(simulation, trap, solute):
         # if the sim is steady state and
         # if a trap is not defined in one subdomain
         # add c_t = 0 to the form in this subdomain
-        all_mat_ids = [mat["id"] for mat in materials]
+        all_mat_ids = [mat.id for mat in materials]
         for mat_id in all_mat_ids:
             if mat_id not in trap_materials:
                 F += solution*test_function*dx(mat_id)
@@ -272,8 +272,8 @@ def create_one_trap_form(simulation, trap, solute):
         c_0 = solute.solution
         if simulation.chemical_pot:
             # change of variable
-            S_0 = corresponding_material['S_0']
-            E_S = corresponding_material['E_S']
+            S_0 = corresponding_material.S_0
+            E_S = corresponding_material.E_S
             c_0 = c_0*S_0*exp(-E_S/k_B/T)
 
         # k(T)*c_m*(n - c_t) - p(T)*c_t

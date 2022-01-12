@@ -96,9 +96,10 @@ def test_run_post_processing(tmpdir):
     W = fenics.FunctionSpace(mesh, 'P', 1)
     u = fenics.Function(V)
     T = fenics.interpolate(fenics.Constant(100), W)
+    my_sim = FESTIM.Simulation(parameters)
 
     volume_markers, surface_markers = \
-        subdomains_1D(mesh, parameters["materials"], size=1)
+        subdomains_1D(mesh, my_sim.materials, size=1)
 
     t = 0
     dt = 1
@@ -108,8 +109,7 @@ def test_run_post_processing(tmpdir):
         [header_derived_quantities(parameters)]
     properties = \
         create_properties(
-            mesh, parameters["materials"], volume_markers, T)
-    my_sim = FESTIM.Simulation(parameters)
+            mesh, my_sim.materials, volume_markers, T)
     my_sim.final_time = 20
     my_sim.transient = True
     my_sim.u = u
@@ -200,9 +200,10 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     fenics.assign(u.sub(0), fenics.interpolate(fenics.Constant(10), V.sub(0).collapse()))
     fenics.assign(u.sub(1), fenics.interpolate(fenics.Constant(1), V.sub(1).collapse()))
     T = fenics.interpolate(fenics.Constant(20), W)
+    my_sim = FESTIM.Simulation(parameters)
 
     volume_markers, surface_markers = \
-        subdomains_1D(mesh, parameters["materials"], size=1)
+        subdomains_1D(mesh, my_sim.materials, size=1)
 
     t = 0
     dt = 1
@@ -211,8 +212,7 @@ def test_run_post_processing_pure_diffusion(tmpdir):
         [header_derived_quantities(parameters)]
     properties = \
         create_properties(
-            mesh, parameters["materials"], volume_markers, T)
-    my_sim = FESTIM.Simulation(parameters)
+            mesh, my_sim.materials, volume_markers, T)
     my_sim.transient = True
     my_sim.u = u
     my_sim.T = T
@@ -288,9 +288,10 @@ def test_run_post_processing_flux(tmpdir):
     u = fenics.interpolate(u, V)
     T = fenics.Expression('100*x[0] + 200', degree=1)
     T = fenics.interpolate(T, V)
+    my_sim = FESTIM.Simulation(parameters)
 
     volume_markers, surface_markers = \
-        subdomains_1D(mesh, parameters["materials"], size=1)
+        subdomains_1D(mesh, my_sim.materials, size=1)
 
     t = 0
     dt = 1
@@ -299,9 +300,8 @@ def test_run_post_processing_flux(tmpdir):
     tab = [header_derived_quantities(parameters)]
     properties = \
         create_properties(
-            mesh, parameters["materials"], volume_markers, T)
+            mesh, my_sim.materials, volume_markers, T)
     t += dt
-    my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u = u
     my_sim.T = T

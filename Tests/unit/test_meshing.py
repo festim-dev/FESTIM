@@ -2,7 +2,7 @@
 from FESTIM.meshing import mesh_and_refine, subdomains_1D,\
     read_subdomains_from_xdmf, check_borders,\
     generate_mesh_from_vertices
-from FESTIM import Simulation
+from FESTIM import Simulation, Material
 import fenics
 import pytest
 import sympy as sp
@@ -61,15 +61,9 @@ def test_subdomains_1D():
     mesh = fenics.UnitIntervalMesh(20)
 
     materials = [
-        {
-            "borders": [0, 0.5],
-            "id": 1,
-            },
-        {
-            "borders": [0.5, 1],
-            "id": 2,
-            }
-            ]
+        Material(id=1, D_0=None, E_D=None, borders=[0, 0.5]),
+        Material(id=2, D_0=None, E_D=None, borders=[0.5, 1]),
+        ]
     volume_markers, surface_markers = subdomains_1D(mesh, materials, 1)
     for cell in fenics.cells(mesh):
         if cell.midpoint().x() < 0.5:
@@ -80,14 +74,8 @@ def test_subdomains_1D():
 
 def test_check_borders():
     materials = [
-        {
-            "borders": [0.5, 0.7],
-            "id": 1,
-            },
-        {
-            "borders": [0, 0.5],
-            "id": 2,
-            }
+        Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),
+        Material(id=2, D_0=None, E_D=None, borders=[0, 0.5]),
             ]
     size = 0.7
     assert check_borders(size, materials) is True
@@ -95,42 +83,24 @@ def test_check_borders():
     with pytest.raises(ValueError, match=r'zero'):
         size = 0.7
         materials = [
-            {
-                "borders": [0.5, 0.7],
-                "id": 1,
-                },
-            {
-                "borders": [0.2, 0.5],
-                "id": 2,
-                }
-                ]
+            Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),
+            Material(id=1, D_0=None, E_D=None, borders=[0.2, 0.5]),
+            ]
         check_borders(size, materials)
 
     with pytest.raises(ValueError, match=r'each other'):
         materials = [
-            {
-                "borders": [0.5, 1],
-                "id": 1,
-                },
-            {
-                "borders": [0, 0.6],
-                "id": 2,
-                },
-            {
-                "borders": [0.6, 1],
-                "id": 3,
-                }
-                ]
+            Material(id=1, D_0=None, E_D=None, borders=[0.5, 1]),
+            Material(id=1, D_0=None, E_D=None, borders=[0, 0.6]),
+            Material(id=1, D_0=None, E_D=None, borders=[0.6, 1]),
+            ]
         size = 1
         check_borders(size, materials)
 
     with pytest.raises(ValueError, match=r'size'):
         materials = [
-            {
-                "borders": [0, 1],
-                "id": 1,
-                }
-                ]
+            Material(id=1, D_0=None, E_D=None, borders=[0, 1]),
+        ]
         size = 3
         check_borders(size, materials)
 
@@ -301,10 +271,14 @@ def test_integration_mesh_from_vertices_subdomains():
     }
     materials = [
         {
+            "D_0": None,
+            "E_D": None,
             "borders": [0, 2],
             "id": 1
         },
         {
+            "D_0": None,
+            "E_D": None,
             "borders": [2, 24],
             "id": 2
         }

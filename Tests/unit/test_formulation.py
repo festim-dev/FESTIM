@@ -19,8 +19,8 @@ def test_formulation_no_trap_1_material():
     parameters = {
         "boundary_conditions": [],
         "materials": [{
-            "alpha": 1,
-            "beta": 2,
+            "D_0": 1,
+            "E_D": 2,
             "borders": [0, 1],
             "E_D": 4,
             "D_0": 5,
@@ -487,6 +487,8 @@ def test_formulation_heat_transfer():
     parameters = {
         "boundary_conditions": [],
         "materials": [{
+            "D_0": None,
+            "E_D": None,
             "borders": [0, 1],
             "thermal_cond": thermal_cond,
             "rho": 5,

@@ -23,11 +23,15 @@ def test_fluxes_chemical_pot():
     parameters = {
         "materials": [
             {
+                "D_0": None,
+                "E_D": None,
                 "S_0": S_0,
                 "E_S": E_S,
                 "id": 1
             },
             {
+                "D_0": None,
+                "E_D": None,
                 "S_0": S_0,
                 "E_S": E_S,
                 "id": 2
@@ -154,11 +158,15 @@ def test_define_dirichlet_bcs_theta():
     parameters = {
         "materials": [
             {
+                "D_0": None,
+                "E_D": None,
                 "S_0": S_01,
                 "E_S": E_S1,
                 "id": 1
                 },
             {
+                "D_0": None,
+                "E_D": None,
                 "S_0": S_02,
                 "E_S": E_S2,
                 "id": 2
@@ -245,9 +253,13 @@ def test_bc_recomb():
     parameters = {
         "materials": [
             {
+                "D_0": None,
+                "E_D": None,
                 "id": 1
                 },
             {
+                "D_0": None,
+                "E_D": None,
                 "id": 2
                 }
         ],
@@ -311,9 +323,13 @@ def test_bc_recomb_instant_recomb():
     parameters = {
         "materials": [
             {
+                "D_0": None,
+                "E_D": None,
                 "id": 1
                 },
             {
+                "D_0": None,
+                "E_D": None,
                 "id": 2
                 }
         ],
@@ -380,11 +396,15 @@ def test_bc_recomb_chemical_pot():
     parameters = {
         "materials": [
             {
+                "D_0": None,
+                "E_D": None,
                 "S_0": S_01,
                 "E_S": E_S1,
                 "id": 1
                 },
             {
+                "D_0": None,
+                "E_D": None,
                 "S_0": S_02,
                 "E_S": E_S2,
                 "id": 2
