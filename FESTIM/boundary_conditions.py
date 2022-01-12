@@ -81,7 +81,7 @@ class DirichletBC(BoundaryCondition):
         expression_BC = BoundaryConditionTheta(
                             self.expression,
                             simulation.materials,
-                            simulation.volume_markers, simulation.T)
+                            simulation.volume_markers, simulation.T.T)
         self.expression = expression_BC
         return expression_BC
 

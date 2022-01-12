@@ -16,7 +16,8 @@ class Temperature:
         self.F = 0
         self.source_term = source_term
 
-    def create_functions(self, V, materials, dx, ds, dt):
+    def create_functions(self, V, materials=None, dx=None, ds=None, dt=None):
+        # TODO: materials, dx, ds, dt should be optional
         self.T = Function(V, name="T")
         self.T_n = Function(V, name="T_n")
         if self.type == "expression":
@@ -27,7 +28,6 @@ class Temperature:
         else:
             # Define variational problem for heat transfers
             self.v_T = TestFunction(V)
-            self.create_dirichlet_bcs(V, ds.subdomain_data())
 
             if self.type == "solve_transient":
                 ccode_T_ini = sp.printing.ccode(self.initial_value)
@@ -36,6 +36,7 @@ class Temperature:
 
             self.define_variational_problem(materials, dx, ds, dt)
             # self.expressions += expressions_bcs_T + self.expressions_FT
+            self.create_dirichlet_bcs(V, ds.subdomain_data())
 
             if self.type == "solve_stationary":
                 print("Solving stationary heat equation")

@@ -175,7 +175,9 @@ def test_output_of_run_without_traps_no_chemical_pot():
         {"boundary_conditions": [], "exports": {}, "traps": []})
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_sim.u = fenics.Function(V_CG1)
-    my_sim.T = fenics.Function(V_CG1)
+    my_temp = FESTIM.Temperature("solve_stationary")
+    my_temp.T = fenics.Function(V_CG1)
+    my_sim.T = my_temp
     my_sim.V_DG1 = V_DG1
 
     # concentrations
@@ -223,7 +225,9 @@ def test_output_of_run_without_traps_with_chemical_pot():
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_sim.chemical_pot = True
     my_sim.S = fenics.Constant(3)
-    my_sim.T = fenics.Function(V_CG1)
+    my_temp = FESTIM.Temperature("solve_stationary")
+    my_temp.T = fenics.Function(V_CG1)
+    my_sim.T = my_temp
     my_sim.V_DG1 = V_DG1
 
     # concentrations
@@ -271,7 +275,9 @@ def test_output_of_run_with_traps_with_chemical_pot():
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_sim.chemical_pot = True
     my_sim.S = fenics.Constant(3)
-    my_sim.T = fenics.Function(V_CG1)
+    my_temp = FESTIM.Temperature("solve_stationary")
+    my_temp.T = fenics.Function(V_CG1)
+    my_sim.T = my_temp
     my_sim.V_DG1 = V_DG1
 
     # concentrations

@@ -428,8 +428,6 @@ def test_bc_recomb_chemical_pot():
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
 
-    temp = fenics.Expression("200 + (x[0] + 1)*t", t=1, degree=1)
-
     vm = fenics.MeshFunction("size_t", mesh, 2, 1)
     left = fenics.CompiledSubDomain('x[0] < 0.5')
     right = fenics.CompiledSubDomain('x[0] >= 0.5')
@@ -447,7 +445,9 @@ def test_bc_recomb_chemical_pot():
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature("expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
+    my_temp.create_functions(V)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
 
     # Set up formulation
@@ -456,9 +456,10 @@ def test_bc_recomb_chemical_pot():
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
     for i in range(0, 3):
-        temp.t = i
-        expressions[0].t = i
-        expressions[1].t = i
+        my_temp.expression.t = i
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
+        for expr in expressions:
+            expr.t = i
 
         T_left = 200 + i
         T_right = 200 + 2*i
@@ -466,19 +467,20 @@ def test_bc_recomb_chemical_pot():
         D_right = D_0*np.exp(-E_D/FESTIM.k_B/T_right)
         K_left = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_left)
         K_right = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_right)
-        S_left = S_01*np.exp(-E_S1/FESTIM.k_B/temp(0, 0.5))
-        S_right = S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))
+        S_left = S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0, 0.5))
+        S_right = S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(1, 0.5))
 
         # Test that the BCs can be applied to a problem
         # and gives the correct values
         fenics.solve(F == 0, u, bcs[0])
-        assert np.isclose(
-            u(0.25, 0.5),
-            (phi*R_p/D_left + (phi/K_left)**0.5)/S_left)
+        expected = (phi*R_p/D_left + (phi/K_left)**0.5)/S_left
+        computed = u(0.25, 0.5)
+        assert np.isclose(expected, computed)
+
         fenics.solve(F == 0, u, bcs[1])
-        assert np.isclose(
-            u(0.25, 0.5),
-            (phi*R_p/D_right + (phi/K_right)**0.5)/S_right)
+        expected = (phi*R_p/D_right + (phi/K_right)**0.5)/S_right
+        computed = u(0.25, 0.5)
+        assert np.isclose(expected, computed)
 
 
 def test_sievert_bc_varying_time():
