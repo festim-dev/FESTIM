@@ -1,5 +1,4 @@
 import fenics as f
-from operator import itemgetter
 import numpy as np
 
 
@@ -174,33 +173,3 @@ class MeshFromXDMF(Mesh):
         print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers
-
-
-def check_borders(size, materials):
-    """Checks that the borders given match
-
-    Arguments:
-        size {float} -- float, size of the domain
-        materials {list} -- contains dicts with materials parameters
-
-    Raises:
-        ValueError: if the borders don't begin at zero
-        ValueError: if borders don't match
-        ValueError: if borders don't end at size
-
-    Returns:
-        bool -- True if everything's alright
-    """
-    check = True
-    all_borders = []
-    for m in materials:
-        all_borders.append(m.borders)
-    all_borders = sorted(all_borders, key=itemgetter(0))
-    if all_borders[0][0] is not 0:
-        raise ValueError("Borders don't begin at zero")
-    for i in range(0, len(all_borders)-1):
-        if all_borders[i][1] != all_borders[i+1][0]:
-            raise ValueError("Borders don't match to each other")
-    if all_borders[len(all_borders) - 1][1] != size:
-        raise ValueError("Borders don't match with size")
-    return True

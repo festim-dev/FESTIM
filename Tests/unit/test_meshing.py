@@ -1,6 +1,6 @@
 # Unit tests meshing
 from FESTIM.meshing import Mesh, Mesh1D, MeshFromXDMF, MeshFromRefinements, \
-    MeshFromVertices, check_borders
+    MeshFromVertices
 from FESTIM import Simulation, Material
 import fenics
 import pytest

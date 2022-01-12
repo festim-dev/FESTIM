@@ -202,8 +202,7 @@ class ArheniusCoeff(UserExpression):
     def eval_cell(self, value, x, ufc_cell):
         cell = Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
-        material = FESTIM.helpers.find_material_from_id(
-            self._materials, subdomain_id)
+        material = self._materials.find_material_from_id(subdomain_id)
         D_0 = getattr(material, self._pre_exp)
         E_D = getattr(material, self._E)
         value[0] = D_0*exp(-E_D/FESTIM.k_B/self._T(x))
@@ -262,7 +261,7 @@ def create_properties(mesh, materials, vm, T):
 
     Arguments:
         mesh {fenics.Mesh()} -- the mesh
-        materials {dict} -- contains materials parameters
+        materials {FESTIM.Materials} -- contains materials parameters
         vm {fenics.MeshFunction()} -- volume markers
         T {fenics.Function()} -- temperature
 
@@ -274,7 +273,7 @@ def create_properties(mesh, materials, vm, T):
         HCoeff -- enthalpy (SI)
         ArheniusCoeff -- solubility coefficient (SI)
     """
-
+    # TODO: this could be refactored since vm contains the mesh
     D = ArheniusCoeff(mesh, materials, vm, T, "D_0", "E_D", degree=2)
     thermal_cond = None
     cp = None

@@ -1,8 +1,7 @@
-from .helpers import find_material_from_id, update_expressions, help_key, \
+from .helpers import update_expressions, help_key, \
     parameters_helper
 
-from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF,\
-                        check_borders
+from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
 from .initialising import read_from_xdmf, check_no_duplicates
 from .formulations import formulation, formulation_extrinsic_traps
 
@@ -19,7 +18,7 @@ from .post_processing import run_post_processing, compute_error, \
     header_derived_quantities, derived_quantities, \
     check_keys_derived_quantities
 
-from .materials import Material
+from .materials import Material, Materials
 
 from .generic_simulation import Simulation, run
 
