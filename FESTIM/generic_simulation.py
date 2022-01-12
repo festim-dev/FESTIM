@@ -112,7 +112,7 @@ class Simulation():
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
             FESTIM.create_properties(
                 self.mesh.mesh, self.materials,
-                self.volume_markers, self.T)
+                self.volume_markers, self.T.T)
         if self.S is not None:
             self.chemical_pot = True
 
@@ -221,7 +221,7 @@ class Simulation():
         if temp_type == "expression":
             self.T.expression = self.parameters["temperature"]['value']
         else:
-            self.T.bcs, self.T.sub_expressions = FESTIM.define_dirichlet_bcs_T(self)
+            self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
             if temp_type == "solve_transient":
                 self.T.initial_value = self.parameters["temperature"]["initial_condition"]
 
@@ -369,9 +369,9 @@ class Simulation():
             self.expressions, self.t)
 
         if self.parameters["temperature"]["type"] == "expression":
-            self.T_n.assign(self.T)
-            self.T_expr.t = self.t
-            self.T.assign(interpolate(self.T_expr, self.V_CG1))
+            self.T.T_n.assign(self.T.T)
+            self.T.expression.t = self.t
+            self.T.T.assign(interpolate(self.T.expression, self.V_CG1))
         self.D._T = self.T
         if self.H is not None:
             self.H._T = self.T
@@ -392,16 +392,16 @@ class Simulation():
 
         # Solve heat transfers
         if self.parameters["temperature"]["type"] == "solve_transient":
-            dT = TrialFunction(self.T.function_space())
-            JT = derivative(self.FT, self.T, dT)  # Define the Jacobian
+            dT = TrialFunction(self.T.T.function_space())
+            JT = derivative(self.T.F, self.T.T, dT)  # Define the Jacobian
             problem = NonlinearVariationalProblem(
-                self.FT, self.T, self.bcs_T, JT)
+                self.T.F, self.T.T, self.T.dirichlet_bcs, JT)
             solver = NonlinearVariationalSolver(problem)
             newton_solver_prm = solver.parameters["newton_solver"]
             newton_solver_prm["absolute_tolerance"] = 1e-3
             newton_solver_prm["relative_tolerance"] = 1e-10
             solver.solve()
-            self.T_n.assign(self.T)
+            self.T.T_n.assign(self.T.T)
 
         # Solve main problem
         FESTIM.solve_it(
@@ -441,7 +441,7 @@ class Simulation():
         if "error" in self.parameters["exports"].keys():
             error = FESTIM.compute_error(
                 self.parameters["exports"]["error"], self.t,
-                [*res, self.T], self.mesh.mesh)
+                [*res, self.T.T], self.mesh.mesh)
             output["error"] = error
 
         output["parameters"] = self.parameters
@@ -454,7 +454,7 @@ class Simulation():
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
             "solute": res[0],
-            "T": self.T
+            "T": self.T.T
         }
         # add traps to output
         for i in range(len(self.parameters["traps"])):

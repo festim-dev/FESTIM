@@ -17,7 +17,7 @@ def run_post_processing(simulation):
     parameters = simulation.parameters
     transient = simulation.transient
     u = simulation.u
-    T = simulation.T
+    T = simulation.T.T
     markers = [simulation.volume_markers, simulation.surface_markers]
     V_DG1, V_CG1 = simulation.V_DG1, simulation.V_CG1
     t = simulation.t
@@ -395,7 +395,7 @@ def derived_quantities(parameters, solutions,
                 Q = properties[2]
     volume_markers = markers[0]
     surface_markers = markers[1]
-    mesh = solutions[-1].function_space().mesh()
+    mesh = volume_markers.mesh()
     n = FacetNormal(mesh)
     dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
     ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
@@ -423,7 +423,9 @@ def derived_quantities(parameters, solutions,
     derived_quant_dict = parameters["exports"]["derived_quantities"]
     if "surface_flux" in derived_quant_dict.keys():
         for flux in derived_quant_dict["surface_flux"]:
+            print(str(flux["field"]))
             sol = field_to_sol[str(flux["field"])]
+            print(type(sol))
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
                 phi = assemble(prop*dot(grad(sol), n)*ds(surf))

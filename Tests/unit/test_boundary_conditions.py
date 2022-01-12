@@ -349,7 +349,6 @@ def test_bc_recomb_instant_recomb():
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
     T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
-    temp = fenics.Expression(sp.printing.ccode(T_expr), t=0, degree=1)
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
     left = fenics.CompiledSubDomain('x[0] < 0.0001')
@@ -361,7 +360,8 @@ def test_bc_recomb_instant_recomb():
     my_sim.V = V
     my_sim.volume_markers = None
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature(type="expression", value=T_expr)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
 
     for current_time in range(0, 3):

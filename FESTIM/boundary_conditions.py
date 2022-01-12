@@ -47,6 +47,14 @@ class DirichletBC(BoundaryCondition):
         super().__init__(**kwargs)
 
     def create_expression(self, T):
+        """[summary]
+
+        Args:
+            T (fenics.Function): temperature
+
+        Returns:
+            [type]: [description]
+        """
         if self.type == "dc":
             value_BC = sp.printing.ccode(self.value)
             value_BC = f.Expression(value_BC, t=0, degree=4)
@@ -96,34 +104,6 @@ class FluxBC(BoundaryCondition):
         self.sub_expressions += [expression for expression in self.prms.values()]
         self.form = form
         return form
-
-
-def define_dirichlet_bcs_T(simulation):
-    """Creates a list of BCs for thermal problem
-
-    Arguments:
-
-
-    Returns:
-        list -- contains fenics.DirichletBC
-        list -- contains fenics.Expression to be updated
-    """
-
-    bcs = []
-    expressions = []
-    for bc in simulation.boundary_conditions:
-        if bc.component == "T" and bc.type == "dc":
-            bc.create_expression(simulation.T)
-            # TODO: one day, we will get rid of this big expressions list
-            expressions += bc.sub_expressions
-            expressions.append(bc.expression)
-
-            for surf in bc.surfaces:
-                bci = f.DirichletBC(
-                    simulation.V_CG1, bc.expression,
-                    simulation.surface_markers, surf)
-                bcs.append(bci)
-    return bcs, expressions
 
 
 def create_H_fluxes(simulation):
@@ -200,6 +180,13 @@ class BoundaryConditionTheta(f.UserExpression):
 
 class BoundaryConditionExpression(f.UserExpression):
     def __init__(self, T, prms, eval_function):
+        """"[summary]"
+
+        Args:
+            T (fenics.Function): the temperature
+            prms (dict): [description]
+            eval_function ([type]): [description]
+        """
 
         super().__init__()
 
@@ -274,7 +261,7 @@ def define_dirichlet_bcs(simulation):
     #  for BC_object in simulation.boundary_conditions:
     for BC_object in simulation.boundary_conditions:
         if BC_object.component != "T" and BC_object.type in FESTIM.helpers.bc_types["dc"]:
-            BC_object.create_expression(simulation.T)
+            BC_object.create_expression(simulation.T.T)
             if BC_object.component == 0 and simulation.chemical_pot:
                 BC_object.normalise_by_solubility(simulation)
             # TODO: one day, we will get rid of this big expressions list

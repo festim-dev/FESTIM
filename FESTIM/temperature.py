@@ -27,6 +27,8 @@ class Temperature:
         else:
             # Define variational problem for heat transfers
             self.v_T = TestFunction(V)
+            self.create_dirichlet_bcs(V, ds.subdomain_data())
+
             if self.type == "solve_transient":
                 ccode_T_ini = sp.printing.ccode(self.initial_value)
                 self.initial_value = Expression(ccode_T_ini, degree=2, t=0)
@@ -37,8 +39,21 @@ class Temperature:
 
             if self.type == "solve_stationary":
                 print("Solving stationary heat equation")
-                solve(self.F == 0, self.T, self.bcs)
+                solve(self.F == 0, self.T, self.dirichlet_bcs)
                 self.T_n.assign(self.T)
+
+    def create_dirichlet_bcs(self, V, surface_markers):
+        # print(surface_markers)
+        # print(V)
+        self.dirichlet_bcs = []
+        for bc in self.bcs:
+            if bc.type == "dc" and bc.component == "T":
+                bc.create_expression(self.T)
+                for surf in bc.surfaces:
+                    bci = DirichletBC(V, bc.expression, surface_markers, surf)
+                    self.dirichlet_bcs.append(bci)
+                self.sub_expressions += bc.sub_expressions
+                self.sub_expressions.append(bc.expression)
 
     def define_variational_problem(self, materials, dx, ds, dt):
         """Create a variational form for heat transfer problem

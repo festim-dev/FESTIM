@@ -50,10 +50,9 @@ def test_formulation_heat_transfer():
     ds = fenics.Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = fenics.Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
-
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, thermal_cond=thermal_cond, rho=5, heat_capacity=4, borders=[0, 1])
     my_mats = FESTIM.Materials([mat1])
-    bc1 = FESTIM.BoundaryCondition("dc", surfaces=[1], value=u, component="T")
+    bc1 = FESTIM.DirichletBC(type="dc", surfaces=[1], value=u, component="T")
     bc2 = FESTIM.FluxBC(type="flux", surfaces=[2], value=2, component="T")
 
     my_temp = FESTIM.Temperature("solve_transient", bcs=[bc1, bc2], initial_value=0, source_term=[{"value": -4, "volume": 1}])
