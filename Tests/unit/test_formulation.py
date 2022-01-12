@@ -1148,8 +1148,8 @@ def test_formulation_heat_transfer_2_ids_per_mat():
 
     parameters["mesh_parameters"] = {
         "mesh": mesh,
-        "meshfunction_cells": vm,
-        "meshfunction_facets": sm,
+        "volume_markers": vm,
+        "surface_markers": sm,
     }
 
     parameters["traps"] = []

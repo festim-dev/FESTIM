@@ -26,6 +26,8 @@ class Simulation():
         self.soret = False
         self.create_boundarycondition_objects()
         self.create_materials()
+        self.define_mesh()
+        self.define_markers()
 
     def create_materials(self):
         materials = []
@@ -94,9 +96,6 @@ class Simulation():
             initial_stepsize = solving_parameters["initial_stepsize"]
             self.dt.assign(initial_stepsize)  # time step size
 
-        # create mesh and markers
-        self.define_mesh()
-        self.define_markers()
 
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
@@ -159,34 +158,36 @@ class Simulation():
                    derived_quant["nb_iterations_between_compute"]
 
     def define_mesh(self):
+        if "mesh_parameters" in self.parameters:
+            mesh_parameters = self.parameters["mesh_parameters"]
 
-        mesh_parameters = self.parameters["mesh_parameters"]
-
-        if "volume_file" in mesh_parameters.keys():
-            self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
-        elif ("mesh" in mesh_parameters.keys() and
-                isinstance(mesh_parameters["mesh"], type(Mesh()))):
-            self.mesh = FESTIM.Mesh(**mesh_parameters)
-        elif "vertices" in mesh_parameters.keys():
-            self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
+            if "volume_file" in mesh_parameters.keys():
+                self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
+            elif ("mesh" in mesh_parameters.keys() and
+                    isinstance(mesh_parameters["mesh"], type(Mesh()))):
+                self.mesh = FESTIM.Mesh(**mesh_parameters)
+            elif "vertices" in mesh_parameters.keys():
+                self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
+            else:
+                self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
         else:
-            self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
+            self.mesh = None
 
     def define_markers(self):
         # Define and mark subdomains
+        if isinstance(self.mesh, FESTIM.Mesh):
+            if isinstance(self.mesh, FESTIM.Mesh1D):
+                if len(self.materials.materials) > 1:
+                    self.materials.check_borders(self.mesh.size)
+                self.mesh.define_markers(self.materials)
 
-        if isinstance(self.mesh, FESTIM.Mesh1D):
-            if len(self.materials.materials) > 1:
-                self.materials.check_borders(self.mesh.size)
-            self.mesh.define_markers(self.materials)
+            self.volume_markers, self.surface_markers = \
+                self.mesh.volume_markers, self.mesh.surface_markers
 
-        self.volume_markers, self.surface_markers = \
-            self.mesh.volume_markers, self.mesh.surface_markers
-
-        self.ds = Measure(
-            'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
-        self.dx = Measure(
-            'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
+            self.ds = Measure(
+                'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
+            self.dx = Measure(
+                'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
     def define_function_spaces(self):
         solving_parameters = self.parameters["solving_parameters"]
