@@ -1208,8 +1208,8 @@ def test_steady_state_with_2_materials():
 
     parameters["mesh_parameters"] = {
         "mesh": mesh,
-        "meshfunction_cells": vm,
-        "meshfunction_facets": sm,
+        "volume_markers": vm,
+        "surface_markers": sm,
     }
 
     parameters["traps"] = [
