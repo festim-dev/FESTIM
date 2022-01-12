@@ -190,7 +190,7 @@ class BoundaryConditionTheta(f.UserExpression):
         Args:
             bci (fenics.Expression): value of BC
             mesh (fenics.mesh): mesh
-            materials (list): contains FESTIM.Material objects
+            materials (FESTIM.Materials): contains materials objects
             vm (fenics.MeshFunction): volume markers
             T (fenics.Function): Temperature
         """
@@ -204,8 +204,7 @@ class BoundaryConditionTheta(f.UserExpression):
     def eval_cell(self, value, x, ufc_cell):
         cell = f.Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
-        material = FESTIM.helpers.find_material_from_id(
-            self._materials, subdomain_id)
+        material = self._materials.find_material_from_id(subdomain_id)
         S_0 = material.S_0
         E_S = material.E_S
         value[0] = self._bci(x)/(S_0*f.exp(-E_S/FESTIM.k_B/self._T(x)))

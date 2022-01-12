@@ -2,7 +2,6 @@ import FESTIM
 from fenics import *
 import sympy as sp
 import numpy as np
-import warnings
 
 
 class Simulation():
@@ -29,11 +28,21 @@ class Simulation():
         self.create_materials()
 
     def create_materials(self):
-        self.materials = []
+        materials = []
         if "materials" in self.parameters:
             for material in self.parameters["materials"]:
                 my_mat = FESTIM.Material(**material)
-                self.materials.append(my_mat)
+                materials.append(my_mat)
+        self.materials = FESTIM.Materials(materials)
+        derived_quantities = {}
+        if "exports" in self.parameters:
+            if "derived_quantities" in self.parameters["exports"]:
+                derived_quantities = self.parameters["exports"]["derived_quantities"]
+        temp_type = "expression"  # default temperature type is expression
+        if "temperature" in self.parameters:
+            if "type" in self.parameters["temperature"]:
+                temp_type = self.parameters["temperature"]["type"]
+        self.materials.check_materials(temp_type, derived_quantities)
 
     def create_boundarycondition_objects(self):
         self.boundary_conditions = []
@@ -87,7 +96,6 @@ class Simulation():
 
         # create mesh and markers
         self.define_mesh()
-        self.check_materials()
         self.define_markers()
 
         # Define function space for system of concentrations and properties
@@ -150,58 +158,6 @@ class Simulation():
                 self.nb_iterations_between_compute_derived_quantities = \
                    derived_quant["nb_iterations_between_compute"]
 
-    def check_materials(self):
-        materials = self.materials
-        # check the keys in the materials are known
-        # for mat in materials:
-        #     for key in mat.keys():
-        #         if key not in FESTIM.parameters_helper["materials"]:
-        #             warnings.warn(
-        #                 key + " key in materials is unknown",
-        #                 UserWarning)
-
-        # check the materials keys match
-        # if len(materials) > 1:
-        #     old = set(materials[0].keys())
-        #     for mat in materials:
-        #         if not old == set(mat.keys()):
-        #             raise ValueError("Materials dicts keys are not the same")
-        #         old = set(mat.keys())
-
-        # warn about unused keys
-        transient_properties = ["rho", "heat_capacity"]
-        if self.parameters["temperature"]["type"] != "solve_transient":
-            for mat in materials:
-                for key in transient_properties:
-                    if getattr(mat, key) is not None:
-                        warnings.warn(key + " key will be ignored", UserWarning)
-
-        for mat in materials:
-            if getattr(mat, "thermal_cond") is not None:
-                warn = True
-                if self.parameters["temperature"]["type"] != "expression":
-                    warn = False
-                elif "derived_quantities" in self.parameters["exports"].keys():
-                    derived_quantities = \
-                        self.parameters["exports"]["derived_quantities"]
-                    if "surface_flux" in derived_quantities:
-                        for surface_flux in derived_quantities["surface_flux"]:
-                            if surface_flux["field"] == "T":
-                                warn = False
-                if warn:
-                    warnings.warn("thermal_cond key will be ignored", UserWarning)
-
-        # check that ids are different
-        mat_ids = []
-        for mat in materials:
-            if type(mat.id) is list:
-                mat_ids += mat.id
-            else:
-                mat_ids.append(mat.id)
-
-        if len(mat_ids) != len(np.unique(mat_ids)):
-            raise ValueError("Some materials have the same id")
-
     def define_mesh(self):
 
         mesh_parameters = self.parameters["mesh_parameters"]
@@ -220,9 +176,8 @@ class Simulation():
         # Define and mark subdomains
 
         if isinstance(self.mesh, FESTIM.Mesh1D):
-            if len(self.materials) > 1:
-                FESTIM.check_borders(
-                    self.mesh.size, self.materials)
+            if len(self.materials.materials) > 1:
+                self.materials.check_borders(self.mesh.size)
             self.mesh.define_markers(self.materials)
 
         self.volume_markers, self.surface_markers = \
@@ -383,14 +338,12 @@ class Simulation():
         vT = self.vT
         self.expressions_FT = []
         self.FT = 0
-        for mat in self.materials:
-            if mat.thermal_cond is None:
-                raise NameError("Missing thermal_cond key in material")
+        for mat in self.materials.materials:
             thermal_cond = mat.thermal_cond
             if callable(thermal_cond):  # if thermal_cond is a function
                 thermal_cond = thermal_cond(T)
 
-            subdomains = mat.id # list of subdomains with this material
+            subdomains = mat.id  # list of subdomains with this material
             if type(subdomains) is not list:
                 subdomains = [subdomains]  # make sure subdomains is a list
             if self.parameters["temperature"]["type"] == "solve_transient":

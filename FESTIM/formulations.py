@@ -132,7 +132,7 @@ def create_diffusion_form(simulation, solute_object):
     dt = simulation.dt
     dx = simulation.dx
 
-    for material in simulation.materials:
+    for material in simulation.materials.materials:
         D_0 = material.D_0
         E_D = material.E_D
         if simulation.chemical_pot:
@@ -243,7 +243,7 @@ def create_one_trap_form(simulation, trap, solute):
         # if the sim is steady state and
         # if a trap is not defined in one subdomain
         # add c_t = 0 to the form in this subdomain
-        all_mat_ids = [mat.id for mat in materials]
+        all_mat_ids = [mat.id for mat in materials.materials]
         for mat_id in all_mat_ids:
             if mat_id not in trap_materials:
                 F += solution*test_function*dx(mat_id)
@@ -267,8 +267,7 @@ def create_one_trap_form(simulation, trap, solute):
         expressions_trap.append(density)
 
         corresponding_material = \
-            FESTIM.helpers.find_material_from_id(
-                materials, mat_id)
+            simulation.materials.find_material_from_id(mat_id)
         c_0 = solute.solution
         if simulation.chemical_pot:
             # change of variable

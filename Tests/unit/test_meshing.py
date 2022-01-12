@@ -1,6 +1,7 @@
 # Unit tests meshing
+from FESTIM.materials import Materials
 from FESTIM.meshing import Mesh, Mesh1D, MeshFromXDMF, MeshFromRefinements, \
-    MeshFromVertices, check_borders
+    MeshFromVertices
 from FESTIM import Simulation, Material
 import fenics
 import pytest
@@ -57,48 +58,16 @@ def test_subdomains_1D():
         Material(id=1, D_0=None, E_D=None, borders=[0, 0.5]),
         Material(id=2, D_0=None, E_D=None, borders=[0.5, 1]),
         ]
+    my_mats = Materials(materials)
     my_mesh = Mesh1D()
     my_mesh.mesh = mesh
     my_mesh.size = 1
-    my_mesh.define_markers(materials)
+    my_mesh.define_markers(my_mats)
     for cell in fenics.cells(mesh):
         if cell.midpoint().x() < 0.5:
             assert my_mesh.volume_markers[cell] == 1
         else:
             assert my_mesh.volume_markers[cell] == 2
-
-
-def test_check_borders():
-    materials = [
-        Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),
-        Material(id=2, D_0=None, E_D=None, borders=[0, 0.5]),
-            ]
-    size = 0.7
-    assert check_borders(size, materials) is True
-
-    with pytest.raises(ValueError, match=r'zero'):
-        size = 0.7
-        materials = [
-            Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),
-            Material(id=1, D_0=None, E_D=None, borders=[0.2, 0.5]),
-            ]
-        check_borders(size, materials)
-
-    with pytest.raises(ValueError, match=r'each other'):
-        materials = [
-            Material(id=1, D_0=None, E_D=None, borders=[0.5, 1]),
-            Material(id=1, D_0=None, E_D=None, borders=[0, 0.6]),
-            Material(id=1, D_0=None, E_D=None, borders=[0.6, 1]),
-            ]
-        size = 1
-        check_borders(size, materials)
-
-    with pytest.raises(ValueError, match=r'size'):
-        materials = [
-            Material(id=1, D_0=None, E_D=None, borders=[0, 1]),
-        ]
-        size = 3
-        check_borders(size, materials)
 
 
 def test_create_mesh_xdmf(tmpdir):

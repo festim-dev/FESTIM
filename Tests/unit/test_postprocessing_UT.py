@@ -172,10 +172,9 @@ def test_create_properties():
     '''
     mesh = fenics.UnitIntervalMesh(10)
     DG_1 = fenics.FunctionSpace(mesh, 'DG', 1)
-    materials = [
-        FESTIM.Material(1, D_0=1, E_D=0, S_0=7, E_S=0, thermal_cond=4, heat_capacity=5, rho=6, H={"free_enthalpy": 5, "entropy": 6}),
-        FESTIM.Material(2, D_0=2, E_D=0, S_0=8, E_S=0, thermal_cond=5, heat_capacity=6, rho=7, H={"free_enthalpy": 6, "entropy": 6})
-        ]
+    mat_1 = FESTIM.Material(1, D_0=1, E_D=0, S_0=7, E_S=0, thermal_cond=4, heat_capacity=5, rho=6, H={"free_enthalpy": 5, "entropy": 6})
+    mat_2 = FESTIM.Material(2, D_0=2, E_D=0, S_0=8, E_S=0, thermal_cond=5, heat_capacity=6, rho=7, H={"free_enthalpy": 6, "entropy": 6})
+    materials = FESTIM.Materials([mat_1, mat_2])
     mf = fenics.MeshFunction("size_t", mesh, 1, 0)
     for cell in fenics.cells(mesh):
         x = cell.midpoint().x()
