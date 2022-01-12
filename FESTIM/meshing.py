@@ -19,7 +19,7 @@ class Mesh1D(Mesh):
         based on their position in the domain
 
         Arguments:
-            materials {list} -- contains the dictionaries of the materials
+            materials {FESTIM.Materials} -- contains the materials
             size {float} -- size of the domain
 
         Returns:
@@ -32,8 +32,8 @@ class Mesh1D(Mesh):
         size = self.size
         volume_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
         for cell in f.cells(mesh):
-            for material in materials:
-                if len(materials) == 1:
+            for material in materials.materials:
+                if len(materials.materials) == 1:
                     volume_markers[cell] = material.id
                 else:
                     if cell.midpoint().x() >= material.borders[0] \

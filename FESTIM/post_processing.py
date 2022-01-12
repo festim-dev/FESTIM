@@ -223,8 +223,7 @@ class ThermalProp(UserExpression):
     def eval_cell(self, value, x, ufc_cell):
         cell = Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
-        material = FESTIM.helpers.find_material_from_id(
-            self._materials, subdomain_id)
+        material = self._materials.find_material_from_id(subdomain_id)
         attribute = getattr(material, self._key)
         if callable(attribute):
             value[0] = attribute(self._T(x))
@@ -246,8 +245,7 @@ class HCoeff(UserExpression):
     def eval_cell(self, value, x, ufc_cell):
         cell = Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
-        material = FESTIM.helpers.find_material_from_id(
-            self._materials, subdomain_id)
+        material = self._materials.find_material_from_id(subdomain_id)
 
         value[0] = material.free_enthalpy + \
             self._T(x)*material.entropy
@@ -280,18 +278,18 @@ def create_properties(mesh, materials, vm, T):
     rho = None
     H = None
     S = None
-    for mat in materials:
-        if mat.S_0 is not None:
-            S = ArheniusCoeff(mesh, materials, vm, T, "S_0", "E_S", degree=2)
-        if mat.thermal_cond is not None:
-            thermal_cond = ThermalProp(mesh, materials, vm, T,
-                                       'thermal_cond', degree=2)
-            cp = ThermalProp(mesh, materials, vm, T,
-                             'heat_capacity', degree=2)
-            rho = ThermalProp(mesh, materials, vm, T,
-                              'rho', degree=2)
-        if mat.H is not None:
-            H = HCoeff(mesh, materials, vm, T, degree=2)
+    # all materials have the same properties so only checking the first is enough
+    if materials.materials[0].S_0 is not None:
+        S = ArheniusCoeff(mesh, materials, vm, T, "S_0", "E_S", degree=2)
+    if materials.materials[0].thermal_cond is not None:
+        thermal_cond = ThermalProp(mesh, materials, vm, T,
+                                    'thermal_cond', degree=2)
+        cp = ThermalProp(mesh, materials, vm, T,
+                            'heat_capacity', degree=2)
+        rho = ThermalProp(mesh, materials, vm, T,
+                            'rho', degree=2)
+    if materials.materials[0].H is not None:
+        H = HCoeff(mesh, materials, vm, T, degree=2)
 
     return D, thermal_cond, cp, rho, H, S
 

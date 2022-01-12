@@ -132,7 +132,7 @@ def create_diffusion_form(simulation, solute_object):
     dt = simulation.dt
     dx = simulation.dx
 
-    for material in simulation.materials:
+    for material in simulation.materials.materials:
         D_0 = material.D_0
         E_D = material.E_D
         if simulation.chemical_pot:

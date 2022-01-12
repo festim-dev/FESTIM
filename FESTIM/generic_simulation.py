@@ -38,8 +38,11 @@ class Simulation():
         if "exports" in self.parameters:
             if "derived_quantities" in self.parameters["exports"]:
                 derived_quantities = self.parameters["exports"]["derived_quantities"]
-        self.materials.check_materials(
-            self.parameters["temperature"]["type"], derived_quantities)
+        temp_type = "expression"  # default temperature type is expression
+        if "temperature" in self.parameters:
+            if "type" in self.parameters["temperature"]:
+                temp_type = self.parameters["temperature"]["type"]
+        self.materials.check_materials(temp_type, derived_quantities)
 
     def create_boundarycondition_objects(self):
         self.boundary_conditions = []
@@ -173,9 +176,8 @@ class Simulation():
         # Define and mark subdomains
 
         if isinstance(self.mesh, FESTIM.Mesh1D):
-            if len(self.materials) > 1:
-                FESTIM.check_borders(
-                    self.mesh.size, self.materials)
+            if len(self.materials.materials) > 1:
+                self.materials.check_borders(self.mesh.size)
             self.mesh.define_markers(self.materials)
 
         self.volume_markers, self.surface_markers = \
