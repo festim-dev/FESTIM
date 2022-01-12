@@ -374,11 +374,11 @@ class Simulation():
             self.T.T_n.assign(self.T.T)
             self.T.expression.t = self.t
             self.T.T.assign(interpolate(self.T.expression, self.V_CG1))
-        self.D._T = self.T
+        self.D._T = self.T.T
         if self.H is not None:
-            self.H._T = self.T
+            self.H._T = self.T.T
         if self.thermal_cond is not None:
-            self.thermal_cond._T = self.T
+            self.thermal_cond._T = self.T.T
         if self.chemical_pot:
             self.S._T = self.T.T
 
