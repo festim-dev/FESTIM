@@ -568,7 +568,7 @@ class Simulation():
             output["error"] = error
 
         output["parameters"] = self.parameters
-        output["mesh"] = self.mesh
+        output["mesh"] = self.mesh.mesh
 
         # add derived quantities to output
         if "derived_quantities" in self.parameters["exports"].keys():
