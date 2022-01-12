@@ -1,3 +1,4 @@
+from attr import has
 import FESTIM
 from FESTIM.boundary_conditions import define_dirichlet_bcs, \
     create_H_fluxes
@@ -484,108 +485,82 @@ def test_sievert_bc_varying_time():
     """Creates a Simulation object with a solubility type bc and checks that
     the correct value is applied
     """
-    parameters = {
-        "mesh_parameters": {
-            "size": 1,
-            "initial_number_of_cells": 10
-        },
-        "materials": [
-            {
-                "D_0": 1,
-                "E_D": 0,
-                "id": 1
-            }
-        ],
-        "traps": [],
-        "temperature": {
-            "type": "expression",
-            "value": 300
-        },
-        "boundary_conditions": [
-            {
-                "type": "solubility",
-                "surfaces": 1,
-                "pressure": 1e5*(1 + FESTIM.t),
-                "S_0": 100,
-                "E_S": 0.5,
-            }
-        ],
-        "solving_parameters": {
-            "initial_stepsize": 1,
-            "final_time": 10
-        },
-        "exports": {}
-    }
+    # build
+    T = fenics.Constant(300)
+    pressure_expr = 1e5*(1 + FESTIM.t)
+    s_0_expr = 100
+    E_S_expr = 0.5
+    my_bc = FESTIM.DirichletBC(type="solubility", surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.initialise()
-    u = my_sim.u
-    bc = my_sim.bcs[0]
+    pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
+                                       t=0,
+                                       degree=1)
+    s_0_expr = fenics.Expression(sp.printing.ccode(s_0_expr),
+                                       t=0,
+                                       degree=1)
+    E_S_expr = fenics.Expression(sp.printing.ccode(E_S_expr),
+                                       t=0,
+                                       degree=1)
+    T_expr = fenics.Expression(sp.printing.ccode(T),
+                                       t=0,
+                                       degree=1)
+    # run
+    my_bc.create_expression(T)
+    # test
 
-    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    def sieverts(T, prms):
+        S_0, E_S = prms["S_0"], prms["E_S"]
+        S = S_0*fenics.exp(-E_S/FESTIM.k_B/T)
+        return S*prms["pressure"]**0.5
+    prms = {"S_0": s_0_expr, "E_S": E_S_expr, "pressure": pressure_expr}
 
-    for expr in my_sim.expressions:
-        expr.t = 10000
+    expected = FESTIM.BoundaryConditionExpression(T_expr, prms, eval_function=sieverts)
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
-    expected = (1e5*(1 + 10000))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    for prm in my_bc.sub_expressions:
+        if hasattr(prm, "t"):
+            prm.t += 10
+    for prm in prms.values():
+        prm.t += 10
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
 
 def test_sievert_bc_varying_temperature():
     """Creates a Simulation object with a solubility type bc and checks that
     the correct value is applied
     """
-    parameters = {
-        "mesh_parameters": {
-            "size": 1,
-            "initial_number_of_cells": 10
-        },
-        "materials": [
-            {
-                "D_0": 1,
-                "E_D": 0,
-                "id": 1
-            }
-        ],
-        "traps": [],
-        "temperature": {
-            "type": "expression",
-            "value": 300
-        },
-        "boundary_conditions": [
-            {
-                "type": "solubility",
-                "surfaces": 1,
-                "pressure": 1e5*(1 + FESTIM.t),
-                "S_0": 100,
-                "E_S": 0.5,
-            }
-        ],
-        "solving_parameters": {
-            "initial_stepsize": 1,
-            "final_time": 10
-        },
-        "exports": {}
-    }
+    # build
+    T = fenics.Constant(300)
+    pressure_expr = 1e5*(1 + FESTIM.t)
+    s_0_expr = 100
+    E_S_expr = 0.5
+    my_bc = FESTIM.DirichletBC(type="solubility", surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.initialise()
+    pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
+                                       t=0,
+                                       degree=1)
+    s_0_expr = fenics.Expression(sp.printing.ccode(s_0_expr),
+                                       t=0,
+                                       degree=1)
+    E_S_expr = fenics.Expression(sp.printing.ccode(E_S_expr),
+                                       t=0,
+                                       degree=1)
 
-    u = my_sim.u
-    bc = my_sim.bcs[0]
+    # run
+    my_bc.create_expression(T)
+    # test
 
-    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    def sieverts(T, prms):
+        S_0, E_S = prms["S_0"], prms["E_S"]
+        S = S_0*fenics.exp(-E_S/FESTIM.k_B/T)
+        return S*prms["pressure"]**0.5
+    prms = {"S_0": s_0_expr, "E_S": E_S_expr, "pressure": pressure_expr}
+    expected = FESTIM.BoundaryConditionExpression(T, prms, eval_function=sieverts)
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
-    my_sim.T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
-    
-    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/1000)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    # T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
+    T.assign(1000)
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
 
 def test_create_bc_expression_dc_custom():

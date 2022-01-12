@@ -26,7 +26,6 @@ class BoundaryCondition:
             if isinstance(value, (int, float)):
                 self.prms[key] = f.Constant(value)
             else:
-                print(type(value))
                 self.prms[key] = f.Expression(sp.printing.ccode(value),
                                        t=0,
                                        degree=1)
@@ -163,20 +162,6 @@ def create_H_fluxes(simulation):
     return F, expressions
 
 
-def create_heat_fluxes(simulation):
-    F = 0
-    expressions = []
-    for bc in simulation.boundary_conditions:
-        if bc.component == "T":
-            if bc.type not in FESTIM.helpers.T_bc_types["dc"]:
-                bc.create_form_for_flux(simulation.T, solute=None)
-                expressions += bc.sub_expressions
-
-                for surf in bc.surfaces:
-                    F += -bc.form*simulation.vT*simulation.ds(surf)
-    return F, expressions
-
-
 class BoundaryConditionTheta(f.UserExpression):
     """Creates an Expression for converting dirichlet bcs in the case
     of chemical potential conservation
@@ -267,7 +252,7 @@ type_to_function = {
     "dc_imp": dc_imp,
 }
 
-
+# TODO this should be a method of BoundaryCondition
 def define_dirichlet_bcs(simulation):
     """Create a list of DirichletBCs.
 

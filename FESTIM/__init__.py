@@ -4,10 +4,10 @@ from .helpers import update_expressions, help_key, \
 from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
 from .initialising import read_from_xdmf, check_no_duplicates
 from .formulations import formulation, formulation_extrinsic_traps
-
+from .temperature import Temperature
 from .boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
-    define_dirichlet_bcs_T, create_H_fluxes, create_heat_fluxes,\
-    BoundaryConditionTheta, define_dirichlet_bcs
+    define_dirichlet_bcs_T, create_H_fluxes,\
+    BoundaryConditionTheta, define_dirichlet_bcs, BoundaryConditionExpression
 
 from .solving import solve_it, solve_once, adaptive_stepsize
 

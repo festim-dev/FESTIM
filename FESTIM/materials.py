@@ -124,6 +124,11 @@ class Materials:
         if temp_type != "expression" and \
                 self.materials[0].thermal_cond is None:
             raise NameError("Missing thermal_cond key in materials")
+        if temp_type == "solve_transient":
+            if self.materials[0].heat_capacity is None:
+                raise NameError("Missing heat_capacity key in materials")
+            if self.materials[0].rho is None:
+                raise NameError("Missing rho key in materials")
         # TODO: add check for thermal cond for thermal flux computation
 
     def find_material_from_id(self, mat_id):
