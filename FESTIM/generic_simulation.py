@@ -104,7 +104,7 @@ class Simulation():
         # Create functions for properties
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
             FESTIM.create_properties(
-                self.mesh, self.materials,
+                self.mesh.mesh, self.materials,
                 self.volume_markers, self.T)
         if self.S is not None:
             self.chemical_pot = True
@@ -205,55 +205,33 @@ class Simulation():
     def define_mesh(self):
 
         mesh_parameters = self.parameters["mesh_parameters"]
-        if "mesh_file" in mesh_parameters.keys():
-            # Read volumetric mesh
-            mesh = Mesh()
-            XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
+
+        if "volume_file" in mesh_parameters.keys():
+            self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
         elif ("mesh" in mesh_parameters.keys() and
                 isinstance(mesh_parameters["mesh"], type(Mesh()))):
-            # use provided fenics mesh
-            mesh = mesh_parameters["mesh"]
+            self.mesh = FESTIM.Mesh(**mesh_parameters)
         elif "vertices" in mesh_parameters.keys():
-            # mesh from list of vertices
-            mesh = FESTIM.generate_mesh_from_vertices(
-                mesh_parameters["vertices"])
+            self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
         else:
-            mesh = FESTIM.mesh_and_refine(mesh_parameters)
-        self.mesh = mesh
-        return mesh
+            self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
 
     def define_markers(self):
         # Define and mark subdomains
 
-        mesh_parameters = self.parameters["mesh_parameters"]
-        if "cells_file" in mesh_parameters.keys():
-            volume_markers, surface_markers = \
-                FESTIM.read_subdomains_from_xdmf(
-                    self.mesh,
-                    mesh_parameters["cells_file"],
-                    mesh_parameters["facets_file"])
-        elif "meshfunction_cells" in mesh_parameters.keys():
-            volume_markers = mesh_parameters["meshfunction_cells"]
-            surface_markers = mesh_parameters["meshfunction_facets"]
-        else:
-            if "vertices" in mesh_parameters.keys():
-                size = max(mesh_parameters["vertices"])
-            else:
-                size = mesh_parameters["size"]
+        if isinstance(self.mesh, FESTIM.Mesh1D):
             if len(self.materials) > 1:
                 FESTIM.check_borders(
-                    size, self.materials)
-            volume_markers, surface_markers = \
-                FESTIM.subdomains_1D(
-                    self.mesh, self.materials, size)
+                    self.mesh.size, self.materials)
+            self.mesh.define_markers(self.materials)
 
         self.volume_markers, self.surface_markers = \
-            volume_markers, surface_markers
+            self.mesh.volume_markers, self.mesh.surface_markers
 
         self.ds = Measure(
-            'ds', domain=self.mesh, subdomain_data=self.surface_markers)
+            'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
         self.dx = Measure(
-            'dx', domain=self.mesh, subdomain_data=self.volume_markers)
+            'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
     def define_function_spaces(self):
         solving_parameters = self.parameters["solving_parameters"]
@@ -266,20 +244,20 @@ class Simulation():
 
         # function space for H concentrations
         nb_traps = len(self.parameters["traps"])
-
+        mesh = self.mesh.mesh
         if nb_traps == 0:
-            V = FunctionSpace(self.mesh, element_solute, order_solute)
+            V = FunctionSpace(mesh, element_solute, order_solute)
         else:
             solute = FiniteElement(
-                element_solute, self.mesh.ufl_cell(), order_solute)
+                element_solute, mesh.ufl_cell(), order_solute)
             traps = FiniteElement(
-                trap_element, self.mesh.ufl_cell(), order_trap)
+                trap_element, mesh.ufl_cell(), order_trap)
             element = [solute] + [traps]*nb_traps
-            V = FunctionSpace(self.mesh, MixedElement(element))
+            V = FunctionSpace(mesh, MixedElement(element))
         self.V = V
         # function space for T and ext trap dens
-        self.V_CG1 = FunctionSpace(self.mesh, 'CG', 1)
-        self.V_DG1 = FunctionSpace(self.mesh, 'DG', 1)
+        self.V_CG1 = FunctionSpace(mesh, 'CG', 1)
+        self.V_DG1 = FunctionSpace(mesh, 'DG', 1)
 
     def define_temperature(self):
         self.T = Function(self.V_CG1, name="T")
@@ -586,7 +564,7 @@ class Simulation():
         if "error" in self.parameters["exports"].keys():
             error = FESTIM.compute_error(
                 self.parameters["exports"]["error"], self.t,
-                [*res, self.T], self.mesh)
+                [*res, self.T], self.mesh.mesh)
             output["error"] = error
 
         output["parameters"] = self.parameters
