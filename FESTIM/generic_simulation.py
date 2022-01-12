@@ -380,7 +380,7 @@ class Simulation():
         if self.thermal_cond is not None:
             self.thermal_cond._T = self.T
         if self.chemical_pot:
-            self.S._T = self.T
+            self.S._T = self.T.T
 
         # Display time
         simulation_percentage = round(self.t/self.final_time*100, 2)
