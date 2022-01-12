@@ -224,7 +224,8 @@ class Simulation():
             self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
             if temp_type == "solve_transient":
                 self.T.initial_value = self.parameters["temperature"]["initial_condition"]
-
+            if "source_term" in self.parameters["temperature"]:
+                self.T.source_term = self.parameters["temperature"]["source_term"]
         self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
 
     def initialise_concentrations(self):
@@ -367,7 +368,8 @@ class Simulation():
         self.t += float(self.dt)
         FESTIM.update_expressions(
             self.expressions, self.t)
-
+        FESTIM.update_expressions(
+            self.T.sub_expressions, self.t)
         if self.parameters["temperature"]["type"] == "expression":
             self.T.T_n.assign(self.T.T)
             self.T.expression.t = self.t
