@@ -61,9 +61,9 @@ class Trap(Concentration):
                 densities = trap_dict['density']
 
                 # check that there are no duplicate ids
-                if len(set(densities)) != len(densities):
+                if len(set(trap_dict['materials'])) != len(trap_dict['materials']):
                     msg = "The key 'density' contains duplicated " + \
-                        "elements ( " + str(densities) + " )"
+                        "ids"
                     raise ValueError(msg)
             for density in densities:
                 density_expr = sp.printing.ccode(density)
@@ -128,7 +128,7 @@ def create_diffusion_form(simulation, solute_object):
     c_0 = solute_object.solution
     c_0_n = solute_object.prev_solution
     k_B = FESTIM.k_B
-    T, T_n = simulation.T, simulation.T_n
+    T, T_n = simulation.T.T, simulation.T.T_n
     dt = simulation.dt
     dx = simulation.dx
 
@@ -228,7 +228,7 @@ def create_one_trap_form(simulation, trap, solute):
     materials = simulation.materials
     dt = simulation.dt
     dx = simulation.dx
-    T = simulation.T
+    T = simulation.T.T
 
     expressions_trap = []
     F = 0  # initialise the form

@@ -1,3 +1,4 @@
+from attr import has
 import FESTIM
 from FESTIM.boundary_conditions import define_dirichlet_bcs, \
     create_H_fluxes
@@ -19,7 +20,6 @@ def test_fluxes_chemical_pot():
     E_S = 3
     order = 2
     k_B = FESTIM.k_B
-    T = 1000
     parameters = {
         "materials": [
             {
@@ -54,6 +54,7 @@ def test_fluxes_chemical_pot():
     }
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V_CG1 = fenics.FunctionSpace(mesh, "P", 1)
     u = fenics.Function(V)
     v = fenics.TestFunction(V)
 
@@ -62,20 +63,23 @@ def test_fluxes_chemical_pot():
     sol = solutions[0]
     test_sol = testfunctions[0]
 
-    S = S_0*fenics.exp(-E_S/k_B/T)
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.chemical_pot = True
     my_sim.u, my_sim.v = u, v
     my_sim.ds = fenics.ds
-    my_sim.T = T
+    my_sim.T = FESTIM.Temperature("expression", value=1000)
+    my_sim.T.create_functions(V_CG1)
+
+    S = S_0*fenics.exp(-E_S/k_B/my_sim.T.T)
+
     my_sim.S = S
     F, expressions = create_H_fluxes(my_sim)
 
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
     order = expressions[2]
-    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/T)
+    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/my_sim.T.T)
     expected_form = 0
     expected_form += -test_sol * (-Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[3]*fenics.ds(1)
@@ -88,7 +92,6 @@ def test_fluxes():
     E_Kr = 3
     order = 2
     k_B = FESTIM.k_B
-    T = 1000
     boundary_conditions = [
 
         {
@@ -106,6 +109,7 @@ def test_fluxes():
     ]
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V_CG1 = fenics.FunctionSpace(mesh, "P", 1)
     u = fenics.Function(V)
     v = fenics.TestFunction(V)
 
@@ -119,13 +123,14 @@ def test_fluxes():
     my_sim = FESTIM.Simulation({"boundary_conditions": boundary_conditions})
     my_sim.u, my_sim.v = u, v
     my_sim.ds = fenics.ds
-    my_sim.T = T
+    my_sim.T = FESTIM.Temperature("expression", value=1000)
+    my_sim.T.create_functions(V_CG1)
     my_sim.S = None
     F, expressions = create_H_fluxes(my_sim)
 
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
-    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/T)
+    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/my_sim.T.T)
     order = expressions[2]
     expected_form = 0
     expected_form += -test_sol * (- Kr* sol**order)*my_sim.ds(1)
@@ -185,7 +190,6 @@ def test_define_dirichlet_bcs_theta():
     V = fenics.FunctionSpace(mesh, 'P', 1)
     u = fenics.Function(V)
     v = fenics.TestFunction(V)
-    temp = fenics.Expression("200 + (x[0] + 1)*t", t=1, degree=1)
 
     vm = fenics.MeshFunction("size_t", mesh, 2, 1)
     left = fenics.CompiledSubDomain('x[0] < 0.5')
@@ -204,13 +208,16 @@ def test_define_dirichlet_bcs_theta():
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature(type="expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
+    my_temp.create_functions(V)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
     for i in range(0, 3):
-        temp.t = i
+        my_temp.expression.t = i
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
         expressions[0].t = i
         expressions[1].t = i
 
@@ -218,21 +225,21 @@ def test_define_dirichlet_bcs_theta():
         expr = fenics.interpolate(expressions[1], V)
         assert np.isclose(
             expr(0.25, 0.5),
-            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/temp(0.25, 0.5))))
+            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0.25, 0.5))))
         assert np.isclose(
             expr(0.75, 0.5),
-            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/temp(0.75, 0.5))))
+            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(0.75, 0.5))))
 
         # Test that the BCs can be applied to a problem
         # and gives the correct values
         fenics.solve(F == 0, u, bcs[0])
         assert np.isclose(
             u(0.25, 0.5),
-            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/temp(0, 0.5))))
+            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0, 0.5))))
         fenics.solve(F == 0, u, bcs[1])
         assert np.isclose(
             u(0.75, 0.5),
-            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))))
+            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(1, 0.5))))
 
 
 def test_define_dirichlet_bcs_fail():
@@ -292,10 +299,13 @@ def test_bc_recomb():
     my_sim.V = V
     my_sim.volume_markers = None
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature(type="expression", value=T_expr)
+    my_temp.create_functions(V)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
     for current_time in range(0, 3):
-        temp.t = current_time
+        my_temp.expression.t = current_time
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
         expressions[0].t = current_time
         expressions[1].t = current_time
 
@@ -348,7 +358,6 @@ def test_bc_recomb_instant_recomb():
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
     T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
-    temp = fenics.Expression(sp.printing.ccode(T_expr), t=0, degree=1)
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
     left = fenics.CompiledSubDomain('x[0] < 0.0001')
@@ -360,13 +369,16 @@ def test_bc_recomb_instant_recomb():
     my_sim.V = V
     my_sim.volume_markers = None
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature(type="expression", value=T_expr)
+    my_temp.create_functions(V)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
 
     for current_time in range(0, 3):
-        temp.t = current_time
-        expressions[0].t = current_time
-        expressions[1].t = current_time
+        my_temp.expression.t = current_time
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
+        for expr in expressions:
+            expr.t = current_time
 
         for x_ in [0, 1]:
             T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
@@ -427,8 +439,6 @@ def test_bc_recomb_chemical_pot():
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
 
-    temp = fenics.Expression("200 + (x[0] + 1)*t", t=1, degree=1)
-
     vm = fenics.MeshFunction("size_t", mesh, 2, 1)
     left = fenics.CompiledSubDomain('x[0] < 0.5')
     right = fenics.CompiledSubDomain('x[0] >= 0.5')
@@ -446,7 +456,9 @@ def test_bc_recomb_chemical_pot():
     my_sim.V = V
     my_sim.volume_markers = vm
     my_sim.surface_markers = sm
-    my_sim.T = temp
+    my_temp = FESTIM.Temperature("expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
+    my_temp.create_functions(V)
+    my_sim.T = my_temp
     bcs, expressions = define_dirichlet_bcs(my_sim)
 
     # Set up formulation
@@ -455,9 +467,10 @@ def test_bc_recomb_chemical_pot():
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
     for i in range(0, 3):
-        temp.t = i
-        expressions[0].t = i
-        expressions[1].t = i
+        my_temp.expression.t = i
+        my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
+        for expr in expressions:
+            expr.t = i
 
         T_left = 200 + i
         T_right = 200 + 2*i
@@ -465,127 +478,102 @@ def test_bc_recomb_chemical_pot():
         D_right = D_0*np.exp(-E_D/FESTIM.k_B/T_right)
         K_left = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_left)
         K_right = Kr_0*np.exp(-E_Kr/FESTIM.k_B/T_right)
-        S_left = S_01*np.exp(-E_S1/FESTIM.k_B/temp(0, 0.5))
-        S_right = S_02*np.exp(-E_S2/FESTIM.k_B/temp(1, 0.5))
+        S_left = S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0, 0.5))
+        S_right = S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(1, 0.5))
 
         # Test that the BCs can be applied to a problem
         # and gives the correct values
         fenics.solve(F == 0, u, bcs[0])
-        assert np.isclose(
-            u(0.25, 0.5),
-            (phi*R_p/D_left + (phi/K_left)**0.5)/S_left)
+        expected = (phi*R_p/D_left + (phi/K_left)**0.5)/S_left
+        computed = u(0.25, 0.5)
+        assert np.isclose(expected, computed)
+
         fenics.solve(F == 0, u, bcs[1])
-        assert np.isclose(
-            u(0.25, 0.5),
-            (phi*R_p/D_right + (phi/K_right)**0.5)/S_right)
+        expected = (phi*R_p/D_right + (phi/K_right)**0.5)/S_right
+        computed = u(0.25, 0.5)
+        assert np.isclose(expected, computed)
 
 
 def test_sievert_bc_varying_time():
     """Creates a Simulation object with a solubility type bc and checks that
     the correct value is applied
     """
-    parameters = {
-        "mesh_parameters": {
-            "size": 1,
-            "initial_number_of_cells": 10
-        },
-        "materials": [
-            {
-                "D_0": 1,
-                "E_D": 0,
-                "id": 1
-            }
-        ],
-        "traps": [],
-        "temperature": {
-            "type": "expression",
-            "value": 300
-        },
-        "boundary_conditions": [
-            {
-                "type": "solubility",
-                "surfaces": 1,
-                "pressure": 1e5*(1 + FESTIM.t),
-                "S_0": 100,
-                "E_S": 0.5,
-            }
-        ],
-        "solving_parameters": {
-            "initial_stepsize": 1,
-            "final_time": 10
-        },
-        "exports": {}
-    }
+    # build
+    T = fenics.Constant(300)
+    pressure_expr = 1e5*(1 + FESTIM.t)
+    s_0_expr = 100
+    E_S_expr = 0.5
+    my_bc = FESTIM.DirichletBC(type="solubility", surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.initialise()
-    u = my_sim.u
-    bc = my_sim.bcs[0]
+    pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
+                                       t=0,
+                                       degree=1)
+    s_0_expr = fenics.Expression(sp.printing.ccode(s_0_expr),
+                                       t=0,
+                                       degree=1)
+    E_S_expr = fenics.Expression(sp.printing.ccode(E_S_expr),
+                                       t=0,
+                                       degree=1)
+    T_expr = fenics.Expression(sp.printing.ccode(T),
+                                       t=0,
+                                       degree=1)
+    # run
+    my_bc.create_expression(T)
+    # test
 
-    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    def sieverts(T, prms):
+        S_0, E_S = prms["S_0"], prms["E_S"]
+        S = S_0*fenics.exp(-E_S/FESTIM.k_B/T)
+        return S*prms["pressure"]**0.5
+    prms = {"S_0": s_0_expr, "E_S": E_S_expr, "pressure": pressure_expr}
 
-    for expr in my_sim.expressions:
-        expr.t = 10000
+    expected = FESTIM.BoundaryConditionExpression(T_expr, prms, eval_function=sieverts)
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
-    expected = (1e5*(1 + 10000))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    for prm in my_bc.sub_expressions:
+        if hasattr(prm, "t"):
+            prm.t += 10
+    for prm in prms.values():
+        prm.t += 10
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
 
 def test_sievert_bc_varying_temperature():
     """Creates a Simulation object with a solubility type bc and checks that
     the correct value is applied
     """
-    parameters = {
-        "mesh_parameters": {
-            "size": 1,
-            "initial_number_of_cells": 10
-        },
-        "materials": [
-            {
-                "D_0": 1,
-                "E_D": 0,
-                "id": 1
-            }
-        ],
-        "traps": [],
-        "temperature": {
-            "type": "expression",
-            "value": 300
-        },
-        "boundary_conditions": [
-            {
-                "type": "solubility",
-                "surfaces": 1,
-                "pressure": 1e5*(1 + FESTIM.t),
-                "S_0": 100,
-                "E_S": 0.5,
-            }
-        ],
-        "solving_parameters": {
-            "initial_stepsize": 1,
-            "final_time": 10
-        },
-        "exports": {}
-    }
+    # build
+    T = fenics.Constant(300)
+    pressure_expr = 1e5*(1 + FESTIM.t)
+    s_0_expr = 100
+    E_S_expr = 0.5
+    my_bc = FESTIM.DirichletBC(type="solubility", surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.initialise()
+    pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
+                                       t=0,
+                                       degree=1)
+    s_0_expr = fenics.Expression(sp.printing.ccode(s_0_expr),
+                                       t=0,
+                                       degree=1)
+    E_S_expr = fenics.Expression(sp.printing.ccode(E_S_expr),
+                                       t=0,
+                                       degree=1)
 
-    u = my_sim.u
-    bc = my_sim.bcs[0]
+    # run
+    my_bc.create_expression(T)
+    # test
 
-    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/300)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    def sieverts(T, prms):
+        S_0, E_S = prms["S_0"], prms["E_S"]
+        S = S_0*fenics.exp(-E_S/FESTIM.k_B/T)
+        return S*prms["pressure"]**0.5
+    prms = {"S_0": s_0_expr, "E_S": E_S_expr, "pressure": pressure_expr}
+    expected = FESTIM.BoundaryConditionExpression(T, prms, eval_function=sieverts)
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
-    my_sim.T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
-    
-    expected = (1e5*(1 + 0))**0.5*100*np.exp(-0.5/FESTIM.k_B/1000)
-    bc.apply(u.vector())
-    assert u(0) == expected
+    # T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
+    T.assign(1000)
+    assert my_bc.expression(0) == pytest.approx(expected(0))
 
 
 def test_create_bc_expression_dc_custom():

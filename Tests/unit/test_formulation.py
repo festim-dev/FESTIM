@@ -34,15 +34,16 @@ def test_formulation_no_trap_1_material():
     u_n = fenics.Function(V)
     v = fenics.TestFunction(V)
 
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_sim.T = my_temp
+    temp = my_temp.T
     my_sim.dt, my_sim.dx = dt, dx
     F, expressions = formulation(my_sim)
 
@@ -96,14 +97,15 @@ def test_formulation_1_trap_1_material():
     previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
 
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_sim.T = my_temp
+    temp = my_temp.T
     my_sim.dt, my_sim.dx = dt, dx
     F, expressions = formulation(my_sim)
 
@@ -174,15 +176,16 @@ def test_formulation_2_traps_1_material():
     previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
 
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_sim.T = my_temp
+    temp = my_temp.T
     my_sim.dt, my_sim.dx = dt, dx
     F, expressions = formulation(my_sim)
 
@@ -274,11 +277,6 @@ def test_formulation_1_trap_2_materials():
         "source_term": {"value": 1},
     }
     mesh = fenics.UnitIntervalMesh(10)
-    mf = fenics.MeshFunction("size_t", mesh, 1, 1)
-    mat1 = create_subdomains(0, 0.5)
-    mat2 = create_subdomains(0.5, 1)
-    mat1.mark(mf, 1)
-    mat2.mark(mf, 2)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     u_n = fenics.Function(V)
@@ -288,15 +286,16 @@ def test_formulation_1_trap_2_materials():
     previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
 
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_sim.T = my_temp
+    temp = my_temp.T
     my_sim.dt, my_sim.dx = dt, dx
     F, expressions = formulation(my_sim)
     flux_ = expressions[0]
@@ -378,15 +377,16 @@ def test_formulation_1_extrap_1_material():
     previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
     extrinsic_traps = [n]
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_sim.T = my_temp
+    temp = my_temp.T
     my_sim.dt, my_sim.dx = dt, dx
     my_sim.extrinsic_traps = extrinsic_traps
     F, expressions = formulation(my_sim)
@@ -444,7 +444,6 @@ def test_formulation_steady_state():
     v = fenics.TestFunction(V)
 
     solutions = list(fenics.split(u))
-    previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
 
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
@@ -454,7 +453,11 @@ def test_formulation_steady_state():
     my_sim.transient = False
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_sim.T = my_temp
+    temp = my_temp.T
     my_sim.dt, my_sim.dx = 0, dx
     F, expressions = formulation(my_sim)
     Index._globalcount = 8
@@ -472,91 +475,6 @@ def test_formulation_steady_state():
         testfunctions[1]*dx(1)
     print(expected_form)
     assert expected_form.equals(F) is True
-
-
-def test_formulation_heat_transfer():
-    '''
-    Test function define_variational_problem_heat_transfers
-    '''
-
-    def thermal_cond(a):
-        return a**2
-
-    Index._globalcount = 8
-    u = 1 + 2*FESTIM.x**2
-    parameters = {
-        "boundary_conditions": [],
-        "materials": [{
-            "D_0": None,
-            "E_D": None,
-            "borders": [0, 1],
-            "thermal_cond": thermal_cond,
-            "rho": 5,
-            "heat_capacity": 4,
-            "id": 1
-            }],
-        "temperature": {
-            "type": "solve_transient",
-            "boundary_conditions": [
-                {
-                    "type": "dc",
-                    "value": u,
-                    "surfaces": [1]
-                },
-                {
-                    "type": "flux",
-                    "value": 2,
-                    "surfaces": [2]
-                },
-                ],
-            "source_term": [
-                {
-                    "value": -4,
-                    "volume": 1
-                }
-            ],
-        },
-    }
-    dt = 2
-    mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
-
-    T = fenics.Function(V)
-    T_n = fenics.Function(V)
-    v = fenics.TestFunction(V)
-    functions = [T, v, T_n]
-
-    # create mesh functions
-    surface_markers = fenics.MeshFunction(
-        "size_t", mesh, mesh.topology().dim()-1, 0)
-    surface_markers.set_all(0)
-    for f in fenics.facets(mesh):
-        x0 = f.midpoint()
-        if fenics.near(x0.x(), 0):
-            surface_markers[f] = 1
-        if fenics.near(x0.x(), 1):
-            surface_markers[f] = 2
-    volume_markers = fenics.MeshFunction('size_t', mesh, 1, 1)
-    ds = fenics.Measure('ds', domain=mesh, subdomain_data=surface_markers)
-    dx = fenics.Measure('dx', domain=mesh, subdomain_data=volume_markers)
-    # Run function
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.transient = True
-    my_sim.T, my_sim.T_n, my_sim.vT = T, T_n, v
-    my_sim.dt, my_sim.dx, my_sim.ds = dt, dx, ds
-    my_sim.define_variational_problem_heat_transfers()
-    F = my_sim.FT
-    expressions = my_sim.expressions_FT
-    Index._globalcount = 8
-    source = expressions[0]
-    expected_form = 5*4*(T - T_n)/dt * v * dx(1) + \
-        fenics.dot(thermal_cond(T)*fenics.grad(T), fenics.grad(v))*dx(1)
-    expected_form += - source*v*dx(1)
-
-    neumann_flux = expressions[1]
-    expected_form += -neumann_flux * v * ds(2)
-
-    assert expected_form.equals(F)
 
 
 def test_formulation_soret():
@@ -613,16 +531,17 @@ def test_formulation_soret():
 
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
-    # temp must be a function and not an expression in that case
-    temp = fenics.interpolate(temp, V)
+    my_temp = FESTIM.Temperature("solve_transient", 300)
+    # Soret only works with Function (not expressions)
+    my_temp.T = fenics.project(fenics.Constant(300), V)
+    temp = my_temp.T
     dt = 2
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.soret = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+    my_sim.T = my_temp
     my_sim.dt, my_sim.dx = dt, dx
     F, expressions = formulation(my_sim)
     flux_ = expressions[0]
@@ -688,15 +607,18 @@ def test_formulation_no_trap_1_material_chemical_pot():
 
     mf = fenics.MeshFunction('size_t', mesh, 1, 1)
     dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
-    temp_n = fenics.Expression("200", degree=0)
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.chemical_pot = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp_n
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_temp.T_n = 200
+    my_sim.T = my_temp
+    temp = my_temp.T
+    temp_n = my_temp.T_n
     my_sim.dt, my_sim.dx = dt, dx
     F, expressions = formulation(my_sim)
 
@@ -760,16 +682,19 @@ def test_formulation_1_trap_1_material_chemical_pot():
     previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
 
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
-    temp_n = fenics.Expression("200", degree=0)
+    dx = fenics.dx()
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.chemical_pot = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp_n
+
+    my_temp = FESTIM.Temperature("solve_transient", 300)
+    my_temp.T = 300
+    my_temp.T_n = 200
+    my_sim.T = my_temp
+    temp, temp_n = my_temp.T, my_temp.T_n
+
     my_sim.dt, my_sim.dx = dt, dx
     F, expressions = formulation(my_sim)
     Index._globalcount = 8
@@ -887,11 +812,6 @@ def test_formulation_with_several_ids_per_material():
         "source_term": {"value": 1},
     }
     mesh = fenics.UnitIntervalMesh(10)
-    mf = fenics.MeshFunction("size_t", mesh, 1, 1)
-    mat1 = create_subdomains(0, 0.5)
-    mat2 = create_subdomains(0.5, 1)
-    mat1.mark(mf, 1)
-    mat2.mark(mf, 2)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     u_n = fenics.Function(V)
@@ -901,17 +821,18 @@ def test_formulation_with_several_ids_per_material():
     previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
 
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
     my_sim.dt, my_sim.dx = dt, dx
 
+    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp.T = 300
+    my_sim.T = my_temp
+    temp = my_temp.T
     # run
     F, expressions = formulation(my_sim)
 
@@ -979,12 +900,8 @@ def test_formulation_material_dependent_trap_properties():
                 }],
     }
     mesh = fenics.UnitIntervalMesh(10)
-    mf = fenics.MeshFunction("size_t", mesh, 1, 1)
-    mat1 = create_subdomains(0, 0.5)
-    mat2 = create_subdomains(0.5, 1)
-    mat1.mark(mf, 1)
-    mat2.mark(mf, 2)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V_cg1 = fenics.FunctionSpace(mesh, 'P', 1)
     u = fenics.Function(V)
     u_n = fenics.Function(V)
     v = fenics.TestFunction(V)
@@ -993,15 +910,22 @@ def test_formulation_material_dependent_trap_properties():
     previous_solutions = list(fenics.split(u_n))
     testfunctions = list(fenics.split(v))
 
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
+    ds = fenics.ds()
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
+    my_temp = FESTIM.Temperature("expression", 300)
+
+    mat_1 = FESTIM.Material(1, D_0=5, E_D=4)
+    mat_2 = FESTIM.Material(2, D_0=6, E_D=5)
+    my_mats = FESTIM.Materials([mat_1, mat_2])
+
+    my_temp.create_functions(V_cg1, my_mats, dx, ds, dt=dt)
+    my_sim.T = my_temp
+    temp = my_temp.T
     my_sim.dt, my_sim.dx = dt, dx
 
     # RUN
@@ -1063,7 +987,7 @@ def test_duplicate_material_dependent_trap_error():
                 "E_k": [2, 1, 7],
                 "p_0": [3, 1, 8],
                 "E_p": [4, 1, 9],
-                "density": [5, 5, 10],
+                "density": [5, 15, 10],
                 "materials": [1, 2, 1]
             }],
         "materials": [{
@@ -1083,106 +1007,29 @@ def test_duplicate_material_dependent_trap_error():
     }
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V_cg1 = fenics.FunctionSpace(mesh, 'P', 1)
     u = fenics.Function(V)
     u_n = fenics.Function(V)
     v = fenics.TestFunction(V)
 
-    solutions = list(fenics.split(u))
-    previous_solutions = list(fenics.split(u_n))
-    testfunctions = list(fenics.split(v))
-
-    mf = fenics.MeshFunction('size_t', mesh, 1, 1)
-    dx = fenics.dx(subdomain_data=mf)
-    temp = fenics.Expression("300", degree=0)
+    dx = fenics.dx()
+    ds = fenics.ds()
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u, my_sim.u_n = u, u_n
     my_sim.v = v
-    my_sim.T, my_sim.T_n = temp, temp
-    my_sim.dt, my_sim.dx = fenics.Constant(1), dx
+    my_sim.dx = dx
+    my_sim.ds = ds
+    my_sim.dt = 1
+    mat_1 = FESTIM.Material(1, D_0=5, E_D=2)
+    mat_2 = FESTIM.Material(2, D_0=5, E_D=2)
+    my_mats = FESTIM.Materials([mat_1, mat_2])
+
+    my_temp = FESTIM.Temperature("expression", value=300)
+    my_temp.create_functions(V_cg1, my_mats, dx, ds, dt=1)
+    my_sim.T = my_temp
 
     # RUN
     with pytest.raises(ValueError):
         formulation(my_sim)
-
-
-def test_formulation_heat_transfer_2_ids_per_mat():
-    '''
-    Test function define_variational_problem_heat_transfers
-    catching bug described in issue #305
-    '''
-
-    parameters = {"boundary_conditions": [],}
-    mat1 = {
-        "E_D": 0,
-        "D_0": 1,
-        "thermal_cond": 1,
-        "id": [1, 2]
-    }
-
-    mat2 = {
-        "E_D": 0,
-        "D_0": 0.25,
-        "thermal_cond": 1,
-        "id": 3
-    }
-
-    parameters["materials"] = [mat1, mat2]
-
-    N = 16
-    mesh = fenics.UnitSquareMesh(N, N)
-    vm = fenics.MeshFunction("size_t", mesh, 2, 0)
-    sm = fenics.MeshFunction("size_t", mesh, 1, 0)
-
-    tol = 1E-14
-    subdomain_1 = fenics.CompiledSubDomain('x[1] <= 0.5 + tol', tol=tol)
-    subdomain_2 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] >= 0.5 - tol', tol=tol)
-    subdomain_3 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] <= 0.5 + tol', tol=tol)
-    subdomain_1.mark(vm, 1)
-    subdomain_2.mark(vm, 2)
-    subdomain_3.mark(vm, 3)
-
-    surfaces = fenics.CompiledSubDomain('on_boundary')
-    surfaces.mark(sm, 1)
-
-    parameters["mesh_parameters"] = {
-        "mesh": mesh,
-        "meshfunction_cells": vm,
-        "meshfunction_facets": sm,
-    }
-
-    parameters["traps"] = []
-    parameters["temperature"] = {
-        "type": "solve_stationary",
-    }
-    parameters["boundary_conditions"] = []
-    parameters["exports"] = {}
-    solving_parameters = {
-        "type": "solve_stationary",
-        "newton_solver": {
-            "absolute_tolerance": 1e-10,
-            "relative_tolerance": 1e-10,
-            "maximum_iterations": 5,
-        }
-    }
-
-    parameters["solving_parameters"] = solving_parameters
-    dt = 2
-    mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
-
-    T = fenics.Function(V)
-    T_n = fenics.Function(V)
-    v = fenics.TestFunction(V)
-    functions = [T, v, T_n]
-
-    # create mesh functions
-    ds = fenics.ds
-    dx = fenics.dx
-    # Run function
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.transient = True
-    my_sim.T, my_sim.T_n, my_sim.vT = T, T_n, v
-    my_sim.dt, my_sim.dx, my_sim.ds = dt, dx, ds
-    my_sim.define_variational_problem_heat_transfers()

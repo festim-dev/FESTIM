@@ -1,4 +1,4 @@
-from fenics import *
+import fenics as f
 from ufl.algebra import Product
 import sympy as sp
 import numpy as np
@@ -17,7 +17,7 @@ def run_post_processing(simulation):
     parameters = simulation.parameters
     transient = simulation.transient
     u = simulation.u
-    T = simulation.T
+    T = simulation.T.T
     markers = [simulation.volume_markers, simulation.surface_markers]
     V_DG1, V_CG1 = simulation.V_DG1, simulation.V_CG1
     t = simulation.t
@@ -54,7 +54,7 @@ def run_post_processing(simulation):
                 need_solute = True
         if need_solute:
             # project solute on V_DG1
-            solute = project(solute, V_DG1)
+            solute = f.project(solute, V_DG1)
 
         res[0] = solute
 
@@ -92,8 +92,8 @@ def run_post_processing(simulation):
                     parameters["exports"]["xdmf"]["functions"]
                 if 'retention' in functions_to_exports:
                     # if not a Function, project it onto V_DG1
-                    if not isinstance(res[-2], Function):
-                        res[-2] = project(retention, V_DG1)
+                    if not isinstance(res[-2], f.Function):
+                        res[-2] = f.project(retention, V_DG1)
 
                 FESTIM.export.export_xdmf(
                     res, parameters["exports"], files, t, append=append)
@@ -156,7 +156,7 @@ def compute_error(parameters, t, res, mesh):
         er = []
         er.append(t)
         for i in range(len(error["exact_solutions"])):
-            exact_sol = Expression(sp.printing.ccode(
+            exact_sol = f.Expression(sp.printing.ccode(
                 error["exact_solutions"][i]),
                 degree=error["degree"],
                 t=t)
@@ -181,7 +181,7 @@ def compute_error(parameters, t, res, mesh):
                 error_max = np.max(np.abs(vertex_values_u - vertex_values_sol))
                 er.append(error_max)
             else:
-                error_L2 = errornorm(
+                error_L2 = f.errornorm(
                     exact_sol, computed_sol, error["norm"])
                 er.append(error_L2)
 
@@ -189,7 +189,7 @@ def compute_error(parameters, t, res, mesh):
     return tab
 
 
-class ArheniusCoeff(UserExpression):
+class ArheniusCoeff(f.UserExpression):
     def __init__(self, mesh, materials, vm, T, pre_exp, E, **kwargs):
         super().__init__(kwargs)
         self._mesh = mesh
@@ -200,18 +200,18 @@ class ArheniusCoeff(UserExpression):
         self._E = E
 
     def eval_cell(self, value, x, ufc_cell):
-        cell = Cell(self._mesh, ufc_cell.index)
+        cell = f.Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
         D_0 = getattr(material, self._pre_exp)
         E_D = getattr(material, self._E)
-        value[0] = D_0*exp(-E_D/FESTIM.k_B/self._T(x))
+        value[0] = D_0*f.exp(-E_D/FESTIM.k_B/self._T(x))
 
     def value_shape(self):
         return ()
 
 
-class ThermalProp(UserExpression):
+class ThermalProp(f.UserExpression):
     def __init__(self, mesh, materials, vm, T, key, **kwargs):
         super().__init__(kwargs)
         self._mesh = mesh
@@ -221,7 +221,7 @@ class ThermalProp(UserExpression):
         self._key = key
 
     def eval_cell(self, value, x, ufc_cell):
-        cell = Cell(self._mesh, ufc_cell.index)
+        cell = f.Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
         attribute = getattr(material, self._key)
@@ -234,7 +234,7 @@ class ThermalProp(UserExpression):
         return ()
 
 
-class HCoeff(UserExpression):
+class HCoeff(f.UserExpression):
     def __init__(self, mesh, materials, vm, T, **kwargs):
         super().__init__(kwargs)
         self._mesh = mesh
@@ -243,7 +243,7 @@ class HCoeff(UserExpression):
         self._materials = materials
 
     def eval_cell(self, value, x, ufc_cell):
-        cell = Cell(self._mesh, ufc_cell.index)
+        cell = f.Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
 
@@ -294,30 +294,30 @@ def create_properties(mesh, materials, vm, T):
     return D, thermal_cond, cp, rho, H, S
 
 
-def calculate_maximum_volume(f, subdomains, subd_id):
+def calculate_maximum_volume(function, subdomains, subd_id):
     '''Minimum of f over subdomains cells marked with subd_id'''
-    V = f.function_space()
+    V = function.function_space()
 
     dm = V.dofmap()
 
     subd_dofs = np.unique(np.hstack(
         [dm.cell_dofs(c.index())
-         for c in SubsetIterator(subdomains, subd_id)]))
+         for c in f.SubsetIterator(subdomains, subd_id)]))
 
-    return np.max(f.vector().get_local()[subd_dofs])
+    return np.max(function.vector().get_local()[subd_dofs])
 
 
-def calculate_minimum_volume(f, subdomains, subd_id):
+def calculate_minimum_volume(function, subdomains, subd_id):
     '''Minimum of f over subdomains cells marked with subd_id'''
-    V = f.function_space()
+    V = function.function_space()
 
     dm = V.dofmap()
 
     subd_dofs = np.unique(np.hstack(
         [dm.cell_dofs(c.index())
-         for c in SubsetIterator(subdomains, subd_id)]))
+         for c in f.SubsetIterator(subdomains, subd_id)]))
 
-    return np.min(f.vector().get_local()[subd_dofs])
+    return np.min(function.vector().get_local()[subd_dofs])
 
 
 def header_derived_quantities(parameters):
@@ -395,15 +395,15 @@ def derived_quantities(parameters, solutions,
                 Q = properties[2]
     volume_markers = markers[0]
     surface_markers = markers[1]
-    mesh = solutions[-1].function_space().mesh()
-    n = FacetNormal(mesh)
-    dx = Measure('dx', domain=mesh, subdomain_data=volume_markers)
-    ds = Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    mesh = volume_markers.mesh()
+    n = f.FacetNormal(mesh)
+    dx = f.Measure('dx', domain=mesh, subdomain_data=volume_markers)
+    ds = f.Measure('ds', domain=mesh, subdomain_data=surface_markers)
 
     # Create dicts
 
     ret = solutions[len(solutions)-2]
-    V_DG1 = FunctionSpace(mesh, "DG", 1)
+    V_DG1 = f.FunctionSpace(mesh, "DG", 1)
 
     T = solutions[len(solutions)-1]
     field_to_sol = {
@@ -423,20 +423,22 @@ def derived_quantities(parameters, solutions,
     derived_quant_dict = parameters["exports"]["derived_quantities"]
     if "surface_flux" in derived_quant_dict.keys():
         for flux in derived_quant_dict["surface_flux"]:
+            print(str(flux["field"]))
             sol = field_to_sol[str(flux["field"])]
+            print(type(sol))
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
-                phi = assemble(prop*dot(grad(sol), n)*ds(surf))
+                phi = f.assemble(prop*f.dot(f.grad(sol), n)*ds(surf))
                 if soret is True and str(flux["field"]) == 'solute':
-                    phi += assemble(
-                        prop*sol*Q/(FESTIM.R*T**2)*dot(grad(T), n)*ds(surf))
+                    phi += f.assemble(
+                        prop*sol*Q/(FESTIM.R*T**2)*f.dot(f.grad(T), n)*ds(surf))
                 tab.append(phi)
     if "average_volume" in derived_quant_dict.keys():
         for average in parameters[
                         "exports"]["derived_quantities"]["average_volume"]:
             sol = field_to_sol[str(average["field"])]
             for vol in average["volumes"]:
-                val = assemble(sol*dx(vol))/assemble(1*dx(vol))
+                val = f.assemble(sol*dx(vol))/f.assemble(1*dx(vol))
                 tab.append(val)
     if "minimum_volume" in derived_quant_dict.keys():
         for minimum in parameters[
@@ -444,8 +446,8 @@ def derived_quantities(parameters, solutions,
             if str(minimum["field"]) == "retention":
                 for vol in minimum["volumes"]:
                     val = 0
-                    for f in solutions[0:-2]:
-                        val += calculate_minimum_volume(f, volume_markers, vol)
+                    for fun in solutions[0:-2]:
+                        val += calculate_minimum_volume(fun, volume_markers, vol)
                     tab.append(val)
             else:
                 sol = field_to_sol[str(minimum["field"])]
@@ -458,8 +460,8 @@ def derived_quantities(parameters, solutions,
             if str(maximum["field"]) == "retention":
                 for vol in maximum["volumes"]:
                     val = 0
-                    for f in solutions[0:-2]:
-                        val += calculate_maximum_volume(f, volume_markers, vol)
+                    for fun in solutions[0:-2]:
+                        val += calculate_maximum_volume(fun, volume_markers, vol)
                     tab.append(val)
             else:
                 sol = field_to_sol[str(maximum["field"])]
@@ -470,12 +472,12 @@ def derived_quantities(parameters, solutions,
         for total in derived_quant_dict["total_volume"]:
             sol = field_to_sol[str(total["field"])]
             for vol in total["volumes"]:
-                tab.append(assemble(sol*dx(vol)))
+                tab.append(f.assemble(sol*dx(vol)))
     if "total_surface" in derived_quant_dict.keys():
         for total in derived_quant_dict["total_surface"]:
             sol = field_to_sol[str(total["field"])]
             for surf in total["surfaces"]:
-                tab.append(assemble(sol*ds(surf)))
+                tab.append(f.assemble(sol*ds(surf)))
     return tab
 
 

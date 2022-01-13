@@ -687,7 +687,9 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u = theta_out
-    my_sim.T = fenics.Constant(500)
+    my_temp = FESTIM.Temperature("expression", 500)
+    my_temp.create_functions(V, FESTIM.Materials(), None, None, None)
+    my_sim.T = my_temp
     my_sim.volume_markers, my_sim.surface_markers = None, None
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
     my_sim.t = 0
@@ -756,7 +758,9 @@ def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
     my_sim = FESTIM.Simulation(parameters)
     my_sim.transient = True
     my_sim.u = theta_out
-    my_sim.T = fenics.Constant(500)
+    my_temp = FESTIM.Temperature("expression", 500)
+    my_temp.create_functions(V, FESTIM.Materials(), None, None, None)
+    my_sim.T = my_temp
     my_sim.volume_markers, my_sim.surface_markers = None, None
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
     my_sim.t = 0

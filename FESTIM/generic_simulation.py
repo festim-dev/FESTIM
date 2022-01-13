@@ -26,6 +26,8 @@ class Simulation():
         self.soret = False
         self.create_boundarycondition_objects()
         self.create_materials()
+        self.define_mesh()
+        self.define_markers()
 
     def create_materials(self):
         materials = []
@@ -94,9 +96,6 @@ class Simulation():
             initial_stepsize = solving_parameters["initial_stepsize"]
             self.dt.assign(initial_stepsize)  # time step size
 
-        # create mesh and markers
-        self.define_mesh()
-        self.define_markers()
 
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
@@ -113,7 +112,7 @@ class Simulation():
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
             FESTIM.create_properties(
                 self.mesh.mesh, self.materials,
-                self.volume_markers, self.T)
+                self.volume_markers, self.T.T)
         if self.S is not None:
             self.chemical_pot = True
 
@@ -159,34 +158,36 @@ class Simulation():
                    derived_quant["nb_iterations_between_compute"]
 
     def define_mesh(self):
+        if "mesh_parameters" in self.parameters:
+            mesh_parameters = self.parameters["mesh_parameters"]
 
-        mesh_parameters = self.parameters["mesh_parameters"]
-
-        if "volume_file" in mesh_parameters.keys():
-            self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
-        elif ("mesh" in mesh_parameters.keys() and
-                isinstance(mesh_parameters["mesh"], type(Mesh()))):
-            self.mesh = FESTIM.Mesh(**mesh_parameters)
-        elif "vertices" in mesh_parameters.keys():
-            self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
+            if "volume_file" in mesh_parameters.keys():
+                self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
+            elif ("mesh" in mesh_parameters.keys() and
+                    isinstance(mesh_parameters["mesh"], type(Mesh()))):
+                self.mesh = FESTIM.Mesh(**mesh_parameters)
+            elif "vertices" in mesh_parameters.keys():
+                self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
+            else:
+                self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
         else:
-            self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
+            self.mesh = None
 
     def define_markers(self):
         # Define and mark subdomains
+        if isinstance(self.mesh, FESTIM.Mesh):
+            if isinstance(self.mesh, FESTIM.Mesh1D):
+                if len(self.materials.materials) > 1:
+                    self.materials.check_borders(self.mesh.size)
+                self.mesh.define_markers(self.materials)
 
-        if isinstance(self.mesh, FESTIM.Mesh1D):
-            if len(self.materials.materials) > 1:
-                self.materials.check_borders(self.mesh.size)
-            self.mesh.define_markers(self.materials)
+            self.volume_markers, self.surface_markers = \
+                self.mesh.volume_markers, self.mesh.surface_markers
 
-        self.volume_markers, self.surface_markers = \
-            self.mesh.volume_markers, self.mesh.surface_markers
-
-        self.ds = Measure(
-            'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
-        self.dx = Measure(
-            'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
+            self.ds = Measure(
+                'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
+            self.dx = Measure(
+                'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
     def define_function_spaces(self):
         solving_parameters = self.parameters["solving_parameters"]
@@ -215,32 +216,17 @@ class Simulation():
         self.V_DG1 = FunctionSpace(mesh, 'DG', 1)
 
     def define_temperature(self):
-        self.T = Function(self.V_CG1, name="T")
-        self.T_n = Function(self.V_CG1, name="T_n")
-
-        if self.parameters["temperature"]["type"] == "expression":
-            self.T_expr = Expression(
-                sp.printing.ccode(
-                    self.parameters["temperature"]['value']), t=0, degree=2)
-            self.T.assign(interpolate(self.T_expr, self.V_CG1))
-            self.T_n.assign(self.T)
+        temp_type = self.parameters["temperature"]["type"]
+        self.T = FESTIM.Temperature(temp_type)
+        if temp_type == "expression":
+            self.T.expression = self.parameters["temperature"]['value']
         else:
-            # Define variational problem for heat transfers
-
-            self.vT = TestFunction(self.V_CG1)
-            if self.parameters["temperature"]["type"] == "solve_transient":
-                T_ini = sp.printing.ccode(
-                    self.parameters["temperature"]["initial_condition"])
-                T_ini = Expression(T_ini, degree=2, t=0)
-                self.T_n.assign(interpolate(T_ini, self.V_CG1))
-            self.bcs_T, expressions_bcs_T = FESTIM.define_dirichlet_bcs_T(self)
-            self.define_variational_problem_heat_transfers()
-            self.expressions += expressions_bcs_T + self.expressions_FT
-
-            if self.parameters["temperature"]["type"] == "solve_stationary":
-                print("Solving stationary heat equation")
-                solve(self.FT == 0, self.T, self.bcs_T)
-                self.T_n.assign(self.T)
+            self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
+            if temp_type == "solve_transient":
+                self.T.initial_value = self.parameters["temperature"]["initial_condition"]
+            if "source_term" in self.parameters["temperature"]:
+                self.T.source_term = self.parameters["temperature"]["source_term"]
+        self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
 
     def initialise_concentrations(self):
         self.u = Function(self.V)  # Function for concentrations
@@ -318,67 +304,6 @@ class Simulation():
         self.F += fluxes
         self.expressions += expressions_BC + expressions_fluxes
 
-    def define_variational_problem_heat_transfers(self):
-        """Create a variational form for heat transfer problem
-
-        Arguments:
-
-        Raises:
-            NameError: if thermal_cond is not in keys
-            NameError: if heat_capacity is not in keys
-            NameError: if rho is not in keys
-
-        Returns:
-            fenics.Form -- the formulation for heat transfers problem
-            list -- contains the fenics.Expression to be updated
-        """
-
-        print('Defining variational problem heat transfers')
-        T, T_n = self.T, self.T_n
-        vT = self.vT
-        self.expressions_FT = []
-        self.FT = 0
-        for mat in self.materials.materials:
-            thermal_cond = mat.thermal_cond
-            if callable(thermal_cond):  # if thermal_cond is a function
-                thermal_cond = thermal_cond(T)
-
-            subdomains = mat.id  # list of subdomains with this material
-            if type(subdomains) is not list:
-                subdomains = [subdomains]  # make sure subdomains is a list
-            if self.parameters["temperature"]["type"] == "solve_transient":
-                if mat.heat_capacity is None:
-                    raise NameError("Missing heat_capacity key in material")
-                if mat.rho is None:
-                    raise NameError("Missing rho key in material")
-                cp = mat.heat_capacity
-                rho = mat.rho
-                if callable(cp):  # if cp or rho are functions, apply T
-                    cp = cp(T)
-                if callable(rho):
-                    rho = rho(T)
-                # Transien term
-                for vol in subdomains:
-                    self.FT += rho*cp*(T-T_n)/self.dt*vT*self.dx(vol)
-            # Diffusion term
-            for vol in subdomains:
-                self.FT += dot(thermal_cond*grad(T), grad(vT))*self.dx(vol)
-
-        # Source terms
-        if "source_term" in self.parameters["temperature"].keys():
-            for source in self.parameters["temperature"]["source_term"]:
-                src = sp.printing.ccode(source["value"])
-                src = Expression(src, degree=2, t=0)
-                self.expressions_FT.append(src)
-                # Source term
-                self.FT += - src*vT*self.dx(source["volume"])
-
-        # Boundary conditions
-        if "boundary_conditions" in self.parameters["temperature"].keys():
-            fluxes, fluxes_expressions = FESTIM.create_heat_fluxes(self)
-            self.FT += fluxes
-            self.expressions_FT += fluxes_expressions
-
     def define_variational_problem_extrinsic_traps(self):
         # Define variational problem for extrinsic traps
         if self.transient:
@@ -443,18 +368,19 @@ class Simulation():
         self.t += float(self.dt)
         FESTIM.update_expressions(
             self.expressions, self.t)
-
+        FESTIM.update_expressions(
+            self.T.sub_expressions, self.t)
         if self.parameters["temperature"]["type"] == "expression":
-            self.T_n.assign(self.T)
-            self.T_expr.t = self.t
-            self.T.assign(interpolate(self.T_expr, self.V_CG1))
-        self.D._T = self.T
+            self.T.T_n.assign(self.T.T)
+            self.T.expression.t = self.t
+            self.T.T.assign(interpolate(self.T.expression, self.V_CG1))
+        self.D._T = self.T.T
         if self.H is not None:
-            self.H._T = self.T
+            self.H._T = self.T.T
         if self.thermal_cond is not None:
-            self.thermal_cond._T = self.T
+            self.thermal_cond._T = self.T.T
         if self.chemical_pot:
-            self.S._T = self.T
+            self.S._T = self.T.T
 
         # Display time
         simulation_percentage = round(self.t/self.final_time*100, 2)
@@ -468,16 +394,16 @@ class Simulation():
 
         # Solve heat transfers
         if self.parameters["temperature"]["type"] == "solve_transient":
-            dT = TrialFunction(self.T.function_space())
-            JT = derivative(self.FT, self.T, dT)  # Define the Jacobian
+            dT = TrialFunction(self.T.T.function_space())
+            JT = derivative(self.T.F, self.T.T, dT)  # Define the Jacobian
             problem = NonlinearVariationalProblem(
-                self.FT, self.T, self.bcs_T, JT)
+                self.T.F, self.T.T, self.T.dirichlet_bcs, JT)
             solver = NonlinearVariationalSolver(problem)
             newton_solver_prm = solver.parameters["newton_solver"]
             newton_solver_prm["absolute_tolerance"] = 1e-3
             newton_solver_prm["relative_tolerance"] = 1e-10
             solver.solve()
-            self.T_n.assign(self.T)
+            self.T.T_n.assign(self.T.T)
 
         # Solve main problem
         FESTIM.solve_it(
@@ -517,7 +443,7 @@ class Simulation():
         if "error" in self.parameters["exports"].keys():
             error = FESTIM.compute_error(
                 self.parameters["exports"]["error"], self.t,
-                [*res, self.T], self.mesh.mesh)
+                [*res, self.T.T], self.mesh.mesh)
             output["error"] = error
 
         output["parameters"] = self.parameters
@@ -530,7 +456,7 @@ class Simulation():
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
             "solute": res[0],
-            "T": self.T
+            "T": self.T.T
         }
         # add traps to output
         for i in range(len(self.parameters["traps"])):

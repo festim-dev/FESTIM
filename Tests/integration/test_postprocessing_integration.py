@@ -94,7 +94,6 @@ def test_run_post_processing(tmpdir):
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
     W = fenics.FunctionSpace(mesh, 'P', 1)
     u = fenics.Function(V)
-    T = fenics.interpolate(fenics.Constant(100), W)
     my_sim = FESTIM.Simulation(parameters)
     my_mesh = FESTIM.Mesh1D()
     my_mesh.mesh = mesh
@@ -107,13 +106,15 @@ def test_run_post_processing(tmpdir):
     files = define_xdmf_files(parameters["exports"])
     tab = \
         [header_derived_quantities(parameters)]
-    properties = \
-        create_properties(
-            mesh, my_sim.materials, my_mesh.volume_markers, T)
+
     my_sim.final_time = 20
     my_sim.transient = True
     my_sim.u = u
-    my_sim.T = T
+    my_sim.T = FESTIM.Temperature("expression", value=100)
+    my_sim.T.create_functions(W)
+    properties = \
+        create_properties(
+            mesh, my_sim.materials, my_mesh.volume_markers, my_sim.T.T)
     my_sim.volume_markers, my_sim.surface_markers = \
         my_mesh.volume_markers, my_mesh.surface_markers
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
@@ -199,7 +200,6 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     u = fenics.Function(V)
     fenics.assign(u.sub(0), fenics.interpolate(fenics.Constant(10), V.sub(0).collapse()))
     fenics.assign(u.sub(1), fenics.interpolate(fenics.Constant(1), V.sub(1).collapse()))
-    T = fenics.interpolate(fenics.Constant(20), W)
     my_sim = FESTIM.Simulation(parameters)
 
     my_mesh = FESTIM.Mesh1D()
@@ -212,12 +212,14 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     files = define_xdmf_files(parameters["exports"])
     tab = \
         [header_derived_quantities(parameters)]
-    properties = \
-        create_properties(
-            mesh, my_sim.materials, my_mesh.volume_markers, T)
+
     my_sim.transient = True
     my_sim.u = u
-    my_sim.T = T
+    my_sim.T = FESTIM.Temperature("expression", value=20)
+    my_sim.T.create_functions(W)
+    properties = \
+        create_properties(
+            mesh, my_sim.materials, my_mesh.volume_markers, my_sim.T.T)
     my_sim.volume_markers, my_sim.surface_markers = \
         my_mesh.volume_markers, my_mesh.surface_markers
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
@@ -308,7 +310,8 @@ def test_run_post_processing_flux(tmpdir):
     t += dt
     my_sim.transient = True
     my_sim.u = u
-    my_sim.T = T
+    my_sim.T = FESTIM.Temperature("expression", value=100*FESTIM.x + 200)
+    my_sim.T.create_functions(V)
     my_sim.volume_markers, my_sim.surface_markers = \
         my_mesh.volume_markers, my_mesh.surface_markers
     my_sim.V_CG1, my_sim.V_DG1 = V, V_DG1
@@ -361,7 +364,8 @@ def test_performance_xdmf_export_every_N_iterations(tmpdir):
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
 
     my_sim = FESTIM.Simulation(parameters)
-    my_sim.T = fenics.Function(V_CG1)
+    my_sim.T = FESTIM.Temperature("solve_stationary")
+    my_sim.T.T = fenics.Function(V_CG1)
     my_sim.u = fenics.Function(V_CG1)
     my_sim.V_CG1 = V_CG1
     my_sim.V_DG1 = V_DG1
@@ -428,7 +432,8 @@ def test_performance_xdmf_export_only_last_timestep(tmpdir):
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
 
     my_sim = FESTIM.Simulation(parameters)
-    my_sim.T = fenics.Function(V_CG1)
+    my_sim.T = FESTIM.Temperature("solve_stationary")
+    my_sim.T.T = fenics.Function(V_CG1)
     my_sim.u = fenics.Function(V_CG1)
     my_sim.V_CG1 = V_CG1
     my_sim.V_DG1 = V_DG1
