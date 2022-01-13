@@ -20,7 +20,6 @@ def test_fluxes_chemical_pot():
     E_S = 3
     order = 2
     k_B = FESTIM.k_B
-    T = 1000
     parameters = {
         "materials": [
             {
@@ -55,6 +54,7 @@ def test_fluxes_chemical_pot():
     }
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V_CG1 = fenics.FunctionSpace(mesh, "P", 1)
     u = fenics.Function(V)
     v = fenics.TestFunction(V)
 
@@ -63,20 +63,23 @@ def test_fluxes_chemical_pot():
     sol = solutions[0]
     test_sol = testfunctions[0]
 
-    S = S_0*fenics.exp(-E_S/k_B/T)
 
     my_sim = FESTIM.Simulation(parameters)
     my_sim.chemical_pot = True
     my_sim.u, my_sim.v = u, v
     my_sim.ds = fenics.ds
-    my_sim.T = T
+    my_sim.T = FESTIM.Temperature("expression", value=1000)
+    my_sim.T.create_functions(V_CG1)
+
+    S = S_0*fenics.exp(-E_S/k_B/my_sim.T.T)
+
     my_sim.S = S
     F, expressions = create_H_fluxes(my_sim)
 
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
     order = expressions[2]
-    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/T)
+    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/my_sim.T.T)
     expected_form = 0
     expected_form += -test_sol * (-Kr*(sol*S)**order)*fenics.ds(1)
     expected_form += -test_sol*expressions[3]*fenics.ds(1)
@@ -89,7 +92,6 @@ def test_fluxes():
     E_Kr = 3
     order = 2
     k_B = FESTIM.k_B
-    T = 1000
     boundary_conditions = [
 
         {
@@ -107,6 +109,7 @@ def test_fluxes():
     ]
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V_CG1 = fenics.FunctionSpace(mesh, "P", 1)
     u = fenics.Function(V)
     v = fenics.TestFunction(V)
 
@@ -120,13 +123,14 @@ def test_fluxes():
     my_sim = FESTIM.Simulation({"boundary_conditions": boundary_conditions})
     my_sim.u, my_sim.v = u, v
     my_sim.ds = fenics.ds
-    my_sim.T = T
+    my_sim.T = FESTIM.Temperature("expression", value=1000)
+    my_sim.T.create_functions(V_CG1)
     my_sim.S = None
     F, expressions = create_H_fluxes(my_sim)
 
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
-    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/T)
+    Kr = Kr_0 * fenics.exp(-E_Kr/k_B/my_sim.T.T)
     order = expressions[2]
     expected_form = 0
     expected_form += -test_sol * (- Kr* sol**order)*my_sim.ds(1)
