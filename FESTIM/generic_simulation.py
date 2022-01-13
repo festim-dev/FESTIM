@@ -269,14 +269,13 @@ class Simulation():
                         comp, self.V.sub(ini["component"]).collapse())
                 else:
                     comp = interpolate(
-                        comp, V.sub(ini["component"]).collapse())
-                assign(u_n.sub(ini["component"]), comp)
+                        comp, self.V.sub(ini["component"]).collapse())
+                assign(self.self.u_n.sub(ini["component"]), comp)
             else:
                 if ini["component"] == 0 and self.chemical_pot:
-                    u_n = project(comp, self.V)
+                    self.u_n = project(comp, self.V)
                 else:
-                    u_n = interpolate(comp, self.V)
-        self.u_n = u_n
+                    self.u_n = interpolate(comp, self.V)
 
     def initialise_extrinsic_traps(self):
         traps = self.parameters["traps"]
