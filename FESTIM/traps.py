@@ -116,8 +116,9 @@ class Mobile(Concentration):
 
 class Trap(Concentration):
     def __init__(
-            self, k_0, E_k, p_0, E_p, materials, density, source_term=0):
+            self, k_0, E_k, p_0, E_p, materials, density, source_term=0, id=None):
         super().__init__()
+        self.id = id
         self.k_0 = k_0
         self.E_k = E_k
         self.p_0 = p_0
@@ -230,6 +231,11 @@ class Trap(Concentration):
 class Traps:
     def __init__(self, traps=[]) -> None:
         self.traps = traps
+
+        # add ids if unspecified
+        for i, trap in enumerate(self.traps):
+            if trap.id is not None:
+                trap.id = i
 
     def create_forms(self, mobile, materials, T, dx, dt=None,
                      chemical_pot=False):
