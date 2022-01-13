@@ -89,32 +89,28 @@ def formulation(simulation):
     c_0 = split(simulation.u)[0]
     c_0_n = split(simulation.u_n)[0]
     v = split(simulation.v)[0]
-    solute_object = Concentration(
-        solution=c_0,
-        prev_solution=c_0_n,
-        test_function=v)
 
     # diffusion + transient terms
-    F += create_diffusion_form(simulation, solute_object)
+    F += create_diffusion_form(simulation, c_0, c_0_n, v)
 
     # Define flux
     if "source_term" in simulation.parameters:
         F_source, expressions_source = \
-            create_source_form(simulation, solute_object)
+            create_source_form(simulation, v)
         F += F_source
         expressions += expressions_source
 
     # Add traps
     if "traps" in simulation.parameters:
         F_traps, expressions_traps = \
-            create_all_traps_form(simulation, solute_object)
+            create_all_traps_form(simulation, c_0, v)
         F += F_traps
         expressions += expressions_traps
 
     return F, expressions
 
 
-def create_diffusion_form(simulation, solute_object):
+def create_diffusion_form(simulation, c_0, c_0_n, v):
     """Creates a form for the solute diffusion terms
 
     Args:
@@ -126,12 +122,9 @@ def create_diffusion_form(simulation, solute_object):
         fenics.Form: formulation for the diffusion terms
     """
     F = 0
-    c_0 = solute_object.solution
-    c_0_n = solute_object.prev_solution
-    v = solute_object.test_function
     if simulation.chemical_pot:
-        theta = solute_object.solution
-        theta_n = solute_object.prev_solution
+        theta = c_0
+        theta_n = c_0_n
     k_B = FESTIM.k_B
     T, T_n = simulation.T.T, simulation.T.T_n
     dt = simulation.dt
@@ -164,7 +157,7 @@ def create_diffusion_form(simulation, solute_object):
     return F
 
 
-def create_source_form(simulation, solute_object):
+def create_source_form(simulation, v):
     """Creates a form for the solute source terms
 
     Args:
@@ -188,7 +181,7 @@ def create_source_form(simulation, solute_object):
         source = Expression(
             sp.printing.ccode(
                 source_term["value"]), t=0, degree=2)
-        F_source += - source*solute_object.test_function*dx
+        F_source += - source*v*dx
         expressions_source.append(source)
 
     elif isinstance(source_term, list):
@@ -200,13 +193,13 @@ def create_source_form(simulation, solute_object):
             if isinstance(volumes, int):
                 volumes = [volumes]
             for vol in volumes:
-                F_source += - source*solute_object.test_function*dx(vol)
+                F_source += - source*v*dx(vol)
             expressions_source.append(source)
 
     return F_source, expressions_source
 
 
-def create_one_trap_form(simulation, trap, solute):
+def create_one_trap_form(simulation, trap, c_0, v):
     """Creates a sub-form for a trap to be added to the general formulation.
 
     The global equation for trapping is:
@@ -235,6 +228,9 @@ def create_one_trap_form(simulation, trap, solute):
     dx = simulation.dx
     T = simulation.T.T
 
+    if simulation.chemical_pot:
+        theta = c_0
+
     expressions_trap = []
     F = 0  # initialise the form
     if simulation.transient:
@@ -243,7 +239,7 @@ def create_one_trap_form(simulation, trap, solute):
             test_function*dx
         # d(c_t)/dt in mobile equation
         F += ((solution - prev_solution) / dt) * \
-            solute.test_function*dx
+            v*dx
     else:
         # if the sim is steady state and
         # if a trap is not defined in one subdomain
@@ -273,12 +269,11 @@ def create_one_trap_form(simulation, trap, solute):
 
         corresponding_material = \
             simulation.materials.find_material_from_id(mat_id)
-        c_0 = solute.solution
         if simulation.chemical_pot:
             # change of variable
             S_0 = corresponding_material.S_0
             E_S = corresponding_material.E_S
-            c_0 = c_0*S_0*exp(-E_S/k_B/T)
+            c_0 = theta*S_0*exp(-E_S/k_B/T)
 
         # k(T)*c_m*(n - c_t) - p(T)*c_t
         F += - k_0 * exp(-E_k/k_B/T) * c_0 \
@@ -289,7 +284,7 @@ def create_one_trap_form(simulation, trap, solute):
     return F, expressions_trap
 
 
-def create_all_traps_form(simulation, solute):
+def create_all_traps_form(simulation, c_0, v):
     """Creates a sub-form for all traps to be added to the general formulation.
 
     Args:
@@ -323,7 +318,7 @@ def create_all_traps_form(simulation, solute):
 
         # add to the global form
         F_trap, expressions_trap = create_one_trap_form(
-            simulation, trap_object, solute)
+            simulation, trap_object, c_0, v)
         F_traps += F_trap
         expressions_traps += expressions_trap
 
