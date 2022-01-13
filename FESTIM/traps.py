@@ -96,10 +96,11 @@ class Mobile(Concentration):
                             grad(self.test_function))*dx(subdomain)
 
         # add the traps transient terms
-        if traps is not None:
-            for trap in traps.traps:
-                F += ((trap.solution - trap.previous_solution) / dt) * \
-                    self.test_function * dx
+        if dt is not None:
+            if traps is not None:
+                for trap in traps.traps:
+                    F += ((trap.solution - trap.previous_solution) / dt) * \
+                        self.test_function * dx
         self.F_diffusion = F
         self.F += F
 
