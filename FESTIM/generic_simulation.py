@@ -34,7 +34,10 @@ class Simulation():
         self.mobile = FESTIM.Mobile()
         traps = []
         for trap in self.parameters["traps"]:
-            traps.append(FESTIM.Trap(**trap))
+            if "type" in trap:
+                traps.append(FESTIM.ExtrinsicTrap(**trap))
+            else:
+                traps.append(FESTIM.Trap(**trap))
         self.traps = FESTIM.Traps(traps)
 
     def create_materials(self):
@@ -276,18 +279,11 @@ class Simulation():
                 trap.initialise(ini, functionspace)
 
     def initialise_extrinsic_traps(self):
-        traps = self.parameters["traps"]
-        self.extrinsic_traps = [Function(self.V_CG1) for d in traps
-                                if "type" in d.keys() if
-                                d["type"] == "extrinsic"]
-        self.testfunctions_traps = [TestFunction(self.V_CG1) for d in traps
-                                    if "type" in d.keys() if
-                                    d["type"] == "extrinsic"]
-
-        self.previous_solutions_traps = []
-        for i in range(len(self.extrinsic_traps)):
-            ini = Expression("0", degree=2)
-            self.previous_solutions_traps.append(interpolate(ini, self.V_CG1))
+        for trap in self.traps.traps:
+            if isinstance(trap, FESTIM.ExtrinsicTrap):
+                trap.density = [Function(self.V_CG1)]
+                trap.density_test_function = TestFunction(self.V_CG1)
+                trap.density_previous_solution = project(Constant(0), self.V_CG1)
 
     def define_variational_problem_H_transport(self):
         print('Defining variational problem')
@@ -446,16 +442,18 @@ class Simulation():
             self.dt, self.parameters["solving_parameters"], J=self.J)
 
         # Solve extrinsic traps formulation
-        for j, form in enumerate(self.extrinsic_formulations):
-            solve(form == 0, self.extrinsic_traps[j], [])
+        for trap in self.traps.traps:
+            if isinstance(trap, FESTIM.ExtrinsicTrap):
+                solve(trap.form_density == 0, trap.density[0], [])
 
         # Post processing
         FESTIM.run_post_processing(self)
 
         # Update previous solutions
         self.u_n.assign(self.u)
-        for j, prev_sol in enumerate(self.previous_solutions_traps):
-            prev_sol.assign(self.extrinsic_traps[j])
+        for trap in self.traps.traps:
+            if isinstance(trap, FESTIM.ExtrinsicTrap):
+                trap.density_previous_solution.assign(trap.density[0])
         self.nb_iterations += 1
 
         # avoid t > final_time

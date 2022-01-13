@@ -235,40 +235,10 @@ def formulation_extrinsic_traps(simulation):
         list -- contains fenics.Form to be solved for extrinsic trap density
         list -- contains fenics.Expression to be updated
     """
-    traps = simulation.parameters["traps"]
-    solutions = simulation.extrinsic_traps
-    previous_solutions = simulation.previous_solutions_traps
-    testfunctions = simulation.testfunctions_traps
-    dt = simulation.dt
-    dx = simulation.dx
-
     formulations = []
     expressions = []
-    i = 0
-    for trap in traps:
-        if 'type' in trap.keys():
-            if trap['type'] == 'extrinsic':
-                parameters = trap["form_parameters"]
-                phi_0 = sp.printing.ccode(parameters['phi_0'])
-                phi_0 = Expression(phi_0, t=0, degree=2)
-                expressions.append(phi_0)
-                n_amax = parameters['n_amax']
-                n_bmax = parameters['n_bmax']
-                eta_a = parameters['eta_a']
-                eta_b = parameters['eta_b']
-                f_a = sp.printing.ccode(parameters['f_a'])
-                f_a = Expression(f_a, t=0, degree=2)
-                expressions.append(f_a)
-                f_b = sp.printing.ccode(parameters['f_b'])
-                f_b = Expression(f_b, t=0, degree=2)
-                expressions.append(f_b)
-
-                F = ((solutions[i] - previous_solutions[i])/dt) * \
-                    testfunctions[i]*dx
-                F += -phi_0*(
-                    (1 - solutions[i]/n_amax)*eta_a*f_a +
-                    (1 - solutions[i]/n_bmax)*eta_b*f_b) \
-                    * testfunctions[i]*dx
-                formulations.append(F)
-                i += 1
+    for trap in simulation.traps.traps:
+        if isinstance(trap, FESTIM.ExtrinsicTrap):
+            trap.create_form_density(simulation.dx, simulation.dt)
+            formulations.append(trap.form_density)
     return formulations, expressions
