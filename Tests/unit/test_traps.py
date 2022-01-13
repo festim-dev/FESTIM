@@ -189,6 +189,32 @@ class TestCreateTrappingForm:
         assert my_trap.F.equals(expected_form)
         assert my_trap.F_trapping.equals(expected_form)
 
+    def test_steady_state_trap_not_defined_everywhere(self):
+        # build
+        my_trap = FESTIM.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4,
+            materials=self.mat1.id, density=1 + FESTIM.x, source_term=2 + FESTIM.x + FESTIM.t)
+        my_trap.F = 0
+        add_functions(my_trap, self.V, id=1)
+        my_mats = FESTIM.Materials([self.mat1, self.mat2])
+
+        # run
+        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+
+        # test
+        v = my_trap.test_function
+        expected_form = 0
+        expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T) * self.my_mobile.solution * \
+            (my_trap.density[0] - my_trap.solution) * v * self.dx(self.mat1.id)
+        expected_form += my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)*my_trap.solution * \
+            v*self.dx(self.mat1.id)
+        expected_form += my_trap.solution * v * self.dx(self.mat2.id)
+        print("expected F:", expected_form)
+        print("produced F_trapping:", my_trap.F_trapping)
+        print("produced F:", my_trap.F)
+        assert my_trap.F.equals(expected_form)
+        assert my_trap.F_trapping.equals(expected_form)
+
 
 class TestCreateTrappingForms:
     mesh = f.UnitIntervalMesh(10)
