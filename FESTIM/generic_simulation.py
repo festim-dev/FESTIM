@@ -24,10 +24,18 @@ class Simulation():
         self.J = None
 
         self.soret = False
+        self.create_concentration_objects()
         self.create_boundarycondition_objects()
         self.create_materials()
         self.define_mesh()
         self.define_markers()
+
+    def create_concentration_objects(self):
+        self.mobile = FESTIM.Mobile()
+        traps = []
+        for trap in self.parameters["traps"]:
+            traps.append(FESTIM.Trap(**trap))
+        self.traps = FESTIM.Traps(traps)
 
     def create_materials(self):
         materials = []
@@ -230,17 +238,10 @@ class Simulation():
 
     def initialise_concentrations(self):
         self.u = Function(self.V)  # Function for concentrations
-
         self.v = TestFunction(self.V)  # TestFunction for concentrations
-
-        if hasattr(self, "S"):
-            S = self.S
-        else:
-            S = None
+        self.u_n = Function(self.V)
 
         print('Defining initial values')
-        V = self.V
-        u_n = Function(V)
 
         parameters = self.parameters
         if "initial_conditions" in parameters.keys():
@@ -253,28 +254,28 @@ class Simulation():
             if 'component' not in ini.keys():
                 ini["component"] = 0
             if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
-                comp = FESTIM.read_from_xdmf(ini, V)
+                comp = FESTIM.read_from_xdmf(ini, self.V)
             else:
                 value = ini["value"]
                 value = sp.printing.ccode(value)
                 comp = Expression(value, degree=3, t=0)
 
             if ini["component"] == 0 and self.chemical_pot:
-                comp = comp/S  # variable change
-            if V.num_sub_spaces() > 0:
+                comp = comp/self.S  # variable change
+            if self.V.num_sub_spaces() > 0:
                 if ini["component"] == 0 and self.chemical_pot:
                     # Product must be projected
                     comp = project(
-                        comp, V.sub(ini["component"]).collapse())
+                        comp, self.V.sub(ini["component"]).collapse())
                 else:
                     comp = interpolate(
                         comp, V.sub(ini["component"]).collapse())
                 assign(u_n.sub(ini["component"]), comp)
             else:
                 if ini["component"] == 0 and self.chemical_pot:
-                    u_n = project(comp, V)
+                    u_n = project(comp, self.V)
                 else:
-                    u_n = interpolate(comp, V)
+                    u_n = interpolate(comp, self.V)
         self.u_n = u_n
 
     def initialise_extrinsic_traps(self):
