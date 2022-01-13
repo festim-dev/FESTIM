@@ -86,11 +86,13 @@ def formulation(simulation):
     """
     expressions = []
     F = 0
-
+    c_0 = split(simulation.u)[0]
+    c_0_n = split(simulation.u_n)[0]
+    v = split(simulation.v)[0]
     solute_object = Concentration(
-        solution=split(simulation.u)[0],
-        prev_solution=split(simulation.u_n)[0],
-        test_function=split(simulation.v)[0])
+        solution=c_0,
+        prev_solution=c_0_n,
+        test_function=v)
 
     # diffusion + transient terms
     F += create_diffusion_form(simulation, solute_object)
@@ -124,9 +126,12 @@ def create_diffusion_form(simulation, solute_object):
         fenics.Form: formulation for the diffusion terms
     """
     F = 0
-
     c_0 = solute_object.solution
     c_0_n = solute_object.prev_solution
+    v = solute_object.test_function
+    if simulation.chemical_pot:
+        theta = solute_object.solution
+        theta_n = solute_object.prev_solution
     k_B = FESTIM.k_B
     T, T_n = simulation.T.T, simulation.T.T_n
     dt = simulation.dt
@@ -138,8 +143,8 @@ def create_diffusion_form(simulation, solute_object):
         if simulation.chemical_pot:
             E_S = material.E_S
             S_0 = material.S_0
-            c_0 = solute_object.solution*S_0*exp(-E_S/k_B/T)
-            c_0_n = solute_object.prev_solution*S_0*exp(-E_S/k_B/T_n)
+            c_0 = theta*S_0*exp(-E_S/k_B/T)
+            c_0_n = theta_n*S_0*exp(-E_S/k_B/T_n)
 
         subdomains = material.id  # list of subdomains with this material
         if type(subdomains) is not list:
@@ -148,14 +153,14 @@ def create_diffusion_form(simulation, solute_object):
         # add to the formulation F for every subdomain
         for subdomain in subdomains:
             if simulation.transient:
-                F += ((c_0-c_0_n)/dt)*solute_object.test_function*dx(subdomain)
+                F += ((c_0-c_0_n)/dt)*v*dx(subdomain)
             F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
-                     grad(solute_object.test_function))*dx(subdomain)
+                     grad(v))*dx(subdomain)
             if simulation.soret:
                 Q = material.free_enthalpy*T + material.entropy
                 F += dot(D_0 * exp(-E_D/k_B/T) *
                          Q * c_0 / (FESTIM.R * T**2) * grad(T),
-                         grad(solute_object.test_function))*dx(subdomain)
+                         grad(v))*dx(subdomain)
     return F
 
 
