@@ -133,7 +133,7 @@ def create_H_fluxes(simulation):
     for bc in simulation.boundary_conditions:
         if bc.component != "T":
             if bc.type not in FESTIM.helpers.bc_types["dc"]:
-                bc.create_form_for_flux(simulation.T, solute)
+                bc.create_form_for_flux(simulation.T.T, solute)
                 # TODO : one day we will get rid of this huge expressions list
                 expressions += bc.sub_expressions
 
