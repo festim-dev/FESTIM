@@ -273,7 +273,7 @@ class Simulation():
                 functionspace = self.V.sub(ini["component"]).collapse()
 
             if ini["component"] == 0:
-                self.mobile.initialise(ini, functionspace)
+                self.mobile.initialise(ini, functionspace, self.S)
             else:
                 trap = self.traps.get_trap(ini["component"])
                 trap.initialise(ini, functionspace)
