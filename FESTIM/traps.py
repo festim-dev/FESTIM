@@ -270,7 +270,6 @@ class Traps:
 
     def get_trap(self, id):
         for trap in self.traps:
-            print(trap.id)
             if trap.id == id:
                 return trap
         raise ValueError("Couldn't find trap {}".format(id))
