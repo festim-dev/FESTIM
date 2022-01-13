@@ -1,6 +1,6 @@
 import sympy as sp
 from fenics import *
-from FESTIM import k_B, read_from_xdmf
+from FESTIM import R, k_B, read_from_xdmf
 import sympy as sp
 
 
@@ -92,7 +92,7 @@ class Mobile(Concentration):
                 if soret:
                     Q = material.free_enthalpy*T + material.entropy
                     F += dot(D_0 * exp(-E_D/k_B/T) *
-                            Q * c_0 / (FESTIM.R * T**2) * grad(T),
+                            Q * c_0 / (R * T**2) * grad(T),
                             grad(self.test_function))*dx(subdomain)
 
         # add the traps transient terms
@@ -142,17 +142,16 @@ class Mobile(Concentration):
 
 class Trap(Concentration):
     def __init__(
-            self, k_0, E_k, p_0, E_p, materials, density, source_term=0, id=None):
+            self, k_0, E_k, p_0, E_p, materials, density, source_term=0, id=None, type=None):
         super().__init__()
         self.id = id
         self.k_0 = k_0
         self.E_k = E_k
         self.p_0 = p_0
         self.E_p = E_p
-        if type(materials) is not list:
-            self.materials = [materials]
-        else:
-            self.materials = materials
+        self.materials = materials
+        if not isinstance(self.materials, list):
+            self.materials = [self.materials]
         self.density = []
         self.make_density(density)
         self.source_term = source_term
@@ -162,8 +161,9 @@ class Trap(Concentration):
             densities = [densities]
 
         for density in densities:
-            density_expr = sp.printing.ccode(density)
-            self.density.append(Expression(density_expr, degree=2, t=0))
+            if density is not None:
+                density_expr = sp.printing.ccode(density)
+                self.density.append(Expression(density_expr, degree=2, t=0))
 
     def create_form(
             self, mobile, materials, T, dx, dt=None,
@@ -279,3 +279,40 @@ class Traps:
             if trap.id == id:
                 return trap
         raise ValueError("Couldn't find trap {}".format(id))
+
+
+class ExtrinsicTrap(Trap):
+    def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None):
+        super().__init__(k_0, E_k, p_0, E_p, materials, density=None, id=id)
+        self.form_parameters = form_parameters
+        self.density_previous_solution = None
+        self.density_test_function = None
+        self.type = type
+
+    def convert_prms(self):
+        # create Expressions or Constant for all parameters
+        for key, value in self.form_parameters.items():
+            if isinstance(value, (int, float)):
+                self.prms[key] = Constant(value)
+            else:
+                self.prms[key] = Expression(sp.printing.ccode(value),
+                                       t=0,
+                                       degree=1)
+                self.sub_expressions.append(self.prms[key])
+
+    def create_form_density(self, dx, dt):
+        phi_0 = self.form_parameters["phi_0"]
+        n_amax = self.form_parameters["n_amax"]
+        n_bmax = self.form_parameters["n_bmax"]
+        eta_a = self.form_parameters["eta_a"]
+        eta_b = self.form_parameters["eta_b"]
+        f_a = self.form_parameters["f_a"]
+        f_b = self.form_parameters["f_b"]
+        density = self.density[0]
+        F = ((density - self.density_previous_solution)/dt) * \
+            self.density_test_function*dx
+        F += -phi_0*(
+            (1 - density/n_amax)*eta_a*f_a +
+            (1 - density/n_bmax)*eta_b*f_b) \
+            * self.density_test_function*dx
+        self.form_density = F
