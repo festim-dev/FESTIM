@@ -6,7 +6,6 @@ from .initialising import read_from_xdmf, check_no_duplicates
 from .formulations import formulation, formulation_extrinsic_traps
 from .temperature import Temperature
 from .boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
-    create_H_fluxes,\
     BoundaryConditionTheta, BoundaryConditionExpression
 
 from .solving import solve_it, solve_once, adaptive_stepsize

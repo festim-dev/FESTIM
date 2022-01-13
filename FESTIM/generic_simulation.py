@@ -299,9 +299,13 @@ class Simulation():
 
         # Boundary conditions
         print('Defining boundary conditions')
+        self.create_dirichlet_bcs()
+        self.create_H_fluxes()
+
+    def create_dirichlet_bcs(self):
         self.bcs = []
         for bc in self.boundary_conditions:
-            if bc.component == 0 and isinstance(bc, FESTIM.DirichletBC):
+            if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
                 bc.create_dirichletbc(
                     self.V, self.T.T, self.surface_markers,
                     chemical_pot=self.chemical_pot,
@@ -310,9 +314,33 @@ class Simulation():
                 self.bcs += bc.dirichlet_bc
                 self.expressions += bc.sub_expressions
                 self.expressions.append(bc.expression)
-        fluxes, expressions_fluxes = FESTIM.create_H_fluxes(self)
-        self.F += fluxes
-        self.expressions += expressions_fluxes
+
+    def create_H_fluxes(self):
+        """Modifies the formulation and adds fluxes based
+        on parameters in boundary_conditions
+        """
+
+        expressions = []
+        solutions = split(self.u)
+        test_solute = split(self.v)[0]
+        F = 0
+
+        if self.chemical_pot:
+            solute = solutions[0]*self.S
+        else:
+            solute = solutions[0]
+
+        for bc in self.boundary_conditions:
+            if bc.component != "T":
+                if bc.type not in FESTIM.helpers.bc_types["dc"]:
+                    bc.create_form_for_flux(self.T.T, solute)
+                    # TODO : one day we will get rid of this huge expressions list
+                    expressions += bc.sub_expressions
+
+                    for surf in bc.surfaces:
+                        F += -test_solute*bc.form*self.ds(surf)
+        self.F += F
+        self.expressions += expressions
 
     def define_variational_problem_extrinsic_traps(self):
         # Define variational problem for extrinsic traps

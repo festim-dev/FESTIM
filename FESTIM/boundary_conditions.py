@@ -132,42 +132,6 @@ class FluxBC(BoundaryCondition):
         return form
 
 
-def create_H_fluxes(simulation):
-    """Modifies the formulation and adds fluxes based
-    on parameters in boundary_conditions
-
-    Arguments:
-
-    Raises:
-        NameError: if boundary condition type is unknown
-
-    Returns:
-        fenics.Form() -- formulation for BCs
-        list -- contains all the fenics.Expression() to be updated
-    """
-
-    expressions = []
-    solutions = f.split(simulation.u)
-    test_solute = f.split(simulation.v)[0]
-    F = 0
-
-    if simulation.chemical_pot:
-        solute = solutions[0]*simulation.S
-    else:
-        solute = solutions[0]
-
-    for bc in simulation.boundary_conditions:
-        if bc.component != "T":
-            if bc.type not in FESTIM.helpers.bc_types["dc"]:
-                bc.create_form_for_flux(simulation.T.T, solute)
-                # TODO : one day we will get rid of this huge expressions list
-                expressions += bc.sub_expressions
-
-                for surf in bc.surfaces:
-                    F += -test_solute*bc.form*simulation.ds(surf)
-    return F, expressions
-
-
 class BoundaryConditionTheta(f.UserExpression):
     """Creates an Expression for converting dirichlet bcs in the case
     of chemical potential conservation
