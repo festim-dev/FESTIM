@@ -43,8 +43,9 @@ class BoundaryCondition:
 
 
 class DirichletBC(BoundaryCondition):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
+        super().__init__(type, surfaces, value=value, function=function, component=component, **kwargs)
+        self.dirichlet_bc = []
 
     def create_expression(self, T):
         """[summary]
@@ -74,16 +75,41 @@ class DirichletBC(BoundaryCondition):
         self.expression = value_BC
         return value_BC
 
-    def normalise_by_solubility(self, simulation):
+    def normalise_by_solubility(self, materials, volume_markers, T):
         # Store the non modified BC to be updated
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
         expression_BC = BoundaryConditionTheta(
                             self.expression,
-                            simulation.materials,
-                            simulation.volume_markers, simulation.T.T)
+                            materials,
+                            volume_markers, T)
         self.expression = expression_BC
         return expression_BC
+
+    def create_dirichletbc(self, V, T, surface_markers, chemical_pot=False, materials=None, volume_markers=None):
+        """[summary]
+
+        Args:
+            V (fenics.FunctionSpace): [description]
+            T (fenics.Constant or fenics.Expression or fenics.Function): [description]
+            surface_markers (fenics.MeshFunction): [description]
+            chemical_pot (bool, optional): [description]. Defaults to False.
+            materials ([type], optional): [description]. Defaults to None.
+            volume_markers ([type], optional): [description]. Defaults to None.
+        """
+        self.create_expression(T)
+        if self.component == 0 and chemical_pot:
+            self.normalise_by_solubility(materials, volume_markers, T)
+
+        # create a DirichletBC and add it to bcs
+        if V.num_sub_spaces() == 0:
+            funspace = V
+        else:  # if only one component, use subspace
+            funspace = V.sub(self.component)
+        for surface in self.surfaces:
+            bci = f.DirichletBC(funspace, self.expression,
+                                surface_markers, surface)
+            self.dirichlet_bc.append(bci)
 
 
 class FluxBC(BoundaryCondition):
@@ -104,42 +130,6 @@ class FluxBC(BoundaryCondition):
         self.sub_expressions += [expression for expression in self.prms.values()]
         self.form = form
         return form
-
-
-def create_H_fluxes(simulation):
-    """Modifies the formulation and adds fluxes based
-    on parameters in boundary_conditions
-
-    Arguments:
-
-    Raises:
-        NameError: if boundary condition type is unknown
-
-    Returns:
-        fenics.Form() -- formulation for BCs
-        list -- contains all the fenics.Expression() to be updated
-    """
-
-    expressions = []
-    solutions = f.split(simulation.u)
-    test_solute = f.split(simulation.v)[0]
-    F = 0
-
-    if simulation.chemical_pot:
-        solute = solutions[0]*simulation.S
-    else:
-        solute = solutions[0]
-
-    for bc in simulation.boundary_conditions:
-        if bc.component != "T":
-            if bc.type not in FESTIM.helpers.bc_types["dc"]:
-                bc.create_form_for_flux(simulation.T.T, solute)
-                # TODO : one day we will get rid of this huge expressions list
-                expressions += bc.sub_expressions
-
-                for surf in bc.surfaces:
-                    F += -test_solute*bc.form*simulation.ds(surf)
-    return F, expressions
 
 
 class BoundaryConditionTheta(f.UserExpression):
@@ -238,45 +228,3 @@ type_to_function = {
     "solubility": sieverts_law,
     "dc_imp": dc_imp,
 }
-
-# TODO this should be a method of BoundaryCondition
-def define_dirichlet_bcs(simulation):
-    """Create a list of DirichletBCs.
-
-    Arguments:
-
-
-    Raises:
-        KeyError: Raised if the type key of bc is missing
-        NameError: Raised if type is unknown
-
-    Returns:
-        list -- contains fenics DirichletBC
-        list -- contains the fenics.Expression() to be updated
-    """
-
-    bcs = list()
-    expressions = list()
-
-    #  for BC_object in simulation.boundary_conditions:
-    for BC_object in simulation.boundary_conditions:
-        if BC_object.component != "T" and BC_object.type in FESTIM.helpers.bc_types["dc"]:
-            BC_object.create_expression(simulation.T.T)
-            if BC_object.component == 0 and simulation.chemical_pot:
-                BC_object.normalise_by_solubility(simulation)
-            # TODO: one day, we will get rid of this big expressions list
-            expressions += BC_object.sub_expressions
-            # add value_BC to expressions for update
-            expressions.append(BC_object.expression)
-
-            # create a DirichletBC and add it to bcs
-            if simulation.V.num_sub_spaces() == 0:
-                funspace = simulation.V
-            else:  # if only one component, use subspace
-                funspace = simulation.V.sub(BC_object.component)
-            for surface in BC_object.surfaces:
-                bci = f.DirichletBC(funspace, BC_object.expression,
-                                simulation.surface_markers, surface)
-                bcs.append(bci)
-
-    return bcs, expressions
