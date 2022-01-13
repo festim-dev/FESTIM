@@ -94,6 +94,7 @@ class Simulation():
                 self.transient = True
             elif solving_parameters["type"] == "solve_stationary":
                 self.transient = False
+                self.dt = None
             else:
                 raise ValueError(
                     str(solving_parameters["type"]) + ' unkown')
