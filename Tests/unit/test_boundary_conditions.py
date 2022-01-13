@@ -1,7 +1,6 @@
 from attr import has
 import FESTIM
-from FESTIM.boundary_conditions import define_dirichlet_bcs, \
-    create_H_fluxes
+from FESTIM.boundary_conditions import create_H_fluxes
 import fenics
 import pytest
 import sympy as sp
@@ -160,31 +159,6 @@ def test_define_dirichlet_bcs_theta():
     S_02 = 3
     E_S1 = 0.1
     E_S2 = 0.2
-    parameters = {
-        "materials": [
-            {
-                "D_0": None,
-                "E_D": None,
-                "S_0": S_01,
-                "E_S": E_S1,
-                "id": 1
-                },
-            {
-                "D_0": None,
-                "E_D": None,
-                "S_0": S_02,
-                "E_S": E_S2,
-                "id": 2
-                }
-        ],
-        "boundary_conditions": [
-            {
-                "type": "dc",
-                "value": 200 + FESTIM.t,
-                "surfaces": [1, 2]
-            },
-        ]
-    }
 
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
@@ -199,19 +173,21 @@ def test_define_dirichlet_bcs_theta():
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
     left = fenics.CompiledSubDomain('x[0] < 0.0001')
-    left.mark(sm, 1)
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
+    left.mark(sm, 1)
     right.mark(sm, 2)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.chemical_pot = True
-    my_sim.V = V
-    my_sim.volume_markers = vm
-    my_sim.surface_markers = sm
     my_temp = FESTIM.Temperature(type="expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
     my_temp.create_functions(V)
-    my_sim.T = my_temp
-    bcs, expressions = define_dirichlet_bcs(my_sim)
+
+    mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)
+    mat2 = FESTIM.Material(2, None, None, S_0=S_02, E_S=E_S2)
+    my_mats = FESTIM.Materials([mat1, mat2])
+
+    my_bc = FESTIM.DirichletBC("dc", [1, 2], value=200 + FESTIM.t)
+    my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm, chemical_pot=True, materials=my_mats, volume_markers=vm)
+    expressions = my_bc.sub_expressions + [my_bc.expression]
+    bcs = my_bc.dirichlet_bc
 
     F = fenics.dot(fenics.grad(u), fenics.grad(v))*fenics.dx
 
@@ -257,52 +233,20 @@ def test_bc_recomb():
     E_D = 0.5
     Kr_0 = 2
     E_Kr = 0.35
-    parameters = {
-        "materials": [
-            {
-                "D_0": None,
-                "E_D": None,
-                "id": 1
-                },
-            {
-                "D_0": None,
-                "E_D": None,
-                "id": 2
-                }
-        ],
-        "boundary_conditions": [
-            {
-                "type": "dc_imp",
-                "implanted_flux": phi,
-                "implantation_depth": R_p,
-                "D_0": D_0,
-                "E_D": E_D,
-                "Kr_0": Kr_0,
-                "E_Kr": E_Kr,
-                "surfaces": [1, 2]
-            },
-        ]
-    }
 
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
     T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
-    temp = fenics.Expression(sp.printing.ccode(T_expr), t=0, degree=1)
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
-    left = fenics.CompiledSubDomain('x[0] < 0.0001')
-    left.mark(sm, 1)
-    right = fenics.CompiledSubDomain('x[0] > 0.99999999')
-    right.mark(sm, 2)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.V = V
-    my_sim.volume_markers = None
-    my_sim.surface_markers = sm
     my_temp = FESTIM.Temperature(type="expression", value=T_expr)
     my_temp.create_functions(V)
-    my_sim.T = my_temp
-    bcs, expressions = define_dirichlet_bcs(my_sim)
+
+    my_bc = FESTIM.DirichletBC("dc_imp", [1, 2], implanted_flux=phi, implantation_depth=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
+    my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
+    expressions = my_bc.sub_expressions + [my_bc.expression]
+
     for current_time in range(0, 3):
         my_temp.expression.t = current_time
         my_temp.T.assign(fenics.interpolate(my_temp.expression, V))
@@ -330,49 +274,20 @@ def test_bc_recomb_instant_recomb():
     R_p = 5 + FESTIM.x
     D_0 = 200
     E_D = 0.25
-    parameters = {
-        "materials": [
-            {
-                "D_0": None,
-                "E_D": None,
-                "id": 1
-                },
-            {
-                "D_0": None,
-                "E_D": None,
-                "id": 2
-                }
-        ],
-        "boundary_conditions": [
-            {
-                "type": "dc_imp",
-                "implanted_flux": phi,
-                "implantation_depth": R_p,
-                "D_0": D_0,
-                "E_D": E_D,
-                "surfaces": [1, 2]
-            },
-        ]
-    }
+
     # Set up
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
     T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
-    left = fenics.CompiledSubDomain('x[0] < 0.0001')
-    left.mark(sm, 1)
-    right = fenics.CompiledSubDomain('x[0] > 0.99999999')
-    right.mark(sm, 2)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.V = V
-    my_sim.volume_markers = None
-    my_sim.surface_markers = sm
     my_temp = FESTIM.Temperature(type="expression", value=T_expr)
     my_temp.create_functions(V)
-    my_sim.T = my_temp
-    bcs, expressions = define_dirichlet_bcs(my_sim)
+
+    my_bc = FESTIM.DirichletBC("dc_imp", [1, 2], implanted_flux=phi, implantation_depth=R_p, D_0=D_0, E_D=E_D)
+    my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
+    expressions = my_bc.sub_expressions + [my_bc.expression]
 
     for current_time in range(0, 3):
         my_temp.expression.t = current_time
@@ -405,36 +320,6 @@ def test_bc_recomb_chemical_pot():
     S_02 = 3
     E_S1 = 0.1
     E_S2 = 0.2
-    parameters = {
-        "materials": [
-            {
-                "D_0": None,
-                "E_D": None,
-                "S_0": S_01,
-                "E_S": E_S1,
-                "id": 1
-                },
-            {
-                "D_0": None,
-                "E_D": None,
-                "S_0": S_02,
-                "E_S": E_S2,
-                "id": 2
-                }
-        ],
-        "boundary_conditions": [
-            {
-                "type": "dc_imp",
-                "implanted_flux": phi,
-                "implantation_depth": R_p,
-                "D_0": D_0,
-                "E_D": E_D,
-                "Kr_0": Kr_0,
-                "E_Kr": E_Kr,
-                "surfaces": [1, 2]
-            },
-        ]
-    }
 
     mesh = fenics.UnitSquareMesh(4, 4)
     V = fenics.FunctionSpace(mesh, 'P', 1)
@@ -451,16 +336,19 @@ def test_bc_recomb_chemical_pot():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.chemical_pot = True
-    my_sim.V = V
-    my_sim.volume_markers = vm
-    my_sim.surface_markers = sm
     my_temp = FESTIM.Temperature("expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
     my_temp.create_functions(V)
-    my_sim.T = my_temp
-    bcs, expressions = define_dirichlet_bcs(my_sim)
 
+    mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)
+    mat2 = FESTIM.Material(2, None, None, S_0=S_02, E_S=E_S2)
+    my_mats = FESTIM.Materials([mat1, mat2])
+
+    # bcs, expressions = define_dirichlet_bcs(my_sim)
+    V = fenics.FunctionSpace(mesh, "P", 1)
+    my_bc = FESTIM.DirichletBC(type="dc_imp", surfaces=[1, 2], component=0, implanted_flux=phi, implantation_depth=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
+    my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm, chemical_pot=True, materials=my_mats, volume_markers=vm)
+    bcs = my_bc.dirichlet_bc
+    expressions = my_bc.sub_expressions + [my_bc.expression]
     # Set up formulation
     u = fenics.Function(V)
     v = fenics.TestFunction(V)
@@ -495,8 +383,7 @@ def test_bc_recomb_chemical_pot():
 
 
 def test_sievert_bc_varying_time():
-    """Creates a Simulation object with a solubility type bc and checks that
-    the correct value is applied
+    """Checks the method DirichletBC.create_expression with type solubility
     """
     # build
     T = fenics.Constant(300)
@@ -539,8 +426,7 @@ def test_sievert_bc_varying_time():
 
 
 def test_sievert_bc_varying_temperature():
-    """Creates a Simulation object with a solubility type bc and checks that
-    the correct value is applied
+    """Checks the method DirichletBC.create_expression with type solubility
     """
     # build
     T = fenics.Constant(300)
@@ -571,13 +457,12 @@ def test_sievert_bc_varying_temperature():
     expected = FESTIM.BoundaryConditionExpression(T, prms, eval_function=sieverts)
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
-    # T.assign(fenics.interpolate(fenics.Constant(1000), my_sim.V))
     T.assign(1000)
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
 
-def test_create_bc_expression_dc_custom():
-    """Creates a dc_custom bc and checks create_bc_expression returns
+def test_create_expression_dc_custom():
+    """Creates a dc_custom bc and checks create_expression returns
     the correct expression
     """
     # build

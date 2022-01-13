@@ -902,7 +902,7 @@ def test_chemical_pot_T_solve_stationary():
         }
     }
     out = run(parameters)
-    assert out["derived_quantities"][-1][1] > 0.97
+    assert out["derived_quantities"][-1][1] == pytest.approx(1)
 
 
 def test_performance_xdmf(tmpdir):
