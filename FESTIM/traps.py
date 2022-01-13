@@ -1,8 +1,6 @@
-from numpy.lib.arraysetops import isin
-from numpy.lib.utils import source
 import sympy as sp
 from fenics import *
-from FESTIM import k_B
+from FESTIM import k_B, read_from_xdmf
 import sympy as sp
 
 
@@ -25,10 +23,37 @@ class Concentration:
         self.sub_expressions = []
         self.F = None
 
+    def initialise(self, initial_condition, V):
+        if type(initial_condition['value']) == str and initial_condition['value'].endswith(".xdmf"):
+            comp = read_from_xdmf(
+                initial_condition["timestep"],
+                initial_condition["label"],
+                self.V)
+        else:
+            value = initial_condition["value"]
+            value = sp.printing.ccode(value)
+            comp = Expression(value, degree=3, t=0)
+            comp = interpolate(comp, V)
+        assign(self.previous_solution, comp)
+
+    def read_from_xdmf(filename, timestep, label, V):
+        comp = Function(V)
+        with XDMFFile(ini["value"]) as f:
+            f.read_checkpoint(comp, label, timestep)
+
 
 class Mobile(Concentration):
+    # TODO move this
     def __init__(self):
         super().__init__()
+
+    def initialise(self, initial_condition, V, S=None):
+        super().initialise(initial_condition, V)
+
+        # variable change if chemical potential
+        if S is not None:
+            theta = self.previous_solution/S
+            self.previous_solution.assign(project(theta, V))
 
     def create_form(self, materials, dx, T,  dt=None, traps=None, source_term=[], chemical_pot=False, soret=False):
         self.F = 0
@@ -73,7 +98,7 @@ class Mobile(Concentration):
         # add the traps transient terms
         if traps is not None:
             for trap in traps.traps:
-                F += ((trap.solution - trap.prev_solution) / dt) * \
+                F += ((trap.solution - trap.previous_solution) / dt) * \
                     self.test_function * dx
         self.F_diffusion = F
         self.F += F
@@ -233,8 +258,8 @@ class Traps:
         self.traps = traps
 
         # add ids if unspecified
-        for i, trap in enumerate(self.traps):
-            if trap.id is not None:
+        for i, trap in enumerate(self.traps, 1):
+            if trap.id is None:
                 trap.id = i
 
     def create_forms(self, mobile, materials, T, dx, dt=None,
@@ -242,3 +267,10 @@ class Traps:
         for trap in self.traps:
             trap.create_form(mobile, materials, T, dx, dt=dt,
                              chemical_pot=chemical_pot)
+
+    def get_trap(self, id):
+        for trap in self.traps:
+            print(trap.id)
+            if trap.id == id:
+                return trap
+        raise ValueError("Couldn't find trap {}".format(id))

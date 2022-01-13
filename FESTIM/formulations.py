@@ -3,25 +3,7 @@ import sympy as sp
 import FESTIM
 
 
-class Concentration:
-    """Class for concentrations (solute or traps) with attributed
-    fenics.Function objects for the solution and the previous solution and a
-    fenics.TestFunction
-
-    Args:
-        solution (fenics.Function or ufl.Indexed): Solution for "current"
-            timestep
-        prev_solution (fenics.Function or ufl.Indexed): Solution for "previous"
-            timestep
-        test_function (fenics.TestFunction or ufl.Indexed): test function
-    """
-    def __init__(self, solution, prev_solution, test_function):
-        self.solution = solution
-        self.prev_solution = prev_solution
-        self.test_function = test_function
-
-
-class Trap(Concentration):
+class Trapold(FESTIM.Concentration):
     """Class for traps inheriting from Concentration() which has usefull
     additional attributes (k_0, E_k, p_0, E_p, density, type, materials)
 
@@ -86,117 +68,27 @@ def formulation(simulation):
     """
     expressions = []
     F = 0
-    c_0 = split(simulation.u)[0]
-    c_0_n = split(simulation.u_n)[0]
-    v = split(simulation.v)[0]
 
     # diffusion + transient terms
-    F += create_diffusion_form(simulation, c_0, c_0_n, v)
-
-    # Define flux
     if "source_term" in simulation.parameters:
-        F_source, expressions_source = \
-            create_source_form(simulation, v)
-        F += F_source
-        expressions += expressions_source
+        source_term = simulation.parameters["source_term"]
+    else:
+        source_term = []
+    simulation.mobile.create_form(
+        simulation.materials, simulation.dx, simulation.T, simulation.dt,
+        traps=simulation.traps, source_term=source_term, chemical_pot=simulation.chemical_pot,
+        soret=simulation.soret)
+    F += simulation.mobile.F
+    expressions += simulation.mobile.sub_expressions
 
     # Add traps
     if "traps" in simulation.parameters:
         F_traps, expressions_traps = \
-            create_all_traps_form(simulation, c_0, v)
+            create_all_traps_form(simulation, simulation.mobile.solution, simulation.mobile.test_function)
         F += F_traps
         expressions += expressions_traps
 
     return F, expressions
-
-
-def create_diffusion_form(simulation, c_0, c_0_n, v):
-    """Creates a form for the solute diffusion terms
-
-    Args:
-        simulation (FESTIM.Simulation): the main simulation object
-        solute_object (Concentration): the instance of Concentration() for the
-            solute concentration
-
-    Returns:
-        fenics.Form: formulation for the diffusion terms
-    """
-    F = 0
-    if simulation.chemical_pot:
-        theta = c_0
-        theta_n = c_0_n
-    k_B = FESTIM.k_B
-    T, T_n = simulation.T.T, simulation.T.T_n
-    dt = simulation.dt
-    dx = simulation.dx
-
-    for material in simulation.materials.materials:
-        D_0 = material.D_0
-        E_D = material.E_D
-        if simulation.chemical_pot:
-            E_S = material.E_S
-            S_0 = material.S_0
-            c_0 = theta*S_0*exp(-E_S/k_B/T)
-            c_0_n = theta_n*S_0*exp(-E_S/k_B/T_n)
-
-        subdomains = material.id  # list of subdomains with this material
-        if type(subdomains) is not list:
-            subdomains = [subdomains]  # make sure subdomains is a list
-
-        # add to the formulation F for every subdomain
-        for subdomain in subdomains:
-            if simulation.transient:
-                F += ((c_0-c_0_n)/dt)*v*dx(subdomain)
-            F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
-                     grad(v))*dx(subdomain)
-            if simulation.soret:
-                Q = material.free_enthalpy*T + material.entropy
-                F += dot(D_0 * exp(-E_D/k_B/T) *
-                         Q * c_0 / (FESTIM.R * T**2) * grad(T),
-                         grad(v))*dx(subdomain)
-    return F
-
-
-def create_source_form(simulation, v):
-    """Creates a form for the solute source terms
-
-    Args:
-        simulation (FESTIM.Simulation): the main simulation object
-        solute_object (Concentration): the instance of Concentration() for the
-            solute concentration
-
-    Returns:
-        fenics.Form, list: formulation for the solute source terms, list of
-            sources as fenics.Expression
-    """
-    F_source = 0
-    expressions_source = []
-
-    source_term = simulation.parameters["source_term"]
-    dx = simulation.dx
-
-    print('Defining source terms')
-
-    if isinstance(source_term, dict):
-        source = Expression(
-            sp.printing.ccode(
-                source_term["value"]), t=0, degree=2)
-        F_source += - source*v*dx
-        expressions_source.append(source)
-
-    elif isinstance(source_term, list):
-        for source_dict in source_term:
-            source = Expression(
-                sp.printing.ccode(
-                    source_dict["value"]), t=0, degree=2)
-            volumes = source_dict["volumes"]
-            if isinstance(volumes, int):
-                volumes = [volumes]
-            for vol in volumes:
-                F_source += - source*v*dx(vol)
-            expressions_source.append(source)
-
-    return F_source, expressions_source
 
 
 def create_one_trap_form(simulation, trap, c_0, v):
