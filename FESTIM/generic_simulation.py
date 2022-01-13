@@ -241,7 +241,6 @@ class Simulation():
         print('Defining initial values')
         V = self.V
         u_n = Function(V)
-        components = list(split(u_n))
 
         parameters = self.parameters
         if "initial_conditions" in parameters.keys():
