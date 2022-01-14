@@ -189,6 +189,7 @@ def test_output_of_run_without_traps_no_chemical_pot():
 
     retention_expected = fenics.project(val_solute, V_CG1)
     my_sim.u = solute
+    my_sim.update_self_processing_solutions()
 
     # run
     output = my_sim.make_output()
@@ -239,6 +240,7 @@ def test_output_of_run_without_traps_with_chemical_pot():
 
     retention_expected = fenics.project(val_solute, V_CG1)
     my_sim.u = solute
+    my_sim.update_self_processing_solutions()
 
     # run
     output = my_sim.make_output()
@@ -271,7 +273,12 @@ def test_output_of_run_with_traps_with_chemical_pot():
     V_CG1 = fenics.VectorFunctionSpace(mesh, 'CG', 1, 3)
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
     my_sim = FESTIM.Simulation(
-        {"boundary_conditions": [], "exports": {}, "traps": [{}, {}]})
+        {"boundary_conditions": [], "exports": {}})
+    traps = [
+        FESTIM.Trap(1, 1, 1, 1, 1, 1),
+        FESTIM.Trap(1, 1, 1, 1, 1, 1),
+    ]
+    my_sim.traps = FESTIM.Traps(traps)
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_sim.chemical_pot = True
     my_sim.S = fenics.Constant(3)
@@ -279,7 +286,8 @@ def test_output_of_run_with_traps_with_chemical_pot():
     my_temp.T = fenics.Function(V_CG1)
     my_sim.T = my_temp
     my_sim.V_DG1 = V_DG1
-
+    my_sim.V = V_CG1
+    my_sim.initialise_concentrations()
     # concentrations
     val_solute = 1
     val_trap_1 = 2
@@ -304,7 +312,7 @@ def test_output_of_run_with_traps_with_chemical_pot():
     fenics.assign(u.sub(2), trap_2)
 
     my_sim.u = u
-
+    my_sim.update_self_processing_solutions()
     # run
     output = my_sim.make_output()
 
@@ -312,8 +320,9 @@ def test_output_of_run_with_traps_with_chemical_pot():
     for key in ["parameters", "mesh", "solutions"]:
         assert key in output.keys()
     assert isinstance(output["mesh"], fenics.Mesh)
-
     for key in ["solute", "T", "trap_1", "trap_2", "retention"]:
+        print(key, output["solutions"][key])
+        print(type(output["solutions"][key]))
         assert key in output["solutions"].keys()
         assert isinstance(output["solutions"][key], fenics.Function)
 

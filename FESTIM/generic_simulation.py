@@ -1,3 +1,4 @@
+import enum
 import FESTIM
 from fenics import *
 import sympy as sp
@@ -454,6 +455,7 @@ class Simulation():
                 solve(trap.form_density == 0, trap.density[0], [])
 
         # Post processing
+        self.update_self_processing_solutions()
         FESTIM.run_post_processing(self)
 
         # Update previous solutions
@@ -467,23 +469,51 @@ class Simulation():
         if self.t + float(self.dt) > self.final_time:
             self.dt.assign(self.final_time - self.t)
 
-    def make_output(self):
-
+    def update_self_processing_solutions(self):
         if self.u.function_space().num_sub_spaces() == 0:
             res = [self.u]
         else:
             res = list(self.u.split())
-
         if self.chemical_pot:  # c_m = theta * S
-            solute = project(self.mobile.solution*self.S, self.V_DG1)
+            theta = res[0]
+            solute = project(theta*self.S, self.V_DG1)
             res[0] = solute
+        else:
+            solute = res[0]
+
+        # TODO remove res
+        self.res = res
+
+        self.mobile.post_processing_solution = solute
+
+        for i, trap in enumerate(self.traps.traps, 1):
+            trap.post_processing_solution = res[i]
+
+    def need_projecting_solute(self):
+        need_solute = False  # initialises to false
+        if "derived_quantities" in self.parameters["exports"].keys():
+            derived_quantities_prm = self.parameters["exports"]["derived_quantities"]
+            if "surface_flux" in derived_quantities_prm:
+                if any(
+                    x["field"] in ["0", "solute"]
+                        for x in derived_quantities_prm["surface_flux"]
+                        ):
+                    need_solute = True
+        if "xdmf" in self.parameters["exports"].keys():
+            functions_to_exports = \
+                self.parameters["exports"]["xdmf"]["functions"]
+            if any(x in functions_to_exports for x in ["0", "solute"]):
+                need_solute = True
+        return need_solute
+
+    def make_output(self):
 
         output = dict()  # Final output
         # Compute error
         if "error" in self.parameters["exports"].keys():
             error = FESTIM.compute_error(
                 self.parameters["exports"]["error"], self.t,
-                [*res, self.T.T], self.mesh.mesh)
+                [*self.res, self.T.T], self.mesh.mesh)
             output["error"] = error
 
         output["parameters"] = self.parameters
@@ -495,14 +525,14 @@ class Simulation():
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
-            "solute": self.mobile.solution,
+            "solute": self.mobile.post_processing_solution,
             "T": self.T.T
         }
         # add traps to output
         for trap in self.traps.traps:
-            output["solutions"]["trap_{}".format(trap.id)] = trap.solution
+            output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
         # compute retention and add it to output
-        output["solutions"]["retention"] = project(sum(res), self.V_DG1)
+        output["solutions"]["retention"] = project(sum(self.res), self.V_DG1)
         return output
 
 
