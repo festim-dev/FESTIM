@@ -33,11 +33,12 @@ class Simulation():
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
         traps = []
-        for trap in self.parameters["traps"]:
-            if "type" in trap:
-                traps.append(FESTIM.ExtrinsicTrap(**trap))
-            else:
-                traps.append(FESTIM.Trap(**trap))
+        if "traps" in self.parameters:
+            for trap in self.parameters["traps"]:
+                if "type" in trap:
+                    traps.append(FESTIM.ExtrinsicTrap(**trap))
+                else:
+                    traps.append(FESTIM.Trap(**trap))
         self.traps = FESTIM.Traps(traps)
 
     def create_materials(self):
