@@ -278,6 +278,12 @@ class Simulation():
                 trap = self.traps.get_trap(ini["component"])
                 trap.initialise(ini, functionspace)
 
+        # this is needed to correctly create the formulation
+        # TODO: write a test for this?
+        if self.V.num_sub_spaces() != 0:
+            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+                concentration.previous_solution = list(split(self.u_n))[i]
+
     def initialise_extrinsic_traps(self):
         for trap in self.traps.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
