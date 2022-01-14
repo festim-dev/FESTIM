@@ -349,7 +349,6 @@ class Simulation():
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
-        print(self.F)
         self.t = 0  # Initialising time to 0s
         self.timer = Timer()  # start timer
 
@@ -442,7 +441,6 @@ class Simulation():
             newton_solver_prm["relative_tolerance"] = 1e-10
             solver.solve()
             self.T.T_n.assign(self.T.T)
-        print(self.u(0.5))
 
         # Solve main problem
         FESTIM.solve_it(
@@ -474,27 +472,7 @@ class Simulation():
             res = [self.u]
         else:
             res = list(self.u.split())
-        for expr in self.expressions:
-            if expr.name() == "trap_density":
-                print('trap expression density')
-                print(expr(0))
-                print(expr(0.25))
-                print(expr(0.5))
-                print(expr(0.75))
-                print(expr(1))
-            if expr.name() == "mobile_source":
-                print('mobile source')
-                print(expr(0))
-                print(expr(0.25))
-                print(expr(0.5))
-                print(expr(0.75))
-                print(expr(1))
-        print('value of u at different positions')
-        print(self.u(0))
-        print(self.u(0.25))
-        print(self.u(0.5))
-        print(self.u(0.75))
-        print(self.u(1))
+
         if self.chemical_pot:  # c_m = theta * S
             solute = project(res[0]*self.S, self.V_DG1)
             res[0] = solute
