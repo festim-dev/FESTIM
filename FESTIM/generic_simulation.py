@@ -241,9 +241,9 @@ class Simulation():
         self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
 
     def initialise_concentrations(self):
-        self.u = Function(self.V)  # Function for concentrations
+        self.u = Function(self.V, name="c")  # Function for concentrations
         self.v = TestFunction(self.V)  # TestFunction for concentrations
-        self.u_n = Function(self.V)
+        self.u_n = Function(self.V, name="c_n")
 
         if self.V.num_sub_spaces() == 0:
             self.mobile.solution = self.u
@@ -251,9 +251,9 @@ class Simulation():
             self.mobile.test_function = self.v
         else:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
-                concentration.solution = split(self.u)[i]
+                concentration.solution = list(split(self.u))[i]
                 concentration.previous_solution = self.u_n.sub(i)
-                concentration.test_function = split(self.v)[i]
+                concentration.test_function = list(split(self.v))[i]
 
         print('Defining initial values')
 
@@ -343,6 +343,7 @@ class Simulation():
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
+        print(self.F)
         self.t = 0  # Initialising time to 0s
         self.timer = Timer()  # start timer
 
@@ -435,6 +436,7 @@ class Simulation():
             newton_solver_prm["relative_tolerance"] = 1e-10
             solver.solve()
             self.T.T_n.assign(self.T.T)
+        print(self.u(0.5))
 
         # Solve main problem
         FESTIM.solve_it(
@@ -466,7 +468,27 @@ class Simulation():
             res = [self.u]
         else:
             res = list(self.u.split())
-
+        for expr in self.expressions:
+            if expr.name() == "trap_density":
+                print('trap expression density')
+                print(expr(0))
+                print(expr(0.25))
+                print(expr(0.5))
+                print(expr(0.75))
+                print(expr(1))
+            if expr.name() == "mobile_source":
+                print('mobile source')
+                print(expr(0))
+                print(expr(0.25))
+                print(expr(0.5))
+                print(expr(0.75))
+                print(expr(1))
+        print('value of u at different positions')
+        print(self.u(0))
+        print(self.u(0.25))
+        print(self.u(0.5))
+        print(self.u(0.75))
+        print(self.u(1))
         if self.chemical_pot:  # c_m = theta * S
             solute = project(res[0]*self.S, self.V_DG1)
             res[0] = solute
@@ -492,8 +514,8 @@ class Simulation():
             "T": self.T.T
         }
         # add traps to output
-        for i in range(len(self.parameters["traps"])):
-            output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
+        # for i in range(len(self.parameters["traps"])):
+        #     output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
         # compute retention and add it to output
         output["solutions"]["retention"] = project(sum(res), self.V_DG1)
         return output
