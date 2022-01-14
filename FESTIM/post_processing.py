@@ -38,21 +38,7 @@ def run_post_processing(simulation):
     if simulation.chemical_pot:
         solute = res[0]*S  # solute = theta*S = (solute/S) * S
 
-        need_solute = False  # initialises to false
-        if "derived_quantities" in parameters["exports"].keys():
-            derived_quantities_prm = parameters["exports"]["derived_quantities"]
-            if "surface_flux" in derived_quantities_prm:
-                if any(
-                    x["field"] in ["0", "solute"]
-                        for x in derived_quantities_prm["surface_flux"]
-                        ):
-                    need_solute = True
-        if "xdmf" in parameters["exports"].keys():
-            functions_to_exports = \
-                parameters["exports"]["xdmf"]["functions"]
-            if any(x in functions_to_exports for x in ["0", "solute"]):
-                need_solute = True
-        if need_solute:
+        if simulation.need_projecting_solute():
             # project solute on V_DG1
             solute = f.project(solute, V_DG1)
 

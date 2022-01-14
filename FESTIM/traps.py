@@ -22,6 +22,7 @@ class Concentration:
         self.test_function = test_function
         self.sub_expressions = []
         self.F = None
+        self.post_processing_solution = None  # used for post treatment
 
     def initialise(self, initial_condition, V):
         comp = self.get_comp(initial_condition, V)
