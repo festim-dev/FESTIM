@@ -19,6 +19,14 @@ def test_run_post_processing(tmpdir):
     of t
     '''
     d = tmpdir.mkdir("Solution_Test")
+    trap_dict = {
+        "k_0": 1,
+        "E_k": 1,
+        "p_0": 1,
+        "E_p": 1,
+        "materials": 1,
+        "density": 1
+    }
     parameters = {
         "materials": [{
                 "borders": [0, 0.5],
@@ -35,7 +43,7 @@ def test_run_post_processing(tmpdir):
                 "id": 2
                 }],
         "boundary_conditions": [],
-        "traps": [{}, {}],
+        "traps": [trap_dict, trap_dict],
         "exports": {
             "xdmf": {
                     "functions": ['solute', 'T'],
@@ -105,7 +113,7 @@ def test_run_post_processing(tmpdir):
 
     files = define_xdmf_files(parameters["exports"])
     tab = \
-        [header_derived_quantities(parameters)]
+        [header_derived_quantities(my_sim)]
 
     my_sim.final_time = 20
     my_sim.transient = True
@@ -153,9 +161,6 @@ def test_run_post_processing_pure_diffusion(tmpdir):
                 "D_0": 6,
                 "id": 2
                 }],
-        "traps": [
-            {}
-        ],
         "exports": {
             "xdmf": {
                     "functions": ['solute', 'T'],
@@ -180,10 +185,6 @@ def test_run_post_processing_pure_diffusion(tmpdir):
                 "minimum_volume": [
                     {
                         "field": "retention",
-                        "volumes": [1]
-                    },
-                    {
-                        "field": "1",
                         "volumes": [1]
                     },
                 ],
@@ -211,7 +212,7 @@ def test_run_post_processing_pure_diffusion(tmpdir):
     dt = 1
     files = define_xdmf_files(parameters["exports"])
     tab = \
-        [header_derived_quantities(parameters)]
+        [header_derived_quantities(my_sim)]
 
     my_sim.transient = True
     my_sim.u = u
@@ -242,7 +243,6 @@ def test_run_post_processing_pure_diffusion(tmpdir):
         assert my_sim.derived_quantities_global[i][2] == 20
         assert round(my_sim.derived_quantities_global[i][3]) == 11
         assert my_sim.derived_quantities_global[i][4] == 11
-        assert my_sim.derived_quantities_global[i][5] == 1
 
 
 def test_run_post_processing_flux(tmpdir):
@@ -303,7 +303,7 @@ def test_run_post_processing_flux(tmpdir):
     dt = 1
 
     # files = define_xdmf_files(parameters["exports"])
-    tab = [header_derived_quantities(parameters)]
+    tab = [header_derived_quantities(my_sim)]
     properties = \
         create_properties(
             mesh, my_sim.materials, my_mesh.volume_markers, T)
@@ -347,9 +347,6 @@ def test_performance_xdmf_export_every_N_iterations(tmpdir):
                 "D_0": 1,
                 "id": 1
                 }],
-        "traps": [
-            {}
-        ],
         "exports": {
             "xdmf": {
                     "functions": ['solute', 'T'],
@@ -364,6 +361,7 @@ def test_performance_xdmf_export_every_N_iterations(tmpdir):
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
 
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.traps = FESTIM.Traps([])
     my_sim.T = FESTIM.Temperature("solve_stationary")
     my_sim.T.T = fenics.Function(V_CG1)
     my_sim.u = fenics.Function(V_CG1)
@@ -416,9 +414,6 @@ def test_performance_xdmf_export_only_last_timestep(tmpdir):
                 "D_0": 1,
                 "id": 1
                 }],
-        "traps": [
-            {}
-        ],
         "exports": {
             "xdmf": {
                     "functions": ['solute', 'T'],
@@ -432,6 +427,7 @@ def test_performance_xdmf_export_only_last_timestep(tmpdir):
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
 
     my_sim = FESTIM.Simulation(parameters)
+    my_sim.traps = FESTIM.Traps([])
     my_sim.T = FESTIM.Temperature("solve_stationary")
     my_sim.T.T = fenics.Function(V_CG1)
     my_sim.u = fenics.Function(V_CG1)

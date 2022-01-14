@@ -13,9 +13,7 @@ class Simulation():
         self.transient = True
         self.expressions = []
         self.files = []
-        self.derived_quantities_global = [
-            FESTIM.post_processing.header_derived_quantities(self.parameters)
-            ]
+
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.nb_iterations_between_exports = 1
@@ -30,6 +28,10 @@ class Simulation():
         self.create_materials()
         self.define_mesh()
         self.define_markers()
+
+        self.derived_quantities_global = [
+            FESTIM.post_processing.header_derived_quantities(self)
+            ]
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
@@ -379,6 +381,7 @@ class Simulation():
                 self.bcs, self.parameters["solving_parameters"], J=self.J)
 
             # Post processing
+            self.update_self_processing_solutions()
             FESTIM.run_post_processing(self)
             elapsed_time = round(self.timer.elapsed()[0], 1)
 
