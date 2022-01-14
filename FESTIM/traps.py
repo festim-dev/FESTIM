@@ -142,7 +142,7 @@ class Mobile(Concentration):
 
 class Trap(Concentration):
     def __init__(
-            self, k_0, E_k, p_0, E_p, materials, density, source_term=0, id=None, type=None):
+            self, k_0, E_k, p_0, E_p, materials, density, source_term=None, id=None):
         super().__init__()
         self.id = id
         self.k_0 = k_0
@@ -180,8 +180,8 @@ class Trap(Concentration):
         """
         self.F = 0
         self.create_trapping_form(mobile, materials, T, dx, dt, chemical_pot)
-
-        self.create_source_form(dx)
+        if self.source_term is not None:
+            self.create_source_form(dx)
 
     def create_trapping_form(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
         solution = self.solution
