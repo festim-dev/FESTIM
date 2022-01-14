@@ -508,8 +508,8 @@ class Simulation():
             "T": self.T.T
         }
         # add traps to output
-        # for i in range(len(self.parameters["traps"])):
-        #     output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
+        for i in range(len(self.parameters["traps"])):
+            output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
         # compute retention and add it to output
         output["solutions"]["retention"] = project(sum(res), self.V_DG1)
         return output
