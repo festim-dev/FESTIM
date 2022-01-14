@@ -474,7 +474,7 @@ class Simulation():
             res = list(self.u.split())
 
         if self.chemical_pot:  # c_m = theta * S
-            solute = project(res[0]*self.S, self.V_DG1)
+            solute = project(self.mobile.solution*self.S, self.V_DG1)
             res[0] = solute
 
         output = dict()  # Final output
@@ -494,12 +494,12 @@ class Simulation():
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
-            "solute": res[0],
+            "solute": self.mobile.solution,
             "T": self.T.T
         }
         # add traps to output
-        for i in range(len(self.parameters["traps"])):
-            output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
+        for trap in self.traps.traps:
+            output["solutions"]["trap_{}".format(trap.id)] = trap.solution
         # compute retention and add it to output
         output["solutions"]["retention"] = project(sum(res), self.V_DG1)
         return output
