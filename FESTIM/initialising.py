@@ -1,6 +1,5 @@
 from fenics import *
 import sympy as sp
-import FESTIM
 
 
 def read_from_xdmf(filename, label, time_step, V):
