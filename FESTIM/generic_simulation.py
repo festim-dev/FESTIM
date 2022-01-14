@@ -211,7 +211,7 @@ class Simulation():
         element_solute, order_solute = "CG", 1
 
         # function space for H concentrations
-        nb_traps = len(self.parameters["traps"])
+        nb_traps = len(self.traps.traps)
         mesh = self.mesh.mesh
         if nb_traps == 0:
             V = FunctionSpace(mesh, element_solute, order_solute)
