@@ -24,6 +24,11 @@ class Concentration:
         self.F = None
 
     def initialise(self, initial_condition, V):
+        comp = self.get_comp(initial_condition, V)
+        comp = interpolate(comp, V)
+        assign(self.previous_solution, comp)
+
+    def get_comp(self, initial_condition, V):
         if type(initial_condition['value']) == str and initial_condition['value'].endswith(".xdmf"):
             comp = read_from_xdmf(
                 initial_condition["timestep"],
@@ -33,8 +38,7 @@ class Concentration:
             value = initial_condition["value"]
             value = sp.printing.ccode(value)
             comp = Expression(value, degree=3, t=0)
-            comp = interpolate(comp, V)
-        assign(self.previous_solution, comp)
+        return comp
 
     def read_from_xdmf(filename, timestep, label, V):
         comp = Function(V)
@@ -48,12 +52,16 @@ class Mobile(Concentration):
         super().__init__()
 
     def initialise(self, initial_condition, V, S=None):
-        super().initialise(initial_condition, V)
+        comp = self.get_comp(initial_condition, V)
 
-        # variable change if chemical potential
-        if S is not None:
-            theta = self.previous_solution/S
-            self.previous_solution.assign(project(theta, V))
+        if S is None:
+            comp = interpolate(comp, V)
+        else:
+            comp = comp/S
+            # Product must be projected
+            comp = project(comp, V)
+
+        assign(self.previous_solution, comp)
 
     def create_form(self, materials, dx, T,  dt=None, traps=None, source_term=[], chemical_pot=False, soret=False):
         self.F = 0
