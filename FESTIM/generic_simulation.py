@@ -277,14 +277,12 @@ class Simulation():
             else:
                 trap = self.traps.get_trap(ini["component"])
                 trap.initialise(ini, functionspace)
-        print(self.u_n(0.5))
 
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
-        print(self.u_n(0.5))
 
     def initialise_extrinsic_traps(self):
         for trap in self.traps.traps:
@@ -476,16 +474,8 @@ class Simulation():
             res = list(self.u.split())
 
         if self.chemical_pot:  # c_m = theta * S
-            print("theta")
-            print(res[0](0.25))
-            print(res[0](0.5))
-            print(res[0](0.75))
             solute = project(res[0]*self.S, self.V_DG1)
             res[0] = solute
-            print("solute")
-            print(solute(0.25))
-            print(solute(0.5))
-            print(solute(0.75))
 
         output = dict()  # Final output
         # Compute error
