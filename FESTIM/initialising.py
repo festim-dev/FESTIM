@@ -3,31 +3,21 @@ import sympy as sp
 import FESTIM
 
 
-def read_from_xdmf(ini, V):
-    """Reads component from XDMF
+def read_from_xdmf(filename, label, time_step, V):
+    """Reads function from XDMF
 
-    Arguments:
-        ini {dict} -- contains XDMF file info ("value", "label", "time_step")
-            and "component"
-        V {fenics.FunctionSpace} -- solution's functionspace
-
-    Raises:
-        KeyError: if label key is not found
-        KeyError: if time_step key is not found
+    Args:
+        filename (str): the filename
+        label (str): the label of the function in the file
+        time_step (int): the timestep at which the file is read
+        V (fenics.FunctionSpace): The function space of the function
 
     Returns:
-        [fenics.Function] -- fenics.Function(V) that will be projected
+        [fenics.Function]: the function
     """
-    if V.num_sub_spaces() > 0:
-        comp = Function(V.sub(ini["component"]).collapse())
-    else:
-        comp = Function(V)
-    if "label" not in ini.keys():
-        raise KeyError("label key not found")
-    if "time_step" not in ini.keys():
-        raise KeyError("time_step key not found")
-    with XDMFFile(ini["value"]) as f:
-        f.read_checkpoint(comp, ini["label"], ini["time_step"])
+    comp = Function(V)
+    with XDMFFile(filename) as f:
+        f.read_checkpoint(comp, label, time_step)
         #  only works if meshes are the same
     return comp
 

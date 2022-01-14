@@ -31,9 +31,10 @@ class Concentration:
     def get_comp(self, initial_condition, V):
         if type(initial_condition['value']) == str and initial_condition['value'].endswith(".xdmf"):
             comp = read_from_xdmf(
-                initial_condition["timestep"],
+                initial_condition['value'],
                 initial_condition["label"],
-                self.V)
+                initial_condition["time_step"],
+                V)
         else:
             value = initial_condition["value"]
             value = sp.printing.ccode(value)
