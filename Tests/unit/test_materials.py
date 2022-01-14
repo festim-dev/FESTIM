@@ -1,4 +1,5 @@
-from FESTIM import Material, Materials
+from FESTIM import Material, Materials, create_properties
+from fenics import *
 import pytest
 
 
@@ -144,3 +145,19 @@ def test_check_borders():
         ]
         size = 3
         Materials(materials).check_borders(size)
+
+
+def test_material_with_multiple_ids_solubility():
+    """Tests the function find_material_from_id() for cases with several ids
+    per material
+    """
+
+    mat_1 = Material(id=[1, 2], D_0=1, E_D=1)
+    my_mats = Materials([mat_1])
+    mesh = UnitIntervalMesh(10)
+    vm = MeshFunction("size_t", mesh, 1, 1)
+    D, thermal_cond, cp, rho, H, S = create_properties(
+            mesh, my_mats,
+            vm, Constant(300))
+    V = FunctionSpace(mesh, "P", 1)
+    interpolate(D, V)
