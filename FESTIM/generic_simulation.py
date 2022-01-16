@@ -1,4 +1,5 @@
 import enum
+from time import time
 import FESTIM
 from fenics import *
 import sympy as sp
@@ -269,7 +270,17 @@ class Simulation():
         FESTIM.check_no_duplicates(initial_conditions)
 
         for ini in initial_conditions:
-            if 'component' not in ini.keys():
+            value = ini['value']
+
+            # if initial value from XDMF
+            if type(value) is str and value.endswith(".xdmf"):
+                label = ini['label']
+                time_step = ini['time_step']
+            else:
+                label = None
+                time_step = None
+            # Default component is 0 (solute)
+            if 'component' not in ini:
                 ini["component"] = 0
             if self.V.num_sub_spaces() == 0:
                 functionspace = self.V
@@ -277,10 +288,10 @@ class Simulation():
                 functionspace = self.V.sub(ini["component"]).collapse()
 
             if ini["component"] == 0:
-                self.mobile.initialise(ini, functionspace, self.S)
+                self.mobile.initialise(functionspace, value, label=label, time_step=time_step, S=self.S)
             else:
                 trap = self.traps.get_trap(ini["component"])
-                trap.initialise(ini, functionspace)
+                trap.initialise(functionspace, value, label=label, time_step=time_step)
 
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
