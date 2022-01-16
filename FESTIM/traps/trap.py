@@ -23,10 +23,10 @@ class Trap(Concentration):
         if type(densities) is not list:
             densities = [densities]
 
-        for density in densities:
+        for i, density in enumerate(densities):
             if density is not None:
                 density_expr = sp.printing.ccode(density)
-                self.density.append(Expression(density_expr, degree=2, t=0))
+                self.density.append(Expression(density_expr, degree=2, t=0, name="density_{}_{}".format(self.id, i)))
 
     def create_form(
             self, mobile, materials, T, dx, dt=None,
