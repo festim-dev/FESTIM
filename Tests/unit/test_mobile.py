@@ -149,3 +149,35 @@ class TestCreateForm:
         print("produced F:")
         print(my_mobile.F)
         assert my_mobile.F.equals(expected_form)
+
+
+class TestInitialise:
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "P", 1)
+    u = f.Function(V)
+
+    def test_from_expresion(self):
+        my_mobile = FESTIM.Mobile()
+        my_mobile.previous_solution = self.u
+        value = 1 + FESTIM.x
+        expected_sol = my_mobile.get_comp(self.V, value)
+        my_mobile.initialise(self.V, value)
+
+        # test
+        for x in [0, 0.5, 0.3, 0.6]:
+            assert my_mobile.previous_solution(x) == expected_sol(x)
+
+    def test_from_expresion_chemical_pot(self):
+        my_mobile = FESTIM.Mobile()
+        my_mobile.previous_solution = self.u
+        value = 1 + FESTIM.x
+        S = f.interpolate(f.Constant(2), self.V)
+        expected_sol = my_mobile.get_comp(self.V, value)
+        expected_sol = f.project(expected_sol/S)
+
+        # run
+        my_mobile.initialise(self.V, value, S=S)
+
+        # test
+        for x in [0, 0.5, 0.3, 0.6]:
+            assert my_mobile.previous_solution(x) == expected_sol(x)
