@@ -107,6 +107,12 @@ def test_mobile_create_form():
     assert my_mobile.F.equals(expected_form)
 
 
+def add_functions(trap, V, id=1):
+    trap.solution = f.Function(V, name="c_t_{}".format(id))
+    trap.previous_solution = f.Function(V, name="c_t_n_{}".format(id))
+    trap.test_function = f.TestFunction(V)
+
+
 class TestCreateDiffusionForm:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
@@ -139,6 +145,44 @@ class TestCreateDiffusionForm:
         c_0_n = my_mobile.previous_solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
         expected_form = ((c_0-c_0_n)/self.dt)*v*self.dx(1)
         expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
+
+        print("expected F:")
+        print(expected_form)
+        print("produced F:")
+        print(my_mobile.F)
+        assert my_mobile.F.equals(expected_form)
+
+    def test_with_traps_transient(self):
+        # build
+        Index._globalcount = 8
+        my_mobile = FESTIM.Mobile()
+        my_mobile.F = 0
+        my_mobile.solution = f.Function(self.V, name="c_m")
+        my_mobile.previous_solution = f.Function(self.V, name="c_m_n")
+        my_mobile.test_function = f.TestFunction(self.V)
+        my_mats = FESTIM.Materials([self.mat1])
+
+        trap1 = FESTIM.Trap(1, 1, 1, 1, [1, 2], 1)
+        add_functions(trap1, self.V, id=1)
+        trap2 = FESTIM.Trap(2, 2, 2, 2, [1, 2], 2)
+        add_functions(trap2, self.V, id=1)
+
+        my_traps = FESTIM.Traps([trap1, trap2])
+
+        # run
+        my_mobile.create_diffusion_form(my_mats, self.dx, self.my_temp, dt=self.dt, traps=my_traps)
+
+        # test
+        Index._globalcount = 8
+        v = my_mobile.test_function
+        D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
+        c_0 = my_mobile.solution
+        c_0_n = my_mobile.previous_solution
+        expected_form = ((c_0-c_0_n)/self.dt)*v*self.dx(1)
+        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
+        for trap in my_traps.traps:
+            expected_form += ((trap.solution - trap.previous_solution) / self.dt) * \
+                v * self.dx
 
         print("expected F:")
         print(expected_form)
