@@ -1,5 +1,6 @@
 import FESTIM
 import fenics as f
+import pytest
 
 
 def add_functions(trap, V, id=1):
@@ -51,3 +52,35 @@ class TestCreateTrappingForms:
 
         for trap in my_traps.traps:
             assert trap.F is not None
+
+
+class TestGetTrap:
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "P", 1)
+    my_mobile = FESTIM.Mobile()
+    my_mobile.solution = f.Function(V, name="c_m")
+    my_mobile.previous_solution = f.Function(V, name="c_m_n")
+    my_mobile.test_function = f.TestFunction(V)
+    my_temp = FESTIM.Temperature("expression", value=100)
+    my_temp.create_functions(V)
+    dx = f.dx()
+    dt = f.Constant(1)
+
+    trap1 = FESTIM.Trap(k_0=1, E_k=2, p_0=1, E_p=2, materials=1, density=1)
+    add_functions(trap1, V, id=1)
+    trap2 = FESTIM.Trap(k_0=2, E_k=3, p_0=1, E_p=2, materials=1, density=1)
+    add_functions(trap2, V, id=2)
+    my_traps = FESTIM.Traps([trap1, trap2])
+
+    def test_trap_is_found(self):
+        assert self.my_traps.get_trap(id=1) == self.trap1
+        assert self.my_traps.get_trap(id=2) == self.trap2
+
+    def test_error_is_raised_when_not_found(self):
+        id = 3
+        with pytest.raises(ValueError, match="Couldn't find trap {}".format(id)):
+            self.my_traps.get_trap(id=id)
+
+        id = -2
+        with pytest.raises(ValueError, match="Couldn't find trap {}".format(id)):
+            self.my_traps.get_trap(id=id)
