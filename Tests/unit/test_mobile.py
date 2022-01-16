@@ -107,7 +107,7 @@ def test_mobile_create_form():
     assert my_mobile.F.equals(expected_form)
 
 
-class TestCreateForm:
+class TestCreateDiffusionForm:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_temp = FESTIM.Temperature("expression", value=100)
