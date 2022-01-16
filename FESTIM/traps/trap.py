@@ -111,7 +111,7 @@ class Trap(Concentration):
 
     def create_source_form(self, dx):
         source = sp.printing.ccode(self.source_term)
-        source = Expression(source, t=0, degree=2)
+        source = Expression(source, t=0, degree=2, name="source_trap_{}".format(self.id))
         self.F_source = -source*self.test_function*dx
         self.F += self.F_source
         self.sub_expressions.append(source)
