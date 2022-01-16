@@ -4,7 +4,6 @@ from ufl.core.multiindex import Index
 
 
 def test_mobile_create_diffusion_form():
-    # TODO move this
     # build
     Index._globalcount = 8
     mesh = f.UnitIntervalMesh(10)
@@ -34,7 +33,6 @@ def test_mobile_create_diffusion_form():
 
 
 def test_mobile_create_source_form_one_dict():
-    # TODO move this
     # build
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
@@ -56,7 +54,6 @@ def test_mobile_create_source_form_one_dict():
 
 
 def test_mobile_create_source_form_several_sources():
-    # TODO move this
     # build
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
@@ -82,7 +79,6 @@ def test_mobile_create_source_form_several_sources():
 
 
 def test_mobile_create_form():
-    # TODO move this
     # build
     Index._globalcount = 8
     mesh = f.UnitIntervalMesh(10)
