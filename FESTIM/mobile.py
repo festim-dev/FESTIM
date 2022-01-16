@@ -9,7 +9,6 @@ class Mobile(Concentration):
         super().__init__()
 
     def initialise(self, V, value, label=None, time_step=None, S=None):
-        print(value)
         comp = self.get_comp(V, value, label=label, time_step=time_step)
         if S is None:
             comp = interpolate(comp, V)
