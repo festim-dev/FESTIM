@@ -4,7 +4,6 @@ import sympy as sp
 
 
 class Mobile(Concentration):
-    # TODO move this
     def __init__(self):
         super().__init__()
 
