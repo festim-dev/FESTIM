@@ -66,7 +66,7 @@ def test_mobile_create_source_form_several_sources():
 
     dx = f.dx()
     source_term = [
-        {"value": 2 + FESTIM.x + FESTIM.t, "volumes": [1]},
+        {"value": 2 + FESTIM.x + FESTIM.t, "volumes": 1},
         {"value": 1 + FESTIM.x + FESTIM.t, "volumes": [2, 3]},
     ]
     # run
