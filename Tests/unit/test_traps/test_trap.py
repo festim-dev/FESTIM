@@ -2,26 +2,6 @@ import FESTIM
 import fenics as f
 
 
-def test_create_source_form():
-    # build
-    mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, "P", 1)
-    my_trap = FESTIM.Trap(k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1, source_term=2 + FESTIM.x + FESTIM.t)
-    my_trap.F = 0
-    my_trap.test_function = f.TestFunction(V)
-
-    dx = f.dx()
-    # run
-    my_trap.create_source_form(dx)
-
-    # test
-    source = my_trap.sub_expressions[0]
-    v = my_trap.test_function
-    expected_form = - source*v*dx
-    assert my_trap.F.equals(expected_form)
-    assert my_trap.F_source.equals(expected_form)
-
-
 def add_functions(trap, V, id=1):
     trap.solution = f.Function(V, name="c_t_{}".format(id))
     trap.previous_solution = f.Function(V, name="c_t_n_{}".format(id))
@@ -216,7 +196,7 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
 
-class TestCreateTrappingForms:
+class TestCreateSourceForm:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = FESTIM.Mobile()
@@ -227,35 +207,111 @@ class TestCreateTrappingForms:
     my_temp.create_functions(V)
     dx = f.dx()
     dt = f.Constant(1)
+
+    mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
+    mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
+
+    def test(self):
+        # build
+        my_trap = FESTIM.Trap(k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1, source_term=2 + FESTIM.x + FESTIM.t)
+        my_trap.F = 0
+        my_trap.test_function = f.TestFunction(self.V)
+
+        # run
+        my_trap.create_source_form(self.dx)
+
+        # test
+        source = my_trap.sub_expressions[0]
+        v = my_trap.test_function
+        expected_form = - source*v*self.dx
+        assert my_trap.F.equals(expected_form)
+        assert my_trap.F_source.equals(expected_form)
+
+
+class TestCreateForm:
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "P", 1)
+    my_mobile = FESTIM.Mobile()
+    my_mobile.solution = f.Function(V, name="c_m")
+    my_mobile.previous_solution = f.Function(V, name="c_m_n")
+    my_mobile.test_function = f.TestFunction(V)
+    my_temp = FESTIM.Temperature("expression", value=100)
+    my_temp.create_functions(V)
+    dx = f.dx()
+    dt = f.Constant(1)
+
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
     my_mats = FESTIM.Materials([mat1, mat2])
 
-    trap1 = FESTIM.Trap(k_0=1, E_k=2, p_0=1, E_p=2, materials=[1, 2], density=1 + FESTIM.x)
-    add_functions(trap1, V, id=1)
-    trap2 = FESTIM.Trap(k_0=2, E_k=3, p_0=1, E_p=2, materials=1, density=1 + FESTIM.t)
-    add_functions(trap2, V, id=2)
+    def test_form_is_zero_by_default(self):
+        my_empty_mats = FESTIM.Materials([])
+        my_trap = FESTIM.Trap(1, 1, 1, 1, [], 1)
 
-    def test_one_trap_steady_state(self):
-        my_traps = FESTIM.Traps([self.trap1])
+        my_trap.create_form(self.my_mobile, my_empty_mats, self.my_temp, self.dx)
 
-        my_traps.create_forms(self.my_mobile, self.my_mats, self.my_temp, self.dx)
+        assert my_trap.F == 0
 
-        for trap in my_traps.traps:
-            assert trap.F is not None
+    def test_1_mat_steady(self):
+        # build
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=1, density=1)
+        add_functions(my_trap, self.V, id=1)
+        my_trap.F = 0
 
-    def test_one_trap_transient(self):
-        my_traps = FESTIM.Traps([self.trap1])
+        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx)
+        expected_form = my_trap.F
+        # run
+        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx)
 
-        my_traps.create_forms(self.my_mobile, self.my_mats, self.my_temp, self.dx, dt=self.dt)
+        # test
+        print(my_trap.F)
+        print(expected_form)
+        assert my_trap.F.equals(expected_form)
 
-        for trap in my_traps.traps:
-            assert trap.F is not None
+    def test_1_mat_transient(self):
+        # build
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=1, density=1)
+        add_functions(my_trap, self.V, id=1)
+        my_trap.F = 0
 
-    def test_two_traps_transient(self):
-        my_traps = FESTIM.Traps([self.trap1, self.trap2])
+        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        expected_form = my_trap.F
+        # run
+        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
 
-        my_traps.create_forms(self.my_mobile, self.my_mats, self.my_temp, self.dx, dt=self.dt)
+        # test
+        print(my_trap.F)
+        print(expected_form)
+        assert my_trap.F.equals(expected_form)
 
-        for trap in my_traps.traps:
-            assert trap.F is not None
+    def test_2_mats_transient(self):
+        # build
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=[1, 2], density=1)
+        add_functions(my_trap, self.V, id=1)
+        my_trap.F = 0
+
+        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        expected_form = my_trap.F
+        # run
+        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+
+        # test
+        print(my_trap.F)
+        print(expected_form)
+        assert my_trap.F.equals(expected_form)
+
+    def test_1_mat_and_source(self):
+        # build
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=2, density=1, source_term=1 + FESTIM.x + FESTIM.y)
+        add_functions(my_trap, self.V, id=1)
+        my_trap.F = 0
+        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        expected_form = my_trap.F
+        # run
+        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+
+        # test
+        expected_form += my_trap.F_source
+        print(my_trap.F)
+        print(expected_form)
+        assert my_trap.F.equals(expected_form)
