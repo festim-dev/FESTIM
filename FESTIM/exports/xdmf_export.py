@@ -3,13 +3,10 @@ import fenics as f
 
 
 class XDMFExport(Export):
-    def __init__(self, functions, labels, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
+    def __init__(self, function, label, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
         super().__init__()
-        self.functions = functions
-        self.labels = labels
-        if len(self.functions) != len(self.labels):
-            raise NameError("Number of functions to be exported "
-                            "doesn't match number of labels in xdmf exports")
+        self.function = function
+        self.label = label
         self.folder = folder
         if self.folder == "":
             raise ValueError("folder value cannot be an empty string")
@@ -28,16 +25,23 @@ class XDMFExport(Export):
 
     def define_xdmf_files(self):
 
-        files = list()
-        for i in range(0, len(self.functions)):
-            u_file = f.XDMFFile(self.folder + '/' +
-                                self.labels[i] + '.xdmf')
-            u_file.parameters["flush_output"] = True
-            u_file.parameters["rewrite_function_mesh"] = False
-            files.append(u_file)
-        self.files = files
+        self.file = f.XDMFFile(self.folder + '/' +
+                               self.label + '.xdmf')
+        self.file.parameters["flush_output"] = True
+        self.file.parameters["rewrite_function_mesh"] = False
 
-    def write(self, functions, t):
+    def write(self, label_to_function, t):
+        solution = label_to_function[self.function]
+        solution.rename(self.label, "label")
+
+        if self.checkpoint:
+            self.file.write_checkpoint(
+                solution, self.label, t, f.XDMFFile.Encoding.HDF5,
+                append=self.append)
+        else:
+            self.file.write(solution, t)
+
+    def write_old(self, functions, t):
         if len(self.functions) > len(functions):
             raise NameError("Too many functions to export "
                             "in xdmf exports")
@@ -79,3 +83,18 @@ class XDMFExport(Export):
                     append=self.append)
             else:
                 file.write(solution, t)
+
+
+class XDMFExports:
+    def __init__(self, functions, labels, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
+        if len(functions) != len(labels):
+            raise NameError("Number of functions to be exported "
+                            "doesn't match number of labels in xdmf exports")
+        self.xdmf_exports = [
+            XDMFExport(
+                function, label, folder,
+                last_timestep_only=last_timestep_only,
+                nb_iterations_between_exports=nb_iterations_between_exports,
+                checkpoint=checkpoint)
+            for function, label in zip(functions, labels)
+        ]

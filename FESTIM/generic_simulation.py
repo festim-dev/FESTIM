@@ -158,8 +158,8 @@ class Simulation():
         self.append = False
         self.exports = FESTIM.Exports([])
         if "xdmf" in self.parameters["exports"]:
-            self.exports.exports.append(
-                FESTIM.XDMFExport(**self.parameters["exports"]["xdmf"]))
+            my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
+            self.exports.exports += my_xdmf_exports.xdmf_exports
 
         # TODO replace this by a derived_quantities object
         if "derived_quantities" in self.parameters["exports"]:

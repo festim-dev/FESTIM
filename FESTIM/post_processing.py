@@ -28,6 +28,26 @@ def run_post_processing(simulation):
         simulation.H, simulation.S
     derived_quantities_global = simulation.derived_quantities_global
 
+    label_to_function = {
+        "solute": simulation.mobile.post_processing_solution,
+        "0": simulation.mobile.post_processing_solution,
+        0: simulation.mobile.post_processing_solution,
+        "T": simulation.T.T,
+        "retention": sum([simulation.mobile.post_processing_solution] + [trap.post_processing_solution for trap in simulation.traps.traps])
+    }
+    for trap in simulation.traps.traps:
+        label_to_function[trap.id] = trap.post_processing_solution
+        label_to_function[str(trap.id)] = trap.post_processing_solution
+
+    # make the change of variable solute = theta*S
+    if simulation.chemical_pot:
+        label_to_function["solute"] = simulation.mobile.solution*S  # solute = theta*S = (solute/S) * S
+
+        if simulation.need_projecting_solute():
+            # project solute on V_DG1
+            label_to_function["solute"] = f.project(label_to_function["solute"], V_DG1)
+
+    # TODO get rid of res
     if u.function_space().num_sub_spaces() == 0:
         res = [u]
     else:
@@ -74,14 +94,11 @@ def run_post_processing(simulation):
                     not export.last_time_step_only:
                 if simulation.nb_iterations % \
                         simulation.nb_iterations_between_exports == 0:
-                    if 'retention' in export.functions:
+                    if export.function == "retention":
                         # if not a Function, project it onto V_DG1
-                        if not isinstance(res[-2], f.Function):
-                            res[-2] = f.project(retention, V_DG1)
-                    # FESTIM.export.export_xdmf(
-                    #     res, parameters["exports"], files, t, append=simulation.append)
-                    # simulation.append = True
-                    export.write(res, simulation.t)
+                        if not isinstance(label_to_function["retention"], f.Function):
+                            label_to_function["retention"] = f.project(label_to_function["retention"], V_DG1)
+                    export.write(label_to_function, simulation.t)
                     export.append = True
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
