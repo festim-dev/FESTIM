@@ -43,22 +43,29 @@ def run_post_processing(simulation):
                 export.write()
 
         elif isinstance(export, FESTIM.XDMFExport):
-            if (export.last_time_step_only and
-                simulation.t >= simulation.final_time) or \
-                    not export.last_time_step_only:
-                if simulation.nb_iterations % \
-                        export.nb_iterations_between_exports == 0:
-                    if export.function == "retention":
-                        # if not a Function, project it onto V_DG1
-                        if not isinstance(label_to_function["retention"], f.Function):
-                            label_to_function["retention"] = f.project(label_to_function["retention"], simulation.V_DG1)
-                    export.write(label_to_function, simulation.t)
-                    export.append = True
+            if is_export_xdmf(simulation, export):
+                if export.function == "retention":
+                    # if not a Function, project it onto V_DG1
+                    if not isinstance(label_to_function["retention"], f.Function):
+                        label_to_function["retention"] = f.project(label_to_function["retention"], simulation.V_DG1)
+                export.write(label_to_function, simulation.t)
+                export.append = True
 
         elif isinstance(export, FESTIM.TXTExport):
             export.write(label_to_function, simulation.t, simulation.dt)
 
     return simulation.dt
+
+
+def is_export_xdmf(simulation, export):
+    if (export.last_time_step_only and
+        simulation.t >= simulation.final_time) or \
+            not export.last_time_step_only:
+        if simulation.nb_iterations % \
+                export.nb_iterations_between_exports == 0:
+            return True
+
+    return False
 
 
 def is_export_derived_quantities(simulation, derived_quantities):
