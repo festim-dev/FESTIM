@@ -1,81 +1,11 @@
 import FESTIM
-from FESTIM.export import define_xdmf_files, export_profiles
-from FESTIM.post_processing import run_post_processing, derived_quantities, \
+from FESTIM.post_processing import run_post_processing, \
     create_properties
 import fenics
 import pytest
 import sympy as sp
 import numpy as np
 from pathlib import Path
-
-
-def test_define_xdmf_files():
-    folder = "Solution"
-    expected = [fenics.XDMFFile(folder + "/" + "a.xdmf"),
-                fenics.XDMFFile(folder + "/" + "b.xdmf")]
-    exports = {
-        "xdmf": {
-            "functions": ['solute', '1'],
-            "labels":  ['a', 'b'],
-            "folder": folder
-        }
-        }
-    assert len(expected) == len(define_xdmf_files(exports))
-
-    # Test an int type for folder
-    with pytest.raises(TypeError, match=r'str'):
-        folder = 123
-        exports = {
-            "xdmf": {
-                "functions": ['solute', '1'],
-                "labels":  ['a', 'b'],
-                "folder": folder
-            }
-            }
-        define_xdmf_files(exports)
-
-    # Test an empty string for folder
-    with pytest.raises(ValueError, match=r'empty string'):
-        folder = ''
-        exports = {
-            "xdmf": {
-                "functions": ['solute', '1'],
-                "labels":  ['a', 'b'],
-                "folder": folder
-            }
-            }
-        define_xdmf_files(exports)
-
-
-# def test_export_xdmf(tmpdir):
-#     mesh = fenics.UnitSquareMesh(3, 3)
-#     V = fenics.FunctionSpace(mesh, 'P', 1)
-#     d = tmpdir.mkdir("Solution_Test")
-#     exports = {
-#         "xdmf": {
-#             "functions": ['solute', 'retention'],
-#             "labels":  ['a', 'b'],
-#             "folder": str(Path(d))
-#         }
-#         }
-#     files = [fenics.XDMFFile(str(Path(d.join("a.xdmf")))),
-#              fenics.XDMFFile(str(Path(d.join("b.xdmf"))))]
-
-#     assert export_xdmf([fenics.Function(V), fenics.Function(V)],
-#                        exports, files, 20, append=True) is None
-
-#     exports["xdmf"]["functions"] = ['solute', 'foo']
-
-#     with pytest.raises(ValueError, match=r'foo'):
-#         export_xdmf(
-#             [fenics.Function(V), fenics.Function(V)],
-#             exports, files, 20, append=True)
-
-#     exports["xdmf"]["functions"] = ['solute', '13']
-#     with pytest.raises(ValueError, match=r'13'):
-#         export_xdmf(
-#             [fenics.Function(V), fenics.Function(V)],
-#             exports, files, 20, append=True)
 
 
 def test_export_profiles(tmpdir):
