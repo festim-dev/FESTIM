@@ -17,10 +17,11 @@ from .solving import solve_it, solve_once, adaptive_stepsize
 from .export import write_to_csv, export_txt, export_profiles, \
     define_xdmf_files, treat_value, export_parameters, Export, Exports
 from .exports.xdmf_export import XDMFExport, XDMFExports
+from .exports.derived_quantities_export import DerivedQuantities
 
 from .post_processing import run_post_processing, compute_error, \
-    create_properties, calculate_maximum_volume, calculate_minimum_volume, \
-    header_derived_quantities, derived_quantities, \
+    create_properties, \
+    header_derived_quantities, \
     check_keys_derived_quantities
 
 from .materials import Material, Materials

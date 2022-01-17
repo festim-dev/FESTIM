@@ -71,14 +71,8 @@ def run_post_processing(simulation):
 
         # compute derived quantities
         if simulation.nb_iterations % \
-             simulation.nb_iterations_between_compute_derived_quantities == 0:
-            derived_quantities_t = \
-                FESTIM.post_processing.derived_quantities(
-                    parameters,
-                    res,
-                    markers,
-                    [D, thermal_cond, H]
-                    )
+             simulation.derived_quantities.nb_iterations_between_compute == 0:
+            derived_quantities_t = simulation.derived_quantities.compute(label_to_function)
             derived_quantities_t.insert(0, t)
             derived_quantities_global.append(derived_quantities_t)
         # export derived quantities
@@ -296,32 +290,6 @@ def create_properties(mesh, materials, vm, T):
     return D, thermal_cond, cp, rho, H, S
 
 
-def calculate_maximum_volume(function, subdomains, subd_id):
-    '''Minimum of f over subdomains cells marked with subd_id'''
-    V = function.function_space()
-
-    dm = V.dofmap()
-
-    subd_dofs = np.unique(np.hstack(
-        [dm.cell_dofs(c.index())
-         for c in f.SubsetIterator(subdomains, subd_id)]))
-
-    return np.max(function.vector().get_local()[subd_dofs])
-
-
-def calculate_minimum_volume(function, subdomains, subd_id):
-    '''Minimum of f over subdomains cells marked with subd_id'''
-    V = function.function_space()
-
-    dm = V.dofmap()
-
-    subd_dofs = np.unique(np.hstack(
-        [dm.cell_dofs(c.index())
-         for c in f.SubsetIterator(subdomains, subd_id)]))
-
-    return np.min(function.vector().get_local()[subd_dofs])
-
-
 def header_derived_quantities(simulation):
     '''
     Creates the header for derived_quantities list
@@ -370,115 +338,6 @@ def header_derived_quantities(simulation):
                             str(surf))
 
     return header
-
-
-def derived_quantities(parameters, solutions,
-                       markers, properties):
-    """Computes all the derived_quantities and stores it into list
-
-    Arguments:
-        parameters {dict} -- main parameters dict
-        solutions {list} -- contains fenics.Function
-        markers {list} -- contains volume and surface markers
-        properties {list} -- contains properties
-            [D, thermal_cond, cp, rho, H, S]
-
-    Returns:
-        list -- list of derived quantities
-    """
-
-    D = properties[0]
-    thermal_cond = properties[1]
-    soret = False
-    if "temperature" in parameters.keys():
-        if "soret" in parameters["temperature"].keys():
-            if parameters["temperature"]["soret"] is True:
-                soret = True
-                Q = properties[2]
-    volume_markers = markers[0]
-    surface_markers = markers[1]
-    mesh = volume_markers.mesh()
-    n = f.FacetNormal(mesh)
-    dx = f.Measure('dx', domain=mesh, subdomain_data=volume_markers)
-    ds = f.Measure('ds', domain=mesh, subdomain_data=surface_markers)
-
-    # Create dicts
-
-    ret = solutions[len(solutions)-2]
-    V_DG1 = f.FunctionSpace(mesh, "DG", 1)
-
-    T = solutions[len(solutions)-1]
-    field_to_sol = {
-        'solute': solutions[0],
-        'retention': ret,
-        'T': T,
-    }
-    field_to_prop = {
-        'solute': D,
-        'T': thermal_cond,
-    }
-    for i in range(1, len(solutions)-2):
-        field_to_sol[str(i)] = solutions[i]
-
-    tab = []
-    # Compute quantities
-    derived_quant_dict = parameters["exports"]["derived_quantities"]
-    if "surface_flux" in derived_quant_dict.keys():
-        for flux in derived_quant_dict["surface_flux"]:
-            sol = field_to_sol[str(flux["field"])]
-            prop = field_to_prop[str(flux["field"])]
-            for surf in flux["surfaces"]:
-                phi = f.assemble(prop*f.dot(f.grad(sol), n)*ds(surf))
-                if soret is True and str(flux["field"]) == 'solute':
-                    phi += f.assemble(
-                        prop*sol*Q/(FESTIM.R*T**2)*f.dot(f.grad(T), n)*ds(surf))
-                tab.append(phi)
-    if "average_volume" in derived_quant_dict.keys():
-        for average in parameters[
-                        "exports"]["derived_quantities"]["average_volume"]:
-            sol = field_to_sol[str(average["field"])]
-            for vol in average["volumes"]:
-                val = f.assemble(sol*dx(vol))/f.assemble(1*dx(vol))
-                tab.append(val)
-    if "minimum_volume" in derived_quant_dict.keys():
-        for minimum in parameters[
-                        "exports"]["derived_quantities"]["minimum_volume"]:
-            if str(minimum["field"]) == "retention":
-                for vol in minimum["volumes"]:
-                    val = 0
-                    for fun in solutions[0:-2]:
-                        val += calculate_minimum_volume(fun, volume_markers, vol)
-                    tab.append(val)
-            else:
-                sol = field_to_sol[str(minimum["field"])]
-                for vol in minimum["volumes"]:
-                    tab.append(calculate_minimum_volume(
-                        sol, volume_markers, vol))
-    if "maximum_volume" in derived_quant_dict.keys():
-        for maximum in parameters[
-                        "exports"]["derived_quantities"]["maximum_volume"]:
-            if str(maximum["field"]) == "retention":
-                for vol in maximum["volumes"]:
-                    val = 0
-                    for fun in solutions[0:-2]:
-                        val += calculate_maximum_volume(fun, volume_markers, vol)
-                    tab.append(val)
-            else:
-                sol = field_to_sol[str(maximum["field"])]
-                for vol in maximum["volumes"]:
-                    tab.append(calculate_maximum_volume(
-                        sol, volume_markers, vol))
-    if "total_volume" in derived_quant_dict.keys():
-        for total in derived_quant_dict["total_volume"]:
-            sol = field_to_sol[str(total["field"])]
-            for vol in total["volumes"]:
-                tab.append(f.assemble(sol*dx(vol)))
-    if "total_surface" in derived_quant_dict.keys():
-        for total in derived_quant_dict["total_surface"]:
-            sol = field_to_sol[str(total["field"])]
-            for surf in total["surfaces"]:
-                tab.append(f.assemble(sol*ds(surf)))
-    return tab
 
 
 def check_keys_derived_quantities(simulation):

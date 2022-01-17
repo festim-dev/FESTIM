@@ -161,15 +161,10 @@ class Simulation():
             my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
             self.exports.exports += my_xdmf_exports.xdmf_exports
 
-        # TODO replace this by a derived_quantities object
         if "derived_quantities" in self.parameters["exports"]:
-            derived_quant = self.parameters["exports"]["derived_quantities"]
-            if "nb_iterations_between_exports" in derived_quant:
-                self.nb_iterations_between_export_derived_quantities = \
-                   derived_quant["nb_iterations_between_exports"]
-            if "nb_iterations_between_compute" in derived_quant:
-                self.nb_iterations_between_compute_derived_quantities = \
-                   derived_quant["nb_iterations_between_compute"]
+            self.derived_quantities = FESTIM.DerivedQuantities(**self.parameters["exports"]["derived_quantities"])
+            self.derived_quantities.assign_measures_to_quantities(self.dx, self.ds)
+            self.derived_quantities.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
 
     def define_mesh(self):
         if "mesh_parameters" in self.parameters:

@@ -1,0 +1,175 @@
+from FESTIM import Export, R
+import fenics as f
+import numpy as np
+
+
+class DerivedQuantity(Export):
+    def __init__(self, field) -> None:
+        super().__init__()
+        self.field = field
+        self.solution = None
+        self.dx = None
+        self.ds = None
+        self.n = None
+        self.D = None
+        self.S = None
+        self.thermal_cond = None
+        self.H = None
+        self.T = None
+
+
+class SurfaceFlux(DerivedQuantity):
+    def __init__(self, surface, field) -> None:
+        super().__init__(field=field)
+        self.surface = surface
+
+
+    def compute(self, soret=False):
+        field_to_prop = {
+            "0": self.D,
+            "solute": self.D,
+            0: self.D,
+            "T": self.thermal_cond
+        }
+        self.prop = field_to_prop[self.field]
+        flux = f.assemble(self.prop*f.dot(f.grad(self.solution), self.n)*self.ds(self.surface))
+        if soret and self.field in [0, "0", "solute"]:
+            flux += f.assemble(
+                        self.prop*self.solution*self.H/(R*self.T**2)*f.dot(f.grad(self.T), self.n)*self.ds(self.surface))
+        return flux
+
+
+class HydrogenFlux(SurfaceFlux):
+    def __init__(self, surface) -> None:
+        super().__init__(surface, field="solute")
+
+
+class ThermalFlux(SurfaceFlux):
+    def __init__(self, surface) -> None:
+        super().__init__(surface, field="T")
+
+
+class AverageVolume(DerivedQuantity):
+    def __init__(self, field, volume) -> None:
+        super().__init__(field)
+        self.volume = volume
+
+    def compute(self):
+        return f.assemble(self.solution*self.dx(self.volume))/f.assemble(1*self.dx(self.volume))
+
+
+class MinimumVolume(DerivedQuantity):
+    def __init__(self, field, volume) -> None:
+        super().__init__(field)
+        self.volume = volume
+
+    def compute(self, volume_markers):
+        '''Minimum of f over subdomains cells marked with self.volume'''
+        V = self.solution.function_space()
+
+        dm = V.dofmap()
+
+        subd_dofs = np.unique(np.hstack(
+            [dm.cell_dofs(c.index())
+             for c in f.SubsetIterator(volume_markers, self.volume)]))
+
+        return np.min(self.solution.vector().get_local()[subd_dofs])
+
+
+class MaximumVolume(DerivedQuantity):
+    def __init__(self, field, volume) -> None:
+        super().__init__(field)
+        self.volume = volume
+
+    def compute(self, volume_markers):
+        '''Minimum of f over subdomains cells marked with self.volume'''
+        V = self.solution.function_space()
+
+        dm = V.dofmap()
+
+        subd_dofs = np.unique(np.hstack(
+            [dm.cell_dofs(c.index())
+             for c in f.SubsetIterator(volume_markers, self.volume)]))
+
+        return np.max(self.solution.vector().get_local()[subd_dofs])
+
+
+class TotalVolume(DerivedQuantity):
+    def __init__(self, field, volume) -> None:
+        super().__init__(field)
+        self.volume = volume
+
+    def compute(self):
+        return f.assemble(self.solution*self.dx(self.volume))
+
+
+class TotalSurface(DerivedQuantity):
+    def __init__(self, field, surface) -> None:
+        super().__init__(field)
+        self.surface = surface
+
+    def compute(self):
+        return f.assemble(self.solution*self.ds(self.surface))
+
+
+class DerivedQuantities(Export):
+    def __init__(self, file=None, folder=None, nb_iterations_between_compute=1, nb_iterations_between_exports=1, **derived_quantities) -> None:
+        super().__init__()
+        self.file = file
+        self.folder = folder
+        self.nb_iterations_between_compute = nb_iterations_between_compute
+        self.nb_iterations_between_exports = nb_iterations_between_exports
+        self.derived_quantities = []
+        self.make_derived_quantities(derived_quantities)
+
+    def make_derived_quantities(self, derived_quantities):
+        for derived_quantity, list_of_prms_dicts in derived_quantities.items():
+            if derived_quantity == "surface_flux":
+                quantity_class = SurfaceFlux
+            elif derived_quantity == "average_volume":
+                quantity_class = AverageVolume
+            elif derived_quantity == "minimum_volume":
+                quantity_class = MinimumVolume
+            elif derived_quantity == "maximum_volume":
+                quantity_class = MaximumVolume
+            elif derived_quantity == "total_volume":
+                quantity_class = TotalVolume
+            elif derived_quantity == "total_surface":
+                quantity_class = TotalSurface
+            for prms_dict in list_of_prms_dicts:
+                if "volumes" in prms_dict:
+                    for entity in prms_dict["volumes"]:
+                        self.derived_quantities.append(
+                            quantity_class(field=prms_dict["field"], volume=entity))
+                if "surfaces" in prms_dict:
+                    for entity in prms_dict["surfaces"]:
+                        self.derived_quantities.append(
+                            quantity_class(field=prms_dict["field"], surface=entity))
+
+    def make_header(self):
+        return
+
+    def assign_measures_to_quantities(self, dx, ds):
+        for quantity in self.derived_quantities:
+            quantity.dx = dx
+            quantity.ds = ds
+            quantity.n = f.FacetNormal(dx.subdomain_data().mesh())
+
+    def assign_functions_to_quantities(self, label_to_function):
+        for quantity in self.derived_quantities:
+            quantity.solution = label_to_function[quantity.field]
+
+    def assign_properties_to_quantities(self, D, S, thermal_cond, H, T):
+        for quantity in self.derived_quantities:
+            quantity.D = D
+            quantity.S = S
+            quantity.thermal_cond = thermal_cond
+            quantity.H = H
+            quantity.T = T
+
+    def compute(self, label_to_function):
+        self.assign_functions_to_quantities(label_to_function)
+        tab = []
+        for quantity in self.derived_quantities:
+            tab.append(quantity.compute())
+        return tab
