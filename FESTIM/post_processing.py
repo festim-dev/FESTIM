@@ -66,18 +66,17 @@ def run_post_processing(simulation):
     res.append(retention)
     res.append(T)
 
-    if "derived_quantities" in parameters["exports"].keys():
-
-        # compute derived quantities
-        if simulation.nb_iterations % \
-             simulation.derived_quantities.nb_iterations_between_compute == 0:
-            simulation.derived_quantities.compute(t, label_to_function)
-        # export derived quantities
-        if is_export_derived_quantities(simulation):
-            simulation.derived_quantities.write()
-
     for export in simulation.exports.exports:
-        if isinstance(export, FESTIM.XDMFExport):
+        if isinstance(export, FESTIM.DerivedQuantities):
+            # compute derived quantities
+            if simulation.nb_iterations % \
+                export.nb_iterations_between_compute == 0:
+                export.compute(t, label_to_function)
+            # export derived quantities
+            if is_export_derived_quantities(simulation):
+                export.write()
+
+        elif isinstance(export, FESTIM.XDMFExport):
             if (export.last_time_step_only and
                 simulation.t >= simulation.final_time) or \
                     not export.last_time_step_only:

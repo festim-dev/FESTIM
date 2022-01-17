@@ -29,7 +29,6 @@ class Simulation():
         self.create_materials()
         self.define_mesh()
         self.define_markers()
-        self.derived_quantities = None
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
@@ -159,9 +158,10 @@ class Simulation():
             self.exports.exports += my_xdmf_exports.xdmf_exports
 
         if "derived_quantities" in self.parameters["exports"]:
-            self.derived_quantities = FESTIM.DerivedQuantities(**self.parameters["exports"]["derived_quantities"])
-            self.derived_quantities.assign_measures_to_quantities(self.dx, self.ds)
-            self.derived_quantities.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
+            derived_quantities = FESTIM.DerivedQuantities(**self.parameters["exports"]["derived_quantities"])
+            derived_quantities.assign_measures_to_quantities(self.dx, self.ds)
+            derived_quantities.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
+            self.exports.exports.append(derived_quantities)
 
     def define_mesh(self):
         if "mesh_parameters" in self.parameters:
@@ -396,8 +396,9 @@ class Simulation():
                 raise ValueError(msg)
 
         # export derived quantities to CSV
-        if "derived_quantities" in self.parameters["exports"].keys():
-            self.derived_quantities.write()
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                export.write()
 
         # End
         print('\007')
@@ -521,8 +522,9 @@ class Simulation():
         output["mesh"] = self.mesh.mesh
 
         # add derived quantities to output
-        if "derived_quantities" in self.parameters["exports"].keys():
-            output["derived_quantities"] = self.derived_quantities.data
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                output["derived_quantities"] = export.data
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
