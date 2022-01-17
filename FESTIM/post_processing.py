@@ -74,9 +74,7 @@ def run_post_processing(simulation):
             simulation.derived_quantities.compute(t, label_to_function)
         # export derived quantities
         if is_export_derived_quantities(simulation):
-            FESTIM.write_to_csv(
-                simulation.parameters["exports"]["derived_quantities"],
-                simulation.derived_quantities.data)
+            simulation.derived_quantities.write()
 
     for export in simulation.exports.exports:
         if isinstance(export, FESTIM.XDMFExport):
@@ -285,56 +283,6 @@ def create_properties(mesh, materials, vm, T):
         H = HCoeff(mesh, materials, vm, T, degree=2)
 
     return D, thermal_cond, cp, rho, H, S
-
-
-# def header_derived_quantities(simulation):
-#     '''
-#     Creates the header for derived_quantities list
-#     '''
-#     parameters = simulation.parameters
-#     header = ['t(s)']
-#     if "exports" in parameters:
-#         if "derived_quantities" in parameters["exports"]:
-#             check_keys_derived_quantities(simulation)
-#             derived_quant_dict = parameters["exports"]["derived_quantities"]
-#             if "surface_flux" in derived_quant_dict.keys():
-#                 for flux in derived_quant_dict["surface_flux"]:
-#                     for surf in flux["surfaces"]:
-#                         header.append(
-#                             "Flux surface " + str(surf) + ": " +
-#                             str(flux['field']))
-#             if "average_volume" in derived_quant_dict.keys():
-#                 for average in derived_quant_dict["average_volume"]:
-#                     for vol in average["volumes"]:
-#                         header.append(
-#                             "Average " + str(average['field']) + " volume " +
-#                             str(vol))
-#             if "minimum_volume" in derived_quant_dict.keys():
-#                 for minimum in derived_quant_dict["minimum_volume"]:
-#                     for vol in minimum["volumes"]:
-#                         header.append(
-#                             "Minimum " + str(minimum["field"]) + " volume " +
-#                             str(vol))
-#             if "maximum_volume" in derived_quant_dict.keys():
-#                 for maximum in derived_quant_dict["maximum_volume"]:
-#                     for vol in maximum["volumes"]:
-#                         header.append(
-#                             "Maximum " + str(maximum["field"]) + " volume " +
-#                             str(vol))
-#             if "total_volume" in derived_quant_dict.keys():
-#                 for total in derived_quant_dict["total_volume"]:
-#                     for vol in total["volumes"]:
-#                         header.append(
-#                             "Total " + str(total["field"]) + " volume " +
-#                             str(vol))
-#             if "total_surface" in derived_quant_dict.keys():
-#                 for total in derived_quant_dict["total_surface"]:
-#                     for surf in total["surfaces"]:
-#                         header.append(
-#                             "Total " + str(total["field"]) + " surface " +
-#                             str(surf))
-
-#     return header
 
 
 def check_keys_derived_quantities(simulation):

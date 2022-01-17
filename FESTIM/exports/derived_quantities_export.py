@@ -1,6 +1,8 @@
 from FESTIM import Export, R
 import fenics as f
 import numpy as np
+import os
+import csv
 
 
 class DerivedQuantity(Export):
@@ -179,3 +181,28 @@ class DerivedQuantities(Export):
     def compute(self, t, label_to_function):
         self.assign_functions_to_quantities(label_to_function)
         self.data.append([t] + [quantity.compute() for quantity in self.derived_quantities])
+
+    def write(self):
+        if self.file is not None:
+            file_export = ''
+            if self.folder is not None:
+                file_export += self.folder + '/'
+                os.makedirs(os.path.dirname(file_export), exist_ok=True)
+            if self.file.endswith(".csv"):
+                file_export += self.file
+            else:
+                file_export += self.file + ".csv"
+            busy = True
+            while busy:
+                try:
+                    with open(file_export, "w+") as f:
+                        busy = False
+                        writer = csv.writer(f, lineterminator='\n')
+                        for val in self.data:
+                            writer.writerows([val])
+                except OSError as err:
+                    print("OS error: {0}".format(err))
+                    print("The file " + file_export + ".txt might currently be busy."
+                          "Please close the application then press any key.")
+                    input()
+        return True

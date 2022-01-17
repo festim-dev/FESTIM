@@ -400,9 +400,7 @@ class Simulation():
 
         # export derived quantities to CSV
         if "derived_quantities" in self.parameters["exports"].keys():
-            FESTIM.write_to_csv(
-                self.parameters["exports"]["derived_quantities"],
-                self.derived_quantities.data)
+            self.derived_quantities.write()
 
         # End
         print('\007')
