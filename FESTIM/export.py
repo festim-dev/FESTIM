@@ -1,10 +1,6 @@
-from fenics import *
-import csv
-import sys
 import os
 import sympy as sp
 import json
-import numpy as np
 
 
 class Export:
