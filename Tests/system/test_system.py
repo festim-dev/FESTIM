@@ -77,11 +77,6 @@ def test_run_temperature_stationary(tmpdir):
             },
         "exports": {
             "parameters":  str(Path(d)) + "/param.json",
-            "txt": {
-                "functions": ['retention'],
-                "times": [100],
-                "labels": ['retention']
-            },
             "xdmf": {
                     "functions": ['T', 'solute'],
                     "labels":  ['temperature', 'solute'],
@@ -189,11 +184,6 @@ def test_run_temperature_transient(tmpdir):
             }
             },
         "exports": {
-            "txt": {
-                "functions": ['retention'],
-                "times": [100],
-                "labels": ['retention']
-            },
             "xdmf": {
                     "functions": ['T'],
                     "labels":  ['temperature'],

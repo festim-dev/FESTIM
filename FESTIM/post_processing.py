@@ -46,31 +46,10 @@ def run_post_processing(simulation):
             # project solute on V_DG1
             label_to_function["solute"] = f.project(label_to_function["solute"], V_DG1)
 
-    # TODO get rid of res
-    if u.function_space().num_sub_spaces() == 0:
-        res = [u]
-    else:
-        res = list(u.split())
-
-    # make the change of variable solute = theta*S
-    if simulation.chemical_pot:
-        solute = res[0]*S  # solute = theta*S = (solute/S) * S
-
-        if simulation.need_projecting_solute():
-            # project solute on V_DG1
-            solute = f.project(solute, V_DG1)
-
-        res[0] = solute
-
-    retention = sum(res)
-    res.append(retention)
-    res.append(T)
-
     for export in simulation.exports.exports:
         if isinstance(export, FESTIM.DerivedQuantities):
             # compute derived quantities
-            if simulation.nb_iterations % \
-                export.nb_iterations_between_compute == 0:
+            if simulation.nb_iterations % export.nb_iterations_between_compute == 0:
                 export.compute(t, label_to_function)
             # export derived quantities
             if is_export_derived_quantities(simulation, export):
@@ -88,9 +67,9 @@ def run_post_processing(simulation):
                             label_to_function["retention"] = f.project(label_to_function["retention"], V_DG1)
                     export.write(label_to_function, simulation.t)
                     export.append = True
-    if "txt" in parameters["exports"].keys():
-        dt = FESTIM.export.export_profiles(
-            res, parameters["exports"], t, dt, V_DG1)
+
+        elif isinstance(export, FESTIM.TXTExport):
+            export.write(label_to_function, t, dt)
 
     return dt
 

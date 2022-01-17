@@ -18,6 +18,7 @@ from .export import export_txt, export_profiles, \
     define_xdmf_files, treat_value, export_parameters, Export, Exports
 from .exports.xdmf_export import XDMFExport, XDMFExports
 from .exports.derived_quantities_export import DerivedQuantities
+from .exports.txt_export import TXTExport, TXTExports
 
 from .post_processing import run_post_processing, compute_error, \
     create_properties, \

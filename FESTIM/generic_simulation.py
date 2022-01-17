@@ -159,6 +159,10 @@ class Simulation():
             derived_quantities.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
             self.exports.exports.append(derived_quantities)
 
+        if "txt" in self.parameters["exports"]:
+            txt_exports = FESTIM.TXTExports(**self.parameters["exports"]["txt"])
+            self.exports.exports += txt_exports.exports
+
     def define_mesh(self):
         if "mesh_parameters" in self.parameters:
             mesh_parameters = self.parameters["mesh_parameters"]
