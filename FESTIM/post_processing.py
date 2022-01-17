@@ -81,6 +81,7 @@ def run_post_processing(simulation):
             if (export.last_time_step_only and
                 simulation.t >= simulation.final_time) or \
                     not export.last_time_step_only:
+                # TODO it should be export.nb_iterations_between_exports
                 if simulation.nb_iterations % \
                         simulation.nb_iterations_between_exports == 0:
                     if export.function == "retention":
