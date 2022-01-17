@@ -156,17 +156,14 @@ class Simulation():
 
         # Solution files
         self.append = False
-        exports = self.parameters["exports"]
-        if "xdmf" in exports.keys():
-            if "last_timestep_only" in exports["xdmf"].keys():
-                self.export_xdmf_last_only = True
-            self.files = FESTIM.define_xdmf_files(exports)
-            if "nb_iterations_between_exports" in exports["xdmf"]:
-                self.nb_iterations_between_exports = \
-                   exports["xdmf"]["nb_iterations_between_exports"]
+        self.exports = FESTIM.Exports([])
+        if "xdmf" in self.parameters["exports"]:
+            self.exports.exports.append(
+                FESTIM.XDMFExport(**self.parameters["exports"]["xdmf"]))
 
-        if "derived_quantities" in exports:
-            derived_quant = exports["derived_quantities"]
+        # TODO replace this by a derived_quantities object
+        if "derived_quantities" in self.parameters["exports"]:
+            derived_quant = self.parameters["exports"]["derived_quantities"]
             if "nb_iterations_between_exports" in derived_quant:
                 self.nb_iterations_between_export_derived_quantities = \
                    derived_quant["nb_iterations_between_exports"]

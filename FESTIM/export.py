@@ -7,6 +7,16 @@ import json
 import numpy as np
 
 
+class Export:
+    def __init__(self) -> None:
+        pass
+
+
+class Exports:
+    def __init__(self, exports=[]) -> None:
+        self.exports = exports
+
+
 def write_to_csv(derived_quantities_dict, data):
     '''
     Exports data to csv according to parameters in derived_quantities_dict
@@ -149,69 +159,6 @@ def define_xdmf_files(exports):
         u_file.parameters["rewrite_function_mesh"] = False
         files.append(u_file)
     return files
-
-
-def export_xdmf(res, exports, files, t, append):
-    '''
-    Exports the solutions fields in xdmf files.
-    Arguments:
-    - res: list, contains fenics.Function()
-    - exports: dict, contains parameters
-    - files: list, contains fenics.XDMFFile()
-    - t: float, time
-    - append: bool, erase the previous file or not
-    '''
-    if len(exports['xdmf']['functions']) > len(res):
-        raise NameError("Too many functions to export "
-                        "in xdmf exports")
-    solution_dict = {
-        'solute': res[0],
-        'retention': res[len(res)-2],
-        'T': res[len(res)-1],
-    }
-    for i in range(0, len(exports["xdmf"]["functions"])):
-        label = exports["xdmf"]["labels"][i]
-        fun = exports["xdmf"]["functions"][i]
-        if type(fun) is int:
-            if fun <= len(res):
-                solution = res[fun]
-            else:
-                raise ValueError(
-                    "The value " + str(fun) +
-                    " is unknown.")
-        elif type(fun) is str:
-            if fun.isdigit():
-                fun = int(fun)
-                if fun <= len(res):
-                    solution = res[fun]
-                else:
-                    raise ValueError(
-                        "The value " + str(fun) +
-                        " is unknown.")
-            elif fun in solution_dict.keys():
-                solution = solution_dict[fun]
-            else:
-                raise ValueError(
-                    "The value " + fun +
-                    " is unknown.")
-        else:
-            raise TypeError('Unexpected' + str(type(fun)) + 'type')
-
-        solution.rename(label, "label")
-        checkpoint = True  # Default value
-        if "checkpoint" in exports["xdmf"].keys():
-            if type(exports["xdmf"]["checkpoint"]) != bool:
-                raise TypeError(
-                    "Unknown value for XDMF checkpoint (True or False)")
-            if exports["xdmf"]["checkpoint"] is False:
-                checkpoint = False
-
-        if checkpoint:
-            files[i].write_checkpoint(
-                solution, label, t, XDMFFile.Encoding.HDF5, append=append)
-        else:
-            files[i].write(solution, t)
-    return
 
 
 def treat_value(d):

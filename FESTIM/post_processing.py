@@ -23,7 +23,6 @@ def run_post_processing(simulation):
     t = simulation.t
     dt = simulation.dt
     files = simulation.files
-    append = simulation.append
     D, thermal_cond, cp, rho, H, S = \
         simulation.D, simulation.thermal_cond, simulation.cp, simulation.rho, \
         simulation.H, simulation.S
@@ -68,22 +67,22 @@ def run_post_processing(simulation):
                 simulation.parameters["exports"]["derived_quantities"],
                 simulation.derived_quantities_global)
 
-    if "xdmf" in parameters["exports"].keys():
-        if (simulation.export_xdmf_last_only and
-            simulation.t >= simulation.final_time) or \
-                not simulation.export_xdmf_last_only:
-            if simulation.nb_iterations % \
-                    simulation.nb_iterations_between_exports == 0:
-                functions_to_exports = \
-                    parameters["exports"]["xdmf"]["functions"]
-                if 'retention' in functions_to_exports:
-                    # if not a Function, project it onto V_DG1
-                    if not isinstance(res[-2], f.Function):
-                        res[-2] = f.project(retention, V_DG1)
-
-                FESTIM.export.export_xdmf(
-                    res, parameters["exports"], files, t, append=append)
-                simulation.append = True
+    for export in simulation.exports.exports:
+        if isinstance(export, FESTIM.XDMFExport):
+            if (export.last_time_step_only and
+                simulation.t >= simulation.final_time) or \
+                    not export.last_time_step_only:
+                if simulation.nb_iterations % \
+                        simulation.nb_iterations_between_exports == 0:
+                    if 'retention' in export.functions:
+                        # if not a Function, project it onto V_DG1
+                        if not isinstance(res[-2], f.Function):
+                            res[-2] = f.project(retention, V_DG1)
+                    # FESTIM.export.export_xdmf(
+                    #     res, parameters["exports"], files, t, append=simulation.append)
+                    # simulation.append = True
+                    export.write(res, simulation.t)
+                    export.append = True
     if "txt" in parameters["exports"].keys():
         dt = FESTIM.export.export_profiles(
             res, parameters["exports"], t, dt, V_DG1)
