@@ -132,6 +132,7 @@ class Simulation():
             if temp_type == "solve_stationary":
                 project_S = True
             elif temp_type == "expression":
+                # TODO this should use the self.T attribute
                 if "t" not in sp.printing.ccode(
                         self.parameters["temperature"]["value"]):
                     project_S = True
