@@ -41,49 +41,6 @@ class XDMFExport(Export):
         else:
             self.file.write(solution, t)
 
-    def write_old(self, functions, t):
-        if len(self.functions) > len(functions):
-            raise NameError("Too many functions to export "
-                            "in xdmf exports")
-        solution_dict = {
-            'solute': functions[0],
-            'retention': functions[-2],
-            'T': functions[-1],
-        }
-        for label, fun, file in zip(self.labels, self.functions, self.files):
-            if type(fun) is int:
-                if fun <= len(functions):
-                    solution = functions[fun]
-                else:
-                    raise ValueError(
-                        "The value " + str(fun) +
-                        " is unknown.")
-            elif type(fun) is str:
-                if fun.isdigit():
-                    fun = int(fun)
-                    if fun <= len(functions):
-                        solution = functions[fun]
-                    else:
-                        raise ValueError(
-                            "The value " + str(fun) +
-                            " is unknown.")
-                elif fun in solution_dict.keys():
-                    solution = solution_dict[fun]
-                else:
-                    raise ValueError(
-                        "The value " + fun +
-                        " is unknown.")
-            else:
-                raise TypeError('Unexpected' + str(type(fun)) + 'type')
-            solution.rename(label, "label")
-
-            if self.checkpoint:
-                file.write_checkpoint(
-                    solution, label, t, f.XDMFFile.Encoding.HDF5,
-                    append=self.append)
-            else:
-                file.write(solution, t)
-
 
 class XDMFExports:
     def __init__(self, functions, labels, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
