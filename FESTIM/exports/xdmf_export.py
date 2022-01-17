@@ -13,7 +13,7 @@ class XDMFExport(Export):
         if type(self.folder) is not str:
             raise TypeError("folder value must be of type str")
         self.files = None
-        self.define_xdmf_files()
+        self.define_xdmf_file()
         self.last_time_step_only = last_timestep_only
         self.nb_iterations_between_exports = nb_iterations_between_exports
         self.checkpoint = checkpoint
@@ -23,7 +23,7 @@ class XDMFExport(Export):
 
         self.append = False
 
-    def define_xdmf_files(self):
+    def define_xdmf_file(self):
 
         self.file = f.XDMFFile(self.folder + '/' +
                                self.label + '.xdmf')
