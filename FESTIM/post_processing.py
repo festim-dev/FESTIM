@@ -425,9 +425,7 @@ def derived_quantities(parameters, solutions,
     derived_quant_dict = parameters["exports"]["derived_quantities"]
     if "surface_flux" in derived_quant_dict.keys():
         for flux in derived_quant_dict["surface_flux"]:
-            print(str(flux["field"]))
             sol = field_to_sol[str(flux["field"])]
-            print(type(sol))
             prop = field_to_prop[str(flux["field"])]
             for surf in flux["surfaces"]:
                 phi = f.assemble(prop*f.dot(f.grad(sol), n)*ds(surf))
