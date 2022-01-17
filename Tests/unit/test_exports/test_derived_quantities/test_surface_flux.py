@@ -5,14 +5,14 @@ import fenics as f
 def test_title_H():
     surface = 1
     field = "solute"
-    my_h_flux = SurfaceFlux(surface, field)
+    my_h_flux = SurfaceFlux(field, surface)
     assert my_h_flux.title == "Flux surface {}: {}".format(surface, field)
 
 
 def test_title_heat():
     surface = 2
     field = "T"
-    my_h_flux = SurfaceFlux(surface, field)
+    my_h_flux = SurfaceFlux(field, surface)
     assert my_h_flux.title == "Flux surface {}: {}".format(surface, field)
 
 

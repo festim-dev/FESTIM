@@ -21,7 +21,7 @@ class DerivedQuantity(Export):
 
 
 class SurfaceFlux(DerivedQuantity):
-    def __init__(self, surface, field) -> None:
+    def __init__(self, field, surface) -> None:
         super().__init__(field=field)
         self.surface = surface
         self.title = "Flux surface {}: {}".format(self.surface, self.field)
