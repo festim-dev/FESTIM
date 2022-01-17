@@ -30,9 +30,6 @@ class Simulation():
         self.define_mesh()
         self.define_markers()
         self.derived_quantities = None
-        # self.derived_quantities_global = [
-        #     FESTIM.post_processing.header_derived_quantities(self)
-        #     ]
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
