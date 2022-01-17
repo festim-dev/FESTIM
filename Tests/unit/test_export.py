@@ -1,4 +1,4 @@
-from FESTIM.export import write_to_csv, export_xdmf, export_parameters, \
+from FESTIM.export import write_to_csv, export_parameters, \
                           treat_value
 from FESTIM import x
 import FESTIM
@@ -24,71 +24,71 @@ def test_write_to_csv(tmpdir):
     assert write_to_csv(derived_quantities_dict, data)
 
 
-def test_export_xdmf(tmpdir):
-    """Tests the several errors that can be raised by export.export_xdmf()
-    """
-    d = tmpdir.mkdir("out")
+# def test_export_xdmf(tmpdir):
+#     """Tests the several errors that can be raised by export.export_xdmf()
+#     """
+#     d = tmpdir.mkdir("out")
 
-    mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
-    res = [fenics.Function(V), fenics.Function(V)]
-    files = [fenics.XDMFFile(str(Path(d)) + "/solute.xdmf"),
-             fenics.XDMFFile(str(Path(d)) + "/1.xdmf")]
+#     mesh = fenics.UnitIntervalMesh(10)
+#     V = fenics.FunctionSpace(mesh, 'P', 1)
+#     res = [fenics.Function(V), fenics.Function(V)]
+#     files = [fenics.XDMFFile(str(Path(d)) + "/solute.xdmf"),
+#              fenics.XDMFFile(str(Path(d)) + "/1.xdmf")]
 
-    with pytest.raises(NameError, match=r'Too many functions to export'):
-        exports = {
-            "xdmf": {
-                "functions": ['solute', '1', '3'],
-                "labels": ['solute', '1'],
-                "folder": str(Path(d))
-            }
-        }
-        export_xdmf(res, exports, files, t=1, append=False)
+#     with pytest.raises(NameError, match=r'Too many functions to export'):
+#         exports = {
+#             "xdmf": {
+#                 "functions": ['solute', '1', '3'],
+#                 "labels": ['solute', '1'],
+#                 "folder": str(Path(d))
+#             }
+#         }
+#         export_xdmf(res, exports, files, t=1, append=False)
 
-    with pytest.raises(TypeError, match=r'checkpoint'):
-        exports = {
-            "xdmf": {
-                "functions": ['solute', '1'],
-                "labels": ['solute', '1'],
-                "checkpoint": "False",
-                "folder": str(Path(d))
-            }
-        }
-        export_xdmf(res, exports, files, t=1, append=False)
+#     with pytest.raises(TypeError, match=r'checkpoint'):
+#         exports = {
+#             "xdmf": {
+#                 "functions": ['solute', '1'],
+#                 "labels": ['solute', '1'],
+#                 "checkpoint": "False",
+#                 "folder": str(Path(d))
+#             }
+#         }
+#         export_xdmf(res, exports, files, t=1, append=False)
 
-    exports["xdmf"].update({"checkpoint": False})
-    export_xdmf(res, exports, files, t=1, append=False)
+#     exports["xdmf"].update({"checkpoint": False})
+#     export_xdmf(res, exports, files, t=1, append=False)
 
-    with pytest.raises(ValueError, match=r'trap1'):
-        exports = {
-            "xdmf": {
-                "functions": ['solute', 'trap1'],
-                "labels": ['solute', '1'],
-                "folder": str(Path(d))
-            }
-        }
-        export_xdmf(res, exports, files, t=1, append=False)
+#     with pytest.raises(ValueError, match=r'trap1'):
+#         exports = {
+#             "xdmf": {
+#                 "functions": ['solute', 'trap1'],
+#                 "labels": ['solute', '1'],
+#                 "folder": str(Path(d))
+#             }
+#         }
+#         export_xdmf(res, exports, files, t=1, append=False)
 
-    with pytest.raises(TypeError, match=r'type'):
-        exports = {
-            "xdmf": {
-                "functions": ['solute', 1.2],
-                "labels": ['solute', '1'],
-                "folder": str(Path(d))
-            }
-        }
-        export_xdmf(res, exports, files, t=1, append=False)
+#     with pytest.raises(TypeError, match=r'type'):
+#         exports = {
+#             "xdmf": {
+#                 "functions": ['solute', 1.2],
+#                 "labels": ['solute', '1'],
+#                 "folder": str(Path(d))
+#             }
+#         }
+#         export_xdmf(res, exports, files, t=1, append=False)
 
-    with pytest.raises(ValueError, match=r'3'):
-        exports = {
-            "xdmf": {
-                "functions": ['solute', 3],
-                "labels": ['solute', '1'],
-                "folder": str(Path(d))
-            }
-        }
-        export_xdmf(res, exports, files, t=1, append=False)
-    return
+#     with pytest.raises(ValueError, match=r'3'):
+#         exports = {
+#             "xdmf": {
+#                 "functions": ['solute', 3],
+#                 "labels": ['solute', '1'],
+#                 "folder": str(Path(d))
+#             }
+#         }
+#         export_xdmf(res, exports, files, t=1, append=False)
+#     return
 
 
 def test_export_parameters(tmpdir):
