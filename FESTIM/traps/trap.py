@@ -1,6 +1,7 @@
 from FESTIM import Concentration, k_B
 from fenics import *
 import sympy as sp
+import numpy as np
 
 
 class Trap(Concentration):
@@ -15,6 +16,9 @@ class Trap(Concentration):
         self.materials = materials
         if not isinstance(self.materials, list):
             self.materials = [self.materials]
+        if len(self.materials) != len(np.unique(self.materials)):
+            raise ValueError("Duplicate materials in trap")
+
         self.density = []
         self.make_density(density)
         self.source_term = source_term
