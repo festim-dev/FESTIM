@@ -466,6 +466,7 @@ def test_derived_quantities_chemical_pot():
         assert abs(tab[i] - expected[i])/expected[i] < 1e-3
 
 
+# TODO try and readapt these tests
 # def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):
 #     """this test checks that the computation of retention is correctly made
 #     with conservation of chemical pot
