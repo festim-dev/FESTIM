@@ -1,11 +1,17 @@
 import FESTIM
 import fenics as f
+import pytest
 
 
 def add_functions(trap, V, id=1):
     trap.solution = f.Function(V, name="c_t_{}".format(id))
     trap.previous_solution = f.Function(V, name="c_t_n_{}".format(id))
     trap.test_function = f.TestFunction(V)
+
+
+def test_error_if_duplicate_material():
+    with pytest.raises(ValueError, match="Duplicate materials in trap"):
+        FESTIM.Trap(1, 1, 1, 1, [1, 1], 1)
 
 
 class TestCreateTrappingForm:
