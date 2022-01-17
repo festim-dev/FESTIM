@@ -1,5 +1,4 @@
 import fenics as f
-from ufl.algebra import Product
 import sympy as sp
 import numpy as np
 import FESTIM
@@ -14,18 +13,6 @@ def run_post_processing(simulation):
         list -- updated derived quantities list
         fenics.Constant() -- updated stepsize
     """
-    parameters = simulation.parameters
-    transient = simulation.transient
-    u = simulation.u
-    T = simulation.T.T
-    markers = [simulation.volume_markers, simulation.surface_markers]
-    V_DG1, V_CG1 = simulation.V_DG1, simulation.V_CG1
-    t = simulation.t
-    dt = simulation.dt
-    files = simulation.files
-    D, thermal_cond, cp, rho, H, S = \
-        simulation.D, simulation.thermal_cond, simulation.cp, simulation.rho, \
-        simulation.H, simulation.S
 
     label_to_function = {
         "solute": simulation.mobile.post_processing_solution,
@@ -40,17 +27,17 @@ def run_post_processing(simulation):
 
     # make the change of variable solute = theta*S
     if simulation.chemical_pot:
-        label_to_function["solute"] = simulation.mobile.solution*S  # solute = theta*S = (solute/S) * S
+        label_to_function["solute"] = simulation.mobile.solution*simulation.S  # solute = theta*S = (solute/S) * S
 
         if simulation.need_projecting_solute():
             # project solute on V_DG1
-            label_to_function["solute"] = f.project(label_to_function["solute"], V_DG1)
+            label_to_function["solute"] = f.project(label_to_function["solute"], simulation.V_DG1)
 
     for export in simulation.exports.exports:
         if isinstance(export, FESTIM.DerivedQuantities):
             # compute derived quantities
             if simulation.nb_iterations % export.nb_iterations_between_compute == 0:
-                export.compute(t, label_to_function)
+                export.compute(simulation.t, label_to_function)
             # export derived quantities
             if is_export_derived_quantities(simulation, export):
                 export.write()
@@ -64,14 +51,14 @@ def run_post_processing(simulation):
                     if export.function == "retention":
                         # if not a Function, project it onto V_DG1
                         if not isinstance(label_to_function["retention"], f.Function):
-                            label_to_function["retention"] = f.project(label_to_function["retention"], V_DG1)
+                            label_to_function["retention"] = f.project(label_to_function["retention"], simulation.V_DG1)
                     export.write(label_to_function, simulation.t)
                     export.append = True
 
         elif isinstance(export, FESTIM.TXTExport):
-            export.write(label_to_function, t, dt)
+            export.write(label_to_function, simulation.t, simulation.dt)
 
-    return dt
+    return simulation.dt
 
 
 def is_export_derived_quantities(simulation, derived_quantities):
