@@ -1,11 +1,13 @@
 import FESTIM
 from fenics import *
+import sympy as sp
 
 
 class ExtrinsicTrap(FESTIM.Trap):
     def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None):
         super().__init__(k_0, E_k, p_0, E_p, materials, density=None, id=id)
         self.form_parameters = form_parameters
+        self.convert_prms()
         self.density_previous_solution = None
         self.density_test_function = None
         self.type = type
@@ -14,12 +16,12 @@ class ExtrinsicTrap(FESTIM.Trap):
         # create Expressions or Constant for all parameters
         for key, value in self.form_parameters.items():
             if isinstance(value, (int, float)):
-                self.prms[key] = Constant(value)
+                self.form_parameters[key] = Constant(value)
             else:
-                self.prms[key] = Expression(sp.printing.ccode(value),
+                self.form_parameters[key] = Expression(sp.printing.ccode(value),
                                        t=0,
                                        degree=1)
-                self.sub_expressions.append(self.prms[key])
+                self.sub_expressions.append(self.form_parameters[key])
 
     def create_form_density(self, dx, dt):
         phi_0 = self.form_parameters["phi_0"]
