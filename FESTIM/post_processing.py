@@ -73,16 +73,15 @@ def run_post_processing(simulation):
                 export.nb_iterations_between_compute == 0:
                 export.compute(t, label_to_function)
             # export derived quantities
-            if is_export_derived_quantities(simulation):
+            if is_export_derived_quantities(simulation, export):
                 export.write()
 
         elif isinstance(export, FESTIM.XDMFExport):
             if (export.last_time_step_only and
                 simulation.t >= simulation.final_time) or \
                     not export.last_time_step_only:
-                # TODO it should be export.nb_iterations_between_exports
                 if simulation.nb_iterations % \
-                        simulation.nb_iterations_between_exports == 0:
+                        export.nb_iterations_between_exports == 0:
                     if export.function == "retention":
                         # if not a Function, project it onto V_DG1
                         if not isinstance(label_to_function["retention"], f.Function):
@@ -96,19 +95,20 @@ def run_post_processing(simulation):
     return dt
 
 
-def is_export_derived_quantities(simulation):
+def is_export_derived_quantities(simulation, derived_quantities):
     """Checks if the derived quantities should be exported or not based on the
     key simulation.nb_iterations_between_export_derived_quantities
 
     Args:
         simulation (FESTIM.Simulation): the main Simulation instance
+        derived_quantities (FESTIM.DerivedQuantities): the derived quantities
 
     Returns:
         bool: True if the derived quantities should be exported, else False
     """
     if simulation.transient:
         nb_its_between_exports = \
-            simulation.nb_iterations_between_export_derived_quantities
+            derived_quantities.nb_iterations_between_exports
         if nb_its_between_exports is None:
             # export at the end
             return simulation.t >= simulation.final_time
