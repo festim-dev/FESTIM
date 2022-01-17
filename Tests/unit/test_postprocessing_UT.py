@@ -1,99 +1,10 @@
 import FESTIM
-from FESTIM.post_processing import run_post_processing, \
-    create_properties
+from FESTIM.post_processing import create_properties
 import fenics
 import pytest
 import sympy as sp
 import numpy as np
 from pathlib import Path
-
-
-def test_export_profiles(tmpdir):
-    '''
-    Test the function export.export_profiles()
-    '''
-    mesh = fenics.UnitIntervalMesh(3)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
-    d = tmpdir.mkdir("Solution_Test")
-    functions = [fenics.Function(V), fenics.Function(V)]
-    exports = {
-        "txt": {
-            "functions": ['1', 'retention'],
-            "times": [2.5, 1, 3.2],
-            "labels":  ['a', 'b'],
-            "folder": str(Path(d))
-        }
-        }
-
-    t = 0
-    dt = fenics.Constant(2)
-    while t < 4:
-        dt_old = dt
-        dt = export_profiles(functions, exports, t, dt, V)
-        # Test that dt is not changed if not on time
-        if np.allclose(t, exports["txt"]["times"]):
-            assert np.isclose(float(dt_old), float(dt)) 
-        # Test that dt has the right value
-        elif t < 2:
-            assert np.isclose(float(dt), 1) 
-        elif t < 3:
-            assert np.isclose(float(dt), 0.5) 
-        else:
-            assert np.isclose(float(dt), 0.2) 
-        t += float(dt)
-
-    # Test that a ValueError is raised if wrong function
-    t = 1
-    exports["txt"]["functions"][0] = "foo"
-    with pytest.raises(ValueError):
-        export_profiles(functions, exports, t, dt, V)
-
-
-def test_export_profiles_with_vectors(tmpdir):
-    '''
-    Test the function export.export_profiles() with a vector space
-    '''
-    mesh = fenics.UnitIntervalMesh(3)
-    solute = fenics.FiniteElement('CG', mesh.ufl_cell(), 1)
-    traps = fenics.FiniteElement('DG', mesh.ufl_cell(), 1)
-    element = [solute] + [traps]*1
-    V = fenics.FunctionSpace(mesh, fenics.MixedElement(element))
-    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
-
-    d = tmpdir.mkdir("Solution_Test")
-    u = fenics.Function(V)
-    functions = list(u.split())
-    exports = {
-        "txt": {
-            "functions": ['1', 'solute'],
-            "times": [2.5, 1, 3.2],
-            "labels":  ['a', 'b'],
-            "folder": str(Path(d))
-        }
-        }
-
-    t = 0
-    dt = fenics.Constant(2)
-    while t < 4:
-        dt_old = dt
-        dt = export_profiles(functions, exports, t, dt, V_DG1)
-        # Test that dt is not changed if not on time
-        if np.allclose(t, exports["txt"]["times"]):
-            assert np.isclose(float(dt_old), float(dt)) 
-        # Test that dt has the right value
-        elif t < 2:
-            assert np.isclose(float(dt), 1) 
-        elif t < 3:
-            assert np.isclose(float(dt), 0.5)
-        else:
-            assert np.isclose(float(dt), 0.2) 
-        t += float(dt)
-
-    # Test that a ValueError is raised if wrong function
-    t = 1
-    exports["txt"]["functions"][0] = "foo"
-    with pytest.raises(ValueError):
-        export_profiles(functions, exports, t, dt, V)
 
 
 def test_create_properties():

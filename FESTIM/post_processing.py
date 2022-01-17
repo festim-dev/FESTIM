@@ -4,59 +4,6 @@ import numpy as np
 import FESTIM
 
 
-def run_post_processing(simulation):
-    """Main post processing FESTIM function.
-
-    Arguments:
-
-    Returns:
-        list -- updated derived quantities list
-        fenics.Constant() -- updated stepsize
-    """
-
-    label_to_function = {
-        "solute": simulation.mobile.post_processing_solution,
-        "0": simulation.mobile.post_processing_solution,
-        0: simulation.mobile.post_processing_solution,
-        "T": simulation.T.T,
-        "retention": sum([simulation.mobile.post_processing_solution] + [trap.post_processing_solution for trap in simulation.traps.traps])
-    }
-    for trap in simulation.traps.traps:
-        label_to_function[trap.id] = trap.post_processing_solution
-        label_to_function[str(trap.id)] = trap.post_processing_solution
-
-    # make the change of variable solute = theta*S
-    if simulation.chemical_pot:
-        label_to_function["solute"] = simulation.mobile.solution*simulation.S  # solute = theta*S = (solute/S) * S
-
-        if simulation.need_projecting_solute():
-            # project solute on V_DG1
-            label_to_function["solute"] = f.project(label_to_function["solute"], simulation.V_DG1)
-
-    for export in simulation.exports.exports:
-        if isinstance(export, FESTIM.DerivedQuantities):
-            # compute derived quantities
-            if simulation.nb_iterations % export.nb_iterations_between_compute == 0:
-                export.compute(simulation.t, label_to_function)
-            # export derived quantities
-            if is_export_derived_quantities(simulation, export):
-                export.write()
-
-        elif isinstance(export, FESTIM.XDMFExport):
-            if is_export_xdmf(simulation, export):
-                if export.function == "retention":
-                    # if not a Function, project it onto V_DG1
-                    if not isinstance(label_to_function["retention"], f.Function):
-                        label_to_function["retention"] = f.project(label_to_function["retention"], simulation.V_DG1)
-                export.write(label_to_function, simulation.t)
-                export.append = True
-
-        elif isinstance(export, FESTIM.TXTExport):
-            export.write(label_to_function, simulation.t, simulation.dt)
-
-    return simulation.dt
-
-
 def is_export_xdmf(simulation, export):
     if (export.last_time_step_only and
         simulation.t >= simulation.final_time) or \

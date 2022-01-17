@@ -382,7 +382,7 @@ class Simulation():
 
             # Post processing
             self.update_self_processing_solutions()
-            FESTIM.run_post_processing(self)
+            self.run_post_processing()
             elapsed_time = round(self.timer.elapsed()[0], 1)
 
             # print final message
@@ -458,7 +458,7 @@ class Simulation():
 
         # Post processing
         self.update_self_processing_solutions()
-        FESTIM.run_post_processing(self)
+        self.run_post_processing()
 
         # Update previous solutions
         self.u_n.assign(self.u)
@@ -470,6 +470,50 @@ class Simulation():
         # avoid t > final_time
         if self.t + float(self.dt) > self.final_time:
             self.dt.assign(self.final_time - self.t)
+
+    def run_post_processing(self):
+        """Main post processing FESTIM function.
+        """
+
+        label_to_function = {
+            "solute": self.mobile.post_processing_solution,
+            "0": self.mobile.post_processing_solution,
+            0: self.mobile.post_processing_solution,
+            "T": self.T.T,
+            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
+        }
+        for trap in self.traps.traps:
+            label_to_function[trap.id] = trap.post_processing_solution
+            label_to_function[str(trap.id)] = trap.post_processing_solution
+
+        # make the change of variable solute = theta*S
+        if self.chemical_pot:
+            label_to_function["solute"] = self.mobile.solution*self.S  # solute = theta*S = (solute/S) * S
+
+            if self.need_projecting_solute():
+                # project solute on V_DG1
+                label_to_function["solute"] = project(label_to_function["solute"], self.V_DG1)
+
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                # compute derived quantities
+                if self.nb_iterations % export.nb_iterations_between_compute == 0:
+                    export.compute(self.t, label_to_function)
+                # export derived quantities
+                if FESTIM.is_export_derived_quantities(self, export):
+                    export.write()
+
+            elif isinstance(export, FESTIM.XDMFExport):
+                if FESTIM.is_export_xdmf(self, export):
+                    if export.function == "retention":
+                        # if not a Function, project it onto V_DG1
+                        if not isinstance(label_to_function["retention"], Function):
+                            label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
+                    export.write(label_to_function, self.t)
+                    export.append = True
+
+            elif isinstance(export, FESTIM.TXTExport):
+                export.write(label_to_function, self.t, self.dt)
 
     def update_self_processing_solutions(self):
         if self.u.function_space().num_sub_spaces() == 0:
