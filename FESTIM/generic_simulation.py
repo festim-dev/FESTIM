@@ -148,7 +148,6 @@ class Simulation():
         self.define_variational_problem_extrinsic_traps()
 
         # Solution files
-        self.append = False
         self.exports = FESTIM.Exports([])
         if "xdmf" in self.parameters["exports"]:
             my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
