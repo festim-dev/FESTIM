@@ -34,6 +34,6 @@ class TestCompute:
     my_average.dx = dx
 
     def test_h_average(self):
-        expected_flux = f.assemble(self.c*self.dx(self.volume))/f.assemble(1*self.dx(self.volume))
-        flux = self.my_average.compute()
-        assert flux == expected_flux
+        expected = f.assemble(self.c*self.dx(self.volume))/f.assemble(1*self.dx(self.volume))
+        computed = self.my_average.compute()
+        assert computed == expected
