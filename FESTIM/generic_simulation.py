@@ -29,10 +29,10 @@ class Simulation():
         self.create_materials()
         self.define_mesh()
         self.define_markers()
-
-        self.derived_quantities_global = [
-            FESTIM.post_processing.header_derived_quantities(self)
-            ]
+        self.derived_quantities = None
+        # self.derived_quantities_global = [
+        #     FESTIM.post_processing.header_derived_quantities(self)
+        #     ]
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
@@ -402,7 +402,7 @@ class Simulation():
         if "derived_quantities" in self.parameters["exports"].keys():
             FESTIM.write_to_csv(
                 self.parameters["exports"]["derived_quantities"],
-                self.derived_quantities_global)
+                self.derived_quantities.data)
 
         # End
         print('\007')
@@ -527,7 +527,7 @@ class Simulation():
 
         # add derived quantities to output
         if "derived_quantities" in self.parameters["exports"].keys():
-            output["derived_quantities"] = self.derived_quantities_global
+            output["derived_quantities"] = self.derived_quantities.data
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {

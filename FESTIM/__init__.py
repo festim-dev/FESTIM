@@ -21,7 +21,6 @@ from .exports.derived_quantities_export import DerivedQuantities
 
 from .post_processing import run_post_processing, compute_error, \
     create_properties, \
-    header_derived_quantities, \
     check_keys_derived_quantities
 
 from .materials import Material, Materials

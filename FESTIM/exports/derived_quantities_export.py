@@ -22,7 +22,7 @@ class SurfaceFlux(DerivedQuantity):
     def __init__(self, surface, field) -> None:
         super().__init__(field=field)
         self.surface = surface
-
+        self.title = "Flux surface {}: {}".format(self.surface, self.field)
 
     def compute(self, soret=False):
         field_to_prop = {
@@ -53,6 +53,7 @@ class AverageVolume(DerivedQuantity):
     def __init__(self, field, volume) -> None:
         super().__init__(field)
         self.volume = volume
+        self.title = "Average {} volume {}".format(self.field, self.volume)
 
     def compute(self):
         return f.assemble(self.solution*self.dx(self.volume))/f.assemble(1*self.dx(self.volume))
@@ -62,6 +63,7 @@ class MinimumVolume(DerivedQuantity):
     def __init__(self, field, volume) -> None:
         super().__init__(field)
         self.volume = volume
+        self.title = "Minimum {} volume {}".format(self.field, self.volume)
 
     def compute(self, volume_markers):
         '''Minimum of f over subdomains cells marked with self.volume'''
@@ -80,6 +82,7 @@ class MaximumVolume(DerivedQuantity):
     def __init__(self, field, volume) -> None:
         super().__init__(field)
         self.volume = volume
+        self.title = "Maximum {} volume {}".format(self.field, self.volume)
 
     def compute(self, volume_markers):
         '''Minimum of f over subdomains cells marked with self.volume'''
@@ -98,6 +101,7 @@ class TotalVolume(DerivedQuantity):
     def __init__(self, field, volume) -> None:
         super().__init__(field)
         self.volume = volume
+        self.title = "Total {} volume {}".format(self.field, self.volume)
 
     def compute(self):
         return f.assemble(self.solution*self.dx(self.volume))
@@ -107,6 +111,7 @@ class TotalSurface(DerivedQuantity):
     def __init__(self, field, surface) -> None:
         super().__init__(field)
         self.surface = surface
+        self.title = "Total {} surface {}".format(self.field, self.surface)
 
     def compute(self):
         return f.assemble(self.solution*self.ds(self.surface))
@@ -121,6 +126,7 @@ class DerivedQuantities(Export):
         self.nb_iterations_between_exports = nb_iterations_between_exports
         self.derived_quantities = []
         self.make_derived_quantities(derived_quantities)
+        self.data = [self.make_header()]
 
     def make_derived_quantities(self, derived_quantities):
         for derived_quantity, list_of_prms_dicts in derived_quantities.items():
@@ -147,7 +153,10 @@ class DerivedQuantities(Export):
                             quantity_class(field=prms_dict["field"], surface=entity))
 
     def make_header(self):
-        return
+        header = ["t(s)"]
+        for quantity in self.derived_quantities:
+            header.append(quantity.title)
+        return header
 
     def assign_measures_to_quantities(self, dx, ds):
         for quantity in self.derived_quantities:
@@ -167,9 +176,6 @@ class DerivedQuantities(Export):
             quantity.H = H
             quantity.T = T
 
-    def compute(self, label_to_function):
+    def compute(self, t, label_to_function):
         self.assign_functions_to_quantities(label_to_function)
-        tab = []
-        for quantity in self.derived_quantities:
-            tab.append(quantity.compute())
-        return tab
+        self.data.append([t] + [quantity.compute() for quantity in self.derived_quantities])
