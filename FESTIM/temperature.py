@@ -92,7 +92,6 @@ class Temperature:
                     rho = rho(T)
                 # Transien term
                 for vol in subdomains:
-                    print('coucou')
                     self.F += rho*cp*(T-T_n)/dt*v_T*dx(vol)
             # Diffusion term
             for vol in subdomains:

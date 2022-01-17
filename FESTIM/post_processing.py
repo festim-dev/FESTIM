@@ -38,21 +38,7 @@ def run_post_processing(simulation):
     if simulation.chemical_pot:
         solute = res[0]*S  # solute = theta*S = (solute/S) * S
 
-        need_solute = False  # initialises to false
-        if "derived_quantities" in parameters["exports"].keys():
-            derived_quantities_prm = parameters["exports"]["derived_quantities"]
-            if "surface_flux" in derived_quantities_prm:
-                if any(
-                    x["field"] in ["0", "solute"]
-                        for x in derived_quantities_prm["surface_flux"]
-                        ):
-                    need_solute = True
-        if "xdmf" in parameters["exports"].keys():
-            functions_to_exports = \
-                parameters["exports"]["xdmf"]["functions"]
-            if any(x in functions_to_exports for x in ["0", "solute"]):
-                need_solute = True
-        if need_solute:
+        if simulation.need_projecting_solute():
             # project solute on V_DG1
             solute = f.project(solute, V_DG1)
 
@@ -320,15 +306,15 @@ def calculate_minimum_volume(function, subdomains, subd_id):
     return np.min(function.vector().get_local()[subd_dofs])
 
 
-def header_derived_quantities(parameters):
+def header_derived_quantities(simulation):
     '''
     Creates the header for derived_quantities list
     '''
-
+    parameters = simulation.parameters
     header = ['t(s)']
     if "exports" in parameters:
         if "derived_quantities" in parameters["exports"]:
-            check_keys_derived_quantities(parameters)
+            check_keys_derived_quantities(simulation)
             derived_quant_dict = parameters["exports"]["derived_quantities"]
             if "surface_flux" in derived_quant_dict.keys():
                 for flux in derived_quant_dict["surface_flux"]:
@@ -481,11 +467,8 @@ def derived_quantities(parameters, solutions,
     return tab
 
 
-def check_keys_derived_quantities(parameters):
+def check_keys_derived_quantities(simulation):
     """Checks the keys in derived quantities dict
-
-    Arguments:
-        parameters {dict} -- main parameters dict
 
     Raises:
         ValueError: if quantity is unknown
@@ -495,6 +478,7 @@ def check_keys_derived_quantities(parameters):
         ValueError: if a field is unknown
         KeyError: if surfaces or volumes key is missing
     """
+    parameters = simulation.parameters
     for quantity in parameters["exports"]["derived_quantities"].keys():
         non_quantity_types = [
             "file", "folder",
@@ -508,18 +492,22 @@ def check_keys_derived_quantities(parameters):
                     raise KeyError("Missing key 'field'")
                 else:
                     if type(f["field"]) is int:
-                        if f["field"] > len(parameters["traps"]) or \
+                        if f["field"] > len(simulation.traps.traps) or \
                            f["field"] < 0:
                             raise ValueError(
                                 "Unknown field: " + str(f["field"]))
                     elif type(f["field"]) is str:
                         if f["field"] not in FESTIM.helpers.field_types:
                             if f["field"].isdigit():
-                                if int(f["field"]) > len(parameters["traps"]) \
-                                    or \
-                                   int(f["field"]) < 0:
+                                if simulation.traps.traps != []:
+                                    if int(f["field"]) > len(simulation.traps.traps) \
+                                        or \
+                                        int(f["field"]) < 0:
+                                        raise ValueError(
+                                            "Unknown field: " + f["field"])
+                                else:
                                     raise ValueError(
-                                        "Unknown field: " + f["field"])
+                                            "Unknown field: " + f["field"])
                             else:
                                 raise ValueError(
                                     "Unknown field: " + str(f["field"]))

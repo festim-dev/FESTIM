@@ -1,7 +1,7 @@
 import FESTIM
 from FESTIM.export import define_xdmf_files, export_profiles, export_xdmf
 from FESTIM.post_processing import run_post_processing, derived_quantities, \
-    create_properties, header_derived_quantities
+    create_properties
 import fenics
 import pytest
 import sympy as sp
@@ -534,121 +534,6 @@ def test_derived_quantities_chemical_pot():
     for i in range(0, len(tab)):
         print(i)
         assert abs(tab[i] - expected[i])/expected[i] < 1e-3
-
-
-def test_header_derived_quantities():
-    # Set parameters for derived quantities
-    parameters = {
-        "exports": {
-            "derived_quantities": {
-                "surface_flux": [
-                    {
-                        "field": 'solute',
-                        "surfaces": [2]
-                    },
-                    {
-                        "field": 'T',
-                        "surfaces": [2]
-                    },
-                ],
-                "average_volume": [
-                    {
-                        "field": 'T',
-                        "volumes": [1]
-                    }
-                ],
-                "total_volume": [
-                    {
-                        "field": 'solute',
-                        "volumes": [1, 2]
-                    }
-                ],
-                "total_surface": [
-                    {
-                        "field": 'solute',
-                        "surfaces": [2]
-                    }
-                ],
-                "maximum_volume": [
-                    {
-                        "field": 'T',
-                        "volumes": [1]
-                    }
-                ],
-                "minimum_volume": [
-                    {
-                        "field": 'solute',
-                        "volumes": [2]
-                    }
-                ],
-                "file": "derived_quantities",
-                "folder": "",
-            }
-        }
-    }
-
-    tab = header_derived_quantities(parameters)
-    expected = ["t(s)",
-                "Flux surface 2: solute", "Flux surface 2: T",
-                "Average T volume 1",
-                "Minimum solute volume 2", "Maximum T volume 1",
-                "Total solute volume 1", "Total solute volume 2",
-                "Total solute surface 2"]
-    assert len(tab) == len(expected)
-    for i in range(0, len(tab)):
-        assert tab[i] == expected[i]
-
-
-def test_header_derived_quantities_wrong_key():
-    # Set parameters for derived quantities
-    parameters_quantity = {
-        "exports": {
-            "derived_quantities": {
-                "FOO": [
-                    {
-                        "field": 'solute',
-                        "surfaces": [2]
-                    },
-                ],
-                "file": "derived_quantities",
-                "folder": "",
-            }
-        }
-    }
-    parameters_field = {
-        "exports": {
-            "derived_quantities": {
-                "surface_flux": [
-                    {
-                        "field": 'foo',
-                        "surfaces": [2]
-                    },
-                ],
-                "file": "derived_quantities",
-                "folder": "",
-            }
-        }
-    }
-    parameters_surface = {
-        "exports": {
-            "derived_quantities": {
-                "FOO": [
-                    {
-                        "field": 'solute',
-                        "surfaces": [20]
-                    },
-                ],
-                "file": "derived_quantities",
-                "folder": "",
-            }
-        }
-    }
-    with pytest.raises(ValueError, match=r'quantity'):
-        tab = header_derived_quantities(
-            parameters_quantity)
-    with pytest.raises(ValueError, match=r'field'):
-        tab = header_derived_quantities(
-            parameters_field)
 
 
 def test_run_post_processing_export_xdmf_chemical_pot(tmpdir):

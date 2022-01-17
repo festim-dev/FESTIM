@@ -1,3 +1,5 @@
+import enum
+from time import time
 import FESTIM
 from fenics import *
 import sympy as sp
@@ -12,9 +14,7 @@ class Simulation():
         self.transient = True
         self.expressions = []
         self.files = []
-        self.derived_quantities_global = [
-            FESTIM.post_processing.header_derived_quantities(self.parameters)
-            ]
+
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.nb_iterations_between_exports = 1
@@ -24,10 +24,26 @@ class Simulation():
         self.J = None
 
         self.soret = False
+        self.create_concentration_objects()
         self.create_boundarycondition_objects()
         self.create_materials()
         self.define_mesh()
         self.define_markers()
+
+        self.derived_quantities_global = [
+            FESTIM.post_processing.header_derived_quantities(self)
+            ]
+
+    def create_concentration_objects(self):
+        self.mobile = FESTIM.Mobile()
+        traps = []
+        if "traps" in self.parameters:
+            for trap in self.parameters["traps"]:
+                if "type" in trap:
+                    traps.append(FESTIM.ExtrinsicTrap(**trap))
+                else:
+                    traps.append(FESTIM.Trap(**trap))
+        self.traps = FESTIM.Traps(traps)
 
     def create_materials(self):
         materials = []
@@ -86,6 +102,7 @@ class Simulation():
                 self.transient = True
             elif solving_parameters["type"] == "solve_stationary":
                 self.transient = False
+                self.dt = None
             else:
                 raise ValueError(
                     str(solving_parameters["type"]) + ' unkown')
@@ -199,7 +216,7 @@ class Simulation():
         element_solute, order_solute = "CG", 1
 
         # function space for H concentrations
-        nb_traps = len(self.parameters["traps"])
+        nb_traps = len(self.traps.traps)
         mesh = self.mesh.mesh
         if nb_traps == 0:
             V = FunctionSpace(mesh, element_solute, order_solute)
@@ -229,19 +246,21 @@ class Simulation():
         self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
 
     def initialise_concentrations(self):
-        self.u = Function(self.V)  # Function for concentrations
-
+        self.u = Function(self.V, name="c")  # Function for concentrations
         self.v = TestFunction(self.V)  # TestFunction for concentrations
+        self.u_n = Function(self.V, name="c_n")
 
-        if hasattr(self, "S"):
-            S = self.S
+        if self.V.num_sub_spaces() == 0:
+            self.mobile.solution = self.u
+            self.mobile.previous_solution = self.u_n
+            self.mobile.test_function = self.v
         else:
-            S = None
+            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+                concentration.solution = list(split(self.u))[i]
+                concentration.previous_solution = self.u_n.sub(i)
+                concentration.test_function = list(split(self.v))[i]
 
         print('Defining initial values')
-        V = self.V
-        u_n = Function(V)
-        components = list(split(u_n))
 
         parameters = self.parameters
         if "initial_conditions" in parameters.keys():
@@ -251,46 +270,41 @@ class Simulation():
         FESTIM.check_no_duplicates(initial_conditions)
 
         for ini in initial_conditions:
-            if 'component' not in ini.keys():
-                ini["component"] = 0
-            if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
-                comp = FESTIM.read_from_xdmf(ini, V)
-            else:
-                value = ini["value"]
-                value = sp.printing.ccode(value)
-                comp = Expression(value, degree=3, t=0)
+            value = ini['value']
 
-            if ini["component"] == 0 and self.chemical_pot:
-                comp = comp/S  # variable change
-            if V.num_sub_spaces() > 0:
-                if ini["component"] == 0 and self.chemical_pot:
-                    # Product must be projected
-                    comp = project(
-                        comp, V.sub(ini["component"]).collapse())
-                else:
-                    comp = interpolate(
-                        comp, V.sub(ini["component"]).collapse())
-                assign(u_n.sub(ini["component"]), comp)
+            # if initial value from XDMF
+            if type(value) is str and value.endswith(".xdmf"):
+                label = ini['label']
+                time_step = ini['time_step']
             else:
-                if ini["component"] == 0 and self.chemical_pot:
-                    u_n = project(comp, V)
-                else:
-                    u_n = interpolate(comp, V)
-        self.u_n = u_n
+                label = None
+                time_step = None
+            # Default component is 0 (solute)
+            if 'component' not in ini:
+                ini["component"] = 0
+            if self.V.num_sub_spaces() == 0:
+                functionspace = self.V
+            else:
+                functionspace = self.V.sub(ini["component"]).collapse()
+
+            if ini["component"] == 0:
+                self.mobile.initialise(functionspace, value, label=label, time_step=time_step, S=self.S)
+            else:
+                trap = self.traps.get_trap(ini["component"])
+                trap.initialise(functionspace, value, label=label, time_step=time_step)
+
+        # this is needed to correctly create the formulation
+        # TODO: write a test for this?
+        if self.V.num_sub_spaces() != 0:
+            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+                concentration.previous_solution = list(split(self.u_n))[i]
 
     def initialise_extrinsic_traps(self):
-        traps = self.parameters["traps"]
-        self.extrinsic_traps = [Function(self.V_CG1) for d in traps
-                                if "type" in d.keys() if
-                                d["type"] == "extrinsic"]
-        self.testfunctions_traps = [TestFunction(self.V_CG1) for d in traps
-                                    if "type" in d.keys() if
-                                    d["type"] == "extrinsic"]
-
-        self.previous_solutions_traps = []
-        for i in range(len(self.extrinsic_traps)):
-            ini = Expression("0", degree=2)
-            self.previous_solutions_traps.append(interpolate(ini, self.V_CG1))
+        for trap in self.traps.traps:
+            if isinstance(trap, FESTIM.ExtrinsicTrap):
+                trap.density = [Function(self.V_CG1)]
+                trap.density_test_function = TestFunction(self.V_CG1)
+                trap.density_previous_solution = project(Constant(0), self.V_CG1)
 
     def define_variational_problem_H_transport(self):
         print('Defining variational problem')
@@ -378,6 +392,7 @@ class Simulation():
                 self.bcs, self.parameters["solving_parameters"], J=self.J)
 
             # Post processing
+            self.update_self_processing_solutions()
             FESTIM.run_post_processing(self)
             elapsed_time = round(self.timer.elapsed()[0], 1)
 
@@ -449,39 +464,70 @@ class Simulation():
             self.dt, self.parameters["solving_parameters"], J=self.J)
 
         # Solve extrinsic traps formulation
-        for j, form in enumerate(self.extrinsic_formulations):
-            solve(form == 0, self.extrinsic_traps[j], [])
+        for trap in self.traps.traps:
+            if isinstance(trap, FESTIM.ExtrinsicTrap):
+                solve(trap.form_density == 0, trap.density[0], [])
 
         # Post processing
+        self.update_self_processing_solutions()
         FESTIM.run_post_processing(self)
 
         # Update previous solutions
         self.u_n.assign(self.u)
-        for j, prev_sol in enumerate(self.previous_solutions_traps):
-            prev_sol.assign(self.extrinsic_traps[j])
+        for trap in self.traps.traps:
+            if isinstance(trap, FESTIM.ExtrinsicTrap):
+                trap.density_previous_solution.assign(trap.density[0])
         self.nb_iterations += 1
 
         # avoid t > final_time
         if self.t + float(self.dt) > self.final_time:
             self.dt.assign(self.final_time - self.t)
 
-    def make_output(self):
-
+    def update_self_processing_solutions(self):
         if self.u.function_space().num_sub_spaces() == 0:
             res = [self.u]
         else:
             res = list(self.u.split())
-
         if self.chemical_pot:  # c_m = theta * S
-            solute = project(res[0]*self.S, self.V_DG1)
+            theta = res[0]
+            solute = project(theta*self.S, self.V_DG1)
             res[0] = solute
+        else:
+            solute = res[0]
+
+        # TODO remove res
+        self.res = res
+
+        self.mobile.post_processing_solution = solute
+
+        for i, trap in enumerate(self.traps.traps, 1):
+            trap.post_processing_solution = res[i]
+
+    def need_projecting_solute(self):
+        need_solute = False  # initialises to false
+        if "derived_quantities" in self.parameters["exports"].keys():
+            derived_quantities_prm = self.parameters["exports"]["derived_quantities"]
+            if "surface_flux" in derived_quantities_prm:
+                if any(
+                    x["field"] in ["0", "solute"]
+                        for x in derived_quantities_prm["surface_flux"]
+                        ):
+                    need_solute = True
+        if "xdmf" in self.parameters["exports"].keys():
+            functions_to_exports = \
+                self.parameters["exports"]["xdmf"]["functions"]
+            if any(x in functions_to_exports for x in ["0", "solute"]):
+                need_solute = True
+        return need_solute
+
+    def make_output(self):
 
         output = dict()  # Final output
         # Compute error
         if "error" in self.parameters["exports"].keys():
             error = FESTIM.compute_error(
                 self.parameters["exports"]["error"], self.t,
-                [*res, self.T.T], self.mesh.mesh)
+                [*self.res, self.T.T], self.mesh.mesh)
             output["error"] = error
 
         output["parameters"] = self.parameters
@@ -493,14 +539,14 @@ class Simulation():
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
-            "solute": res[0],
+            "solute": self.mobile.post_processing_solution,
             "T": self.T.T
         }
         # add traps to output
-        for i in range(len(self.parameters["traps"])):
-            output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
+        for trap in self.traps.traps:
+            output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
         # compute retention and add it to output
-        output["solutions"]["retention"] = project(sum(res), self.V_DG1)
+        output["solutions"]["retention"] = project(sum(self.res), self.V_DG1)
         return output
 
 

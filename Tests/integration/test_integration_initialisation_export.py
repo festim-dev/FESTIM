@@ -45,6 +45,7 @@ def test_export_and_initialise_xdmf(tmpdir):
     }
     my_sim = FESTIM.Simulation(parameters)
     my_sim.V = V
+    my_sim.S = None
     my_sim.initialise_concentrations()
 
 
@@ -77,6 +78,7 @@ def test_initialise_and_export_xdmf(tmpdir):
     }
     my_sim = FESTIM.Simulation(parameters)
     my_sim.V = V
+    my_sim.S = None
     my_sim.initialise_concentrations()
     v = my_sim.u_n
 
