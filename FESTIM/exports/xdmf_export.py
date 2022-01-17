@@ -45,8 +45,8 @@ class XDMFExport(Export):
 class XDMFExports:
     def __init__(self, functions, labels, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
         if len(functions) != len(labels):
-            raise NameError("Number of functions to be exported "
-                            "doesn't match number of labels in xdmf exports")
+            raise ValueError("Number of functions to be exported "
+                             "doesn't match number of labels in xdmf exports")
         self.xdmf_exports = [
             XDMFExport(
                 function, label, folder,
