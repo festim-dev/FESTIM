@@ -7,7 +7,7 @@ from .helpers import update_expressions, help_key, \
     parameters_helper
 
 from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
-from .initialising import read_from_xdmf, check_no_duplicates
+from .initialising import check_no_duplicates
 from .temperature import Temperature
 from .boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
