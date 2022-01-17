@@ -36,7 +36,7 @@ class TestCompute:
 
     surface = 1
     n = f.FacetNormal(mesh)
-    my_h_flux = SurfaceFlux(surface, "solute")
+    my_h_flux = SurfaceFlux("solute", surface)
     my_h_flux.D = D
     my_h_flux.thermal_cond = thermal_cond
     my_h_flux.solution = c
@@ -45,7 +45,7 @@ class TestCompute:
     my_h_flux.T = T
     my_h_flux.H = H
 
-    my_heat_flux = SurfaceFlux(surface, "T")
+    my_heat_flux = SurfaceFlux("T", surface)
     my_heat_flux.D = D
     my_heat_flux.thermal_cond = thermal_cond
     my_heat_flux.solution = T
