@@ -3,6 +3,7 @@ from FESTIM import DerivedQuantities, SurfaceFlux, AverageVolume, \
 import fenics as f
 import os
 from pathlib import Path
+import pytest
 
 
 class TestMakeHeader:
@@ -236,18 +237,38 @@ class TestCompute:
         assert self.my_derv_quant.data[0] == expected_data
 
 
-def test_write(tmpdir):
-    """adds data to DerivedQuantities and checks that write() creates the csv
-    file
-    """
-    file = "my_file"
-    folder = str(Path(tmpdir.mkdir("test_folder")))
-    my_derv_quant = DerivedQuantities(file=file, folder=folder)
-    my_derv_quant.data = [
-        ["a", "b", "c"],
-        [1, 2, 3],
-        [1, 2, 3],
-    ]
-    my_derv_quant.write()
+class TestWrite:
+    @pytest.fixture
+    def folder(self, tmpdir):
+        return str(Path(tmpdir.mkdir("test_folder")))
 
-    assert os.path.exists(folder + "/" + file + ".csv")
+    @pytest.fixture
+    def my_derived_quantities(self, folder):
+        file = "my_file"
+        my_derv_quant = DerivedQuantities(file=file, folder=folder)
+        my_derv_quant.data = [
+            ["a", "b", "c"],
+            [1, 2, 3],
+            [1, 2, 3],
+        ]
+        return my_derv_quant
+
+    def test_write_no_csv_ext(self, folder, my_derived_quantities):
+        """adds data to DerivedQuantities and checks that write() creates the csv
+        file
+        """
+        file = "my_file"
+        my_derived_quantities.file = file
+        my_derived_quantities.write()
+
+        assert os.path.exists(folder + "/" + file + ".csv")
+
+    def test_write(self, folder, my_derived_quantities):
+        """adds data to DerivedQuantities and checks that write() creates the csv
+        file
+        """
+        file = "my_file.csv"
+        my_derived_quantities.file = file
+        my_derived_quantities.write()
+
+        assert os.path.exists(folder + "/" + file)
