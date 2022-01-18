@@ -30,7 +30,7 @@ class TestCompute:
 
     volume = 1
     my_average = AverageVolume("solute", volume)
-    my_average.solution = c
+    my_average.function = c
     my_average.dx = dx
 
     def test_h_average(self):

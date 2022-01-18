@@ -83,28 +83,6 @@ class TestAssignMeasuresToQuantities:
             assert quantity.n == self.n
 
 
-def test_assign_function_to_quantities():
-    mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, "P", 1)
-    T = f.Function(V)
-    solute = f.Function(V)
-    my_quantities = DerivedQuantities()
-    my_quantities.derived_quantities = [
-        SurfaceFlux("solute", 2),
-        SurfaceFlux("T", 3),
-        AverageVolume("solute", 3),
-    ]
-    label_to_function = {
-        "solute": solute,
-        "T": T
-    }
-
-    my_quantities.assign_functions_to_quantities(label_to_function)
-
-    for quantity in my_quantities.derived_quantities:
-        assert quantity.solution == label_to_function[quantity.field]
-
-
 class TestAssignPropertiesToQuantities:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
@@ -181,7 +159,8 @@ class TestCompute:
         self.my_derv_quant.derived_quantities = [
             self.surface_flux_1
         ]
-        self.my_derv_quant.assign_functions_to_quantities(self.label_to_function)
+        for quantity in self.my_derv_quant.derived_quantities:
+            quantity.function = self.label_to_function[quantity.field]
         self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
@@ -198,7 +177,8 @@ class TestCompute:
             self.surface_flux_1,
             self.average_vol_1
         ]
-        self.my_derv_quant.assign_functions_to_quantities(self.label_to_function)
+        for quantity in self.my_derv_quant.derived_quantities:
+            quantity.function = self.label_to_function[quantity.field]
         self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
@@ -219,7 +199,8 @@ class TestCompute:
             self.min_vol_1,
             self.max_vol_1,
         ]
-        self.my_derv_quant.assign_functions_to_quantities(self.label_to_function)
+        for quantity in self.my_derv_quant.derived_quantities:
+            quantity.function = self.label_to_function[quantity.field]
         self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2

@@ -31,7 +31,7 @@ class TestCompute:
 
     volume = 1
     my_min = MinimumVolume("solute", volume)
-    my_min.solution = c
+    my_min.function = c
     my_min.dx = dx
 
     def test_minimum(self):

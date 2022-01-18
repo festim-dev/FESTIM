@@ -31,7 +31,7 @@ class TestCompute:
 
     surface = 1
     my_total = TotalSurface("solute", surface)
-    my_total.solution = c
+    my_total.function = c
     my_total.ds = ds
 
     def test_minimum(self):

@@ -9,7 +9,6 @@ class DerivedQuantity(Export):
     def __init__(self, field) -> None:
         super().__init__()
         self.field = field
-        self.solution = None
         self.dx = None
         self.ds = None
         self.n = None
@@ -34,10 +33,10 @@ class SurfaceFlux(DerivedQuantity):
             "T": self.thermal_cond
         }
         self.prop = field_to_prop[self.field]
-        flux = f.assemble(self.prop*f.dot(f.grad(self.solution), self.n)*self.ds(self.surface))
+        flux = f.assemble(self.prop*f.dot(f.grad(self.function), self.n)*self.ds(self.surface))
         if soret and self.field in [0, "0", "solute"]:
             flux += f.assemble(
-                        self.prop*self.solution*self.H/(R*self.T**2)*f.dot(f.grad(self.T), self.n)*self.ds(self.surface))
+                        self.prop*self.function*self.H/(R*self.T**2)*f.dot(f.grad(self.T), self.n)*self.ds(self.surface))
         return flux
 
 
@@ -58,7 +57,7 @@ class AverageVolume(DerivedQuantity):
         self.title = "Average {} volume {}".format(self.field, self.volume)
 
     def compute(self):
-        return f.assemble(self.solution*self.dx(self.volume))/f.assemble(1*self.dx(self.volume))
+        return f.assemble(self.function*self.dx(self.volume))/f.assemble(1*self.dx(self.volume))
 
 
 class MinimumVolume(DerivedQuantity):
@@ -69,7 +68,7 @@ class MinimumVolume(DerivedQuantity):
 
     def compute(self, volume_markers):
         '''Minimum of f over subdomains cells marked with self.volume'''
-        V = self.solution.function_space()
+        V = self.function.function_space()
 
         dm = V.dofmap()
 
@@ -77,7 +76,7 @@ class MinimumVolume(DerivedQuantity):
             [dm.cell_dofs(c.index())
              for c in f.SubsetIterator(volume_markers, self.volume)]))
 
-        return np.min(self.solution.vector().get_local()[subd_dofs])
+        return np.min(self.function.vector().get_local()[subd_dofs])
 
 
 class MaximumVolume(DerivedQuantity):
@@ -88,7 +87,7 @@ class MaximumVolume(DerivedQuantity):
 
     def compute(self, volume_markers):
         '''Minimum of f over subdomains cells marked with self.volume'''
-        V = self.solution.function_space()
+        V = self.function.function_space()
 
         dm = V.dofmap()
 
@@ -96,7 +95,7 @@ class MaximumVolume(DerivedQuantity):
             [dm.cell_dofs(c.index())
              for c in f.SubsetIterator(volume_markers, self.volume)]))
 
-        return np.max(self.solution.vector().get_local()[subd_dofs])
+        return np.max(self.function.vector().get_local()[subd_dofs])
 
 
 class TotalVolume(DerivedQuantity):
@@ -106,7 +105,7 @@ class TotalVolume(DerivedQuantity):
         self.title = "Total {} volume {}".format(self.field, self.volume)
 
     def compute(self):
-        return f.assemble(self.solution*self.dx(self.volume))
+        return f.assemble(self.function*self.dx(self.volume))
 
 
 class TotalSurface(DerivedQuantity):
@@ -116,7 +115,7 @@ class TotalSurface(DerivedQuantity):
         self.title = "Total {} surface {}".format(self.field, self.surface)
 
     def compute(self):
-        return f.assemble(self.solution*self.ds(self.surface))
+        return f.assemble(self.function*self.ds(self.surface))
 
 
 class DerivedQuantities:
@@ -167,10 +166,6 @@ class DerivedQuantities:
             quantity.ds = ds
             quantity.n = f.FacetNormal(dx.subdomain_data().mesh())
 
-    def assign_functions_to_quantities(self, label_to_function):
-        for quantity in self.derived_quantities:
-            quantity.solution = label_to_function[quantity.field]
-
     def assign_properties_to_quantities(self, D, S, thermal_cond, H, T):
         for quantity in self.derived_quantities:
             quantity.D = D
@@ -180,8 +175,6 @@ class DerivedQuantities:
             quantity.T = T
 
     def compute(self, t, label_to_function):
-        # TODO no need to do that at each iteration
-        self.assign_functions_to_quantities(label_to_function)
 
         # TODO need to support for soret flag in surface flux
         row = [t]

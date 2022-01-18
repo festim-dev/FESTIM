@@ -496,9 +496,9 @@ class Simulation():
                 # check if function has to be projected
                 for quantity in export.derived_quantities:
                     if isinstance(quantity, (FESTIM.MaximumVolume, FESTIM.MinimumVolume)):
-                        function = label_to_function[quantity.field]
-                        if not isinstance(function, Function):
-                            label_to_function[quantity.field] = project(function, self.V_DG1)
+                        if not isinstance(label_to_function[quantity.field], Function):
+                            label_to_function[quantity.field] = project(label_to_function[quantity.field], self.V_DG1)
+                    quantity.function = label_to_function[quantity.field]
                 # compute derived quantities
                 if self.nb_iterations % export.nb_iterations_between_compute == 0:
                     export.compute(self.t, label_to_function)

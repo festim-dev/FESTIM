@@ -39,7 +39,7 @@ class TestCompute:
     my_h_flux = SurfaceFlux("solute", surface)
     my_h_flux.D = D
     my_h_flux.thermal_cond = thermal_cond
-    my_h_flux.solution = c
+    my_h_flux.function = c
     my_h_flux.n = n
     my_h_flux.ds = ds
     my_h_flux.T = T
@@ -48,7 +48,7 @@ class TestCompute:
     my_heat_flux = SurfaceFlux("T", surface)
     my_heat_flux.D = D
     my_heat_flux.thermal_cond = thermal_cond
-    my_heat_flux.solution = T
+    my_heat_flux.function = T
     my_heat_flux.n = n
     my_heat_flux.ds = ds
 
