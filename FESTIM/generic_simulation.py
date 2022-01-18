@@ -196,11 +196,12 @@ class Simulation():
                 'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
     def define_function_spaces(self):
-        solving_parameters = self.parameters["solving_parameters"]
-        if "traps_element_type" in solving_parameters.keys():
-            trap_element = solving_parameters["traps_element_type"]
-        else:
-            trap_element = "CG"  # Default is CG
+        trap_element = "CG"  # Default is CG
+        if "solving_parameters" in self.parameters:
+            solving_parameters = self.parameters["solving_parameters"]
+            if "traps_element_type" in solving_parameters.keys():
+                trap_element = solving_parameters["traps_element_type"]
+
         order_trap = 1
         element_solute, order_solute = "CG", 1
 
@@ -496,6 +497,13 @@ class Simulation():
 
         for export in self.exports.exports:
             if isinstance(export, FESTIM.DerivedQuantities):
+
+                # check if function has to be projected
+                for quantity in export.derived_quantities:
+                    if isinstance(quantity, (FESTIM.MaximumVolume, FESTIM.MinimumVolume)):
+                        function = label_to_function[quantity.field]
+                        if not isinstance(function, Function):
+                            label_to_function[quantity.field] = project(function, self.V_DG1)
                 # compute derived quantities
                 if self.nb_iterations % export.nb_iterations_between_compute == 0:
                     export.compute(self.t, label_to_function)
