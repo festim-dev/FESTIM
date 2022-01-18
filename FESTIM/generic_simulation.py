@@ -249,9 +249,8 @@ class Simulation():
 
         print('Defining initial values')
 
-        parameters = self.parameters
-        if "initial_conditions" in parameters.keys():
-            initial_conditions = parameters["initial_conditions"]
+        if "initial_conditions" in self.parameters.keys():
+            initial_conditions = self.parameters["initial_conditions"]
         else:
             initial_conditions = []
         FESTIM.check_no_duplicates(initial_conditions)
@@ -408,7 +407,8 @@ class Simulation():
             self.expressions, self.t)
         FESTIM.update_expressions(
             self.T.sub_expressions, self.t)
-        if self.parameters["temperature"]["type"] == "expression":
+        # TODO this could be a method of Temperature()
+        if self.T.type == "expression":
             self.T.T_n.assign(self.T.T)
             self.T.expression.t = self.t
             self.T.T.assign(interpolate(self.T.expression, self.V_CG1))
