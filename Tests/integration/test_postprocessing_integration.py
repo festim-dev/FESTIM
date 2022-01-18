@@ -35,7 +35,6 @@ class TestPostProcessing:
                 my_sim.mesh.mesh, my_sim.materials,
                 my_sim.volume_markers, my_sim.T.T)
         my_sim.exports = FESTIM.Exports([])
-        my_sim.update_self_processing_solutions()
 
         return my_sim
 
@@ -132,7 +131,6 @@ class TestPostProcessing:
         derived_quantities.assign_properties_to_quantities(my_sim.D, my_sim.S, my_sim.thermal_cond, my_sim.H, my_sim.T)
 
         my_sim.exports.exports = [derived_quantities]
-        my_sim.update_self_processing_solutions()
 
         my_sim.run_post_processing()
         data = derived_quantities.data
