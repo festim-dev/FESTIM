@@ -1,4 +1,3 @@
-import enum
 from time import time
 import FESTIM
 from fenics import *
