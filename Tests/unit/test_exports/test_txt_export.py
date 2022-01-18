@@ -15,6 +15,14 @@ class TestWrite:
         return {"solute": u}
 
     @pytest.fixture
+    def label_to_function_subspace(self):
+        mesh = f.UnitIntervalMesh(10)
+        V = f.VectorFunctionSpace(mesh, "P", 1, 2)
+        u = f.Function(V)
+
+        return {"solute": u.sub(0)}
+
+    @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
         my_export = TXTExport("solute", [1, 2, 3], "solute_label", str(Path(d)))
@@ -40,6 +48,12 @@ class TestWrite:
         my_export.write(label_to_function, current_time=current_time, dt=dt)
 
         assert float(dt) == my_export.when_is_next_time(current_time) - current_time
+
+    def test_subspace(self, my_export, label_to_function_subspace):
+        current_time = 1
+        my_export.write(label_to_function_subspace, current_time=current_time, dt=f.Constant(3))
+
+        assert os.path.exists("{}/{}_{}.txt".format(my_export.folder, my_export.label, current_time))
 
 
 class TestIsItTimeToExport:
