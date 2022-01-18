@@ -30,13 +30,13 @@ class TestWrite:
         current_time = 1
         my_export.write(label_to_function, current_time=current_time, dt=f.Constant(3))
         for export in my_export.exports:
-            assert os.path.exists("{}/{}_{}.txt".format(my_export.folder, export.label, current_time))
+            assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, export.label, current_time))
 
     def test_file_doesnt_exist(self, my_export, label_to_function):
         current_time = 10
         my_export.write(label_to_function, current_time=current_time, dt=f.Constant(3))
         for export in my_export.exports:
-            assert not os.path.exists("{}/{}_{}.txt".format(my_export.folder, export.label, current_time))
+            assert not os.path.exists("{}/{}_{}s.txt".format(my_export.folder, export.label, current_time))
 
     def test_dt_is_changed(self, my_export, label_to_function):
         current_time = 1
