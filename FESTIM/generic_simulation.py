@@ -559,7 +559,7 @@ class Simulation():
         return need_solute
 
     def make_output(self):
-
+        self.update_post_processing_solutions()
         output = dict()  # Final output
         # Compute error
         if "error" in self.parameters["exports"].keys():

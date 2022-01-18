@@ -104,7 +104,6 @@ def test_output_of_run_without_traps_no_chemical_pot():
 
     retention_expected = fenics.project(val_solute, V_CG1)
     my_sim.u = solute
-    my_sim.update_self_processing_solutions()
     my_sim.exports = FESTIM.Exports([])
 
     # run
@@ -156,7 +155,6 @@ def test_output_of_run_without_traps_with_chemical_pot():
 
     retention_expected = fenics.project(val_solute, V_CG1)
     my_sim.u = solute
-    my_sim.update_self_processing_solutions()
     my_sim.exports = FESTIM.Exports([])
     # run
     output = my_sim.make_output()
@@ -229,7 +227,6 @@ def test_output_of_run_with_traps_with_chemical_pot():
     fenics.assign(u.sub(2), trap_2)
 
     my_sim.u = u
-    my_sim.update_self_processing_solutions()
     # run
     output = my_sim.make_output()
 
