@@ -518,6 +518,9 @@ class Simulation():
                     export.append = True
 
             elif isinstance(export, FESTIM.TXTExport):
+                # if not a Function, project it onto V_DG1
+                if not isinstance(label_to_function["retention"], Function):
+                    label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
                 export.write(label_to_function, self.t, self.dt)
 
     def update_self_processing_solutions(self):
