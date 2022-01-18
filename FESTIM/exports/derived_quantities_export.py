@@ -161,6 +161,7 @@ class DerivedQuantities(Export):
         return header
 
     def assign_measures_to_quantities(self, dx, ds):
+        self.volume_markers = dx.subdomain_data()
         for quantity in self.derived_quantities:
             quantity.dx = dx
             quantity.ds = ds
@@ -179,8 +180,17 @@ class DerivedQuantities(Export):
             quantity.T = T
 
     def compute(self, t, label_to_function):
+        # TODO no need to do that at each iteration
         self.assign_functions_to_quantities(label_to_function)
-        self.data.append([t] + [quantity.compute() for quantity in self.derived_quantities])
+
+        # TODO need to support for soret flag in surface flux
+        row = [t]
+        for quantity in self.derived_quantities:
+            if isinstance(quantity, (MaximumVolume, MinimumVolume)):
+                row.append(quantity.compute(self.volume_markers))
+            else:
+                row.append(quantity.compute())
+        self.data.append(row)
 
     def write(self):
         if self.file is not None:
