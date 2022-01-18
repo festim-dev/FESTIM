@@ -379,7 +379,6 @@ class Simulation():
                 self.bcs, self.parameters["solving_parameters"], J=self.J)
 
             # Post processing
-            self.update_self_processing_solutions()
             self.run_post_processing()
             elapsed_time = round(self.timer.elapsed()[0], 1)
 
@@ -455,7 +454,6 @@ class Simulation():
                 solve(trap.form_density == 0, trap.density[0], [])
 
         # Post processing
-        self.update_self_processing_solutions()
         self.run_post_processing()
 
         # Update previous solutions
@@ -472,7 +470,7 @@ class Simulation():
     def run_post_processing(self):
         """Main post processing FESTIM function.
         """
-
+        self.update_self_processing_solutions()
         label_to_function = {
             "solute": self.mobile.post_processing_solution,
             "0": self.mobile.post_processing_solution,
