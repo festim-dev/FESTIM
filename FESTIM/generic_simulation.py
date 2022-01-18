@@ -1,8 +1,6 @@
-from time import time
 import FESTIM
 from fenics import *
 import sympy as sp
-import numpy as np
 
 
 class Simulation():
