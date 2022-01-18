@@ -2,6 +2,7 @@ from FESTIM import DerivedQuantities, SurfaceFlux, AverageVolume, \
     TotalSurface, TotalVolume, MaximumVolume, MinimumVolume
 import fenics as f
 import os
+from pathlib import Path
 
 
 class TestMakeHeader:
@@ -235,12 +236,12 @@ class TestCompute:
         assert self.my_derv_quant.data[0] == expected_data
 
 
-def test_write():
+def test_write(tmpdir):
     """adds data to DerivedQuantities and checks that write() creates the csv
     file
     """
     file = "my_file"
-    folder = "my_folder"
+    folder = str(Path(tmpdir.mkdir("test_folder")))
     my_derv_quant = DerivedQuantities(file=file, folder=folder)
     my_derv_quant.data = [
         ["a", "b", "c"],
