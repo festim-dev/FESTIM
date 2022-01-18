@@ -431,6 +431,7 @@ class Simulation():
         print(msg, end="\r")
 
         # Solve heat transfers
+        # TODO this could be a method of Temperature()
         if self.T.type == "solve_transient":
             dT = TrialFunction(self.T.T.function_space())
             JT = derivative(self.T.F, self.T.T, dT)  # Define the Jacobian
