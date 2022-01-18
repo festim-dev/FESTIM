@@ -508,7 +508,7 @@ class Simulation():
 
             elif isinstance(export, FESTIM.XDMFExport):
                 if FESTIM.is_export_xdmf(self, export):
-                    if export.function == "retention":
+                    if export.field == "retention":
                         # if not a Function, project it onto V_DG1
                         if not isinstance(label_to_function["retention"], Function):
                             label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
@@ -517,8 +517,9 @@ class Simulation():
 
             elif isinstance(export, FESTIM.TXTExport):
                 # if not a Function, project it onto V_DG1
-                if not isinstance(label_to_function["retention"], Function):
-                    label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
+                if export.field == "retention":
+                    if not isinstance(label_to_function["retention"], Function):
+                        label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
                 export.write(label_to_function, self.t, self.dt)
 
     def update_post_processing_solutions(self):
@@ -553,7 +554,7 @@ class Simulation():
                     need_solute = True
         if "xdmf" in self.parameters["exports"].keys():
             functions_to_exports = \
-                self.parameters["exports"]["xdmf"]["functions"]
+                self.parameters["exports"]["xdmf"]["fields"]
             if any(x in functions_to_exports for x in ["0", "solute"]):
                 need_solute = True
         return need_solute

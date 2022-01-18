@@ -78,7 +78,7 @@ def test_run_temperature_stationary(tmpdir):
         "exports": {
             "parameters":  str(Path(d)) + "/param.json",
             "xdmf": {
-                    "functions": ['T', 'solute'],
+                    "fields": ['T', 'solute'],
                     "labels":  ['temperature', 'solute'],
                     "folder": str(Path(d))
             },
@@ -185,7 +185,7 @@ def test_run_temperature_transient(tmpdir):
             },
         "exports": {
             "xdmf": {
-                    "functions": ['T'],
+                    "fields": ['T'],
                     "labels":  ['temperature'],
                     "folder": str(Path(d))
             },
@@ -307,7 +307,7 @@ def test_run_MMS(tmpdir):
                 },
             "exports": {
                 "xdmf": {
-                    "functions": ['retention'],
+                    "fields": ['retention'],
                     "labels": ['retention'],
                     "folder": str(Path(d))
                 },
@@ -445,7 +445,7 @@ def test_run_MMS_chemical_pot(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
+                    "fields": [],
                     "times": [],
                     "labels": [],
                     "folder": str(Path(d))
@@ -536,7 +536,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
             },
         "exports": {
             "xdmf": {
-                "functions": ["retention"],
+                "fields": ["retention"],
                 "labels": ["retention"],
                 "folder": str(Path(d))
             },
@@ -649,13 +649,13 @@ def test_run_MMS_soret(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
+                    "fields": [],
                     "times": [],
                     "labels": [],
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": [0, 'T'],
+                    "fields": [0, 'T'],
                     "labels": ["solute", 'T'],
                     "folder": str(Path(d))
                 },
@@ -773,13 +773,13 @@ def test_run_MMS_steady_state(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
+                    "fields": [],
                     "times": [],
                     "labels": [],
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": ['solute', '1', 'T', 'retention'],
+                    "fields": ['solute', '1', 'T', 'retention'],
                     "labels":  ['solute', '1', 'temp', 'retention'],
                     "folder": str(Path(d))
                 },
@@ -885,7 +885,7 @@ def test_chemical_pot_T_solve_stationary():
                 ]
             },
             "xdmf": {
-                "functions": ['solute'],
+                "fields": ['solute'],
                 "labels": ["solute"],
                 "folder": 'results',
             },
@@ -935,7 +935,7 @@ def test_performance_xdmf(tmpdir):
             },
         "exports": {
             "xdmf": {
-                    "functions": ['retention', 'T'],
+                    "fields": ['retention', 'T'],
                     "labels":  ['retention', 'temperature'],
                     "folder": str(Path(d))
             },
@@ -997,7 +997,7 @@ def test_performance_xdmf_last_timestep(tmpdir):
             },
         "exports": {
             "xdmf": {
-                    "functions": ['retention', 'T'],
+                    "fields": ['retention', 'T'],
                     "labels":  ['retention', 'temperature'],
                     "folder": str(Path(d))
             },

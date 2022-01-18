@@ -119,14 +119,14 @@ class TotalSurface(DerivedQuantity):
         return f.assemble(self.solution*self.ds(self.surface))
 
 
-class DerivedQuantities(Export):
+class DerivedQuantities:
     def __init__(self, file=None, folder=None, nb_iterations_between_compute=1, nb_iterations_between_exports=1, **derived_quantities) -> None:
-        super().__init__()
         self.file = file
         self.folder = folder
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
         self.derived_quantities = []
+        # TODO remove this
         self.make_derived_quantities(derived_quantities)
         self.data = [self.make_header()]
 

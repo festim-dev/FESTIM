@@ -18,7 +18,7 @@ class TestListXDMFExports:
 
     def test_function_attributes(self):
         for export, function in zip(self.my_exports.xdmf_exports, self.functions):
-            assert export.function == function
+            assert export.field == function
 
     def test_label_attributes(self):
         for export, label in zip(self.my_exports.xdmf_exports, self.labels):

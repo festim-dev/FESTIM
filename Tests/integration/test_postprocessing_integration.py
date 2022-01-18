@@ -148,7 +148,7 @@ class TestPostProcessing:
     def test_performance_xdmf_export_every_N_iterations(self, my_sim, tmpdir):
         d = tmpdir.mkdir("test_folder")
         my_sim.exports.exports = FESTIM.XDMFExports(
-                functions=["solute", "T"],
+                fields=["solute", "T"],
                 labels=['solute', 'temperature'],
                 folder=str(Path(d))).xdmf_exports
 
@@ -183,7 +183,7 @@ class TestPostProcessing:
     def test_xdmf_export_only_last_timestep(self, my_sim, tmpdir):
         d = tmpdir.mkdir("test_folder")
         my_sim.exports.exports = FESTIM.XDMFExports(
-                functions=["solute", "T"],
+                fields=["solute", "T"],
                 labels=['solute', 'temperature'],
                 last_timestep_only=True,
                 folder=str(Path(d))).xdmf_exports

@@ -1,10 +1,11 @@
 import fenics as f
 import numpy as np
+import FESTIM
 
 
-class TXTExport:
-    def __init__(self, function, times, label, folder) -> None:
-        self.function = function
+class TXTExport(FESTIM.Export):
+    def __init__(self, field, times, label, folder) -> None:
+        super().__init__(field=field)
         self.times = sorted(times)
         self.label = label
         self.folder = folder
@@ -23,7 +24,7 @@ class TXTExport:
         return None
 
     def write(self, label_to_function, current_time, dt):
-        solution = label_to_function[self.function]
+        solution = label_to_function[self.field]
 
         # create a DG1 functionspace
         V_DG1 = f.FunctionSpace(solution.function_space().mesh(), "DG", 1)
@@ -51,16 +52,16 @@ class TXTExport:
 
 
 class TXTExports:
-    def __init__(self, functions, times, labels, folder) -> None:
-        if len(functions) != len(labels):
-            raise NameError("Number of functions to be exported "
+    def __init__(self, fields, times, labels, folder) -> None:
+        if len(fields) != len(labels):
+            raise NameError("Number of fields to be exported "
                             "doesn't match number of labels in txt exports")
-        self.functions = functions
+        self.fields = fields
         self.times = sorted(times)
         self.labels = labels
         self.folder = folder
         self.exports = []
-        for function, label in zip(self.functions, self.labels):
+        for function, label in zip(self.fields, self.labels):
             self.exports.append(TXTExport(function, times, label, folder))
 
     def write(self, label_to_function, current_time, dt):

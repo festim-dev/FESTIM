@@ -4,8 +4,8 @@ import json
 
 
 class Export:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, field=None) -> None:
+        self.field = field
 
 
 class Exports:

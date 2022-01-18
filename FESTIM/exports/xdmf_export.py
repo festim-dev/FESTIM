@@ -3,9 +3,8 @@ import fenics as f
 
 
 class XDMFExport(Export):
-    def __init__(self, function, label, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
-        super().__init__()
-        self.function = function
+    def __init__(self, field, label, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
+        super().__init__(field=field)
         self.label = label
         self.folder = folder
         if self.folder == "":
@@ -31,7 +30,7 @@ class XDMFExport(Export):
         self.file.parameters["rewrite_function_mesh"] = False
 
     def write(self, label_to_function, t):
-        solution = label_to_function[self.function]
+        solution = label_to_function[self.field]
         solution.rename(self.label, "label")
 
         if self.checkpoint:
@@ -43,9 +42,9 @@ class XDMFExport(Export):
 
 
 class XDMFExports:
-    def __init__(self, functions, labels, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
-        if len(functions) != len(labels):
-            raise ValueError("Number of functions to be exported "
+    def __init__(self, fields, labels, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
+        if len(fields) != len(labels):
+            raise ValueError("Number of fields to be exported "
                              "doesn't match number of labels in xdmf exports")
         self.xdmf_exports = [
             XDMFExport(
@@ -53,5 +52,5 @@ class XDMFExports:
                 last_timestep_only=last_timestep_only,
                 nb_iterations_between_exports=nb_iterations_between_exports,
                 checkpoint=checkpoint)
-            for function, label in zip(functions, labels)
+            for function, label in zip(fields, labels)
         ]
