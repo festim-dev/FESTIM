@@ -545,19 +545,15 @@ class Simulation():
 
     def need_projecting_solute(self):
         need_solute = False  # initialises to false
-        if "derived_quantities" in self.parameters["exports"].keys():
-            derived_quantities_prm = self.parameters["exports"]["derived_quantities"]
-            if "surface_flux" in derived_quantities_prm:
-                if any(
-                    x["field"] in ["0", "solute"]
-                        for x in derived_quantities_prm["surface_flux"]
-                        ):
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                for quantity in export.derived_quantities:
+                    if isinstance(quantity, FESTIM.SurfaceFlux):
+                        if export.field in ["0", 0, "solute"]:
+                            need_solute = True
+            elif isinstance(export, FESTIM.XDMFExport):
+                if export.field in ["0", 0, "solute"]:
                     need_solute = True
-        if "xdmf" in self.parameters["exports"].keys():
-            functions_to_exports = \
-                self.parameters["exports"]["xdmf"]["fields"]
-            if any(x in functions_to_exports for x in ["0", "solute"]):
-                need_solute = True
         return need_solute
 
     def make_output(self):
