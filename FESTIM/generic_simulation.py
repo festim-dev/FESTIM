@@ -521,7 +521,8 @@ class Simulation():
                 if export.field == "retention":
                     if not isinstance(label_to_function["retention"], Function):
                         label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
-                export.write(label_to_function, self.t, self.dt)
+                export.solution = label_to_function[export.field]
+                export.write(self.t, self.dt)
 
     def update_post_processing_solutions(self):
         if self.u.function_space().num_sub_spaces() == 0:

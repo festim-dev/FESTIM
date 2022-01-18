@@ -23,13 +23,12 @@ class TXTExport(FESTIM.Export):
                 return time
         return None
 
-    def write(self, label_to_function, current_time, dt):
-        solution = label_to_function[self.field]
+    def write(self, current_time, dt):
 
         # create a DG1 functionspace
-        V_DG1 = f.FunctionSpace(solution.function_space().mesh(), "DG", 1)
+        V_DG1 = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
 
-        solution = f.project(solution, V_DG1)
+        solution = f.project(self.function, V_DG1)
         if self.is_it_time_to_export(current_time):
             filename = "{}/{}_{}s.txt".format(self.folder, self.label, current_time)
             busy = True
@@ -45,6 +44,7 @@ class TXTExport(FESTIM.Export):
                           "Please close the application then press any key.")
                     input()
 
+        #  TODO maybe this should be in another method
         next_time = self.when_is_next_time(current_time)
         if next_time is not None:
             if current_time + float(dt) > next_time:
@@ -63,7 +63,3 @@ class TXTExports:
         self.exports = []
         for function, label in zip(self.fields, self.labels):
             self.exports.append(TXTExport(function, times, label, folder))
-
-    def write(self, label_to_function, current_time, dt):
-        for export in self.exports:
-            export.write(label_to_function, current_time, dt)

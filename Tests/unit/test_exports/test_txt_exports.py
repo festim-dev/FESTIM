@@ -13,35 +13,6 @@ class TestWrite:
 
         return my_export
 
-    @pytest.fixture
-    def label_to_function(self):
-        mesh = f.UnitIntervalMesh(10)
-        V = f.FunctionSpace(mesh, "P", 1)
-        u = f.Function(V)
-        T = f.Function(V)
-
-        return {"solute": u, "T": T}
-
     def test_txt_exports_times(self, my_export):
         for export in my_export.exports:
             assert export.times == my_export.times
-
-    def test_file_exists(self, my_export, label_to_function):
-        current_time = 1
-        my_export.write(label_to_function, current_time=current_time, dt=f.Constant(3))
-        for export in my_export.exports:
-            assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, export.label, current_time))
-
-    def test_file_doesnt_exist(self, my_export, label_to_function):
-        current_time = 10
-        my_export.write(label_to_function, current_time=current_time, dt=f.Constant(3))
-        for export in my_export.exports:
-            assert not os.path.exists("{}/{}_{}s.txt".format(my_export.folder, export.label, current_time))
-
-    def test_dt_is_changed(self, my_export, label_to_function):
-        current_time = 1
-        initial_value = 10
-        dt = f.Constant(initial_value)
-        my_export.write(label_to_function, current_time=current_time, dt=dt)
-
-        assert float(dt) == 2 - current_time

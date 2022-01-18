@@ -7,20 +7,20 @@ from pathlib import Path
 
 class TestWrite:
     @pytest.fixture
-    def label_to_function(self):
+    def function(self):
         mesh = f.UnitIntervalMesh(10)
         V = f.FunctionSpace(mesh, "P", 1)
         u = f.Function(V)
 
-        return {"solute": u}
+        return u
 
     @pytest.fixture
-    def label_to_function_subspace(self):
+    def function_subspace(self):
         mesh = f.UnitIntervalMesh(10)
         V = f.VectorFunctionSpace(mesh, "P", 1, 2)
         u = f.Function(V)
 
-        return {"solute": u.sub(0)}
+        return u.sub(0)
 
     @pytest.fixture
     def my_export(self, tmpdir):
@@ -29,29 +29,33 @@ class TestWrite:
 
         return my_export
 
-    def test_file_exists(self, my_export, label_to_function):
+    def test_file_exists(self, my_export, function):
         current_time = 1
-        my_export.write(label_to_function, current_time=current_time, dt=f.Constant(3))
+        my_export.function = function
+        my_export.write(current_time=current_time, dt=f.Constant(3))
 
         assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
-    def test_file_doesnt_exist(self, my_export, label_to_function):
+    def test_file_doesnt_exist(self, my_export, function):
         current_time = 10
-        my_export.write(label_to_function, current_time=current_time, dt=f.Constant(3))
+        my_export.function = function
+        my_export.write(current_time=current_time, dt=f.Constant(3))
 
         assert not os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
-    def test_dt_is_changed(self, my_export, label_to_function):
+    def test_dt_is_changed(self, my_export, function):
         current_time = 1
         initial_value = 10
+        my_export.function = function
         dt = f.Constant(initial_value)
-        my_export.write(label_to_function, current_time=current_time, dt=dt)
+        my_export.write(current_time=current_time, dt=dt)
 
         assert float(dt) == my_export.when_is_next_time(current_time) - current_time
 
-    def test_subspace(self, my_export, label_to_function_subspace):
+    def test_subspace(self, my_export, function_subspace):
         current_time = 1
-        my_export.write(label_to_function_subspace, current_time=current_time, dt=f.Constant(3))
+        my_export.function = function_subspace
+        my_export.write(current_time=current_time, dt=f.Constant(3))
 
         assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
