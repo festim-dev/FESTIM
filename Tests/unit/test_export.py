@@ -1,5 +1,4 @@
-from FESTIM.export import write_to_csv, export_parameters, \
-                          treat_value
+from FESTIM.export import export_parameters, treat_value
 from FESTIM import x
 import FESTIM
 import fenics
