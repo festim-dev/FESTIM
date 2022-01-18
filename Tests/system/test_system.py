@@ -445,9 +445,9 @@ def test_run_MMS_chemical_pot(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "fields": [],
-                    "times": [],
-                    "labels": [],
+                    "functions": ["solute"],
+                    "times": [100],
+                    "labels": ["solute"],
                     "folder": str(Path(d))
                 },
                 "error": [
