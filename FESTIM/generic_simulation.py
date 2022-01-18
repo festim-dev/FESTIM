@@ -470,7 +470,7 @@ class Simulation():
     def run_post_processing(self):
         """Main post processing FESTIM function.
         """
-        self.update_self_processing_solutions()
+        self.update_post_processing_solutions()
         label_to_function = {
             "solute": self.mobile.post_processing_solution,
             "0": self.mobile.post_processing_solution,
@@ -521,7 +521,7 @@ class Simulation():
                     label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
                 export.write(label_to_function, self.t, self.dt)
 
-    def update_self_processing_solutions(self):
+    def update_post_processing_solutions(self):
         if self.u.function_space().num_sub_spaces() == 0:
             res = [self.u]
         else:
