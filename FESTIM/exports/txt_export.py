@@ -23,10 +23,11 @@ class TXTExport:
         return None
 
     def write(self, label_to_function, current_time, dt):
+        solution = label_to_function[self.function]
+
         # create a DG1 functionspace
         V_DG1 = f.FunctionSpace(solution.function_space().mesh(), "DG", 1)
 
-        solution = label_to_function[self.function]
         solution = f.project(solution, V_DG1)
         if self.is_it_time_to_export(current_time):
             filename = "{}/{}_{}.txt".format(self.folder, self.label, current_time)
