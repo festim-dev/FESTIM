@@ -1,6 +1,7 @@
 from FESTIM import DerivedQuantities, SurfaceFlux, AverageVolume, \
     TotalSurface, TotalVolume, MaximumVolume, MinimumVolume
 import fenics as f
+import os
 
 
 class TestMakeHeader:
@@ -232,3 +233,20 @@ class TestCompute:
         self.my_derv_quant.compute(t, self.label_to_function)
 
         assert self.my_derv_quant.data[0] == expected_data
+
+
+def test_write():
+    """adds data to DerivedQuantities and checks that write() creates the csv
+    file
+    """
+    file = "my_file"
+    folder = "my_folder"
+    my_derv_quant = DerivedQuantities(file=file, folder=folder)
+    my_derv_quant.data = [
+        ["a", "b", "c"],
+        [1, 2, 3],
+        [1, 2, 3],
+    ]
+    my_derv_quant.write()
+
+    assert os.path.exists(folder + "/" + file + ".csv")
