@@ -549,7 +549,7 @@ class Simulation():
             if isinstance(export, FESTIM.DerivedQuantities):
                 for quantity in export.derived_quantities:
                     if isinstance(quantity, FESTIM.SurfaceFlux):
-                        if export.field in ["0", 0, "solute"]:
+                        if quantity.field in ["0", 0, "solute"]:
                             need_solute = True
             elif isinstance(export, FESTIM.XDMFExport):
                 if export.field in ["0", 0, "solute"]:
