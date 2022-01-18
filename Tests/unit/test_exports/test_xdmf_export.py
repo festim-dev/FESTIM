@@ -12,7 +12,6 @@ def folder(tmpdir):
 def test_define_file_upon_construction(folder):
     mesh = f.UnitIntervalMesh(10)
     label = "my_label"
-    # folder = str(Path(tmpdir.mkdir("test_folder")))
     my_xdmf = XDMFExport("solute", label, folder)
 
     my_xdmf.file.write(mesh)
@@ -44,14 +43,18 @@ class TestWrite:
 
     def test_no_checkpoint_no_error(self, folder):
         my_xdmf = XDMFExport("solute", "foo", folder)
-        my_xdmf.write(self.label_to_function, t=2)
+        my_xdmf.function = self.u
+
+        my_xdmf.write(t=2)
 
     def test_no_checkpoint_error_on_read(self, folder):
         """checks that without checkpointing one cannot read the
         xdmf file
         """
         my_xdmf = XDMFExport("solute", "foo", folder, checkpoint=False)
-        my_xdmf.write(self.label_to_function, t=2)
+        my_xdmf.function = self.u
+
+        my_xdmf.write(t=2)
         u2 = f.Function(self.V)
         with pytest.raises(TypeError, match="incompatible function arguments"):
             my_xdmf.file.read(u2)
@@ -60,6 +63,8 @@ class TestWrite:
         """checks that the xdmf file can be read with checkpointing
         """
         my_xdmf = XDMFExport("solute", "foo", folder)
-        my_xdmf.write(self.label_to_function, t=2)
+        my_xdmf.function = self.u
+
+        my_xdmf.write(t=2)
         u2 = f.Function(self.V)
         my_xdmf.file.read_checkpoint(u2, "foo", 0)

@@ -501,7 +501,7 @@ class Simulation():
                     quantity.function = label_to_function[quantity.field]
                 # compute derived quantities
                 if self.nb_iterations % export.nb_iterations_between_compute == 0:
-                    export.compute(self.t, label_to_function)
+                    export.compute(self.t)
                 # export derived quantities
                 if FESTIM.is_export_derived_quantities(self, export):
                     export.write()
@@ -512,7 +512,8 @@ class Simulation():
                         # if not a Function, project it onto V_DG1
                         if not isinstance(label_to_function["retention"], Function):
                             label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
-                    export.write(label_to_function, self.t)
+                    export.function = label_to_function[export.field]
+                    export.write(self.t)
                     export.append = True
 
             elif isinstance(export, FESTIM.TXTExport):

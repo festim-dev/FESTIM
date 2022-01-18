@@ -29,16 +29,15 @@ class XDMFExport(Export):
         self.file.parameters["flush_output"] = True
         self.file.parameters["rewrite_function_mesh"] = False
 
-    def write(self, label_to_function, t):
-        solution = label_to_function[self.field]
-        solution.rename(self.label, "label")
+    def write(self, t):
+        self.function.rename(self.label, "label")
 
         if self.checkpoint:
             self.file.write_checkpoint(
-                solution, self.label, t, f.XDMFFile.Encoding.HDF5,
+                self.function, self.label, t, f.XDMFFile.Encoding.HDF5,
                 append=self.append)
         else:
-            self.file.write(solution, t)
+            self.file.write(self.function, t)
 
 
 class XDMFExports:

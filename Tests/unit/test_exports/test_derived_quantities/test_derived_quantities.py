@@ -168,7 +168,7 @@ class TestCompute:
         expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
 
         self.my_derv_quant.data = []
-        self.my_derv_quant.compute(t, self.label_to_function)
+        self.my_derv_quant.compute(t)
 
         assert self.my_derv_quant.data[0] == expected_data
 
@@ -186,7 +186,7 @@ class TestCompute:
         expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
 
         self.my_derv_quant.data = []
-        self.my_derv_quant.compute(t, self.label_to_function)
+        self.my_derv_quant.compute(t)
 
         assert self.my_derv_quant.data[0] == expected_data
 
@@ -213,7 +213,7 @@ class TestCompute:
                 expected_data.append(quantity.compute())
 
         self.my_derv_quant.data = []
-        self.my_derv_quant.compute(t, self.label_to_function)
+        self.my_derv_quant.compute(t)
 
         assert self.my_derv_quant.data[0] == expected_data
 

@@ -173,7 +173,7 @@ class DerivedQuantities:
             quantity.H = H
             quantity.T = T
 
-    def compute(self, t, label_to_function):
+    def compute(self, t):
 
         # TODO need to support for soret flag in surface flux
         row = [t]
