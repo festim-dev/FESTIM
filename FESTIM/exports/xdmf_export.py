@@ -1,3 +1,4 @@
+import warnings
 from FESTIM import Export
 import fenics as f
 
@@ -41,8 +42,15 @@ class XDMFExport(Export):
 
 
 class XDMFExports:
-    def __init__(self, fields, labels, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
-        if len(fields) != len(labels):
+    def __init__(self, fields=[], labels=[], folder=None, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True, functions=[]) -> None:
+        self.fields = fields
+        self.labels = labels
+        if functions != []:
+            self.fields = functions
+            msg = "functions key will be deprecated. Please use fields instead"
+            warnings.warn(msg, DeprecationWarning)
+
+        if len(self.fields) != len(self.labels):
             raise ValueError("Number of fields to be exported "
                              "doesn't match number of labels in xdmf exports")
         self.xdmf_exports = [
@@ -51,5 +59,5 @@ class XDMFExports:
                 last_timestep_only=last_timestep_only,
                 nb_iterations_between_exports=nb_iterations_between_exports,
                 checkpoint=checkpoint)
-            for function, label in zip(fields, labels)
+            for function, label in zip(self.fields, self.labels)
         ]

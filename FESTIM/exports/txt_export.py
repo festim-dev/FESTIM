@@ -1,6 +1,7 @@
 import fenics as f
 import numpy as np
 import FESTIM
+import warnings
 
 
 class TXTExport(FESTIM.Export):
@@ -52,11 +53,16 @@ class TXTExport(FESTIM.Export):
 
 
 class TXTExports:
-    def __init__(self, fields, times, labels, folder) -> None:
-        if len(fields) != len(labels):
+    def __init__(self, fields=[], times=[], labels=[], folder=None, functions=[]) -> None:
+        self.fields = fields
+        if functions != []:
+            self.fields = functions
+            msg = "functions key will be deprecated. Please use fields instead"
+            warnings.warn(msg, DeprecationWarning)
+
+        if len(self.fields) != len(labels):
             raise NameError("Number of fields to be exported "
                             "doesn't match number of labels in txt exports")
-        self.fields = fields
         self.times = sorted(times)
         self.labels = labels
         self.folder = folder
