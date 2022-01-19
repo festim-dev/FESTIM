@@ -27,3 +27,9 @@ class TestListXDMFExports:
     def test_folder_attributes(self):
         for export in self.my_exports.xdmf_exports:
             assert export.folder == self.folder
+
+
+def test_deprecation_warning():
+    with pytest.warns(DeprecationWarning) as record:
+        XDMFExports(functions=["coucou"], labels=["coucou"], folder="my_folder")
+        assert len(record) == 1
