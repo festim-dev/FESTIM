@@ -78,3 +78,8 @@ def test_error_folder_empty_str():
 def test_error_folder_not_a_str():
     with pytest.raises(TypeError, match="type str"):
         XDMFExport("solute", "solute", 2)
+
+
+def test_error_checkpoint_wrong_type():
+    with pytest.raises(TypeError, match="checkpoint should be a bool"):
+        XDMFExport("solute", "solute", "my_folder", checkpoint=2)

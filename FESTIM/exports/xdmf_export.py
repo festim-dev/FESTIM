@@ -19,7 +19,7 @@ class XDMFExport(Export):
         self.checkpoint = checkpoint
         if type(self.checkpoint) != bool:
             raise TypeError(
-                "Unknown value for XDMF checkpoint (True or False)")
+                "checkpoint should be a bool")
 
         self.append = False
 
