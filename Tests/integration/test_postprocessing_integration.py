@@ -13,7 +13,7 @@ class TestPostProcessing:
         my_sim = FESTIM.Simulation({})
         my_sim.t = 0
         my_sim.mesh = FESTIM.MeshFromRefinements(10, 1)
-
+        my_sim.settings = FESTIM.Settings(None, None, final_time=10)
         mat1 = FESTIM.Material(1, D_0=1, E_D=1)
         my_sim.materials = FESTIM.Materials([mat1])
 
