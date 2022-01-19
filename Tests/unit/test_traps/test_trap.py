@@ -24,7 +24,7 @@ class TestCreateTrappingForm:
     my_temp = FESTIM.Temperature("expression", value=100)
     my_temp.create_functions(V)
     dx = f.dx()
-    dt = f.Constant(1)
+    dt = FESTIM.Stepsize(initial_value=1)
 
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
@@ -74,7 +74,7 @@ class TestCreateTrappingForm:
 
         # test
         v = my_trap.test_function
-        expected_form = ((my_trap.solution - my_trap.previous_solution) / self.dt) * my_trap.test_function * self.dx
+        expected_form = ((my_trap.solution - my_trap.previous_solution) / self.dt.value) * my_trap.test_function * self.dx
         expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T) * self.my_mobile.solution \
             * (my_trap.density[0] - my_trap.solution) * \
             v*self.dx(1)
@@ -212,7 +212,7 @@ class TestCreateSourceForm:
     my_temp = FESTIM.Temperature("expression", value=100)
     my_temp.create_functions(V)
     dx = f.dx()
-    dt = f.Constant(1)
+    dt = FESTIM.Stepsize(initial_value=1)
 
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
@@ -244,7 +244,7 @@ class TestCreateForm:
     my_temp = FESTIM.Temperature("expression", value=100)
     my_temp.create_functions(V)
     dx = f.dx()
-    dt = f.Constant(1)
+    dt = FESTIM.Stepsize(initial_value=1)
 
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)

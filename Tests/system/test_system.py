@@ -1345,9 +1345,6 @@ def test_no_jacobian_update():
         "solving_parameters": {
             "final_time": 10,
             "initial_stepsize": 1,
-            "adaptive_stepsize": {
-                "stepsize_change_ratio": 1,
-                },
             "newton_solver": {
                 "absolute_tolerance": 1e-10,
                 "relative_tolerance": 1e-9,

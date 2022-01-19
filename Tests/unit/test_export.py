@@ -139,7 +139,7 @@ def test_output_of_run_without_traps_with_chemical_pot():
     my_sim = FESTIM.Simulation(
         {"boundary_conditions": [], "exports": {}, "traps": []})
     my_sim.mesh = FESTIM.Mesh(mesh)
-    my_sim.chemical_pot = True
+    my_sim.settings.chemical_pot = True
     my_sim.S = fenics.Constant(3)
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
@@ -194,7 +194,7 @@ def test_output_of_run_with_traps_with_chemical_pot():
     ]
     my_sim.traps = FESTIM.Traps(traps)
     my_sim.mesh = FESTIM.Mesh(mesh)
-    my_sim.chemical_pot = True
+    my_sim.settings.chemical_pot = True
     my_sim.S = fenics.Constant(3)
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
