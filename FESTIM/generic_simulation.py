@@ -20,6 +20,7 @@ class Simulation():
         self.traps = None
         self.materials = None
         self.boundary_conditions = None
+        self.initial_conditions = None
         self.bcs = None
         self.T = None
         self.exports = None
@@ -43,6 +44,7 @@ class Simulation():
         self.create_boundarycondition_objects()
         self.create_materials()
         self.create_temperature()
+        self.create_initial_conditions()
         self.define_mesh()
         self.define_markers()
         self.create_exports()
@@ -159,6 +161,13 @@ class Simulation():
                     self.T.initial_value = self.parameters["temperature"]["initial_condition"]
                 if "source_term" in self.parameters["temperature"]:
                     self.T.source_term = self.parameters["temperature"]["source_term"]
+
+    def create_initial_conditions(self):
+        initial_conditions = []
+        if "initial_conditions" in self.parameters.keys():
+            for condition in self.parameters["initial_conditions"]:
+                initial_conditions.append(FESTIM.InitialCondition(**condition))
+        self.initial_conditions = initial_conditions
 
     def create_exports(self):
         self.exports = FESTIM.Exports([])
@@ -297,36 +306,29 @@ class Simulation():
                 concentration.test_function = list(split(self.v))[i]
 
         print('Defining initial values')
+        field_to_component = {
+            "solute": 0,
+            "0": 0,
+            0: 0,
+        }
+        for i, trap in enumerate(self.traps.traps, 1):
+            field_to_component[trap.id] = i
+            field_to_component[str(trap.id)] = i
 
-        if "initial_conditions" in self.parameters.keys():
-            initial_conditions = self.parameters["initial_conditions"]
-        else:
-            initial_conditions = []
-        FESTIM.check_no_duplicates(initial_conditions)
+        for ini in self.initial_conditions:
+            value = ini.value
+            component = field_to_component[ini.field]
 
-        for ini in initial_conditions:
-            value = ini['value']
-
-            # if initial value from XDMF
-            if type(value) is str and value.endswith(".xdmf"):
-                label = ini['label']
-                time_step = ini['time_step']
-            else:
-                label = None
-                time_step = None
-            # Default component is 0 (solute)
-            if 'component' not in ini:
-                ini["component"] = 0
             if self.V.num_sub_spaces() == 0:
                 functionspace = self.V
             else:
-                functionspace = self.V.sub(ini["component"]).collapse()
+                functionspace = self.V.sub(component).collapse()
 
-            if ini["component"] == 0:
-                self.mobile.initialise(functionspace, value, label=label, time_step=time_step, S=self.S)
+            if component == 0:
+                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step, S=self.S)
             else:
-                trap = self.traps.get_trap(ini["component"])
-                trap.initialise(functionspace, value, label=label, time_step=time_step)
+                trap = self.traps.get_trap(component)
+                trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
 
         # this is needed to correctly create the formulation
         # TODO: write a test for this?

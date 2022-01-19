@@ -7,7 +7,6 @@ from .helpers import update_expressions, help_key, \
     parameters_helper
 
 from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
-from .initialising import check_no_duplicates
 from .temperature import Temperature
 from .boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
@@ -31,7 +30,7 @@ from .post_processing import is_export_derived_quantities, is_export_xdmf, \
 
 from .materials import Material, Materials
 from .concentration import Concentration
-
+from .initial_condition import InitialCondition
 from .mobile import Mobile
 
 from .traps.trap import Trap
