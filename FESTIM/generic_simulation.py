@@ -8,7 +8,6 @@ class Simulation():
         self.parameters = parameters
         self.log_level = log_level
         self.chemical_pot = False
-        self.transient = True
         self.expressions = []
 
         self.dt = Constant(0, name="dt")
@@ -16,6 +15,7 @@ class Simulation():
         self.J = None
 
         self.soret = False
+        self.create_settings()
         self.create_concentration_objects()
         self.create_boundarycondition_objects()
         self.create_materials()
@@ -23,6 +23,38 @@ class Simulation():
         self.define_mesh()
         self.define_markers()
         self.create_exports()
+
+    def create_settings(self):
+        my_settings = FESTIM.Settings(None, None)
+        if "solving_parameters" in self.parameters:
+            # Check if transient
+            solving_parameters = self.parameters["solving_parameters"]
+            if "type" in solving_parameters:
+                if solving_parameters["type"] == "solve_transient":
+                    my_settings.transient = True
+                elif solving_parameters["type"] == "solve_stationary":
+                    my_settings.transient = False
+                    self.dt = None
+                else:
+                    raise ValueError(
+                        str(solving_parameters["type"]) + ' unkown')
+
+            # Declaration of variables
+            if my_settings.transient:
+                my_settings.final_time = solving_parameters["final_time"]
+                initial_stepsize = solving_parameters["initial_stepsize"]
+                self.dt.assign(initial_stepsize)  # time step size
+
+            my_settings.absolute_tolerance = solving_parameters["newton_solver"]["absolute_tolerance"]
+            my_settings.relative_tolerance = solving_parameters["newton_solver"]["relative_tolerance"]
+            my_settings.maximum_iterations = solving_parameters["newton_solver"]["maximum_iterations"]
+            if "traps_element_type" in solving_parameters:
+                my_settings.traps_element_type = solving_parameters["traps_element_type"]
+
+            if "update_jacobian" in solving_parameters:
+                my_settings.update_jacobian = solving_parameters["update_jacobian"]
+
+        self.settings = my_settings
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
@@ -152,25 +184,6 @@ class Simulation():
 
         set_log_level(self.log_level)
 
-        # Check if transient
-        solving_parameters = self.parameters["solving_parameters"]
-        if "type" in solving_parameters.keys():
-            if solving_parameters["type"] == "solve_transient":
-                self.transient = True
-            elif solving_parameters["type"] == "solve_stationary":
-                self.transient = False
-                self.dt = None
-            else:
-                raise ValueError(
-                    str(solving_parameters["type"]) + ' unkown')
-
-        # Declaration of variables
-        if self.transient:
-            self.final_time = solving_parameters["final_time"]
-            initial_stepsize = solving_parameters["initial_stepsize"]
-            self.dt.assign(initial_stepsize)  # time step size
-
-
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
 
@@ -216,12 +229,6 @@ class Simulation():
                 export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
 
     def define_function_spaces(self):
-        trap_element = "CG"  # Default is CG
-        if "solving_parameters" in self.parameters:
-            solving_parameters = self.parameters["solving_parameters"]
-            if "traps_element_type" in solving_parameters.keys():
-                trap_element = solving_parameters["traps_element_type"]
-
         order_trap = 1
         element_solute, order_solute = "CG", 1
 
@@ -234,7 +241,7 @@ class Simulation():
             solute = FiniteElement(
                 element_solute, mesh.ufl_cell(), order_solute)
             traps = FiniteElement(
-                trap_element, mesh.ufl_cell(), order_trap)
+                self.settings.traps_element_type, mesh.ufl_cell(), order_trap)
             element = [solute] + [traps]*nb_traps
             V = FunctionSpace(mesh, MixedElement(element))
         self.V = V
@@ -354,7 +361,7 @@ class Simulation():
 
     def define_variational_problem_extrinsic_traps(self):
         # Define variational problem for extrinsic traps
-        if self.transient:
+        if self.settings.transient:
             self.extrinsic_formulations, expressions_extrinsic = \
                 FESTIM.formulation_extrinsic_traps(self)
             self.expressions.extend(expressions_extrinsic)
@@ -363,17 +370,15 @@ class Simulation():
         self.t = 0  # Initialising time to 0s
         self.timer = Timer()  # start timer
 
-        if self.transient:
+        if self.settings.transient:
             # compute Jacobian before iterating if required
-            solving_params = self.parameters["solving_parameters"]
-            if "update_jacobian" in solving_params:
-                if not solving_params["update_jacobian"]:
-                    du = TrialFunction(self.u.function_space())
-                    self.J = derivative(self.F, self.u, du)
+            if not self.settings.update_jacobian:
+                du = TrialFunction(self.u.function_space())
+                self.J = derivative(self.F, self.u, du)
 
             #  Time-stepping
             print('Time stepping...')
-            while self.t < self.final_time:
+            while self.t < self.settings.final_time:
                 self.iterate()
             # print final message
             elapsed_time = round(self.timer.elapsed()[0], 1)
@@ -431,7 +436,7 @@ class Simulation():
             self.S._T = self.T.T
 
         # Display time
-        simulation_percentage = round(self.t/self.final_time*100, 2)
+        simulation_percentage = round(self.t/self.settings.final_time*100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = '{:.1f} %        '.format(simulation_percentage)
@@ -475,8 +480,8 @@ class Simulation():
         self.nb_iterations += 1
 
         # avoid t > final_time
-        if self.t + float(self.dt) > self.final_time:
-            self.dt.assign(self.final_time - self.t)
+        if self.t + float(self.dt) > self.settings.final_time:
+            self.dt.assign(self.settings.final_time - self.t)
 
     def run_post_processing(self):
         """Main post processing FESTIM function.
