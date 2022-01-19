@@ -8,5 +8,5 @@ class InitialCondition:
         if component is not None:
             self.field = component
             warnings.warn("components key will be deprecated", DeprecationWarning)
-        self.label = None
-        self.time_step = None
+        self.label = label
+        self.time_step = time_step
