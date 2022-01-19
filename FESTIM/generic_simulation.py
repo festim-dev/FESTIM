@@ -13,7 +13,6 @@ class Simulation():
         self.nb_iterations = 0
         self.J = None
 
-        self.soret = False
         self.create_settings()
         self.create_stepsize()
         self.create_concentration_objects()
@@ -67,6 +66,9 @@ class Simulation():
 
             if "update_jacobian" in solving_parameters:
                 my_settings.update_jacobian = solving_parameters["update_jacobian"]
+
+            if "soret" in self.parameters["temperature"]:
+                my_settings.soret = self.parameters["temperature"]["soret"]
 
         self.settings = my_settings
 
@@ -203,11 +205,6 @@ class Simulation():
 
         # Define temperature
         self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
-
-        # check if the soret effect has to be taken into account
-        if "soret" in self.parameters["temperature"]:
-            if self.parameters["temperature"]["soret"]:
-                self.soret = True
 
         # Create functions for properties
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
