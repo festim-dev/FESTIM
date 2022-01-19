@@ -68,3 +68,13 @@ class TestWrite:
         my_xdmf.write(t=2)
         u2 = f.Function(self.V)
         my_xdmf.file.read_checkpoint(u2, "foo", 0)
+
+
+def test_error_folder_empty_str():
+    with pytest.raises(ValueError, match="empty string"):
+        XDMFExport("solute", "solute", "")
+
+
+def test_error_folder_not_a_str():
+    with pytest.raises(TypeError, match="type str"):
+        XDMFExport("solute", "solute", 2)
