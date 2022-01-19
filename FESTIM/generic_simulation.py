@@ -92,7 +92,7 @@ class Simulation():
 
     def create_exports(self):
         self.exports = FESTIM.Exports([])
-        if "exports" in parameters:
+        if "exports" in self.parameters:
             if "xdmf" in self.parameters["exports"]:
                 my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
                 self.exports.exports += my_xdmf_exports.xdmf_exports
