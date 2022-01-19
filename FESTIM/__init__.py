@@ -31,7 +31,7 @@ from .post_processing import is_export_derived_quantities, is_export_xdmf, \
 
 from .materials import Material, Materials
 from .concentration import Concentration
-
+from .initial_condition import InitialCondition
 from .mobile import Mobile
 
 from .traps.trap import Trap
