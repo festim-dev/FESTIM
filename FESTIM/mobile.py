@@ -49,7 +49,7 @@ class Mobile(Concentration):
             for subdomain in subdomains:
                 # transient form
                 if dt is not None:
-                    F += ((c_0-c_0_n)/dt)*self.test_function*dx(subdomain)
+                    F += ((c_0-c_0_n)/dt.value)*self.test_function*dx(subdomain)
                 F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
                         grad(self.test_function))*dx(subdomain)
                 if soret:
@@ -62,7 +62,7 @@ class Mobile(Concentration):
         if dt is not None:
             if traps is not None:
                 for trap in traps.traps:
-                    F += ((trap.solution - trap.previous_solution) / dt) * \
+                    F += ((trap.solution - trap.previous_solution) / dt.value) * \
                         self.test_function * dx
         self.F_diffusion = F
         self.F += F

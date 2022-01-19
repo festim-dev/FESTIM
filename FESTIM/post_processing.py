@@ -6,7 +6,7 @@ import FESTIM
 
 def is_export_xdmf(simulation, export):
     if (export.last_time_step_only and
-        simulation.t >= simulation.final_time) or \
+        simulation.t >= simulation.settings.final_time) or \
             not export.last_time_step_only:
         if simulation.nb_iterations % \
                 export.nb_iterations_between_exports == 0:
@@ -26,12 +26,12 @@ def is_export_derived_quantities(simulation, derived_quantities):
     Returns:
         bool: True if the derived quantities should be exported, else False
     """
-    if simulation.transient:
+    if simulation.settings.transient:
         nb_its_between_exports = \
             derived_quantities.nb_iterations_between_exports
         if nb_its_between_exports is None:
             # export at the end
-            return simulation.t >= simulation.final_time
+            return simulation.t >= simulation.settings.final_time
         else:
             # export every N iterations
             return simulation.nb_iterations % nb_its_between_exports == 0

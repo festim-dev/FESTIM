@@ -10,10 +10,10 @@ import pytest
 class TestPostProcessing:
     @pytest.fixture
     def my_sim(self):
-        my_sim = FESTIM.Simulation({"solving_parameters": {}})
+        my_sim = FESTIM.Simulation({})
         my_sim.t = 0
         my_sim.mesh = FESTIM.MeshFromRefinements(10, 1)
-
+        my_sim.settings = FESTIM.Settings(None, None, final_time=10)
         mat1 = FESTIM.Material(1, D_0=1, E_D=1)
         my_sim.materials = FESTIM.Materials([mat1])
 
@@ -187,12 +187,12 @@ class TestPostProcessing:
                 labels=['solute', 'temperature'],
                 last_timestep_only=True,
                 folder=str(Path(d))).xdmf_exports
-        my_sim.final_time = 1
+        my_sim.settings.final_time = 1
         my_sim.t = 0
 
         my_sim.run_post_processing()
         assert not path.exists(str(Path(d)) + '/solute.xdmf')
 
-        my_sim.t = my_sim.final_time
+        my_sim.t = my_sim.settings.final_time
         my_sim.run_post_processing()
         assert path.exists(str(Path(d)) + '/solute.xdmf')

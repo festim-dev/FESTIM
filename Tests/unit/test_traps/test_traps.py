@@ -19,7 +19,7 @@ class TestCreateTrappingForms:
     my_temp = FESTIM.Temperature("expression", value=100)
     my_temp.create_functions(V)
     dx = f.dx()
-    dt = f.Constant(1)
+    dt = FESTIM.Stepsize(initial_value=1)
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
     my_mats = FESTIM.Materials([mat1, mat2])

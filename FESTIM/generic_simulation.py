@@ -7,16 +7,38 @@ class Simulation():
     def __init__(self, parameters, log_level=40):
         self.parameters = parameters
         self.log_level = log_level
-        self.chemical_pot = False
-        self.transient = True
         self.expressions = []
-        self.files = []
 
-        self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.J = None
+        self.t = 0  # Initialising time to 0s
+        self.timer = None
 
-        self.soret = False
+        self.settings = None
+        self.dt = None
+        self.mobile = None
+        self.traps = None
+        self.materials = None
+        self.boundary_conditions = None
+        self.bcs = None
+        self.T = None
+        self.exports = None
+        self.mesh = None
+        self.dx, self.ds = None, None
+        self.V, self.V_CG1, self.V_DG1 = None, None, None
+        self.u = None
+        self.v = None
+        self.u_n = None
+
+        self.D = None
+        self.thermal_cond = None
+        self.cp = None
+        self.rho = None
+        self.H = None
+        self.S = None
+
+        self.create_settings()
+        self.create_stepsize()
         self.create_concentration_objects()
         self.create_boundarycondition_objects()
         self.create_materials()
@@ -24,6 +46,54 @@ class Simulation():
         self.define_mesh()
         self.define_markers()
         self.create_exports()
+
+    def create_stepsize(self):
+        if self.settings.transient:
+            self.dt = FESTIM.Stepsize()
+            if "solving_parameters" in self.parameters:
+                solving_parameters = self.parameters["solving_parameters"]
+                self.dt.value.assign(solving_parameters["initial_stepsize"])
+                if "adaptive_stepsize" in solving_parameters:
+                    self.dt.adaptive_stepsize = {}
+                    for key, val in solving_parameters["adaptive_stepsize"].items():
+                        self.dt.adaptive_stepsize[key] = val
+                    if "t_stop" not in solving_parameters["adaptive_stepsize"]:
+                        self.dt.adaptive_stepsize["t_stop"] = None
+                    if "stepsize_stop_max" not in solving_parameters["adaptive_stepsize"]:
+                        self.dt.adaptive_stepsize["stepsize_stop_max"] = None
+
+    def create_settings(self):
+        my_settings = FESTIM.Settings(None, None)
+        if "solving_parameters" in self.parameters:
+            # Check if transient
+            solving_parameters = self.parameters["solving_parameters"]
+            if "type" in solving_parameters:
+                if solving_parameters["type"] == "solve_transient":
+                    my_settings.transient = True
+                elif solving_parameters["type"] == "solve_stationary":
+                    my_settings.transient = False
+                    self.dt = None
+                else:
+                    raise ValueError(
+                        str(solving_parameters["type"]) + ' unkown')
+
+            # Declaration of variables
+            if my_settings.transient:
+                my_settings.final_time = solving_parameters["final_time"]
+
+            my_settings.absolute_tolerance = solving_parameters["newton_solver"]["absolute_tolerance"]
+            my_settings.relative_tolerance = solving_parameters["newton_solver"]["relative_tolerance"]
+            my_settings.maximum_iterations = solving_parameters["newton_solver"]["maximum_iterations"]
+            if "traps_element_type" in solving_parameters:
+                my_settings.traps_element_type = solving_parameters["traps_element_type"]
+
+            if "update_jacobian" in solving_parameters:
+                my_settings.update_jacobian = solving_parameters["update_jacobian"]
+
+            if "soret" in self.parameters["temperature"]:
+                my_settings.soret = self.parameters["temperature"]["soret"]
+
+        self.settings = my_settings
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
@@ -124,8 +194,6 @@ class Simulation():
                 self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
             else:
                 self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
-        else:
-            self.mesh = None
 
     def define_markers(self):
         # Define and mark subdomains
@@ -137,7 +205,7 @@ class Simulation():
 
             self.volume_markers, self.surface_markers = \
                 self.mesh.volume_markers, self.mesh.surface_markers
-
+            # TODO maybe these should be attributes of self.mesh?
             self.ds = Measure(
                 'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
             self.dx = Measure(
@@ -153,35 +221,11 @@ class Simulation():
 
         set_log_level(self.log_level)
 
-        # Check if transient
-        solving_parameters = self.parameters["solving_parameters"]
-        if "type" in solving_parameters.keys():
-            if solving_parameters["type"] == "solve_transient":
-                self.transient = True
-            elif solving_parameters["type"] == "solve_stationary":
-                self.transient = False
-                self.dt = None
-            else:
-                raise ValueError(
-                    str(solving_parameters["type"]) + ' unkown')
-
-        # Declaration of variables
-        if self.transient:
-            self.final_time = solving_parameters["final_time"]
-            initial_stepsize = solving_parameters["initial_stepsize"]
-            self.dt.assign(initial_stepsize)  # time step size
-
-
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
 
         # Define temperature
         self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
-
-        # check if the soret effect has to be taken into account
-        if "soret" in self.parameters["temperature"]:
-            if self.parameters["temperature"]["soret"]:
-                self.soret = True
 
         # Create functions for properties
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
@@ -189,7 +233,7 @@ class Simulation():
                 self.mesh.mesh, self.materials,
                 self.volume_markers, self.T.T)
         if self.S is not None:
-            self.chemical_pot = True
+            self.settings.chemical_pot = True
 
             # if the temperature is of type "solve_stationary" or "expression"
             # the solubility needs to be projected
@@ -217,12 +261,6 @@ class Simulation():
                 export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
 
     def define_function_spaces(self):
-        trap_element = "CG"  # Default is CG
-        if "solving_parameters" in self.parameters:
-            solving_parameters = self.parameters["solving_parameters"]
-            if "traps_element_type" in solving_parameters.keys():
-                trap_element = solving_parameters["traps_element_type"]
-
         order_trap = 1
         element_solute, order_solute = "CG", 1
 
@@ -235,7 +273,7 @@ class Simulation():
             solute = FiniteElement(
                 element_solute, mesh.ufl_cell(), order_solute)
             traps = FiniteElement(
-                trap_element, mesh.ufl_cell(), order_trap)
+                self.settings.traps_element_type, mesh.ufl_cell(), order_trap)
             element = [solute] + [traps]*nb_traps
             V = FunctionSpace(mesh, MixedElement(element))
         self.V = V
@@ -319,7 +357,7 @@ class Simulation():
             if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
                 bc.create_dirichletbc(
                     self.V, self.T.T, self.surface_markers,
-                    chemical_pot=self.chemical_pot,
+                    chemical_pot=self.settings.chemical_pot,
                     materials=self.materials,
                     volume_markers=self.volume_markers)
                 self.bcs += bc.dirichlet_bc
@@ -336,7 +374,7 @@ class Simulation():
         test_solute = split(self.v)[0]
         F = 0
 
-        if self.chemical_pot:
+        if self.settings.chemical_pot:
             solute = solutions[0]*self.S
         else:
             solute = solutions[0]
@@ -355,26 +393,23 @@ class Simulation():
 
     def define_variational_problem_extrinsic_traps(self):
         # Define variational problem for extrinsic traps
-        if self.transient:
+        if self.settings.transient:
             self.extrinsic_formulations, expressions_extrinsic = \
                 FESTIM.formulation_extrinsic_traps(self)
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
-        self.t = 0  # Initialising time to 0s
         self.timer = Timer()  # start timer
 
-        if self.transient:
+        if self.settings.transient:
             # compute Jacobian before iterating if required
-            solving_params = self.parameters["solving_parameters"]
-            if "update_jacobian" in solving_params:
-                if not solving_params["update_jacobian"]:
-                    du = TrialFunction(self.u.function_space())
-                    self.J = derivative(self.F, self.u, du)
+            if not self.settings.update_jacobian:
+                du = TrialFunction(self.u.function_space())
+                self.J = derivative(self.F, self.u, du)
 
             #  Time-stepping
             print('Time stepping...')
-            while self.t < self.final_time:
+            while self.t < self.settings.final_time:
                 self.iterate()
             # print final message
             elapsed_time = round(self.timer.elapsed()[0], 1)
@@ -386,7 +421,7 @@ class Simulation():
 
             nb_iterations, converged = FESTIM.solve_once(
                 self.F, self.u,
-                self.bcs, self.parameters["solving_parameters"], J=self.J)
+                self.bcs, self.settings, J=self.J)
 
             # Post processing
             self.run_post_processing()
@@ -413,7 +448,7 @@ class Simulation():
 
     def iterate(self):
         # Update current time
-        self.t += float(self.dt)
+        self.t += float(self.dt.value)
         FESTIM.update_expressions(
             self.expressions, self.t)
         FESTIM.update_expressions(
@@ -428,11 +463,11 @@ class Simulation():
             self.H._T = self.T.T
         if self.thermal_cond is not None:
             self.thermal_cond._T = self.T.T
-        if self.chemical_pot:
+        if self.settings.chemical_pot:
             self.S._T = self.T.T
 
         # Display time
-        simulation_percentage = round(self.t/self.final_time*100, 2)
+        simulation_percentage = round(self.t/self.settings.final_time*100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = '{:.1f} %        '.format(simulation_percentage)
@@ -458,7 +493,7 @@ class Simulation():
         # Solve main problem
         FESTIM.solve_it(
             self.F, self.u, self.bcs, self.t,
-            self.dt, self.parameters["solving_parameters"], J=self.J)
+            self.dt, self.settings, J=self.J)
 
         # Solve extrinsic traps formulation
         for trap in self.traps.traps:
@@ -476,8 +511,8 @@ class Simulation():
         self.nb_iterations += 1
 
         # avoid t > final_time
-        if self.t + float(self.dt) > self.final_time:
-            self.dt.assign(self.final_time - self.t)
+        if self.t + float(self.dt.value) > self.settings.final_time:
+            self.dt.value.assign(self.settings.final_time - self.t)
 
     def run_post_processing(self):
         """Main post processing FESTIM function.
@@ -495,7 +530,7 @@ class Simulation():
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
         # make the change of variable solute = theta*S
-        if self.chemical_pot:
+        if self.settings.chemical_pot:
             label_to_function["solute"] = self.mobile.solution*self.S  # solute = theta*S = (solute/S) * S
 
             if self.need_projecting_solute():
@@ -540,7 +575,7 @@ class Simulation():
             res = [self.u]
         else:
             res = list(self.u.split())
-        if self.chemical_pot:  # c_m = theta * S
+        if self.settings.chemical_pot:  # c_m = theta * S
             theta = res[0]
             solute = project(theta*self.S, self.V_DG1)
             res[0] = solute

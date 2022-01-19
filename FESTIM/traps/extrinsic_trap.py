@@ -32,7 +32,7 @@ class ExtrinsicTrap(FESTIM.Trap):
         f_a = self.form_parameters["f_a"]
         f_b = self.form_parameters["f_b"]
         density = self.density[0]
-        F = ((density - self.density_previous_solution)/dt) * \
+        F = ((density - self.density_previous_solution)/dt.value) * \
             self.density_test_function*dx
         F += -phi_0*(
             (1 - density/n_amax)*eta_a*f_a +

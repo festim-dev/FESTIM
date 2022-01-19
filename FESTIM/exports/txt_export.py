@@ -48,8 +48,8 @@ class TXTExport(FESTIM.Export):
         #  TODO maybe this should be in another method
         next_time = self.when_is_next_time(current_time)
         if next_time is not None:
-            if current_time + float(dt) > next_time:
-                dt.assign(next_time - current_time)
+            if current_time + float(dt.value) > next_time:
+                dt.value.assign(next_time - current_time)
 
 
 class TXTExports:

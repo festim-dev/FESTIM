@@ -24,7 +24,7 @@ def formulation(simulation):
     simulation.mobile.create_form(
         simulation.materials, simulation.dx, simulation.T, simulation.dt,
         traps=simulation.traps, source_term=source_term,
-        chemical_pot=simulation.chemical_pot, soret=simulation.soret)
+        chemical_pot=simulation.settings.chemical_pot, soret=simulation.settings.soret)
     F += simulation.mobile.F
     expressions += simulation.mobile.sub_expressions
 
@@ -32,7 +32,7 @@ def formulation(simulation):
     simulation.traps.create_forms(
         simulation.mobile, simulation.materials,
         simulation.T, simulation.dx, simulation.dt,
-        simulation.chemical_pot)
+        simulation.settings.chemical_pot)
     F += simulation.traps.F
     expressions += simulation.traps.sub_expressions
 

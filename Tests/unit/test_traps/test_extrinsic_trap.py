@@ -19,7 +19,7 @@ class TestExtrinsicTrap:
     my_trap.density_previous_solution = f.Function(V)
     my_trap.density_test_function = f.TestFunction(V)
     dx = f.dx()
-    dt = f.Constant(1)
+    dt = FESTIM.Stepsize(initial_value=1)
 
     def test_that_form_parameters_are_expressions(self):
         for prm in self.my_trap.form_parameters.values():
@@ -28,7 +28,7 @@ class TestExtrinsicTrap:
     def test_create_form_density(self):
         form_prms = self.my_trap.form_parameters
         density = self.my_trap.density[0]
-        expected_form = (density - self.my_trap.density_previous_solution)/self.dt * self.my_trap.density_test_function*self.dx
+        expected_form = (density - self.my_trap.density_previous_solution)/self.dt.value * self.my_trap.density_test_function*self.dx
         expected_form += -form_prms["phi_0"] * (
             (1 - density/form_prms["n_amax"])*form_prms["eta_a"]*form_prms["f_a"] +
             (1 - density/form_prms["n_bmax"])*form_prms["eta_b"]*form_prms["f_b"] ) * \

@@ -1,4 +1,4 @@
-from FESTIM import TXTExport
+from FESTIM import TXTExport, Stepsize
 import fenics as f
 import os
 import pytest
@@ -32,14 +32,14 @@ class TestWrite:
     def test_file_exists(self, my_export, function):
         current_time = 1
         my_export.function = function
-        my_export.write(current_time=current_time, dt=f.Constant(3))
+        my_export.write(current_time=current_time, dt=Stepsize(initial_value=3))
 
         assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
     def test_file_doesnt_exist(self, my_export, function):
         current_time = 10
         my_export.function = function
-        my_export.write(current_time=current_time, dt=f.Constant(3))
+        my_export.write(current_time=current_time, dt=Stepsize(initial_value=3))
 
         assert not os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
@@ -47,15 +47,15 @@ class TestWrite:
         current_time = 1
         initial_value = 10
         my_export.function = function
-        dt = f.Constant(initial_value)
+        dt = Stepsize(initial_value=initial_value)
         my_export.write(current_time=current_time, dt=dt)
 
-        assert float(dt) == my_export.when_is_next_time(current_time) - current_time
+        assert float(dt.value) == my_export.when_is_next_time(current_time) - current_time
 
     def test_subspace(self, my_export, function_subspace):
         current_time = 1
         my_export.function = function_subspace
-        my_export.write(current_time=current_time, dt=f.Constant(3))
+        my_export.write(current_time=current_time, dt=Stepsize(initial_value=current_time))
 
         assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 

@@ -66,7 +66,7 @@ class Trap(Concentration):
 
         if dt is not None:
             # d(c_t)/dt in trapping equation
-            F_trapping += ((solution - prev_solution) / dt) * test_function * dx
+            F_trapping += ((solution - prev_solution) / dt.value) * test_function * dx
         else:
             # if the sim is steady state and
             # if a trap is not defined in one subdomain

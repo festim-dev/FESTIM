@@ -118,7 +118,7 @@ class TotalSurface(DerivedQuantity):
 
 
 class DerivedQuantities:
-    def __init__(self, file=None, folder=None, nb_iterations_between_compute=1, nb_iterations_between_exports=1, **derived_quantities) -> None:
+    def __init__(self, file=None, folder=None, nb_iterations_between_compute=1, nb_iterations_between_exports=None, **derived_quantities) -> None:
         self.file = file
         self.folder = folder
         self.nb_iterations_between_compute = nb_iterations_between_compute

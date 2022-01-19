@@ -119,7 +119,7 @@ class TestCreateDiffusionForm:
     my_temp = FESTIM.Temperature("expression", value=100)
     my_temp.create_functions(V)
     dx = f.dx()
-    dt = f.Constant(1)
+    dt = FESTIM.Stepsize(initial_value=1)
 
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
@@ -143,7 +143,7 @@ class TestCreateDiffusionForm:
         D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
         c_0 = my_mobile.solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
         c_0_n = my_mobile.previous_solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
-        expected_form = ((c_0-c_0_n)/self.dt)*v*self.dx(1)
+        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.dx(1)
         expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
 
         print("expected F:")
@@ -178,10 +178,10 @@ class TestCreateDiffusionForm:
         D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
         c_0 = my_mobile.solution
         c_0_n = my_mobile.previous_solution
-        expected_form = ((c_0-c_0_n)/self.dt)*v*self.dx(1)
+        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.dx(1)
         expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
         for trap in my_traps.traps:
-            expected_form += ((trap.solution - trap.previous_solution) / self.dt) * \
+            expected_form += ((trap.solution - trap.previous_solution) / self.dt.value) * \
                 v * self.dx
 
         print("expected F:")

@@ -19,7 +19,7 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     my_mats = FESTIM.Materials([mat1, mat2])
     my_temp = FESTIM.Temperature("solve_stationary")
 
-    my_temp.create_functions(V, my_mats, fenics.dx, fenics.ds, dt=2)
+    my_temp.create_functions(V, my_mats, fenics.dx, fenics.ds, dt=FESTIM.Stepsize(initial_value=2))
 
 
 def test_formulation_heat_transfer():
@@ -32,7 +32,7 @@ def test_formulation_heat_transfer():
 
     Index._globalcount = 8
     u = 1 + 2*FESTIM.x**2
-    dt = 2
+    dt = FESTIM.Stepsize(initial_value=2)
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.FunctionSpace(mesh, 'P', 1)
 
@@ -56,7 +56,7 @@ def test_formulation_heat_transfer():
     bc2 = FESTIM.FluxBC(type="flux", surfaces=[2], value=2, component="T")
 
     my_temp = FESTIM.Temperature("solve_transient", bcs=[bc1, bc2], initial_value=0, source_term=[{"value": -4, "volume": 1}])
-    my_temp.create_functions(V, my_mats, dx, ds, dt=2)
+    my_temp.create_functions(V, my_mats, dx, ds, dt=dt)
 
     T = my_temp.T
     T_n = my_temp.T_n
@@ -67,7 +67,7 @@ def test_formulation_heat_transfer():
     Index._globalcount = 8
 
     source = expressions[0]
-    expected_form = 5*4*(T - T_n)/dt * v * dx(1) + \
+    expected_form = 5*4*(T - T_n)/dt.value * v * dx(1) + \
         fenics.dot(thermal_cond(T)*fenics.grad(T), fenics.grad(v))*dx(1)
     expected_form += - source*v*dx(1)
 
