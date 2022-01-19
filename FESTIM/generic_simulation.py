@@ -111,6 +111,38 @@ class Simulation():
                         error = FESTIM.Error(field, exact, error_dict["norm"], error_dict["degree"])
                         self.exports.exports.append(error)
 
+    def define_mesh(self):
+        if "mesh_parameters" in self.parameters:
+            mesh_parameters = self.parameters["mesh_parameters"]
+
+            if "volume_file" in mesh_parameters.keys():
+                self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
+            elif ("mesh" in mesh_parameters.keys() and
+                    isinstance(mesh_parameters["mesh"], type(Mesh()))):
+                self.mesh = FESTIM.Mesh(**mesh_parameters)
+            elif "vertices" in mesh_parameters.keys():
+                self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
+            else:
+                self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
+        else:
+            self.mesh = None
+
+    def define_markers(self):
+        # Define and mark subdomains
+        if isinstance(self.mesh, FESTIM.Mesh):
+            if isinstance(self.mesh, FESTIM.Mesh1D):
+                if len(self.materials.materials) > 1:
+                    self.materials.check_borders(self.mesh.size)
+                self.mesh.define_markers(self.materials)
+
+            self.volume_markers, self.surface_markers = \
+                self.mesh.volume_markers, self.mesh.surface_markers
+
+            self.ds = Measure(
+                'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
+            self.dx = Measure(
+                'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
+
     def initialise(self):
         # Export parameters
         if "parameters" in self.parameters["exports"].keys():
@@ -183,38 +215,6 @@ class Simulation():
             if isinstance(export, FESTIM.DerivedQuantities):
                 export.assign_measures_to_quantities(self.dx, self.ds)
                 export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
-
-    def define_mesh(self):
-        if "mesh_parameters" in self.parameters:
-            mesh_parameters = self.parameters["mesh_parameters"]
-
-            if "volume_file" in mesh_parameters.keys():
-                self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
-            elif ("mesh" in mesh_parameters.keys() and
-                    isinstance(mesh_parameters["mesh"], type(Mesh()))):
-                self.mesh = FESTIM.Mesh(**mesh_parameters)
-            elif "vertices" in mesh_parameters.keys():
-                self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
-            else:
-                self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
-        else:
-            self.mesh = None
-
-    def define_markers(self):
-        # Define and mark subdomains
-        if isinstance(self.mesh, FESTIM.Mesh):
-            if isinstance(self.mesh, FESTIM.Mesh1D):
-                if len(self.materials.materials) > 1:
-                    self.materials.check_borders(self.mesh.size)
-                self.mesh.define_markers(self.materials)
-
-            self.volume_markers, self.surface_markers = \
-                self.mesh.volume_markers, self.mesh.surface_markers
-
-            self.ds = Measure(
-                'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
-            self.dx = Measure(
-                'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
     def define_function_spaces(self):
         trap_element = "CG"  # Default is CG
