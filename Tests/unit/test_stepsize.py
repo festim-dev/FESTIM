@@ -22,3 +22,11 @@ class TestAdapt():
         my_stepsize.adapt(t=6, converged=True, nb_it=6)
         new_value = float(my_stepsize.value)
         assert new_value == old_value/my_stepsize.adaptive_stepsize["stepsize_change_ratio"]
+
+    def test_hit_stepsize_max(self, my_stepsize):
+        my_stepsize.value.assign(10)
+        my_stepsize.adaptive_stepsize["stepsize_stop_max"] = 1
+        my_stepsize.adaptive_stepsize["t_stop"] = 0
+        my_stepsize.adapt(t=6, converged=True, nb_it=2)
+        new_value = float(my_stepsize.value)
+        assert new_value == my_stepsize.adaptive_stepsize["stepsize_stop_max"]
