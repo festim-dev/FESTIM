@@ -10,6 +10,7 @@ class Temperature:
         self.T = None
         self.T_n = None
         self.v_T = None
+        self.value = value
         self.expression = value
         self.initial_value = initial_value
         self.sub_expressions = []

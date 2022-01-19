@@ -20,8 +20,10 @@ class Simulation():
         self.create_concentration_objects()
         self.create_boundarycondition_objects()
         self.create_materials()
+        self.create_temperature()
         self.define_mesh()
         self.define_markers()
+        self.create_exports()
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
@@ -74,6 +76,41 @@ class Simulation():
                         my_BC = FESTIM.FluxBC(component="T", **BC)
                     self.boundary_conditions.append(my_BC)
 
+    def create_temperature(self):
+        if "temperature" in self.parameters:
+            temp_type = self.parameters["temperature"]["type"]
+            self.T = FESTIM.Temperature(temp_type)
+            if temp_type == "expression":
+                self.T.expression = self.parameters["temperature"]['value']
+                self.T.value = self.parameters["temperature"]['value']
+            else:
+                self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
+                if temp_type == "solve_transient":
+                    self.T.initial_value = self.parameters["temperature"]["initial_condition"]
+                if "source_term" in self.parameters["temperature"]:
+                    self.T.source_term = self.parameters["temperature"]["source_term"]
+
+    def create_exports(self):
+        self.exports = FESTIM.Exports([])
+        if "exports" in parameters:
+            if "xdmf" in self.parameters["exports"]:
+                my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
+                self.exports.exports += my_xdmf_exports.xdmf_exports
+
+            if "derived_quantities" in self.parameters["exports"]:
+                derived_quantities = FESTIM.DerivedQuantities(**self.parameters["exports"]["derived_quantities"])
+                self.exports.exports.append(derived_quantities)
+
+            if "txt" in self.parameters["exports"]:
+                txt_exports = FESTIM.TXTExports(**self.parameters["exports"]["txt"])
+                self.exports.exports += txt_exports.exports
+
+            if "error" in self.parameters["exports"]:
+                for error_dict in self.parameters["exports"]["error"]:
+                    for field, exact in zip(error_dict["fields"], error_dict["exact_solutions"]):
+                        error = FESTIM.Error(field, exact, error_dict["norm"], error_dict["degree"])
+                        self.exports.exports.append(error)
+
     def initialise(self):
         # Export parameters
         if "parameters" in self.parameters["exports"].keys():
@@ -107,7 +144,7 @@ class Simulation():
         self.define_function_spaces()
 
         # Define temperature
-        self.define_temperature()
+        self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
 
         # check if the soret effect has to be taken into account
         if "soret" in self.parameters["temperature"]:
@@ -128,6 +165,7 @@ class Simulation():
             if self.T.type == "solve_stationary":
                 project_S = True
             elif self.T.type == "expression":
+                print(self.T.value)
                 if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
@@ -141,27 +179,11 @@ class Simulation():
         self.define_variational_problem_H_transport()
         self.define_variational_problem_extrinsic_traps()
 
-        # Solution files
-        self.exports = FESTIM.Exports([])
-        if "xdmf" in self.parameters["exports"]:
-            my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
-            self.exports.exports += my_xdmf_exports.xdmf_exports
-
-        if "derived_quantities" in self.parameters["exports"]:
-            derived_quantities = FESTIM.DerivedQuantities(**self.parameters["exports"]["derived_quantities"])
-            derived_quantities.assign_measures_to_quantities(self.dx, self.ds)
-            derived_quantities.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
-            self.exports.exports.append(derived_quantities)
-
-        if "txt" in self.parameters["exports"]:
-            txt_exports = FESTIM.TXTExports(**self.parameters["exports"]["txt"])
-            self.exports.exports += txt_exports.exports
-
-        if "error" in self.parameters["exports"]:
-            for error_dict in self.parameters["exports"]["error"]:
-                for field, exact in zip(error_dict["fields"], error_dict["exact_solutions"]):
-                    error = FESTIM.Error(field, exact, error_dict["norm"], error_dict["degree"])
-                    self.exports.exports.append(error)
+        # add measure and properties to derived_quantities
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                export.assign_measures_to_quantities(self.dx, self.ds)
+                export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
 
     def define_mesh(self):
         if "mesh_parameters" in self.parameters:
@@ -221,19 +243,6 @@ class Simulation():
         # function space for T and ext trap dens
         self.V_CG1 = FunctionSpace(mesh, 'CG', 1)
         self.V_DG1 = FunctionSpace(mesh, 'DG', 1)
-
-    def define_temperature(self):
-        temp_type = self.parameters["temperature"]["type"]
-        self.T = FESTIM.Temperature(temp_type)
-        if temp_type == "expression":
-            self.T.expression = self.parameters["temperature"]['value']
-        else:
-            self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
-            if temp_type == "solve_transient":
-                self.T.initial_value = self.parameters["temperature"]["initial_condition"]
-            if "source_term" in self.parameters["temperature"]:
-                self.T.source_term = self.parameters["temperature"]["source_term"]
-        self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
 
     def initialise_concentrations(self):
         self.u = Function(self.V, name="c")  # Function for concentrations
