@@ -1,8 +1,5 @@
-import os.path
-from os import path
 import FESTIM
 import fenics
-import pytest
 from pathlib import Path
 
 
@@ -26,15 +23,8 @@ def test_define_markers(tmpdir):
     fenics.XDMFFile(str(Path(filename_surface))).write(sm)
 
     # run
-    my_sim = FESTIM.Simulation(parameters={"boundary_conditions": []})
+    my_sim = FESTIM.Simulation()
     my_sim.mesh = FESTIM.Mesh(mesh, vm, sm)
-    my_sim.parameters["mesh_parameters"] = {}
-    my_sim.parameters["mesh_parameters"]["mesh_file"] = \
-        str(Path(filename_volume))
-    my_sim.parameters["mesh_parameters"]["cells_file"] = \
-        str(Path(filename_volume))
-    my_sim.parameters["mesh_parameters"]["facets_file"] = \
-        str(Path(filename_surface))
     my_sim.define_markers()
     vm_computed, sm_computed = my_sim.volume_markers, my_sim.surface_markers
 
@@ -46,3 +36,37 @@ def test_define_markers(tmpdir):
 
     assert my_sim.dx is not None
     assert my_sim.ds is not None
+
+
+def test_integration_mesh_from_vertices_subdomains():
+    '''
+    Integration test for meshing and subdomain 1D
+    when parsing a list of vertices
+    Checks that the cells are marked correctly
+    '''
+    points = [0, 1, 2, 5, 12, 24]
+
+    my_model = FESTIM.Simulation()
+    my_model.materials = FESTIM.Materials(
+        [
+            FESTIM.Material(1, None, None, borders=[0, 2]),
+            FESTIM.Material(2, None, None, borders=[2, 24]),
+        ]
+    )
+    my_model.mesh = FESTIM.MeshFromVertices(points)
+    produced_mesh = my_model.mesh.mesh
+
+    my_model.define_markers()
+    vm, sm = my_model.volume_markers, my_model.surface_markers
+
+    # Testing
+    for cell in fenics.cells(produced_mesh):
+        if cell.midpoint().x() < 2:
+            assert vm[cell] == 1
+        elif cell.midpoint().x() > 2:
+            assert vm[cell] == 2
+    for facet in fenics.facets(produced_mesh):
+        if facet.midpoint().x() == 0:
+            assert sm[facet] == 1
+        if facet.midpoint().x() == max(points):
+            assert sm[facet] == 2

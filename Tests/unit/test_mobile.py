@@ -41,9 +41,9 @@ def test_mobile_create_source_form_one_dict():
     my_mobile.test_function = f.TestFunction(V)
 
     dx = f.dx()
-    source_term = {"value": 2 + FESTIM.x + FESTIM.t}
+    my_mobile.source_term = {"value": 2 + FESTIM.x + FESTIM.t}
     # run
-    my_mobile.create_source_form(dx, source_term)
+    my_mobile.create_source_form(dx)
 
     # test
     source = my_mobile.sub_expressions[0]
@@ -62,12 +62,12 @@ def test_mobile_create_source_form_several_sources():
     my_mobile.test_function = f.TestFunction(V)
 
     dx = f.dx()
-    source_term = [
+    my_mobile.source_term = [
         {"value": 2 + FESTIM.x + FESTIM.t, "volumes": 1},
         {"value": 1 + FESTIM.x + FESTIM.t, "volumes": [2, 3]},
     ]
     # run
-    my_mobile.create_source_form(dx, source_term)
+    my_mobile.create_source_form(dx)
 
     # test
     v = my_mobile.test_function
@@ -88,16 +88,16 @@ def test_mobile_create_form():
     my_mobile.solution = f.Function(V)
     my_mobile.previous_solution = f.Function(V)
     my_mobile.test_function = f.TestFunction(V)
+    my_mobile.source_term = {"value": 2 + FESTIM.x + FESTIM.t}
 
     mat = FESTIM.Material(1, D_0=1, E_D=1)
     my_mats = FESTIM.Materials([mat])
     dx = f.dx()
     T = FESTIM.Temperature("expression", value=100)
     T.create_functions(V)
-    source_term = {"value": 2 + FESTIM.x + FESTIM.t}
 
     # run
-    my_mobile.create_form(my_mats, dx, T, source_term=source_term)
+    my_mobile.create_form(my_mats, dx, T)
 
     # test
     c_0 = my_mobile.solution

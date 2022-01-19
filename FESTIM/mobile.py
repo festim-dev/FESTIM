@@ -4,8 +4,9 @@ import sympy as sp
 
 
 class Mobile(Concentration):
-    def __init__(self):
+    def __init__(self, source_term=None):
         super().__init__()
+        self.source_term = source_term
 
     def initialise(self, V, value, label=None, time_step=None, S=None):
         comp = self.get_comp(V, value, label=label, time_step=time_step)
@@ -18,10 +19,10 @@ class Mobile(Concentration):
 
         assign(self.previous_solution, comp)
 
-    def create_form(self, materials, dx, T,  dt=None, traps=None, source_term=[], chemical_pot=False, soret=False):
+    def create_form(self, materials, dx, T,  dt=None, traps=None, chemical_pot=False, soret=False):
         self.F = 0
         self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, chemical_pot=chemical_pot, soret=soret)
-        self.create_source_form(dx, source_term)
+        self.create_source_form(dx)
 
     def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, chemical_pot=False, soret=False):
         F = 0
@@ -67,27 +68,26 @@ class Mobile(Concentration):
         self.F_diffusion = F
         self.F += F
 
-    def create_source_form(self, dx, source_term):
+    def create_source_form(self, dx):
         """[summary]
 
         Args:
             dx (fenics.Measure): [description]
-            source_term (dict or list): {"value": ...} or [{"value": ..., "volumes": [1, 2]}, {"value": ..., "volumes": 3}]
         """
         F_source = 0
         expressions_source = []
 
         print('Defining source terms')
 
-        if isinstance(source_term, dict):
+        if isinstance(self.source_term, dict):
             source = Expression(
                 sp.printing.ccode(
-                    source_term["value"]), t=0, degree=2)
+                    self.source_term["value"]), t=0, degree=2)
             F_source += - source*self.test_function*dx
             expressions_source.append(source)
 
-        elif isinstance(source_term, list):
-            for source_dict in source_term:
+        elif isinstance(self.source_term, list):
+            for source_dict in self.source_term:
                 source = Expression(
                     sp.printing.ccode(
                         source_dict["value"]), t=0, degree=2)
@@ -95,7 +95,6 @@ class Mobile(Concentration):
                 if isinstance(volumes, int):
                     volumes = [volumes]
                 for vol in volumes:
-                    print(vol)
                     F_source += - source*self.test_function*dx(vol)
                 expressions_source.append(source)
         self.F_source = F_source

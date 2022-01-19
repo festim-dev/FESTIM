@@ -4,7 +4,7 @@ import sympy as sp
 
 
 class Simulation():
-    def __init__(self, parameters, log_level=40):
+    def __init__(self, parameters=None, log_level=40):
         self.log_level = log_level
         self.expressions = []
 
@@ -100,6 +100,8 @@ class Simulation():
 
     def create_concentration_objects(self, parameters):
         self.mobile = FESTIM.Mobile()
+        if "source_term" in parameters:
+            self.mobile.source_term = parameters["source_term"]
         traps = []
         if "traps" in parameters:
             for trap in parameters["traps"]:

@@ -1,12 +1,9 @@
 # Unit tests meshing
-from FESTIM.materials import Materials
+from FESTIM.materials import Materials, Material
 from FESTIM.meshing import Mesh, Mesh1D, MeshFromXDMF, MeshFromRefinements, \
     MeshFromVertices
-from FESTIM import Simulation, Material
 import fenics
 import pytest
-import sympy as sp
-import numpy as np
 from pathlib import Path
 
 
@@ -87,14 +84,7 @@ def test_create_mesh_xdmf(tmpdir):
     fenics.XDMFFile(str(Path(file2))).write(mf_facets)
 
     # read mesh
-    mesh_parameters = {
-        "volume_file": str(Path(file1)),
-        "boundary_file": str(Path(file1))
-        }
-    my_model = Simulation(
-        {"boundary_conditions": [], "mesh_parameters": mesh_parameters})
-    my_model.define_mesh()
-    mesh2 = my_model.mesh.mesh
+    my_mesh = MeshFromXDMF(volume_file=str(Path(file1)), boundary_file=str(Path(file1)))
 
     # check that vertices are the same
     vertices_mesh = []
@@ -104,7 +94,7 @@ def test_create_mesh_xdmf(tmpdir):
                 [v.point().x(), v.point().y()])
 
     vertices_mesh2 = []
-    for f in fenics.facets(mesh2):
+    for f in fenics.facets(my_mesh.mesh):
         for v in fenics.vertices(f):
             vertices_mesh2.append(
                 [v.point().x(), v.point().y()])
@@ -202,54 +192,6 @@ def test_generate_mesh_from_vertices():
     assert mesh.num_vertices() == len(points)
     assert mesh.num_edges() == len(points) - 1
     assert mesh.num_cells() == len(points) - 1
-
-
-def test_integration_mesh_from_vertices_subdomains():
-    '''
-    Integration test for meshing and subdomain 1D
-    when parsing a list of vertices
-    Checks that the cells are marked correctly
-    '''
-    points = [0, 1, 2, 5, 12, 24]
-    mesh_parameters = {
-        "vertices": points
-    }
-    materials = [
-        {
-            "D_0": None,
-            "E_D": None,
-            "borders": [0, 2],
-            "id": 1
-        },
-        {
-            "D_0": None,
-            "E_D": None,
-            "borders": [2, 24],
-            "id": 2
-        }
-    ]
-    parameters = {
-        "boundary_conditions": [],
-        "mesh_parameters": mesh_parameters,
-        "materials": materials
-    }
-    my_model = Simulation(parameters)
-    my_model.define_mesh()
-    mesh = my_model.mesh.mesh
-    my_model.define_markers()
-    vm, sm = my_model.volume_markers, my_model.surface_markers
-
-    # Testing
-    for cell in fenics.cells(mesh):
-        if cell.midpoint().x() < 2:
-            assert vm[cell] == 1
-        elif cell.midpoint().x() > 2:
-            assert vm[cell] == 2
-    for facet in fenics.facets(mesh):
-        if facet.midpoint().x() == 0:
-            assert sm[facet] == 1
-        if facet.midpoint().x() == max(points):
-            assert sm[facet] == 2
 
 
 def test_mesh_refinement_course_mesh():
