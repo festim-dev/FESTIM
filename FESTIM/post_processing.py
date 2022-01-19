@@ -40,66 +40,6 @@ def is_export_derived_quantities(simulation, derived_quantities):
         return True
 
 
-def compute_error(parameters, t, res, mesh):
-    """Returns a list containing the errors
-
-    Arguments:
-        parameters {dict} -- error parameters dict
-        t {float} -- time
-        res {list} -- contains the solutions
-        mesh {fenics.Mesh()} -- the mesh
-
-    Raises:
-        KeyError: if key is not found in dict
-
-    Returns:
-        list -- list of errors
-    """
-    tab = []
-
-    solution_dict = {
-        'solute': res[0],
-        'retention': res[len(res)-2],
-        'T': res[len(res)-1],
-    }
-
-    for error in parameters:
-        er = []
-        er.append(t)
-        for i in range(len(error["exact_solutions"])):
-            exact_sol = f.Expression(sp.printing.ccode(
-                error["exact_solutions"][i]),
-                degree=error["degree"],
-                t=t)
-            err = error["computed_solutions"][i]
-            if type(err) is str:
-                if err.isdigit():
-                    nb = int(err)
-                    computed_sol = res[nb]
-                else:
-                    if err in solution_dict.keys():
-                        computed_sol = solution_dict[
-                            err]
-                    else:
-                        raise KeyError(
-                            "The key " + err + " is unknown.")
-            elif type(err) is int:
-                computed_sol = res[err]
-
-            if error["norm"] == "error_max":
-                vertex_values_u = computed_sol.compute_vertex_values(mesh)
-                vertex_values_sol = exact_sol.compute_vertex_values(mesh)
-                error_max = np.max(np.abs(vertex_values_u - vertex_values_sol))
-                er.append(error_max)
-            else:
-                error_L2 = f.errornorm(
-                    exact_sol, computed_sol, error["norm"])
-                er.append(error_L2)
-
-        tab.append(er)
-    return tab
-
-
 class ArheniusCoeff(f.UserExpression):
     def __init__(self, mesh, materials, vm, T, pre_exp, E, **kwargs):
         super().__init__(kwargs)

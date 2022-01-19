@@ -94,7 +94,7 @@ def test_run_temperature_stationary(tmpdir):
             },
             "error": [
                 {
-                    "computed_solutions": ['T'],
+                    "fields": ['T'],
                     "exact_solutions": [u],
                     "norm": 'error_max',
                     "degree": 4
@@ -104,7 +104,7 @@ def test_run_temperature_stationary(tmpdir):
 
     }
     output = run(parameters)
-    assert output["error"][0][1] < 1e-9
+    assert output["error"][0] < 1e-9
 
 
 def test_run_temperature_transient(tmpdir):
@@ -191,7 +191,7 @@ def test_run_temperature_transient(tmpdir):
             },
             "error": [
                 {
-                    "computed_solutions": ['T'],
+                    "fields": ['T'],
                     "exact_solutions": [u],
                     "norm": 'error_max',
                     "degree": 4
@@ -202,7 +202,7 @@ def test_run_temperature_transient(tmpdir):
     }
     output = run(parameters)
 
-    assert output["error"][0][1] < 1e-9
+    assert output["error"][0] < 1e-9
 
 
 def test_run_MMS(tmpdir):
@@ -313,7 +313,7 @@ def test_run_MMS(tmpdir):
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -331,8 +331,8 @@ def test_run_MMS(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -452,7 +452,7 @@ def test_run_MMS_chemical_pot(tmpdir):
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -470,8 +470,8 @@ def test_run_MMS_chemical_pot(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -661,7 +661,7 @@ def test_run_MMS_soret(tmpdir):
                 },
                 "error": [
                     {
-                        "computed_solutions": [0],
+                        "fields": [0],
                         "exact_solutions": [u],
                         "norm": 'L2',
                         "degree": 4
@@ -678,7 +678,7 @@ def test_run_MMS_soret(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u))
-        error_max_u = output["error"][0][1]
+        error_max_u = output["error"][0]
         msg = 'L2 error on u is:' + str(error_max_u) + '\n \
             with h = ' + str(h) + '\n \
             with dt = ' + str(dt)
@@ -785,7 +785,7 @@ def test_run_MMS_steady_state(tmpdir):
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -801,8 +801,8 @@ def test_run_MMS_steady_state(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h)

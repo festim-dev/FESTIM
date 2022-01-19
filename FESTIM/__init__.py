@@ -15,6 +15,7 @@ from .boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
 from .solving import solve_it, solve_once, adaptive_stepsize
 
 from .export import treat_value, export_parameters, Export, Exports
+from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
 from .exports.derived_quantities_export import DerivedQuantities, \
     SurfaceFlux, AverageVolume, MinimumVolume, MaximumVolume, \
@@ -22,7 +23,7 @@ from .exports.derived_quantities_export import DerivedQuantities, \
 from .exports.txt_export import TXTExport, TXTExports
 
 from .post_processing import is_export_derived_quantities, is_export_xdmf, \
-    compute_error, create_properties, check_keys_derived_quantities
+    create_properties, check_keys_derived_quantities
 
 from .materials import Material, Materials
 from .concentration import Concentration

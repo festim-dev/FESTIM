@@ -160,6 +160,12 @@ class Simulation():
             txt_exports = FESTIM.TXTExports(**self.parameters["exports"]["txt"])
             self.exports.exports += txt_exports.exports
 
+        if "error" in self.parameters["exports"]:
+            for error_dict in self.parameters["exports"]["error"]:
+                for field, exact in zip(error_dict["fields"], error_dict["exact_solutions"]):
+                    error = FESTIM.Error(field, exact, error_dict["norm"], error_dict["degree"])
+                    self.exports.exports.append(error)
+
     def define_mesh(self):
         if "mesh_parameters" in self.parameters:
             mesh_parameters = self.parameters["mesh_parameters"]
@@ -536,9 +542,6 @@ class Simulation():
         else:
             solute = res[0]
 
-        # TODO remove res
-        self.res = res
-
         self.mobile.post_processing_solution = solute
 
         for i, trap in enumerate(self.traps.traps, 1):
@@ -559,13 +562,26 @@ class Simulation():
 
     def make_output(self):
         self.update_post_processing_solutions()
+
+        label_to_function = {
+            "solute": self.mobile.post_processing_solution,
+            "0": self.mobile.post_processing_solution,
+            0: self.mobile.post_processing_solution,
+            "T": self.T.T,
+            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
+        }
+        for trap in self.traps.traps:
+            label_to_function[trap.id] = trap.post_processing_solution
+            label_to_function[str(trap.id)] = trap.post_processing_solution
+
         output = dict()  # Final output
         # Compute error
-        if "error" in self.parameters["exports"].keys():
-            error = FESTIM.compute_error(
-                self.parameters["exports"]["error"], self.t,
-                [*self.res, self.T.T], self.mesh.mesh)
-            output["error"] = error
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.Error):
+                export.function = label_to_function[export.field]
+                if "error" not in output:
+                    output["error"] = []
+                output["error"].append(export.compute(self.t))
 
         output["parameters"] = self.parameters
         output["mesh"] = self.mesh.mesh
@@ -584,7 +600,7 @@ class Simulation():
         for trap in self.traps.traps:
             output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
         # compute retention and add it to output
-        output["solutions"]["retention"] = project(sum(self.res), self.V_DG1)
+        output["solutions"]["retention"] = project(label_to_function["retention"], self.V_DG1)
         return output
 
 
