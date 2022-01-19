@@ -18,7 +18,7 @@ from .export import treat_value, export_parameters, Export, Exports
 from .exports.xdmf_export import XDMFExport, XDMFExports
 from .exports.derived_quantities_export import DerivedQuantities, \
     SurfaceFlux, AverageVolume, MinimumVolume, MaximumVolume, \
-    TotalVolume, TotalSurface
+    TotalVolume, TotalSurface, ThermalFlux, HydrogenFlux
 from .exports.txt_export import TXTExport, TXTExports
 
 from .post_processing import is_export_derived_quantities, is_export_xdmf, \

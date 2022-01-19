@@ -41,12 +41,12 @@ class SurfaceFlux(DerivedQuantity):
 
 class HydrogenFlux(SurfaceFlux):
     def __init__(self, surface) -> None:
-        super().__init__(surface, field="solute")
+        super().__init__(field="solute", surface=surface)
 
 
 class ThermalFlux(SurfaceFlux):
     def __init__(self, surface) -> None:
-        super().__init__(surface, field="T")
+        super().__init__(field="T", surface=surface)
 
 
 class AverageVolume(DerivedQuantity):
