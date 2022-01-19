@@ -30,8 +30,13 @@ class Simulation():
             solving_parameters = self.parameters["solving_parameters"]
             self.dt.value.assign(solving_parameters["initial_stepsize"])
             if "adaptive_stepsize" in solving_parameters:
+                self.dt.adaptive_stepsize = {}
                 for key, val in solving_parameters["adaptive_stepsize"].items():
                     self.dt.adaptive_stepsize[key] = val
+                if "t_stop" not in solving_parameters["adaptive_stepsize"]:
+                    self.dt.adaptive_stepsize["t_stop"] = None
+                if "stepsize_stop_max" not in solving_parameters["adaptive_stepsize"]:
+                    self.dt.adaptive_stepsize["stepsize_stop_max"] = None
         else:
             self.dt = None
 
@@ -471,7 +476,7 @@ class Simulation():
         # Solve main problem
         FESTIM.solve_it(
             self.F, self.u, self.bcs, self.t,
-            self.dt, self.settings, self.parameters["solving_parameters"], J=self.J)
+            self.dt, self.settings, J=self.J)
 
         # Solve extrinsic traps formulation
         for trap in self.traps.traps:

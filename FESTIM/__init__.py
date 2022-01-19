@@ -12,7 +12,7 @@ from .temperature import Temperature
 from .boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
 
-from .solving import solve_it, solve_once, adaptive_stepsize
+from .solving import solve_it, solve_once
 
 from .export import treat_value, export_parameters, Export, Exports
 from .exports.error import Error
