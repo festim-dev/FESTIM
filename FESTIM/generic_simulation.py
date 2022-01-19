@@ -11,6 +11,31 @@ class Simulation():
 
         self.nb_iterations = 0
         self.J = None
+        self.t = 0  # Initialising time to 0s
+        self.timer = None
+
+        self.settings = None
+        self.dt = None
+        self.mobile = None
+        self.traps = None
+        self.materials = None
+        self.boundary_conditions = None
+        self.bcs = None
+        self.T = None
+        self.exports = None
+        self.mesh = None
+        self.dx, self.ds = None, None
+        self.V, self.V_CG1, self.V_DG1 = None, None, None
+        self.u = None
+        self.v = None
+        self.u_n = None
+
+        self.D = None
+        self.thermal_cond = None
+        self.cp = None
+        self.rho = None
+        self.H = None
+        self.S = None
 
         self.create_settings()
         self.create_stepsize()
@@ -35,8 +60,6 @@ class Simulation():
                     self.dt.adaptive_stepsize["t_stop"] = None
                 if "stepsize_stop_max" not in solving_parameters["adaptive_stepsize"]:
                     self.dt.adaptive_stepsize["stepsize_stop_max"] = None
-        else:
-            self.dt = None
 
     def create_settings(self):
         my_settings = FESTIM.Settings(None, None)
@@ -170,8 +193,6 @@ class Simulation():
                 self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
             else:
                 self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
-        else:
-            self.mesh = None
 
     def define_markers(self):
         # Define and mark subdomains
@@ -183,7 +204,7 @@ class Simulation():
 
             self.volume_markers, self.surface_markers = \
                 self.mesh.volume_markers, self.mesh.surface_markers
-
+            # TODO maybe these should be attributes of self.mesh?
             self.ds = Measure(
                 'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
             self.dx = Measure(
@@ -377,7 +398,6 @@ class Simulation():
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
-        self.t = 0  # Initialising time to 0s
         self.timer = Timer()  # start timer
 
         if self.settings.transient:
