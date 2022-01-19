@@ -17,7 +17,7 @@ def test_fluxes_chemical_pot():
     k_B = FESTIM.k_B
 
     mesh = fenics.UnitIntervalMesh(10)
-    my_sim = FESTIM.Simulation({"traps": [], "solving_parameters": {}})
+    my_sim = FESTIM.Simulation({"traps": []})
     my_sim.boundary_conditions = [
         FESTIM.FluxBC(type="recomb", Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
         FESTIM.FluxBC(type="flux", value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
@@ -26,7 +26,7 @@ def test_fluxes_chemical_pot():
     my_sim.define_function_spaces()
     my_sim.initialise_concentrations()
 
-    my_sim.chemical_pot = True
+    my_sim.settings.chemical_pot = True
     my_sim.ds = fenics.ds
     my_sim.T = FESTIM.Temperature("expression", value=1000)
     my_sim.T.create_functions(my_sim.V_CG1)
@@ -57,7 +57,7 @@ def test_fluxes():
     k_B = FESTIM.k_B
 
     mesh = fenics.UnitIntervalMesh(10)
-    my_sim = FESTIM.Simulation({"traps": [], "solving_parameters": {}})
+    my_sim = FESTIM.Simulation({"traps": []})
     my_sim.boundary_conditions = [
         FESTIM.FluxBC(type="recomb", Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
         FESTIM.FluxBC(type="flux", value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
