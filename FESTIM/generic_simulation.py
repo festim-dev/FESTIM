@@ -306,7 +306,6 @@ class Simulation():
                 concentration.test_function = list(split(self.v))[i]
 
         print('Defining initial values')
-        # FESTIM.check_no_duplicates(initial_conditions)
         field_to_component = {
             "solute": 0,
             "0": 0,

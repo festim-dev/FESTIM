@@ -10,3 +10,9 @@ class InitialCondition:
             warnings.warn("components key will be deprecated", DeprecationWarning)
         self.label = label
         self.time_step = time_step
+        if type(self.value) == str:
+            if self.value.endswith(".xdmf"):
+                if self.label is None:
+                    raise ValueError("label cannot be None")
+                if self.time_step is None:
+                    raise ValueError("time_step cannot be None")

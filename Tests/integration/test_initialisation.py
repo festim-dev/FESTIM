@@ -58,64 +58,6 @@ def test_initialisation_from_xdmf(tmpdir):
     assert fenics.errornorm(u, w) == 0
 
 
-def test_fail_initialisation_from_xdmf():
-    '''
-    Test that the function fails initialise_solutions if
-    there's a missing key
-    '''
-    mesh = fenics.UnitSquareMesh(5, 5)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
-
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": "Initial solutions/u_1out.xdmf",
-                "component": 0,
-                "label": "1",
-            },
-            {
-                "value": "Initial solutions/u_2out.xdmf",
-                "component": 1,
-                "label": "2",
-                "time_step": 1
-            },
-        ],
-    }
-    my_sim = FESTIM.Simulation(parameters)
-
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
-    my_sim.traps = FESTIM.Traps([my_trap])
-    my_sim.V = V
-    my_sim.S = None
-    with pytest.raises(KeyError, match=r'time_step'):
-        my_sim.initialise_concentrations()
-
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": "Initial solutions/u_1out.xdmf",
-                "component": 0,
-                "time_step": 1
-            },
-            {
-                "value": "Initial solutions/u_2out.xdmf",
-                "component": 1,
-                "time_step": 1
-            },
-        ],
-    }
-    my_sim = FESTIM.Simulation(parameters)
-
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
-    my_sim.traps = FESTIM.Traps([my_trap])
-    my_sim.V = V
-    my_sim.S = None
-    with pytest.raises(KeyError, match=r'label'):
-        my_sim.initialise_concentrations()
-
-
 def test_initialisation_with_expression():
     '''
     Test that initialise_solutions interpolates correctly
@@ -272,30 +214,3 @@ def test_initialisation_no_component():
     my_sim.initialise_concentrations()
     w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
-
-
-def test_initialisation_duplicates():
-    '''
-    Test that initialise_solutions set component at 0
-    by default
-    '''
-    mesh = fenics.UnitSquareMesh(8, 8)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 3)
-
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": 1+FESTIM.x + FESTIM.y,
-                "component": 0
-            },
-            {
-                "value": 1+FESTIM.x + FESTIM.y,
-                "component": 0
-            },
-        ],
-    }
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.V = V
-    with pytest.raises(ValueError, match=r'Duplicate'):
-        my_sim.initialise_concentrations()
