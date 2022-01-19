@@ -4,9 +4,9 @@ import sympy as sp
 
 
 class Mobile(Concentration):
-    def __init__(self, source_term=None):
+    def __init__(self):
         super().__init__()
-        self.source_term = source_term
+        self.sources = []
 
     def initialise(self, V, value, label=None, time_step=None, S=None):
         comp = self.get_comp(V, value, label=label, time_step=time_step)
@@ -79,15 +79,15 @@ class Mobile(Concentration):
 
         print('Defining source terms')
 
-        if isinstance(self.source_term, dict):
+        if isinstance(self.sources, dict):
             source = Expression(
                 sp.printing.ccode(
-                    self.source_term["value"]), t=0, degree=2)
+                    self.sources["value"]), t=0, degree=2)
             F_source += - source*self.test_function*dx
             expressions_source.append(source)
 
-        elif isinstance(self.source_term, list):
-            for source_dict in self.source_term:
+        elif isinstance(self.sources, list):
+            for source_dict in self.sources:
                 source = Expression(
                     sp.printing.ccode(
                         source_dict["value"]), t=0, degree=2)

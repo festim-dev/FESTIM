@@ -4,8 +4,24 @@ import sympy as sp
 
 
 class Simulation():
-    def __init__(self, parameters=None, log_level=40):
+    def __init__(self, parameters=None, mesh=None, materials=None, sources=[], boundary_conditions=None, traps=None, dt=None, settings=None, temperature=None, initial_conditions=[], exports=None, log_level=40):
         self.log_level = log_level
+
+        self.settings = settings
+        self.dt = dt
+        self.traps = traps
+        if self.traps is None:
+            self.traps = FESTIM.Traps([])
+        self.materials = materials
+        self.boundary_conditions = boundary_conditions
+        self.initial_conditions = initial_conditions
+        self.T = temperature
+        self.exports = exports
+        self.mesh = mesh
+        self.sources = sources
+
+        # internal attributes
+        self.mobile = FESTIM.Mobile()
         self.expressions = []
 
         self.nb_iterations = 0
@@ -13,22 +29,13 @@ class Simulation():
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
-        self.settings = None
-        self.dt = None
-        self.mobile = None
-        self.traps = None
-        self.materials = None
-        self.boundary_conditions = None
-        self.initial_conditions = None
-        self.bcs = None
-        self.T = None
-        self.exports = None
-        self.mesh = None
         self.dx, self.ds = None, None
         self.V, self.V_CG1, self.V_DG1 = None, None, None
         self.u = None
         self.v = None
         self.u_n = None
+
+        self.bcs = None
 
         self.D = None
         self.thermal_cond = None
@@ -47,8 +54,32 @@ class Simulation():
             self.create_initial_conditions(parameters)
             self.define_mesh(parameters)
             self.create_exports(parameters)
+            self.create_sources_objects(parameters)
+
+        self.attribute_source_terms()
+        self.attribute_boundary_conditions()
 
         self.define_markers()
+
+    def attribute_source_terms(self):
+        field_to_object = {
+            "0": self.mobile,
+            0: self.mobile,
+            "mobile": self.mobile,
+            "T": self.T
+        }
+        for i, trap in enumerate(self.traps.traps, 1):
+            field_to_object[i] = trap
+            field_to_object[str(i)] = trap
+
+        for source in self.sources:
+            field_to_object[source.field].sources.append(source)
+
+    def attribute_boundary_conditions(self):
+        self.T.boundary_conditions = []
+        for bc in self.boundary_conditions:
+            if bc.component == "T":
+                self.T.boundary_conditions.append(bc)
 
     def create_stepsize(self, parameters):
         if self.settings.transient:
@@ -100,16 +131,39 @@ class Simulation():
 
     def create_concentration_objects(self, parameters):
         self.mobile = FESTIM.Mobile()
-        if "source_term" in parameters:
-            self.mobile.source_term = parameters["source_term"]
         traps = []
         if "traps" in parameters:
             for trap in parameters["traps"]:
                 if "type" in trap:
                     traps.append(FESTIM.ExtrinsicTrap(**trap))
                 else:
-                    traps.append(FESTIM.Trap(**trap))
+                    traps.append(
+                        FESTIM.Trap(trap["k_0"], trap["E_k"], trap["p_0"], trap["E_p"], trap["materials"], trap["density"])
+                    )
         self.traps = FESTIM.Traps(traps)
+
+    def create_sources_objects(self, parameters):
+        self.sources = []
+        if "traps" in parameters:
+            for i, trap in enumerate(parameters["traps"], 1):
+                if "source_term" in trap:
+                    if type(trap["materials"]) is not list:
+                        materials = [trap["materials"]]
+                    else:
+                        materials = trap["materials"]
+                    for mat in materials:
+                        self.sources.append(
+                            FESTIM.Source(trap["source_term"], mat, i)
+                        )
+        if "source_term" in parameters:
+            self.mobile.sources = parameters["source_term"]
+
+        if "temperature" in parameters:
+            if "source_term" in parameters["temperature"]:
+                for source in parameters["temperature"]["source_term"]:
+                    self.sources.append(
+                        FESTIM.Source(source["value"], source["volume"], "T")
+                    )
 
     def create_materials(self, parameters):
         materials = []

@@ -4,9 +4,8 @@ from fenics import *
 
 
 class Temperature:
-    def __init__(self, type, value=None, bcs=[], initial_value=None, source_term=[]) -> None:
+    def __init__(self, type, value=None, initial_value=None) -> None:
         self.type = type
-        self.bcs = bcs
         self.T = None
         self.T_n = None
         self.v_T = None
@@ -15,7 +14,8 @@ class Temperature:
         self.initial_value = initial_value
         self.sub_expressions = []
         self.F = 0
-        self.source_term = source_term
+        self.sources = []
+        self.boundary_conditions = []
 
     def create_functions(self, V, materials=None, dx=None, ds=None, dt=None):
         # TODO: materials, dx, ds, dt should be optional
@@ -45,10 +45,9 @@ class Temperature:
                 self.T_n.assign(self.T)
 
     def create_dirichlet_bcs(self, V, surface_markers):
-        # print(surface_markers)
-        # print(V)
+        # TODO needs to choose between having Temperature bcs in Temperature or in Simulation.boundary_conditions
         self.dirichlet_bcs = []
-        for bc in self.bcs:
+        for bc in self.boundary_conditions:
             if bc.type == "dc" and bc.component == "T":
                 bc.create_expression(self.T)
                 for surf in bc.surfaces:
@@ -99,14 +98,14 @@ class Temperature:
                 self.F += dot(thermal_cond*grad(T), grad(v_T))*dx(vol)
 
         # source term
-        for source in self.source_term:
-            src = sp.printing.ccode(source["value"])
+        for source in self.sources:
+            src = sp.printing.ccode(source.value)
             src = Expression(src, degree=2, t=0)
             self.sub_expressions.append(src)
-            self.F += - src*v_T*dx(source["volume"])
+            self.F += - src*v_T*dx(source.volume)
 
         # Boundary conditions
-        for bc in self.bcs:
+        for bc in self.boundary_conditions:
             if bc.type not in FESTIM.helpers.T_bc_types["dc"]:
                 bc.create_form_for_flux(self.T, solute=None)
 

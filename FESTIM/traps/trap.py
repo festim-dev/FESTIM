@@ -6,7 +6,7 @@ import numpy as np
 
 class Trap(Concentration):
     def __init__(
-            self, k_0, E_k, p_0, E_p, materials, density, source_term=None, id=None):
+            self, k_0, E_k, p_0, E_p, materials, density, id=None):
         super().__init__()
         self.id = id
         self.k_0 = k_0
@@ -21,7 +21,7 @@ class Trap(Concentration):
 
         self.density = []
         self.make_density(density)
-        self.source_term = source_term
+        self.sources = []
 
     def make_density(self, densities):
         if type(densities) is not list:
@@ -47,7 +47,7 @@ class Trap(Concentration):
         """
         self.F = 0
         self.create_trapping_form(mobile, materials, T, dx, dt, chemical_pot)
-        if self.source_term is not None:
+        if self.sources is not None:
             self.create_source_form(dx)
 
     def create_trapping_form(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
@@ -114,8 +114,9 @@ class Trap(Concentration):
         self.sub_expressions += expressions_trap
 
     def create_source_form(self, dx):
-        source = sp.printing.ccode(self.source_term)
-        source = Expression(source, t=0, degree=2, name="source_trap_{}".format(self.id))
-        self.F_source = -source*self.test_function*dx
-        self.F += self.F_source
-        self.sub_expressions.append(source)
+        for source_term in self.sources:
+            source = sp.printing.ccode(source_term.value)
+            source = Expression(source, t=0, degree=2, name="source_trap_{}".format(self.id))
+            self.F_source = -source*self.test_function*dx
+            self.F += self.F_source
+            self.sub_expressions.append(source)
