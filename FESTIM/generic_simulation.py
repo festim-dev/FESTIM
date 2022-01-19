@@ -390,7 +390,7 @@ class Simulation():
 
             nb_iterations, converged = FESTIM.solve_once(
                 self.F, self.u,
-                self.bcs, self.parameters["solving_parameters"], J=self.J)
+                self.bcs, self.settings, J=self.J)
 
             # Post processing
             self.run_post_processing()
@@ -462,7 +462,7 @@ class Simulation():
         # Solve main problem
         FESTIM.solve_it(
             self.F, self.u, self.bcs, self.t,
-            self.dt, self.parameters["solving_parameters"], J=self.J)
+            self.dt, self.settings, self.parameters["solving_parameters"], J=self.J)
 
         # Solve extrinsic traps formulation
         for trap in self.traps.traps:

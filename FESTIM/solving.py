@@ -3,7 +3,7 @@ from fenics import *
 import sys
 
 
-def solve_it(F, u, bcs, t, dt, solving_parameters, J=None):
+def solve_it(F, u, bcs, t, dt, settings, solving_parameters, J=None):
     """Solves the problem during time stepping.
 
     Args:
@@ -33,7 +33,7 @@ def solve_it(F, u, bcs, t, dt, solving_parameters, J=None):
     u_.assign(u)
     while converged is False:
         u.assign(u_)
-        nb_it, converged = solve_once(F, u, bcs, solving_parameters, J=J)
+        nb_it, converged = solve_once(F, u, bcs, settings, J=J)
         if "adaptive_stepsize" in solving_parameters.keys():
             stepsize_change_ratio = \
                 solving_parameters[
@@ -58,7 +58,7 @@ def solve_it(F, u, bcs, t, dt, solving_parameters, J=None):
     return
 
 
-def solve_once(F, u, bcs, solving_parameters, J=None):
+def solve_once(F, u, bcs, settings, J=None):
     """Solves non linear problem
 
     Args:
@@ -88,11 +88,11 @@ def solve_once(F, u, bcs, solving_parameters, J=None):
     solver = NonlinearVariationalSolver(problem)
     solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
     solver.parameters["newton_solver"]["absolute_tolerance"] = \
-        solving_parameters['newton_solver']['absolute_tolerance']
+        settings.absolute_tolerance
     solver.parameters["newton_solver"]["relative_tolerance"] = \
-        solving_parameters['newton_solver']['relative_tolerance']
+        settings.relative_tolerance
     solver.parameters["newton_solver"]["maximum_iterations"] = \
-        solving_parameters['newton_solver']['maximum_iterations']
+        settings.maximum_iterations
     nb_it, converged = solver.solve()
 
     return nb_it, converged
