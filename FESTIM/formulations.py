@@ -15,6 +15,8 @@ def formulation(simulation):
     F = 0
 
     # diffusion + transient terms
+
+    # TODO source term should be like Temperature an argument of Mobile.
     if "source_term" in simulation.parameters:
         source_term = simulation.parameters["source_term"]
     else:

@@ -77,13 +77,8 @@ def test_run_temperature_stationary(tmpdir):
             },
         "exports": {
             "parameters":  str(Path(d)) + "/param.json",
-            "txt": {
-                "functions": ['retention'],
-                "times": [100],
-                "labels": ['retention']
-            },
             "xdmf": {
-                    "functions": ['T', 'solute'],
+                    "fields": ['T', 'solute'],
                     "labels":  ['temperature', 'solute'],
                     "folder": str(Path(d))
             },
@@ -99,7 +94,7 @@ def test_run_temperature_stationary(tmpdir):
             },
             "error": [
                 {
-                    "computed_solutions": ['T'],
+                    "fields": ['T'],
                     "exact_solutions": [u],
                     "norm": 'error_max',
                     "degree": 4
@@ -109,7 +104,7 @@ def test_run_temperature_stationary(tmpdir):
 
     }
     output = run(parameters)
-    assert output["error"][0][1] < 1e-9
+    assert output["error"][0] < 1e-9
 
 
 def test_run_temperature_transient(tmpdir):
@@ -189,19 +184,14 @@ def test_run_temperature_transient(tmpdir):
             }
             },
         "exports": {
-            "txt": {
-                "functions": ['retention'],
-                "times": [100],
-                "labels": ['retention']
-            },
             "xdmf": {
-                    "functions": ['T'],
+                    "fields": ['T'],
                     "labels":  ['temperature'],
                     "folder": str(Path(d))
             },
             "error": [
                 {
-                    "computed_solutions": ['T'],
+                    "fields": ['T'],
                     "exact_solutions": [u],
                     "norm": 'error_max',
                     "degree": 4
@@ -212,7 +202,7 @@ def test_run_temperature_transient(tmpdir):
     }
     output = run(parameters)
 
-    assert output["error"][0][1] < 1e-9
+    assert output["error"][0] < 1e-9
 
 
 def test_run_MMS(tmpdir):
@@ -317,13 +307,13 @@ def test_run_MMS(tmpdir):
                 },
             "exports": {
                 "xdmf": {
-                    "functions": ['retention'],
+                    "fields": ['retention'],
                     "labels": ['retention'],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -341,8 +331,8 @@ def test_run_MMS(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -455,14 +445,14 @@ def test_run_MMS_chemical_pot(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
-                    "times": [],
-                    "labels": [],
+                    "functions": ["solute"],
+                    "times": [100],
+                    "labels": ["solute"],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -480,8 +470,8 @@ def test_run_MMS_chemical_pot(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -546,7 +536,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
             },
         "exports": {
             "xdmf": {
-                "functions": ["retention"],
+                "fields": ["retention"],
                 "labels": ["retention"],
                 "folder": str(Path(d))
             },
@@ -659,19 +649,19 @@ def test_run_MMS_soret(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
+                    "fields": [],
                     "times": [],
                     "labels": [],
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": [0, 'T'],
+                    "fields": [0, 'T'],
                     "labels": ["solute", 'T'],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0],
+                        "fields": [0],
                         "exact_solutions": [u],
                         "norm": 'L2',
                         "degree": 4
@@ -688,7 +678,7 @@ def test_run_MMS_soret(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u))
-        error_max_u = output["error"][0][1]
+        error_max_u = output["error"][0]
         msg = 'L2 error on u is:' + str(error_max_u) + '\n \
             with h = ' + str(h) + '\n \
             with dt = ' + str(dt)
@@ -783,19 +773,19 @@ def test_run_MMS_steady_state(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
+                    "fields": [],
                     "times": [],
                     "labels": [],
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": ['solute', '1', 'T', 'retention'],
+                    "fields": ['solute', '1', 'T', 'retention'],
                     "labels":  ['solute', '1', 'temp', 'retention'],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -811,8 +801,8 @@ def test_run_MMS_steady_state(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h)
@@ -895,7 +885,7 @@ def test_chemical_pot_T_solve_stationary():
                 ]
             },
             "xdmf": {
-                "functions": ['solute'],
+                "fields": ['solute'],
                 "labels": ["solute"],
                 "folder": 'results',
             },
@@ -945,7 +935,7 @@ def test_performance_xdmf(tmpdir):
             },
         "exports": {
             "xdmf": {
-                    "functions": ['retention', 'T'],
+                    "fields": ['retention', 'T'],
                     "labels":  ['retention', 'temperature'],
                     "folder": str(Path(d))
             },
@@ -1007,7 +997,7 @@ def test_performance_xdmf_last_timestep(tmpdir):
             },
         "exports": {
             "xdmf": {
-                    "functions": ['retention', 'T'],
+                    "fields": ['retention', 'T'],
                     "labels":  ['retention', 'temperature'],
                     "folder": str(Path(d))
             },

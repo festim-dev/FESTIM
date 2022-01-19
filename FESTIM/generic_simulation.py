@@ -1,9 +1,6 @@
-import enum
-from time import time
 import FESTIM
 from fenics import *
 import sympy as sp
-import numpy as np
 
 
 class Simulation():
@@ -17,22 +14,16 @@ class Simulation():
 
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
-        self.nb_iterations_between_exports = 1
-        self.nb_iterations_between_export_derived_quantities = None
-        self.nb_iterations_between_compute_derived_quantities = 1
-        self.export_xdmf_last_only = False
         self.J = None
 
         self.soret = False
         self.create_concentration_objects()
         self.create_boundarycondition_objects()
         self.create_materials()
+        self.create_temperature()
         self.define_mesh()
         self.define_markers()
-
-        self.derived_quantities_global = [
-            FESTIM.post_processing.header_derived_quantities(self)
-            ]
+        self.create_exports()
 
     def create_concentration_objects(self):
         self.mobile = FESTIM.Mobile()
@@ -85,94 +76,40 @@ class Simulation():
                         my_BC = FESTIM.FluxBC(component="T", **BC)
                     self.boundary_conditions.append(my_BC)
 
-    def initialise(self):
-        # Export parameters
-        if "parameters" in self.parameters["exports"].keys():
-            try:
-                FESTIM.export_parameters(self.parameters)
-            except TypeError:
-                pass
-
-        set_log_level(self.log_level)
-
-        # Check if transient
-        solving_parameters = self.parameters["solving_parameters"]
-        if "type" in solving_parameters.keys():
-            if solving_parameters["type"] == "solve_transient":
-                self.transient = True
-            elif solving_parameters["type"] == "solve_stationary":
-                self.transient = False
-                self.dt = None
-            else:
-                raise ValueError(
-                    str(solving_parameters["type"]) + ' unkown')
-
-        # Declaration of variables
-        if self.transient:
-            self.final_time = solving_parameters["final_time"]
-            initial_stepsize = solving_parameters["initial_stepsize"]
-            self.dt.assign(initial_stepsize)  # time step size
-
-
-        # Define function space for system of concentrations and properties
-        self.define_function_spaces()
-
-        # Define temperature
-        self.define_temperature()
-
-        # check if the soret effect has to be taken into account
-        if "soret" in self.parameters["temperature"]:
-            if self.parameters["temperature"]["soret"]:
-                self.soret = True
-
-        # Create functions for properties
-        self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
-            FESTIM.create_properties(
-                self.mesh.mesh, self.materials,
-                self.volume_markers, self.T.T)
-        if self.S is not None:
-            self.chemical_pot = True
-
-            # if the temperature is of type "solve_stationary" or "expression"
-            # the solubility needs to be projected
-            project_S = False
+    def create_temperature(self):
+        if "temperature" in self.parameters:
             temp_type = self.parameters["temperature"]["type"]
-            if temp_type == "solve_stationary":
-                project_S = True
-            elif temp_type == "expression":
-                if "t" not in sp.printing.ccode(
-                        self.parameters["temperature"]["value"]):
-                    project_S = True
-            if project_S:
-                self.S = project(self.S, self.V_DG1)
+            self.T = FESTIM.Temperature(temp_type)
+            if temp_type == "expression":
+                self.T.expression = self.parameters["temperature"]['value']
+                self.T.value = self.parameters["temperature"]['value']
+            else:
+                self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
+                if temp_type == "solve_transient":
+                    self.T.initial_value = self.parameters["temperature"]["initial_condition"]
+                if "source_term" in self.parameters["temperature"]:
+                    self.T.source_term = self.parameters["temperature"]["source_term"]
 
-        # Define functions
-        self.initialise_concentrations()
-        self.initialise_extrinsic_traps()
+    def create_exports(self):
+        self.exports = FESTIM.Exports([])
+        if "exports" in self.parameters:
+            if "xdmf" in self.parameters["exports"]:
+                my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
+                self.exports.exports += my_xdmf_exports.xdmf_exports
 
-        # Define variational problem H transport
-        self.define_variational_problem_H_transport()
-        self.define_variational_problem_extrinsic_traps()
+            if "derived_quantities" in self.parameters["exports"]:
+                derived_quantities = FESTIM.DerivedQuantities(**self.parameters["exports"]["derived_quantities"])
+                self.exports.exports.append(derived_quantities)
 
-        # Solution files
-        self.append = False
-        exports = self.parameters["exports"]
-        if "xdmf" in exports.keys():
-            if "last_timestep_only" in exports["xdmf"].keys():
-                self.export_xdmf_last_only = True
-            self.files = FESTIM.define_xdmf_files(exports)
-            if "nb_iterations_between_exports" in exports["xdmf"]:
-                self.nb_iterations_between_exports = \
-                   exports["xdmf"]["nb_iterations_between_exports"]
+            if "txt" in self.parameters["exports"]:
+                txt_exports = FESTIM.TXTExports(**self.parameters["exports"]["txt"])
+                self.exports.exports += txt_exports.exports
 
-        if "derived_quantities" in exports:
-            derived_quant = exports["derived_quantities"]
-            if "nb_iterations_between_exports" in derived_quant:
-                self.nb_iterations_between_export_derived_quantities = \
-                   derived_quant["nb_iterations_between_exports"]
-            if "nb_iterations_between_compute" in derived_quant:
-                self.nb_iterations_between_compute_derived_quantities = \
-                   derived_quant["nb_iterations_between_compute"]
+            if "error" in self.parameters["exports"]:
+                for error_dict in self.parameters["exports"]["error"]:
+                    for field, exact in zip(error_dict["fields"], error_dict["exact_solutions"]):
+                        error = FESTIM.Error(field, exact, error_dict["norm"], error_dict["degree"])
+                        self.exports.exports.append(error)
 
     def define_mesh(self):
         if "mesh_parameters" in self.parameters:
@@ -206,12 +143,86 @@ class Simulation():
             self.dx = Measure(
                 'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
-    def define_function_spaces(self):
+    def initialise(self):
+        # Export parameters
+        if "parameters" in self.parameters["exports"].keys():
+            try:
+                FESTIM.export_parameters(self.parameters)
+            except TypeError:
+                pass
+
+        set_log_level(self.log_level)
+
+        # Check if transient
         solving_parameters = self.parameters["solving_parameters"]
-        if "traps_element_type" in solving_parameters.keys():
-            trap_element = solving_parameters["traps_element_type"]
-        else:
-            trap_element = "CG"  # Default is CG
+        if "type" in solving_parameters.keys():
+            if solving_parameters["type"] == "solve_transient":
+                self.transient = True
+            elif solving_parameters["type"] == "solve_stationary":
+                self.transient = False
+                self.dt = None
+            else:
+                raise ValueError(
+                    str(solving_parameters["type"]) + ' unkown')
+
+        # Declaration of variables
+        if self.transient:
+            self.final_time = solving_parameters["final_time"]
+            initial_stepsize = solving_parameters["initial_stepsize"]
+            self.dt.assign(initial_stepsize)  # time step size
+
+
+        # Define function space for system of concentrations and properties
+        self.define_function_spaces()
+
+        # Define temperature
+        self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
+
+        # check if the soret effect has to be taken into account
+        if "soret" in self.parameters["temperature"]:
+            if self.parameters["temperature"]["soret"]:
+                self.soret = True
+
+        # Create functions for properties
+        self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
+            FESTIM.create_properties(
+                self.mesh.mesh, self.materials,
+                self.volume_markers, self.T.T)
+        if self.S is not None:
+            self.chemical_pot = True
+
+            # if the temperature is of type "solve_stationary" or "expression"
+            # the solubility needs to be projected
+            project_S = False
+            if self.T.type == "solve_stationary":
+                project_S = True
+            elif self.T.type == "expression":
+                if "t" not in sp.printing.ccode(self.T.value):
+                    project_S = True
+            if project_S:
+                self.S = project(self.S, self.V_DG1)
+
+        # Define functions
+        self.initialise_concentrations()
+        self.initialise_extrinsic_traps()
+
+        # Define variational problem H transport
+        self.define_variational_problem_H_transport()
+        self.define_variational_problem_extrinsic_traps()
+
+        # add measure and properties to derived_quantities
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                export.assign_measures_to_quantities(self.dx, self.ds)
+                export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
+
+    def define_function_spaces(self):
+        trap_element = "CG"  # Default is CG
+        if "solving_parameters" in self.parameters:
+            solving_parameters = self.parameters["solving_parameters"]
+            if "traps_element_type" in solving_parameters.keys():
+                trap_element = solving_parameters["traps_element_type"]
+
         order_trap = 1
         element_solute, order_solute = "CG", 1
 
@@ -232,19 +243,6 @@ class Simulation():
         self.V_CG1 = FunctionSpace(mesh, 'CG', 1)
         self.V_DG1 = FunctionSpace(mesh, 'DG', 1)
 
-    def define_temperature(self):
-        temp_type = self.parameters["temperature"]["type"]
-        self.T = FESTIM.Temperature(temp_type)
-        if temp_type == "expression":
-            self.T.expression = self.parameters["temperature"]['value']
-        else:
-            self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
-            if temp_type == "solve_transient":
-                self.T.initial_value = self.parameters["temperature"]["initial_condition"]
-            if "source_term" in self.parameters["temperature"]:
-                self.T.source_term = self.parameters["temperature"]["source_term"]
-        self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
-
     def initialise_concentrations(self):
         self.u = Function(self.V, name="c")  # Function for concentrations
         self.v = TestFunction(self.V)  # TestFunction for concentrations
@@ -262,9 +260,8 @@ class Simulation():
 
         print('Defining initial values')
 
-        parameters = self.parameters
-        if "initial_conditions" in parameters.keys():
-            initial_conditions = parameters["initial_conditions"]
+        if "initial_conditions" in self.parameters.keys():
+            initial_conditions = self.parameters["initial_conditions"]
         else:
             initial_conditions = []
         FESTIM.check_no_duplicates(initial_conditions)
@@ -392,8 +389,7 @@ class Simulation():
                 self.bcs, self.parameters["solving_parameters"], J=self.J)
 
             # Post processing
-            self.update_self_processing_solutions()
-            FESTIM.run_post_processing(self)
+            self.run_post_processing()
             elapsed_time = round(self.timer.elapsed()[0], 1)
 
             # print final message
@@ -407,10 +403,9 @@ class Simulation():
                 raise ValueError(msg)
 
         # export derived quantities to CSV
-        if "derived_quantities" in self.parameters["exports"].keys():
-            FESTIM.write_to_csv(
-                self.parameters["exports"]["derived_quantities"],
-                self.derived_quantities_global)
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                export.write()
 
         # End
         print('\007')
@@ -423,7 +418,8 @@ class Simulation():
             self.expressions, self.t)
         FESTIM.update_expressions(
             self.T.sub_expressions, self.t)
-        if self.parameters["temperature"]["type"] == "expression":
+        # TODO this could be a method of Temperature()
+        if self.T.type == "expression":
             self.T.T_n.assign(self.T.T)
             self.T.expression.t = self.t
             self.T.T.assign(interpolate(self.T.expression, self.V_CG1))
@@ -446,7 +442,8 @@ class Simulation():
         print(msg, end="\r")
 
         # Solve heat transfers
-        if self.parameters["temperature"]["type"] == "solve_transient":
+        # TODO this could be a method of Temperature()
+        if self.T.type == "solve_transient":
             dT = TrialFunction(self.T.T.function_space())
             JT = derivative(self.T.F, self.T.T, dT)  # Define the Jacobian
             problem = NonlinearVariationalProblem(
@@ -469,8 +466,7 @@ class Simulation():
                 solve(trap.form_density == 0, trap.density[0], [])
 
         # Post processing
-        self.update_self_processing_solutions()
-        FESTIM.run_post_processing(self)
+        self.run_post_processing()
 
         # Update previous solutions
         self.u_n.assign(self.u)
@@ -483,7 +479,63 @@ class Simulation():
         if self.t + float(self.dt) > self.final_time:
             self.dt.assign(self.final_time - self.t)
 
-    def update_self_processing_solutions(self):
+    def run_post_processing(self):
+        """Main post processing FESTIM function.
+        """
+        self.update_post_processing_solutions()
+        label_to_function = {
+            "solute": self.mobile.post_processing_solution,
+            "0": self.mobile.post_processing_solution,
+            0: self.mobile.post_processing_solution,
+            "T": self.T.T,
+            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
+        }
+        for trap in self.traps.traps:
+            label_to_function[trap.id] = trap.post_processing_solution
+            label_to_function[str(trap.id)] = trap.post_processing_solution
+
+        # make the change of variable solute = theta*S
+        if self.chemical_pot:
+            label_to_function["solute"] = self.mobile.solution*self.S  # solute = theta*S = (solute/S) * S
+
+            if self.need_projecting_solute():
+                # project solute on V_DG1
+                label_to_function["solute"] = project(label_to_function["solute"], self.V_DG1)
+
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+
+                # check if function has to be projected
+                for quantity in export.derived_quantities:
+                    if isinstance(quantity, (FESTIM.MaximumVolume, FESTIM.MinimumVolume)):
+                        if not isinstance(label_to_function[quantity.field], Function):
+                            label_to_function[quantity.field] = project(label_to_function[quantity.field], self.V_DG1)
+                    quantity.function = label_to_function[quantity.field]
+                # compute derived quantities
+                if self.nb_iterations % export.nb_iterations_between_compute == 0:
+                    export.compute(self.t)
+                # export derived quantities
+                if FESTIM.is_export_derived_quantities(self, export):
+                    export.write()
+
+            elif isinstance(export, FESTIM.XDMFExport):
+                if FESTIM.is_export_xdmf(self, export):
+                    if export.field == "retention":
+                        # if not a Function, project it onto V_DG1
+                        if not isinstance(label_to_function["retention"], Function):
+                            label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
+                    export.function = label_to_function[export.field]
+                    export.write(self.t)
+                    export.append = True
+
+            elif isinstance(export, FESTIM.TXTExport):
+                # if not a Function, project it onto V_DG1
+                if not isinstance(label_to_function[export.field], Function):
+                    label_to_function[export.field] = project(label_to_function[export.field], self.V_DG1)
+                export.function = label_to_function[export.field]
+                export.write(self.t, self.dt)
+
+    def update_post_processing_solutions(self):
         if self.u.function_space().num_sub_spaces() == 0:
             res = [self.u]
         else:
@@ -495,9 +547,6 @@ class Simulation():
         else:
             solute = res[0]
 
-        # TODO remove res
-        self.res = res
-
         self.mobile.post_processing_solution = solute
 
         for i, trap in enumerate(self.traps.traps, 1):
@@ -505,37 +554,47 @@ class Simulation():
 
     def need_projecting_solute(self):
         need_solute = False  # initialises to false
-        if "derived_quantities" in self.parameters["exports"].keys():
-            derived_quantities_prm = self.parameters["exports"]["derived_quantities"]
-            if "surface_flux" in derived_quantities_prm:
-                if any(
-                    x["field"] in ["0", "solute"]
-                        for x in derived_quantities_prm["surface_flux"]
-                        ):
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                for quantity in export.derived_quantities:
+                    if isinstance(quantity, FESTIM.SurfaceFlux):
+                        if quantity.field in ["0", 0, "solute"]:
+                            need_solute = True
+            elif isinstance(export, FESTIM.XDMFExport):
+                if export.field in ["0", 0, "solute"]:
                     need_solute = True
-        if "xdmf" in self.parameters["exports"].keys():
-            functions_to_exports = \
-                self.parameters["exports"]["xdmf"]["functions"]
-            if any(x in functions_to_exports for x in ["0", "solute"]):
-                need_solute = True
         return need_solute
 
     def make_output(self):
+        self.update_post_processing_solutions()
+
+        label_to_function = {
+            "solute": self.mobile.post_processing_solution,
+            "0": self.mobile.post_processing_solution,
+            0: self.mobile.post_processing_solution,
+            "T": self.T.T,
+            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
+        }
+        for trap in self.traps.traps:
+            label_to_function[trap.id] = trap.post_processing_solution
+            label_to_function[str(trap.id)] = trap.post_processing_solution
 
         output = dict()  # Final output
         # Compute error
-        if "error" in self.parameters["exports"].keys():
-            error = FESTIM.compute_error(
-                self.parameters["exports"]["error"], self.t,
-                [*self.res, self.T.T], self.mesh.mesh)
-            output["error"] = error
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.Error):
+                export.function = label_to_function[export.field]
+                if "error" not in output:
+                    output["error"] = []
+                output["error"].append(export.compute(self.t))
 
         output["parameters"] = self.parameters
         output["mesh"] = self.mesh.mesh
 
         # add derived quantities to output
-        if "derived_quantities" in self.parameters["exports"].keys():
-            output["derived_quantities"] = self.derived_quantities_global
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                output["derived_quantities"] = export.data
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
@@ -546,7 +605,7 @@ class Simulation():
         for trap in self.traps.traps:
             output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
         # compute retention and add it to output
-        output["solutions"]["retention"] = project(sum(self.res), self.V_DG1)
+        output["solutions"]["retention"] = project(label_to_function["retention"], self.V_DG1)
         return output
 
 
