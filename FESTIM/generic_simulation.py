@@ -125,13 +125,10 @@ class Simulation():
             # if the temperature is of type "solve_stationary" or "expression"
             # the solubility needs to be projected
             project_S = False
-            temp_type = self.parameters["temperature"]["type"]
-            if temp_type == "solve_stationary":
+            if self.T.type == "solve_stationary":
                 project_S = True
-            elif temp_type == "expression":
-                # TODO this should use the self.T attribute
-                if "t" not in sp.printing.ccode(
-                        self.parameters["temperature"]["value"]):
+            elif self.T.type == "expression":
+                if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
                 self.S = project(self.S, self.V_DG1)
