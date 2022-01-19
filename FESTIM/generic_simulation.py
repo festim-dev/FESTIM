@@ -165,7 +165,6 @@ class Simulation():
             if self.T.type == "solve_stationary":
                 project_S = True
             elif self.T.type == "expression":
-                print(self.T.value)
                 if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
