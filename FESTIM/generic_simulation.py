@@ -10,12 +10,12 @@ class Simulation():
         self.chemical_pot = False
         self.expressions = []
 
-        self.dt = Constant(0, name="dt")
         self.nb_iterations = 0
         self.J = None
 
         self.soret = False
         self.create_settings()
+        self.create_stepsize()
         self.create_concentration_objects()
         self.create_boundarycondition_objects()
         self.create_materials()
@@ -23,6 +23,17 @@ class Simulation():
         self.define_mesh()
         self.define_markers()
         self.create_exports()
+
+    def create_stepsize(self):
+        if self.settings.transient:
+            self.dt = FESTIM.Stepsize()
+            solving_parameters = self.parameters["solving_parameters"]
+            self.dt.value.assign(solving_parameters["initial_stepsize"])
+            if "adaptive_stepsize" in solving_parameters:
+                for key, val in solving_parameters["adaptive_stepsize"].items():
+                    self.dt.adaptive_stepsize[key] = val
+        else:
+            self.dt = None
 
     def create_settings(self):
         my_settings = FESTIM.Settings(None, None)
@@ -42,8 +53,6 @@ class Simulation():
             # Declaration of variables
             if my_settings.transient:
                 my_settings.final_time = solving_parameters["final_time"]
-                initial_stepsize = solving_parameters["initial_stepsize"]
-                self.dt.assign(initial_stepsize)  # time step size
 
             my_settings.absolute_tolerance = solving_parameters["newton_solver"]["absolute_tolerance"]
             my_settings.relative_tolerance = solving_parameters["newton_solver"]["relative_tolerance"]
@@ -417,7 +426,7 @@ class Simulation():
 
     def iterate(self):
         # Update current time
-        self.t += float(self.dt)
+        self.t += float(self.dt.value)
         FESTIM.update_expressions(
             self.expressions, self.t)
         FESTIM.update_expressions(
@@ -480,8 +489,8 @@ class Simulation():
         self.nb_iterations += 1
 
         # avoid t > final_time
-        if self.t + float(self.dt) > self.settings.final_time:
-            self.dt.assign(self.settings.final_time - self.t)
+        if self.t + float(self.dt.value) > self.settings.final_time:
+            self.dt.value.assign(self.settings.final_time - self.t)
 
     def run_post_processing(self):
         """Main post processing FESTIM function.

@@ -53,8 +53,8 @@ def solve_it(F, u, bcs, t, dt, settings, solving_parameters, J=None):
                     solving_parameters["adaptive_stepsize"][
                             "stepsize_stop_max"]
                 if t >= t_stop:
-                    if float(dt) > stepsize_stop_max:
-                        dt.assign(stepsize_stop_max)
+                    if float(dt.value) > stepsize_stop_max:
+                        dt.value.assign(stepsize_stop_max)
     return
 
 
@@ -114,12 +114,12 @@ def adaptive_stepsize(nb_it, converged, dt, dt_min,
     """
 
     if converged is False:
-        dt.assign(float(dt)/stepsize_change_ratio)
-        if float(dt) < dt_min:
+        dt.value.assign(float(dt.value)/stepsize_change_ratio)
+        if float(dt.value) < dt_min:
             sys.exit('Error: stepsize reached minimal value')
 
     if nb_it < 5:
-        dt.assign(float(dt)*stepsize_change_ratio)
+        dt.value.assign(float(dt.value)*stepsize_change_ratio)
     else:
-        dt.assign(float(dt)/stepsize_change_ratio)
+        dt.value.assign(float(dt.value)/stepsize_change_ratio)
     return
