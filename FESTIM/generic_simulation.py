@@ -50,16 +50,17 @@ class Simulation():
     def create_stepsize(self):
         if self.settings.transient:
             self.dt = FESTIM.Stepsize()
-            solving_parameters = self.parameters["solving_parameters"]
-            self.dt.value.assign(solving_parameters["initial_stepsize"])
-            if "adaptive_stepsize" in solving_parameters:
-                self.dt.adaptive_stepsize = {}
-                for key, val in solving_parameters["adaptive_stepsize"].items():
-                    self.dt.adaptive_stepsize[key] = val
-                if "t_stop" not in solving_parameters["adaptive_stepsize"]:
-                    self.dt.adaptive_stepsize["t_stop"] = None
-                if "stepsize_stop_max" not in solving_parameters["adaptive_stepsize"]:
-                    self.dt.adaptive_stepsize["stepsize_stop_max"] = None
+            if "solving_parameters" in self.parameters:
+                solving_parameters = self.parameters["solving_parameters"]
+                self.dt.value.assign(solving_parameters["initial_stepsize"])
+                if "adaptive_stepsize" in solving_parameters:
+                    self.dt.adaptive_stepsize = {}
+                    for key, val in solving_parameters["adaptive_stepsize"].items():
+                        self.dt.adaptive_stepsize[key] = val
+                    if "t_stop" not in solving_parameters["adaptive_stepsize"]:
+                        self.dt.adaptive_stepsize["t_stop"] = None
+                    if "stepsize_stop_max" not in solving_parameters["adaptive_stepsize"]:
+                        self.dt.adaptive_stepsize["stepsize_stop_max"] = None
 
     def create_settings(self):
         my_settings = FESTIM.Settings(None, None)
