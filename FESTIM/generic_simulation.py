@@ -7,7 +7,6 @@ class Simulation():
     def __init__(self, parameters, log_level=40):
         self.parameters = parameters
         self.log_level = log_level
-        self.chemical_pot = False
         self.expressions = []
 
         self.nb_iterations = 0
@@ -212,7 +211,7 @@ class Simulation():
                 self.mesh.mesh, self.materials,
                 self.volume_markers, self.T.T)
         if self.S is not None:
-            self.chemical_pot = True
+            self.settings.chemical_pot = True
 
             # if the temperature is of type "solve_stationary" or "expression"
             # the solubility needs to be projected
@@ -336,7 +335,7 @@ class Simulation():
             if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
                 bc.create_dirichletbc(
                     self.V, self.T.T, self.surface_markers,
-                    chemical_pot=self.chemical_pot,
+                    chemical_pot=self.settings.chemical_pot,
                     materials=self.materials,
                     volume_markers=self.volume_markers)
                 self.bcs += bc.dirichlet_bc
@@ -353,7 +352,7 @@ class Simulation():
         test_solute = split(self.v)[0]
         F = 0
 
-        if self.chemical_pot:
+        if self.settings.chemical_pot:
             solute = solutions[0]*self.S
         else:
             solute = solutions[0]
@@ -443,7 +442,7 @@ class Simulation():
             self.H._T = self.T.T
         if self.thermal_cond is not None:
             self.thermal_cond._T = self.T.T
-        if self.chemical_pot:
+        if self.settings.chemical_pot:
             self.S._T = self.T.T
 
         # Display time
@@ -510,7 +509,7 @@ class Simulation():
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
         # make the change of variable solute = theta*S
-        if self.chemical_pot:
+        if self.settings.chemical_pot:
             label_to_function["solute"] = self.mobile.solution*self.S  # solute = theta*S = (solute/S) * S
 
             if self.need_projecting_solute():
@@ -555,7 +554,7 @@ class Simulation():
             res = [self.u]
         else:
             res = list(self.u.split())
-        if self.chemical_pot:  # c_m = theta * S
+        if self.settings.chemical_pot:  # c_m = theta * S
             theta = res[0]
             solute = project(theta*self.S, self.V_DG1)
             res[0] = solute
