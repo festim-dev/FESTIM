@@ -61,8 +61,8 @@ class TXTExports:
             warnings.warn(msg, DeprecationWarning)
 
         if len(self.fields) != len(labels):
-            raise NameError("Number of fields to be exported "
-                            "doesn't match number of labels in txt exports")
+            raise ValueError("Number of fields to be exported "
+                             "doesn't match number of labels in txt exports")
         self.times = sorted(times)
         self.labels = labels
         self.folder = folder

@@ -16,3 +16,8 @@ class TestWrite:
     def test_txt_exports_times(self, my_export):
         for export in my_export.exports:
             assert export.times == my_export.times
+
+
+def test_error_when_fields_and_labels_have_different_lengths():
+    with pytest.raises(ValueError, match="Number of fields to be exported"):
+        TXTExports(["solute", "T"], [1], ["solute_label"])
