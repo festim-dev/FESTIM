@@ -26,7 +26,7 @@ from .settings import Settings
 from .stepsize import Stepsize
 
 from .post_processing import is_export_derived_quantities, is_export_xdmf, \
-    create_properties, check_keys_derived_quantities
+    create_properties
 
 from .materials import Material, Materials
 from .concentration import Concentration
