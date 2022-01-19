@@ -10,7 +10,6 @@ class Simulation():
         self.chemical_pot = False
         self.transient = True
         self.expressions = []
-        self.files = []
 
         self.dt = Constant(0, name="dt")
         self.nb_iterations = 0

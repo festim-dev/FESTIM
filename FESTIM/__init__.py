@@ -22,6 +22,9 @@ from .exports.derived_quantities_export import DerivedQuantities, \
     TotalVolume, TotalSurface, ThermalFlux, HydrogenFlux
 from .exports.txt_export import TXTExport, TXTExports
 
+
+from .settings import Settings
+
 from .post_processing import is_export_derived_quantities, is_export_xdmf, \
     create_properties, check_keys_derived_quantities
 
