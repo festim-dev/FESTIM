@@ -56,11 +56,6 @@ class Simulation():
             self.create_exports(parameters)
             self.create_sources_objects(parameters)
 
-        self.attribute_source_terms()
-        self.attribute_boundary_conditions()
-
-        self.define_markers()
-
     def attribute_source_terms(self):
         field_to_object = {
             "0": self.mobile,
@@ -295,6 +290,11 @@ class Simulation():
 
     def initialise(self):
         set_log_level(self.log_level)
+
+        self.attribute_source_terms()
+        self.attribute_boundary_conditions()
+
+        self.define_markers()
 
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
