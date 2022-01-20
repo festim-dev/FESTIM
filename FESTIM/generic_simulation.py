@@ -179,9 +179,13 @@ class Simulation():
                         )
             elif isinstance(parameters["source_term"], list):
                 for source_dict in parameters["source_term"]:
-                    for volume in source_dict["volume"]:
+                    if type(source_dict["volume"]) is not list:
+                        vols = [source_dict["volume"]]
+                    else:
+                        vols = source_dict["volume"]
+                    for volume in vols:
                         self.sources.append(
-                            FESTIM.Source(source_dict["value"], volume=source_dict["volume"], field="0")
+                            FESTIM.Source(source_dict["value"], volume=volume, field="0")
                         )
         if "temperature" in parameters:
             if "source_term" in parameters["temperature"]:
@@ -665,8 +669,6 @@ class Simulation():
         for export in self.exports.exports:
             if isinstance(export, FESTIM.Error):
                 export.function = label_to_function[export.field]
-                if not isinstance(export.function, Function):
-                    export.function = project(export.function, self.V_DG1)
                 if "error" not in output:
                     output["error"] = []
                 output["error"].append(export.compute(self.t))

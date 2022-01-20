@@ -1,7 +1,4 @@
 import FESTIM
-from FESTIM import materials
-from FESTIM import initial_condition
-from FESTIM.exports.xdmf_export import XDMFExport
 import fenics
 import pytest
 import sympy as sp
@@ -20,11 +17,10 @@ def test_run_temperature_stationary(tmpdir):
     u = 1 + 2*FESTIM.x**2
     size = 1
 
-    my_materials = FESTIM.Materials(
-        [
-            FESTIM.Material(id=1, D_0=4.1e-7, E_D=0.39, thermal_cond=1)
-        ]
-    )
+    my_materials = [
+        FESTIM.Material(id=1, D_0=4.1e-7, E_D=0.39, thermal_cond=1)
+    ]
+
     my_mesh = FESTIM.MeshFromRefinements(200, size=size)
     my_boundary_conditions = [
         FESTIM.DirichletBC("dc", value=1, component=0, surfaces=[1]),
@@ -43,13 +39,11 @@ def test_run_temperature_stationary(tmpdir):
     my_derived_quantities = FESTIM.DerivedQuantities(file="derived_quantities.csv", folder=str(Path(d)))
     my_derived_quantities.derived_quantities = [FESTIM.TotalVolume("solute", 1)]
 
-    my_exports = FESTIM.Exports(
-        [
+    my_exports = [
             FESTIM.XDMFExports(fields=['T', 'solute'], labels=["temperature", "solute"], folder=str(Path(d))),
             my_derived_quantities,
             FESTIM.Error("T", exact_solution=u)
-        ]
-    )
+    ]
 
     my_sim = FESTIM.Simulation(
         mesh=my_mesh, materials=my_materials,
