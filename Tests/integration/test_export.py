@@ -1,80 +1,6 @@
-from FESTIM.export import export_parameters, treat_value
-from FESTIM import x
-import FESTIM
 import fenics
-from pathlib import Path
+import FESTIM
 import pytest
-
-
-def test_export_parameters(tmpdir):
-    """Tests the function export parameters
-    """
-    d = tmpdir.mkdir("out")
-
-    def thermal_cond(T):
-        return 2*T
-
-    parameters = {
-        "exports": {
-            "parameters": str(Path(d)) + "/parameters"
-        },
-        "a": {
-            "a1": x,
-            "a2": 3
-        },
-        "b": [
-            {
-                "b11": 'a',
-                "b12": 'b'
-            },
-            {
-                "b21": 'a',
-                "b22": 'b'
-            },
-        ],
-        "thermal_cond": thermal_cond
-    }
-    assert export_parameters(parameters)
-
-
-def test_treat_value():
-    """Tests that the function export.treat_value() returns the correct dict
-    """
-    d = {
-        "a": {
-            "a1": x,
-            "a2": 3
-        },
-        "b": [
-            {
-                "b11": 'a',
-                "b12": ['1', 2]
-            },
-            {
-                "b21": 'a',
-                "b22": 'b'
-            },
-        ],
-        "thermal_cond": 2
-    }
-    d_expected = {
-        "a": {
-            "a1": 'x[0]',
-            "a2": 3
-        },
-        "b": [
-            {
-                "b11": 'a',
-                "b12": ['1', 2]
-            },
-            {
-                "b21": 'a',
-                "b22": 'b'
-            },
-        ],
-        "thermal_cond": 2
-    }
-    assert treat_value(d) == d_expected
 
 
 def test_output_of_run_without_traps_no_chemical_pot():
@@ -110,7 +36,7 @@ def test_output_of_run_without_traps_no_chemical_pot():
     output = my_sim.make_output()
 
     # test
-    for key in ["parameters", "mesh", "solutions"]:
+    for key in ["mesh", "solutions"]:
         assert key in output.keys()
 
     assert isinstance(output["mesh"], fenics.Mesh)
@@ -160,7 +86,7 @@ def test_output_of_run_without_traps_with_chemical_pot():
     output = my_sim.make_output()
 
     # test
-    for key in ["parameters", "mesh", "solutions"]:
+    for key in ["mesh", "solutions"]:
         assert key in output.keys()
 
     assert isinstance(output["mesh"], fenics.Mesh)
@@ -231,7 +157,7 @@ def test_output_of_run_with_traps_with_chemical_pot():
     output = my_sim.make_output()
 
     # test
-    for key in ["parameters", "mesh", "solutions"]:
+    for key in ["mesh", "solutions"]:
         assert key in output.keys()
     assert isinstance(output["mesh"], fenics.Mesh)
     for key in ["solute", "T", "trap_1", "trap_2", "retention"]:

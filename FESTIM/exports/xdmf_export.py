@@ -1,6 +1,7 @@
 import warnings
 from FESTIM import Export
 import fenics as f
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class XDMFExport(Export):

@@ -13,7 +13,7 @@ from .boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
 
 from .solving import solve_it, solve_once
 
-from .export import treat_value, export_parameters, Export, Exports
+from .export import Export, Exports
 from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
 from .exports.derived_quantities_export import DerivedQuantities, \
@@ -26,7 +26,9 @@ from .settings import Settings
 from .stepsize import Stepsize
 
 from .post_processing import is_export_derived_quantities, is_export_xdmf, \
-    create_properties, check_keys_derived_quantities
+    create_properties
+
+from .source import Source
 
 from .materials import Material, Materials
 from .concentration import Concentration

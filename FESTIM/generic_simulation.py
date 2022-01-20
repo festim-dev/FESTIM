@@ -1,35 +1,57 @@
 import FESTIM
 from fenics import *
 import sympy as sp
+import warnings
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class Simulation():
-    def __init__(self, parameters, log_level=40):
-        self.parameters = parameters
+    def __init__(self, parameters=None, mesh=None, materials=None, sources=[], boundary_conditions=None, traps=None, dt=None, settings=None, temperature=None, initial_conditions=[], exports=None, log_level=40):
         self.log_level = log_level
+
+        self.settings = settings
+        self.dt = dt
+        if traps is None:
+            self.traps = FESTIM.Traps([])
+        elif type(traps) is list:
+            self.traps = FESTIM.Traps(traps)
+        elif isinstance(traps, FESTIM.Traps):
+            self.traps = traps
+
+        if type(materials) is list:
+            self.materials = FESTIM.Materials(materials)
+        elif isinstance(materials, FESTIM.Materials):
+            self.materials = materials
+        else:
+            self.materials = materials
+
+        self.boundary_conditions = boundary_conditions
+        self.initial_conditions = initial_conditions
+        self.T = temperature
+        if exports is None:
+            self.exports = FESTIM.Exports([])
+        elif type(exports) is list:
+            self.exports = FESTIM.Exports(exports)
+        elif isinstance(exports, FESTIM.Exports):
+            self.exports = exports
+        self.mesh = mesh
+        self.sources = sources
+
+        # internal attributes
+        self.mobile = FESTIM.Mobile()
         self.expressions = []
 
-        self.nb_iterations = 0
         self.J = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
-        self.settings = None
-        self.dt = None
-        self.mobile = None
-        self.traps = None
-        self.materials = None
-        self.boundary_conditions = None
-        self.initial_conditions = None
-        self.bcs = None
-        self.T = None
-        self.exports = None
-        self.mesh = None
         self.dx, self.ds = None, None
         self.V, self.V_CG1, self.V_DG1 = None, None, None
         self.u = None
         self.v = None
         self.u_n = None
+
+        self.bcs = None
 
         self.D = None
         self.thermal_cond = None
@@ -38,22 +60,48 @@ class Simulation():
         self.H = None
         self.S = None
 
-        self.create_settings()
-        self.create_stepsize()
-        self.create_concentration_objects()
-        self.create_boundarycondition_objects()
-        self.create_materials()
-        self.create_temperature()
-        self.create_initial_conditions()
-        self.define_mesh()
-        self.define_markers()
-        self.create_exports()
+        if parameters is not None:
+            msg = "The use of parameters will soon be deprecated \
+                 please use the object-oriented approach instead"
+            warnings.warn(msg, DeprecationWarning)
+            self.create_settings(parameters)
+            self.create_stepsize(parameters)
+            self.create_concentration_objects(parameters)
+            self.create_boundarycondition_objects(parameters)
+            self.create_materials(parameters)
+            self.create_temperature(parameters)
+            self.create_initial_conditions(parameters)
+            self.define_mesh(parameters)
+            self.create_exports(parameters)
+            self.create_sources_objects(parameters)
 
-    def create_stepsize(self):
+    def attribute_source_terms(self):
+        field_to_object = {
+            "0": self.mobile,
+            0: self.mobile,
+            "mobile": self.mobile,
+            "T": self.T
+        }
+        if None not in [self.mobile, self.T]:
+            for i, trap in enumerate(self.traps.traps, 1):
+                field_to_object[i] = trap
+                field_to_object[str(i)] = trap
+
+            for source in self.sources:
+                field_to_object[source.field].sources.append(source)
+
+    def attribute_boundary_conditions(self):
+        if self.T is not None:
+            self.T.boundary_conditions = []
+            for bc in self.boundary_conditions:
+                if bc.component == "T":
+                    self.T.boundary_conditions.append(bc)
+
+    def create_stepsize(self, parameters):
         if self.settings.transient:
             self.dt = FESTIM.Stepsize()
-            if "solving_parameters" in self.parameters:
-                solving_parameters = self.parameters["solving_parameters"]
+            if "solving_parameters" in parameters:
+                solving_parameters = parameters["solving_parameters"]
                 self.dt.value.assign(solving_parameters["initial_stepsize"])
                 if "adaptive_stepsize" in solving_parameters:
                     self.dt.adaptive_stepsize = {}
@@ -64,11 +112,11 @@ class Simulation():
                     if "stepsize_stop_max" not in solving_parameters["adaptive_stepsize"]:
                         self.dt.adaptive_stepsize["stepsize_stop_max"] = None
 
-    def create_settings(self):
+    def create_settings(self, parameters):
         my_settings = FESTIM.Settings(None, None)
-        if "solving_parameters" in self.parameters:
+        if "solving_parameters" in parameters:
             # Check if transient
-            solving_parameters = self.parameters["solving_parameters"]
+            solving_parameters = parameters["solving_parameters"]
             if "type" in solving_parameters:
                 if solving_parameters["type"] == "solve_transient":
                     my_settings.transient = True
@@ -92,43 +140,86 @@ class Simulation():
             if "update_jacobian" in solving_parameters:
                 my_settings.update_jacobian = solving_parameters["update_jacobian"]
 
-            if "soret" in self.parameters["temperature"]:
-                my_settings.soret = self.parameters["temperature"]["soret"]
+            if "soret" in parameters["temperature"]:
+                my_settings.soret = parameters["temperature"]["soret"]
 
         self.settings = my_settings
 
-    def create_concentration_objects(self):
+    def create_concentration_objects(self, parameters):
         self.mobile = FESTIM.Mobile()
         traps = []
-        if "traps" in self.parameters:
-            for trap in self.parameters["traps"]:
+        if "traps" in parameters:
+            for trap in parameters["traps"]:
                 if "type" in trap:
                     traps.append(FESTIM.ExtrinsicTrap(**trap))
                 else:
-                    traps.append(FESTIM.Trap(**trap))
+                    traps.append(
+                        FESTIM.Trap(trap["k_0"], trap["E_k"], trap["p_0"], trap["E_p"], trap["materials"], trap["density"])
+                    )
         self.traps = FESTIM.Traps(traps)
 
-    def create_materials(self):
+    def create_sources_objects(self, parameters):
+        self.sources = []
+        if "traps" in parameters:
+            for i, trap in enumerate(parameters["traps"], 1):
+                if "source_term" in trap:
+                    if type(trap["materials"]) is not list:
+                        materials = [trap["materials"]]
+                    else:
+                        materials = trap["materials"]
+                    for mat in materials:
+                        self.sources.append(
+                            FESTIM.Source(trap["source_term"], mat, i)
+                        )
+        if "source_term" in parameters:
+            if isinstance(parameters["source_term"], dict):
+                for mat in self.materials.materials:
+                    if type(mat.id) is not list:
+                        vols = [mat.id]
+                    else:
+                        vols = mat.id
+                    for vol in vols:
+                        self.sources.append(
+                            FESTIM.Source(parameters["source_term"]["value"], volume=vol, field="0")
+                        )
+            elif isinstance(parameters["source_term"], list):
+                for source_dict in parameters["source_term"]:
+                    if type(source_dict["volume"]) is not list:
+                        vols = [source_dict["volume"]]
+                    else:
+                        vols = source_dict["volume"]
+                    for volume in vols:
+                        self.sources.append(
+                            FESTIM.Source(source_dict["value"], volume=volume, field="0")
+                        )
+        if "temperature" in parameters:
+            if "source_term" in parameters["temperature"]:
+                for source in parameters["temperature"]["source_term"]:
+                    self.sources.append(
+                        FESTIM.Source(source["value"], source["volume"], "T")
+                    )
+
+    def create_materials(self, parameters):
         materials = []
-        if "materials" in self.parameters:
-            for material in self.parameters["materials"]:
+        if "materials" in parameters:
+            for material in parameters["materials"]:
                 my_mat = FESTIM.Material(**material)
                 materials.append(my_mat)
         self.materials = FESTIM.Materials(materials)
         derived_quantities = {}
-        if "exports" in self.parameters:
-            if "derived_quantities" in self.parameters["exports"]:
-                derived_quantities = self.parameters["exports"]["derived_quantities"]
+        if "exports" in parameters:
+            if "derived_quantities" in parameters["exports"]:
+                derived_quantities = parameters["exports"]["derived_quantities"]
         temp_type = "expression"  # default temperature type is expression
-        if "temperature" in self.parameters:
-            if "type" in self.parameters["temperature"]:
-                temp_type = self.parameters["temperature"]["type"]
+        if "temperature" in parameters:
+            if "type" in parameters["temperature"]:
+                temp_type = parameters["temperature"]["type"]
         self.materials.check_materials(temp_type, derived_quantities)
 
-    def create_boundarycondition_objects(self):
+    def create_boundarycondition_objects(self, parameters):
         self.boundary_conditions = []
-        if "boundary_conditions" in self.parameters:
-            for BC in self.parameters["boundary_conditions"]:
+        if "boundary_conditions" in parameters:
+            for BC in parameters["boundary_conditions"]:
                 if BC["type"] in FESTIM.helpers.bc_types["dc"]:
                     my_BC = FESTIM.DirichletBC(**BC)
                 elif BC["type"] not in FESTIM.helpers.bc_types["neumann"] or \
@@ -136,10 +227,10 @@ class Simulation():
                     my_BC = FESTIM.FluxBC(**BC)
                 self.boundary_conditions.append(my_BC)
 
-        if "temperature" in self.parameters:
-            if "boundary_conditions" in self.parameters["temperature"]:
+        if "temperature" in parameters:
+            if "boundary_conditions" in parameters["temperature"]:
 
-                BCs = self.parameters["temperature"]["boundary_conditions"]
+                BCs = parameters["temperature"]["boundary_conditions"]
                 for BC in BCs:
                     if BC["type"] in FESTIM.helpers.T_bc_types["dc"]:
                         my_BC = FESTIM.DirichletBC(component="T", **BC)
@@ -148,51 +239,51 @@ class Simulation():
                         my_BC = FESTIM.FluxBC(component="T", **BC)
                     self.boundary_conditions.append(my_BC)
 
-    def create_temperature(self):
-        if "temperature" in self.parameters:
-            temp_type = self.parameters["temperature"]["type"]
+    def create_temperature(self, parameters):
+        if "temperature" in parameters:
+            temp_type = parameters["temperature"]["type"]
             self.T = FESTIM.Temperature(temp_type)
             if temp_type == "expression":
-                self.T.expression = self.parameters["temperature"]['value']
-                self.T.value = self.parameters["temperature"]['value']
+                self.T.expression = parameters["temperature"]['value']
+                self.T.value = parameters["temperature"]['value']
             else:
                 self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
                 if temp_type == "solve_transient":
-                    self.T.initial_value = self.parameters["temperature"]["initial_condition"]
-                if "source_term" in self.parameters["temperature"]:
-                    self.T.source_term = self.parameters["temperature"]["source_term"]
+                    self.T.initial_value = parameters["temperature"]["initial_condition"]
+                if "source_term" in parameters["temperature"]:
+                    self.T.source_term = parameters["temperature"]["source_term"]
 
-    def create_initial_conditions(self):
+    def create_initial_conditions(self, parameters):
         initial_conditions = []
-        if "initial_conditions" in self.parameters.keys():
-            for condition in self.parameters["initial_conditions"]:
+        if "initial_conditions" in parameters.keys():
+            for condition in parameters["initial_conditions"]:
                 initial_conditions.append(FESTIM.InitialCondition(**condition))
         self.initial_conditions = initial_conditions
 
-    def create_exports(self):
+    def create_exports(self, parameters):
         self.exports = FESTIM.Exports([])
-        if "exports" in self.parameters:
-            if "xdmf" in self.parameters["exports"]:
-                my_xdmf_exports = FESTIM.XDMFExports(**self.parameters["exports"]["xdmf"])
+        if "exports" in parameters:
+            if "xdmf" in parameters["exports"]:
+                my_xdmf_exports = FESTIM.XDMFExports(**parameters["exports"]["xdmf"])
                 self.exports.exports += my_xdmf_exports.xdmf_exports
 
-            if "derived_quantities" in self.parameters["exports"]:
-                derived_quantities = FESTIM.DerivedQuantities(**self.parameters["exports"]["derived_quantities"])
+            if "derived_quantities" in parameters["exports"]:
+                derived_quantities = FESTIM.DerivedQuantities(**parameters["exports"]["derived_quantities"])
                 self.exports.exports.append(derived_quantities)
 
-            if "txt" in self.parameters["exports"]:
-                txt_exports = FESTIM.TXTExports(**self.parameters["exports"]["txt"])
+            if "txt" in parameters["exports"]:
+                txt_exports = FESTIM.TXTExports(**parameters["exports"]["txt"])
                 self.exports.exports += txt_exports.exports
 
-            if "error" in self.parameters["exports"]:
-                for error_dict in self.parameters["exports"]["error"]:
+            if "error" in parameters["exports"]:
+                for error_dict in parameters["exports"]["error"]:
                     for field, exact in zip(error_dict["fields"], error_dict["exact_solutions"]):
                         error = FESTIM.Error(field, exact, error_dict["norm"], error_dict["degree"])
                         self.exports.exports.append(error)
 
-    def define_mesh(self):
-        if "mesh_parameters" in self.parameters:
-            mesh_parameters = self.parameters["mesh_parameters"]
+    def define_mesh(self, parameters):
+        if "mesh_parameters" in parameters:
+            mesh_parameters = parameters["mesh_parameters"]
 
             if "volume_file" in mesh_parameters.keys():
                 self.mesh = FESTIM.MeshFromXDMF(**mesh_parameters)
@@ -221,14 +312,12 @@ class Simulation():
                 'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
     def initialise(self):
-        # Export parameters
-        if "parameters" in self.parameters["exports"].keys():
-            try:
-                FESTIM.export_parameters(self.parameters)
-            except TypeError:
-                pass
-
         set_log_level(self.log_level)
+
+        self.attribute_source_terms()
+        self.attribute_boundary_conditions()
+
+        self.define_markers()
 
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
@@ -289,6 +378,8 @@ class Simulation():
         # function space for T and ext trap dens
         self.V_CG1 = FunctionSpace(mesh, 'CG', 1)
         self.V_DG1 = FunctionSpace(mesh, 'DG', 1)
+
+        self.exports.V_DG1 = self.V_DG1
 
     def initialise_concentrations(self):
         self.u = Function(self.V, name="c")  # Function for concentrations
@@ -404,6 +495,9 @@ class Simulation():
         self.timer = Timer()  # start timer
 
         if self.settings.transient:
+            # add final_time to Exports
+            self.exports.final_time = self.settings.final_time
+
             # compute Jacobian before iterating if required
             if not self.settings.update_jacobian:
                 du = TrialFunction(self.u.function_space())
@@ -510,7 +604,6 @@ class Simulation():
         for trap in self.traps.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
                 trap.density_previous_solution.assign(trap.density[0])
-        self.nb_iterations += 1
 
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:
@@ -519,7 +612,29 @@ class Simulation():
     def run_post_processing(self):
         """Main post processing FESTIM function.
         """
-        self.update_post_processing_solutions()
+        label_to_function = self.update_post_processing_solutions()
+
+        self.exports.t = self.t
+        self.exports.write(label_to_function, self.dt)
+
+    def update_post_processing_solutions(self):
+        if self.u.function_space().num_sub_spaces() == 0:
+            res = [self.u]
+        else:
+            res = list(self.u.split())
+        if self.settings.chemical_pot:  # c_m = theta * S
+            solute = res[0]*self.S
+            if self.need_projecting_solute():
+                # project solute on V_DG1
+                solute = project(solute, self.V_DG1)
+        else:
+            solute = res[0]
+
+        self.mobile.post_processing_solution = solute
+
+        for i, trap in enumerate(self.traps.traps, 1):
+            trap.post_processing_solution = res[i]
+
         label_to_function = {
             "solute": self.mobile.post_processing_solution,
             "0": self.mobile.post_processing_solution,
@@ -531,63 +646,7 @@ class Simulation():
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
-        # make the change of variable solute = theta*S
-        if self.settings.chemical_pot:
-            label_to_function["solute"] = self.mobile.solution*self.S  # solute = theta*S = (solute/S) * S
-
-            if self.need_projecting_solute():
-                # project solute on V_DG1
-                label_to_function["solute"] = project(label_to_function["solute"], self.V_DG1)
-
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-
-                # check if function has to be projected
-                for quantity in export.derived_quantities:
-                    if isinstance(quantity, (FESTIM.MaximumVolume, FESTIM.MinimumVolume)):
-                        if not isinstance(label_to_function[quantity.field], Function):
-                            label_to_function[quantity.field] = project(label_to_function[quantity.field], self.V_DG1)
-                    quantity.function = label_to_function[quantity.field]
-                # compute derived quantities
-                if self.nb_iterations % export.nb_iterations_between_compute == 0:
-                    export.compute(self.t)
-                # export derived quantities
-                if FESTIM.is_export_derived_quantities(self, export):
-                    export.write()
-
-            elif isinstance(export, FESTIM.XDMFExport):
-                if FESTIM.is_export_xdmf(self, export):
-                    if export.field == "retention":
-                        # if not a Function, project it onto V_DG1
-                        if not isinstance(label_to_function["retention"], Function):
-                            label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
-                    export.function = label_to_function[export.field]
-                    export.write(self.t)
-                    export.append = True
-
-            elif isinstance(export, FESTIM.TXTExport):
-                # if not a Function, project it onto V_DG1
-                if not isinstance(label_to_function[export.field], Function):
-                    label_to_function[export.field] = project(label_to_function[export.field], self.V_DG1)
-                export.function = label_to_function[export.field]
-                export.write(self.t, self.dt)
-
-    def update_post_processing_solutions(self):
-        if self.u.function_space().num_sub_spaces() == 0:
-            res = [self.u]
-        else:
-            res = list(self.u.split())
-        if self.settings.chemical_pot:  # c_m = theta * S
-            theta = res[0]
-            solute = project(theta*self.S, self.V_DG1)
-            res[0] = solute
-        else:
-            solute = res[0]
-
-        self.mobile.post_processing_solution = solute
-
-        for i, trap in enumerate(self.traps.traps, 1):
-            trap.post_processing_solution = res[i]
+        return label_to_function
 
     def need_projecting_solute(self):
         need_solute = False  # initialises to false
@@ -603,18 +662,11 @@ class Simulation():
         return need_solute
 
     def make_output(self):
-        self.update_post_processing_solutions()
+        label_to_function = self.update_post_processing_solutions()
 
-        label_to_function = {
-            "solute": self.mobile.post_processing_solution,
-            "0": self.mobile.post_processing_solution,
-            0: self.mobile.post_processing_solution,
-            "T": self.T.T,
-            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
-        }
-        for trap in self.traps.traps:
-            label_to_function[trap.id] = trap.post_processing_solution
-            label_to_function[str(trap.id)] = trap.post_processing_solution
+        for key, val in label_to_function.items():
+            if not isinstance(val, Function):
+                label_to_function[key] = project(val, self.V_DG1)
 
         output = dict()  # Final output
         # Compute error
@@ -625,7 +677,6 @@ class Simulation():
                     output["error"] = []
                 output["error"].append(export.compute(self.t))
 
-        output["parameters"] = self.parameters
         output["mesh"] = self.mesh.mesh
 
         # add derived quantities to output
@@ -635,8 +686,8 @@ class Simulation():
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
-            "solute": self.mobile.post_processing_solution,
-            "T": self.T.T
+            "solute": label_to_function["solute"],
+            "T": label_to_function["T"]
         }
         # add traps to output
         for trap in self.traps.traps:

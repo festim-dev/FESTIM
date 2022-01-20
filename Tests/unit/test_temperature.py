@@ -55,7 +55,9 @@ def test_formulation_heat_transfer():
     bc1 = FESTIM.DirichletBC(type="dc", surfaces=[1], value=u, component="T")
     bc2 = FESTIM.FluxBC(type="flux", surfaces=[2], value=2, component="T")
 
-    my_temp = FESTIM.Temperature("solve_transient", bcs=[bc1, bc2], initial_value=0, source_term=[{"value": -4, "volume": 1}])
+    my_temp = FESTIM.Temperature("solve_transient", initial_value=0)
+    my_temp.boundary_conditions = [bc1, bc2]
+    my_temp.sources = [FESTIM.Source(-4, volume=1, field="T")]
     my_temp.create_functions(V, my_mats, dx, ds, dt=dt)
 
     T = my_temp.T
