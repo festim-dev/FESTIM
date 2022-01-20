@@ -17,6 +17,8 @@ class Simulation():
         self.initial_conditions = initial_conditions
         self.T = temperature
         self.exports = exports
+        if self.exports is None:
+            self.exports = FESTIM.Exports([])
         self.mesh = mesh
         self.sources = sources
 
@@ -604,39 +606,11 @@ class Simulation():
             if self.need_projecting_solute():
                 # project solute on V_DG1
                 label_to_function["solute"] = project(label_to_function["solute"], self.V_DG1)
-
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-
-                # check if function has to be projected
-                for quantity in export.derived_quantities:
-                    if isinstance(quantity, (FESTIM.MaximumVolume, FESTIM.MinimumVolume)):
-                        if not isinstance(label_to_function[quantity.field], Function):
-                            label_to_function[quantity.field] = project(label_to_function[quantity.field], self.V_DG1)
-                    quantity.function = label_to_function[quantity.field]
-                # compute derived quantities
-                if self.nb_iterations % export.nb_iterations_between_compute == 0:
-                    export.compute(self.t)
-                # export derived quantities
-                if FESTIM.is_export_derived_quantities(self, export):
-                    export.write()
-
-            elif isinstance(export, FESTIM.XDMFExport):
-                if FESTIM.is_export_xdmf(self, export):
-                    if export.field == "retention":
-                        # if not a Function, project it onto V_DG1
-                        if not isinstance(label_to_function["retention"], Function):
-                            label_to_function["retention"] = project(label_to_function["retention"], self.V_DG1)
-                    export.function = label_to_function[export.field]
-                    export.write(self.t)
-                    export.append = True
-
-            elif isinstance(export, FESTIM.TXTExport):
-                # if not a Function, project it onto V_DG1
-                if not isinstance(label_to_function[export.field], Function):
-                    label_to_function[export.field] = project(label_to_function[export.field], self.V_DG1)
-                export.function = label_to_function[export.field]
-                export.write(self.t, self.dt)
+        self.exports.V_DG1 = self.V_DG1
+        self.exports.t = self.t
+        self.exports.nb_iterations = self.nb_iterations
+        self.exports.final_time = self.settings.final_time
+        self.exports.write(label_to_function, self.dt)
 
     def update_post_processing_solutions(self):
         if self.u.function_space().num_sub_spaces() == 0:

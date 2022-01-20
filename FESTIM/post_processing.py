@@ -2,18 +2,18 @@ import fenics as f
 import FESTIM
 
 
-def is_export_xdmf(simulation, export):
+def is_export_xdmf(export, t, final_time, nb_iterations):
     if (export.last_time_step_only and
-        simulation.t >= simulation.settings.final_time) or \
+        t >= final_time) or \
             not export.last_time_step_only:
-        if simulation.nb_iterations % \
+        if nb_iterations % \
                 export.nb_iterations_between_exports == 0:
             return True
 
     return False
 
 
-def is_export_derived_quantities(simulation, derived_quantities):
+def is_export_derived_quantities(derived_quantities, t, final_time, nb_iterations):
     """Checks if the derived quantities should be exported or not based on the
     key simulation.nb_iterations_between_export_derived_quantities
 
@@ -24,15 +24,15 @@ def is_export_derived_quantities(simulation, derived_quantities):
     Returns:
         bool: True if the derived quantities should be exported, else False
     """
-    if simulation.settings.transient:
+    if final_time is not None:
         nb_its_between_exports = \
             derived_quantities.nb_iterations_between_exports
         if nb_its_between_exports is None:
             # export at the end
-            return simulation.t >= simulation.settings.final_time
+            return t >= final_time
         else:
             # export every N iterations
-            return simulation.nb_iterations % nb_its_between_exports == 0
+            return nb_iterations % nb_its_between_exports == 0
     else:
         # if steady state, export
         return True
