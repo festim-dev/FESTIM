@@ -117,6 +117,6 @@ class Trap(Concentration):
         for source_term in self.sources:
             source = sp.printing.ccode(source_term.value)
             source = Expression(source, t=0, degree=2, name="source_trap_{}".format(self.id))
-            self.F_source = -source*self.test_function*dx
+            self.F_source = -source*self.test_function*dx(source_term.volume)
             self.F += self.F_source
             self.sub_expressions.append(source)

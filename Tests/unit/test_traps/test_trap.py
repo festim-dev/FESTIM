@@ -33,7 +33,7 @@ class TestCreateTrappingForm:
         # build
         my_trap = FESTIM.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4,
-            materials=1, density=1 + FESTIM.x, source_term=2 + FESTIM.x + FESTIM.t)
+            materials=1, density=1 + FESTIM.x)
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
@@ -60,7 +60,7 @@ class TestCreateTrappingForm:
         # build
         my_trap = FESTIM.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4,
-            materials=1, density=1 + FESTIM.x, source_term=2 + FESTIM.x + FESTIM.t)
+            materials=1, density=1 + FESTIM.x)
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
@@ -90,7 +90,7 @@ class TestCreateTrappingForm:
         # build
         my_trap = FESTIM.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4,
-            materials=1, density=1 + FESTIM.x, source_term=2 + FESTIM.x + FESTIM.t)
+            materials=1, density=1 + FESTIM.x)
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
@@ -121,7 +121,7 @@ class TestCreateTrappingForm:
         # build
         my_trap = FESTIM.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4,
-            materials=[1, 2], density=1 + FESTIM.x, source_term=2 + FESTIM.x + FESTIM.t)
+            materials=[1, 2], density=1 + FESTIM.x)
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
@@ -151,7 +151,10 @@ class TestCreateTrappingForm:
         # build
         my_trap = FESTIM.Trap(
             k_0=[1, 2], E_k=[2, 2], p_0=[3, 2], E_p=[4, 2],
-            materials=[1, 2], density=[1 + FESTIM.x, 1 + FESTIM.t], source_term=2 + FESTIM.x + FESTIM.t)
+            materials=[1, 2], density=[1 + FESTIM.x, 1 + FESTIM.t])
+        my_trap.sources = [
+            FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")
+        ]
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
         my_mats = FESTIM.Materials([self.mat1, self.mat2])
@@ -179,7 +182,10 @@ class TestCreateTrappingForm:
         # build
         my_trap = FESTIM.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4,
-            materials=self.mat1.id, density=1 + FESTIM.x, source_term=2 + FESTIM.x + FESTIM.t)
+            materials=self.mat1.id, density=1 + FESTIM.x)
+        my_trap.sources = [
+            FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")
+        ]
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
         my_mats = FESTIM.Materials([self.mat1, self.mat2])
@@ -219,7 +225,10 @@ class TestCreateSourceForm:
 
     def test(self):
         # build
-        my_trap = FESTIM.Trap(k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1, source_term=2 + FESTIM.x + FESTIM.t)
+        my_trap = FESTIM.Trap(k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1)
+        my_trap.sources = [
+            FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")
+        ]
         my_trap.F = 0
         my_trap.test_function = f.TestFunction(self.V)
 
@@ -229,7 +238,7 @@ class TestCreateSourceForm:
         # test
         source = my_trap.sub_expressions[0]
         v = my_trap.test_function
-        expected_form = - source*v*self.dx
+        expected_form = - source*v*self.dx(1)
         assert my_trap.F.equals(expected_form)
         assert my_trap.F_source.equals(expected_form)
 
@@ -308,7 +317,10 @@ class TestCreateForm:
 
     def test_1_mat_and_source(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=2, density=1, source_term=1 + FESTIM.x + FESTIM.y)
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=2, density=1)
+        my_trap.sources = [
+            FESTIM.Source(1 + FESTIM.x + FESTIM.y, volume=1, field="1")
+        ]
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
         my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)

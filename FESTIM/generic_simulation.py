@@ -68,18 +68,20 @@ class Simulation():
             "mobile": self.mobile,
             "T": self.T
         }
-        for i, trap in enumerate(self.traps.traps, 1):
-            field_to_object[i] = trap
-            field_to_object[str(i)] = trap
+        if None not in [self.mobile, self.T]:
+            for i, trap in enumerate(self.traps.traps, 1):
+                field_to_object[i] = trap
+                field_to_object[str(i)] = trap
 
-        for source in self.sources:
-            field_to_object[source.field].sources.append(source)
+            for source in self.sources:
+                field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
-        self.T.boundary_conditions = []
-        for bc in self.boundary_conditions:
-            if bc.component == "T":
-                self.T.boundary_conditions.append(bc)
+        if self.T is not None:
+            self.T.boundary_conditions = []
+            for bc in self.boundary_conditions:
+                if bc.component == "T":
+                    self.T.boundary_conditions.append(bc)
 
     def create_stepsize(self, parameters):
         if self.settings.transient:
@@ -156,8 +158,22 @@ class Simulation():
                             FESTIM.Source(trap["source_term"], mat, i)
                         )
         if "source_term" in parameters:
-            self.mobile.sources = parameters["source_term"]
-
+            if isinstance(parameters["source_term"], dict):
+                for mat in self.materials.materials:
+                    if type(mat.id) is not list:
+                        vols = [mat.id]
+                    else:
+                        vols = mat.id
+                    for vol in vols:
+                        self.sources.append(
+                            FESTIM.Source(parameters["source_term"]["value"], volume=vol, field="0")
+                        )
+            elif isinstance(parameters["source_term"], list):
+                for source_dict in parameters["source_term"]:
+                    for volume in source_dict["volume"]:
+                        self.sources.append(
+                            FESTIM.Source(source_dict["value"], volume=source_dict["volume"], field="0")
+                        )
         if "temperature" in parameters:
             if "source_term" in parameters["temperature"]:
                 for source in parameters["temperature"]["source_term"]:
