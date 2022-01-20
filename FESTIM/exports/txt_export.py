@@ -42,7 +42,7 @@ class TXTExport(FESTIM.Export):
                     break
                 except OSError as err:
                     print("OS error: {0}".format(err))
-                    print("The file " + filename + ".txt might currently be busy."
+                    print("The file " + filename + " might currently be busy."
                           "Please close the application then press any key.")
                     input()
 
