@@ -599,7 +599,6 @@ class Simulation():
         for trap in self.traps.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
                 trap.density_previous_solution.assign(trap.density[0])
-        self.exports.nb_iterations += 1
 
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:

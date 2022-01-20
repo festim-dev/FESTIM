@@ -49,3 +49,4 @@ class Exports:
                     label_to_function[export.field] = f.project(label_to_function[export.field], self.V_DG1)
                 export.function = label_to_function[export.field]
                 export.write(self.t, dt)
+        self.nb_iterations += 1

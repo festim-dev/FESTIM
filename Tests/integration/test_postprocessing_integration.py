@@ -158,7 +158,6 @@ class TestPostProcessing:
         my_sim.nb_iterations = 0
         start = timeit.default_timer()
         for i in range(40):
-            my_sim.nb_iterations += 1
             my_sim.run_post_processing()
 
         stop = timeit.default_timer()
@@ -171,7 +170,6 @@ class TestPostProcessing:
             export.nb_iterations_between_exports = 1
         start = timeit.default_timer()
         for i in range(40):
-            my_sim.nb_iterations += 1
             my_sim.run_post_processing()
 
         stop = timeit.default_timer()
