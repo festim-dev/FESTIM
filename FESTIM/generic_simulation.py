@@ -26,7 +26,6 @@ class Simulation():
         self.mobile = FESTIM.Mobile()
         self.expressions = []
 
-        self.nb_iterations = 0
         self.J = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
@@ -358,6 +357,8 @@ class Simulation():
         self.V_CG1 = FunctionSpace(mesh, 'CG', 1)
         self.V_DG1 = FunctionSpace(mesh, 'DG', 1)
 
+        self.exports.V_DG1 = self.V_DG1
+
     def initialise_concentrations(self):
         self.u = Function(self.V, name="c")  # Function for concentrations
         self.v = TestFunction(self.V)  # TestFunction for concentrations
@@ -472,6 +473,9 @@ class Simulation():
         self.timer = Timer()  # start timer
 
         if self.settings.transient:
+            # add final_time to Exports
+            self.exports.final_time = self.settings.final_time
+
             # compute Jacobian before iterating if required
             if not self.settings.update_jacobian:
                 du = TrialFunction(self.u.function_space())
@@ -578,7 +582,7 @@ class Simulation():
         for trap in self.traps.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
                 trap.density_previous_solution.assign(trap.density[0])
-        self.nb_iterations += 1
+        self.exports.nb_iterations += 1
 
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:
@@ -587,7 +591,29 @@ class Simulation():
     def run_post_processing(self):
         """Main post processing FESTIM function.
         """
-        self.update_post_processing_solutions()
+        label_to_function = self.update_post_processing_solutions()
+
+        self.exports.t = self.t
+        self.exports.write(label_to_function, self.dt)
+
+    def update_post_processing_solutions(self):
+        if self.u.function_space().num_sub_spaces() == 0:
+            res = [self.u]
+        else:
+            res = list(self.u.split())
+        if self.settings.chemical_pot:  # c_m = theta * S
+            solute = res[0]*self.S
+            if self.need_projecting_solute():
+                # project solute on V_DG1
+                solute = project(solute, self.V_DG1)
+        else:
+            solute = res[0]
+
+        self.mobile.post_processing_solution = solute
+
+        for i, trap in enumerate(self.traps.traps, 1):
+            trap.post_processing_solution = res[i]
+
         label_to_function = {
             "solute": self.mobile.post_processing_solution,
             "0": self.mobile.post_processing_solution,
@@ -599,35 +625,7 @@ class Simulation():
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
-        # make the change of variable solute = theta*S
-        if self.settings.chemical_pot:
-            label_to_function["solute"] = self.mobile.solution*self.S  # solute = theta*S = (solute/S) * S
-
-            if self.need_projecting_solute():
-                # project solute on V_DG1
-                label_to_function["solute"] = project(label_to_function["solute"], self.V_DG1)
-        self.exports.V_DG1 = self.V_DG1
-        self.exports.t = self.t
-        self.exports.nb_iterations = self.nb_iterations
-        self.exports.final_time = self.settings.final_time
-        self.exports.write(label_to_function, self.dt)
-
-    def update_post_processing_solutions(self):
-        if self.u.function_space().num_sub_spaces() == 0:
-            res = [self.u]
-        else:
-            res = list(self.u.split())
-        if self.settings.chemical_pot:  # c_m = theta * S
-            theta = res[0]
-            solute = project(theta*self.S, self.V_DG1)
-            res[0] = solute
-        else:
-            solute = res[0]
-
-        self.mobile.post_processing_solution = solute
-
-        for i, trap in enumerate(self.traps.traps, 1):
-            trap.post_processing_solution = res[i]
+        return label_to_function
 
     def need_projecting_solute(self):
         need_solute = False  # initialises to false
@@ -643,24 +641,15 @@ class Simulation():
         return need_solute
 
     def make_output(self):
-        self.update_post_processing_solutions()
-
-        label_to_function = {
-            "solute": self.mobile.post_processing_solution,
-            "0": self.mobile.post_processing_solution,
-            0: self.mobile.post_processing_solution,
-            "T": self.T.T,
-            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
-        }
-        for trap in self.traps.traps:
-            label_to_function[trap.id] = trap.post_processing_solution
-            label_to_function[str(trap.id)] = trap.post_processing_solution
+        label_to_function = self.update_post_processing_solutions()
 
         output = dict()  # Final output
         # Compute error
         for export in self.exports.exports:
             if isinstance(export, FESTIM.Error):
                 export.function = label_to_function[export.field]
+                if not isinstance(export.function, Function):
+                    export.function = project(export.function, self.V_DG1)
                 if "error" not in output:
                     output["error"] = []
                 output["error"].append(export.compute(self.t))
