@@ -1,6 +1,8 @@
 import FESTIM
 from fenics import *
 import sympy as sp
+import warnings
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class Simulation():
@@ -59,6 +61,9 @@ class Simulation():
         self.S = None
 
         if parameters is not None:
+            msg = "The use of parameters will soon be deprecated \
+                 please use the object-oriented approach instead"
+            warnings.warn(msg, DeprecationWarning)
             self.create_settings(parameters)
             self.create_stepsize(parameters)
             self.create_concentration_objects(parameters)
