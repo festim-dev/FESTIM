@@ -51,7 +51,7 @@ def test_run_temperature_stationary(tmpdir):
 
     my_sim = FESTIM.Simulation(
         mesh=my_mesh, materials=my_materials,
-        boundary_conditions=my_boundary_conditions, traps=my_traps,
+        boundary_conditions=my_boundary_conditions,
         sources=my_sources,
         dt=my_stepsize, settings=my_settings,
         temperature=my_temperature, exports=my_exports)
