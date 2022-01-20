@@ -2,6 +2,7 @@ import fenics as f
 import numpy as np
 import FESTIM
 import warnings
+warnings.simplefilter('always', DeprecationWarning)
 
 
 class TXTExport(FESTIM.Export):
