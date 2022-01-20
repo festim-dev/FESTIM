@@ -9,16 +9,29 @@ class Simulation():
 
         self.settings = settings
         self.dt = dt
-        self.traps = traps
-        if self.traps is None:
+        if traps is None:
             self.traps = FESTIM.Traps([])
-        self.materials = materials
+        elif type(traps) is list:
+            self.traps = FESTIM.Traps(traps)
+        elif isinstance(traps, FESTIM.Traps):
+            self.traps = traps
+
+        if type(materials) is list:
+            self.materials = FESTIM.Materials(materials)
+        elif isinstance(materials, FESTIM.Materials):
+            self.materials = materials
+        else:
+            self.materials = materials
+
         self.boundary_conditions = boundary_conditions
         self.initial_conditions = initial_conditions
         self.T = temperature
-        self.exports = exports
-        if self.exports is None:
+        if exports is None:
             self.exports = FESTIM.Exports([])
+        elif type(exports) is list:
+            self.exports = FESTIM.Exports(exports)
+        elif isinstance(exports, FESTIM.Exports):
+            self.exports = exports
         self.mesh = mesh
         self.sources = sources
 
@@ -643,6 +656,10 @@ class Simulation():
     def make_output(self):
         label_to_function = self.update_post_processing_solutions()
 
+        for key, val in label_to_function.items():
+            if not isinstance(val, Function):
+                label_to_function[key] = project(val, self.V_DG1)
+
         output = dict()  # Final output
         # Compute error
         for export in self.exports.exports:
@@ -663,8 +680,8 @@ class Simulation():
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
-            "solute": self.mobile.post_processing_solution,
-            "T": self.T.T
+            "solute": label_to_function["solute"],
+            "T": label_to_function["T"]
         }
         # add traps to output
         for trap in self.traps.traps:

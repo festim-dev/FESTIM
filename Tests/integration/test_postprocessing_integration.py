@@ -187,12 +187,12 @@ class TestPostProcessing:
                 labels=['solute', 'temperature'],
                 last_timestep_only=True,
                 folder=str(Path(d))).xdmf_exports
-        my_sim.settings.final_time = 1
+        my_sim.exports.final_time = 1
         my_sim.t = 0
 
         my_sim.run_post_processing()
         assert not path.exists(str(Path(d)) + '/solute.xdmf')
 
-        my_sim.t = my_sim.settings.final_time
+        my_sim.t = my_sim.exports.final_time
         my_sim.run_post_processing()
         assert path.exists(str(Path(d)) + '/solute.xdmf')
