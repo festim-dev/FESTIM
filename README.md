@@ -35,13 +35,13 @@ Get Docker [here](https://www.docker.com/community-edition).
 
 Pull the Docker image and run the container, sharing a folder between the host and container:
 
-    For Windows users:
+For Windows users:
 
-        docker run -ti -v ${PWD}:/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
+    docker run -ti -v ${PWD}:/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
 
-    For Linux users:
+For Linux users:
 
-        docker run -ti -v $(pwd):/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
+    docker run -ti -v $(pwd):/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
 
 Clone FESTIM's git repository:
 
