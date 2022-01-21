@@ -157,6 +157,7 @@ class Simulation():
 
         self.bcs = None
 
+        # perhaps these should be attributes of Materials
         self.D = None
         self.thermal_cond = None
         self.cp = None
@@ -597,7 +598,7 @@ class Simulation():
         for i, trap in enumerate(self.traps.traps, 1):
             field_to_component[trap.id] = i
             field_to_component[str(trap.id)] = i
-
+        # TODO refactore this, attach the initial conditions to the objects directly
         for ini in self.initial_conditions:
             value = ini.value
             component = field_to_component[ini.field]
