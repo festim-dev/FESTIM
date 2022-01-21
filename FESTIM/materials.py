@@ -4,7 +4,39 @@ import numpy as np
 
 
 class Material:
-    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=[], H=None) -> None:
+    def __init__(
+            self,
+            id,
+            D_0,
+            E_D,
+            S_0=None,
+            E_S=None,
+            thermal_cond=None,
+            heat_capacity=None,
+            rho=None,
+            borders=[],
+            H=None) -> None:
+        """Inits Material
+
+        Args:
+            id (int): id of the material
+            D_0 (float): diffusion coefficient pre-exponential factor (m2/s)
+            E_D (float): diffusion coefficient activation energy (eV)
+            S_0 (float, optional): solubility pre-exponential factor. Defaults
+                to None.
+            E_S (float, optional): solubility activation energy (eV). Defaults
+                to None.
+            thermal_cond (float, callable, optional): thermal conductivity
+                (W/m/K). Defaults to None.
+            heat_capacity (float, callable, optional): heat capacity (J/K/kg).
+                Defaults to None.
+            rho (float, callable, optional): volumetric density (kg/m^3).
+                Defaults to None.
+            borders (list, optional): borders of the material [x1, x2] (m).
+                Only needed in 1D multimaterial. Defaults to [].
+            H (dict, optional): heat of transport
+                {"free_enthalpy": ..., "entropy": ...}. Defaults to None.
+        """
         self.id = id
         self.D_0 = D_0
         self.E_D = E_D
@@ -21,6 +53,12 @@ class Material:
         self.check_properties()
 
     def check_properties(self):
+        """Checks that if S_0 is None E_S is not None and reverse.
+
+        Raises:
+            ValueError: [description]
+            ValueError: [description]
+        """
         if self.S_0 is None and self.E_S is not None:
             raise ValueError("S_0 cannot be None")
         if self.E_S is None and self.S_0 is not None:
@@ -29,13 +67,19 @@ class Material:
 
 class Materials:
     def __init__(self, materials=[]):
+        """Inits Materials
+
+        Args:
+            materials (list, optional): contains FESTIM.Material objects.
+                Defaults to [].
+        """
         self.materials = materials
 
     def check_borders(self, size):
-        """Checks that the borders given match
+        """Checks that the borders of the materials match
 
-        Arguments:
-            size {float} -- float, size of the domain
+        Args:
+            size (float): size of the 1D domain
 
         Raises:
             ValueError: if the borders don't begin at zero
@@ -59,6 +103,12 @@ class Materials:
         return True
 
     def check_materials(self, temp_type, derived_quantities={}):
+        """Checks the materials keys
+
+        Args:
+            temp_type (str): the type of FESTIM.Temperature
+            derived_quantities (dict, optional): [description]. Defaults to {}.
+        """
 
         if len(self.materials) > 0:  # TODO: get rid of this...
             self.check_consistency()
