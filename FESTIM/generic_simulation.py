@@ -6,6 +6,58 @@ warnings.simplefilter('always', DeprecationWarning)
 
 
 class Simulation():
+    """
+    Main FESTIM class representing a FESTIM model
+
+    Attributes:
+        log_level (int): set what kind of FEniCS messsages are
+            displayed.
+            CRITICAL  = 50, errors that may lead to data corruption
+            ERROR     = 40, errors
+            WARNING   = 30, warnings
+            INFO      = 20, information of general interest
+            PROGRESS  = 16, what's happening (broadly)
+            TRACE     = 13,  what's happening (in detail)
+            DBG       = 10  sundry
+        settings (FESTIM.Settings): The model's settings.
+        dt (FESTIM.Stepsize): The model's stepsize.
+        traps (FESTIM.Traps): The model's traps.
+        materials (FESTIM.Materials): The model materials.
+        boundary_conditions (list of FESTIM.BoundaryCondition):
+            The model's boundary conditions (temperature of H
+            concentration).
+        initial_conditions (list of FESTIM.InitialCondition):
+            The model's initial conditions (H or T).
+        T (FESTIM.Temperature): The model's temperature.
+        exports (FESTIM.Exports): The model's exports
+            (derived quantities, XDMF exports, txt exports...).
+        mesh (FESTIM.Mesh): The mesh of the model.
+        sources (list of FESTIM.Source): Volumetric sources
+            (particle or heat sources).
+        mobile (FESTIM.Mobile): the mobile concentration (c_m or theta)
+        expressions (list): contains time-dependent fenics.Expressions
+        J (ufl.Form): the jacobian of the variational problem
+        t (fenics.Constant): the current time of simulation
+        timer (fenics.timer): the elapsed time of simulation
+        dx (fenics.Measure): the measure for dx
+        ds (fenics.Measure): the measure for ds
+        V (fenics.FunctionSpace): the vector-function space for concentrations
+        V_CG1 (fenics.FunctionSpace): the function space CG1
+        V_DG1 (fenics.FunctionSpace): the function space DG1
+        u (fenics.Function): the vector holding the concentrations (c_m, ct1,
+            ct2, ...)
+        v (fenics.TestFunction): the test function
+        u_n (fenics.Function): the "previous" function
+        bcs (list): list of fenics.DirichletBC for H transport
+        D (FESTIM.ArheniusCoeff): the hydrogen diffusion coefficient over the
+            whole domain
+        thermal_cond (FESTIM.ThermalProp): the thermal conductivity over the
+            whole domain
+        cp (FESTIM.ThermalProp): the heat capacity over the whole domain
+        rho (FESTIM.ThermalProp): the volumetric density over the whole domain
+        H (FESTIM.HCoeff): the heat of transport over the whole domain
+        S (FESTIM.ArheniusCoeff): the solubility over the whole domain
+    """
     def __init__(
         self,
         parameters=None,
@@ -21,7 +73,7 @@ class Simulation():
         exports=None,
         log_level=40
     ):
-        """Main FESTIM class representing a FESTIM model
+        """Inits FESTIM.Simulation
 
         Args:
             parameters (dict, optional): Soon to be deprecated. Defaults to
