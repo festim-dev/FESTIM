@@ -3,13 +3,35 @@ import numpy as np
 
 
 class Mesh:
+    """
+    Mesh class
+
+    Attributes:
+        mesh (fenics.Mesh): the mesh
+        volume_markers (fenics.MeshFunction): markers of the mesh cells
+        surface_markers (fenics.MeshFunction): markers of the mesh facets
+    """
     def __init__(self, mesh=None, volume_markers=None, surface_markers=None) -> None:
+        """Inits Mesh
+
+        Args:
+            mesh (fenics.Mesh, optional): the mesh. Defaults to None.
+            volume_markers (fenics.MeshFunction, optional): markers of the mesh cells. Defaults to None.
+            surface_markers (fenics.MeshFunction, optional): markers of the mesh facets. Defaults to None.
+        """
         self.mesh = mesh
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers
 
 
 class Mesh1D(Mesh):
+    """
+    1D Mesh
+
+    Attributes:
+        size (float): the size of the 1D mesh
+
+    """
     def __init__(self) -> None:
         super().__init__()
         self.size = None
@@ -20,12 +42,6 @@ class Mesh1D(Mesh):
 
         Arguments:
             materials {FESTIM.Materials} -- contains the materials
-
-        Returns:
-            fenics.MeshFunction() -- that contains the subdomains
-            (0 if no domain was found)
-            fenics.MeshFunction() -- that contains the surfaces
-            (0 if no domain was found)
         """
         mesh = self.mesh
         size = self.size
@@ -55,20 +71,26 @@ class Mesh1D(Mesh):
 
 
 class MeshFromVertices(Mesh1D):
+    """
+    Description of MeshFromVertices
+
+    Attributes:
+        vertices (list): the mesh vertices
+        size (type): the size of the 1D mesh
+    """
     def __init__(self, vertices) -> None:
+        """Inits MeshFromVertices
+
+        Args:
+            vertices (list): the mesh vertices
+        """
         super().__init__()
         self.vertices = vertices
         self.size = max(vertices)
         self.generate_mesh_from_vertices()
 
     def generate_mesh_from_vertices(self):
-        '''Generates a 1D mesh from a list of vertices
-
-        Arguments:
-        - vertices: list, list of vertices
-
-        Returns:
-        - mesh: fenics.Mesh()
+        '''Generates a 1D mesh
         '''
         vertices = sorted(np.unique(self.vertices))
         nb_points = len(vertices)
@@ -87,9 +109,27 @@ class MeshFromVertices(Mesh1D):
 
 
 class MeshFromRefinements(Mesh1D):
+    """1D mesh with iterative refinements (on the left hand side of the domain)
+
+    Attributes:
+        initial_number_of_cells (int): initial number of cells before
+            refinement
+        size (float): total size of the 1D mesh
+        refinements (list): list of refinements
+    """
     def __init__(self, initial_number_of_cells, size, refinements=[]) -> None:
+        """Inits MeshFromRefinements
+
+        Args:
+            initial_number_of_cells (float): initial number of cells before
+            refinement
+            size (float): total size of the 1D mesh
+            refinements (list, optional): list of dicts
+                {"x": ..., "cells": ...}. For each refinement, the mesh will
+                have at least ["cells"] in [0, "x"]. Defaults to [].
+        """
         super().__init__()
-        self.initial_unmber_of_cells = initial_number_of_cells
+        self.initial_number_of_cells = initial_number_of_cells
         self.size = size
         self.refinements = refinements
         self.mesh_and_refine()
@@ -97,17 +137,10 @@ class MeshFromRefinements(Mesh1D):
     def mesh_and_refine(self):
         """Mesh and refine iteratively until meeting the refinement
         conditions.
-
-        Arguments:
-            mesh_parameters {dict} -- contains initial number of cells, size,
-        and refinements (number of cells and position)
-
-        Returns:
-            fenics.Mesh() -- the mesh
         """
 
         print('Meshing ...')
-        initial_number_of_cells = self.initial_unmber_of_cells
+        initial_number_of_cells = self.initial_number_of_cells
         size = self.size
         mesh = f.IntervalMesh(initial_number_of_cells, 0, size)
         for refinement in self.refinements:
@@ -137,7 +170,21 @@ class MeshFromRefinements(Mesh1D):
 
 
 class MeshFromXDMF(Mesh):
+    """
+    Mesh read from XDMF files
+
+    Attributes:
+        volume_file (str): name of the volume file
+        boundary_file (str): name of the boundary file
+        mesh (fenics.Mesh): the mesh
+    """
     def __init__(self, volume_file, boundary_file) -> None:
+        """Inits MeshFromXDMF
+
+        Args:
+            volume_file (str): path to the volume file
+            boundary_file (str): path the boundary file
+        """
         super().__init__()
 
         self.volume_file = volume_file
@@ -150,11 +197,6 @@ class MeshFromXDMF(Mesh):
 
     def define_markers(self):
         """Reads volume and surface entities from XDMF files
-
-        Raises:
-            ValueError: if the reading of attribute f in volumetric file fails
-            ValueError: if the reading of attribute f in boundary file fails
-
         """
         mesh = self.mesh
 
