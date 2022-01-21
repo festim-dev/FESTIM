@@ -16,7 +16,7 @@ class Exports:
         self.final_time = None
         self.nb_iterations = 0
 
-    def write(self, label_to_function,  dt):
+    def write(self, label_to_function, dt):
         for export in self.exports:
             if isinstance(export, FESTIM.DerivedQuantities):
 
