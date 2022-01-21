@@ -4,12 +4,36 @@ from fenics import *
 
 
 class Temperature:
+    """
+    Description of Temperature
+
+    Attributes:
+        type (str): the type of temperature ("expression", "solve_stationary",
+            "solve_transient")
+        T (fenics.Function): the function attributed with temperature
+        T_n (fenics.Function): the previous function
+        v_T (fenics.TestFunction): the test function
+        expression (sp.Add, int, float): the expression
+        initial_value (sp.Add, int, float): the initial value
+        sub_expressions (list): contains time dependent fenics.Expression to
+            be updated
+        F (fenics.Form): the variational form of the heat transfer problem
+        sources (list): contains FESTIM.Source objects for volumetric heat
+            sources
+        boundary_conditions (list): contains FESTIM.BoundaryConditions
+    """
     def __init__(self, type, value=None, initial_value=None) -> None:
+        """Inits Temperature
+
+        Args:
+            type ([type]): [description]
+            value ([type], optional): [description]. Defaults to None.
+            initial_value ([type], optional): [description]. Defaults to None.
+        """
         self.type = type
         self.T = None
         self.T_n = None
         self.v_T = None
-        self.value = value
         self.expression = value
         self.initial_value = initial_value
         self.sub_expressions = []
@@ -18,6 +42,19 @@ class Temperature:
         self.boundary_conditions = []
 
     def create_functions(self, V, materials=None, dx=None, ds=None, dt=None):
+        """Creates functions self.T, self.T_n and test function self.v_T
+
+        Args:
+            V (fenics.FunctionSpace): the function space of Temperature
+            materials (FESTIM.Materials, optional): needed if self.type is not
+                "expression". Defaults to None.
+            dx (fenics.Measure, optional): measure for dx. Needed if type is
+                not "expression". Defaults to None.
+            ds (fenics.Measure, optional): measure for ds. Needed if type is
+                not "expression". Defaults to None.
+            dt (FESTIM.Stepsize, optional): the stepsize. Needed if type is
+                not "expression". Defaults to None.
+        """
         # TODO: materials, dx, ds, dt should be optional
         self.T = Function(V, name="T")
         self.T_n = Function(V, name="T_n")
@@ -45,6 +82,14 @@ class Temperature:
                 self.T_n.assign(self.T)
 
     def create_dirichlet_bcs(self, V, surface_markers):
+        """Creates a list of fenics.DirichletBC and add time dependent
+        expressions to .sub_expressions
+
+        Args:
+            V (fenics.FunctionSpace): the function space
+            surface_markers (fenics.MeshFunction): contains the mesh facet
+                markers
+        """
         # TODO needs to choose between having Temperature bcs in Temperature or in Simulation.boundary_conditions
         self.dirichlet_bcs = []
         for bc in self.boundary_conditions:
@@ -59,16 +104,12 @@ class Temperature:
     def define_variational_problem(self, materials, dx, ds, dt):
         """Create a variational form for heat transfer problem
 
-        Arguments:
-
-        Raises:
-            NameError: if thermal_cond is not in keys
-            NameError: if heat_capacity is not in keys
-            NameError: if rho is not in keys
-
-        Returns:
-            fenics.Form -- the formulation for heat transfers problem
-            list -- contains the fenics.Expression to be updated
+        Args:
+            materials (FESTIM.Materials, optional): the materials. Defaults to
+                None.
+            dx (fenics.Measure, optional): measure for dx. Defaults to None.
+            ds (fenics.Measure, optional): measure for ds. Defaults to None.
+            dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
         """
 
         print('Defining variational problem heat transfers')
