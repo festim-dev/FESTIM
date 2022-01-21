@@ -4,11 +4,37 @@ import sympy as sp
 
 
 class Mobile(Concentration):
+    """
+    The mobile concentration.
+
+    If conservation of chemical potential, this will be c_m/S.
+    If not, Mobile represents c_m.
+
+    Attributes:
+        sources (list): list of FESTIM.Source objects.
+            The volumetric source terms
+        F (fenics.Form): the variational formulation for mobile
+    """
     def __init__(self):
+        """Inits FESTIM.Mobile
+        """
         super().__init__()
         self.sources = []
 
     def initialise(self, V, value, label=None, time_step=None, S=None):
+        """Assign a value to self.previous_solution
+
+        Args:
+            V (fenics.FunctionSpace): the function space
+            value (sp.Add, float, int, str): the value of the initialisation.
+            label (str, optional): the label in the XDMF file. Defaults to
+                None.
+            time_step (int, optional): the time step to read in the XDMF file.
+                Defaults to None.
+            S (FESTIM.ArheniusCoeff, optional): the solubility. If not None,
+                conservation of chemical potential is assumed. Defaults to
+                None.
+        """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
         if S is None:
             comp = interpolate(comp, V)
@@ -20,11 +46,37 @@ class Mobile(Concentration):
         assign(self.previous_solution, comp)
 
     def create_form(self, materials, dx, T,  dt=None, traps=None, chemical_pot=False, soret=False):
+        """Creates the variational formulation.
+
+        Args:
+            materials (FESTIM.Materials): the materials
+            dx (fenics.Measure): the measure dx
+            T (FESTIM.Temperature): the temperature
+            dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
+            traps (FESTIM.Traps, optional): the traps. Defaults to None.
+            chemical_pot (bool, optional): if True, conservation of chemical
+                potential is assumed. Defaults to False.
+            soret (bool, optional): If True, Soret effect is assumed. Defaults
+                to False.
+        """
         self.F = 0
         self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, chemical_pot=chemical_pot, soret=soret)
         self.create_source_form(dx)
 
     def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, chemical_pot=False, soret=False):
+        """Creates the variational formulation for the diffusive part.
+
+        Args:
+            materials (FESTIM.Materials): the materials
+            dx (fenics.Measure): the measure dx
+            T (FESTIM.Temperature): the temperature
+            dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
+            traps (FESTIM.Traps, optional): the traps. Defaults to None.
+            chemical_pot (bool, optional): if True, conservation of chemical
+                potential is assumed. Defaults to False.
+            soret (bool, optional): If True, Soret effect is assumed. Defaults
+                to False.
+        """
         F = 0
         c_0 = self.solution
         c_0_n = self.previous_solution
@@ -69,10 +121,10 @@ class Mobile(Concentration):
         self.F += F
 
     def create_source_form(self, dx):
-        """[summary]
+        """Creates the variational form for the volumetric source term parts.
 
         Args:
-            dx (fenics.Measure): [description]
+            dx (fenics.Measure): the measure dx
         """
         F_source = 0
         expressions_source = []
