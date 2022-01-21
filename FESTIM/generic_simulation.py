@@ -5,7 +5,7 @@ import warnings
 warnings.simplefilter('always', DeprecationWarning)
 
 
-class Simulation():
+class Simulation:
     """
     Main FESTIM class representing a FESTIM model
 
