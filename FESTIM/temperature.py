@@ -8,8 +8,7 @@ class Temperature:
     Description of Temperature
 
     Attributes:
-        type (str): the type of temperature ("expression", "solve_stationary",
-            "solve_transient")
+        type (str): the type of temperature
         T (fenics.Function): the function attributed with temperature
         T_n (fenics.Function): the previous function
         v_T (fenics.TestFunction): the test function
@@ -26,9 +25,12 @@ class Temperature:
         """Inits Temperature
 
         Args:
-            type ([type]): [description]
-            value ([type], optional): [description]. Defaults to None.
-            initial_value ([type], optional): [description]. Defaults to None.
+            type (str): type of temperature in "expression",
+                "solve_stationary", "solve_transient"
+            value (sp.Add, int, float, optional): The value of the temperature.
+                Only needed if type is not "expression". Defaults to None.
+            initial_value (sp.Add, int, float, optional): The initial value.
+                Only needed if type is not "expression". Defaults to None.
         """
         self.type = type
         self.T = None
