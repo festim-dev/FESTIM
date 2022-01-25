@@ -6,6 +6,25 @@ warnings.simplefilter('always', DeprecationWarning)
 
 class XDMFExport(Export):
     def __init__(self, field, label, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
+        """Inits XDMFExport
+
+        Args:
+            field (str): [description]
+            label (str): [description]
+            folder (str): [description]
+            last_timestep_only (bool, optional): If set to True, will only
+                export at the last time step. Defaults to False.
+            nb_iterations_between_exports (int, optional): Number of
+                iterations between each export. Defaults to 1.
+            checkpoint (bool, optional): If set to True,
+                fenics.XDMFFile.write_checkpoint will be use, else
+                fenics.XDMFFile.write. Defaults to True.
+
+        Raises:
+            ValueError: if folder is ""
+            TypeError: if folder is not str
+            TypeError: if checkpoint is not bool
+        """
         super().__init__(field=field)
         self.label = label
         self.folder = folder
@@ -25,6 +44,8 @@ class XDMFExport(Export):
         self.append = False
 
     def define_xdmf_file(self):
+        """Creates the file
+        """
 
         self.file = f.XDMFFile(self.folder + '/' +
                                self.label + '.xdmf')
@@ -32,6 +53,11 @@ class XDMFExport(Export):
         self.file.parameters["rewrite_function_mesh"] = False
 
     def write(self, t):
+        """Writes to file
+
+        Args:
+            t (float): current time
+        """
         self.function.rename(self.label, "label")
 
         if self.checkpoint:
