@@ -513,6 +513,7 @@ class Simulation:
             FESTIM.create_properties(
                 self.mesh.mesh, self.materials,
                 self.volume_markers, self.T.T)
+        # TODO this should be reversed
         if self.S is not None:
             self.settings.chemical_pot = True
 
