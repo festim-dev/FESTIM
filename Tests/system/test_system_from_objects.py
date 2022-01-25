@@ -200,7 +200,105 @@ def test_run_MMS(tmpdir):
     tol_v = 1e-6
     sizes = [1/1600, 1/1700]
     dt = 0.1/50
-    final_time = 0.1
+    for h in sizes:
+        output = run(h)
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
+        msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
+            Maximum error on v is:' + str(error_max_v) + '\n \
+            with h = ' + str(h) + '\n \
+            with dt = ' + str(dt)
+        print(msg)
+        assert error_max_u < tol_u and error_max_v < tol_v
+
+
+def test_run_MMS_chemical_pot(tmpdir):
+    '''
+    Test function run() with conservation of chemical potential (1 material)
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t + FESTIM.t
+    v = 1 + sp.cos(2*fenics.pi*FESTIM.x)*FESTIM.t
+
+    size = 1
+    k_0 = 2
+    E_k = 1.5
+    p_0 = 3
+    E_p = 0.2
+    T = 700 + 30*FESTIM.x
+    n_trap = 1
+    E_D = 0.1
+    D_0 = 2
+    k_B = FESTIM.k_B
+    D = D_0 * sp.exp(-E_D/k_B/T)
+    p = p_0 * sp.exp(-E_p/k_B/T)
+    k = k_0 * sp.exp(-E_k/k_B/T)
+
+    f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
+        D * sp.diff(u, FESTIM.x, 2) - \
+        sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
+    g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
+
+    def run(h):
+        my_materials = FESTIM.Materials(
+            [
+                FESTIM.Material(id=1, D_0=D_0, E_D=E_D, S_0=2, E_S=0.1)
+            ]
+        )
+        my_traps = FESTIM.Traps(
+            [
+                FESTIM.Trap(k_0, E_k, p_0, E_p, 1, n_trap)
+            ]
+        )
+
+        my_initial_conditions = [
+            FESTIM.InitialCondition(field=0, value=u),
+            FESTIM.InitialCondition(field=1, value=v),
+        ]
+
+        my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
+
+        my_bcs = [
+            FESTIM.DirichletBC(type="dc", surfaces=[1, 2], value=u, component=0),
+            FESTIM.DirichletBC(type="dc", surfaces=[1, 2], value=v, component=1),
+        ]
+
+        my_temp = FESTIM.Temperature("expression", T)
+
+        my_sources = [
+            FESTIM.Source(f, 1, "0"),
+            FESTIM.Source(g, 1, "1")
+        ]
+
+        my_settings = FESTIM.Settings(
+            absolute_tolerance=1e-10,
+            relative_tolerance=1e-9,
+            maximum_iterations=50,
+            transient=True, final_time=0.1,
+            chemical_pot=True
+        )
+
+        my_dt = FESTIM.Stepsize(0.1/50)
+        my_exports = FESTIM.Exports([
+                FESTIM.TXTExport("solute", times=[100], label="solute", folder=str(Path(d))),
+                FESTIM.Error(0, u),
+                FESTIM.Error(1, v),
+            ]
+        )
+
+        my_sim = FESTIM.Simulation(
+            mesh=my_mesh, materials=my_materials, traps=my_traps,
+            initial_conditions=my_initial_conditions, boundary_conditions=my_bcs,
+            temperature=my_temp, sources=my_sources, settings=my_settings,
+            dt=my_dt, exports=my_exports)
+
+        my_sim.initialise()
+        return my_sim.run()
+
+    tol_u = 1e-7
+    tol_v = 1e-6
+    sizes = [1/1600]
+    dt = 0.1/50
     for h in sizes:
         output = run(h)
         error_max_u = output["error"][0]
