@@ -9,9 +9,9 @@ class XDMFExport(Export):
         """Inits XDMFExport
 
         Args:
-            field (str): [description]
-            label (str): [description]
-            folder (str): [description]
+            field (str): the exported field ("solute", "1", "retention", "T"...)
+            label (str): label of the field in the written file
+            folder (str): path of the export folder
             last_timestep_only (bool, optional): If set to True, will only
                 export at the last time step. Defaults to False.
             nb_iterations_between_exports (int, optional): Number of
