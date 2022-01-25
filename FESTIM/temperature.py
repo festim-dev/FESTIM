@@ -12,7 +12,9 @@ class Temperature:
         T (fenics.Function): the function attributed with temperature
         T_n (fenics.Function): the previous function
         v_T (fenics.TestFunction): the test function
-        expression (sp.Add, int, float): the expression
+        value (sp.Add, int, float): the expression of temperature
+        expression (fenics.Expression): the expression of temperature as a
+            fenics object
         initial_value (sp.Add, int, float): the initial value
         sub_expressions (list): contains time dependent fenics.Expression to
             be updated
@@ -36,8 +38,9 @@ class Temperature:
         self.T = None
         self.T_n = None
         self.v_T = None
-        self.expression = value
+        self.value = value
         self.initial_value = initial_value
+        self.expression = None
         self.sub_expressions = []
         self.F = 0
         self.sources = []
@@ -62,7 +65,7 @@ class Temperature:
         self.T_n = Function(V, name="T_n")
         if self.type == "expression":
             self.expression = Expression(
-                sp.printing.ccode(self.expression), t=0, degree=2)
+                sp.printing.ccode(self.value), t=0, degree=2)
             self.T.assign(interpolate(self.expression, V))
             self.T_n.assign(self.T)
         else:
