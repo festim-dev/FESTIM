@@ -75,6 +75,7 @@ class Temperature:
         T, T_n = self.T, self.T_n
         v_T = self.v_T
 
+        self.F = 0
         for mat in materials.materials:
             thermal_cond = mat.thermal_cond
             if callable(thermal_cond):  # if thermal_cond is a function

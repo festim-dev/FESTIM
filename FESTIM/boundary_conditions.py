@@ -97,6 +97,7 @@ class DirichletBC(BoundaryCondition):
             materials ([type], optional): [description]. Defaults to None.
             volume_markers ([type], optional): [description]. Defaults to None.
         """
+        self.dirichlet_bc = []
         self.create_expression(T)
         if self.component == 0 and chemical_pot:
             self.normalise_by_solubility(materials, volume_markers, T)
