@@ -1061,11 +1061,11 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
                 "surface_flux": [
                     {
                         "field": "solute",
-                        "surfaces": [0],
+                        "surfaces": [1],
                     },
                     {
                         "field": "T",
-                        "surfaces": [0],
+                        "surfaces": [1],
                     }
                 ],
                 "total_volume": [
