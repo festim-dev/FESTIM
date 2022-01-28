@@ -76,6 +76,7 @@ class DirichletBC(BoundaryCondition):
         return value_BC
 
     def normalise_by_solubility(self, materials, volume_markers, T):
+        print('coucou')
         # Store the non modified BC to be updated
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
@@ -99,7 +100,9 @@ class DirichletBC(BoundaryCondition):
         """
         self.dirichlet_bc = []
         self.create_expression(T)
-        if self.component == 0 and chemical_pot:
+        # TODO: this should be more generic
+        mobile_components = [0, "0", "solute"]
+        if self.component in mobile_components and chemical_pot:
             self.normalise_by_solubility(materials, volume_markers, T)
 
         # create a DirichletBC and add it to bcs
