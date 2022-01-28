@@ -1,5 +1,4 @@
 import FESTIM
-from FESTIM.exports.xdmf_export import XDMFExport
 import fenics
 import pytest
 import sympy as sp
@@ -349,7 +348,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
     derived_quantities = FESTIM.DerivedQuantities()
     derived_quantities.derived_quantities = [total_solute, total_retention]
     my_exports = FESTIM.Exports([
-        XDMFExport("retention", "retention", folder=str(Path(d))),
+        FESTIM.XDMFExport("retention", "retention", folder=str(Path(d))),
         derived_quantities
         ]
     )
@@ -364,3 +363,83 @@ def test_run_chemical_pot_mass_balance(tmpdir):
     my_sim.run()
     assert total_solute.compute() == pytest.approx(1)
     assert total_retention.compute() == pytest.approx(1)
+
+
+def test_run_MMS_soret(tmpdir):
+    '''
+    MMS test with soret effect
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    u = 1 + FESTIM.x**2 + FESTIM.t
+
+    def run(h):
+        T = 2 + sp.cos(2*fenics.pi*FESTIM.x)*sp.cos(FESTIM.t)
+        E_D = 0
+        D_0 = 2
+        k_B = FESTIM.k_B
+        D = D_0 * sp.exp(-E_D/k_B/T)
+        H = -2
+        S = 3
+        R = FESTIM.R
+        f = sp.diff(u, FESTIM.t) - \
+            sp.diff(
+                (D*(sp.diff(u, FESTIM.x) +
+                    (H*T+S)*u/(R*T**2)*sp.diff(T, FESTIM.x))),
+                FESTIM.x)
+
+        my_materials = FESTIM.Materials(
+            [
+                FESTIM.Material(id=1, D_0=D_0, E_D=E_D, H={"free_enthalpy": H, "entropy": S})
+            ]
+        )
+        my_initial_conditions = [
+            FESTIM.InitialCondition(field=0, value=u),
+        ]
+
+        size = 0.1
+        my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
+
+        my_source = FESTIM.Source(f, 1, "solute")
+
+        my_temp = FESTIM.Temperature("expression", T)
+
+        my_bcs = [
+            FESTIM.DirichletBC(type="dc", surfaces=[1, 2], value=u, component=0),
+        ]
+
+        my_settings = FESTIM.Settings(
+            absolute_tolerance=1e-10,
+            relative_tolerance=1e-9,
+            maximum_iterations=50,
+            transient=True, final_time=0.1,
+            soret=True
+        )
+
+        my_dt = FESTIM.Stepsize(0.1/50)
+
+        my_exports = FESTIM.Exports([
+            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+            FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
+            FESTIM.Error("solute", u, norm="L2")
+            ]
+        )
+
+        my_sim = FESTIM.Simulation(
+            mesh=my_mesh, materials=my_materials,
+            initial_conditions=my_initial_conditions,
+            boundary_conditions=my_bcs, sources=[my_source],
+            temperature=my_temp, settings=my_settings,
+            dt=my_dt, exports=my_exports)
+
+        my_sim.initialise()
+        return my_sim.run()
+
+    tol_u = 1e-7
+    sizes = [1/1000, 1/2000]
+    for h in sizes:
+        output = run(h)
+        error_max_u = output["error"][0]
+        msg = 'L2 error on u is:' + str(error_max_u) + '\n \
+            with h = ' + str(h)
+        print(msg)
+        assert error_max_u < tol_u

@@ -77,6 +77,7 @@ class Simulation():
 
     def attribute_source_terms(self):
         field_to_object = {
+            "solute": self.mobile,
             "0": self.mobile,
             0: self.mobile,
             "mobile": self.mobile,
