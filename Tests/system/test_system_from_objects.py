@@ -541,3 +541,52 @@ def test_run_MMS_steady_state(tmpdir):
             with h = ' + str(h)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
+
+
+def test_chemical_pot_T_solve_stationary(tmpdir):
+    """checks that the chemical potential conservation is well computed with
+    type solve_stationary for temperature
+
+    adapted to catch bug described in issue #310
+    """
+    d = tmpdir.mkdir("Solution_Test")
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=1, D_0=1, E_D=0.1, S_0=2, E_S=0.2, thermal_cond=1)
+        ]
+    )
+    my_mesh = FESTIM.MeshFromRefinements(10, 1)
+
+    my_temp = FESTIM.Temperature("solve_stationary")
+    my_bcs = [
+        FESTIM.DirichletBC(type="dc", surfaces=[1, 2], value=1, component="solute"),
+        FESTIM.DirichletBC(type="dc", surfaces=[1], value=300, component="T"),
+        FESTIM.DirichletBC(type="dc", surfaces=[2], value=300, component="T"),
+    ]
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=20,
+        chemical_pot=True,
+        transient=True, final_time=100,
+    )
+    my_dt = FESTIM.Stepsize(10, stepsize_change_ratio=1.2, dt_min=1e-8)
+    my_derived_quantities = FESTIM.DerivedQuantities()
+    my_derived_quantities.derived_quantities = [
+        FESTIM.TotalSurface("solute", 2)
+    ]
+    my_exports = FESTIM.Exports([
+        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+        my_derived_quantities
+        ]
+    )
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials,
+        boundary_conditions=my_bcs,
+        temperature=my_temp, settings=my_settings,
+        dt=my_dt, exports=my_exports)
+
+    my_sim.initialise()
+    out = my_sim.run()
+    assert out["derived_quantities"][-1][1] == pytest.approx(1)
