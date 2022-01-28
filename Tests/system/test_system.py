@@ -810,12 +810,13 @@ def test_run_MMS_steady_state(tmpdir):
         assert error_max_u < tol_u and error_max_v < tol_v
 
 
-def test_chemical_pot_T_solve_stationary():
+def test_chemical_pot_T_solve_stationary(tmpdir):
     """checks that the chemical potential conservation is well computed with
     type solve_stationary for temperature
 
     adapted to catch bug described in issue #310
     """
+    d = tmpdir.mkdir("Solution_Test")
     parameters = {
         "mesh_parameters": {
             "size": 1,
@@ -887,7 +888,7 @@ def test_chemical_pot_T_solve_stationary():
             "xdmf": {
                 "fields": ['solute'],
                 "labels": ["solute"],
-                "folder": 'results',
+                "folder": str(Path(d)),
             },
         }
     }
@@ -1060,11 +1061,11 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
                 "surface_flux": [
                     {
                         "field": "solute",
-                        "surfaces": [0],
+                        "surfaces": [1],
                     },
                     {
                         "field": "T",
-                        "surfaces": [0],
+                        "surfaces": [1],
                     }
                 ],
                 "total_volume": [

@@ -64,7 +64,7 @@ class Simulation:
         mesh=None,
         materials=None,
         sources=[],
-        boundary_conditions=None,
+        boundary_conditions=[],
         traps=None,
         dt=None,
         settings=None,
@@ -121,6 +121,8 @@ class Simulation:
             self.traps = FESTIM.Traps(traps)
         elif isinstance(traps, FESTIM.Traps):
             self.traps = traps
+        elif isinstance(traps, FESTIM.Trap):
+            self.traps = FESTIM.Traps([traps])
 
         if type(materials) is list:
             self.materials = FESTIM.Materials(materials)
@@ -451,6 +453,7 @@ class Simulation:
         (self.mobile, self.T, or traps)
         """
         field_to_object = {
+            "solute": self.mobile,
             "0": self.mobile,
             0: self.mobile,
             "mobile": self.mobile,
@@ -539,6 +542,7 @@ class Simulation:
         # add measure and properties to derived_quantities
         for export in self.exports.exports:
             if isinstance(export, FESTIM.DerivedQuantities):
+                export.data = [export.make_header()]
                 export.assign_measures_to_quantities(self.dx, self.ds)
                 export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
 

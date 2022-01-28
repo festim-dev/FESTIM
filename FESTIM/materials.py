@@ -4,38 +4,28 @@ import numpy as np
 
 
 class Material:
-    def __init__(
-            self,
-            id,
-            D_0,
-            E_D,
-            S_0=None,
-            E_S=None,
-            thermal_cond=None,
-            heat_capacity=None,
-            rho=None,
-            borders=[],
-            H=None) -> None:
-        """Inits Material
+    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=[], H=None) -> None:
+        """Inits Material class
 
         Args:
-            id (int): id of the material
+            id (int): the id of the material
             D_0 (float): diffusion coefficient pre-exponential factor (m2/s)
             E_D (float): diffusion coefficient activation energy (eV)
-            S_0 (float, optional): solubility pre-exponential factor. Defaults
-                to None.
-            E_S (float, optional): solubility activation energy (eV). Defaults
-                to None.
-            thermal_cond (float, callable, optional): thermal conductivity
-                (W/m/K). Defaults to None.
-            heat_capacity (float, callable, optional): heat capacity (J/K/kg).
+            S_0 (float, optional): Solubility pre-exponential factor
+                (H/m3/Pa0.5). Defaults to None.
+            E_S (float, optional): Solubility activation energy (eV).
                 Defaults to None.
-            rho (float, callable, optional): volumetric density (kg/m^3).
-                Defaults to None.
-            borders (list, optional): borders of the material [x1, x2] (m).
-                Only needed in 1D multimaterial. Defaults to [].
-            H (dict, optional): heat of transport
-                {"free_enthalpy": ..., "entropy": ...}. Defaults to None.
+            thermal_cond (float or callable, optional): thermal conductivity
+                (W/m/K). Can be a function of T. Defaults to None.
+            heat_capacity (float or callable, optional): heat capacity
+                (J/K/kg). Can be a function of T. Defaults to None.
+            rho (float or callable, optional): volumetric density (kg/m3). Can
+                be a function of T. Defaults to None.
+            borders (list, optional): The borders of the 1D subdomain.
+                Only needed in 1D with several materials. Defaults to [].
+            H (dict, optional): heat of transport (J/mol).
+                {"free_enthalpy": ..., "entropy": ...} so that
+                H = free_enthalpy + entropy*T. Defaults to None.
         """
         self.id = id
         self.D_0 = D_0

@@ -121,6 +121,7 @@ class Temperature:
         T, T_n = self.T, self.T_n
         v_T = self.v_T
 
+        self.F = 0
         for mat in materials.materials:
             thermal_cond = mat.thermal_cond
             if callable(thermal_cond):  # if thermal_cond is a function
@@ -148,7 +149,12 @@ class Temperature:
             src = sp.printing.ccode(source.value)
             src = Expression(src, degree=2, t=0)
             self.sub_expressions.append(src)
-            self.F += - src*v_T*dx(source.volume)
+            if type(source.volume) is list:
+                volumes = source.volume
+            else:
+                volumes = [source.volume]
+            for volume in volumes:
+                self.F += - src*v_T*dx(volume)
 
         # Boundary conditions
         for bc in self.boundary_conditions:
