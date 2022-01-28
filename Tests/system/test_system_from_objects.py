@@ -907,3 +907,48 @@ def test_no_jacobian_update():
     # run
     my_sim.initialise()
     my_sim.run()
+
+
+def test_nb_iterations_bewteen_derived_quantities_compute():
+    """Checks that "nb_iterations_between_compute" has an influence on the
+    number of entries in derived quantities
+    """
+    def init_sim(nb_it_compute):
+        my_materials = FESTIM.Materials(
+            [
+                FESTIM.Material(id=1, D_0=1, E_D=0)
+            ]
+        )
+        my_mesh = FESTIM.MeshFromRefinements(10, 1)
+
+        my_temp = FESTIM.Temperature("expression", 300)
+
+        my_settings = FESTIM.Settings(
+            absolute_tolerance=1e10,
+            relative_tolerance=1e-9,
+            final_time=30
+        )
+
+        my_dt = FESTIM.Stepsize(4)
+
+        my_derived_quantities = FESTIM.DerivedQuantities(nb_iterations_between_compute=nb_it_compute)
+        my_derived_quantities.derived_quantities = [
+            FESTIM.TotalVolume("retention", 1),
+        ]
+        my_exports = FESTIM.Exports([
+            my_derived_quantities
+            ]
+        )
+
+        my_sim = FESTIM.Simulation(
+            mesh=my_mesh, materials=my_materials,
+            temperature=my_temp, settings=my_settings,
+            exports=my_exports, dt=my_dt)
+
+        my_sim.initialise()
+        return my_sim
+
+    short_derived_quantities = init_sim(10).run()["derived_quantities"]
+    long_derived_quantities = init_sim(1).run()["derived_quantities"]
+
+    assert len(long_derived_quantities) > len(short_derived_quantities)
