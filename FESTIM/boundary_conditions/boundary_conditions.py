@@ -117,16 +117,14 @@ class DirichletBC(BoundaryCondition):
 
 
 class FluxBC(BoundaryCondition):
-    def __init__(self, type="flux", **kwargs) -> None:
-        super().__init__(type=type, **kwargs)
+    def __init__(self, surfaces, value=None, type="flux", **kwargs) -> None:
+        super().__init__(type=type, surfaces=surfaces, value=value, **kwargs)
 
     def create_form(self, T, solute):
         if self.type == "flux":
             form = sp.printing.ccode(self.value)
             form = f.Expression(form, t=0, degree=2)
             self.sub_expressions.append(form)
-        # elif self.type == "recomb":
-        #     form = recombination_flux(T, solute, self.prms)
         elif self.type == "convective_flux":
             form = convective_flux(T, self.prms)
         if self.type == "flux_custom":
@@ -199,11 +197,6 @@ class BoundaryConditionExpression(f.UserExpression):
 
     def value_shape(self):
         return ()
-
-
-def recombination_flux(T, c, prms):
-    Kr = prms["Kr_0"]*f.exp(-prms["E_Kr"]/FESTIM.k_B/T)
-    return -Kr*c**prms["order"]
 
 
 def dc_imp(T, prms):
