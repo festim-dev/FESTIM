@@ -159,7 +159,7 @@ class Temperature:
         # Boundary conditions
         for bc in self.boundary_conditions:
             if bc.type not in FESTIM.helpers.T_bc_types["dc"]:
-                bc.create_form_for_flux(self.T, solute=None)
+                bc.create_form(self.T, solute=None)
 
                 # TODO: maybe that's not necessary
                 self.sub_expressions += bc.sub_expressions
