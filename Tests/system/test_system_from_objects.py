@@ -831,3 +831,44 @@ def test_steady_state_with_2_materials():
     # test
 
     assert my_sim.u(0.5, 0.5) != 0
+
+
+def test_steady_state_traps_not_everywhere():
+    """Creates a simulation problem with a trap not set in all subdomains runs
+    the sim and check that the value is not NaN
+    """
+    # build
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=1, D_0=1, E_D=0, borders=[0, 0.25]),
+            FESTIM.Material(id=2, D_0=1, E_D=0, borders=[0.25, 0.5]),
+            FESTIM.Material(id=3, D_0=1, E_D=0, borders=[0.5, 1]),
+        ]
+    )
+
+    my_mesh = FESTIM.MeshFromRefinements(100, 1)
+
+    my_trap = FESTIM.Trap(1, 0, 1, 0, [1, 3], 1)
+
+    my_temp = FESTIM.Temperature("expression", 1)
+    my_bc = FESTIM.DirichletBC("dc", [1], value=1)
+    my_source = FESTIM.Source(1, [1, 2, 3], "solute")
+
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=5,
+        traps_element_type="DG",
+        transient=False
+    )
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials, sources=[my_source],
+        traps=my_trap,
+        temperature=my_temp, settings=my_settings, boundary_conditions=[my_bc])
+
+    # run
+    my_sim.initialise()
+    my_sim.run()
+    assert not np.isnan(my_sim.u.split()[1](0.5))
+
