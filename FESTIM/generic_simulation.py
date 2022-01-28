@@ -6,7 +6,7 @@ warnings.simplefilter('always', DeprecationWarning)
 
 
 class Simulation():
-    def __init__(self, parameters=None, mesh=None, materials=None, sources=[], boundary_conditions=None, traps=None, dt=None, settings=None, temperature=None, initial_conditions=[], exports=None, log_level=40):
+    def __init__(self, parameters=None, mesh=None, materials=None, sources=[], boundary_conditions=[], traps=None, dt=None, settings=None, temperature=None, initial_conditions=[], exports=None, log_level=40):
         self.log_level = log_level
 
         self.settings = settings

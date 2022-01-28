@@ -1,4 +1,5 @@
 import FESTIM
+from FESTIM.exports.xdmf_export import XDMFExport
 import fenics
 import pytest
 import sympy as sp
@@ -309,3 +310,57 @@ def test_run_MMS_chemical_pot(tmpdir):
             with dt = ' + str(dt)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
+
+
+def test_run_chemical_pot_mass_balance(tmpdir):
+    '''
+    Simple test checking that the mass balance in ensured when solubility
+    increases.
+    Creates a model with a constant concentration of mobile (c_m(t=0)=1,
+    non-flux conditions at surfaces) with a varying temperature
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=1, D_0=1, E_D=0.1, S_0=2, E_S=0.1)
+        ]
+    )
+
+    my_initial_conditions = [
+        FESTIM.InitialCondition(field=0, value=1),
+    ]
+
+    my_mesh = FESTIM.MeshFromRefinements(5, 1)
+
+    my_temp = FESTIM.Temperature("expression", 700 + 210*FESTIM.t)
+
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=50,
+        transient=True, final_time=100,
+        chemical_pot=True
+    )
+
+    my_dt = FESTIM.Stepsize(2)
+
+    total_solute = FESTIM.TotalVolume("solute", 1)
+    total_retention = FESTIM.TotalVolume("retention", 1)
+    derived_quantities = FESTIM.DerivedQuantities()
+    derived_quantities.derived_quantities = [total_solute, total_retention]
+    my_exports = FESTIM.Exports([
+        XDMFExport("retention", "retention", folder=str(Path(d))),
+        derived_quantities
+        ]
+    )
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials,
+        initial_conditions=my_initial_conditions,
+        temperature=my_temp, settings=my_settings,
+        dt=my_dt, exports=my_exports)
+
+    my_sim.initialise()
+    my_sim.run()
+    assert total_solute.compute() == pytest.approx(1)
+    assert total_retention.compute() == pytest.approx(1)
