@@ -357,9 +357,9 @@ def test_create_expression_dc_custom():
             assert expected(x) == value_BC(x)
 
 
-def test_create_form_for_flux_flux_custom():
+def test_create_form_flux_custom():
     """Creates a flux_custom bc and checks
-    create_form_for_flux returns
+    create_form returns
     the correct form
     """
     # build
@@ -375,7 +375,7 @@ def test_create_form_for_flux_flux_custom():
 
     # run
     my_BC = FESTIM.FluxBC(type="flux_custom", surfaces=[1, 0], function=func, foo=expr_foo)
-    value_BC = my_BC.create_form_for_flux(T, solute)
+    value_BC = my_BC.create_form(T, solute)
 
     # test
     mesh = fenics.UnitIntervalMesh(10)
@@ -398,7 +398,7 @@ def test_convective_flux():
     T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
 
     my_BC = FESTIM.FluxBC(type="convective_flux", surfaces=[0], component="T", h_coeff=expr_T, T_ext=expr_T)
-    my_BC.create_form_for_flux(T, None)
+    my_BC.create_form(T, None)
 
 
 def test_recomb_flux():
@@ -406,5 +406,5 @@ def test_recomb_flux():
     T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
     c = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
 
-    my_BC = FESTIM.FluxBC(type="recomb", surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
-    my_BC.create_form_for_flux(T, c)
+    my_BC = FESTIM.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
+    my_BC.create_form(T, c)
