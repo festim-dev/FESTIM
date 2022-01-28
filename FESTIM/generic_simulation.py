@@ -17,6 +17,8 @@ class Simulation():
             self.traps = FESTIM.Traps(traps)
         elif isinstance(traps, FESTIM.Traps):
             self.traps = traps
+        elif isinstance(traps, FESTIM.Trap):
+            self.traps = FESTIM.Traps([traps])
 
         if type(materials) is list:
             self.materials = FESTIM.Materials(materials)

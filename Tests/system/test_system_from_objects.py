@@ -371,22 +371,20 @@ def test_run_MMS_soret(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + FESTIM.x**2 + FESTIM.t
-
+    T = 2 + sp.cos(2*fenics.pi*FESTIM.x)*sp.cos(FESTIM.t)
+    E_D = 0
+    D_0 = 2
+    k_B = FESTIM.k_B
+    D = D_0 * sp.exp(-E_D/k_B/T)
+    H = -2
+    S = 3
+    R = FESTIM.R
+    f = sp.diff(u, FESTIM.t) - \
+        sp.diff(
+            (D*(sp.diff(u, FESTIM.x) +
+                (H*T+S)*u/(R*T**2)*sp.diff(T, FESTIM.x))),
+            FESTIM.x)
     def run(h):
-        T = 2 + sp.cos(2*fenics.pi*FESTIM.x)*sp.cos(FESTIM.t)
-        E_D = 0
-        D_0 = 2
-        k_B = FESTIM.k_B
-        D = D_0 * sp.exp(-E_D/k_B/T)
-        H = -2
-        S = 3
-        R = FESTIM.R
-        f = sp.diff(u, FESTIM.t) - \
-            sp.diff(
-                (D*(sp.diff(u, FESTIM.x) +
-                    (H*T+S)*u/(R*T**2)*sp.diff(T, FESTIM.x))),
-                FESTIM.x)
-
         my_materials = FESTIM.Materials(
             [
                 FESTIM.Material(id=1, D_0=D_0, E_D=E_D, H={"free_enthalpy": H, "entropy": S})
@@ -443,3 +441,103 @@ def test_run_MMS_soret(tmpdir):
             with h = ' + str(h)
         print(msg)
         assert error_max_u < tol_u
+
+
+def test_run_MMS_steady_state(tmpdir):
+    '''
+    MMS test with one trap at steady state
+    '''
+    d = tmpdir.mkdir("Solution_Test")
+    u = 1 + FESTIM.x
+    v = 1 + FESTIM.x*2
+    size = 1
+    k_0 = 2
+    E_k = 1.5
+    p_0 = 0.2
+    E_p = 0.1
+    T = 700 + 30*FESTIM.x
+    n_trap = 1
+    E_D = 0.1
+    D_0 = 2
+    k_B = FESTIM.k_B
+    D = D_0 * sp.exp(-E_D/k_B/T)
+    p = p_0 * sp.exp(-E_p/k_B/T)
+    k = k_0 * sp.exp(-E_k/k_B/T)
+
+    f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
+        D * sp.diff(u, FESTIM.x, 2) - \
+        sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
+    g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
+
+    def run(h):
+
+        my_materials = FESTIM.Materials(
+            [
+                FESTIM.Material(id=1, D_0=D_0, E_D=E_D)
+            ]
+        )
+
+        my_trap = FESTIM.Trap(k_0, E_k, p_0, E_p, [1], n_trap)
+
+        my_initial_conditions = [
+            FESTIM.InitialCondition(field=0, value=u),
+            FESTIM.InitialCondition(field=1, value=v),
+        ]
+
+        size = 0.1
+        my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
+
+        my_sources = [
+            FESTIM.Source(f, 1, "solute"),
+            FESTIM.Source(g, 1, "1")
+        ]
+
+        my_temp = FESTIM.Temperature("expression", T)
+
+        my_bcs = [
+            FESTIM.DirichletBC(type="dc", surfaces=[1, 2], value=u, component=0),
+            FESTIM.DirichletBC(type="dc", surfaces=[1, 2], value=v, component=1),
+        ]
+
+        my_settings = FESTIM.Settings(
+            absolute_tolerance=1e-10,
+            relative_tolerance=1e-9,
+            maximum_iterations=50,
+            transient=False, final_time=0.1,
+            traps_element_type="DG"
+        )
+
+        my_dt = FESTIM.Stepsize(0.1/50)
+
+        my_exports = FESTIM.Exports([
+            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+            FESTIM.XDMFExport("1", "1", folder=str(Path(d))),
+            FESTIM.XDMFExport("retention", "retention", folder=str(Path(d))),
+            FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
+            FESTIM.Error("solute", u),
+            FESTIM.Error("1", v)
+            ]
+        )
+
+        my_sim = FESTIM.Simulation(
+            mesh=my_mesh, materials=my_materials, traps=my_trap,
+            initial_conditions=my_initial_conditions,
+            boundary_conditions=my_bcs, sources=my_sources,
+            temperature=my_temp, settings=my_settings,
+            dt=my_dt, exports=my_exports)
+
+        my_sim.initialise()
+        return my_sim.run()
+
+    tol_u = 1e-10
+    tol_v = 1e-7
+    sizes = [1/1000, 1/2000]
+    for h in sizes:
+        output = run(h)
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
+        msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
+            Maximum error on v is:' + str(error_max_v) + '\n \
+            with h = ' + str(h)
+        print(msg)
+        assert error_max_u < tol_u and error_max_v < tol_v
