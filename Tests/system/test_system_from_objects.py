@@ -741,10 +741,9 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
     my_sim.run()
 
 
-def test_extrinsic_trap(tmpdir):
+def test_extrinsic_trap():
     """Runs a FESTIM sim with an extrinsic trap
     """
-    d = tmpdir.mkdir("Solution_Test")
     my_materials = FESTIM.Materials(
         [
             FESTIM.Material(id=1, D_0=2, E_D=1)
@@ -779,3 +778,56 @@ def test_extrinsic_trap(tmpdir):
 
     my_sim.initialise()
     my_sim.run()
+
+
+def test_steady_state_with_2_materials():
+    """Runs a sim with several materials and checks that the produced value is
+    not zero at the centre
+    """
+    # build
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=[1, 2], D_0=1, E_D=0),
+            FESTIM.Material(id=3, D_0=0.25, E_D=0),
+        ]
+    )
+
+    N = 16
+    mesh = fenics.UnitSquareMesh(N, N)
+    vm = fenics.MeshFunction("size_t", mesh, 2, 0)
+    sm = fenics.MeshFunction("size_t", mesh, 1, 0)
+
+    tol = 1E-14
+    subdomain_1 = fenics.CompiledSubDomain('x[1] <= 0.5 + tol', tol=tol)
+    subdomain_2 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] >= 0.5 - tol', tol=tol)
+    subdomain_3 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] <= 0.5 + tol', tol=tol)
+    subdomain_1.mark(vm, 1)
+    subdomain_2.mark(vm, 2)
+    subdomain_3.mark(vm, 3)
+
+    surfaces = fenics.CompiledSubDomain('on_boundary')
+    surfaces.mark(sm, 1)
+    my_mesh = FESTIM.Mesh(mesh=mesh, volume_markers=vm, surface_markers=sm)
+
+    my_temp = FESTIM.Temperature("expression", 30)
+    my_bc = FESTIM.DirichletBC("dc", [1], value=0)
+    my_source = FESTIM.Source(1, [1, 2, 3], "solute")
+
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=5,
+        transient=False
+    )
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials, sources=[my_source],
+        temperature=my_temp, settings=my_settings, boundary_conditions=[my_bc])
+
+    # run
+    my_sim.initialise()
+    my_sim.run()
+
+    # test
+
+    assert my_sim.u(0.5, 0.5) != 0
