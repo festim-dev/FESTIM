@@ -739,3 +739,43 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
 
     my_sim.initialise()
     my_sim.run()
+
+
+def test_extrinsic_trap(tmpdir):
+    """Runs a FESTIM sim with an extrinsic trap
+    """
+    d = tmpdir.mkdir("Solution_Test")
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=1, D_0=2, E_D=1)
+        ]
+    )
+    my_mesh = FESTIM.MeshFromRefinements(10, 1)
+
+    my_traps = FESTIM.ExtrinsicTrap(
+        k_0=1, E_k=0.1, p_0=1e13, E_p=0.1, materials=[1],
+        form_parameters={
+            "phi_0": 2.5e19,
+            "n_amax": 1e-1*6.3e28,
+            "f_a": 1,
+            "eta_a": 6e-4,
+            "n_bmax": 1e-2*6.3e28,
+            "f_b": 2,
+            "eta_b": 2e-4}
+    )
+
+    my_temp = FESTIM.Temperature("expression", 300)
+
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e10,
+        relative_tolerance=1e-9,
+        final_time=1,
+    )
+    my_dt = FESTIM.Stepsize(0.5)
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials,
+        temperature=my_temp, settings=my_settings, traps=my_traps, dt=my_dt)
+
+    my_sim.initialise()
+    my_sim.run()
