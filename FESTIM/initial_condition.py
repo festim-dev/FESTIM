@@ -2,7 +2,24 @@ import warnings
 
 
 class InitialCondition:
-    def __init__(self, field=0, value=0, component=None, label=None, time_step=None) -> None:
+    def __init__(self, field=0, value=0., component=None, label=None, time_step=None) -> None:
+        """Inits InitialCondition
+
+        Args:
+            field (int, str, optional): the field
+                ("0", "solute", "T", "1",...). Defaults to 0.
+            value (float, str, optional): the value of the initial condition.
+                Defaults to 0.
+            component (int, str, optional): the field
+                ("0", "solute", "T", "1",...). Soon to be deprecated. Defaults to None.
+            label (str, optional): label in the XDMF file. Defaults to None.
+            time_step ([type], optional): [description]. Defaults to None.
+
+        Raises:
+            ValueError: if XDMF and label is None
+            ValueError: if XDMF and time_step is None
+        """
+        # TODO make an inherited class InitialConditionXDMF
         self.field = field
         self.value = value
         if component is not None:
