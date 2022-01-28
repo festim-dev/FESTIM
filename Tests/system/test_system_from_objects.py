@@ -952,3 +952,88 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
     long_derived_quantities = init_sim(1).run()["derived_quantities"]
 
     assert len(long_derived_quantities) > len(short_derived_quantities)
+
+# TODO need to convert this test and actually test something!!
+# def test_nb_iterations_bewteen_derived_quantities_export(tmpdir):
+#     """Checks that a simulation with "nb_iterations_between_exports" key for
+#     derived quantities doesn't raise an error
+#     """
+#     d = tmpdir.mkdir("temp")
+#     parameters = {
+#         "materials": [
+#             {
+#                 "E_D": 1,
+#                 "D_0": 1,
+#                 "id": 1
+#             }
+#             ],
+#         "traps": [
+#             ],
+#         "mesh_parameters": {
+#                 "initial_number_of_cells": 200,
+#                 "size": 1,
+#                 "refinements": [
+#                 ],
+#             },
+#         "boundary_conditions": [
+#             ],
+#         "temperature": {
+#             "type": "expression",
+#             "value": 300
+#         },
+#         "solving_parameters": {
+#             "type": "solve_transient",
+#             "final_time": 30,
+#             "initial_stepsize": 4,
+#             "newton_solver": {
+#                 "absolute_tolerance": 1e10,
+#                 "relative_tolerance": 1e-9,
+#                 "maximum_iterations": 50,
+#             }
+#             },
+#         "exports": {
+#             "derived_quantities": {
+#                 "total_volume": [{
+#                     "field": 'retention',
+#                     "volumes":  [1],
+#                 }],
+#                 "folder": str(Path(d)),
+#                 "nb_iterations_between_exports": 2
+#             },
+#             },
+#     }
+#     output = FESTIM.run(parameters)
+
+
+def test_error_steady_state_diverges():
+    """Checks that when a sim doesn't converge in steady state, an error is
+    raised
+    """
+    # build
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=1, D_0=1, E_D=1),
+        ]
+    )
+
+    my_mesh = FESTIM.MeshFromRefinements(10, 1)
+
+    my_temp = FESTIM.Temperature("expression", -1)
+
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        maximum_iterations=2,
+        transient=False
+    )
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials,
+        temperature=my_temp, settings=my_settings)
+
+    # run
+    my_sim.initialise()
+    with pytest.raises(ValueError) as err:
+        my_sim.run()
+
+    assert "The solver diverged" in str(err.value)
