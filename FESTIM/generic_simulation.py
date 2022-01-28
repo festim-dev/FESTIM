@@ -355,6 +355,7 @@ class Simulation():
         # add measure and properties to derived_quantities
         for export in self.exports.exports:
             if isinstance(export, FESTIM.DerivedQuantities):
+                export.data = [export.make_header()]
                 export.assign_measures_to_quantities(self.dx, self.ds)
                 export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
 
