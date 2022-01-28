@@ -103,7 +103,12 @@ class Temperature:
             src = sp.printing.ccode(source.value)
             src = Expression(src, degree=2, t=0)
             self.sub_expressions.append(src)
-            self.F += - src*v_T*dx(source.volume)
+            if type(source.volume) is list:
+                volumes = source.volume
+            else:
+                volumes = [source.volume]
+            for volume in volumes:
+                self.F += - src*v_T*dx(volume)
 
         # Boundary conditions
         for bc in self.boundary_conditions:
