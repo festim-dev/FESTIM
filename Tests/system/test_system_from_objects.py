@@ -698,3 +698,44 @@ def test_performance_xdmf_last_timestep(tmpdir):
     long_time = stop - start
 
     assert short_time < long_time
+
+
+def test_export_particle_flux_with_chemical_pot(tmpdir):
+    """Checks that surface particle fluxes can be computed with conservation
+    of chemical potential
+    """
+    d = tmpdir.mkdir("Solution_Test")
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=1, D_0=2, E_D=1, S_0=2, E_S=1, thermal_cond=2)
+        ]
+    )
+    my_mesh = FESTIM.MeshFromRefinements(10, 1)
+
+    my_temp = FESTIM.Temperature("expression", 300)
+
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e10,
+        relative_tolerance=1e-9,
+        chemical_pot=True,
+        transient=False,
+    )
+    my_derived_quantities = FESTIM.DerivedQuantities()
+    my_derived_quantities.derived_quantities = [
+        FESTIM.SurfaceFlux("solute", 1),
+        FESTIM.SurfaceFlux("T", 1),
+        FESTIM.TotalVolume("retention", 1),
+    ]
+    my_exports = FESTIM.Exports([
+        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+        my_derived_quantities
+        ]
+    )
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials,
+        temperature=my_temp, settings=my_settings,
+        exports=my_exports)
+
+    my_sim.initialise()
+    my_sim.run()
