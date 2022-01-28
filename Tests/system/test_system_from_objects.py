@@ -852,7 +852,6 @@ def test_steady_state_traps_not_everywhere():
 
     my_temp = FESTIM.Temperature("expression", 1)
     my_bc = FESTIM.DirichletBC("dc", [1], value=1)
-    my_source = FESTIM.Source(1, [1, 2, 3], "solute")
 
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e-10,
@@ -863,7 +862,7 @@ def test_steady_state_traps_not_everywhere():
     )
 
     my_sim = FESTIM.Simulation(
-        mesh=my_mesh, materials=my_materials, sources=[my_source],
+        mesh=my_mesh, materials=my_materials,
         traps=my_trap,
         temperature=my_temp, settings=my_settings, boundary_conditions=[my_bc])
 
@@ -872,3 +871,39 @@ def test_steady_state_traps_not_everywhere():
     my_sim.run()
     assert not np.isnan(my_sim.u.split()[1](0.5))
 
+
+def test_no_jacobian_update():
+    """Runs a transient sim and with the flag "update_jacobian" set to False.
+    """
+
+    # build
+    my_materials = FESTIM.Materials(
+        [
+            FESTIM.Material(id=1, D_0=1, E_D=0),
+        ]
+    )
+
+    my_mesh = FESTIM.MeshFromRefinements(10, 1)
+
+    my_trap = FESTIM.Trap(1, 0, 1, 0, [1], 1)
+
+    my_temp = FESTIM.Temperature("expression", 1)
+
+    my_settings = FESTIM.Settings(
+        final_time=10,
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=5,
+        update_jacobian=False
+    )
+
+    my_dt = FESTIM.Stepsize(1)
+
+    my_sim = FESTIM.Simulation(
+        mesh=my_mesh, materials=my_materials, dt=my_dt,
+        traps=my_trap,
+        temperature=my_temp, settings=my_settings)
+
+    # run
+    my_sim.initialise()
+    my_sim.run()
