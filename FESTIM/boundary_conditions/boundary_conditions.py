@@ -125,8 +125,6 @@ class FluxBC(BoundaryCondition):
             form = sp.printing.ccode(self.value)
             form = f.Expression(form, t=0, degree=2)
             self.sub_expressions.append(form)
-        elif self.type == "convective_flux":
-            form = convective_flux(T, self.prms)
         if self.type == "flux_custom":
             form = self.function(T, solute, self.prms)
         self.sub_expressions += [expression for expression in self.prms.values()]
@@ -215,10 +213,6 @@ def sieverts_law(T, prms):
     S_0, E_S = prms["S_0"], prms["E_S"]
     S = S_0*f.exp(-E_S/FESTIM.k_B/T)
     return S*prms["pressure"]**0.5
-
-
-def convective_flux(T, prms):
-    return prms["h_coeff"] * (T - prms["T_ext"])
 
 
 type_to_function = {

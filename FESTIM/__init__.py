@@ -11,6 +11,7 @@ from .temperature import Temperature
 from .boundary_conditions.boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
 from .boundary_conditions.recombination_flux import RecombinationFlux
+from .boundary_conditions.convective_flux import ConvectiveFlux
 
 from .solving import solve_it, solve_once
 

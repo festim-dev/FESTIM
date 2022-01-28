@@ -397,7 +397,7 @@ def test_convective_flux():
     expr_T = 2 + FESTIM.x
     T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
 
-    my_BC = FESTIM.FluxBC(type="convective_flux", surfaces=[0], component="T", h_coeff=expr_T, T_ext=expr_T)
+    my_BC = FESTIM.ConvectiveFlux(surfaces=[0], h_coeff=expr_T, T_ext=expr_T)
     my_BC.create_form(T, None)
 
 
