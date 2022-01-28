@@ -38,12 +38,11 @@ def formulation_extrinsic_traps(simulation):
     """Creates a list that contains formulations to be solved during
     time stepping.
 
-    Arguments:
-
+    Args:
+        simulation (FESTIM.Simulation): the simulation
 
     Returns:
-        list -- contains fenics.Form to be solved for extrinsic trap density
-        list -- contains fenics.Expression to be updated
+        list, list: list of fenics.Form and list of fenics.Expression
     """
     formulations = []
     expressions = []

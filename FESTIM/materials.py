@@ -43,6 +43,12 @@ class Material:
         self.check_properties()
 
     def check_properties(self):
+        """Checks that if S_0 is None E_S is not None and reverse.
+
+        Raises:
+            ValueError: [description]
+            ValueError: [description]
+        """
         if self.S_0 is None and self.E_S is not None:
             raise ValueError("S_0 cannot be None")
         if self.E_S is None and self.S_0 is not None:
@@ -51,13 +57,19 @@ class Material:
 
 class Materials:
     def __init__(self, materials=[]):
+        """Inits Materials
+
+        Args:
+            materials (list, optional): contains FESTIM.Material objects.
+                Defaults to [].
+        """
         self.materials = materials
 
     def check_borders(self, size):
-        """Checks that the borders given match
+        """Checks that the borders of the materials match
 
-        Arguments:
-            size {float} -- float, size of the domain
+        Args:
+            size (float): size of the 1D domain
 
         Raises:
             ValueError: if the borders don't begin at zero
@@ -81,6 +93,12 @@ class Materials:
         return True
 
     def check_materials(self, temp_type, derived_quantities={}):
+        """Checks the materials keys
+
+        Args:
+            temp_type (str): the type of FESTIM.Temperature
+            derived_quantities (dict, optional): [description]. Defaults to {}.
+        """
 
         if len(self.materials) > 0:  # TODO: get rid of this...
             self.check_consistency()

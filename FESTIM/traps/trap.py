@@ -7,6 +7,20 @@ import numpy as np
 class Trap(Concentration):
     def __init__(
             self, k_0, E_k, p_0, E_p, materials, density, id=None):
+        """Inits Trap
+
+        Args:
+            k_0 (float): trapping pre-exponential factor
+            E_k (float): trapping activation energy
+            p_0 (float): detrapping pre-exponential factor
+            E_p (float): detrapping activation energy
+            materials (list or int): the materials ids the trap is living in
+            density (sp.Add, float): the trap density
+            id (int, optional): The trap id. Defaults to None.
+
+        Raises:
+            ValueError: if duplicates are found in materials
+        """
         super().__init__()
         self.id = id
         self.k_0 = k_0
@@ -35,15 +49,18 @@ class Trap(Concentration):
     def create_form(
             self, mobile, materials, T, dx, dt=None,
             chemical_pot=False):
-        """[summary]
+        """Creates the general form associated with the trap
+        d ct/ dt = k c_m (n - c_t) - p c_t + S
 
         Args:
-            mobile (FESTIM.Concentration): [description]
-            materials (FESTIM.Materials): [description]
-            T (FESTIM.Temperature): [description]
-            dx ([type]): [description]
-            dt ([type], optional): If None assuming steady state. Defaults to None.
-            chemical_pot (bool, optional): [description]. Defaults to False.
+            mobile (FESTIM.Mobile): the mobile concentration of the simulation
+            materials (FESTIM.Materials): the materials of the simulation
+            T (FESTIM.Temperature): the temperature of the simulation
+            dx (fenics.Measure): the dx measure of the sim
+            dt (FESTIM.Stepsize, optional): If None assuming steady state.
+                Defaults to None.
+            chemical_pot (bool, optional): If True, continuity of chemical
+                potential is assumed. Defaults to False.
         """
         self.F = 0
         self.create_trapping_form(mobile, materials, T, dx, dt, chemical_pot)
@@ -51,6 +68,18 @@ class Trap(Concentration):
             self.create_source_form(dx)
 
     def create_trapping_form(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
+        """d ct/ dt = k c_m (n - c_t) - p c_t
+
+        Args:
+            mobile (FESTIM.Mobile): the mobile concentration of the simulation
+            materials (FESTIM.Materials): the materials of the simulation
+            T (FESTIM.Temperature): the temperature of the simulation
+            dx (fenics.Measure): the dx measure of the sim
+            dt (FESTIM.Stepsize, optional): If None assuming steady state.
+                Defaults to None.
+            chemical_pot (bool, optional): If True, continuity of chemical
+                potential is assumed. Defaults to False.
+        """
         solution = self.solution
         prev_solution = self.previous_solution
         test_function = self.test_function
@@ -114,6 +143,11 @@ class Trap(Concentration):
         self.sub_expressions += expressions_trap
 
     def create_source_form(self, dx):
+        """Create the source form for the trap
+
+        Args:
+            dx (fenics.Measure): the dx measure of the sim
+        """
         for source_term in self.sources:
             source = sp.printing.ccode(source_term.value)
             source = Expression(source, t=0, degree=2, name="source_trap_{}".format(self.id))

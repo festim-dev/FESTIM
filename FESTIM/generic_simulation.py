@@ -5,8 +5,112 @@ import warnings
 warnings.simplefilter('always', DeprecationWarning)
 
 
-class Simulation():
-    def __init__(self, parameters=None, mesh=None, materials=None, sources=[], boundary_conditions=[], traps=None, dt=None, settings=None, temperature=None, initial_conditions=[], exports=None, log_level=40):
+class Simulation:
+    """
+    Main FESTIM class representing a FESTIM model
+
+    Attributes:
+        log_level (int): set what kind of FEniCS messsages are
+            displayed.
+            CRITICAL  = 50, errors that may lead to data corruption
+            ERROR     = 40, errors
+            WARNING   = 30, warnings
+            INFO      = 20, information of general interest
+            PROGRESS  = 16, what's happening (broadly)
+            TRACE     = 13,  what's happening (in detail)
+            DBG       = 10  sundry
+        settings (FESTIM.Settings): The model's settings.
+        dt (FESTIM.Stepsize): The model's stepsize.
+        traps (FESTIM.Traps): The model's traps.
+        materials (FESTIM.Materials): The model materials.
+        boundary_conditions (list of FESTIM.BoundaryCondition):
+            The model's boundary conditions (temperature of H
+            concentration).
+        initial_conditions (list of FESTIM.InitialCondition):
+            The model's initial conditions (H or T).
+        T (FESTIM.Temperature): The model's temperature.
+        exports (FESTIM.Exports): The model's exports
+            (derived quantities, XDMF exports, txt exports...).
+        mesh (FESTIM.Mesh): The mesh of the model.
+        sources (list of FESTIM.Source): Volumetric sources
+            (particle or heat sources).
+        mobile (FESTIM.Mobile): the mobile concentration (c_m or theta)
+        expressions (list): contains time-dependent fenics.Expressions
+        J (ufl.Form): the jacobian of the variational problem
+        t (fenics.Constant): the current time of simulation
+        timer (fenics.timer): the elapsed time of simulation
+        dx (fenics.Measure): the measure for dx
+        ds (fenics.Measure): the measure for ds
+        V (fenics.FunctionSpace): the vector-function space for concentrations
+        V_CG1 (fenics.FunctionSpace): the function space CG1
+        V_DG1 (fenics.FunctionSpace): the function space DG1
+        u (fenics.Function): the vector holding the concentrations (c_m, ct1,
+            ct2, ...)
+        v (fenics.TestFunction): the test function
+        u_n (fenics.Function): the "previous" function
+        bcs (list): list of fenics.DirichletBC for H transport
+        D (FESTIM.ArheniusCoeff): the hydrogen diffusion coefficient over the
+            whole domain
+        thermal_cond (FESTIM.ThermalProp): the thermal conductivity over the
+            whole domain
+        cp (FESTIM.ThermalProp): the heat capacity over the whole domain
+        rho (FESTIM.ThermalProp): the volumetric density over the whole domain
+        H (FESTIM.HCoeff): the heat of transport over the whole domain
+        S (FESTIM.ArheniusCoeff): the solubility over the whole domain
+    """
+    def __init__(
+        self,
+        parameters=None,
+        mesh=None,
+        materials=None,
+        sources=[],
+        boundary_conditions=[],
+        traps=None,
+        dt=None,
+        settings=None,
+        temperature=None,
+        initial_conditions=[],
+        exports=None,
+        log_level=40
+    ):
+        """Inits FESTIM.Simulation
+
+        Args:
+            parameters (dict, optional): Soon to be deprecated. Defaults to
+                None.
+            mesh (FESTIM.Mesh, optional): The mesh of the model. Defaults to
+                None.
+            materials (FESTIM.Materials or [FESTIM.Material, ...], optional):
+                The model materials. Defaults to None.
+            sources (list of FESTIM.Source, optional): Volumetric sources
+                (particle or heat sources). Defaults to [].
+            boundary_conditions (list of FESTIM.BoundaryCondition, optional):
+                The model's boundary conditions (temperature of H
+                concentration). Defaults to None.
+            traps (FESTIM.Traps or list, optional): The model's traps. Defaults
+                to None.
+            dt (FESTIM.Stepsize, optional): The model's stepsize. Defaults to
+                None.
+            settings (FESTIM.Settings, optional): The model's settings.
+                Defaults to None.
+            temperature (FESTIM.Temperature, optional): The model's
+                temperature. Can be an expression or a heat transfer model.
+                Defaults to None.
+            initial_conditions (list of FESTIM.InitialCondition, optional):
+                The model's initial conditions (H or T). Defaults to [].
+            exports (FESTIM.Exports or list, optional): The model's exports
+                (derived quantities, XDMF exports, txt exports...). Defaults
+                to None.
+            log_level (int, optional): set what kind of FEniCS messsages are
+                displayed. Defaults to 40.
+                CRITICAL  = 50, errors that may lead to data corruption
+                ERROR     = 40, errors
+                WARNING   = 30, warnings
+                INFO      = 20, information of general interest
+                PROGRESS  = 16, what's happening (broadly)
+                TRACE     = 13,  what's happening (in detail)
+                DBG       = 10  sundry
+        """
         self.log_level = log_level
 
         self.settings = settings
@@ -55,6 +159,7 @@ class Simulation():
 
         self.bcs = None
 
+        # perhaps these should be attributes of Materials
         self.D = None
         self.thermal_cond = None
         self.cp = None
@@ -77,30 +182,13 @@ class Simulation():
             self.create_exports(parameters)
             self.create_sources_objects(parameters)
 
-    def attribute_source_terms(self):
-        field_to_object = {
-            "solute": self.mobile,
-            "0": self.mobile,
-            0: self.mobile,
-            "mobile": self.mobile,
-            "T": self.T
-        }
-        if None not in [self.mobile, self.T]:
-            for i, trap in enumerate(self.traps.traps, 1):
-                field_to_object[i] = trap
-                field_to_object[str(i)] = trap
-
-            for source in self.sources:
-                field_to_object[source.field].sources.append(source)
-
-    def attribute_boundary_conditions(self):
-        if self.T is not None:
-            self.T.boundary_conditions = []
-            for bc in self.boundary_conditions:
-                if bc.component == "T":
-                    self.T.boundary_conditions.append(bc)
-
     def create_stepsize(self, parameters):
+        """Creates FESTIM.Stepsize object from a parameters dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         if self.settings.transient:
             self.dt = FESTIM.Stepsize()
             if "solving_parameters" in parameters:
@@ -116,6 +204,12 @@ class Simulation():
                         self.dt.adaptive_stepsize["stepsize_stop_max"] = None
 
     def create_settings(self, parameters):
+        """Creates FESTIM.Settings object from a parameters dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         my_settings = FESTIM.Settings(None, None)
         if "solving_parameters" in parameters:
             # Check if transient
@@ -149,6 +243,13 @@ class Simulation():
         self.settings = my_settings
 
     def create_concentration_objects(self, parameters):
+        """Creates FESTIM.Mobile and FESTIM.Traps objects from a parameters
+        dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         self.mobile = FESTIM.Mobile()
         traps = []
         if "traps" in parameters:
@@ -162,6 +263,13 @@ class Simulation():
         self.traps = FESTIM.Traps(traps)
 
     def create_sources_objects(self, parameters):
+        """Creates a list of FESTIM.Source objects from a parameters
+        dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         self.sources = []
         if "traps" in parameters:
             for i, trap in enumerate(parameters["traps"], 1):
@@ -203,6 +311,13 @@ class Simulation():
                     )
 
     def create_materials(self, parameters):
+        """Creates a FESTIM.Materials object from a parameters
+        dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         materials = []
         if "materials" in parameters:
             for material in parameters["materials"]:
@@ -220,6 +335,13 @@ class Simulation():
         self.materials.check_materials(temp_type, derived_quantities)
 
     def create_boundarycondition_objects(self, parameters):
+        """Creates a list of FESTIM.BoundaryCondition objects from a
+        parameters dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         self.boundary_conditions = []
         if "boundary_conditions" in parameters:
             for BC in parameters["boundary_conditions"]:
@@ -243,6 +365,13 @@ class Simulation():
                     self.boundary_conditions.append(my_BC)
 
     def create_temperature(self, parameters):
+        """Creates a FESTIM.Temperature object from a
+        parameters dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         if "temperature" in parameters:
             temp_type = parameters["temperature"]["type"]
             self.T = FESTIM.Temperature(temp_type)
@@ -257,6 +386,13 @@ class Simulation():
                     self.T.source_term = parameters["temperature"]["source_term"]
 
     def create_initial_conditions(self, parameters):
+        """Creates a list of FESTIM.InitialCondition objects from a
+        parameters dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         initial_conditions = []
         if "initial_conditions" in parameters.keys():
             for condition in parameters["initial_conditions"]:
@@ -264,6 +400,13 @@ class Simulation():
         self.initial_conditions = initial_conditions
 
     def create_exports(self, parameters):
+        """Creates a FESTIM.Exports object from a
+        parameters dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         self.exports = FESTIM.Exports([])
         if "exports" in parameters:
             if "xdmf" in parameters["exports"]:
@@ -285,6 +428,13 @@ class Simulation():
                         self.exports.exports.append(error)
 
     def define_mesh(self, parameters):
+        """Creates a FESTIM.Mesh object from a
+        parameters dict.
+        To be deprecated.
+
+        Args:
+            parameters (dict): parameters dict (<= 0.7.1)
+        """
         if "mesh_parameters" in parameters:
             mesh_parameters = parameters["mesh_parameters"]
 
@@ -298,7 +448,36 @@ class Simulation():
             else:
                 self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
 
+    def attribute_source_terms(self):
+        """Assigns the source terms (in self.sources) to the correct field
+        (self.mobile, self.T, or traps)
+        """
+        field_to_object = {
+            "0": self.mobile,
+            0: self.mobile,
+            "mobile": self.mobile,
+            "T": self.T
+        }
+        if None not in [self.mobile, self.T]:
+            for i, trap in enumerate(self.traps.traps, 1):
+                field_to_object[i] = trap
+                field_to_object[str(i)] = trap
+
+            for source in self.sources:
+                field_to_object[source.field].sources.append(source)
+
+    def attribute_boundary_conditions(self):
+        """Assigns the T boundary conditions to self.T
+        """
+        if self.T is not None:
+            self.T.boundary_conditions = []
+            for bc in self.boundary_conditions:
+                if bc.component == "T":
+                    self.T.boundary_conditions.append(bc)
+
     def define_markers(self):
+        """Creates the fenics.Measure objects for self.dx and self.ds
+        """
         # Define and mark subdomains
         if isinstance(self.mesh, FESTIM.Mesh):
             if isinstance(self.mesh, FESTIM.Mesh1D):
@@ -315,6 +494,9 @@ class Simulation():
                 'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
 
     def initialise(self):
+        """Initialise the model. Defines markers, create the suitable function
+        spaces, the functions, the variational forms...
+        """
         set_log_level(self.log_level)
 
         self.attribute_source_terms()
@@ -333,6 +515,7 @@ class Simulation():
             FESTIM.create_properties(
                 self.mesh.mesh, self.materials,
                 self.volume_markers, self.T.T)
+        # TODO this should be reversed
         if self.S is not None:
             self.settings.chemical_pot = True
 
@@ -363,6 +546,11 @@ class Simulation():
                 export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
 
     def define_function_spaces(self):
+        """Creates the suitable function spaces depending on the number of
+        traps. Also creates additional function spaces like V_CG1 (for
+        temperature) and V_DG1 (for projecting properties, and mobile
+        concentration with conservation of chemical potential)
+        """
         order_trap = 1
         element_solute, order_solute = "CG", 1
 
@@ -386,6 +574,11 @@ class Simulation():
         self.exports.V_DG1 = self.V_DG1
 
     def initialise_concentrations(self):
+        """Creates the main fenics.Function (holding all the concentrations),
+        eventually split it and assign it to Trap and Mobile.
+        Then initialise self.u_n based on self.initial_conditions
+        """
+        # TODO rename u and u_n to c and c_n
         self.u = Function(self.V, name="c")  # Function for concentrations
         self.v = TestFunction(self.V)  # TestFunction for concentrations
         self.u_n = Function(self.V, name="c_n")
@@ -409,7 +602,7 @@ class Simulation():
         for i, trap in enumerate(self.traps.traps, 1):
             field_to_component[trap.id] = i
             field_to_component[str(trap.id)] = i
-
+        # TODO refactore this, attach the initial conditions to the objects directly
         for ini in self.initial_conditions:
             value = ini.value
             component = field_to_component[ini.field]
@@ -432,6 +625,8 @@ class Simulation():
                 concentration.previous_solution = list(split(self.u_n))[i]
 
     def initialise_extrinsic_traps(self):
+        """Add functions to ExtrinsicTrap objects for density form
+        """
         for trap in self.traps.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
                 trap.density = [Function(self.V_CG1)]
@@ -439,6 +634,9 @@ class Simulation():
                 trap.density_previous_solution = project(Constant(0), self.V_CG1)
 
     def define_variational_problem_H_transport(self):
+        """Creates the variational problem for hydrogen transport (form,
+        Dirichlet boundary conditions)
+        """
         print('Defining variational problem')
         self.F, expressions_F = FESTIM.formulation(self)
         self.expressions += expressions_F
@@ -449,6 +647,9 @@ class Simulation():
         self.create_H_fluxes()
 
     def create_dirichlet_bcs(self):
+        """Creates fenics.DirichletBC objects for the hydrogen transport
+        problem and add them to self.bcs
+        """
         self.bcs = []
         for bc in self.boundary_conditions:
             if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
@@ -463,10 +664,11 @@ class Simulation():
 
     def create_H_fluxes(self):
         """Modifies the formulation and adds fluxes based
-        on parameters in boundary_conditions
+        on parameters in self.boundary_conditions
         """
 
         expressions = []
+        # TODO refactore this using self.mobile
         solutions = split(self.u)
         test_solute = split(self.v)[0]
         F = 0
@@ -489,6 +691,11 @@ class Simulation():
         self.expressions += expressions
 
     def define_variational_problem_extrinsic_traps(self):
+        """Creates the variational formulations for the extrinsic traps
+        densities
+        """
+        # TODO replace this by formulation_extrinsic_traps()
+
         # Define variational problem for extrinsic traps
         if self.settings.transient:
             self.extrinsic_formulations, expressions_extrinsic = \
@@ -496,6 +703,14 @@ class Simulation():
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
+        """Runs the model.
+
+        Raises:
+            ValueError: if steady state model didn't converge
+
+        Returns:
+            dict: output containing solutions, mesh, derived quantities
+        """
         self.timer = Timer()  # start timer
 
         if self.settings.transient:
@@ -547,6 +762,8 @@ class Simulation():
         return self.make_output()
 
     def iterate(self):
+        """Advance the model by one iteration
+        """
         # Update current time
         self.t += float(self.dt.value)
         FESTIM.update_expressions(
@@ -614,7 +831,7 @@ class Simulation():
             self.dt.value.assign(self.settings.final_time - self.t)
 
     def run_post_processing(self):
-        """Main post processing FESTIM function.
+        """Create post processing functions and compute/write the exports
         """
         label_to_function = self.update_post_processing_solutions()
 
@@ -622,6 +839,13 @@ class Simulation():
         self.exports.write(label_to_function, self.dt)
 
     def update_post_processing_solutions(self):
+        """Creates the post-processing functions by splitting self.u. Projects
+        the function on a suitable functionspace if needed.
+
+        Returns:
+            dict: a mapping of the field ("solute", "T", "retention") to its
+            post_processsing_solution
+        """
         if self.u.function_space().num_sub_spaces() == 0:
             res = [self.u]
         else:
@@ -653,6 +877,13 @@ class Simulation():
         return label_to_function
 
     def need_projecting_solute(self):
+        """Checks if the user computes a Hydrogen surface flux or exports the
+        solute to XDMF. If so, the function of mobile particles will have to
+        be type fenics.Function for the post-processing.
+
+        Returns:
+            bool: True if the solute needs to be projected, False else.
+        """
         need_solute = False  # initialises to false
         for export in self.exports.exports:
             if isinstance(export, FESTIM.DerivedQuantities):
@@ -666,6 +897,12 @@ class Simulation():
         return need_solute
 
     def make_output(self):
+        """Creates a dictionary with some useful information such as derived
+        quantities, solutions, etc.
+
+        Returns:
+            dict: the output
+        """
         label_to_function = self.update_post_processing_solutions()
 
         for key, val in label_to_function.items():

@@ -5,14 +5,28 @@ import sympy as sp
 
 class ExtrinsicTrap(FESTIM.Trap):
     def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None):
+        """Inits ExtrinsicTrap
+
+        Args:
+            E_k (float): trapping pre-exponential factor
+            k_0 (float): trapping activation energy
+            p_0 (float): detrapping pre-exponential factor
+            E_p (float): detrapping activation energy
+            materials (list or int): the materials ids the trap is living in
+            form_parameters (dict): dict with keys ["phi_0", "n_amax",
+                "n_bmax", "eta_a", "eta_b", "f_a", "f_b"]
+            id (int, optional): The trap id. Defaults to None.
+        """
         super().__init__(k_0, E_k, p_0, E_p, materials, density=None, id=id)
         self.form_parameters = form_parameters
         self.convert_prms()
         self.density_previous_solution = None
         self.density_test_function = None
-        self.type = type
 
     def convert_prms(self):
+        """Converts all the form parameters into fenics.Expression or
+        fenics.Constant
+        """
         # create Expressions or Constant for all parameters
         for key, value in self.form_parameters.items():
             if isinstance(value, (int, float)):
