@@ -453,6 +453,7 @@ class Simulation:
         (self.mobile, self.T, or traps)
         """
         field_to_object = {
+            "solute": self.mobile,
             "0": self.mobile,
             0: self.mobile,
             "mobile": self.mobile,
