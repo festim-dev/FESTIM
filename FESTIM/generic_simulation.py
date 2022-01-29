@@ -49,14 +49,6 @@ class Simulation:
         v (fenics.TestFunction): the test function
         u_n (fenics.Function): the "previous" function
         bcs (list): list of fenics.DirichletBC for H transport
-        D (FESTIM.ArheniusCoeff): the hydrogen diffusion coefficient over the
-            whole domain
-        thermal_cond (FESTIM.ThermalProp): the thermal conductivity over the
-            whole domain
-        cp (FESTIM.ThermalProp): the heat capacity over the whole domain
-        rho (FESTIM.ThermalProp): the volumetric density over the whole domain
-        H (FESTIM.HCoeff): the heat of transport over the whole domain
-        S (FESTIM.ArheniusCoeff): the solubility over the whole domain
     """
     def __init__(
         self,
@@ -159,14 +151,6 @@ class Simulation:
 
         self.bcs = None
 
-        # perhaps these should be attributes of Materials
-        self.D = None
-        self.thermal_cond = None
-        self.cp = None
-        self.rho = None
-        self.H = None
-        self.S = None
-
         if parameters is not None:
             msg = "The use of parameters will soon be deprecated \
                  please use the object-oriented approach instead"
@@ -246,12 +230,9 @@ class Simulation:
         self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
 
         # Create functions for properties
-        self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
-            FESTIM.create_properties(
-                self.materials,
-                self.volume_markers, self.T.T)
+        self.materials.create_properties(self.volume_markers, self.T.T)
         # TODO this should be reversed
-        if self.S is not None:
+        if self.materials.S is not None:
             self.settings.chemical_pot = True
 
             # if the temperature is of type "solve_stationary" or "expression"
@@ -263,7 +244,7 @@ class Simulation:
                 if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
-                self.S = project(self.S, self.V_DG1)
+                self.materials.S = project(self.materials.S, self.V_DG1)
 
         # Define functions
         self.initialise_concentrations()
@@ -278,7 +259,7 @@ class Simulation:
             if isinstance(export, FESTIM.DerivedQuantities):
                 export.data = [export.make_header()]
                 export.assign_measures_to_quantities(self.dx, self.ds)
-                export.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
+                export.assign_properties_to_quantities(self.materials.D, self.materials.S, self.materials.thermal_cond, self.materials.H, self.T)
 
     def define_function_spaces(self):
         """Creates the suitable function spaces depending on the number of
@@ -348,7 +329,7 @@ class Simulation:
                 functionspace = self.V.sub(component).collapse()
 
             if component == 0:
-                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step, S=self.S)
+                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step, S=self.materials.S)
             else:
                 trap = self.traps.get_trap(component)
                 trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
@@ -409,7 +390,7 @@ class Simulation:
         F = 0
 
         if self.settings.chemical_pot:
-            solute = solutions[0]*self.S
+            solute = solutions[0]*self.materials.S
         else:
             solute = solutions[0]
 
@@ -510,13 +491,13 @@ class Simulation:
             self.T.T_n.assign(self.T.T)
             self.T.expression.t = self.t
             self.T.T.assign(interpolate(self.T.expression, self.V_CG1))
-        self.D._T = self.T.T
-        if self.H is not None:
-            self.H._T = self.T.T
-        if self.thermal_cond is not None:
-            self.thermal_cond._T = self.T.T
+        self.materials.D._T = self.T.T
+        if self.materials.H is not None:
+            self.materials.H._T = self.T.T
+        if self.materials.thermal_cond is not None:
+            self.materials.thermal_cond._T = self.T.T
         if self.settings.chemical_pot:
-            self.S._T = self.T.T
+            self.materials.S._T = self.T.T
 
         # Display time
         simulation_percentage = round(self.t/self.settings.final_time*100, 2)
@@ -586,7 +567,7 @@ class Simulation:
         else:
             res = list(self.u.split())
         if self.settings.chemical_pot:  # c_m = theta * S
-            solute = res[0]*self.S
+            solute = res[0]*self.materials.S
             if self.need_projecting_solute():
                 # project solute on V_DG1
                 solute = project(solute, self.V_DG1)
