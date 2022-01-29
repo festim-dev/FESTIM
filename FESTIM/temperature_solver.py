@@ -15,23 +15,26 @@ class HeatTransferProblem(FESTIM.Temperature):
         """
         super().__init__()
         self.transient = transient
+        self.initial_value = initial_value
+
         self.F = 0
         self.v_T = None
         self.sources = []
         self.boundary_conditions = []
         self.sub_expressions = []
-        self.initial_value = initial_value
 
-    def create_functions(self, V, materials=None, dx=None, ds=None, dt=None):
-        """Creates functions self.T, self.T_n and test function self.v_T
+    def create_functions(self, V, materials, dx, ds, dt=None):
+        """Creates functions self.T, self.T_n and test function self.v_T.
+        Solves the steady-state heat transfer problem if self.transient is
+        False.
 
         Args:
             V (fenics.FunctionSpace): the function space of Temperature
-            materials (FESTIM.Materials, optional): the materials. Defaults to
-                None.
-            dx (fenics.Measure, optional): measure for dx. Defaults to None.
-            ds (fenics.Measure, optional): measure for ds. Defaults to None.
-            dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
+            materials (FESTIM.Materials): the materials.
+            dx (fenics.Measure): measure for dx.
+            ds (fenics.Measure): measure for ds.
+            dt (FESTIM.Stepsize, optional): the stepsize. Only needed if
+                self.transient is True. Defaults to None.
         """
         # Define variational problem for heat transfers
         self.T = f.Function(V, name="T")
@@ -51,15 +54,15 @@ class HeatTransferProblem(FESTIM.Temperature):
             f.solve(self.F == 0, self.T, self.dirichlet_bcs)
             self.T_n.assign(self.T)
 
-    def define_variational_problem(self, materials, dx, ds, dt):
+    def define_variational_problem(self, materials, dx, ds, dt=None):
         """Create a variational form for heat transfer problem
 
         Args:
-            materials (FESTIM.Materials, optional): the materials. Defaults to
-                None.
-            dx (fenics.Measure, optional): measure for dx. Defaults to None.
-            ds (fenics.Measure, optional): measure for ds. Defaults to None.
-            dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
+            materials (FESTIM.Materials): the materials.
+            dx (fenics.Measure): measure for dx.
+            ds (fenics.Measure): measure for ds.
+            dt (FESTIM.Stepsize, optional): the stepsize. Only needed if
+                self.transient is True. Defaults to None.
         """
 
         print('Defining variational problem heat transfers')
