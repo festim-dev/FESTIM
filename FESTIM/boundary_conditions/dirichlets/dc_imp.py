@@ -14,7 +14,29 @@ def dc_imp(T, phi, R_p, D_0, E_D, Kr_0=None, E_Kr=None):
 
 
 class ImplantationDirichlet(DirichletBC):
+    """Subclass of DirichletBC representing an approximation of an implanted
+    flux of hydrogen.
+    The details of the approximation can be found in
+    https://www.nature.com/articles/s41598-020-74844-w
+
+    c = phi*R_p/D + (phi/Kr)**0.5
+
+    """
     def __init__(self, surfaces, phi, R_p, D_0, E_D, Kr_0=None, E_Kr=None) -> None:
+        """Inits ImplantationDirichlet
+
+        Args:
+            surfaces (list or int): the surfaces of the BC
+            phi (float or sp.Expr): implanted flux (H/m2/s)
+            R_p (float or sp.Expr): implantation depth (m)
+            D_0 (float): diffusion coefficient pre-exponential factor (m2/s)
+            E_D (float): diffusion coefficient activation energy (eV)
+            Kr_0 (float, optional): recombination coefficient pre-exponential
+                factor (m^4/s). If None, instantaneous recombination will be
+                assumed. Defaults to None.
+            E_Kr (float, optional): recombination coefficient activation
+                energy (eV). Defaults to None.
+        """
         super().__init__(surfaces, component=0)
         self.phi = phi
         self.R_p = R_p
