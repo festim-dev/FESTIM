@@ -8,6 +8,8 @@ from .helpers import update_expressions, help_key, \
 
 from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
 from .temperature import Temperature
+from .temperature_solver import HeatTransferProblem
+
 from .boundary_conditions.boundary_condition import BoundaryCondition
 from .boundary_conditions.dirichlets.dirichlet_bc import DirichletBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
