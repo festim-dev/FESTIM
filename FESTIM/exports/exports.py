@@ -28,7 +28,7 @@ class Exports:
                     export.write()
 
             elif isinstance(export, FESTIM.XDMFExport):
-                if export.is_export_xdmf(self.t, self.final_time, self.nb_iterations):
+                if export.is_export(self.t, self.final_time, self.nb_iterations):
                     if export.field == "retention":
                         # if not a Function, project it onto V_DG1
                         if not isinstance(label_to_function["retention"], f.Function):

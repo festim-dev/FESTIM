@@ -67,7 +67,7 @@ class XDMFExport(Export):
         else:
             self.file.write(self.function, t)
 
-    def is_export_xdmf(self, t, final_time, nb_iterations):
+    def is_export(self, t, final_time, nb_iterations):
         """Checks if export should be exported.
 
         Args:
