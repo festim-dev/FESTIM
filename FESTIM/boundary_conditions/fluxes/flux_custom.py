@@ -8,7 +8,11 @@ class CustomFlux(FluxBC):
     Usage:
     def fun(T, solute, param1):
         return 2*T + solute - param1
-    my_bc = CustomFlux(surfaces=[1, 2], function=fun)
+    my_bc = CustomFlux(
+        surfaces=[1, 2],
+        function=fun,
+        param1=2*FESTIM.x + FESTIM.t
+    )
     """
     def __init__(self, surfaces, function, **prms) -> None:
         """Inits CustomFlux
