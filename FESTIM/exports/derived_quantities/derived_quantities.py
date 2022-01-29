@@ -53,13 +53,18 @@ class DerivedQuantities:
             quantity.ds = ds
             quantity.n = f.FacetNormal(dx.subdomain_data().mesh())
 
-    def assign_properties_to_quantities(self, D, S, thermal_cond, H, T):
+    def assign_properties_to_quantities(self, materials):
+        """Assign properties attributes to all DerivedQuantity objects
+        (D, S, thermal_cond and H) based on the properties stored in materials
+
+        Args:
+            materials (FESTIM.Materials): the materials
+        """
         for quantity in self.derived_quantities:
-            quantity.D = D
-            quantity.S = S
-            quantity.thermal_cond = thermal_cond
-            quantity.H = H
-            quantity.T = T
+            quantity.D = materials.D
+            quantity.S = materials.S
+            quantity.thermal_cond = materials.thermal_cond
+            quantity.H = materials.H
 
     def compute(self, t):
 
@@ -96,3 +101,41 @@ class DerivedQuantities:
                           "Please close the application then press any key.")
                     input()
         return True
+
+    def is_export(self, t, final_time, nb_iterations):
+        """Checks if the derived quantities should be exported or not based on
+        the current time, the final time of simulation and the current number
+        of iterations
+
+        Args:
+            t (float): the current time
+            final_time (float): the final time of the simulation
+            nb_iterations (int): the current number of time steps
+
+        Returns:
+            bool: True if the derived quantities should be exported, else False
+        """
+        if final_time is not None:
+            nb_its_between_exports = \
+                self.nb_iterations_between_exports
+            if nb_its_between_exports is None:
+                # export at the end
+                return t >= final_time
+            else:
+                # export every N iterations
+                return nb_iterations % nb_its_between_exports == 0
+        else:
+            # if steady state, export
+            return True
+
+    def is_compute(self, nb_iterations):
+        """Checks if the derived quantities should be computed or not based on
+        the current number of iterations
+
+        Args:
+            nb_iterations (int): the current number of time steps
+
+        Returns:
+            bool: True if it's time to compute, else False
+        """
+        return nb_iterations % self.nb_iterations_between_compute == 0

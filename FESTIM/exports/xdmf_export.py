@@ -67,6 +67,26 @@ class XDMFExport(Export):
         else:
             self.file.write(self.function, t)
 
+    def is_export(self, t, final_time, nb_iterations):
+        """Checks if export should be exported.
+
+        Args:
+            t (float): the current time
+            final_time (float): the final time of the simulation
+            nb_iterations (int): the current number of time steps
+
+        Returns:
+            bool: True if export should be exported, else False
+        """
+        if (self.last_time_step_only and
+            t >= final_time) or \
+                not self.last_time_step_only:
+            if nb_iterations % \
+                    self.nb_iterations_between_exports == 0:
+                return True
+
+        return False
+
 
 class XDMFExports:
     def __init__(self, fields=[], labels=[], folder=None, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True, functions=[]) -> None:

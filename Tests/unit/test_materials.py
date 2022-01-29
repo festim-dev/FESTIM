@@ -1,4 +1,4 @@
-from FESTIM import Material, Materials, create_properties
+from FESTIM import Material, Materials
 from fenics import *
 import pytest
 
@@ -156,8 +156,40 @@ def test_material_with_multiple_ids_solubility():
     my_mats = Materials([mat_1])
     mesh = UnitIntervalMesh(10)
     vm = MeshFunction("size_t", mesh, 1, 1)
-    D, thermal_cond, cp, rho, H, S = create_properties(
-            mesh, my_mats,
-            vm, Constant(300))
+    my_mats.create_properties(vm, T=Constant(300))
     V = FunctionSpace(mesh, "P", 1)
-    interpolate(D, V)
+    interpolate(my_mats.D, V)
+
+
+def test_create_properties():
+    '''
+    Test the function create_properties()
+    '''
+    mesh = UnitIntervalMesh(10)
+    DG_1 = FunctionSpace(mesh, 'DG', 1)
+    mat_1 = Material(1, D_0=1, E_D=0, S_0=7, E_S=0, thermal_cond=4, heat_capacity=5, rho=6, H={"free_enthalpy": 5, "entropy": 6})
+    mat_2 = Material(2, D_0=2, E_D=0, S_0=8, E_S=0, thermal_cond=5, heat_capacity=6, rho=7, H={"free_enthalpy": 6, "entropy": 6})
+    materials = Materials([mat_1, mat_2])
+    mf = MeshFunction("size_t", mesh, 1, 0)
+    for cell in cells(mesh):
+        x = cell.midpoint().x()
+        if x < 0.5:
+            mf[cell] = 1
+        else:
+            mf[cell] = 2
+    T = Expression("1", degree=1)
+    materials.create_properties(mf, T)
+    D = interpolate(materials.D, DG_1)
+    thermal_cond = interpolate(materials.thermal_cond, DG_1)
+    cp = interpolate(materials.heat_capacity, DG_1)
+    rho = interpolate(materials.density, DG_1)
+    H = interpolate(materials.H, DG_1)
+    S = interpolate(materials.S, DG_1)
+
+    for cell in cells(mesh):
+        assert D(cell.midpoint().x()) == mf[cell]
+        assert thermal_cond(cell.midpoint().x()) == mf[cell] + 3
+        assert cp(cell.midpoint().x()) == mf[cell] + 4
+        assert rho(cell.midpoint().x()) == mf[cell] + 5
+        assert H(cell.midpoint().x()) == mf[cell] + 10
+        assert S(cell.midpoint().x()) == mf[cell] + 6

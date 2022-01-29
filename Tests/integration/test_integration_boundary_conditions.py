@@ -33,7 +33,7 @@ def test_fluxes_chemical_pot():
 
     S = S_0*fenics.exp(-E_S/k_B/my_sim.T.T)
 
-    my_sim.S = S
+    my_sim.materials.S = S
     my_sim.F = 0
     my_sim.create_H_fluxes()
     expressions = my_sim.expressions

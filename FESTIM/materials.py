@@ -1,6 +1,8 @@
 from operator import itemgetter
 import warnings
 import numpy as np
+from FESTIM import k_B
+import fenics as f
 
 
 class Material:
@@ -64,6 +66,12 @@ class Materials:
                 Defaults to [].
         """
         self.materials = materials
+        self.D = None
+        self.S = None
+        self.thermal_cond = None
+        self.heat_capacity = None
+        self.density = None
+        self.H = None
 
     def check_borders(self, size):
         """Checks that the borders of the materials match
@@ -190,3 +198,86 @@ class Materials:
             if mat_id in mat_ids:
                 return material
         raise ValueError("Couldn't find ID " + str(mat_id) + " in materials list")
+
+    def create_properties(self, vm, T):
+        """Creates the properties fields needed for post processing
+
+        Arguments:
+            vm {fenics.MeshFunction()} -- volume markers
+            T {fenics.Function()} -- temperature
+        """
+        self.D = ArheniusCoeff(self, vm, T, "D_0", "E_D", degree=2)
+        # all materials have the same properties so only checking the first is enough
+        if self.materials[0].S_0 is not None:
+            self.S = ArheniusCoeff(self, vm, T, "S_0", "E_S", degree=2)
+        if self.materials[0].thermal_cond is not None:
+            self.thermal_cond = ThermalProp(self, vm, T,
+                                        'thermal_cond', degree=2)
+            self.heat_capacity = ThermalProp(self, vm, T,
+                                'heat_capacity', degree=2)
+            self.density = ThermalProp(self, vm, T,
+                                'rho', degree=2)
+        if self.materials[0].H is not None:
+            self.H = HCoeff(self, vm, T, degree=2)
+
+
+class ArheniusCoeff(f.UserExpression):
+    def __init__(self, materials, vm, T, pre_exp, E, **kwargs):
+        super().__init__(kwargs)
+        self._vm = vm
+        self._T = T
+        self._materials = materials
+        self._pre_exp = pre_exp
+        self._E = E
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = self._materials.find_material_from_id(subdomain_id)
+        D_0 = getattr(material, self._pre_exp)
+        E_D = getattr(material, self._E)
+        value[0] = D_0*f.exp(-E_D/k_B/self._T(x))
+
+    def value_shape(self):
+        return ()
+
+
+class ThermalProp(f.UserExpression):
+    def __init__(self, materials, vm, T, key, **kwargs):
+        super().__init__(kwargs)
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+        self._key = key
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = self._materials.find_material_from_id(subdomain_id)
+        attribute = getattr(material, self._key)
+        if callable(attribute):
+            value[0] = attribute(self._T(x))
+        else:
+            value[0] = attribute
+
+    def value_shape(self):
+        return ()
+
+
+class HCoeff(f.UserExpression):
+    def __init__(self, materials, vm, T, **kwargs):
+        super().__init__(kwargs)
+        self._T = T
+        self._vm = vm
+        self._materials = materials
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = self._materials.find_material_from_id(subdomain_id)
+
+        value[0] = material.free_enthalpy + \
+            self._T(x)*material.entropy
+
+    def value_shape(self):
+        return ()
