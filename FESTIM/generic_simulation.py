@@ -240,7 +240,7 @@ class Simulation:
             # the solubility needs to be projected
             project_S = False
             if isinstance(self.T, FESTIM.HeatTransferProblem):
-                if self.T.transient:
+                if not self.T.transient:
                     project_S = True
             # self.T is an instance of FESTIM.Temperature
             elif not isinstance(self.T, FESTIM.HeatTransferProblem):
