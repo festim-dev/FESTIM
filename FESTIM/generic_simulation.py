@@ -1,5 +1,4 @@
 import FESTIM
-from FESTIM.boundary_conditions.boundary_conditions import DirichletBC
 from fenics import *
 import sympy as sp
 import warnings
