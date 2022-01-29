@@ -47,7 +47,7 @@ class TestPostProcessing:
         derived_quantities.assign_properties_to_quantities(
             my_sim.materials.D, my_sim.materials.S,
             my_sim.materials.thermal_cond,
-            my_sim.materials.H, my_sim.T)
+            my_sim.materials.H)
 
         my_sim.exports.exports = [derived_quantities]
         t = 0
@@ -130,7 +130,7 @@ class TestPostProcessing:
         derived_quantities.assign_properties_to_quantities(
             my_sim.materials.D, my_sim.materials.S,
             my_sim.materials.thermal_cond,
-            my_sim.materials.H, my_sim.T)
+            my_sim.materials.H)
 
         my_sim.exports.exports = [derived_quantities]
 

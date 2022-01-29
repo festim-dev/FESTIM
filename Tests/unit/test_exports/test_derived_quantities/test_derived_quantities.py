@@ -98,7 +98,7 @@ class TestAssignPropertiesToQuantities:
     thermal_cond = f.Function(V)
     T = f.Function(V)
 
-    my_quantities.assign_properties_to_quantities(D, S, thermal_cond, H, T)
+    my_quantities.assign_properties_to_quantities(D, S, thermal_cond, H)
 
     def test_quantities_have_D(self):
         for quantity in self.my_quantities.derived_quantities:
@@ -161,7 +161,7 @@ class TestCompute:
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
+        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
@@ -179,7 +179,7 @@ class TestCompute:
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
+        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
@@ -201,7 +201,7 @@ class TestCompute:
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H, self.T)
+        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
