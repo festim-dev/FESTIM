@@ -22,7 +22,8 @@ from .boundary_conditions.fluxes.flux_custom import CustomFlux
 
 from .solving import solve_it, solve_once
 
-from .export import Export, Exports
+from .exports.exports import Exports
+from .exports.export import Export
 from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
 
