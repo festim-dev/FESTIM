@@ -51,6 +51,11 @@ class Temperature:
         self.T_n.assign(self.T)
 
     def update(self, t):
+        """Updates T_n, expression, and T with respect to time
+
+        Args:
+            t (float): the time
+        """
         self.T_n.assign(self.T)
         self.expression.t = t
         self.T.assign(interpolate(self.expression, self.T.function_space()))

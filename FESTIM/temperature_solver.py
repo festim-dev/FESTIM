@@ -132,6 +132,12 @@ class HeatTransferProblem(FESTIM.Temperature):
                 self.sub_expressions.append(bc.expression)
 
     def update(self, t):
+        """Updates T_n, and T with respect to time by solving the heat transfer
+        problem
+
+        Args:
+            t (float): the time
+        """
         if self.transient:
             FESTIM.update_expressions(self.sub_expressions, t)
             # Solve heat transfers
