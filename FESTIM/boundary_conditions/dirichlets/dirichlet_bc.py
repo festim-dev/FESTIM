@@ -4,8 +4,9 @@ import sympy as sp
 
 
 class DirichletBC(FESTIM.BoundaryCondition):
-    def __init__(self, surfaces, value=None, function=None, component=0, **kwargs) -> None:
-        super().__init__(surfaces, value=value, function=function, component=component, **kwargs)
+    def __init__(self, surfaces, value=None, component=0) -> None:
+        super().__init__(surfaces, component=component)
+        self.value = value
         self.dirichlet_bc = []
 
     def create_expression(self, T):
