@@ -25,8 +25,8 @@ class TestPostProcessing:
 
         my_sim.define_function_spaces()
 
-        my_sim.T = FESTIM.Temperature("expression", value=20)
-        my_sim.T.create_functions(my_sim.V_CG1, my_sim.materials)
+        my_sim.T = FESTIM.Temperature(value=20)
+        my_sim.T.create_functions(my_sim.V_CG1)
 
         my_sim.initialise_concentrations()
 
@@ -98,7 +98,7 @@ class TestPostProcessing:
 
     def test_fluxes(self, my_sim):
 
-        my_sim.T = FESTIM.Temperature("expression", 100*FESTIM.x + 200)
+        my_sim.T = FESTIM.Temperature(100*FESTIM.x + 200)
         my_sim.T.create_functions(my_sim.V_CG1)
 
         my_sim.materials = FESTIM.Materials(

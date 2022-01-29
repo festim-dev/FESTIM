@@ -41,7 +41,7 @@ def test_define_dirichlet_bcs_theta():
     left.mark(sm, 1)
     right.mark(sm, 2)
 
-    my_temp = FESTIM.Temperature(type="expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
+    my_temp = FESTIM.Temperature(value=200 + (FESTIM.x + 1)*FESTIM.t)
     my_temp.create_functions(V)
 
     mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)
@@ -99,7 +99,7 @@ def test_bc_recomb():
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
 
-    my_temp = FESTIM.Temperature(type="expression", value=T_expr)
+    my_temp = FESTIM.Temperature(value=T_expr)
     my_temp.create_functions(V)
 
     my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
@@ -141,7 +141,7 @@ def test_bc_recomb_instant_recomb():
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
 
-    my_temp = FESTIM.Temperature(type="expression", value=T_expr)
+    my_temp = FESTIM.Temperature(value=T_expr)
     my_temp.create_functions(V)
 
     my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D)
@@ -195,7 +195,7 @@ def test_bc_recomb_chemical_pot():
     right = fenics.CompiledSubDomain('x[0] > 0.99999999')
     right.mark(sm, 2)
 
-    my_temp = FESTIM.Temperature("expression", value=200 + (FESTIM.x + 1)*FESTIM.t)
+    my_temp = FESTIM.Temperature(value=200 + (FESTIM.x + 1)*FESTIM.t)
     my_temp.create_functions(V)
 
     mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)

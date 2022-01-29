@@ -227,7 +227,10 @@ class Simulation:
         self.define_function_spaces()
 
         # Define temperature
-        self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
+        if isinstance(self.T, FESTIM.HeatTransferProblem):
+            self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
+        elif isinstance(self.T, FESTIM.Temperature):
+            self.T.create_functions(self.V_CG1)
 
         # Create functions for properties
         self.materials.create_properties(self.volume_markers, self.T.T)
@@ -236,9 +239,10 @@ class Simulation:
             # if the temperature is of type "solve_stationary" or "expression"
             # the solubility needs to be projected
             project_S = False
-            if self.T.type == "solve_stationary":
-                project_S = True
-            elif self.T.type == "expression":
+            if isinstance(self.T, FESTIM.HeatTransferProblem):
+                if not self.T.transient:
+                    project_S = True
+            elif isinstance(self.T, FESTIM.Temperature):
                 if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
@@ -483,13 +487,8 @@ class Simulation:
         self.t += float(self.dt.value)
         FESTIM.update_expressions(
             self.expressions, self.t)
-        FESTIM.update_expressions(
-            self.T.sub_expressions, self.t)
-        # TODO this could be a method of Temperature()
-        if self.T.type == "expression":
-            self.T.T_n.assign(self.T.T)
-            self.T.expression.t = self.t
-            self.T.T.assign(interpolate(self.T.expression, self.V_CG1))
+        self.T.update(self.t)
+        # TODO this should be a method of Materials
         self.materials.D._T = self.T.T
         if self.materials.H is not None:
             self.materials.H._T = self.T.T
@@ -507,20 +506,6 @@ class Simulation:
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
 
         print(msg, end="\r")
-
-        # Solve heat transfers
-        # TODO this could be a method of Temperature()
-        if self.T.type == "solve_transient":
-            dT = TrialFunction(self.T.T.function_space())
-            JT = derivative(self.T.F, self.T.T, dT)  # Define the Jacobian
-            problem = NonlinearVariationalProblem(
-                self.T.F, self.T.T, self.T.dirichlet_bcs, JT)
-            solver = NonlinearVariationalSolver(problem)
-            newton_solver_prm = solver.parameters["newton_solver"]
-            newton_solver_prm["absolute_tolerance"] = 1e-3
-            newton_solver_prm["relative_tolerance"] = 1e-10
-            solver.solve()
-            self.T.T_n.assign(self.T.T)
 
         # Solve main problem
         FESTIM.solve_it(
@@ -879,14 +864,17 @@ class Simulation:
         """
         if "temperature" in parameters:
             temp_type = parameters["temperature"]["type"]
-            self.T = FESTIM.Temperature(temp_type)
             if temp_type == "expression":
-                self.T.expression = parameters["temperature"]['value']
-                self.T.value = parameters["temperature"]['value']
+                self.T = FESTIM.Temperature(parameters["temperature"]['value'])
+                # self.T.expression = parameters["temperature"]['value']
             else:
+                self.T = FESTIM.HeatTransferProblem()
                 self.T.bcs = [bc for bc in self.boundary_conditions if bc.component == "T"]
                 if temp_type == "solve_transient":
+                    self.T.transient = True
                     self.T.initial_value = parameters["temperature"]["initial_condition"]
+                elif temp_type == "solve_stationary":
+                    self.T.transient = False
                 if "source_term" in parameters["temperature"]:
                     self.T.source_term = parameters["temperature"]["source_term"]
 

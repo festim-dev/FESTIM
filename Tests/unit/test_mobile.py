@@ -17,7 +17,7 @@ def test_mobile_create_diffusion_form():
     mat = FESTIM.Material(1, D_0=1, E_D=1)
     my_mats = FESTIM.Materials([mat])
     dx = f.dx()
-    T = FESTIM.Temperature("expression", value=100)
+    T = FESTIM.Temperature(value=100)
     T.create_functions(V)
     # run
     my_mobile.create_diffusion_form(my_mats, dx, T)
@@ -94,7 +94,7 @@ def test_mobile_create_form():
     mat = FESTIM.Material(1, D_0=1, E_D=1)
     my_mats = FESTIM.Materials([mat])
     dx = f.dx()
-    T = FESTIM.Temperature("expression", value=100)
+    T = FESTIM.Temperature(value=100)
     T.create_functions(V)
 
     # run
@@ -117,7 +117,7 @@ def add_functions(trap, V, id=1):
 class TestCreateDiffusionForm:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_temp = FESTIM.Temperature("expression", value=100)
+    my_temp = FESTIM.Temperature(value=100)
     my_temp.create_functions(V)
     dx = f.dx()
     dt = FESTIM.Stepsize(initial_value=1)
