@@ -8,7 +8,7 @@ from .helpers import update_expressions, help_key, \
 
 from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
 from .temperature import Temperature
-from .boundary_conditions.boundary_conditions import BoundaryCondition
+from .boundary_conditions.boundary_condition import BoundaryCondition
 from .boundary_conditions.dirichlets.dirichlet_bc import DirichletBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
 from .boundary_conditions.dirichlets.dc_imp import ImplantationDirichlet
