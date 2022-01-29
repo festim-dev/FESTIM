@@ -1,6 +1,5 @@
-import FESTIM
 import sympy as sp
-from fenics import *
+import fenics as f
 
 
 class Temperature:
@@ -43,11 +42,11 @@ class Temperature:
         Args:
             V (fenics.FunctionSpace): the function space of Temperature
         """
-        self.T = Function(V, name="T")
-        self.T_n = Function(V, name="T_n")
-        self.expression = Expression(
+        self.T = f.Function(V, name="T")
+        self.T_n = f.Function(V, name="T_n")
+        self.expression = f.Expression(
             sp.printing.ccode(self.value), t=0, degree=2)
-        self.T.assign(interpolate(self.expression, V))
+        self.T.assign(f.interpolate(self.expression, V))
         self.T_n.assign(self.T)
 
     def update(self, t):
@@ -58,4 +57,4 @@ class Temperature:
         """
         self.T_n.assign(self.T)
         self.expression.t = t
-        self.T.assign(interpolate(self.expression, self.T.function_space()))
+        self.T.assign(f.interpolate(self.expression, self.T.function_space()))
