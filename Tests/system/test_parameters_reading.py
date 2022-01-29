@@ -89,6 +89,13 @@ def test_read_fluxes():
                 "surfaces": [1, 2]
             },
             {
+                "type": "solubility",
+                "S_0": 1,
+                "E_S": 2,
+                "pressure": 3,
+                "surfaces": [1, 2]
+            },
+            {
                 "surfaces": [2],
                 "type": "recomb",
                 "Kr_0": 1e-9,
