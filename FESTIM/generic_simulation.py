@@ -842,7 +842,7 @@ class Simulation:
                             **{key: val for key, val in BC.items()
                                if key != "type"})
                     elif bc_type == "dc_imp":
-                        my_BC = FESTIM.ImplantationDC(
+                        my_BC = FESTIM.ImplantationDirichlet(
                             **{key: val for key, val in BC.items()
                                if key != "type"})
                     else:

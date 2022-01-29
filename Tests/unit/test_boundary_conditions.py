@@ -102,7 +102,7 @@ def test_bc_recomb():
     my_temp = FESTIM.Temperature(type="expression", value=T_expr)
     my_temp.create_functions(V)
 
-    my_bc = FESTIM.ImplantationDC([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
+    my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
     expressions = my_bc.sub_expressions + [my_bc.expression]
 
@@ -144,7 +144,7 @@ def test_bc_recomb_instant_recomb():
     my_temp = FESTIM.Temperature(type="expression", value=T_expr)
     my_temp.create_functions(V)
 
-    my_bc = FESTIM.ImplantationDC([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D)
+    my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
     expressions = my_bc.sub_expressions + [my_bc.expression]
 
@@ -204,7 +204,7 @@ def test_bc_recomb_chemical_pot():
 
     # bcs, expressions = define_dirichlet_bcs(my_sim)
     V = fenics.FunctionSpace(mesh, "P", 1)
-    my_bc = FESTIM.ImplantationDC(surfaces=[1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
+    my_bc = FESTIM.ImplantationDirichlet(surfaces=[1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm, chemical_pot=True, materials=my_mats, volume_markers=vm)
     bcs = my_bc.dirichlet_bc
     expressions = my_bc.sub_expressions + [my_bc.expression]

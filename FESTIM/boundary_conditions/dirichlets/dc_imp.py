@@ -13,7 +13,7 @@ def dc_imp(T, phi, R_p, D_0, E_D, Kr_0=None, E_Kr=None):
     return value
 
 
-class ImplantationDC(DirichletBC):
+class ImplantationDirichlet(DirichletBC):
     def __init__(self, surfaces, phi, R_p, D_0, E_D, Kr_0=None, E_Kr=None) -> None:
         super().__init__(surfaces, component=0)
         self.phi = phi
