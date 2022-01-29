@@ -116,22 +116,6 @@ class DirichletBC(BoundaryCondition):
             self.dirichlet_bc.append(bci)
 
 
-class FluxBC(BoundaryCondition):
-    def __init__(self, surfaces, value=None, type="flux", **kwargs) -> None:
-        super().__init__(type=type, surfaces=surfaces, value=value, **kwargs)
-
-    def create_form(self, T, solute):
-        if self.type == "flux":
-            form = sp.printing.ccode(self.value)
-            form = f.Expression(form, t=0, degree=2)
-            self.sub_expressions.append(form)
-        if self.type == "flux_custom":
-            form = self.function(T, solute, self.prms)
-        self.sub_expressions += [expression for expression in self.prms.values()]
-        self.form = form
-        return form
-
-
 class BoundaryConditionTheta(f.UserExpression):
     """Creates an Expression for converting dirichlet bcs in the case
     of chemical potential conservation

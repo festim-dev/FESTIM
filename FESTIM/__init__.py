@@ -8,10 +8,12 @@ from .helpers import update_expressions, help_key, \
 
 from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
 from .temperature import Temperature
-from .boundary_conditions.boundary_conditions import BoundaryCondition, DirichletBC, FluxBC, \
+from .boundary_conditions.boundary_conditions import BoundaryCondition, DirichletBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
+from .boundary_conditions.flux_bc import FluxBC
 from .boundary_conditions.recombination_flux import RecombinationFlux
 from .boundary_conditions.convective_flux import ConvectiveFlux
+from .boundary_conditions.flux_custom import CustomFlux
 
 from .solving import solve_it, solve_once
 
