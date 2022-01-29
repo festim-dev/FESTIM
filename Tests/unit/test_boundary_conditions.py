@@ -7,12 +7,6 @@ import sympy as sp
 import numpy as np
 
 
-def test_unknown_boundary_condition_type():
-    # Test error raise
-    with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        FESTIM.BoundaryCondition(type="foo", surfaces=1)
-
-
 def test_define_dirichlet_bcs_theta():
     '''
     Test the function apply_boundary_condition()
@@ -90,7 +84,7 @@ def test_define_dirichlet_bcs_theta():
 
 def test_define_dirichlet_bcs_fail():
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        FESTIM.BoundaryCondition(type="foo", surfaces=0)
+        FESTIM.DirichletBC(type="foo", surfaces=0)
 
 
 def test_bc_recomb():

@@ -20,7 +20,7 @@ def test_fluxes_chemical_pot():
     my_sim = FESTIM.Simulation({"traps": []})
     my_sim.boundary_conditions = [
         FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
-        FESTIM.FluxBC(type="flux", value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
+        FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
     ]
     my_sim.mesh = FESTIM.Mesh(mesh=mesh)
     my_sim.define_function_spaces()
@@ -59,7 +59,7 @@ def test_fluxes():
     my_sim = FESTIM.Simulation({"traps": []})
     my_sim.boundary_conditions = [
         FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
-        FESTIM.FluxBC(type="flux", value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
+        FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
     ]
     my_sim.mesh = FESTIM.Mesh(mesh=mesh)
     my_sim.define_function_spaces()
@@ -71,6 +71,7 @@ def test_fluxes():
     my_sim.create_H_fluxes()
     F = my_sim.F
     expressions = my_sim.expressions
+    print(expressions)
 
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
