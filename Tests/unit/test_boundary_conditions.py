@@ -349,9 +349,10 @@ def test_create_form_flux_custom():
     the correct form
     """
     # build
-    def func(T, c, prms):
-        return 2*T + c + prms["foo"]
-    expr_foo = 1 + 2*FESTIM.t + FESTIM.x
+    def func(T, c, prm1, prm2):
+        return 2*T + c + prm1*prm2
+    expr_prm1 = 1 + 2*FESTIM.t + FESTIM.x
+    expr_prm2 = 2
     expr_T = 2 + FESTIM.x + FESTIM.t
     expr_c = FESTIM.x*FESTIM.x
 
@@ -360,14 +361,14 @@ def test_create_form_flux_custom():
     expressions = [T, solute]
 
     # run
-    my_BC = FESTIM.CustomFlux(surfaces=[1, 0], function=func, foo=expr_foo)
+    my_BC = FESTIM.CustomFlux(surfaces=[1, 0], function=func, prm1=expr_prm1, prm2=expr_prm2)
     my_BC.create_form(T, solute)
     value_BC = my_BC.form
 
     # test
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.FunctionSpace(mesh, "P", 1)
-    expected_expr = 2*expr_T + expr_c + expr_foo
+    expected_expr = 2*expr_T + expr_c + expr_prm1*expr_prm2
     expected_expr = fenics.Expression(sp.printing.ccode(expected_expr), t=0, degree=1)
     for t in range(10):
 
