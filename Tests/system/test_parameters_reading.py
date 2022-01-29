@@ -123,5 +123,4 @@ def test_read_fluxes():
         "exports": {},
     }
     my_sim = FESTIM.Simulation(parameters)
-    print(my_sim.boundary_conditions[1].prms)
     my_sim.initialise()
