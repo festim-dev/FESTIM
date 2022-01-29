@@ -248,7 +248,7 @@ class Simulation:
         # Create functions for properties
         self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
             FESTIM.create_properties(
-                self.mesh.mesh, self.materials,
+                self.materials,
                 self.volume_markers, self.T.T)
         # TODO this should be reversed
         if self.S is not None:

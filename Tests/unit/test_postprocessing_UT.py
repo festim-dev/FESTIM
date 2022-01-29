@@ -21,7 +21,7 @@ def test_create_properties():
             mf[cell] = 2
     T = fenics.Expression("1", degree=1)
     D, thermal_cond, cp, rho, H, S = \
-        create_properties(mesh, materials, mf, T)
+        create_properties(materials, mf, T)
     D = fenics.interpolate(D, DG_1)
     thermal_cond = fenics.interpolate(thermal_cond, DG_1)
     cp = fenics.interpolate(cp, DG_1)

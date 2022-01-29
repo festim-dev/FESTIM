@@ -157,7 +157,7 @@ def test_material_with_multiple_ids_solubility():
     mesh = UnitIntervalMesh(10)
     vm = MeshFunction("size_t", mesh, 1, 1)
     D, thermal_cond, cp, rho, H, S = create_properties(
-            mesh, my_mats,
+            my_mats,
             vm, Constant(300))
     V = FunctionSpace(mesh, "P", 1)
     interpolate(D, V)
