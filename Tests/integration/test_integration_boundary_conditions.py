@@ -71,7 +71,6 @@ def test_fluxes():
     my_sim.create_H_fluxes()
     F = my_sim.F
     expressions = my_sim.expressions
-    print(expressions)
 
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
