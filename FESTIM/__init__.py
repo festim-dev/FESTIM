@@ -25,9 +25,13 @@ from .solving import solve_it, solve_once
 from .export import Export, Exports
 from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
-from .exports.derived_quantities_export import DerivedQuantities, \
-    SurfaceFlux, AverageVolume, MinimumVolume, MaximumVolume, \
+
+from .exports.derived_quantities.derived_quantity import DerivedQuantity
+from .exports.derived_quantities_export import SurfaceFlux, AverageVolume, \
+    MinimumVolume, MaximumVolume, \
     TotalVolume, TotalSurface, ThermalFlux, HydrogenFlux
+from .exports.derived_quantities.derived_quantities import DerivedQuantities
+
 from .exports.txt_export import TXTExport, TXTExports
 
 
