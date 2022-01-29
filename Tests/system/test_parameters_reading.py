@@ -87,6 +87,13 @@ def test_read_fluxes():
                 "type": "flux",
                 "value": 0,
                 "surfaces": [1, 2]
+            },
+            {
+                "surfaces": [2],
+                "type": "recomb",
+                "Kr_0": 1e-9,
+                "E_Kr": 1,
+                "order": 2,
             }
             ],
         "temperature": {
@@ -95,8 +102,14 @@ def test_read_fluxes():
                     {
                         "type": "flux",
                         "value": 1,
-                        "surfaces": [1, 2]
-                    }
+                        "surfaces": [2]
+                    },
+                    {
+                        "type": "convective_flux",
+                        "h_coeff": 1,
+                        "T_ext": 2,
+                        "surfaces": [1]
+                    },
                 ]
             },
         "solving_parameters": {
@@ -109,4 +122,6 @@ def test_read_fluxes():
         },
         "exports": {},
     }
-    FESTIM.Simulation(parameters)
+    my_sim = FESTIM.Simulation(parameters)
+    print(my_sim.boundary_conditions[1].prms)
+    my_sim.initialise()

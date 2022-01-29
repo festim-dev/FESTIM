@@ -835,14 +835,21 @@ class Simulation:
         self.boundary_conditions = []
         if "boundary_conditions" in parameters:
             for BC in parameters["boundary_conditions"]:
-                if BC["type"] in FESTIM.helpers.bc_types["dc"]:
+                bc_type = BC["type"]
+                if bc_type in FESTIM.helpers.bc_types["dc"]:
                     my_BC = FESTIM.DirichletBC(**BC)
-                elif BC["type"] not in FESTIM.helpers.bc_types["neumann"] or \
-                        BC["type"] not in FESTIM.helpers.bc_types["robin"]:
-                    my_BC = FESTIM.FluxBC(
-                        **{key: val for key, val in BC.items()
-                            if key != "type"}
-                    )
+                elif bc_type not in FESTIM.helpers.bc_types["neumann"] or \
+                        bc_type not in FESTIM.helpers.bc_types["robin"]:
+                    if bc_type == "recomb":
+                        my_BC = FESTIM.RecombinationFlux(
+                            **{key: val for key, val in BC.items()
+                                if key != "type"}
+                        )
+                    else:
+                        my_BC = FESTIM.FluxBC(
+                            **{key: val for key, val in BC.items()
+                                if key != "type"}
+                        )
                 self.boundary_conditions.append(my_BC)
 
         if "temperature" in parameters:
@@ -850,14 +857,20 @@ class Simulation:
 
                 BCs = parameters["temperature"]["boundary_conditions"]
                 for BC in BCs:
-                    if BC["type"] in FESTIM.helpers.T_bc_types["dc"]:
+                    bc_type = BC["type"]
+                    if bc_type in FESTIM.helpers.T_bc_types["dc"]:
                         my_BC = FESTIM.DirichletBC(component="T", **BC)
-                    elif BC["type"] not in FESTIM.helpers.T_bc_types["neumann"] or \
-                            BC["type"] not in FESTIM.helpers.T_bc_types["robin"]:
-                        my_BC = FESTIM.FluxBC(
-                            component="T",
-                            **{key: val for key, val in BC.items()
-                                if key != "type"})
+                    elif bc_type not in FESTIM.helpers.T_bc_types["neumann"] or \
+                            bc_type not in FESTIM.helpers.T_bc_types["robin"]:
+                        if bc_type == "convective_flux":
+                            my_BC = FESTIM.ConvectiveFlux(
+                                **{key: val for key, val in BC.items()
+                                    if key != "type"})
+                        else:
+                            my_BC = FESTIM.FluxBC(
+                                component="T",
+                                **{key: val for key, val in BC.items()
+                                    if key != "type"})
                     self.boundary_conditions.append(my_BC)
 
     def create_temperature(self, parameters):
