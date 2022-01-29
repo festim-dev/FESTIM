@@ -4,7 +4,14 @@ import sympy as sp
 
 
 class HeatTransferProblem(FESTIM.Temperature):
-    def __init__(self, transient=True, initial_value=0) -> None:
+    def __init__(self, transient=True, initial_value=0.) -> None:
+        """[summary]
+
+        Args:
+            transient (bool, optional): [description]. Defaults to True.
+            initial_value (sp.Add, float, optional): The initial value.
+                Only needed if type is not "expression". Defaults to 0..
+        """
         super().__init__()
         self.transient = transient
         self.F = 0
