@@ -101,6 +101,14 @@ def test_read_fluxes():
                 "Kr_0": 1e-9,
                 "E_Kr": 1,
                 "order": 2,
+            },
+            {
+                "type": "dc_imp",
+                "surfaces": [1],
+                "phi": 1,
+                "R_p": 2,
+                "D_0": 1,
+                "E_D": 2
             }
             ],
         "temperature": {
