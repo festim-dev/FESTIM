@@ -71,7 +71,6 @@ class XDMFExport(Export):
         """Checks if export should be exported.
 
         Args:
-            export (FESTIM.XDMFExport): the export object
             t (float): the current time
             final_time (float): the final time of the simulation
             nb_iterations (int): the current number of time steps
