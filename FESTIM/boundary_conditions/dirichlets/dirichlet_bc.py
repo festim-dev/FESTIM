@@ -1,22 +1,30 @@
-import FESTIM
+from FESTIM import BoundaryCondition, k_B
 import fenics as f
 import sympy as sp
 
 
-class DirichletBC(FESTIM.BoundaryCondition):
+class DirichletBC(BoundaryCondition):
+    """Class to enforce the solution on boundaries.
+    """
     def __init__(self, surfaces, value=None, component=0) -> None:
+        """Inits DirichletBC
+
+        Args:
+            surfaces (list or int): the surfaces of the BC
+            value (float or sp.Expr, optional): the value of the boundary
+                condition. Defaults to None.
+            component (int, optional): the field the boundary condition is
+                applied to. Defaults to 0.
+        """
         super().__init__(surfaces, component=component)
         self.value = value
         self.dirichlet_bc = []
 
     def create_expression(self, T):
-        """[summary]
+        """Assigns a value to self.expression
 
         Args:
             T (fenics.Function): temperature
-
-        Returns:
-            [type]: [description]
         """
         value_BC = sp.printing.ccode(self.value)
         value_BC = f.Expression(value_BC, t=0, degree=4)
@@ -25,6 +33,14 @@ class DirichletBC(FESTIM.BoundaryCondition):
         self.expression = value_BC
 
     def normalise_by_solubility(self, materials, volume_markers, T):
+        """Normalise self.expression by the solubility
+        theta = c/S
+
+        Args:
+            materials (FESTIM.Materials): the materials
+            volume_markers (fenics.MeshFunction): the volume markers
+            T (fenics.Function): the temperature
+        """
         # Store the non modified BC to be updated
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
@@ -33,18 +49,24 @@ class DirichletBC(FESTIM.BoundaryCondition):
                             materials,
                             volume_markers, T)
         self.expression = expression_BC
-        return expression_BC
 
-    def create_dirichletbc(self, V, T, surface_markers, chemical_pot=False, materials=None, volume_markers=None):
-        """[summary]
+    def create_dirichletbc(
+            self, V, T, surface_markers, chemical_pot=False, materials=None,
+            volume_markers=None):
+        """creates a list of fenics.DirichletBC and stores it in
+        self.dirichlet_bc
 
         Args:
-            V (fenics.FunctionSpace): [description]
-            T (fenics.Constant or fenics.Expression or fenics.Function): [description]
-            surface_markers (fenics.MeshFunction): [description]
-            chemical_pot (bool, optional): [description]. Defaults to False.
-            materials ([type], optional): [description]. Defaults to None.
-            volume_markers ([type], optional): [description]. Defaults to None.
+            V (fenics.FunctionSpace): the function space of the field
+            T (fenics.Constant or fenics.Expression or fenics.Function): the
+                temperature
+            surface_markers (fenics.MeshFunction): the surface markers
+            chemical_pot (bool, optional): if True, conservation of chemical
+                pot will be assumed. Defaults to False.
+            materials (FESTIM.Materials): The materials, only needed when
+                chemical_pot is True. Defaults to None.
+            volume_markers (fenics.MeshFunction, optional): the volume markers,
+                only needed when chemical_pot is True. Defaults to None.
         """
         self.dirichlet_bc = []
         self.create_expression(T)
@@ -94,7 +116,7 @@ class BoundaryConditionTheta(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
         S_0 = material.S_0
         E_S = material.E_S
-        value[0] = self._bci(x)/(S_0*f.exp(-E_S/FESTIM.k_B/self._T(x)))
+        value[0] = self._bci(x)/(S_0*f.exp(-E_S/k_B/self._T(x)))
 
     def value_shape(self):
         return ()
