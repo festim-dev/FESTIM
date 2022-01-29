@@ -7,12 +7,6 @@ import sympy as sp
 import numpy as np
 
 
-def test_unknown_boundary_condition_type():
-    # Test error raise
-    with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        FESTIM.BoundaryCondition(type="foo", surfaces=1)
-
-
 def test_define_dirichlet_bcs_theta():
     '''
     Test the function apply_boundary_condition()
@@ -90,7 +84,7 @@ def test_define_dirichlet_bcs_theta():
 
 def test_define_dirichlet_bcs_fail():
     with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        FESTIM.BoundaryCondition(type="foo", surfaces=0)
+        FESTIM.DirichletBC(type="foo", surfaces=0)
 
 
 def test_bc_recomb():
@@ -357,9 +351,9 @@ def test_create_expression_dc_custom():
             assert expected(x) == value_BC(x)
 
 
-def test_create_form_for_flux_flux_custom():
+def test_create_form_flux_custom():
     """Creates a flux_custom bc and checks
-    create_form_for_flux returns
+    create_form returns
     the correct form
     """
     # build
@@ -374,8 +368,9 @@ def test_create_form_for_flux_flux_custom():
     expressions = [T, solute]
 
     # run
-    my_BC = FESTIM.FluxBC(type="flux_custom", surfaces=[1, 0], function=func, foo=expr_foo)
-    value_BC = my_BC.create_form_for_flux(T, solute)
+    my_BC = FESTIM.CustomFlux(surfaces=[1, 0], function=func, foo=expr_foo)
+    my_BC.create_form(T, solute)
+    value_BC = my_BC.form
 
     # test
     mesh = fenics.UnitIntervalMesh(10)
@@ -397,8 +392,8 @@ def test_convective_flux():
     expr_T = 2 + FESTIM.x
     T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
 
-    my_BC = FESTIM.FluxBC(type="convective_flux", surfaces=[0], component="T", h_coeff=expr_T, T_ext=expr_T)
-    my_BC.create_form_for_flux(T, None)
+    my_BC = FESTIM.ConvectiveFlux(surfaces=[0], h_coeff=expr_T, T_ext=expr_T)
+    my_BC.create_form(T, None)
 
 
 def test_recomb_flux():
@@ -406,5 +401,5 @@ def test_recomb_flux():
     T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
     c = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
 
-    my_BC = FESTIM.FluxBC(type="recomb", surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
-    my_BC.create_form_for_flux(T, c)
+    my_BC = FESTIM.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
+    my_BC.create_form(T, c)

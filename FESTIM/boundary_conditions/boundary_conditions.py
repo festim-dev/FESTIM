@@ -4,9 +4,7 @@ import sympy as sp
 
 
 class BoundaryCondition:
-    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
-        self.type = type
-        self.check_type()
+    def __init__(self, surfaces, value=None, function=None, component=0, **kwargs) -> None:
 
         if not isinstance(surfaces, list):
             surfaces = [surfaces]
@@ -30,6 +28,14 @@ class BoundaryCondition:
                                        t=0,
                                        degree=1)
 
+
+class DirichletBC(BoundaryCondition):
+    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
+        super().__init__(surfaces, value=value, function=function, component=component, **kwargs)
+        self.dirichlet_bc = []
+        self.type = type
+        self.check_type()
+
     def check_type(self):
         possible_types = FESTIM.helpers.bc_types["neumann"] + \
             FESTIM.helpers.bc_types["robin"] + \
@@ -40,12 +46,6 @@ class BoundaryCondition:
         if self.type not in possible_types:
             raise NameError(
                     "Unknown boundary condition type : " + self.type)
-
-
-class DirichletBC(BoundaryCondition):
-    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
-        super().__init__(type, surfaces, value=value, function=function, component=component, **kwargs)
-        self.dirichlet_bc = []
 
     def create_expression(self, T):
         """[summary]
@@ -76,7 +76,6 @@ class DirichletBC(BoundaryCondition):
         return value_BC
 
     def normalise_by_solubility(self, materials, volume_markers, T):
-        print('coucou')
         # Store the non modified BC to be updated
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
@@ -114,26 +113,6 @@ class DirichletBC(BoundaryCondition):
             bci = f.DirichletBC(funspace, self.expression,
                                 surface_markers, surface)
             self.dirichlet_bc.append(bci)
-
-
-class FluxBC(BoundaryCondition):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-
-    def create_form_for_flux(self, T, solute):
-        if self.type == "flux":
-            form = sp.printing.ccode(self.value)
-            form = f.Expression(form, t=0, degree=2)
-            self.sub_expressions.append(form)
-        elif self.type == "recomb":
-            form = recombination_flux(T, solute, self.prms)
-        elif self.type == "convective_flux":
-            form = convective_flux(T, self.prms)
-        elif self.type == "flux_custom":
-            form = self.function(T, solute, self.prms)
-        self.sub_expressions += [expression for expression in self.prms.values()]
-        self.form = form
-        return form
 
 
 class BoundaryConditionTheta(f.UserExpression):
@@ -201,11 +180,6 @@ class BoundaryConditionExpression(f.UserExpression):
         return ()
 
 
-def recombination_flux(T, c, prms):
-    Kr = prms["Kr_0"]*f.exp(-prms["E_Kr"]/FESTIM.k_B/T)
-    return -Kr*c**prms["order"]
-
-
 def dc_imp(T, prms):
     flux = prms["implanted_flux"]
     implantation_depth = prms["implantation_depth"]
@@ -222,10 +196,6 @@ def sieverts_law(T, prms):
     S_0, E_S = prms["S_0"], prms["E_S"]
     S = S_0*f.exp(-E_S/FESTIM.k_B/T)
     return S*prms["pressure"]**0.5
-
-
-def convective_flux(T, prms):
-    return prms["h_coeff"] * (T - prms["T_ext"])
 
 
 type_to_function = {
