@@ -5,12 +5,13 @@ import sympy as sp
 
 class HeatTransferProblem(FESTIM.Temperature):
     def __init__(self, transient=True, initial_value=0.) -> None:
-        """[summary]
+        """Inits HeatTransferProblem
 
         Args:
-            transient (bool, optional): [description]. Defaults to True.
+            transient (bool, optional): If True, a transient simulation will
+                be run. Defaults to True.
             initial_value (sp.Add, float, optional): The initial value.
-                Only needed if type is not "expression". Defaults to 0..
+                Only needed if transient is True. Defaults to 0..
         """
         super().__init__()
         self.transient = transient
@@ -43,7 +44,7 @@ class HeatTransferProblem(FESTIM.Temperature):
             self.T_n.assign(interpolate(self.initial_value, V))
 
         self.define_variational_problem(materials, dx, ds, dt)
-        self.create_dirichlet_bcs(V, ds.subdomain_data())
+        self.create_dirichlet_bcs(ds.subdomain_data())
 
         if not self.transient:
             print("Solving stationary heat equation")
@@ -111,15 +112,15 @@ class HeatTransferProblem(FESTIM.Temperature):
                 for surf in bc.surfaces:
                     self.F += -bc.form*self.v_T*ds(surf)
 
-    def create_dirichlet_bcs(self, V, surface_markers):
+    def create_dirichlet_bcs(self, surface_markers):
         """Creates a list of fenics.DirichletBC and add time dependent
         expressions to .sub_expressions
 
         Args:
-            V (fenics.FunctionSpace): the function space
             surface_markers (fenics.MeshFunction): contains the mesh facet
                 markers
         """
+        V = self.T.function_space()
         self.dirichlet_bcs = []
         for bc in self.boundary_conditions:
             if isinstance(bc, FESTIM.DirichletBC) and bc.component == "T":
