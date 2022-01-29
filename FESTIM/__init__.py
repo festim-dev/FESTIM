@@ -31,9 +31,10 @@ from .exports.derived_quantities.surface_flux import SurfaceFlux
 from .exports.derived_quantities.hydrogen_flux import HydrogenFlux
 from .exports.derived_quantities.thermal_flux import ThermalFlux
 from .exports.derived_quantities.average_volume import AverageVolume
+from .exports.derived_quantities.maximum_volume import MaximumVolume
+from .exports.derived_quantities.minimum_volume import MinimumVolume
 
-from .exports.derived_quantities_export import MinimumVolume, MaximumVolume, \
-    TotalVolume, TotalSurface
+from .exports.derived_quantities_export import TotalVolume, TotalSurface
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
 from .exports.txt_export import TXTExport, TXTExports
