@@ -30,9 +30,9 @@ from .exports.derived_quantities.derived_quantity import DerivedQuantity
 from .exports.derived_quantities.surface_flux import SurfaceFlux
 from .exports.derived_quantities.hydrogen_flux import HydrogenFlux
 from .exports.derived_quantities.thermal_flux import ThermalFlux
+from .exports.derived_quantities.average_volume import AverageVolume
 
-from .exports.derived_quantities_export import AverageVolume, \
-    MinimumVolume, MaximumVolume, \
+from .exports.derived_quantities_export import MinimumVolume, MaximumVolume, \
     TotalVolume, TotalSurface
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
