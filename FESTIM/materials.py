@@ -281,4 +281,3 @@ class HCoeff(f.UserExpression):
 
     def value_shape(self):
         return ()
-

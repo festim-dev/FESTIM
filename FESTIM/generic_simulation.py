@@ -242,7 +242,7 @@ class Simulation:
                 if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
-                self.materials.S.project(self.V_DG1)
+                self.materials.S = project(self.materials.S, self.V_DG1)
 
         # Define functions
         self.initialise_concentrations()
