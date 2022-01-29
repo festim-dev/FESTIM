@@ -4,23 +4,9 @@ import sympy as sp
 
 
 class DirichletBC(FESTIM.BoundaryCondition):
-    def __init__(self, surfaces, type="dc", value=None, function=None, component=0, **kwargs) -> None:
+    def __init__(self, surfaces, value=None, function=None, component=0, **kwargs) -> None:
         super().__init__(surfaces, value=value, function=function, component=component, **kwargs)
         self.dirichlet_bc = []
-        self.type = type
-        self.check_type()
-
-    def check_type(self):
-        print(self.type)
-        possible_types = FESTIM.helpers.bc_types["neumann"] + \
-            FESTIM.helpers.bc_types["robin"] + \
-            FESTIM.helpers.bc_types["dc"]
-        possible_types += FESTIM.helpers.T_bc_types["neumann"] + \
-            FESTIM.helpers.T_bc_types["robin"] + \
-            FESTIM.helpers.T_bc_types["dc"]
-        if self.type not in possible_types:
-            raise NameError(
-                    "Unknown boundary condition type : " + self.type)
 
     def create_expression(self, T):
         """[summary]
@@ -31,19 +17,9 @@ class DirichletBC(FESTIM.BoundaryCondition):
         Returns:
             [type]: [description]
         """
-        if self.type == "dc":
-            value_BC = sp.printing.ccode(self.value)
-            value_BC = f.Expression(value_BC, t=0, degree=4)
-            # TODO : why degree 4?
-        else:
-            if self.type == "dc_custom":
-                function = self.function
-
-            ignored_keys = ["type", "surfaces", "function", "component"]
-
-            prms = {key: val for key, val in self.prms.items() if key not in ignored_keys}
-            value_BC = BoundaryConditionExpression(T, eval_function=function, **prms)
-            self.sub_expressions = [self.prms[key] for key in prms.keys()]
+        value_BC = sp.printing.ccode(self.value)
+        value_BC = f.Expression(value_BC, t=0, degree=4)
+        # TODO : why degree 4?
 
         self.expression = value_BC
         return value_BC

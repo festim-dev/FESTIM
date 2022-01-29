@@ -13,6 +13,7 @@ from .boundary_conditions.dirichlets.dirichlet_bc import DirichletBC, \
     BoundaryConditionTheta, BoundaryConditionExpression
 from .boundary_conditions.dirichlets.dc_imp import ImplantationDC
 from .boundary_conditions.dirichlets.sieverts_bc import SievertsBC
+from .boundary_conditions.dirichlets.custom_dc import CustomDirichlet
 
 from .boundary_conditions.fluxes.flux_bc import FluxBC
 from .boundary_conditions.fluxes.recombination_flux import RecombinationFlux
