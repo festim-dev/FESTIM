@@ -1,5 +1,5 @@
 from FESTIM import DerivedQuantities, SurfaceFlux, AverageVolume, \
-    TotalSurface, TotalVolume, MaximumVolume, MinimumVolume
+    TotalSurface, TotalVolume, MaximumVolume, MinimumVolume, Materials
 import fenics as f
 import os
 from pathlib import Path
@@ -92,29 +92,30 @@ class TestAssignPropertiesToQuantities:
         SurfaceFlux("T", 3),
         AverageVolume("solute", 3),
     ]
-    D = f.Function(V)
-    S = f.Function(V)
-    H = f.Function(V)
-    thermal_cond = f.Function(V)
+    my_mats = Materials()
+    my_mats.D = f.Function(V)
+    my_mats.S = f.Function(V)
+    my_mats.H = f.Function(V)
+    my_mats.thermal_cond = f.Function(V)
     T = f.Function(V)
 
-    my_quantities.assign_properties_to_quantities(D, S, thermal_cond, H)
+    my_quantities.assign_properties_to_quantities(my_mats)
 
     def test_quantities_have_D(self):
         for quantity in self.my_quantities.derived_quantities:
-            assert quantity.D == self.D
+            assert quantity.D == self.my_mats.D
 
     def test_quantities_have_S(self):
         for quantity in self.my_quantities.derived_quantities:
-            assert quantity.S == self.S
+            assert quantity.S == self.my_mats.S
 
     def test_quantities_have_H(self):
         for quantity in self.my_quantities.derived_quantities:
-            assert quantity.H == self.H
+            assert quantity.H == self.my_mats.H
 
     def test_quantities_have_thermal_cond(self):
         for quantity in self.my_quantities.derived_quantities:
-            assert quantity.thermal_cond == self.thermal_cond
+            assert quantity.thermal_cond == self.my_mats.thermal_cond
 
 
 class TestCompute:
@@ -149,11 +150,12 @@ class TestCompute:
     ds = f.Measure('ds', domain=mesh, subdomain_data=surface_markers)
     n = f.FacetNormal(mesh)
 
-    D = f.interpolate(f.Constant(2), V)
-    S = f.interpolate(f.Constant(2), V)
-    H = f.interpolate(f.Constant(2), V)
-    thermal_cond = f.interpolate(f.Constant(2), V)
     T = f.interpolate(f.Constant(2), V)
+    my_mats = Materials()
+    my_mats.D = f.interpolate(f.Constant(2), V)
+    my_mats.S = f.interpolate(f.Constant(2), V)
+    my_mats.H = f.interpolate(f.Constant(2), V)
+    my_mats.thermal_cond = f.interpolate(f.Constant(2), V)
 
     def test_simple(self):
         self.my_derv_quant.derived_quantities = [
@@ -161,7 +163,7 @@ class TestCompute:
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H)
+        self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
@@ -179,7 +181,7 @@ class TestCompute:
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H)
+        self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
@@ -201,7 +203,7 @@ class TestCompute:
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.D, self.S, self.thermal_cond, self.H)
+        self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
