@@ -1,5 +1,5 @@
 import FESTIM
-from fenics import *
+import fenics as f
 import sympy as sp
 
 
@@ -34,21 +34,21 @@ class HeatTransferProblem(FESTIM.Temperature):
             dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
         """
         # Define variational problem for heat transfers
-        self.T = Function(V, name="T")
-        self.T_n = Function(V, name="T_n")
-        self.v_T = TestFunction(V)
+        self.T = f.Function(V, name="T")
+        self.T_n = f.Function(V, name="T_n")
+        self.v_T = f.TestFunction(V)
 
         if self.transient:
             ccode_T_ini = sp.printing.ccode(self.initial_value)
-            self.initial_value = Expression(ccode_T_ini, degree=2, t=0)
-            self.T_n.assign(interpolate(self.initial_value, V))
+            self.initial_value = f.Expression(ccode_T_ini, degree=2, t=0)
+            self.T_n.assign(f.interpolate(self.initial_value, V))
 
         self.define_variational_problem(materials, dx, ds, dt)
         self.create_dirichlet_bcs(ds.subdomain_data())
 
         if not self.transient:
             print("Solving stationary heat equation")
-            solve(self.F == 0, self.T, self.dirichlet_bcs)
+            f.solve(self.F == 0, self.T, self.dirichlet_bcs)
             self.T_n.assign(self.T)
 
     def define_variational_problem(self, materials, dx, ds, dt):
@@ -87,12 +87,12 @@ class HeatTransferProblem(FESTIM.Temperature):
                     self.F += rho*cp*(T-T_n)/dt.value*v_T*dx(vol)
             # Diffusion term
             for vol in subdomains:
-                self.F += dot(thermal_cond*grad(T), grad(v_T))*dx(vol)
+                self.F += f.dot(thermal_cond*f.grad(T), f.grad(v_T))*dx(vol)
 
         # source term
         for source in self.sources:
             src = sp.printing.ccode(source.value)
-            src = Expression(src, degree=2, t=0)
+            src = f.Expression(src, degree=2, t=0)
             self.sub_expressions.append(src)
             if type(source.volume) is list:
                 volumes = source.volume
@@ -126,7 +126,8 @@ class HeatTransferProblem(FESTIM.Temperature):
             if isinstance(bc, FESTIM.DirichletBC) and bc.component == "T":
                 bc.create_expression(self.T)
                 for surf in bc.surfaces:
-                    bci = DirichletBC(V, bc.expression, surface_markers, surf)
+                    bci = f.DirichletBC(
+                        V, bc.expression, surface_markers, surf)
                     self.dirichlet_bcs.append(bci)
                 self.sub_expressions += bc.sub_expressions
                 self.sub_expressions.append(bc.expression)
@@ -141,11 +142,11 @@ class HeatTransferProblem(FESTIM.Temperature):
         if self.transient:
             FESTIM.update_expressions(self.sub_expressions, t)
             # Solve heat transfers
-            dT = TrialFunction(self.T.function_space())
-            JT = derivative(self.F, self.T, dT)  # Define the Jacobian
-            problem = NonlinearVariationalProblem(
+            dT = f.TrialFunction(self.T.function_space())
+            JT = f.derivative(self.F, self.T, dT)  # Define the Jacobian
+            problem = f.NonlinearVariationalProblem(
                 self.F, self.T, self.dirichlet_bcs, JT)
-            solver = NonlinearVariationalSolver(problem)
+            solver = f.NonlinearVariationalSolver(problem)
             newton_solver_prm = solver.parameters["newton_solver"]
             newton_solver_prm["absolute_tolerance"] = 1e-3
             newton_solver_prm["relative_tolerance"] = 1e-10
