@@ -106,7 +106,7 @@ class HeatTransferProblem(FESTIM.Temperature):
 
         # Boundary conditions
         for bc in self.boundary_conditions:
-            if not isinstance(bc, FESTIM.DirichletBC):
+            if isinstance(bc, FESTIM.FluxBC):
                 bc.create_form(self.T, solute=None)
 
                 # TODO: maybe that's not necessary
