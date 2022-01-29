@@ -1,5 +1,6 @@
 import FESTIM
 import sympy as sp
+from FESTIM.boundary_conditions.boundary_conditions import DirichletBC
 from fenics import *
 
 
@@ -95,10 +96,9 @@ class Temperature:
             surface_markers (fenics.MeshFunction): contains the mesh facet
                 markers
         """
-        # TODO needs to choose between having Temperature bcs in Temperature or in Simulation.boundary_conditions
         self.dirichlet_bcs = []
         for bc in self.boundary_conditions:
-            if bc.type == "dc" and bc.component == "T":
+            if isinstance(bc, FESTIM.DirichletBC) and bc.component == "T":
                 bc.create_expression(self.T)
                 for surf in bc.surfaces:
                     bci = DirichletBC(V, bc.expression, surface_markers, surf)
@@ -158,7 +158,7 @@ class Temperature:
 
         # Boundary conditions
         for bc in self.boundary_conditions:
-            if bc.type not in FESTIM.helpers.T_bc_types["dc"]:
+            if not isinstance(bc, FESTIM.DirichletBC):
                 bc.create_form(self.T, solute=None)
 
                 # TODO: maybe that's not necessary
