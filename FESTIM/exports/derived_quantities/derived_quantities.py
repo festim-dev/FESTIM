@@ -53,13 +53,12 @@ class DerivedQuantities:
             quantity.ds = ds
             quantity.n = f.FacetNormal(dx.subdomain_data().mesh())
 
-    def assign_properties_to_quantities(self, D, S, thermal_cond, H, T):
+    def assign_properties_to_quantities(self, D, S, thermal_cond, H):
         for quantity in self.derived_quantities:
             quantity.D = D
             quantity.S = S
             quantity.thermal_cond = thermal_cond
             quantity.H = H
-            quantity.T = T
 
     def compute(self, t):
 

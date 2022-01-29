@@ -259,7 +259,7 @@ class Simulation:
             if isinstance(export, FESTIM.DerivedQuantities):
                 export.data = [export.make_header()]
                 export.assign_measures_to_quantities(self.dx, self.ds)
-                export.assign_properties_to_quantities(self.materials.D, self.materials.S, self.materials.thermal_cond, self.materials.H, self.T)
+                export.assign_properties_to_quantities(self.materials.D, self.materials.S, self.materials.thermal_cond, self.materials.H)
 
     def define_function_spaces(self):
         """Creates the suitable function spaces depending on the number of
