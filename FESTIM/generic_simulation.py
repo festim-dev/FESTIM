@@ -242,8 +242,7 @@ class Simulation:
             if isinstance(self.T, FESTIM.HeatTransferProblem):
                 if not self.T.transient:
                     project_S = True
-            # self.T is an instance of FESTIM.Temperature
-            elif not isinstance(self.T, FESTIM.HeatTransferProblem):
+            elif isinstance(self.T, FESTIM.Temperature):
                 if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
