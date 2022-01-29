@@ -43,7 +43,6 @@ class HeatTransferProblem(FESTIM.Temperature):
             self.T_n.assign(interpolate(self.initial_value, V))
 
         self.define_variational_problem(materials, dx, ds, dt)
-        # self.expressions += expressions_bcs_T + self.expressions_FT
         self.create_dirichlet_bcs(V, ds.subdomain_data())
 
         if not self.transient:
