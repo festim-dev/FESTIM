@@ -76,7 +76,6 @@ class DirichletBC(BoundaryCondition):
         return value_BC
 
     def normalise_by_solubility(self, materials, volume_markers, T):
-        print('coucou')
         # Store the non modified BC to be updated
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
