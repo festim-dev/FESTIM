@@ -28,7 +28,7 @@ def test_run_temperature_stationary(tmpdir):
     ]
 
     my_sources = [FESTIM.Source(-4, 1, "T")]
-    my_temperature = FESTIM.Temperature("solve_stationary")
+    my_temperature = FESTIM.HeatTransferProblem(transient=False)
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e10, relative_tolerance=1e-9,
         maximum_iterations=50,
@@ -79,7 +79,7 @@ def test_run_temperature_transient(tmpdir):
         FESTIM.DirichletBC(surfaces=[1, 2], value=u, component="T")
     ]
 
-    my_temp = FESTIM.Temperature("solve_transient", initial_value=u)
+    my_temp = FESTIM.HeatTransferProblem(transient=True, initial_value=u)
 
     my_sources = [
         FESTIM.Source(value=sp.diff(u, FESTIM.t) - sp.diff(u, FESTIM.x, 2), volume=1, field="T")
@@ -165,7 +165,7 @@ def test_run_MMS(tmpdir):
             FESTIM.DirichletBC(surfaces=[1, 2], value=v, component=1),
         ]
 
-        my_temp = FESTIM.Temperature("expression", T)
+        my_temp = FESTIM.Temperature(T)
 
         my_sources = [
             FESTIM.Source(f, 1, "0"),
@@ -263,7 +263,7 @@ def test_run_MMS_chemical_pot(tmpdir):
             FESTIM.DirichletBC(surfaces=[1, 2], value=v, component=1),
         ]
 
-        my_temp = FESTIM.Temperature("expression", T)
+        my_temp = FESTIM.Temperature(T)
 
         my_sources = [
             FESTIM.Source(f, 1, "0"),
@@ -331,7 +331,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
 
     my_mesh = FESTIM.MeshFromRefinements(5, 1)
 
-    my_temp = FESTIM.Temperature("expression", 700 + 210*FESTIM.t)
+    my_temp = FESTIM.Temperature(700 + 210*FESTIM.t)
 
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e-10,
@@ -399,7 +399,7 @@ def test_run_MMS_soret(tmpdir):
 
         my_source = FESTIM.Source(f, 1, "solute")
 
-        my_temp = FESTIM.Temperature("expression", T)
+        my_temp = FESTIM.Temperature(T)
 
         my_bcs = [
             FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
@@ -492,7 +492,7 @@ def test_run_MMS_steady_state(tmpdir):
             FESTIM.Source(g, 1, "1")
         ]
 
-        my_temp = FESTIM.Temperature("expression", T)
+        my_temp = FESTIM.Temperature(T)
 
         my_bcs = [
             FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
@@ -557,7 +557,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
     )
     my_mesh = FESTIM.MeshFromRefinements(10, 1)
 
-    my_temp = FESTIM.Temperature("solve_stationary")
+    my_temp = FESTIM.HeatTransferProblem(transient=False)
     my_bcs = [
         FESTIM.DirichletBC(surfaces=[1, 2], value=1, component="solute"),
         FESTIM.DirichletBC(surfaces=[1], value=300, component="T"),
@@ -607,7 +607,7 @@ def test_performance_xdmf(tmpdir):
         )
         my_mesh = FESTIM.MeshFromRefinements(200, 1)
 
-        my_temp = FESTIM.Temperature("expression", 300)
+        my_temp = FESTIM.Temperature(300)
 
         my_settings = FESTIM.Settings(
             absolute_tolerance=1e10,
@@ -661,7 +661,7 @@ def test_performance_xdmf_last_timestep(tmpdir):
         )
         my_mesh = FESTIM.MeshFromRefinements(200, 1)
 
-        my_temp = FESTIM.Temperature("expression", 300)
+        my_temp = FESTIM.Temperature(300)
 
         my_settings = FESTIM.Settings(
             absolute_tolerance=1e10,
@@ -712,7 +712,7 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
     )
     my_mesh = FESTIM.MeshFromRefinements(10, 1)
 
-    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp = FESTIM.Temperature(300)
 
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e10,
@@ -763,7 +763,7 @@ def test_extrinsic_trap():
             "eta_b": 2e-4}
     )
 
-    my_temp = FESTIM.Temperature("expression", 300)
+    my_temp = FESTIM.Temperature(300)
 
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e10,
@@ -809,7 +809,7 @@ def test_steady_state_with_2_materials():
     surfaces.mark(sm, 1)
     my_mesh = FESTIM.Mesh(mesh=mesh, volume_markers=vm, surface_markers=sm)
 
-    my_temp = FESTIM.Temperature("expression", 30)
+    my_temp = FESTIM.Temperature(30)
     my_bc = FESTIM.DirichletBC([1], value=0)
     my_source = FESTIM.Source(1, [1, 2, 3], "solute")
 
@@ -850,7 +850,7 @@ def test_steady_state_traps_not_everywhere():
 
     my_trap = FESTIM.Trap(1, 0, 1, 0, [1, 3], 1)
 
-    my_temp = FESTIM.Temperature("expression", 1)
+    my_temp = FESTIM.Temperature(1)
     my_bc = FESTIM.DirichletBC([1], value=1)
 
     my_settings = FESTIM.Settings(
@@ -887,7 +887,7 @@ def test_no_jacobian_update():
 
     my_trap = FESTIM.Trap(1, 0, 1, 0, [1], 1)
 
-    my_temp = FESTIM.Temperature("expression", 1)
+    my_temp = FESTIM.Temperature(1)
 
     my_settings = FESTIM.Settings(
         final_time=10,
@@ -921,7 +921,7 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
         )
         my_mesh = FESTIM.MeshFromRefinements(10, 1)
 
-        my_temp = FESTIM.Temperature("expression", 300)
+        my_temp = FESTIM.Temperature(300)
 
         my_settings = FESTIM.Settings(
             absolute_tolerance=1e10,
@@ -1018,7 +1018,7 @@ def test_error_steady_state_diverges():
 
     my_mesh = FESTIM.MeshFromRefinements(10, 1)
 
-    my_temp = FESTIM.Temperature("expression", -1)
+    my_temp = FESTIM.Temperature(-1)
 
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e-10,
