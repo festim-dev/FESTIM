@@ -488,10 +488,22 @@ class Simulation:
         self.t += float(self.dt.value)
         FESTIM.update_expressions(
             self.expressions, self.t)
-        if isinstance(self.T, FESTIM.HeatTransferProblem):
-            FESTIM.update_expressions(
-                self.T.sub_expressions, self.t)
         # TODO this could be a method of Temperature()
+        if isinstance(self.T, FESTIM.HeatTransferProblem):
+            if self.T.transient:
+                FESTIM.update_expressions(
+                    self.T.sub_expressions, self.t)
+                # Solve heat transfers
+                dT = TrialFunction(self.T.T.function_space())
+                JT = derivative(self.T.F, self.T.T, dT)  # Define the Jacobian
+                problem = NonlinearVariationalProblem(
+                    self.T.F, self.T.T, self.T.dirichlet_bcs, JT)
+                solver = NonlinearVariationalSolver(problem)
+                newton_solver_prm = solver.parameters["newton_solver"]
+                newton_solver_prm["absolute_tolerance"] = 1e-3
+                newton_solver_prm["relative_tolerance"] = 1e-10
+                solver.solve()
+                self.T.T_n.assign(self.T.T)
         elif isinstance(self.T, FESTIM.Temperature):
             self.T.T_n.assign(self.T.T)
             self.T.expression.t = self.t
@@ -514,20 +526,7 @@ class Simulation:
 
         print(msg, end="\r")
 
-        # Solve heat transfers
-        # TODO this could be a method of Temperature()
-        if isinstance(self.T, FESTIM.HeatTransferProblem):
-            if self.T.transient:
-                dT = TrialFunction(self.T.T.function_space())
-                JT = derivative(self.T.F, self.T.T, dT)  # Define the Jacobian
-                problem = NonlinearVariationalProblem(
-                    self.T.F, self.T.T, self.T.dirichlet_bcs, JT)
-                solver = NonlinearVariationalSolver(problem)
-                newton_solver_prm = solver.parameters["newton_solver"]
-                newton_solver_prm["absolute_tolerance"] = 1e-3
-                newton_solver_prm["relative_tolerance"] = 1e-10
-                solver.solve()
-                self.T.T_n.assign(self.T.T)
+
 
         # Solve main problem
         FESTIM.solve_it(
