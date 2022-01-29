@@ -4,9 +4,7 @@ import sympy as sp
 
 
 class BoundaryCondition:
-    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
-        self.type = type
-        self.check_type()
+    def __init__(self, surfaces, value=None, function=None, component=0, **kwargs) -> None:
 
         if not isinstance(surfaces, list):
             surfaces = [surfaces]
@@ -30,6 +28,14 @@ class BoundaryCondition:
                                        t=0,
                                        degree=1)
 
+
+class DirichletBC(BoundaryCondition):
+    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
+        super().__init__(surfaces, value=value, function=function, component=component, **kwargs)
+        self.dirichlet_bc = []
+        self.type = type
+        self.check_type()
+
     def check_type(self):
         possible_types = FESTIM.helpers.bc_types["neumann"] + \
             FESTIM.helpers.bc_types["robin"] + \
@@ -40,12 +46,6 @@ class BoundaryCondition:
         if self.type not in possible_types:
             raise NameError(
                     "Unknown boundary condition type : " + self.type)
-
-
-class DirichletBC(BoundaryCondition):
-    def __init__(self, type, surfaces, value=None, function=None, component=0, **kwargs) -> None:
-        super().__init__(type, surfaces, value=value, function=function, component=component, **kwargs)
-        self.dirichlet_bc = []
 
     def create_expression(self, T):
         """[summary]

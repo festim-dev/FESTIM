@@ -1,4 +1,5 @@
 import FESTIM
+from FESTIM.boundary_conditions.boundary_conditions import DirichletBC
 from fenics import *
 import sympy as sp
 import warnings
@@ -681,7 +682,7 @@ class Simulation:
 
         for bc in self.boundary_conditions:
             if bc.component != "T":
-                if bc.type not in FESTIM.helpers.bc_types["dc"]:
+                if not isinstance(bc, DirichletBC):
                     bc.create_form(self.T.T, solute)
                     # TODO : one day we will get rid of this huge expressions list
                     expressions += bc.sub_expressions
