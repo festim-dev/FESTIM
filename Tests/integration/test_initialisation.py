@@ -52,7 +52,7 @@ def test_initialisation_from_xdmf(tmpdir):
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
     my_sim.traps = FESTIM.Traps([my_trap])
     my_sim.V = V
-    my_sim.S = None
+    my_sim.materials.S = None
     my_sim.initialise_concentrations()
     w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
@@ -92,7 +92,7 @@ def test_initialisation_with_expression():
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
     my_sim.traps = FESTIM.Traps([my_trap])
     my_sim.V = V
-    my_sim.S = None
+    my_sim.materials.S = None
     my_sim.initialise_concentrations()
     w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
@@ -134,7 +134,7 @@ def test_initialisation_with_expression_chemical_pot():
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
     my_sim.traps = FESTIM.Traps([my_trap])
     my_sim.V = V
-    my_sim.S = S
+    my_sim.materials.S = S
     my_sim.chemical_pot = True
     my_sim.initialise_concentrations()
     w = my_sim.u_n
@@ -153,7 +153,7 @@ def test_initialisation_default():
     my_sim = FESTIM.Simulation(
         {"boundary_conditions": [], "initial_conditions": []})
     my_sim.V = V
-    my_sim.S = None
+    my_sim.materials.S = None
     my_sim.initialise_concentrations()
     w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
@@ -181,7 +181,7 @@ def test_initialisation_solute_only():
     }
     my_sim = FESTIM.Simulation(parameters)
     my_sim.V = V
-    my_sim.S = None
+    my_sim.materials.S = None
     my_sim.initialise_concentrations()
     w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0
@@ -210,7 +210,7 @@ def test_initialisation_no_component():
     }
     my_sim = FESTIM.Simulation(parameters)
     my_sim.V = V
-    my_sim.S = None
+    my_sim.materials.S = None
     my_sim.initialise_concentrations()
     w = my_sim.u_n
     assert fenics.errornorm(u, w) == 0

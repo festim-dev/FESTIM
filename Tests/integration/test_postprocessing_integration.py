@@ -30,9 +30,7 @@ class TestPostProcessing:
 
         my_sim.initialise_concentrations()
 
-        my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, my_sim.H, my_sim.S =\
-            FESTIM.create_properties(
-                my_sim.materials,
+        my_sim.materials.create_properties(
                 my_sim.volume_markers, my_sim.T.T)
         my_sim.exports = FESTIM.Exports([])
 
@@ -46,7 +44,10 @@ class TestPostProcessing:
             FESTIM.TotalVolume("1", 1)
         ]
         derived_quantities.assign_measures_to_quantities(my_sim.dx, my_sim.ds)
-        derived_quantities.assign_properties_to_quantities(my_sim.D, my_sim.S, my_sim.thermal_cond, my_sim.H, my_sim.T)
+        derived_quantities.assign_properties_to_quantities(
+            my_sim.materials.D, my_sim.materials.S,
+            my_sim.materials.thermal_cond,
+            my_sim.materials.H, my_sim.T)
 
         my_sim.exports.exports = [derived_quantities]
         t = 0
@@ -112,9 +113,7 @@ class TestPostProcessing:
 
         my_sim.define_markers()
 
-        my_sim.D, my_sim.thermal_cond, my_sim.cp, my_sim.rho, my_sim.H, my_sim.S =\
-            FESTIM.create_properties(
-                my_sim.materials,
+        my_sim.materials.create_properties(
                 my_sim.volume_markers, my_sim.T.T)
 
         u_expr = f.Expression("2*x[0]", degree=1)
@@ -128,7 +127,10 @@ class TestPostProcessing:
             FESTIM.SurfaceFlux("T", 2),
         ]
         derived_quantities.assign_measures_to_quantities(my_sim.dx, my_sim.ds)
-        derived_quantities.assign_properties_to_quantities(my_sim.D, my_sim.S, my_sim.thermal_cond, my_sim.H, my_sim.T)
+        derived_quantities.assign_properties_to_quantities(
+            my_sim.materials.D, my_sim.materials.S,
+            my_sim.materials.thermal_cond,
+            my_sim.materials.H, my_sim.T)
 
         my_sim.exports.exports = [derived_quantities]
 
