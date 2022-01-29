@@ -27,9 +27,13 @@ from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
 
 from .exports.derived_quantities.derived_quantity import DerivedQuantity
-from .exports.derived_quantities_export import SurfaceFlux, AverageVolume, \
+from .exports.derived_quantities.surface_flux import SurfaceFlux
+from .exports.derived_quantities.hydrogen_flux import HydrogenFlux
+from .exports.derived_quantities.thermal_flux import ThermalFlux
+
+from .exports.derived_quantities_export import AverageVolume, \
     MinimumVolume, MaximumVolume, \
-    TotalVolume, TotalSurface, ThermalFlux, HydrogenFlux
+    TotalVolume, TotalSurface
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
 from .exports.txt_export import TXTExport, TXTExports
