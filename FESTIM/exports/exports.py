@@ -15,7 +15,7 @@ class Exports:
             if isinstance(export, FESTIM.DerivedQuantities):
 
                 # compute derived quantities
-                if self.nb_iterations % export.nb_iterations_between_compute == 0:
+                if export.is_compute(self.nb_iterations):
                     # check if function has to be projected
                     for quantity in export.derived_quantities:
                         if isinstance(quantity, (FESTIM.MaximumVolume, FESTIM.MinimumVolume)):
@@ -24,7 +24,7 @@ class Exports:
                         quantity.function = label_to_function[quantity.field]
                     export.compute(self.t)
                 # export derived quantities
-                if FESTIM.is_export_derived_quantities(export, self.t, self.final_time, self.nb_iterations):
+                if export.is_export(self.t, self.final_time, self.nb_iterations):
                     export.write()
 
             elif isinstance(export, FESTIM.XDMFExport):

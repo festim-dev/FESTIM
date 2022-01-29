@@ -2,34 +2,6 @@ import fenics as f
 import FESTIM
 
 
-def is_export_derived_quantities(derived_quantities, t, final_time, nb_iterations):
-    """Checks if the derived quantities should be exported or not based on the
-    key simulation.nb_iterations_between_export_derived_quantities
-
-    Args:
-        derived_quantities (FESTIM.DerivedQuantities): the derived quantities
-        t (float): the current time
-        final_time (float): the final time of the simulation
-        nb_iterations (int): the current number of time steps
-
-    Returns:
-        bool: True if the derived quantities should be exported, else False
-    """
-    # TODO this should be a method of DerivedQuantities
-    if final_time is not None:
-        nb_its_between_exports = \
-            derived_quantities.nb_iterations_between_exports
-        if nb_its_between_exports is None:
-            # export at the end
-            return t >= final_time
-        else:
-            # export every N iterations
-            return nb_iterations % nb_its_between_exports == 0
-    else:
-        # if steady state, export
-        return True
-
-
 class ArheniusCoeff(f.UserExpression):
     def __init__(self, mesh, materials, vm, T, pre_exp, E, **kwargs):
         super().__init__(kwargs)

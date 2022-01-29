@@ -45,8 +45,7 @@ from .exports.txt_export import TXTExport, TXTExports
 from .settings import Settings
 from .stepsize import Stepsize
 
-from .post_processing import is_export_derived_quantities, \
-    create_properties
+from .post_processing import create_properties
 
 from .source import Source
 
