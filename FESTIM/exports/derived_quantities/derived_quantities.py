@@ -53,12 +53,18 @@ class DerivedQuantities:
             quantity.ds = ds
             quantity.n = f.FacetNormal(dx.subdomain_data().mesh())
 
-    def assign_properties_to_quantities(self, D, S, thermal_cond, H):
+    def assign_properties_to_quantities(self, materials):
+        """Assign properties attributes to all DerivedQuantity objects
+        (D, S, thermal_cond and H) based on the properties stored in materials
+
+        Args:
+            materials (FESTIM.Materials): the materials
+        """
         for quantity in self.derived_quantities:
-            quantity.D = D
-            quantity.S = S
-            quantity.thermal_cond = thermal_cond
-            quantity.H = H
+            quantity.D = materials.D
+            quantity.S = materials.S
+            quantity.thermal_cond = materials.thermal_cond
+            quantity.H = materials.H
 
     def compute(self, t):
 
