@@ -29,7 +29,7 @@ class CustomFlux(FluxBC):
         self.convert_prms()
 
     def create_form(self, T, solute):
-        self.form = self.function(T, solute, self.prms)
+        self.form = self.function(T, solute, **self.prms)
         self.sub_expressions += [
             expression for expression in self.prms.values()]
 
