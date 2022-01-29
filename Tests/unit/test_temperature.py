@@ -17,7 +17,7 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     mat1 = FESTIM.Material(id=[1, 2], D_0=1, E_D=0, thermal_cond=1)
     mat2 = FESTIM.Material(id=3, D_0=0.25, E_D=0, thermal_cond=1)
     my_mats = FESTIM.Materials([mat1, mat2])
-    my_temp = FESTIM.Temperature("solve_stationary")
+    my_temp = FESTIM.HeatTransferProblem(transient=False)
 
     my_temp.create_functions(V, my_mats, fenics.dx, fenics.ds, dt=FESTIM.Stepsize(initial_value=2))
 
@@ -55,7 +55,7 @@ def test_formulation_heat_transfer():
     bc1 = FESTIM.DirichletBC(surfaces=[1], value=u, component="T")
     bc2 = FESTIM.FluxBC(surfaces=[2], value=2, component="T")
 
-    my_temp = FESTIM.Temperature("solve_transient", initial_value=0)
+    my_temp = FESTIM.HeatTransferProblem(transient=True, initial_value=0)
     my_temp.boundary_conditions = [bc1, bc2]
     my_temp.sources = [FESTIM.Source(-4, volume=[1], field="T")]
     my_temp.create_functions(V, my_mats, dx, ds, dt=dt)

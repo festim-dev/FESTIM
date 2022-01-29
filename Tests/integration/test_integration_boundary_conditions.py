@@ -28,7 +28,7 @@ def test_fluxes_chemical_pot():
 
     my_sim.settings.chemical_pot = True
     my_sim.ds = fenics.ds
-    my_sim.T = FESTIM.Temperature("expression", value=1000)
+    my_sim.T = FESTIM.Temperature(value=1000)
     my_sim.T.create_functions(my_sim.V_CG1)
 
     S = S_0*fenics.exp(-E_S/k_B/my_sim.T.T)
@@ -66,7 +66,7 @@ def test_fluxes():
     my_sim.F = 0
     my_sim.initialise_concentrations()
     my_sim.ds = fenics.ds
-    my_sim.T = FESTIM.Temperature("expression", value=1000)
+    my_sim.T = FESTIM.Temperature(value=1000)
     my_sim.T.create_functions(my_sim.V_CG1)
     my_sim.create_H_fluxes()
     F = my_sim.F
