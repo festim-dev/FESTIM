@@ -231,10 +231,8 @@ class Simulation:
 
         # Create functions for properties
         self.materials.create_properties(self.volume_markers, self.T.T)
-        # TODO this should be reversed
-        if self.materials.S is not None:
-            self.settings.chemical_pot = True
 
+        if self.settings.chemical_pot:
             # if the temperature is of type "solve_stationary" or "expression"
             # the solubility needs to be projected
             project_S = False
@@ -244,7 +242,7 @@ class Simulation:
                 if "t" not in sp.printing.ccode(self.T.value):
                     project_S = True
             if project_S:
-                self.materials.S = project(self.materials.S, self.V_DG1)
+                self.materials.S.project(self.V_DG1)
 
         # Define functions
         self.initialise_concentrations()
@@ -711,7 +709,9 @@ class Simulation:
 
             if "soret" in parameters["temperature"]:
                 my_settings.soret = parameters["temperature"]["soret"]
-
+            if "materials" in parameters:
+                if "S_0" in parameters["materials"][0]:
+                    my_settings.chemical_pot = True
         self.settings = my_settings
 
     def create_concentration_objects(self, parameters):
