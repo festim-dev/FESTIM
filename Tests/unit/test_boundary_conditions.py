@@ -322,30 +322,30 @@ def test_sievert_bc_varying_temperature():
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
 
-# def test_create_expression_dc_custom():
-#     """Creates a dc_custom bc and checks create_expression returns
-#     the correct expression
-#     """
-#     # build
-#     def func(T, foo):
-#         return 2*T + foo
+def test_create_expression_dc_custom():
+    """Creates a dc_custom bc and checks create_expression returns
+    the correct expression
+    """
+    # build
+    def func(T, foo):
+        return 2*T + foo
 
-#     T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
-#     expressions = [T]
-#     # run
-#     my_BC = FESTIM.DirichletBC(type="dc_custom", surfaces=[1, 0], function=func, foo=1 + 2*FESTIM.t)
-#     value_BC = my_BC.create_expression(T)
-#     expressions += my_BC.sub_expressions
+    T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
+    expressions = [T]
+    # run
+    my_BC = FESTIM.DirichletBC(type="dc_custom", surfaces=[1, 0], function=func, foo=1 + 2*FESTIM.t)
+    value_BC = my_BC.create_expression(T)
+    expressions += my_BC.sub_expressions
 
-#     # test
-#     expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t
-#     expected = fenics.Expression(sp.printing.ccode(expected), t=0, degree=1)
-#     for t in range(10):
-#         expected.t = t
-#         for expr in expressions:
-#             expr.t = t
-#         for x in range(5):
-#             assert expected(x) == value_BC(x)
+    # test
+    expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t
+    expected = fenics.Expression(sp.printing.ccode(expected), t=0, degree=1)
+    for t in range(10):
+        expected.t = t
+        for expr in expressions:
+            expr.t = t
+        for x in range(5):
+            assert expected(x) == value_BC(x)
 
 
 def test_create_form_flux_custom():
