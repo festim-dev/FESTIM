@@ -19,7 +19,7 @@ def test_fluxes_chemical_pot():
     mesh = fenics.UnitIntervalMesh(10)
     my_sim = FESTIM.Simulation({"traps": []})
     my_sim.boundary_conditions = [
-        FESTIM.FluxBC(type="recomb", Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
+        FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
         FESTIM.FluxBC(type="flux", value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
     ]
     my_sim.mesh = FESTIM.Mesh(mesh=mesh)
@@ -41,12 +41,11 @@ def test_fluxes_chemical_pot():
     sol = my_sim.u
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
-    order = expressions[2]
     Kr = Kr_0 * fenics.exp(-E_Kr/k_B/my_sim.T.T)
     expected_form = 0
     expected_form += -test_sol * (-Kr*(sol*S)**order)*fenics.ds(1)
-    expected_form += -test_sol*expressions[3]*fenics.ds(1)
-    expected_form += -test_sol*expressions[3]*fenics.ds(2)
+    expected_form += -test_sol*expressions[2]*fenics.ds(1)
+    expected_form += -test_sol*expressions[2]*fenics.ds(2)
     assert expected_form.equals(my_sim.F)
 
 
@@ -59,7 +58,7 @@ def test_fluxes():
     mesh = fenics.UnitIntervalMesh(10)
     my_sim = FESTIM.Simulation({"traps": []})
     my_sim.boundary_conditions = [
-        FESTIM.FluxBC(type="recomb", Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
+        FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
         FESTIM.FluxBC(type="flux", value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
     ]
     my_sim.mesh = FESTIM.Mesh(mesh=mesh)
@@ -76,11 +75,10 @@ def test_fluxes():
     Kr_0 = expressions[0]
     E_Kr = expressions[1]
     Kr = Kr_0 * fenics.exp(-E_Kr/k_B/my_sim.T.T)
-    order = expressions[2]
     test_sol = my_sim.v
     sol = my_sim.u
     expected_form = 0
     expected_form += -test_sol * (- Kr* sol**order)*my_sim.ds(1)
-    expected_form += -test_sol*expressions[3]*my_sim.ds(1)
-    expected_form += -test_sol*expressions[3]*my_sim.ds(2)
+    expected_form += -test_sol*expressions[2]*my_sim.ds(1)
+    expected_form += -test_sol*expressions[2]*my_sim.ds(2)
     assert expected_form.equals(F)
