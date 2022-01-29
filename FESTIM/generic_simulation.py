@@ -837,7 +837,18 @@ class Simulation:
             for BC in parameters["boundary_conditions"]:
                 bc_type = BC["type"]
                 if bc_type in FESTIM.helpers.bc_types["dc"]:
-                    my_BC = FESTIM.DirichletBC(**BC)
+                    if bc_type == "solubility":
+                        my_BC = FESTIM.SievertsBC(
+                            **{key: val for key, val in BC.items()
+                               if key != "type"})
+                    elif bc_type == "dc_imp":
+                        my_BC = FESTIM.ImplantationDC(
+                            **{key: val for key, val in BC.items()
+                               if key != "type"})
+                    else:
+                        my_BC = FESTIM.DirichletBC(
+                            **{key: val for key, val in BC.items()
+                               if key != "type"})
                 elif bc_type not in FESTIM.helpers.bc_types["neumann"] or \
                         bc_type not in FESTIM.helpers.bc_types["robin"]:
                     if bc_type == "recomb":
@@ -859,7 +870,10 @@ class Simulation:
                 for BC in BCs:
                     bc_type = BC["type"]
                     if bc_type in FESTIM.helpers.T_bc_types["dc"]:
-                        my_BC = FESTIM.DirichletBC(component="T", **BC)
+                        my_BC = FESTIM.DirichletBC(
+                            component="T",
+                            **{key: val for key, val in BC.items()
+                               if key != "type"})
                     elif bc_type not in FESTIM.helpers.T_bc_types["neumann"] or \
                             bc_type not in FESTIM.helpers.T_bc_types["robin"]:
                         if bc_type == "convective_flux":
