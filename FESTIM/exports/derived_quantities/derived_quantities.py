@@ -124,4 +124,13 @@ class DerivedQuantities:
             return True
 
     def is_compute(self, nb_iterations):
+        """Checks if the derived quantities should be computed or not based on
+        the current number of iterations
+
+        Args:
+            nb_iterations (int): the current number of time steps
+
+        Returns:
+            bool: True if it's time to compute, else False
+        """
         return nb_iterations % self.nb_iterations_between_compute == 0
