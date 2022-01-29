@@ -322,18 +322,18 @@ def test_create_expression_dc_custom():
     the correct expression
     """
     # build
-    def func(T, foo):
-        return 2*T + foo
+    def func(T, prm1, prm2):
+        return 2*T + prm1*prm2
 
     T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
     expressions = [T]
     # run
-    my_BC = FESTIM.CustomDirichlet(surfaces=[1, 0], function=func, foo=1 + 2*FESTIM.t)
+    my_BC = FESTIM.CustomDirichlet(surfaces=[1, 0], function=func, prm1=1 + 2*FESTIM.t, prm2=2)
     my_BC.create_expression(T)
     expressions += my_BC.sub_expressions
 
     # test
-    expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t
+    expected = 2*(2 + FESTIM.x + FESTIM.t) + (1 + 2*FESTIM.t)*2
     expected = fenics.Expression(sp.printing.ccode(expected), t=0, degree=1)
     for t in range(10):
         expected.t = t
