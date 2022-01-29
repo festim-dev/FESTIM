@@ -48,7 +48,7 @@ def test_define_dirichlet_bcs_theta():
     mat2 = FESTIM.Material(2, None, None, S_0=S_02, E_S=E_S2)
     my_mats = FESTIM.Materials([mat1, mat2])
 
-    my_bc = FESTIM.DirichletBC("dc", [1, 2], value=200 + FESTIM.t)
+    my_bc = FESTIM.DirichletBC([1, 2], value=200 + FESTIM.t)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm, chemical_pot=True, materials=my_mats, volume_markers=vm)
     expressions = my_bc.sub_expressions + [my_bc.expression]
     bcs = my_bc.dirichlet_bc
@@ -82,11 +82,6 @@ def test_define_dirichlet_bcs_theta():
             (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(1, 0.5))))
 
 
-def test_define_dirichlet_bcs_fail():
-    with pytest.raises(NameError, match=r'Unknown boundary condition type'):
-        FESTIM.DirichletBC(type="foo", surfaces=0)
-
-
 def test_bc_recomb():
     """Test the function boundary_conditions.define_dirichlet_bcs
     with bc type dc_imp
@@ -107,7 +102,7 @@ def test_bc_recomb():
     my_temp = FESTIM.Temperature(type="expression", value=T_expr)
     my_temp.create_functions(V)
 
-    my_bc = FESTIM.DirichletBC("dc_imp", [1, 2], implanted_flux=phi, implantation_depth=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
+    my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
     expressions = my_bc.sub_expressions + [my_bc.expression]
 
@@ -149,7 +144,7 @@ def test_bc_recomb_instant_recomb():
     my_temp = FESTIM.Temperature(type="expression", value=T_expr)
     my_temp.create_functions(V)
 
-    my_bc = FESTIM.DirichletBC("dc_imp", [1, 2], implanted_flux=phi, implantation_depth=R_p, D_0=D_0, E_D=E_D)
+    my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
     expressions = my_bc.sub_expressions + [my_bc.expression]
 
@@ -209,7 +204,7 @@ def test_bc_recomb_chemical_pot():
 
     # bcs, expressions = define_dirichlet_bcs(my_sim)
     V = fenics.FunctionSpace(mesh, "P", 1)
-    my_bc = FESTIM.DirichletBC(type="dc_imp", surfaces=[1, 2], component=0, implanted_flux=phi, implantation_depth=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
+    my_bc = FESTIM.ImplantationDirichlet(surfaces=[1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm, chemical_pot=True, materials=my_mats, volume_markers=vm)
     bcs = my_bc.dirichlet_bc
     expressions = my_bc.sub_expressions + [my_bc.expression]
@@ -254,7 +249,7 @@ def test_sievert_bc_varying_time():
     pressure_expr = 1e5*(1 + FESTIM.t)
     s_0_expr = 100
     E_S_expr = 0.5
-    my_bc = FESTIM.DirichletBC(type="solubility", surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
+    my_bc = FESTIM.SievertsBC(surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
 
     pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
                                        t=0,
@@ -272,13 +267,12 @@ def test_sievert_bc_varying_time():
     my_bc.create_expression(T)
     # test
 
-    def sieverts(T, prms):
-        S_0, E_S = prms["S_0"], prms["E_S"]
+    def sieverts(T, S_0, E_S, pressure):
         S = S_0*fenics.exp(-E_S/FESTIM.k_B/T)
-        return S*prms["pressure"]**0.5
+        return S*pressure**0.5
     prms = {"S_0": s_0_expr, "E_S": E_S_expr, "pressure": pressure_expr}
 
-    expected = FESTIM.BoundaryConditionExpression(T_expr, prms, eval_function=sieverts)
+    expected = FESTIM.BoundaryConditionExpression(T_expr, eval_function=sieverts, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
     for prm in my_bc.sub_expressions:
@@ -297,7 +291,7 @@ def test_sievert_bc_varying_temperature():
     pressure_expr = 1e5*(1 + FESTIM.t)
     s_0_expr = 100
     E_S_expr = 0.5
-    my_bc = FESTIM.DirichletBC(type="solubility", surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
+    my_bc = FESTIM.SievertsBC(surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr)
 
     pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
                                        t=0,
@@ -313,12 +307,10 @@ def test_sievert_bc_varying_temperature():
     my_bc.create_expression(T)
     # test
 
-    def sieverts(T, prms):
-        S_0, E_S = prms["S_0"], prms["E_S"]
+    def sieverts(T, S_0, E_S, pressure):
         S = S_0*fenics.exp(-E_S/FESTIM.k_B/T)
-        return S*prms["pressure"]**0.5
-    prms = {"S_0": s_0_expr, "E_S": E_S_expr, "pressure": pressure_expr}
-    expected = FESTIM.BoundaryConditionExpression(T, prms, eval_function=sieverts)
+        return S*pressure**0.5
+    expected = FESTIM.BoundaryConditionExpression(T, eval_function=sieverts, S_0=s_0_expr, E_S=E_S_expr, pressure=pressure_expr)
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
     T.assign(1000)
@@ -330,25 +322,25 @@ def test_create_expression_dc_custom():
     the correct expression
     """
     # build
-    def func(T, prms):
-        return 2*T + prms["foo"]
+    def func(T, prm1, prm2):
+        return 2*T + prm1*prm2
 
     T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
     expressions = [T]
     # run
-    my_BC = FESTIM.DirichletBC(type="dc_custom", surfaces=[1, 0], function=func, foo=1 + 2*FESTIM.t)
-    value_BC = my_BC.create_expression(T)
+    my_BC = FESTIM.CustomDirichlet(surfaces=[1, 0], function=func, prm1=1 + 2*FESTIM.t, prm2=2)
+    my_BC.create_expression(T)
     expressions += my_BC.sub_expressions
 
     # test
-    expected = 2*(2 + FESTIM.x + FESTIM.t) + 1 + 2*FESTIM.t
+    expected = 2*(2 + FESTIM.x + FESTIM.t) + (1 + 2*FESTIM.t)*2
     expected = fenics.Expression(sp.printing.ccode(expected), t=0, degree=1)
     for t in range(10):
         expected.t = t
         for expr in expressions:
             expr.t = t
         for x in range(5):
-            assert expected(x) == value_BC(x)
+            assert expected(x) == my_BC.expression(x)
 
 
 def test_create_form_flux_custom():
@@ -357,9 +349,10 @@ def test_create_form_flux_custom():
     the correct form
     """
     # build
-    def func(T, c, prms):
-        return 2*T + c + prms["foo"]
-    expr_foo = 1 + 2*FESTIM.t + FESTIM.x
+    def func(T, c, prm1, prm2):
+        return 2*T + c + prm1*prm2
+    expr_prm1 = 1 + 2*FESTIM.t + FESTIM.x
+    expr_prm2 = 2
     expr_T = 2 + FESTIM.x + FESTIM.t
     expr_c = FESTIM.x*FESTIM.x
 
@@ -368,14 +361,14 @@ def test_create_form_flux_custom():
     expressions = [T, solute]
 
     # run
-    my_BC = FESTIM.CustomFlux(surfaces=[1, 0], function=func, foo=expr_foo)
+    my_BC = FESTIM.CustomFlux(surfaces=[1, 0], function=func, prm1=expr_prm1, prm2=expr_prm2)
     my_BC.create_form(T, solute)
     value_BC = my_BC.form
 
     # test
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.FunctionSpace(mesh, "P", 1)
-    expected_expr = 2*expr_T + expr_c + expr_foo
+    expected_expr = 2*expr_T + expr_c + expr_prm1*expr_prm2
     expected_expr = fenics.Expression(sp.printing.ccode(expected_expr), t=0, degree=1)
     for t in range(10):
 

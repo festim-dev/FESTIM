@@ -17,7 +17,8 @@ class FluxBC(BoundaryCondition):
             value (sp.Expr or float, optional): value of the flux. Defaults to
                 None.
         """
-        super().__init__(surfaces=surfaces, value=value, **kwargs)
+        super().__init__(surfaces=surfaces, **kwargs)
+        self.value = value
 
     def create_form(self, T, solute):
         """Creates the form for the flux

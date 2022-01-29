@@ -52,7 +52,7 @@ def test_formulation_heat_transfer():
 
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, thermal_cond=thermal_cond, rho=5, heat_capacity=4, borders=[0, 1])
     my_mats = FESTIM.Materials([mat1])
-    bc1 = FESTIM.DirichletBC(type="dc", surfaces=[1], value=u, component="T")
+    bc1 = FESTIM.DirichletBC(surfaces=[1], value=u, component="T")
     bc2 = FESTIM.FluxBC(surfaces=[2], value=2, component="T")
 
     my_temp = FESTIM.Temperature("solve_transient", initial_value=0)
