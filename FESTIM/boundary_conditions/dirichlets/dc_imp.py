@@ -31,8 +31,6 @@ class ImplantationDirichlet(DirichletBC):
             sp.printing.ccode(self.R_p),
             t=0, degree=1)
         sub_expressions = [phi, R_p]
-        # D = self.D_0*f.exp(-self.E_D/k_B/T)
-        # value = flux_expr*R_p_expr/D
 
         value_BC = BoundaryConditionExpression(
             T, dc_imp,
