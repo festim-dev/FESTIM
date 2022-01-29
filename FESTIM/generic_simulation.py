@@ -350,7 +350,10 @@ class Simulation:
                     my_BC = FESTIM.DirichletBC(**BC)
                 elif BC["type"] not in FESTIM.helpers.bc_types["neumann"] or \
                         BC["type"] not in FESTIM.helpers.bc_types["robin"]:
-                    my_BC = FESTIM.FluxBC(**BC)
+                    my_BC = FESTIM.FluxBC(
+                        **{key: val for key, val in BC.items()
+                            if key != "type"}
+                    )
                 self.boundary_conditions.append(my_BC)
 
         if "temperature" in parameters:
@@ -361,8 +364,11 @@ class Simulation:
                     if BC["type"] in FESTIM.helpers.T_bc_types["dc"]:
                         my_BC = FESTIM.DirichletBC(component="T", **BC)
                     elif BC["type"] not in FESTIM.helpers.T_bc_types["neumann"] or \
-                         BC["type"] not in FESTIM.helpers.T_bc_types["robin"]:
-                        my_BC = FESTIM.FluxBC(component="T", **BC)
+                            BC["type"] not in FESTIM.helpers.T_bc_types["robin"]:
+                        my_BC = FESTIM.FluxBC(
+                            component="T",
+                            **{key: val for key, val in BC.items()
+                                if key != "type"})
                     self.boundary_conditions.append(my_BC)
 
     def create_temperature(self, parameters):
