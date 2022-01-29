@@ -23,7 +23,6 @@ class DirichletBC(FESTIM.BoundaryCondition):
         # TODO : why degree 4?
 
         self.expression = value_BC
-        return value_BC
 
     def normalise_by_solubility(self, materials, volume_markers, T):
         # Store the non modified BC to be updated
