@@ -22,12 +22,23 @@ from .boundary_conditions.fluxes.flux_custom import CustomFlux
 
 from .solving import solve_it, solve_once
 
-from .export import Export, Exports
+from .exports.exports import Exports
+from .exports.export import Export
 from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
-from .exports.derived_quantities_export import DerivedQuantities, \
-    SurfaceFlux, AverageVolume, MinimumVolume, MaximumVolume, \
-    TotalVolume, TotalSurface, ThermalFlux, HydrogenFlux
+
+from .exports.derived_quantities.derived_quantity import DerivedQuantity
+from .exports.derived_quantities.surface_flux import SurfaceFlux
+from .exports.derived_quantities.hydrogen_flux import HydrogenFlux
+from .exports.derived_quantities.thermal_flux import ThermalFlux
+from .exports.derived_quantities.average_volume import AverageVolume
+from .exports.derived_quantities.maximum_volume import MaximumVolume
+from .exports.derived_quantities.minimum_volume import MinimumVolume
+from .exports.derived_quantities.total_surface import TotalSurface
+from .exports.derived_quantities.total_volume import TotalVolume
+
+from .exports.derived_quantities.derived_quantities import DerivedQuantities
+
 from .exports.txt_export import TXTExport, TXTExports
 
 
