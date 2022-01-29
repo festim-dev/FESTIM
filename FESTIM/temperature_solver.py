@@ -130,3 +130,18 @@ class HeatTransferProblem(FESTIM.Temperature):
                     self.dirichlet_bcs.append(bci)
                 self.sub_expressions += bc.sub_expressions
                 self.sub_expressions.append(bc.expression)
+
+    def update(self, t):
+        if self.transient:
+            FESTIM.update_expressions(self.sub_expressions, t)
+            # Solve heat transfers
+            dT = TrialFunction(self.T.function_space())
+            JT = derivative(self.F, self.T, dT)  # Define the Jacobian
+            problem = NonlinearVariationalProblem(
+                self.F, self.T, self.dirichlet_bcs, JT)
+            solver = NonlinearVariationalSolver(problem)
+            newton_solver_prm = solver.parameters["newton_solver"]
+            newton_solver_prm["absolute_tolerance"] = 1e-3
+            newton_solver_prm["relative_tolerance"] = 1e-10
+            solver.solve()
+            self.T_n.assign(self.T)

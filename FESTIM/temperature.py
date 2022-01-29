@@ -49,3 +49,8 @@ class Temperature:
             sp.printing.ccode(self.value), t=0, degree=2)
         self.T.assign(interpolate(self.expression, V))
         self.T_n.assign(self.T)
+
+    def update(self, t):
+        self.T_n.assign(self.T)
+        self.expression.t = t
+        self.T.assign(interpolate(self.expression, self.T.function_space()))
