@@ -415,7 +415,7 @@ class Simulation:
 
         for bc in self.boundary_conditions:
             if bc.component != "T":
-                if not isinstance(bc, FESTIM.DirichletBC):
+                if isinstance(bc, FESTIM.FluxBC):
                     bc.create_form(self.T.T, solute)
                     # TODO : one day we will get rid of this huge expressions list
                     expressions += bc.sub_expressions
