@@ -3,16 +3,6 @@ import fenics as f
 import sympy as sp
 
 
-def sieverts_law(T, S_0, E_S, pressure):
-    S = S_0*f.exp(-E_S/FESTIM.k_B/T)
-    return S*pressure**0.5
-
-
-type_to_function = {
-    "solubility": sieverts_law,
-}
-
-
 class DirichletBC(FESTIM.BoundaryCondition):
     def __init__(self, surfaces, type="dc", value=None, function=None, component=0, **kwargs) -> None:
         super().__init__(surfaces, value=value, function=function, component=component, **kwargs)
@@ -48,8 +38,6 @@ class DirichletBC(FESTIM.BoundaryCondition):
         else:
             if self.type == "dc_custom":
                 function = self.function
-            elif self.type == "solubility":
-                function = type_to_function[self.type]
 
             ignored_keys = ["type", "surfaces", "function", "component"]
 
