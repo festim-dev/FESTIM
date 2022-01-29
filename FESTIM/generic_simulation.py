@@ -255,6 +255,7 @@ class Simulation:
         self.define_variational_problem_extrinsic_traps()
 
         # add measure and properties to derived_quantities
+        # TODO this could be a method .initialise() of Exports()
         for export in self.exports.exports:
             if isinstance(export, FESTIM.DerivedQuantities):
                 export.data = [export.make_header()]
