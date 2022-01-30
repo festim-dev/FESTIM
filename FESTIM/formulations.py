@@ -17,7 +17,7 @@ def formulation(simulation):
     # diffusion + transient terms
 
     simulation.mobile.create_form(
-        simulation.materials, simulation.dx, simulation.T, simulation.dt,
+        simulation.materials, simulation.dx, simulation.ds, simulation.T, simulation.dt,
         traps=simulation.traps,
         chemical_pot=simulation.settings.chemical_pot, soret=simulation.settings.soret)
     F += simulation.mobile.F

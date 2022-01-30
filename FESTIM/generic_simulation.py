@@ -186,13 +186,17 @@ class Simulation:
                 field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
-        """Assigns the T boundary conditions to self.T
+        """Assigns boundary_conditions to mobile and T
         """
         if self.T is not None:
             self.T.boundary_conditions = []
             for bc in self.boundary_conditions:
                 if bc.component == "T":
                     self.T.boundary_conditions.append(bc)
+        self.mobile.boundary_conditions = []
+        for bc in self.boundary_conditions:
+            if bc.component == 0:
+                self.mobile.boundary_conditions.append(bc)
 
     def define_markers(self):
         """Creates the fenics.Measure objects for self.dx and self.ds
@@ -363,7 +367,6 @@ class Simulation:
         # Boundary conditions
         print('Defining boundary conditions')
         self.create_dirichlet_bcs()
-        self.create_H_fluxes()
 
     def create_dirichlet_bcs(self):
         """Creates fenics.DirichletBC objects for the hydrogen transport
@@ -380,34 +383,6 @@ class Simulation:
                 self.bcs += bc.dirichlet_bc
                 self.expressions += bc.sub_expressions
                 self.expressions.append(bc.expression)
-
-    def create_H_fluxes(self):
-        """Modifies the formulation and adds fluxes based
-        on parameters in self.boundary_conditions
-        """
-
-        expressions = []
-        # TODO refactore this using self.mobile
-        solutions = split(self.u)
-        test_solute = split(self.v)[0]
-        F = 0
-
-        if self.settings.chemical_pot:
-            solute = solutions[0]*self.materials.S
-        else:
-            solute = solutions[0]
-
-        for bc in self.boundary_conditions:
-            if bc.component != "T":
-                if isinstance(bc, FESTIM.FluxBC):
-                    bc.create_form(self.T.T, solute)
-                    # TODO : one day we will get rid of this huge expressions list
-                    expressions += bc.sub_expressions
-
-                    for surf in bc.surfaces:
-                        F += -test_solute*bc.form*self.ds(surf)
-        self.F += F
-        self.expressions += expressions
 
     def define_variational_problem_extrinsic_traps(self):
         """Creates the variational formulations for the extrinsic traps
