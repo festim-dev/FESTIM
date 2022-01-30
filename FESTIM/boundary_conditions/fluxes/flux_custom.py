@@ -23,6 +23,7 @@ class CustomFlux(FluxBC):
                 def fun(T, solute, param1):
                     return 2*T + solute - param1
         """
+        # TODO: the component shouldn't be "T" here
         super().__init__(surfaces=surfaces, component="T")
         self.function = function
         self.prms = prms
