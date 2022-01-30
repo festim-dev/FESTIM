@@ -180,7 +180,12 @@ class HTransportProblem:
             nb_it, converged = self.solve_once()
             if dt.adaptive_stepsize is not None:
                 dt.adapt(t, nb_it, converged)
-        return
+
+        # Update previous solutions
+        self.update_previous_solutions()
+
+        # Solve extrinsic traps formulation
+        self.traps.solve_extrinsic_traps()
 
     def solve_once(self):
         """Solves non linear problem

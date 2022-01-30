@@ -156,19 +156,18 @@ class Simulation:
             "mobile": self.mobile,
             "T": self.T
         }
-        if None not in [self.mobile, self.T]:
-            for i, trap in enumerate(self.traps.traps, 1):
-                field_to_object[i] = trap
-                field_to_object[str(i)] = trap
+        for i, trap in enumerate(self.traps.traps, 1):
+            field_to_object[i] = trap
+            field_to_object[str(i)] = trap
 
-            for source in self.sources:
-                field_to_object[source.field].sources.append(source)
+        for source in self.sources:
+            field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
         """Assigns boundary_conditions to mobile and T
         """
         self.T.boundary_conditions = []
-        self.mobile.boundary_conditions = []
+        self.h_transport_problem.boundary_conditions = []
 
         for bc in self.boundary_conditions:
             if bc.component == "T":
@@ -298,17 +297,11 @@ class Simulation:
 
         print(msg, end="\r")
 
-        # Solve main problem
+        # update H problem
         self.h_transport_problem.update(self.t, self.dt)
-
-        # Solve extrinsic traps formulation
-        self.traps.solve_extrinsic_traps()
 
         # Post processing
         self.run_post_processing()
-
-        # Update previous solutions
-        self.h_transport_problem.update_previous_solutions()
 
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:
