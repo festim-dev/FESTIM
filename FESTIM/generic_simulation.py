@@ -384,11 +384,6 @@ class Simulation:
         else:
             self.run_steady()
 
-        # export derived quantities to CSV
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-                export.write()
-
         # End
         print('\007')
         return self.make_output()
