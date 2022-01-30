@@ -9,17 +9,9 @@ class Temperature:
     Attributes:
         T (fenics.Function): the function attributed with temperature
         T_n (fenics.Function): the previous function
-        v_T (fenics.TestFunction): the test function
         value (sp.Add, int, float): the expression of temperature
         expression (fenics.Expression): the expression of temperature as a
             fenics object
-        initial_value (sp.Add, int, float): the initial value
-        sub_expressions (list): contains time dependent fenics.Expression to
-            be updated
-        F (fenics.Form): the variational form of the heat transfer problem
-        sources (list): contains FESTIM.Source objects for volumetric heat
-            sources
-        boundary_conditions (list): contains FESTIM.BoundaryConditions
     """
     def __init__(self, value=None) -> None:
         """Inits Temperature
