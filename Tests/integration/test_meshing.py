@@ -25,8 +25,8 @@ def test_define_markers(tmpdir):
     # run
     my_sim = FESTIM.Simulation()
     my_sim.mesh = FESTIM.Mesh(mesh, vm, sm)
-    my_sim.define_markers()
-    vm_computed, sm_computed = my_sim.volume_markers, my_sim.surface_markers
+    my_sim.mesh.define_measures()
+    vm_computed, sm_computed = my_sim.mesh.volume_markers, my_sim.mesh.surface_markers
 
     # test
     for cell in fenics.cells(mesh):
@@ -34,8 +34,8 @@ def test_define_markers(tmpdir):
     for facet in fenics.facets(mesh):
         assert sm[facet] == sm_computed[facet]
 
-    assert my_sim.dx is not None
-    assert my_sim.ds is not None
+    assert my_sim.mesh.dx is not None
+    assert my_sim.mesh.ds is not None
 
 
 def test_integration_mesh_from_vertices_subdomains():
@@ -54,10 +54,9 @@ def test_integration_mesh_from_vertices_subdomains():
         ]
     )
     my_model.mesh = FESTIM.MeshFromVertices(points)
+    my_model.mesh.define_measures(my_model.materials)
     produced_mesh = my_model.mesh.mesh
-
-    my_model.define_markers()
-    vm, sm = my_model.volume_markers, my_model.surface_markers
+    vm, sm = my_model.mesh.volume_markers, my_model.mesh.surface_markers
 
     # Testing
     for cell in fenics.cells(produced_mesh):
