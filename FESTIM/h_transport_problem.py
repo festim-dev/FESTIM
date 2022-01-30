@@ -226,7 +226,7 @@ class HTransportProblem:
             solute = res[0]
 
         self.mobile.post_processing_solution = solute
-
+        print(self.traps.traps)
         for i, trap in enumerate(self.traps.traps, 1):
             trap.post_processing_solution = res[i]
 

@@ -27,8 +27,12 @@ class TestPostProcessing:
 
         my_sim.T = FESTIM.Temperature(value=20)
         my_sim.T.create_functions(my_sim.V_CG1)
-
-        my_sim.initialise_concentrations()
+        my_sim.h_transport_problem = FESTIM.HTransportProblem(
+            my_sim.mobile, my_sim.traps, my_sim.T, my_sim.settings,
+            my_sim.initial_conditions
+        )
+        my_sim.h_transport_problem.define_function_space(my_sim.mesh)
+        my_sim.h_transport_problem.initialise_concentrations(my_sim.materials)
 
         my_sim.materials.create_properties(
                 my_sim.mesh.volume_markers, my_sim.T.T)
@@ -67,8 +71,12 @@ class TestPostProcessing:
 
         my_sim.mesh.define_measures(my_sim.materials)
 
-        f.assign(my_sim.u.sub(0), f.interpolate(f.Constant(10), my_sim.V.sub(0).collapse()))
-        f.assign(my_sim.u.sub(1), f.interpolate(f.Constant(1), my_sim.V.sub(1).collapse()))
+        f.assign(
+            my_sim.h_transport_problem.u.sub(0),
+            f.interpolate(f.Constant(10), my_sim.h_transport_problem.V.sub(0).collapse()))
+        f.assign(
+            my_sim.h_transport_problem.u.sub(1),
+            f.interpolate(f.Constant(1), my_sim.h_transport_problem.V.sub(1).collapse()))
 
         derived_quantities = FESTIM.DerivedQuantities()
         derived_quantities.derived_quantities = [
@@ -114,7 +122,9 @@ class TestPostProcessing:
                 my_sim.mesh.volume_markers, my_sim.T.T)
 
         u_expr = f.Expression("2*x[0]", degree=1)
-        f.assign(my_sim.u.sub(0), f.interpolate(u_expr, my_sim.V.sub(0).collapse()))
+        f.assign(
+            my_sim.h_transport_problem.u.sub(0),
+            f.interpolate(u_expr, my_sim.h_transport_problem.V.sub(0).collapse()))
 
         derived_quantities = FESTIM.DerivedQuantities()
         derived_quantities.derived_quantities = [

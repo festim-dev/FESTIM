@@ -128,10 +128,7 @@ class Simulation:
 
         # internal attributes
         self.mobile = FESTIM.Mobile()
-        self.h_transport_problem = HTransportProblem(
-            self.mobile, self.traps, self.T, self.settings,
-            self.initial_conditions)
-
+        self.h_transport_problem = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
@@ -188,7 +185,9 @@ class Simulation:
         spaces, the functions, the variational forms...
         """
         set_log_level(self.log_level)
-
+        self.h_transport_problem = HTransportProblem(
+            self.mobile, self.traps, self.T, self.settings,
+            self.initial_conditions)
         self.attribute_source_terms()
         self.attribute_boundary_conditions()
 
