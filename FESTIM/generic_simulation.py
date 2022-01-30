@@ -374,52 +374,15 @@ class Simulation:
     def run(self):
         """Runs the model.
 
-        Raises:
-            ValueError: if steady state model didn't converge
-
         Returns:
             dict: output containing solutions, mesh, derived quantities
         """
         self.timer = Timer()  # start timer
 
         if self.settings.transient:
-            # add final_time to Exports
-            self.exports.final_time = self.settings.final_time
-
-            # compute Jacobian before iterating if required
-            if not self.settings.update_jacobian:
-                du = TrialFunction(self.u.function_space())
-                self.J = derivative(self.F, self.u, du)
-
-            #  Time-stepping
-            print('Time stepping...')
-            while self.t < self.settings.final_time:
-                self.iterate()
-            # print final message
-            elapsed_time = round(self.timer.elapsed()[0], 1)
-            msg = "Solved problem in {:.2f} s".format(elapsed_time)
-            print(msg)
+            self.run_transient()
         else:
-            # Solve steady state
-            print('Solving steady state problem...')
-
-            nb_iterations, converged = FESTIM.solve_once(
-                self.F, self.u,
-                self.bcs, self.settings, J=self.J)
-
-            # Post processing
-            self.run_post_processing()
-            elapsed_time = round(self.timer.elapsed()[0], 1)
-
-            # print final message
-            if converged:
-                msg = "Solved problem in {:.2f} s".format(elapsed_time)
-                print(msg)
-            else:
-                msg = "The solver diverged in "
-                msg += "{:.0f} iteration(s) ({:.2f} s)".format(
-                    nb_iterations, elapsed_time)
-                raise ValueError(msg)
+            self.run_steady()
 
         # export derived quantities to CSV
         for export in self.exports.exports:
@@ -429,6 +392,46 @@ class Simulation:
         # End
         print('\007')
         return self.make_output()
+
+    def run_transient(self):
+        # add final_time to Exports
+        self.exports.final_time = self.settings.final_time
+
+        # compute Jacobian before iterating if required
+        if not self.settings.update_jacobian:
+            du = TrialFunction(self.u.function_space())
+            self.J = derivative(self.F, self.u, du)
+
+        #  Time-stepping
+        print('Time stepping...')
+        while self.t < self.settings.final_time:
+            self.iterate()
+        # print final message
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+        msg = "Solved problem in {:.2f} s".format(elapsed_time)
+        print(msg)
+
+    def run_steady(self):
+        # Solve steady state
+        print('Solving steady state problem...')
+
+        nb_iterations, converged = FESTIM.solve_once(
+            self.F, self.u,
+            self.bcs, self.settings, J=self.J)
+
+        # Post processing
+        self.run_post_processing()
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+
+        # print final message
+        if converged:
+            msg = "Solved problem in {:.2f} s".format(elapsed_time)
+            print(msg)
+        else:
+            msg = "The solver diverged in "
+            msg += "{:.0f} iteration(s) ({:.2f} s)".format(
+                nb_iterations, elapsed_time)
+            raise ValueError(msg)
 
     def iterate(self):
         """Advance the model by one iteration
