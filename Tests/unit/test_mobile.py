@@ -94,15 +94,14 @@ def test_mobile_create_form():
     mat = FESTIM.Material(1, D_0=1, E_D=1)
     my_mats = FESTIM.Materials([mat])
     dx = f.dx()
+    ds = f.ds()
     T = FESTIM.Temperature(value=100)
     T.create_functions(V)
 
     # run
-    my_mobile.create_form(my_mats, dx, T)
+    my_mobile.create_form(my_mats, dx, ds, T)
 
     # test
-    c_0 = my_mobile.solution
-    v = my_mobile.test_function
     Index._globalcount = 8
     expected_form = my_mobile.F_diffusion + my_mobile.F_source
     assert my_mobile.F.equals(expected_form)
@@ -222,3 +221,89 @@ class TestInitialise:
         # test
         for x in [0, 0.5, 0.3, 0.6]:
             assert my_mobile.previous_solution(x) == expected_sol(x)
+
+
+def test_fluxes_chemical_pot():
+    '''
+    This test that the function boundary_conditions.create_H_fluxes()
+    returns the correct formulation in the case of conservation
+    of chemical potential
+    '''
+
+    Kr_0 = 2
+    E_Kr = 3
+    S_0 = 2
+    E_S = 3
+    order = 2
+    k_B = FESTIM.k_B
+
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "P", 1)
+    ds = f.ds()
+
+    my_mobile = FESTIM.Mobile()
+    my_mobile.F = 0
+    my_mobile.solution = f.Function(V)
+    my_mobile.test_function = f.TestFunction(V)
+    my_mobile.boundary_conditions = [
+        FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
+        FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
+    ]
+    T = FESTIM.Temperature(value=1000)
+    T.create_functions(V)
+
+    S = S_0*f.exp(-E_S/k_B/T.T)
+    my_mats = FESTIM.Materials()
+    my_mats.S = S
+
+    my_mobile.create_fluxes_form(my_mats, T, ds, chemical_pot=True)
+
+    test_sol = my_mobile.test_function
+    sol = my_mobile.solution
+    Kr_0 = my_mobile.sub_expressions[0]
+    E_Kr = my_mobile.sub_expressions[1]
+    Kr = Kr_0 * f.exp(-E_Kr/k_B/T.T)
+    expected_form = 0
+    expected_form += -test_sol * (-Kr*(sol*S)**order)*f.ds(1)
+    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(1)
+    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(2)
+    assert expected_form.equals(my_mobile.F)
+    assert expected_form.equals(my_mobile.F_fluxes)
+
+
+def test_fluxes():
+    Kr_0 = 2
+    E_Kr = 3
+    order = 2
+    k_B = FESTIM.k_B
+
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "P", 1)
+    ds = f.ds()
+
+    my_mobile = FESTIM.Mobile()
+    my_mobile.F = 0
+    my_mobile.solution = f.Function(V)
+    my_mobile.test_function = f.TestFunction(V)
+    my_mobile.boundary_conditions = [
+        FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
+        FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
+    ]
+    T = FESTIM.Temperature(value=1000)
+    T.create_functions(V)
+
+    my_mats = FESTIM.Materials()
+
+    my_mobile.create_fluxes_form(my_mats, T, ds, chemical_pot=False)
+
+    test_sol = my_mobile.test_function
+    sol = my_mobile.solution
+    Kr_0 = my_mobile.sub_expressions[0]
+    E_Kr = my_mobile.sub_expressions[1]
+    Kr = Kr_0 * f.exp(-E_Kr/k_B/T.T)
+    expected_form = 0
+    expected_form += -test_sol * (-Kr*(sol)**order)*f.ds(1)
+    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(1)
+    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(2)
+    assert expected_form.equals(my_mobile.F)
+    assert expected_form.equals(my_mobile.F_fluxes)
