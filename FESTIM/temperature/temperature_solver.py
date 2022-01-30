@@ -36,7 +36,7 @@ class HeatTransferProblem(FESTIM.Temperature):
         self.sub_expressions = []
 
     # TODO rename initialise?
-    def create_functions(self, V, materials, dx, ds, dt=None):
+    def create_functions(self, materials, mesh, dt=None):
         """Creates functions self.T, self.T_n and test function self.v_T.
         Solves the steady-state heat transfer problem if self.transient is
         False.
@@ -50,6 +50,7 @@ class HeatTransferProblem(FESTIM.Temperature):
                 self.transient is True. Defaults to None.
         """
         # Define variational problem for heat transfers
+        V = f.FunctionSpace(mesh.mesh, "CG", 1)
         self.T = f.Function(V, name="T")
         self.T_n = f.Function(V, name="T_n")
         self.v_T = f.TestFunction(V)
@@ -59,8 +60,8 @@ class HeatTransferProblem(FESTIM.Temperature):
             self.initial_value = f.Expression(ccode_T_ini, degree=2, t=0)
             self.T_n.assign(f.interpolate(self.initial_value, V))
 
-        self.define_variational_problem(materials, dx, ds, dt)
-        self.create_dirichlet_bcs(ds.subdomain_data())
+        self.define_variational_problem(materials, mesh.dx, mesh.ds, dt)
+        self.create_dirichlet_bcs(mesh.surface_markers)
 
         if not self.transient:
             print("Solving stationary heat equation")

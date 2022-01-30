@@ -28,12 +28,10 @@ class Temperature:
         self.value = value
         self.expression = None
 
-    def create_functions(self, V):
+    def create_functions(self, mesh):
         """Creates functions self.T, self.T_n
-
-        Args:
-            V (fenics.FunctionSpace): the function space of Temperature
         """
+        V = f.FunctionSpace(mesh.mesh, "CG", 1)
         self.T = f.Function(V, name="T")
         self.T_n = f.Function(V, name="T_n")
         self.expression = f.Expression(

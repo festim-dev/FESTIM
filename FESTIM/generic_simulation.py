@@ -38,8 +38,6 @@ class Simulation:
         mobile (FESTIM.Mobile): the mobile concentration (c_m or theta)
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
-        V_CG1 (fenics.FunctionSpace): the function space CG1
-        V_DG1 (fenics.FunctionSpace): the function space DG1
     """
     def __init__(
         self,
@@ -132,8 +130,6 @@ class Simulation:
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
-        self.V_CG1, self.V_DG1 = None, None
-
         if parameters is not None:
             msg = "The use of parameters will soon be deprecated \
                  please use the object-oriented approach instead"
@@ -200,9 +196,9 @@ class Simulation:
 
         # Define temperature
         if isinstance(self.T, FESTIM.HeatTransferProblem):
-            self.T.create_functions(self.V_CG1, self.materials, self.mesh.dx, self.mesh.ds, self.dt)
+            self.T.create_functions(self.materials, self.mesh, self.dt)
         elif isinstance(self.T, FESTIM.Temperature):
-            self.T.create_functions(self.V_CG1)
+            self.T.create_functions(self.mesh)
 
         # Create functions for properties
         self.materials.create_properties(self.mesh.volume_markers, self.T.T)
@@ -232,7 +228,6 @@ class Simulation:
         concentration with conservation of chemical potential)
         """
         # function space for T and ext trap dens
-        self.V_CG1 = FunctionSpace(self.mesh.mesh, 'CG', 1)
         self.V_DG1 = FunctionSpace(self.mesh.mesh, 'DG', 1)
 
         self.exports.V_DG1 = self.V_DG1
