@@ -39,8 +39,6 @@ class Simulation:
         J (ufl.Form): the jacobian of the variational problem
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
-        dx (fenics.Measure): the measure for dx
-        ds (fenics.Measure): the measure for ds
         V (fenics.FunctionSpace): the vector-function space for concentrations
         V_CG1 (fenics.FunctionSpace): the function space CG1
         V_DG1 (fenics.FunctionSpace): the function space DG1
@@ -143,7 +141,6 @@ class Simulation:
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
-        self.dx, self.ds = None, None
         self.V, self.V_CG1, self.V_DG1 = None, None, None
         self.u = None
         self.v = None
@@ -198,24 +195,6 @@ class Simulation:
             if bc.component == 0:
                 self.mobile.boundary_conditions.append(bc)
 
-    def define_markers(self):
-        """Creates the fenics.Measure objects for self.dx and self.ds
-        """
-        # Define and mark subdomains
-        if isinstance(self.mesh, FESTIM.Mesh):
-            if isinstance(self.mesh, FESTIM.Mesh1D):
-                if len(self.materials.materials) > 1:
-                    self.materials.check_borders(self.mesh.size)
-                self.mesh.define_markers(self.materials)
-
-            self.volume_markers, self.surface_markers = \
-                self.mesh.volume_markers, self.mesh.surface_markers
-            # TODO maybe these should be attributes of self.mesh?
-            self.ds = Measure(
-                'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
-            self.dx = Measure(
-                'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
-
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
         spaces, the functions, the variational forms...
@@ -225,19 +204,21 @@ class Simulation:
         self.attribute_source_terms()
         self.attribute_boundary_conditions()
 
-        self.define_markers()
-
+        if isinstance(self.mesh, FESTIM.Mesh1D):
+            self.mesh.define_measures(self.materials)
+        else:
+            self.mesh.define_measures()
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
 
         # Define temperature
         if isinstance(self.T, FESTIM.HeatTransferProblem):
-            self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
+            self.T.create_functions(self.V_CG1, self.materials, self.mesh.dx, self.mesh.ds, self.dt)
         elif isinstance(self.T, FESTIM.Temperature):
             self.T.create_functions(self.V_CG1)
 
         # Create functions for properties
-        self.materials.create_properties(self.volume_markers, self.T.T)
+        self.materials.create_properties(self.mesh.volume_markers, self.T.T)
 
         if self.settings.chemical_pot:
             # if the temperature is of type "solve_stationary" or "expression"
@@ -362,7 +343,7 @@ class Simulation:
         # diffusion + transient terms
 
         self.mobile.create_form(
-            self.materials, self.dx, self.ds, self.T, self.dt,
+            self.materials, self.mesh.dx, self.mesh.ds, self.T, self.dt,
             traps=self.traps,
             chemical_pot=self.settings.chemical_pot, soret=self.settings.soret)
         F += self.mobile.F
@@ -371,7 +352,7 @@ class Simulation:
         # Add traps
         self.traps.create_forms(
             self.mobile, self.materials,
-            self.T, self.dx, self.dt,
+            self.T, self.mesh.dx, self.dt,
             self.settings.chemical_pot)
         F += self.traps.F
         expressions += self.traps.sub_expressions
@@ -390,10 +371,10 @@ class Simulation:
         for bc in self.boundary_conditions:
             if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
                 bc.create_dirichletbc(
-                    self.V, self.T.T, self.surface_markers,
+                    self.V, self.T.T, self.mesh.surface_markers,
                     chemical_pot=self.settings.chemical_pot,
                     materials=self.materials,
-                    volume_markers=self.volume_markers)
+                    volume_markers=self.mesh.volume_markers)
                 self.bcs += bc.dirichlet_bc
                 self.expressions += bc.sub_expressions
                 self.expressions.append(bc.expression)
@@ -408,7 +389,7 @@ class Simulation:
             expressions_extrinsic = []
             for trap in self.traps.traps:
                 if isinstance(trap, FESTIM.ExtrinsicTrap):
-                    trap.create_form_density(self.dx, self.dt)
+                    trap.create_form_density(self.mesh.dx, self.dt)
                     self.extrinsic_formulations.append(trap.form_density)
             self.expressions.extend(expressions_extrinsic)
 

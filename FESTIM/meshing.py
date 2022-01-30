@@ -1,5 +1,6 @@
 import fenics as f
 import numpy as np
+import FESTIM
 
 
 class Mesh:
@@ -10,6 +11,8 @@ class Mesh:
         mesh (fenics.Mesh): the mesh
         volume_markers (fenics.MeshFunction): markers of the mesh cells
         surface_markers (fenics.MeshFunction): markers of the mesh facets
+        dx (fenics.Measure):
+        ds (fenics.Measure):
     """
     def __init__(self, mesh=None, volume_markers=None, surface_markers=None) -> None:
         """Inits Mesh
@@ -22,6 +25,17 @@ class Mesh:
         self.mesh = mesh
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers
+        self.dx = None
+        self.ds = None
+
+    def define_measures(self):
+        """Creates the fenics.Measure objects for self.dx and self.ds
+        """
+
+        self.ds = f.Measure(
+            'ds', domain=self.mesh, subdomain_data=self.surface_markers)
+        self.dx = f.Measure(
+            'dx', domain=self.mesh, subdomain_data=self.volume_markers)
 
 
 class Mesh1D(Mesh):
@@ -68,6 +82,14 @@ class Mesh1D(Mesh):
                 surface_markers[facet] = 2
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers
+
+    def define_measures(self, materials):
+        """Creates the fenics.Measure objects for self.dx and self.ds
+        """
+        if len(materials.materials) > 1:
+            materials.check_borders(self.size)
+        self.define_markers(materials)
+        super().define_measures()
 
 
 class MeshFromVertices(Mesh1D):
