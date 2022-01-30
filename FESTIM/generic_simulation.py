@@ -191,8 +191,9 @@ class Simulation:
             self.mesh.define_measures(self.materials)
         else:
             self.mesh.define_measures()
-        # Define function space for system of concentrations and properties
-        self.define_function_spaces()
+
+        self.V_DG1 = FunctionSpace(self.mesh.mesh, 'DG', 1)
+        self.exports.V_DG1 = self.V_DG1
 
         # Define temperature
         if isinstance(self.T, FESTIM.HeatTransferProblem):
@@ -220,17 +221,6 @@ class Simulation:
 
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
-
-    def define_function_spaces(self):
-        """Creates the suitable function spaces depending on the number of
-        traps. Also creates additional function spaces like V_CG1 (for
-        temperature) and V_DG1 (for projecting properties, and mobile
-        concentration with conservation of chemical potential)
-        """
-        # function space for T and ext trap dens
-        self.V_DG1 = FunctionSpace(self.mesh.mesh, 'DG', 1)
-
-        self.exports.V_DG1 = self.V_DG1
 
     def run(self):
         """Runs the model.

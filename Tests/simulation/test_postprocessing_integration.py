@@ -23,10 +23,10 @@ class TestPostProcessing:
 
         my_sim.mesh.define_measures(my_sim.materials)
 
-        my_sim.define_function_spaces()
+        my_sim.V_DG1 = f.FunctionSpace(my_sim.mesh.mesh, "DG", 1)
 
         my_sim.T = FESTIM.Temperature(value=20)
-        my_sim.T.create_functions(my_sim.V_CG1)
+        my_sim.T.create_functions(my_sim.mesh)
         my_sim.h_transport_problem = FESTIM.HTransportProblem(
             my_sim.mobile, my_sim.traps, my_sim.T, my_sim.settings,
             my_sim.initial_conditions
@@ -107,7 +107,7 @@ class TestPostProcessing:
     def test_fluxes(self, my_sim):
 
         my_sim.T = FESTIM.Temperature(100*FESTIM.x + 200)
-        my_sim.T.create_functions(my_sim.V_CG1)
+        my_sim.T.create_functions(my_sim.mesh)
 
         my_sim.materials = FESTIM.Materials(
             [
