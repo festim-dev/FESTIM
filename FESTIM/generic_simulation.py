@@ -361,8 +361,27 @@ class Simulation:
         Dirichlet boundary conditions)
         """
         print('Defining variational problem')
-        self.F, expressions_F = FESTIM.formulation(self)
-        self.expressions += expressions_F
+        expressions = []
+        F = 0
+
+        # diffusion + transient terms
+
+        self.mobile.create_form(
+            self.materials, self.dx, self.ds, self.T, self.dt,
+            traps=self.traps,
+            chemical_pot=self.settings.chemical_pot, soret=self.settings.soret)
+        F += self.mobile.F
+        expressions += self.mobile.sub_expressions
+
+        # Add traps
+        self.traps.create_forms(
+            self.mobile, self.materials,
+            self.T, self.dx, self.dt,
+            self.settings.chemical_pot)
+        F += self.traps.F
+        expressions += self.traps.sub_expressions
+        self.F = F
+        self.expressions = expressions
 
         # Boundary conditions
         print('Defining boundary conditions')
