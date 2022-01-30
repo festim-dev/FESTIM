@@ -203,19 +203,9 @@ class Simulation:
         # Create functions for properties
         self.materials.create_properties(self.mesh.volume_markers, self.T.T)
 
-        if self.settings.chemical_pot:
-            # if the temperature is of type "solve_stationary" or "expression"
-            # the solubility needs to be projected
-            # TODO this should be a method of Temperature
-            project_S = False
-            if isinstance(self.T, FESTIM.HeatTransferProblem):
-                if not self.T.transient:
-                    project_S = True
-            elif isinstance(self.T, FESTIM.Temperature):
-                if "t" not in sp.printing.ccode(self.T.value):
-                    project_S = True
-            if project_S:
-                self.materials.S = project(self.materials.S, self.V_DG1)
+        # if the temperature is not time-dependent, solubility can be projected
+        if self.settings.chemical_pot and self.T.is_steady_state():
+            self.materials.S = project(self.materials.S, self.V_DG1)
 
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 

@@ -48,3 +48,6 @@ class Temperature:
         self.T_n.assign(self.T)
         self.expression.t = t
         self.T.assign(f.interpolate(self.expression, self.T.function_space()))
+
+    def is_steady_state(self):
+        return "t" not in sp.printing.ccode(self.value)

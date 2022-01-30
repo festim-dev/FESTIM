@@ -169,3 +169,6 @@ class HeatTransferProblem(FESTIM.Temperature):
             newton_solver_prm["relative_tolerance"] = 1e-10
             solver.solve()
             self.T_n.assign(self.T)
+
+    def is_steady_state(self):
+        return not self.transient
