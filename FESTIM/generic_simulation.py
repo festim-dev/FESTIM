@@ -39,8 +39,6 @@ class Simulation:
         J (ufl.Form): the jacobian of the variational problem
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
-        dx (fenics.Measure): the measure for dx
-        ds (fenics.Measure): the measure for ds
         V (fenics.FunctionSpace): the vector-function space for concentrations
         V_CG1 (fenics.FunctionSpace): the function space CG1
         V_DG1 (fenics.FunctionSpace): the function space DG1
@@ -143,7 +141,6 @@ class Simulation:
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
-        self.dx, self.ds = None, None
         self.V, self.V_CG1, self.V_DG1 = None, None, None
         self.u = None
         self.v = None
@@ -186,31 +183,17 @@ class Simulation:
                 field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
-        """Assigns the T boundary conditions to self.T
+        """Assigns boundary_conditions to mobile and T
         """
         if self.T is not None:
             self.T.boundary_conditions = []
             for bc in self.boundary_conditions:
                 if bc.component == "T":
                     self.T.boundary_conditions.append(bc)
-
-    def define_markers(self):
-        """Creates the fenics.Measure objects for self.dx and self.ds
-        """
-        # Define and mark subdomains
-        if isinstance(self.mesh, FESTIM.Mesh):
-            if isinstance(self.mesh, FESTIM.Mesh1D):
-                if len(self.materials.materials) > 1:
-                    self.materials.check_borders(self.mesh.size)
-                self.mesh.define_markers(self.materials)
-
-            self.volume_markers, self.surface_markers = \
-                self.mesh.volume_markers, self.mesh.surface_markers
-            # TODO maybe these should be attributes of self.mesh?
-            self.ds = Measure(
-                'ds', domain=self.mesh.mesh, subdomain_data=self.surface_markers)
-            self.dx = Measure(
-                'dx', domain=self.mesh.mesh, subdomain_data=self.volume_markers)
+        self.mobile.boundary_conditions = []
+        for bc in self.boundary_conditions:
+            if bc.component == 0:
+                self.mobile.boundary_conditions.append(bc)
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
@@ -221,19 +204,21 @@ class Simulation:
         self.attribute_source_terms()
         self.attribute_boundary_conditions()
 
-        self.define_markers()
-
+        if isinstance(self.mesh, FESTIM.Mesh1D):
+            self.mesh.define_measures(self.materials)
+        else:
+            self.mesh.define_measures()
         # Define function space for system of concentrations and properties
         self.define_function_spaces()
 
         # Define temperature
         if isinstance(self.T, FESTIM.HeatTransferProblem):
-            self.T.create_functions(self.V_CG1, self.materials, self.dx, self.ds, self.dt)
+            self.T.create_functions(self.V_CG1, self.materials, self.mesh.dx, self.mesh.ds, self.dt)
         elif isinstance(self.T, FESTIM.Temperature):
             self.T.create_functions(self.V_CG1)
 
         # Create functions for properties
-        self.materials.create_properties(self.volume_markers, self.T.T)
+        self.materials.create_properties(self.mesh.volume_markers, self.T.T)
 
         if self.settings.chemical_pot:
             # if the temperature is of type "solve_stationary" or "expression"
@@ -250,19 +235,15 @@ class Simulation:
 
         # Define functions
         self.initialise_concentrations()
-        self.initialise_extrinsic_traps()
+        self.traps.initialise_extrinsic_traps(self.V_CG1)
 
         # Define variational problem H transport
         self.define_variational_problem_H_transport()
-        self.define_variational_problem_extrinsic_traps()
+        if self.settings.transient:
+            self.traps.define_variational_problem_extrinsic_traps(self.mesh.dx, self.dt)
 
-        # add measure and properties to derived_quantities
-        # TODO this could be a method .initialise() of Exports()
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-                export.data = [export.make_header()]
-                export.assign_measures_to_quantities(self.dx, self.ds)
-                export.assign_properties_to_quantities(self.materials)
+        self.exports.initialise_derived_quantities(
+            self.mesh.dx, self.mesh.ds, self.materials)
 
     def define_function_spaces(self):
         """Creates the suitable function spaces depending on the number of
@@ -343,27 +324,36 @@ class Simulation:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
 
-    def initialise_extrinsic_traps(self):
-        """Add functions to ExtrinsicTrap objects for density form
-        """
-        for trap in self.traps.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
-                trap.density = [Function(self.V_CG1)]
-                trap.density_test_function = TestFunction(self.V_CG1)
-                trap.density_previous_solution = project(Constant(0), self.V_CG1)
-
     def define_variational_problem_H_transport(self):
         """Creates the variational problem for hydrogen transport (form,
         Dirichlet boundary conditions)
         """
         print('Defining variational problem')
-        self.F, expressions_F = FESTIM.formulation(self)
-        self.expressions += expressions_F
+        expressions = []
+        F = 0
+
+        # diffusion + transient terms
+
+        self.mobile.create_form(
+            self.materials, self.mesh.dx, self.mesh.ds, self.T, self.dt,
+            traps=self.traps,
+            chemical_pot=self.settings.chemical_pot, soret=self.settings.soret)
+        F += self.mobile.F
+        expressions += self.mobile.sub_expressions
+
+        # Add traps
+        self.traps.create_forms(
+            self.mobile, self.materials,
+            self.T, self.mesh.dx, self.dt,
+            self.settings.chemical_pot)
+        F += self.traps.F
+        expressions += self.traps.sub_expressions
+        self.F = F
+        self.expressions = expressions
 
         # Boundary conditions
         print('Defining boundary conditions')
         self.create_dirichlet_bcs()
-        self.create_H_fluxes()
 
     def create_dirichlet_bcs(self):
         """Creates fenics.DirichletBC objects for the hydrogen transport
@@ -373,59 +363,16 @@ class Simulation:
         for bc in self.boundary_conditions:
             if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
                 bc.create_dirichletbc(
-                    self.V, self.T.T, self.surface_markers,
+                    self.V, self.T.T, self.mesh.surface_markers,
                     chemical_pot=self.settings.chemical_pot,
                     materials=self.materials,
-                    volume_markers=self.volume_markers)
+                    volume_markers=self.mesh.volume_markers)
                 self.bcs += bc.dirichlet_bc
                 self.expressions += bc.sub_expressions
                 self.expressions.append(bc.expression)
 
-    def create_H_fluxes(self):
-        """Modifies the formulation and adds fluxes based
-        on parameters in self.boundary_conditions
-        """
-
-        expressions = []
-        # TODO refactore this using self.mobile
-        solutions = split(self.u)
-        test_solute = split(self.v)[0]
-        F = 0
-
-        if self.settings.chemical_pot:
-            solute = solutions[0]*self.materials.S
-        else:
-            solute = solutions[0]
-
-        for bc in self.boundary_conditions:
-            if bc.component != "T":
-                if isinstance(bc, FESTIM.FluxBC):
-                    bc.create_form(self.T.T, solute)
-                    # TODO : one day we will get rid of this huge expressions list
-                    expressions += bc.sub_expressions
-
-                    for surf in bc.surfaces:
-                        F += -test_solute*bc.form*self.ds(surf)
-        self.F += F
-        self.expressions += expressions
-
-    def define_variational_problem_extrinsic_traps(self):
-        """Creates the variational formulations for the extrinsic traps
-        densities
-        """
-        # TODO replace this by formulation_extrinsic_traps()
-
-        # Define variational problem for extrinsic traps
-        if self.settings.transient:
-            self.extrinsic_formulations, expressions_extrinsic = \
-                FESTIM.formulation_extrinsic_traps(self)
-            self.expressions.extend(expressions_extrinsic)
-
     def run(self):
         """Runs the model.
-
-        Raises:
-            ValueError: if steady state model didn't converge
 
         Returns:
             dict: output containing solutions, mesh, derived quantities
@@ -433,52 +380,53 @@ class Simulation:
         self.timer = Timer()  # start timer
 
         if self.settings.transient:
-            # add final_time to Exports
-            self.exports.final_time = self.settings.final_time
-
-            # compute Jacobian before iterating if required
-            if not self.settings.update_jacobian:
-                du = TrialFunction(self.u.function_space())
-                self.J = derivative(self.F, self.u, du)
-
-            #  Time-stepping
-            print('Time stepping...')
-            while self.t < self.settings.final_time:
-                self.iterate()
-            # print final message
-            elapsed_time = round(self.timer.elapsed()[0], 1)
-            msg = "Solved problem in {:.2f} s".format(elapsed_time)
-            print(msg)
+            self.run_transient()
         else:
-            # Solve steady state
-            print('Solving steady state problem...')
-
-            nb_iterations, converged = FESTIM.solve_once(
-                self.F, self.u,
-                self.bcs, self.settings, J=self.J)
-
-            # Post processing
-            self.run_post_processing()
-            elapsed_time = round(self.timer.elapsed()[0], 1)
-
-            # print final message
-            if converged:
-                msg = "Solved problem in {:.2f} s".format(elapsed_time)
-                print(msg)
-            else:
-                msg = "The solver diverged in "
-                msg += "{:.0f} iteration(s) ({:.2f} s)".format(
-                    nb_iterations, elapsed_time)
-                raise ValueError(msg)
-
-        # export derived quantities to CSV
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-                export.write()
+            self.run_steady()
 
         # End
         print('\007')
         return self.make_output()
+
+    def run_transient(self):
+        # add final_time to Exports
+        self.exports.final_time = self.settings.final_time
+
+        # compute Jacobian before iterating if required
+        if not self.settings.update_jacobian:
+            du = TrialFunction(self.u.function_space())
+            self.J = derivative(self.F, self.u, du)
+
+        #  Time-stepping
+        print('Time stepping...')
+        while self.t < self.settings.final_time:
+            self.iterate()
+        # print final message
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+        msg = "Solved problem in {:.2f} s".format(elapsed_time)
+        print(msg)
+
+    def run_steady(self):
+        # Solve steady state
+        print('Solving steady state problem...')
+
+        nb_iterations, converged = FESTIM.solve_once(
+            self.F, self.u,
+            self.bcs, self.settings, J=self.J)
+
+        # Post processing
+        self.run_post_processing()
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+
+        # print final message
+        if converged:
+            msg = "Solved problem in {:.2f} s".format(elapsed_time)
+            print(msg)
+        else:
+            msg = "The solver diverged in "
+            msg += "{:.0f} iteration(s) ({:.2f} s)".format(
+                nb_iterations, elapsed_time)
+            raise ValueError(msg)
 
     def iterate(self):
         """Advance the model by one iteration
@@ -488,14 +436,7 @@ class Simulation:
         FESTIM.update_expressions(
             self.expressions, self.t)
         self.T.update(self.t)
-        # TODO this should be a method of Materials
-        self.materials.D._T = self.T.T
-        if self.materials.H is not None:
-            self.materials.H._T = self.T.T
-        if self.materials.thermal_cond is not None:
-            self.materials.thermal_cond._T = self.T.T
-        if self.settings.chemical_pot:
-            self.materials.S._T = self.T.T
+        self.materials.update_properties_temperature(self.T)
 
         # Display time
         simulation_percentage = round(self.t/self.settings.final_time*100, 2)
@@ -513,18 +454,14 @@ class Simulation:
             self.dt, self.settings, J=self.J)
 
         # Solve extrinsic traps formulation
-        for trap in self.traps.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
-                solve(trap.form_density == 0, trap.density[0], [])
+        self.traps.solve_extrinsic_traps()
 
         # Post processing
         self.run_post_processing()
 
         # Update previous solutions
         self.u_n.assign(self.u)
-        for trap in self.traps.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
-                trap.density_previous_solution.assign(trap.density[0])
+        self.traps.update_extrinsic_traps_density()
 
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:

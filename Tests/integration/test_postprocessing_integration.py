@@ -21,7 +21,7 @@ class TestPostProcessing:
         trap_1 = FESTIM.Trap(1, 1, 1, 1, 1, 1)
         my_sim.traps = FESTIM.Traps([trap_1])
 
-        my_sim.define_markers()
+        my_sim.mesh.define_measures(my_sim.materials)
 
         my_sim.define_function_spaces()
 
@@ -31,7 +31,7 @@ class TestPostProcessing:
         my_sim.initialise_concentrations()
 
         my_sim.materials.create_properties(
-                my_sim.volume_markers, my_sim.T.T)
+                my_sim.mesh.volume_markers, my_sim.T.T)
         my_sim.exports = FESTIM.Exports([])
 
         return my_sim
@@ -43,7 +43,7 @@ class TestPostProcessing:
             FESTIM.AverageVolume("T", 1),
             FESTIM.TotalVolume("1", 1)
         ]
-        derived_quantities.assign_measures_to_quantities(my_sim.dx, my_sim.ds)
+        derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 
         my_sim.exports.exports = [derived_quantities]
@@ -65,7 +65,7 @@ class TestPostProcessing:
             ]
         )
 
-        my_sim.define_markers()
+        my_sim.mesh.define_measures(my_sim.materials)
 
         f.assign(my_sim.u.sub(0), f.interpolate(f.Constant(10), my_sim.V.sub(0).collapse()))
         f.assign(my_sim.u.sub(1), f.interpolate(f.Constant(1), my_sim.V.sub(1).collapse()))
@@ -77,7 +77,7 @@ class TestPostProcessing:
             FESTIM.AverageVolume("retention", 2),
             FESTIM.MinimumVolume("retention", 1)
         ]
-        derived_quantities.assign_measures_to_quantities(my_sim.dx, my_sim.ds)
+        derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
 
         my_sim.exports.exports = [derived_quantities]
 
@@ -108,10 +108,10 @@ class TestPostProcessing:
             ]
         )
 
-        my_sim.define_markers()
+        my_sim.mesh.define_measures(my_sim.materials)
 
         my_sim.materials.create_properties(
-                my_sim.volume_markers, my_sim.T.T)
+                my_sim.mesh.volume_markers, my_sim.T.T)
 
         u_expr = f.Expression("2*x[0]", degree=1)
         f.assign(my_sim.u.sub(0), f.interpolate(u_expr, my_sim.V.sub(0).collapse()))
@@ -123,7 +123,7 @@ class TestPostProcessing:
             FESTIM.SurfaceFlux("T", 1),
             FESTIM.SurfaceFlux("T", 2),
         ]
-        derived_quantities.assign_measures_to_quantities(my_sim.dx, my_sim.ds)
+        derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 
         my_sim.exports.exports = [derived_quantities]

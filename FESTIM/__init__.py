@@ -7,8 +7,8 @@ from .helpers import update_expressions, help_key, \
     parameters_helper
 
 from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
-from .temperature import Temperature
-from .temperature_solver import HeatTransferProblem
+from .temperature.temperature import Temperature
+from .temperature.temperature_solver import HeatTransferProblem
 
 from .boundary_conditions.boundary_condition import BoundaryCondition
 from .boundary_conditions.dirichlets.dirichlet_bc import DirichletBC, \
@@ -57,7 +57,5 @@ from .mobile import Mobile
 from .traps.trap import Trap
 from .traps.traps import Traps
 from .traps.extrinsic_trap import ExtrinsicTrap
-
-from .formulations import formulation, formulation_extrinsic_traps
 
 from .generic_simulation import Simulation, run

@@ -4,6 +4,18 @@ import sympy as sp
 
 
 class HeatTransferProblem(FESTIM.Temperature):
+    """[summary]
+
+    Attributes:
+        F (fenics.Form): the variational form of the heat transfer problem
+        v_T (fenics.TestFunction): the test function
+        initial_value (sp.Add, int, float): the initial value
+        sub_expressions (list): contains time dependent fenics.Expression to
+            be updated
+        sources (list): contains FESTIM.Source objects for volumetric heat
+            sources
+        boundary_conditions (list): contains FESTIM.BoundaryConditions
+    """
     def __init__(self, transient=True, initial_value=0.) -> None:
         """Inits HeatTransferProblem
 

@@ -1,4 +1,4 @@
-from FESTIM import Concentration, k_B, R
+from FESTIM import Concentration, FluxBC, k_B, R
 from fenics import *
 import sympy as sp
 
@@ -20,6 +20,7 @@ class Mobile(Concentration):
         """
         super().__init__()
         self.sources = []
+        self.boundary_conditions = []
 
     def initialise(self, V, value, label=None, time_step=None, S=None):
         """Assign a value to self.previous_solution
@@ -45,7 +46,7 @@ class Mobile(Concentration):
 
         assign(self.previous_solution, comp)
 
-    def create_form(self, materials, dx, T,  dt=None, traps=None, chemical_pot=False, soret=False):
+    def create_form(self, materials, dx, ds, T,  dt=None, traps=None, chemical_pot=False, soret=False):
         """Creates the variational formulation.
 
         Args:
@@ -62,6 +63,7 @@ class Mobile(Concentration):
         self.F = 0
         self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, chemical_pot=chemical_pot, soret=soret)
         self.create_source_form(dx)
+        self.create_fluxes_form(materials, T, ds, chemical_pot=chemical_pot)
 
     def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, chemical_pot=False, soret=False):
         """Creates the variational formulation for the diffusive part.
@@ -145,3 +147,29 @@ class Mobile(Concentration):
         self.F_source = F_source
         self.F += F_source
         self.sub_expressions += expressions_source
+
+    def create_fluxes_form(self, materials, T, ds, chemical_pot):
+        """Modifies the formulation and adds fluxes based
+        on parameters in self.boundary_conditions
+        """
+
+        expressions_fluxes = []
+        F = 0
+
+        if chemical_pot:
+            solute = self.solution*materials.S
+        else:
+            solute = self.solution
+
+        for bc in self.boundary_conditions:
+            if bc.component != "T":
+                if isinstance(bc, FluxBC):
+                    bc.create_form(T.T, solute)
+                    # TODO : one day we will get rid of this huge expressions list
+                    expressions_fluxes += bc.sub_expressions
+
+                    for surf in bc.surfaces:
+                        F += -self.test_function*bc.form*ds(surf)
+        self.F_fluxes = F
+        self.F += F
+        self.sub_expressions += expressions_fluxes
