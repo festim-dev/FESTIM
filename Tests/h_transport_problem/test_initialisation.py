@@ -1,5 +1,6 @@
 import FESTIM
 import pytest
+from FESTIM import initial_condition
 import fenics
 import os
 from pathlib import Path
@@ -30,31 +31,24 @@ def test_initialisation_from_xdmf(tmpdir):
         f.write_checkpoint(u.sub(1), "2", 4, fenics.XDMFFile.Encoding.HDF5,
                            append=True)
 
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": str(Path(file1)),
-                "component": 0,
-                "label": "1",
-                "time_step": 0
-            },
-            {
-                "value": str(Path(file2)),
-                "component": 1,
-                "label": "2",
-                "time_step": 1
-            },
-        ],
-    }
-    my_sim = FESTIM.Simulation(parameters)
-
+    initial_conditions = [
+        FESTIM.InitialCondition(field=0, value=str(Path(file1)), label="1", time_step=0),
+        FESTIM.InitialCondition(field=1, value=str(Path(file2)), label="2", time_step=0)
+    ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
-    my_sim.traps = FESTIM.Traps([my_trap])
-    my_sim.V = V
-    my_sim.materials.S = None
-    my_sim.initialise_concentrations()
-    w = my_sim.u_n
+
+    my_problem = FESTIM.HTransportProblem(
+        FESTIM.Mobile(),
+        FESTIM.Traps([my_trap]),
+        FESTIM.Temperature(300),
+        FESTIM.Settings(1e10, 1e-10),
+        initial_conditions)
+
+    my_problem.V = V
+    my_mats = FESTIM.Materials()
+    my_mats.S = None
+    my_problem.initialise_concentrations(my_mats)
+    w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -87,14 +81,24 @@ def test_initialisation_with_expression():
             },
         ],
     }
-    my_sim = FESTIM.Simulation(parameters)
-
+    initial_conditions = [
+        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=1, value=1+FESTIM.x),
+    ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
-    my_sim.traps = FESTIM.Traps([my_trap])
-    my_sim.V = V
-    my_sim.materials.S = None
-    my_sim.initialise_concentrations()
-    w = my_sim.u_n
+
+    my_problem = FESTIM.HTransportProblem(
+        FESTIM.Mobile(),
+        FESTIM.Traps([my_trap]),
+        FESTIM.Temperature(300),
+        FESTIM.Settings(1e10, 1e-10),
+        initial_conditions)
+
+    my_problem.V = V
+    my_mats = FESTIM.Materials()
+    my_mats.S = None
+    my_problem.initialise_concentrations(my_mats)
+    w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -116,28 +120,24 @@ def test_initialisation_with_expression_chemical_pot():
     ini_u = fenics.interpolate(ini_u, V.sub(1).collapse())
     fenics.assign(u.sub(1), ini_u)
 
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": 1+FESTIM.x + FESTIM.y,
-                "component": 0,
-            },
-            {
-                "value": 1+FESTIM.x,
-                "component": 1,
-            },
-        ],
-    }
-    my_sim = FESTIM.Simulation(parameters)
-
+    initial_conditions = [
+        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=1, value=1+FESTIM.x),
+    ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
-    my_sim.traps = FESTIM.Traps([my_trap])
-    my_sim.V = V
-    my_sim.materials.S = S
-    my_sim.chemical_pot = True
-    my_sim.initialise_concentrations()
-    w = my_sim.u_n
+
+    my_problem = FESTIM.HTransportProblem(
+        FESTIM.Mobile(),
+        FESTIM.Traps([my_trap]),
+        FESTIM.Temperature(300),
+        FESTIM.Settings(1e10, 1e-10),
+        initial_conditions)
+
+    my_problem.V = V
+    my_mats = FESTIM.Materials()
+    my_mats.S = S
+    my_problem.initialise_concentrations(my_mats)
+    w = my_problem.u_n
     assert fenics.errornorm(u, w) == pytest.approx(0)
 
 
@@ -150,12 +150,21 @@ def test_initialisation_default():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-    my_sim = FESTIM.Simulation(
-        {"boundary_conditions": [], "initial_conditions": []})
-    my_sim.V = V
-    my_sim.materials.S = None
-    my_sim.initialise_concentrations()
-    w = my_sim.u_n
+    initial_conditions = []
+    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+
+    my_problem = FESTIM.HTransportProblem(
+        FESTIM.Mobile(),
+        FESTIM.Traps([my_trap]),
+        FESTIM.Temperature(300),
+        FESTIM.Settings(1e10, 1e-10),
+        initial_conditions)
+
+    my_problem.V = V
+    my_mats = FESTIM.Materials()
+    my_mats.S = None
+    my_problem.initialise_concentrations(my_mats)
+    w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -170,20 +179,24 @@ def test_initialisation_solute_only():
     w = fenics.Function(V)
     ini_u = fenics.Expression("1 + x[0] + x[1]", degree=1)
     u = fenics.interpolate(ini_u, V)
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": 1+FESTIM.x + FESTIM.y,
-                "component": 0
-            },
-        ],
-    }
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.V = V
-    my_sim.materials.S = None
-    my_sim.initialise_concentrations()
-    w = my_sim.u_n
+
+    initial_conditions = [
+        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
+    ]
+    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+
+    my_problem = FESTIM.HTransportProblem(
+        FESTIM.Mobile(),
+        FESTIM.Traps([my_trap]),
+        FESTIM.Temperature(300),
+        FESTIM.Settings(1e10, 1e-10),
+        initial_conditions)
+
+    my_problem.V = V
+    my_mats = FESTIM.Materials()
+    my_mats.S = None
+    my_problem.initialise_concentrations(my_mats)
+    w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
 
@@ -200,17 +213,21 @@ def test_initialisation_no_component():
     ini_u = fenics.interpolate(ini_u, V.sub(0).collapse())
     fenics.assign(u.sub(0), ini_u)
 
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": 1+FESTIM.x + FESTIM.y,
-            },
-        ],
-    }
-    my_sim = FESTIM.Simulation(parameters)
-    my_sim.V = V
-    my_sim.materials.S = None
-    my_sim.initialise_concentrations()
-    w = my_sim.u_n
+    initial_conditions = [
+        FESTIM.InitialCondition(value=1+FESTIM.x + FESTIM.y),
+    ]
+    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+
+    my_problem = FESTIM.HTransportProblem(
+        FESTIM.Mobile(),
+        FESTIM.Traps([my_trap]),
+        FESTIM.Temperature(300),
+        FESTIM.Settings(1e10, 1e-10),
+        initial_conditions)
+
+    my_problem.V = V
+    my_mats = FESTIM.Materials()
+    my_mats.S = None
+    my_problem.initialise_concentrations(my_mats)
+    w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
