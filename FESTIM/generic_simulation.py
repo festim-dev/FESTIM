@@ -1,7 +1,6 @@
 import FESTIM
 from FESTIM.h_transport_problem import HTransportProblem
 from fenics import *
-import sympy as sp
 
 
 class Simulation:
