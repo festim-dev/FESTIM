@@ -58,6 +58,4 @@ from .traps.trap import Trap
 from .traps.traps import Traps
 from .traps.extrinsic_trap import ExtrinsicTrap
 
-from .formulations import formulation_extrinsic_traps
-
 from .generic_simulation import Simulation, run

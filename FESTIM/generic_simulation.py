@@ -407,12 +407,14 @@ class Simulation:
         """Creates the variational formulations for the extrinsic traps
         densities
         """
-        # TODO replace this by formulation_extrinsic_traps()
 
-        # Define variational problem for extrinsic traps
         if self.settings.transient:
-            self.extrinsic_formulations, expressions_extrinsic = \
-                FESTIM.formulation_extrinsic_traps(self)
+            self.extrinsic_formulations = []
+            expressions_extrinsic = []
+            for trap in self.traps.traps:
+                if isinstance(trap, FESTIM.ExtrinsicTrap):
+                    trap.create_form_density(self.dx, self.dt)
+                    self.extrinsic_formulations.append(trap.form_density)
             self.expressions.extend(expressions_extrinsic)
 
     def run(self):
