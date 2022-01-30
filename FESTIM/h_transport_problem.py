@@ -1,0 +1,251 @@
+from fenics import *
+import FESTIM
+
+
+class HTransportProblem:
+    """[summary]
+    Attributes:
+        expressions (list): contains time-dependent fenics.Expressions
+        J (ufl.Form): the jacobian of the variational problem
+        V (fenics.FunctionSpace): the vector-function space for concentrations
+        u (fenics.Function): the vector holding the concentrations (c_m, ct1,
+            ct2, ...)
+        v (fenics.TestFunction): the test function
+        u_n (fenics.Function): the "previous" function
+        bcs (list): list of fenics.DirichletBC for H transport
+    """
+    def __init__(self, mobile, traps, T, settings, initial_conditions) -> None:
+        self.mobile = mobile
+        self.traps = traps
+        self.T = T
+        self.settings = settings
+        self.initial_conditions = initial_conditions
+
+        self.J = None
+        self.u = None
+        self.v = None
+        self.u_n = None
+
+        self.boundary_conditions = []
+        self.bcs = None
+        self.V = None
+        self.V_CG1 = None
+        self.expressions = []
+
+    def initialise(self, mesh, materials, dt=None):
+        self.attribute_boundary_conditions()
+        # Define functions
+        self.define_function_space(mesh)
+        self.initialise_concentrations(materials)
+        self.traps.initialise_extrinsic_traps(self.V_CG1)
+
+        # Define variational problem H transport
+        self.define_variational_problem(materials, mesh.dx, mesh.ds, dt)
+        # Boundary conditions
+        print('Defining boundary conditions')
+        self.create_dirichlet_bcs(materials, mesh)
+        if self.settings.transient:
+            self.traps.define_variational_problem_extrinsic_traps(mesh.dx, dt)
+
+    def define_function_space(self, mesh):
+        order_trap = 1
+        element_solute, order_solute = "CG", 1
+
+        # function space for H concentrations
+        nb_traps = len(self.traps.traps)
+        if nb_traps == 0:
+            V = FunctionSpace(mesh.mesh, element_solute, order_solute)
+        else:
+            solute = FiniteElement(
+                element_solute, mesh.mesh.ufl_cell(), order_solute)
+            traps = FiniteElement(
+                self.settings.traps_element_type, mesh.mesh.ufl_cell(), order_trap)
+            element = [solute] + [traps]*nb_traps
+            V = FunctionSpace(mesh.mesh, MixedElement(element))
+        self.V = V
+        self.V_CG1 = FunctionSpace(mesh.mesh, "CG", 1)
+        self.V_DG1 = FunctionSpace(mesh.mesh, "DG", 1)
+
+    def initialise_concentrations(self, materials):
+        """Creates the main fenics.Function (holding all the concentrations),
+        eventually split it and assign it to Trap and Mobile.
+        Then initialise self.u_n based on self.initial_conditions
+        """
+        # TODO rename u and u_n to c and c_n
+        self.u = Function(self.V, name="c")  # Function for concentrations
+        self.v = TestFunction(self.V)  # TestFunction for concentrations
+        self.u_n = Function(self.V, name="c_n")
+
+        if self.V.num_sub_spaces() == 0:
+            self.mobile.solution = self.u
+            self.mobile.previous_solution = self.u_n
+            self.mobile.test_function = self.v
+        else:
+            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+                concentration.solution = list(split(self.u))[i]
+                concentration.previous_solution = self.u_n.sub(i)
+                concentration.test_function = list(split(self.v))[i]
+
+        print('Defining initial values')
+        field_to_component = {
+            "solute": 0,
+            "0": 0,
+            0: 0,
+        }
+        for i, trap in enumerate(self.traps.traps, 1):
+            field_to_component[trap.id] = i
+            field_to_component[str(trap.id)] = i
+        # TODO refactore this, attach the initial conditions to the objects directly
+        for ini in self.initial_conditions:
+            value = ini.value
+            component = field_to_component[ini.field]
+
+            if self.V.num_sub_spaces() == 0:
+                functionspace = self.V
+            else:
+                functionspace = self.V.sub(component).collapse()
+
+            if component == 0:
+                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step, S=materials.S)
+            else:
+                trap = self.traps.get_trap(component)
+                trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
+
+        # this is needed to correctly create the formulation
+        # TODO: write a test for this?
+        if self.V.num_sub_spaces() != 0:
+            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+                concentration.previous_solution = list(split(self.u_n))[i]
+
+    def define_variational_problem(self, materials, dx, ds, dt=None):
+        """Creates the variational problem for hydrogen transport (form,
+        Dirichlet boundary conditions)
+        """
+        print('Defining variational problem')
+        expressions = []
+        F = 0
+
+        # diffusion + transient terms
+
+        self.mobile.create_form(
+            materials, dx, ds, self.T, dt,
+            traps=self.traps,
+            chemical_pot=self.settings.chemical_pot, soret=self.settings.soret)
+        F += self.mobile.F
+        expressions += self.mobile.sub_expressions
+
+        # Add traps
+        self.traps.create_forms(
+            self.mobile, materials,
+            self.T, dx, dt,
+            self.settings.chemical_pot)
+        F += self.traps.F
+        expressions += self.traps.sub_expressions
+        self.F = F
+        self.expressions = expressions
+
+    def attribute_boundary_conditions(self):
+        for bc in self.boundary_conditions:
+            if isinstance(bc, FESTIM.FluxBC) and bc.component == 0:
+                self.mobile.boundary_conditions.append(bc)
+
+    def create_dirichlet_bcs(self, materials, mesh):
+        """Creates fenics.DirichletBC objects for the hydrogen transport
+        problem and add them to self.bcs
+        """
+        self.bcs = []
+        for bc in self.boundary_conditions:
+            if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
+                bc.create_dirichletbc(
+                    self.V, self.T.T, mesh.surface_markers,
+                    chemical_pot=self.settings.chemical_pot,
+                    materials=materials,
+                    volume_markers=mesh.volume_markers)
+                self.bcs += bc.dirichlet_bc
+                self.expressions += bc.sub_expressions
+                self.expressions.append(bc.expression)
+
+    def compute_jacobian(self):
+        du = TrialFunction(self.u.function_space())
+        self.J = derivative(self.F, self.u, du)
+
+    def update(self, t, dt):
+        """Solves the problem during time stepping.
+        """
+        converged = False
+        u_ = Function(self.u.function_space())
+        u_.assign(self.u)
+        while converged is False:
+            self.u.assign(u_)
+            nb_it, converged = self.solve_once()
+            if dt.adaptive_stepsize is not None:
+                dt.adapt(t, nb_it, converged)
+        return
+
+    def solve_once(self):
+        """Solves non linear problem
+
+        Returns:
+            int, bool: number of iterations for reaching convergence, True if
+                converged else False
+        """
+
+        if self.J is None:  # Define the Jacobian
+            du = TrialFunction(self.u.function_space())
+            J = derivative(self.F, self.u, du)
+        else:
+            J = self.J
+        problem = NonlinearVariationalProblem(self.F, self.u, self.bcs, J)
+        solver = NonlinearVariationalSolver(problem)
+        solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
+        solver.parameters["newton_solver"]["absolute_tolerance"] = \
+            self.settings.absolute_tolerance
+        solver.parameters["newton_solver"]["relative_tolerance"] = \
+            self.settings.relative_tolerance
+        solver.parameters["newton_solver"]["maximum_iterations"] = \
+            self.settings.maximum_iterations
+        nb_it, converged = solver.solve()
+
+        return nb_it, converged
+
+    def update_previous_solutions(self):
+        self.u_n.assign(self.u)
+        self.traps.update_extrinsic_traps_density()
+
+    def update_post_processing_solutions(self, S, exports):
+        if self.u.function_space().num_sub_spaces() == 0:
+            res = [self.u]
+        else:
+            res = list(self.u.split())
+        if self.settings.chemical_pot:  # c_m = theta * S
+            solute = res[0]*S
+            if self.need_projecting_solute(exports):
+                # project solute on V_DG1
+                solute = project(solute, self.V_DG1)
+        else:
+            solute = res[0]
+
+        self.mobile.post_processing_solution = solute
+
+        for i, trap in enumerate(self.traps.traps, 1):
+            trap.post_processing_solution = res[i]
+
+    def need_projecting_solute(self, exports):
+        """Checks if the user computes a Hydrogen surface flux or exports the
+        solute to XDMF. If so, the function of mobile particles will have to
+        be type fenics.Function for the post-processing.
+
+        Returns:
+            bool: True if the solute needs to be projected, False else.
+        """
+        need_solute = False  # initialises to false
+        for export in exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                for quantity in export.derived_quantities:
+                    if isinstance(quantity, FESTIM.SurfaceFlux):
+                        if quantity.field in ["0", 0, "solute"]:
+                            need_solute = True
+            elif isinstance(export, FESTIM.XDMFExport):
+                if export.field in ["0", 0, "solute"]:
+                    need_solute = True
+        return need_solute

@@ -1,4 +1,5 @@
 import FESTIM
+from FESTIM.h_transport_problem import HTransportProblem
 from fenics import *
 import sympy as sp
 import warnings
@@ -35,18 +36,10 @@ class Simulation:
         sources (list of FESTIM.Source): Volumetric sources
             (particle or heat sources).
         mobile (FESTIM.Mobile): the mobile concentration (c_m or theta)
-        expressions (list): contains time-dependent fenics.Expressions
-        J (ufl.Form): the jacobian of the variational problem
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
-        V (fenics.FunctionSpace): the vector-function space for concentrations
         V_CG1 (fenics.FunctionSpace): the function space CG1
         V_DG1 (fenics.FunctionSpace): the function space DG1
-        u (fenics.Function): the vector holding the concentrations (c_m, ct1,
-            ct2, ...)
-        v (fenics.TestFunction): the test function
-        u_n (fenics.Function): the "previous" function
-        bcs (list): list of fenics.DirichletBC for H transport
     """
     def __init__(
         self,
@@ -135,18 +128,14 @@ class Simulation:
 
         # internal attributes
         self.mobile = FESTIM.Mobile()
-        self.expressions = []
+        self.h_transport_problem = HTransportProblem(
+            self.mobile, self.traps, self.T, self.settings,
+            self.initial_conditions)
 
-        self.J = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
-        self.V, self.V_CG1, self.V_DG1 = None, None, None
-        self.u = None
-        self.v = None
-        self.u_n = None
-
-        self.bcs = None
+        self.V_CG1, self.V_DG1 = None, None
 
         if parameters is not None:
             msg = "The use of parameters will soon be deprecated \
@@ -185,15 +174,14 @@ class Simulation:
     def attribute_boundary_conditions(self):
         """Assigns boundary_conditions to mobile and T
         """
-        if self.T is not None:
-            self.T.boundary_conditions = []
-            for bc in self.boundary_conditions:
-                if bc.component == "T":
-                    self.T.boundary_conditions.append(bc)
+        self.T.boundary_conditions = []
         self.mobile.boundary_conditions = []
+
         for bc in self.boundary_conditions:
-            if bc.component == 0:
-                self.mobile.boundary_conditions.append(bc)
+            if bc.component == "T":
+                self.T.boundary_conditions.append(bc)
+            else:
+                self.h_transport_problem.boundary_conditions.append(bc)
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
@@ -233,14 +221,7 @@ class Simulation:
             if project_S:
                 self.materials.S = project(self.materials.S, self.V_DG1)
 
-        # Define functions
-        self.initialise_concentrations()
-        self.traps.initialise_extrinsic_traps(self.V_CG1)
-
-        # Define variational problem H transport
-        self.define_variational_problem_H_transport()
-        if self.settings.transient:
-            self.traps.define_variational_problem_extrinsic_traps(self.mesh.dx, self.dt)
+        self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
@@ -251,125 +232,11 @@ class Simulation:
         temperature) and V_DG1 (for projecting properties, and mobile
         concentration with conservation of chemical potential)
         """
-        order_trap = 1
-        element_solute, order_solute = "CG", 1
-
-        # function space for H concentrations
-        nb_traps = len(self.traps.traps)
-        mesh = self.mesh.mesh
-        if nb_traps == 0:
-            V = FunctionSpace(mesh, element_solute, order_solute)
-        else:
-            solute = FiniteElement(
-                element_solute, mesh.ufl_cell(), order_solute)
-            traps = FiniteElement(
-                self.settings.traps_element_type, mesh.ufl_cell(), order_trap)
-            element = [solute] + [traps]*nb_traps
-            V = FunctionSpace(mesh, MixedElement(element))
-        self.V = V
         # function space for T and ext trap dens
-        self.V_CG1 = FunctionSpace(mesh, 'CG', 1)
-        self.V_DG1 = FunctionSpace(mesh, 'DG', 1)
+        self.V_CG1 = FunctionSpace(self.mesh.mesh, 'CG', 1)
+        self.V_DG1 = FunctionSpace(self.mesh.mesh, 'DG', 1)
 
         self.exports.V_DG1 = self.V_DG1
-
-    def initialise_concentrations(self):
-        """Creates the main fenics.Function (holding all the concentrations),
-        eventually split it and assign it to Trap and Mobile.
-        Then initialise self.u_n based on self.initial_conditions
-        """
-        # TODO rename u and u_n to c and c_n
-        self.u = Function(self.V, name="c")  # Function for concentrations
-        self.v = TestFunction(self.V)  # TestFunction for concentrations
-        self.u_n = Function(self.V, name="c_n")
-
-        if self.V.num_sub_spaces() == 0:
-            self.mobile.solution = self.u
-            self.mobile.previous_solution = self.u_n
-            self.mobile.test_function = self.v
-        else:
-            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
-                concentration.solution = list(split(self.u))[i]
-                concentration.previous_solution = self.u_n.sub(i)
-                concentration.test_function = list(split(self.v))[i]
-
-        print('Defining initial values')
-        field_to_component = {
-            "solute": 0,
-            "0": 0,
-            0: 0,
-        }
-        for i, trap in enumerate(self.traps.traps, 1):
-            field_to_component[trap.id] = i
-            field_to_component[str(trap.id)] = i
-        # TODO refactore this, attach the initial conditions to the objects directly
-        for ini in self.initial_conditions:
-            value = ini.value
-            component = field_to_component[ini.field]
-
-            if self.V.num_sub_spaces() == 0:
-                functionspace = self.V
-            else:
-                functionspace = self.V.sub(component).collapse()
-
-            if component == 0:
-                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step, S=self.materials.S)
-            else:
-                trap = self.traps.get_trap(component)
-                trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
-
-        # this is needed to correctly create the formulation
-        # TODO: write a test for this?
-        if self.V.num_sub_spaces() != 0:
-            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
-                concentration.previous_solution = list(split(self.u_n))[i]
-
-    def define_variational_problem_H_transport(self):
-        """Creates the variational problem for hydrogen transport (form,
-        Dirichlet boundary conditions)
-        """
-        print('Defining variational problem')
-        expressions = []
-        F = 0
-
-        # diffusion + transient terms
-
-        self.mobile.create_form(
-            self.materials, self.mesh.dx, self.mesh.ds, self.T, self.dt,
-            traps=self.traps,
-            chemical_pot=self.settings.chemical_pot, soret=self.settings.soret)
-        F += self.mobile.F
-        expressions += self.mobile.sub_expressions
-
-        # Add traps
-        self.traps.create_forms(
-            self.mobile, self.materials,
-            self.T, self.mesh.dx, self.dt,
-            self.settings.chemical_pot)
-        F += self.traps.F
-        expressions += self.traps.sub_expressions
-        self.F = F
-        self.expressions = expressions
-
-        # Boundary conditions
-        print('Defining boundary conditions')
-        self.create_dirichlet_bcs()
-
-    def create_dirichlet_bcs(self):
-        """Creates fenics.DirichletBC objects for the hydrogen transport
-        problem and add them to self.bcs
-        """
-        self.bcs = []
-        for bc in self.boundary_conditions:
-            if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
-                bc.create_dirichletbc(
-                    self.V, self.T.T, self.mesh.surface_markers,
-                    chemical_pot=self.settings.chemical_pot,
-                    materials=self.materials,
-                    volume_markers=self.mesh.volume_markers)
-                self.bcs += bc.dirichlet_bc
-                self.expressions += bc.sub_expressions
-                self.expressions.append(bc.expression)
 
     def run(self):
         """Runs the model.
@@ -394,8 +261,7 @@ class Simulation:
 
         # compute Jacobian before iterating if required
         if not self.settings.update_jacobian:
-            du = TrialFunction(self.u.function_space())
-            self.J = derivative(self.F, self.u, du)
+            self.h_transport_problem.compute_jacobian()
 
         #  Time-stepping
         print('Time stepping...')
@@ -410,9 +276,7 @@ class Simulation:
         # Solve steady state
         print('Solving steady state problem...')
 
-        nb_iterations, converged = FESTIM.solve_once(
-            self.F, self.u,
-            self.bcs, self.settings, J=self.J)
+        nb_iterations, converged = self.h_transport_problem.solve_once()
 
         # Post processing
         self.run_post_processing()
@@ -434,11 +298,12 @@ class Simulation:
         # Update current time
         self.t += float(self.dt.value)
         FESTIM.update_expressions(
-            self.expressions, self.t)
+            self.h_transport_problem.expressions, self.t)
         self.T.update(self.t)
         self.materials.update_properties_temperature(self.T)
 
         # Display time
+        # TODO this should be a method
         simulation_percentage = round(self.t/self.settings.final_time*100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
@@ -449,9 +314,7 @@ class Simulation:
         print(msg, end="\r")
 
         # Solve main problem
-        FESTIM.solve_it(
-            self.F, self.u, self.bcs, self.t,
-            self.dt, self.settings, J=self.J)
+        self.h_transport_problem.update(self.t, self.dt)
 
         # Solve extrinsic traps formulation
         self.traps.solve_extrinsic_traps()
@@ -460,8 +323,7 @@ class Simulation:
         self.run_post_processing()
 
         # Update previous solutions
-        self.u_n.assign(self.u)
-        self.traps.update_extrinsic_traps_density()
+        self.h_transport_problem.update_previous_solutions()
 
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:
@@ -483,22 +345,7 @@ class Simulation:
             dict: a mapping of the field ("solute", "T", "retention") to its
             post_processsing_solution
         """
-        if self.u.function_space().num_sub_spaces() == 0:
-            res = [self.u]
-        else:
-            res = list(self.u.split())
-        if self.settings.chemical_pot:  # c_m = theta * S
-            solute = res[0]*self.materials.S
-            if self.need_projecting_solute():
-                # project solute on V_DG1
-                solute = project(solute, self.V_DG1)
-        else:
-            solute = res[0]
-
-        self.mobile.post_processing_solution = solute
-
-        for i, trap in enumerate(self.traps.traps, 1):
-            trap.post_processing_solution = res[i]
+        self.h_transport_problem.update_post_processing_solutions(self.materials.S, self.exports)
 
         label_to_function = {
             "solute": self.mobile.post_processing_solution,
@@ -512,26 +359,6 @@ class Simulation:
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
         return label_to_function
-
-    def need_projecting_solute(self):
-        """Checks if the user computes a Hydrogen surface flux or exports the
-        solute to XDMF. If so, the function of mobile particles will have to
-        be type fenics.Function for the post-processing.
-
-        Returns:
-            bool: True if the solute needs to be projected, False else.
-        """
-        need_solute = False  # initialises to false
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-                for quantity in export.derived_quantities:
-                    if isinstance(quantity, FESTIM.SurfaceFlux):
-                        if quantity.field in ["0", 0, "solute"]:
-                            need_solute = True
-            elif isinstance(export, FESTIM.XDMFExport):
-                if export.field in ["0", 0, "solute"]:
-                    need_solute = True
-        return need_solute
 
     def make_output(self):
         """Creates a dictionary with some useful information such as derived

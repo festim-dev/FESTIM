@@ -58,4 +58,6 @@ from .traps.trap import Trap
 from .traps.traps import Traps
 from .traps.extrinsic_trap import ExtrinsicTrap
 
+from .h_transport_problem import HTransportProblem
+
 from .generic_simulation import Simulation, run
