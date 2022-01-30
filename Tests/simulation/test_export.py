@@ -15,7 +15,6 @@ def test_output_of_run_without_traps_no_chemical_pot():
     my_sim = FESTIM.Simulation(
         {"boundary_conditions": [], "exports": {}, "traps": []})
     my_sim.mesh = FESTIM.Mesh(mesh)
-    my_sim.u = fenics.Function(V_CG1)
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
     my_sim.T = my_temp
@@ -29,8 +28,11 @@ def test_output_of_run_without_traps_no_chemical_pot():
         V_CG1)
 
     retention_expected = fenics.project(val_solute, V_CG1)
-    my_sim.u = solute
     my_sim.exports = FESTIM.Exports([])
+    my_sim.h_transport_problem = FESTIM.HTransportProblem(
+        my_sim.mobile, my_sim.traps, my_sim.T, my_sim.settings,
+        my_sim.initial_conditions)
+    my_sim.h_transport_problem.u = solute
 
     # run
     output = my_sim.make_output()
@@ -71,7 +73,9 @@ def test_output_of_run_without_traps_with_chemical_pot():
     my_temp.T = fenics.Function(V_CG1)
     my_sim.T = my_temp
     my_sim.V_DG1 = V_DG1
-
+    my_sim.h_transport_problem = FESTIM.HTransportProblem(
+        my_sim.mobile, my_sim.traps, my_sim.T, my_sim.settings,
+        my_sim.initial_conditions)
     # concentrations
     val_solute = 1
 
@@ -80,7 +84,7 @@ def test_output_of_run_without_traps_with_chemical_pot():
         V_CG1)
 
     retention_expected = fenics.project(val_solute, V_CG1)
-    my_sim.u = solute
+    my_sim.h_transport_problem.u = solute
     my_sim.exports = FESTIM.Exports([])
     # run
     output = my_sim.make_output()
@@ -112,22 +116,26 @@ def test_output_of_run_with_traps_with_chemical_pot():
     mesh = fenics.UnitSquareMesh(10, 10)
     V_CG1 = fenics.VectorFunctionSpace(mesh, 'CG', 1, 3)
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
-    my_sim = FESTIM.Simulation(
-        {"boundary_conditions": [], "exports": {}})
+    my_sim = FESTIM.Simulation()
     traps = [
         FESTIM.Trap(1, 1, 1, 1, 1, 1),
         FESTIM.Trap(1, 1, 1, 1, 1, 1),
     ]
     my_sim.traps = FESTIM.Traps(traps)
     my_sim.mesh = FESTIM.Mesh(mesh)
-    my_sim.settings.chemical_pot = True
+    my_sim.settings = FESTIM.Settings(1e10, 1e-10, chemical_pot=True)
+    my_sim.materials = FESTIM.Materials()
     my_sim.materials.S = fenics.Constant(3)
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
     my_sim.T = my_temp
     my_sim.V_DG1 = V_DG1
-    my_sim.V = V_CG1
-    my_sim.initialise_concentrations()
+    my_sim.h_transport_problem = FESTIM.HTransportProblem(
+        my_sim.mobile, my_sim.traps, my_sim.T, my_sim.settings,
+        my_sim.initial_conditions)
+    my_sim.h_transport_problem.settings = my_sim.settings
+    my_sim.h_transport_problem.define_function_space(my_sim.mesh)
+    my_sim.h_transport_problem.initialise_concentrations(my_sim.materials)
     my_sim.exports = FESTIM.Exports([])
     # concentrations
     val_solute = 1
@@ -151,8 +159,7 @@ def test_output_of_run_with_traps_with_chemical_pot():
     fenics.assign(u.sub(0), solute)
     fenics.assign(u.sub(1), trap_1)
     fenics.assign(u.sub(2), trap_2)
-
-    my_sim.u = u
+    my_sim.h_transport_problem.u = u
     # run
     output = my_sim.make_output()
 
