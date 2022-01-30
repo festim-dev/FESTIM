@@ -1,8 +1,6 @@
 import FESTIM
 import pytest
-from FESTIM import initial_condition
 import fenics
-import os
 from pathlib import Path
 
 
