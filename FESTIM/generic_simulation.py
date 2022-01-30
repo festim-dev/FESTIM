@@ -235,11 +235,12 @@ class Simulation:
 
         # Define functions
         self.initialise_concentrations()
-        self.initialise_extrinsic_traps()
+        self.traps.initialise_extrinsic_traps(self.V_CG1)
 
         # Define variational problem H transport
         self.define_variational_problem_H_transport()
-        self.define_variational_problem_extrinsic_traps()
+        if self.settings.transient:
+            self.traps.define_variational_problem_extrinsic_traps(self.mesh.dx, self.dt)
 
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
@@ -323,15 +324,6 @@ class Simulation:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
 
-    def initialise_extrinsic_traps(self):
-        """Add functions to ExtrinsicTrap objects for density form
-        """
-        for trap in self.traps.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
-                trap.density = [Function(self.V_CG1)]
-                trap.density_test_function = TestFunction(self.V_CG1)
-                trap.density_previous_solution = project(Constant(0), self.V_CG1)
-
     def define_variational_problem_H_transport(self):
         """Creates the variational problem for hydrogen transport (form,
         Dirichlet boundary conditions)
@@ -378,20 +370,6 @@ class Simulation:
                 self.bcs += bc.dirichlet_bc
                 self.expressions += bc.sub_expressions
                 self.expressions.append(bc.expression)
-
-    def define_variational_problem_extrinsic_traps(self):
-        """Creates the variational formulations for the extrinsic traps
-        densities
-        """
-
-        if self.settings.transient:
-            self.extrinsic_formulations = []
-            expressions_extrinsic = []
-            for trap in self.traps.traps:
-                if isinstance(trap, FESTIM.ExtrinsicTrap):
-                    trap.create_form_density(self.mesh.dx, self.dt)
-                    self.extrinsic_formulations.append(trap.form_density)
-            self.expressions.extend(expressions_extrinsic)
 
     def run(self):
         """Runs the model.
@@ -478,18 +456,14 @@ class Simulation:
             self.dt, self.settings, J=self.J)
 
         # Solve extrinsic traps formulation
-        for trap in self.traps.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
-                solve(trap.form_density == 0, trap.density[0], [])
+        self.traps.solve_extrinsic_traps()
 
         # Post processing
         self.run_post_processing()
 
         # Update previous solutions
         self.u_n.assign(self.u)
-        for trap in self.traps.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
-                trap.density_previous_solution.assign(trap.density[0])
+        self.traps.update_extrinsic_traps_density()
 
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:
