@@ -207,6 +207,7 @@ class Simulation:
         if self.settings.chemical_pot:
             # if the temperature is of type "solve_stationary" or "expression"
             # the solubility needs to be projected
+            # TODO this should be a method of Temperature
             project_S = False
             if isinstance(self.T, FESTIM.HeatTransferProblem):
                 if not self.T.transient:
