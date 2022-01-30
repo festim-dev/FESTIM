@@ -35,6 +35,7 @@ class HeatTransferProblem(FESTIM.Temperature):
         self.boundary_conditions = []
         self.sub_expressions = []
 
+    # TODO rename initialise?
     def create_functions(self, V, materials, dx, ds, dt=None):
         """Creates functions self.T, self.T_n and test function self.v_T.
         Solves the steady-state heat transfer problem if self.transient is
