@@ -484,14 +484,7 @@ class Simulation:
         FESTIM.update_expressions(
             self.expressions, self.t)
         self.T.update(self.t)
-        # TODO this should be a method of Materials
-        self.materials.D._T = self.T.T
-        if self.materials.H is not None:
-            self.materials.H._T = self.T.T
-        if self.materials.thermal_cond is not None:
-            self.materials.thermal_cond._T = self.T.T
-        if self.settings.chemical_pot:
-            self.materials.S._T = self.T.T
+        self.materials.update_properties_temperature(self.T)
 
         # Display time
         simulation_percentage = round(self.t/self.settings.final_time*100, 2)
