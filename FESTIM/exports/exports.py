@@ -44,3 +44,18 @@ class Exports:
                 export.function = label_to_function[export.field]
                 export.write(self.t, dt)
         self.nb_iterations += 1
+
+    def initialise_derived_quantities(self, dx, ds, materials):
+        """If derived quantities in exports, creates header and adds measures
+        and properties
+
+        Args:
+            dx (fenics.Measure): the measure for dx
+            ds (fenics.Measure): the measure for ds
+            materials (FESTIM.Materials): the materials
+        """
+        for export in self.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                export.data = [export.make_header()]
+                export.assign_measures_to_quantities(dx, ds)
+                export.assign_properties_to_quantities(materials)

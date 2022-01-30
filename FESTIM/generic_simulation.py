@@ -260,13 +260,8 @@ class Simulation:
         self.define_variational_problem_H_transport()
         self.define_variational_problem_extrinsic_traps()
 
-        # add measure and properties to derived_quantities
-        # TODO this could be a method .initialise() of Exports()
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-                export.data = [export.make_header()]
-                export.assign_measures_to_quantities(self.dx, self.ds)
-                export.assign_properties_to_quantities(self.materials)
+        self.exports.initialise_derived_quantities(
+            self.mesh.dx, self.mesh.ds, self.materials)
 
     def define_function_spaces(self):
         """Creates the suitable function spaces depending on the number of
