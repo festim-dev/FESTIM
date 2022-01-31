@@ -9,9 +9,9 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     catching bug described in issue #305
     '''
 
-    mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
-
+    my_mesh = FESTIM.Mesh(fenics.UnitIntervalMesh(10))
+    my_mesh.dx = fenics.dx
+    my_mesh.ds = fenics.ds
     # Run function
 
     mat1 = FESTIM.Material(id=[1, 2], D_0=1, E_D=0, thermal_cond=1)
@@ -19,7 +19,7 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     my_mats = FESTIM.Materials([mat1, mat2])
     my_temp = FESTIM.HeatTransferProblem(transient=False)
 
-    my_temp.create_functions(V, my_mats, fenics.dx, fenics.ds, dt=FESTIM.Stepsize(initial_value=2))
+    my_temp.create_functions(my_mats, my_mesh, dt=FESTIM.Stepsize(initial_value=2))
 
 
 def test_formulation_heat_transfer():
@@ -50,6 +50,10 @@ def test_formulation_heat_transfer():
     ds = fenics.Measure('ds', domain=mesh, subdomain_data=surface_markers)
     dx = fenics.Measure('dx', domain=mesh, subdomain_data=volume_markers)
 
+    my_mesh = FESTIM.Mesh(mesh, volume_markers, surface_markers)
+    my_mesh.dx = dx
+    my_mesh.ds = ds
+
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, thermal_cond=thermal_cond, rho=5, heat_capacity=4, borders=[0, 1])
     my_mats = FESTIM.Materials([mat1])
     bc1 = FESTIM.DirichletBC(surfaces=[1], value=u, component="T")
@@ -58,7 +62,7 @@ def test_formulation_heat_transfer():
     my_temp = FESTIM.HeatTransferProblem(transient=True, initial_value=0)
     my_temp.boundary_conditions = [bc1, bc2]
     my_temp.sources = [FESTIM.Source(-4, volume=[1], field="T")]
-    my_temp.create_functions(V, my_mats, dx, ds, dt=dt)
+    my_temp.create_functions(my_mats, my_mesh, dt=dt)
 
     T = my_temp.T
     T_n = my_temp.T_n

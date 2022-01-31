@@ -41,8 +41,12 @@ def test_define_dirichlet_bcs_theta():
     left.mark(sm, 1)
     right.mark(sm, 2)
 
+    my_mesh = FESTIM.Mesh(mesh, vm, sm)
+    my_mesh.dx = fenics.dx()
+    my_mesh.ds = fenics.ds()
+
     my_temp = FESTIM.Temperature(value=200 + (FESTIM.x + 1)*FESTIM.t)
-    my_temp.create_functions(V)
+    my_temp.create_functions(my_mesh)
 
     mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)
     mat2 = FESTIM.Material(2, None, None, S_0=S_02, E_S=E_S2)
@@ -94,13 +98,16 @@ def test_bc_recomb():
     E_Kr = 0.35
 
     mesh = fenics.UnitSquareMesh(4, 4)
+    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh.dx = fenics.dx()
+    my_mesh.ds = fenics.ds()
     V = fenics.FunctionSpace(mesh, 'P', 1)
     T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
 
     my_temp = FESTIM.Temperature(value=T_expr)
-    my_temp.create_functions(V)
+    my_temp.create_functions(my_mesh)
 
     my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
@@ -136,13 +143,16 @@ def test_bc_recomb_instant_recomb():
 
     # Set up
     mesh = fenics.UnitSquareMesh(4, 4)
+    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh.dx = fenics.dx()
+    my_mesh.ds = fenics.ds()
     V = fenics.FunctionSpace(mesh, 'P', 1)
     T_expr = 500 + (FESTIM.x + 1)*100*FESTIM.t
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
 
     my_temp = FESTIM.Temperature(value=T_expr)
-    my_temp.create_functions(V)
+    my_temp.create_functions(my_mesh)
 
     my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
@@ -181,6 +191,9 @@ def test_bc_recomb_chemical_pot():
     E_S2 = 0.2
 
     mesh = fenics.UnitSquareMesh(4, 4)
+    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh.dx = fenics.dx()
+    my_mesh.ds = fenics.ds()
     V = fenics.FunctionSpace(mesh, 'P', 1)
 
     vm = fenics.MeshFunction("size_t", mesh, 2, 1)
@@ -196,7 +209,7 @@ def test_bc_recomb_chemical_pot():
     right.mark(sm, 2)
 
     my_temp = FESTIM.Temperature(value=200 + (FESTIM.x + 1)*FESTIM.t)
-    my_temp.create_functions(V)
+    my_temp.create_functions(my_mesh)
 
     mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)
     mat2 = FESTIM.Material(2, None, None, S_0=S_02, E_S=E_S2)

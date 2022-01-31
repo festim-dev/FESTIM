@@ -17,7 +17,7 @@ class TestCreateTrappingForms:
     my_mobile.previous_solution = f.Function(V, name="c_m_n")
     my_mobile.test_function = f.TestFunction(V)
     my_temp = FESTIM.Temperature(value=100)
-    my_temp.create_functions(V)
+    my_temp.T = f.interpolate(f.Constant(100), V)
     dx = f.dx()
     dt = FESTIM.Stepsize(initial_value=1)
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
@@ -62,7 +62,7 @@ class TestGetTrap:
     my_mobile.previous_solution = f.Function(V, name="c_m_n")
     my_mobile.test_function = f.TestFunction(V)
     my_temp = FESTIM.Temperature(value=100)
-    my_temp.create_functions(V)
+    my_temp.T = f.interpolate(f.Constant(100), V)
     dx = f.dx()
     dt = f.Constant(1)
 

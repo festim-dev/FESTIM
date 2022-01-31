@@ -1242,7 +1242,7 @@ def test_steady_state_with_2_materials():
 
     # test
 
-    assert my_sim.u(0.5, 0.5) != 0
+    assert my_sim.h_transport_problem.u(0.5, 0.5) != 0
 
 
 def test_steady_state_traps_not_everywhere():
@@ -1311,7 +1311,7 @@ def test_steady_state_traps_not_everywhere():
     my_sim = FESTIM.Simulation(parameters)
     my_sim.initialise()
     my_sim.run()
-    assert not np.isnan(my_sim.u.split()[1](0.5))
+    assert not np.isnan(my_sim.h_transport_problem.u.split()[1](0.5))
 
 
 def test_no_jacobian_update():

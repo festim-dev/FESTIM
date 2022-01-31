@@ -18,7 +18,7 @@ def test_mobile_create_diffusion_form():
     my_mats = FESTIM.Materials([mat])
     dx = f.dx()
     T = FESTIM.Temperature(value=100)
-    T.create_functions(V)
+    T.T = f.interpolate(f.Constant(100), V)
     # run
     my_mobile.create_diffusion_form(my_mats, dx, T)
 
@@ -96,7 +96,7 @@ def test_mobile_create_form():
     dx = f.dx()
     ds = f.ds()
     T = FESTIM.Temperature(value=100)
-    T.create_functions(V)
+    T.T = f.interpolate(f.Constant(100), V)
 
     # run
     my_mobile.create_form(my_mats, dx, ds, T)
@@ -115,12 +115,12 @@ def add_functions(trap, V, id=1):
 
 class TestCreateDiffusionForm:
     mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, "P", 1)
+    my_mesh = FESTIM.Mesh(mesh)
     my_temp = FESTIM.Temperature(value=100)
-    my_temp.create_functions(V)
+    my_temp.create_functions(my_mesh)
     dx = f.dx()
     dt = FESTIM.Stepsize(initial_value=1)
-
+    V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
 
@@ -239,7 +239,9 @@ def test_fluxes_chemical_pot():
 
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    ds = f.ds()
+    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh.dx = f.dx()
+    my_mesh.ds = f.ds()
 
     my_mobile = FESTIM.Mobile()
     my_mobile.F = 0
@@ -250,13 +252,13 @@ def test_fluxes_chemical_pot():
         FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
     ]
     T = FESTIM.Temperature(value=1000)
-    T.create_functions(V)
+    T.create_functions(my_mesh)
 
     S = S_0*f.exp(-E_S/k_B/T.T)
     my_mats = FESTIM.Materials()
     my_mats.S = S
 
-    my_mobile.create_fluxes_form(my_mats, T, ds, chemical_pot=True)
+    my_mobile.create_fluxes_form(my_mats, T, my_mesh.ds, chemical_pot=True)
 
     test_sol = my_mobile.test_function
     sol = my_mobile.solution
@@ -279,7 +281,9 @@ def test_fluxes():
 
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    ds = f.ds()
+    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh.dx = f.dx()
+    my_mesh.ds = f.ds()
 
     my_mobile = FESTIM.Mobile()
     my_mobile.F = 0
@@ -290,11 +294,11 @@ def test_fluxes():
         FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
     ]
     T = FESTIM.Temperature(value=1000)
-    T.create_functions(V)
+    T.create_functions(my_mesh)
 
     my_mats = FESTIM.Materials()
 
-    my_mobile.create_fluxes_form(my_mats, T, ds, chemical_pot=False)
+    my_mobile.create_fluxes_form(my_mats, T, my_mesh.ds, chemical_pot=False)
 
     test_sol = my_mobile.test_function
     sol = my_mobile.solution
