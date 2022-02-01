@@ -53,6 +53,7 @@ from .materials import Material, Materials
 from .concentration import Concentration
 from .initial_condition import InitialCondition
 from .mobile import Mobile
+from .theta import Theta
 
 from .traps.trap import Trap
 from .traps.traps import Traps

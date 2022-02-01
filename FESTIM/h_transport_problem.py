@@ -166,7 +166,7 @@ class HTransportProblem:
         self.mobile.create_form(
             materials, dx, ds, self.T, dt,
             traps=self.traps,
-            chemical_pot=self.settings.chemical_pot, soret=self.settings.soret)
+            soret=self.settings.soret)
         F += self.mobile.F
         expressions += self.mobile.sub_expressions
 
@@ -266,7 +266,7 @@ class HTransportProblem:
         else:
             res = list(self.u.split())
         if self.settings.chemical_pot:  # c_m = theta * S
-            solute = res[0]*S
+            solute = self.mobile.convert_theta_to_concentration(res[0], S)
             if self.need_projecting_solute(exports):
                 # project solute on V_DG1
                 solute = project(solute, self.V_DG1)
