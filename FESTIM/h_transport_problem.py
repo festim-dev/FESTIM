@@ -57,7 +57,7 @@ class HTransportProblem:
         self.attribute_flux_boundary_conditions()
         # Define functions
         self.define_function_space(mesh)
-        self.initialise_concentrations(materials)
+        self.initialise_concentrations()
         self.traps.initialise_extrinsic_traps(self.V_CG1)
 
         # Define variational problem H transport
@@ -92,7 +92,7 @@ class HTransportProblem:
         self.V_CG1 = FunctionSpace(mesh.mesh, "CG", 1)
         self.V_DG1 = FunctionSpace(mesh.mesh, "DG", 1)
 
-    def initialise_concentrations(self, materials):
+    def initialise_concentrations(self):
         """Creates the main fenics.Function (holding all the concentrations),
         eventually split it and assign it to Trap and Mobile.
         Then initialise self.u_n based on self.initial_conditions
