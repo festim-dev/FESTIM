@@ -136,7 +136,7 @@ class HTransportProblem:
 
             if component == 0:
                 if self.settings.chemical_pot:
-                    self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step, S=materials.S)
+                    self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
                 else:
                     self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
             else:
@@ -263,22 +263,22 @@ class HTransportProblem:
         self.u_n.assign(self.u)
         self.traps.update_extrinsic_traps_density()
 
-    def update_post_processing_solutions(self, S, exports):
+    def update_post_processing_solutions(self, exports):
         if self.u.function_space().num_sub_spaces() == 0:
             res = [self.u]
         else:
             res = list(self.u.split())
-        if self.settings.chemical_pot:  # c_m = theta * S
-            solute = self.mobile.convert_theta_to_concentration(res[0], S)
-            if self.need_projecting_solute(exports):
-                # project solute on V_DG1
-                solute = project(solute, self.V_DG1)
-        else:
-            solute = res[0]
 
-        self.mobile.post_processing_solution = solute
+        self.mobile.post_processing_solution = res[0]
         for i, trap in enumerate(self.traps.traps, 1):
             trap.post_processing_solution = res[i]
+
+        if self.settings.chemical_pot:
+            self.mobile.post_processing_solution_to_concentration()
+            if self.need_projecting_solute(exports):
+                # project solute on V_DG1
+                self.mobile.post_processing_solution = \
+                    project(self.mobile.post_processing_solution, self.V_DG1)
 
     def need_projecting_solute(self, exports):
         """Checks if the user computes a Hydrogen surface flux or exports the

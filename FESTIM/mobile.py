@@ -137,7 +137,7 @@ class Mobile(Concentration):
         expressions_fluxes = []
         F = 0
 
-        solute = self.get_solute_concentration(materials)
+        solute = self.mobile_concentration()
 
         for bc in self.boundary_conditions:
             if bc.component != "T":
@@ -155,5 +155,5 @@ class Mobile(Concentration):
     def get_concentration_for_a_given_material(self, material, T):
         return self.solution, self.previous_solution
 
-    def get_solute_concentration(self, materials):
+    def mobile_concentration(self):
         return self.solution
