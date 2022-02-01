@@ -23,7 +23,18 @@ class Concentration:
         self.post_processing_solution = None  # used for post treatment
 
     def initialise(self, V, value, label=None, time_step=None):
+        """Assign a value to self.previous_solution
+
+        Args:
+            V (fenics.FunctionSpace): the function space
+            value (sp.Add, float, int, str): the value of the initialisation.
+            label (str, optional): the label in the XDMF file. Defaults to
+                None.
+            time_step (int, optional): the time step to read in the XDMF file.
+                Defaults to None.
+        """
         # TODO : do we need V here? can it be retrieved from self.solution?
+        # not if indexed (several components)
         comp = self.get_comp(V, value, label=label, time_step=time_step)
         comp = interpolate(comp, V)
         assign(self.previous_solution, comp)

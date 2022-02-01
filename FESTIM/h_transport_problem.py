@@ -135,10 +135,7 @@ class HTransportProblem:
                 functionspace = self.V.sub(component).collapse()
 
             if component == 0:
-                if self.settings.chemical_pot:
-                    self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
-                else:
-                    self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
+                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
             else:
                 trap = self.traps.get_trap(component)
                 trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
