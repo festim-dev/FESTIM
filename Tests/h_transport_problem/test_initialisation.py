@@ -124,8 +124,11 @@ def test_initialisation_with_expression_chemical_pot():
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
+    my_theta = FESTIM.Theta()
+    my_theta.S = S
+
     my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(),
+        my_theta,
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),

@@ -19,6 +19,7 @@ def test_output_of_run_without_traps_no_chemical_pot():
     my_temp.T = fenics.Function(V_CG1)
     my_sim.T = my_temp
     my_sim.V_DG1 = V_DG1
+    my_sim.mobile = FESTIM.Mobile()
 
     # concentrations
     val_solute = 1
@@ -68,7 +69,8 @@ def test_output_of_run_without_traps_with_chemical_pot():
         {"boundary_conditions": [], "exports": {}, "traps": []})
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_sim.settings.chemical_pot = True
-    my_sim.materials.S = fenics.Constant(3)
+    my_sim.mobile = FESTIM.Theta()
+    my_sim.mobile.S = fenics.Constant(3)
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
     my_sim.T = my_temp
@@ -80,7 +82,7 @@ def test_output_of_run_without_traps_with_chemical_pot():
     val_solute = 1
 
     solute = fenics.project(
-        fenics.Expression(str(val_solute), degree=0)/my_sim.materials.S,
+        fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S,
         V_CG1)
 
     retention_expected = fenics.project(val_solute, V_CG1)
@@ -124,8 +126,9 @@ def test_output_of_run_with_traps_with_chemical_pot():
     my_sim.traps = FESTIM.Traps(traps)
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_sim.settings = FESTIM.Settings(1e10, 1e-10, chemical_pot=True)
-    my_sim.materials = FESTIM.Materials()
-    my_sim.materials.S = fenics.Constant(3)
+    my_sim.mobile = FESTIM.Theta()
+    my_sim.mobile.S = fenics.Constant(3)
+
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
     my_sim.T = my_temp
@@ -144,7 +147,7 @@ def test_output_of_run_with_traps_with_chemical_pot():
     u = fenics.Function(V_CG1)
 
     solute = fenics.project(
-        fenics.Expression(str(val_solute), degree=0)/my_sim.materials.S,
+        fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S,
         V_CG1.sub(0).collapse())
     trap_1 = fenics.interpolate(
         fenics.Expression(str(val_trap_1), degree=0),

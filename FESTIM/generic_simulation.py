@@ -121,6 +121,7 @@ class Simulation:
         self.mesh = mesh
         self.sources = sources
 
+        # internal attributes
         self.h_transport_problem = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
@@ -128,11 +129,6 @@ class Simulation:
         # parse the parameters dict if given
         if parameters is not None:
             FESTIM.read_parameters(self, parameters)
-        # internal attributes
-        if self.settings.chemical_pot:
-            self.mobile = FESTIM.Theta()
-        else:
-            self.mobile = FESTIM.Mobile()
 
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
@@ -169,6 +165,11 @@ class Simulation:
         spaces, the functions, the variational forms...
         """
         set_log_level(self.log_level)
+
+        if self.settings.chemical_pot:
+            self.mobile = FESTIM.Theta()
+        else:
+            self.mobile = FESTIM.Mobile()
         self.h_transport_problem = HTransportProblem(
             self.mobile, self.traps, self.T, self.settings,
             self.initial_conditions)

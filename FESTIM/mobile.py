@@ -39,7 +39,7 @@ class Mobile(Concentration):
         self.F = 0
         self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, soret=soret)
         self.create_source_form(dx)
-        self.create_fluxes_form(materials, T, ds)
+        self.create_fluxes_form(T, ds)
 
     def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, soret=False):
         """Creates the variational formulation for the diffusive part.
@@ -113,7 +113,7 @@ class Mobile(Concentration):
         self.F += F_source
         self.sub_expressions += expressions_source
 
-    def create_fluxes_form(self, materials, T, ds):
+    def create_fluxes_form(self, T, ds):
         """Modifies the formulation and adds fluxes based
         on parameters in self.boundary_conditions
         """
