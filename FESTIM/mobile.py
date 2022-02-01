@@ -32,9 +32,6 @@ class Mobile(Concentration):
                 None.
             time_step (int, optional): the time step to read in the XDMF file.
                 Defaults to None.
-            S (FESTIM.ArheniusCoeff, optional): the solubility. If not None,
-                conservation of chemical potential is assumed. Defaults to
-                None.
         """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
         comp = interpolate(comp, V)

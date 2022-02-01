@@ -7,6 +7,19 @@ class Theta(Mobile):
         super().__init__()
 
     def initialise(self, V, value, label=None, time_step=None, S=None):
+        """Assign a value to self.previous_solution
+
+        Args:
+            V (fenics.FunctionSpace): the function space
+            value (sp.Add, float, int, str): the value of the initialisation.
+            label (str, optional): the label in the XDMF file. Defaults to
+                None.
+            time_step (int, optional): the time step to read in the XDMF file.
+                Defaults to None.
+            S (FESTIM.ArheniusCoeff, optional): the solubility. If not None,
+                conservation of chemical potential is assumed. Defaults to
+                None.
+        """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
         # TODO this needs changing for Henry
         comp = comp/S
