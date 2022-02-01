@@ -1,6 +1,7 @@
 import FESTIM
 import fenics as f
 from ufl.core.multiindex import Index
+import pytest
 
 
 class TestInitialise:
@@ -63,3 +64,50 @@ class TestCreateDiffusionForm:
         print("produced F:")
         print(my_theta.F)
         assert my_theta.F.equals(expected_form)
+
+
+def test_get_concentration_for_a_given_material():
+    # build
+    S_0 = 2
+    E_S = 0.5
+    my_mat = FESTIM.Material(1, 1, 1, S_0=S_0, E_S=E_S)
+    my_theta = FESTIM.Theta()
+    my_mesh = FESTIM.MeshFromRefinements(10, 1)
+    V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
+    my_theta.solution = f.interpolate(f.Constant(100), V)
+    my_theta.previous_solution = f.interpolate(f.Constant(200), V)
+
+    my_temp = FESTIM.Temperature()
+    my_temp.T = f.interpolate(f.Constant(300), V)
+    my_temp.T_n = f.interpolate(f.Constant(500), V)
+
+    # run
+    c, c_n = my_theta.get_concentration_for_a_given_material(my_mat, my_temp)
+    c = f.project(c, V)
+    c_n = f.project(c_n, V)
+
+    # test
+    expected_c = f.project(
+        my_theta.solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T), V)
+    expected_c_n = f.project(
+        my_theta.previous_solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T_n), V)
+    assert f.errornorm(c, expected_c) == pytest.approx(0)
+    assert f.errornorm(c_n, expected_c_n) == pytest.approx(0)
+
+
+def test_mobile_concentration():
+    my_theta = FESTIM.Theta()
+    my_theta.S = 3
+    my_theta.solution = 12
+
+    assert my_theta.mobile_concentration() == 3*12
+
+
+def test_post_processing_solution_to_concentration():
+    my_theta = FESTIM.Theta()
+    my_theta.S = 3
+    my_theta.post_processing_solution = 5
+
+    my_theta.post_processing_solution_to_concentration()
+
+    assert my_theta.post_processing_solution == 5*3
