@@ -32,7 +32,7 @@ class TestPostProcessing:
             my_sim.initial_conditions
         )
         my_sim.h_transport_problem.define_function_space(my_sim.mesh)
-        my_sim.h_transport_problem.initialise_concentrations(my_sim.materials)
+        my_sim.h_transport_problem.initialise_concentrations()
 
         my_sim.materials.create_properties(
                 my_sim.mesh.volume_markers, my_sim.T.T)

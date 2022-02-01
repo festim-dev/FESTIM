@@ -138,7 +138,7 @@ def test_output_of_run_with_traps_with_chemical_pot():
         my_sim.initial_conditions)
     my_sim.h_transport_problem.settings = my_sim.settings
     my_sim.h_transport_problem.define_function_space(my_sim.mesh)
-    my_sim.h_transport_problem.initialise_concentrations(my_sim.materials)
+    my_sim.h_transport_problem.initialise_concentrations()
     my_sim.exports = FESTIM.Exports([])
     # concentrations
     val_solute = 1
