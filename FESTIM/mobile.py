@@ -22,7 +22,7 @@ class Mobile(Concentration):
         self.sources = []
         self.boundary_conditions = []
 
-    def initialise(self, V, value, label=None, time_step=None, S=None):
+    def initialise(self, V, value, label=None, time_step=None):
         """Assign a value to self.previous_solution
 
         Args:
@@ -37,12 +37,7 @@ class Mobile(Concentration):
                 None.
         """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
-        if S is None:
-            comp = interpolate(comp, V)
-        else:
-            comp = comp/S
-            # Product must be projected
-            comp = project(comp, V)
+        comp = interpolate(comp, V)
 
         assign(self.previous_solution, comp)
 
