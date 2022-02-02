@@ -119,7 +119,7 @@ class BoundaryConditionTheta(f.UserExpression):
         # TODO this requires changes for Henry's law
         S_0 = material.S_0
         E_S = material.E_S
-        value[0] = self._bci(x)/(S_0*f.exp(-E_S/k_B/self._T(x)))
+        value[0] = (self._bci(x)/(S_0*f.exp(-E_S/k_B/self._T(x))))**2
 
     def value_shape(self):
         return ()

@@ -25,7 +25,7 @@ class Theta(Mobile):
         """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
         # TODO this needs changing for Henry
-        comp = comp/self.S
+        comp = (comp/self.S)**2
         # Product must be projected
         comp = f.project(comp, V)
         f.assign(self.previous_solution, comp)
@@ -34,14 +34,15 @@ class Theta(Mobile):
         # TODO this needs changing for Henry
         E_S = material.E_S
         S_0 = material.S_0
-        c_0 = self.solution*S_0*f.exp(-E_S/k_B/T.T)
-        c_0_n = self.previous_solution*S_0*f.exp(-E_S/k_B/T.T_n)
+        # https://fenicsproject.discourse.group/t/square-root-and-natural-logarithm-not-working/5894/2 
+        c_0 = (self.solution + f.DOLFIN_EPS)**0.5*S_0*f.exp(-E_S/k_B/T.T)
+        c_0_n = (self.previous_solution + f.DOLFIN_EPS)**0.5*S_0*f.exp(-E_S/k_B/T.T_n)
         return c_0, c_0_n
 
-    def mobile_concentration(self):
-        # TODO this needs changing for Henry
-        return self.solution*self.S
+    # def mobile_concentration(self):
+    #     # TODO this needs changing for Henry
+    #     return self.S*(self.solution)**0.5
 
     def post_processing_solution_to_concentration(self):
         # TODO this needs changing for Henry
-        self.post_processing_solution *= self.S
+        self.post_processing_solution = self.S * self.post_processing_solution**0.5
