@@ -308,7 +308,8 @@ def test_run_MMS_chemical_pot(tmpdir):
             with h = ' + str(h) + '\n \
             with dt = ' + str(dt)
         print(msg)
-        assert error_max_u < tol_u and error_max_v < tol_v
+        assert error_max_u < tol_u
+        assert error_max_v < tol_v
 
 
 def test_run_chemical_pot_mass_balance(tmpdir):
