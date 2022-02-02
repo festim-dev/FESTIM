@@ -44,7 +44,9 @@ class Theta(Mobile):
 
     def mobile_concentration(self):
         # TODO this needs changing for Henry
-        return self.S*(self.solution)**0.5
+        # DOLFIN_EPS is needed when self.solution = 0
+        # see above
+        return self.S*(self.solution + f.DOLFIN_EPS)**0.5
 
     def post_processing_solution_to_concentration(self):
         # TODO this needs changing for Henry
