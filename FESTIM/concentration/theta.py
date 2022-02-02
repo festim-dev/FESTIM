@@ -3,7 +3,12 @@ import fenics as f
 
 
 class Theta(Mobile):
+    """Class representing the "chemical potential" c/S where S is the
+    solubility of the metal
+    """
     def __init__(self):
+        """Inits Theta
+        """
         super().__init__()
         self.S = None
 
