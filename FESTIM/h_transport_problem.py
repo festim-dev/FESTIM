@@ -146,6 +146,9 @@ class HTransportProblem:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
 
+        # initial guess
+        self.u.assign(self.u_n)
+
     def define_variational_problem(self, materials, dx, ds, dt=None):
         """Creates the variational problem for hydrogen transport (form,
         Dirichlet boundary conditions)
