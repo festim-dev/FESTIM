@@ -22,8 +22,6 @@ from .boundary_conditions.fluxes.recombination_flux import RecombinationFlux
 from .boundary_conditions.fluxes.convective_flux import ConvectiveFlux
 from .boundary_conditions.fluxes.flux_custom import CustomFlux
 
-from .solving import solve_it, solve_once
-
 from .exports.exports import Exports
 from .exports.export import Export
 from .exports.error import Error
@@ -50,14 +48,14 @@ from .stepsize import Stepsize
 from .source import Source
 
 from .materials import Material, Materials
-from .concentration import Concentration
+from .concentration.concentration import Concentration
 from .initial_condition import InitialCondition
-from .mobile import Mobile
-from .theta import Theta
+from .concentration.mobile import Mobile
+from .concentration.theta import Theta
 
-from .traps.trap import Trap
-from .traps.traps import Traps
-from .traps.extrinsic_trap import ExtrinsicTrap
+from .concentration.traps.trap import Trap
+from .concentration.traps.traps import Traps
+from .concentration.traps.extrinsic_trap import ExtrinsicTrap
 
 from .h_transport_problem import HTransportProblem
 
