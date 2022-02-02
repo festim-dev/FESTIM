@@ -96,8 +96,9 @@ def test_initialisation_with_expression_chemical_pot():
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
-    ini_u = fenics.Expression("(1+x[0] + x[1])/S", S=S, degree=1)
-    ini_u = fenics.interpolate(ini_u, V.sub(0).collapse())
+    ini_c = fenics.Expression("1+x[0] + x[1]", degree=2)
+    ini_u = (ini_c/S)**2
+    ini_u = fenics.project(ini_u, V.sub(0).collapse())
     fenics.assign(u.sub(0), ini_u)
     ini_u = fenics.Expression("1+x[0]", degree=1)
     ini_u = fenics.interpolate(ini_u, V.sub(1).collapse())
@@ -122,6 +123,8 @@ def test_initialisation_with_expression_chemical_pot():
     my_problem.V = V
     my_problem.initialise_concentrations()
     w = my_problem.u_n
+    print(u(0.5, 0.5))
+    print(w(0.5, 0.5))
     assert fenics.errornorm(u, w) == pytest.approx(0)
 
 

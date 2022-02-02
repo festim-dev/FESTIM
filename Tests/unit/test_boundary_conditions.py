@@ -69,21 +69,25 @@ def test_define_dirichlet_bcs_theta():
         expr = fenics.interpolate(expressions[1], V)
         assert np.isclose(
             expr(0.25, 0.5),
-            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0.25, 0.5))))
+            ((200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0.25, 0.5))))**2
+        )
         assert np.isclose(
             expr(0.75, 0.5),
-            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(0.75, 0.5))))
+            ((200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(0.75, 0.5))))**2
+        )
 
         # Test that the BCs can be applied to a problem
         # and gives the correct values
         fenics.solve(F == 0, u, bcs[0])
         assert np.isclose(
             u(0.25, 0.5),
-            (200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0, 0.5))))
+            ((200 + i)/(S_01*np.exp(-E_S1/FESTIM.k_B/my_temp.T(0, 0.5))))**2
+        )
         fenics.solve(F == 0, u, bcs[1])
         assert np.isclose(
             u(0.75, 0.5),
-            (200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(1, 0.5))))
+            ((200 + i)/(S_02*np.exp(-E_S2/FESTIM.k_B/my_temp.T(1, 0.5))))**2
+        )
 
 
 def test_bc_recomb():
@@ -244,12 +248,12 @@ def test_bc_recomb_chemical_pot():
         # Test that the BCs can be applied to a problem
         # and gives the correct values
         fenics.solve(F == 0, u, bcs[0])
-        expected = (phi*R_p/D_left + (phi/K_left)**0.5)/S_left
+        expected = ((phi*R_p/D_left + (phi/K_left)**0.5)/S_left)**2
         computed = u(0.25, 0.5)
         assert np.isclose(expected, computed)
 
         fenics.solve(F == 0, u, bcs[1])
-        expected = (phi*R_p/D_right + (phi/K_right)**0.5)/S_right
+        expected = ((phi*R_p/D_right + (phi/K_right)**0.5)/S_right)**2
         computed = u(0.25, 0.5)
         assert np.isclose(expected, computed)
 

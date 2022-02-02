@@ -82,7 +82,7 @@ def test_output_of_run_without_traps_with_chemical_pot():
     val_solute = 1
 
     solute = fenics.project(
-        fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S,
+        (fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S)**2,
         V_CG1)
 
     retention_expected = fenics.project(val_solute, V_CG1)
@@ -147,7 +147,7 @@ def test_output_of_run_with_traps_with_chemical_pot():
     u = fenics.Function(V_CG1)
 
     solute = fenics.project(
-        fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S,
+        (fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S)**2,
         V_CG1.sub(0).collapse())
     trap_1 = fenics.interpolate(
         fenics.Expression(str(val_trap_1), degree=0),
