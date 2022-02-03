@@ -6,7 +6,7 @@ import fenics as f
 
 
 class Material:
-    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=[], H=None) -> None:
+    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=[], H=None, solubility_law="sieverts") -> None:
         """Inits Material class
 
         Args:
@@ -42,6 +42,7 @@ class Material:
         if H is not None:
             self.free_enthalpy = H["free_enthalpy"]
             self.entropy = H["entropy"]
+        self.solubility_law = solubility_law
         self.check_properties()
 
     def check_properties(self):
