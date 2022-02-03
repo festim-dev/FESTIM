@@ -62,6 +62,10 @@ class HTransportProblem:
 
         # Define variational problem H transport
         self.define_variational_problem(materials, mesh.dx, mesh.ds, dt)
+
+        # if chemical pot create form to convert theta to concentration
+        if self.settings.chemical_pot:
+            self.mobile.create_form_post_processing(self.V_DG1, materials, mesh.dx)
         # Boundary conditions
         print('Defining boundary conditions')
         self.create_dirichlet_bcs(materials, mesh)
@@ -266,17 +270,15 @@ class HTransportProblem:
         else:
             res = list(self.u.split())
 
-        self.mobile.post_processing_solution = res[0]
         for i, trap in enumerate(self.traps.traps, 1):
             trap.post_processing_solution = res[i]
 
         if self.settings.chemical_pot:
             self.mobile.post_processing_solution_to_concentration()
-            if self.need_projecting_solute(exports):
-                # project solute on V_DG1
-                self.mobile.post_processing_solution = \
-                    project(self.mobile.post_processing_solution, self.V_DG1)
+        else:
+            self.mobile.post_processing_solution = res[0]
 
+    # TODO remove this unused method
     def need_projecting_solute(self, exports):
         """Checks if the user computes a Hydrogen surface flux or exports the
         solute to XDMF. If so, the function of mobile particles will have to

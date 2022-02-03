@@ -11,9 +11,7 @@ class Theta(Mobile):
         """
         super().__init__()
         self.S = None
-        self.materials = None
-        self.volume_markers = None
-        self.T = None
+        self.F = None
 
     def initialise(self, V, value, label=None, time_step=None):
         """Assign a value to self.previous_solution
@@ -64,10 +62,7 @@ class Theta(Mobile):
             fenics.Product: the hydrogen mobile concentration
         """
         # TODO this needs changing for Henry
-        # return self.solution*self.S
-        return ThetaToConcentration(
-            self.solution, self.materials, self.volume_markers, self.T.T
-        )
+        return self.solution*self.S
 
     def post_processing_solution_to_concentration(self):
         """Converts the post_processing_solution from theta to mobile
@@ -76,12 +71,25 @@ class Theta(Mobile):
         The attribute post_processing_solution is fenics.Product (if self.S is
         FESTIM.ArheniusCoeff)
         """
-        # TODO this needs changing for Henry
-        self.post_processing_solution *= self.S
-        # extremely slow
-        # self.post_processing_solution = ThetaToConcentration(
-        #     self.post_processing_solution, self.materials, self.volume_markers, self.S
-        # )
+        du = f.TrialFunction(self.post_processing_solution.function_space())
+        J = f.derivative(self.F, self.post_processing_solution, du)
+        problem = f.NonlinearVariationalProblem(self.F, self.post_processing_solution, [], J)
+        solver = f.NonlinearVariationalSolver(problem)
+        # TODO these prms should be the same as in Simulation.settings I think
+        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-10
+        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
+        solver.parameters["newton_solver"]["maximum_iterations"] = 50
+        solver.solve()
+
+    def create_form_post_processing(self, V, materials, dx):
+        F = 0
+        v = f.TestFunction(V)
+        self.post_processing_solution = f.Function(V)
+        F += -self.post_processing_solution*v*dx
+        for mat in materials.materials:
+            if mat.solubility_law == "sieverts":
+                F += self.solution*self.S*v*dx(mat.id)
+        self.F = F
 
 
 # TODO merge this with dirichlet_bc.BoundaryConditionTheta
@@ -115,38 +123,6 @@ class ConcentrationToTheta(f.UserExpression):
             c = self._comp(x)
             S = S_0*f.exp(-E_S/k_B/self._T(x))
             value[0] = c/S
-        else:
-            assert False
-
-    def value_shape(self):
-        return ()
-
-
-class ThetaToConcentration(f.UserExpression):
-    def __init__(self, theta, materials, vm, S, **kwargs):
-        """initialisation
-
-        Args:
-            theta (fenics.Expression): value of BC
-            materials (FESTIM.Materials): contains materials objects
-            vm (fenics.MeshFunction): volume markers
-            T (fenics.Function): Temperature
-        """
-        super().__init__(kwargs)
-        self._theta = theta
-        self._vm = vm
-        self._materials = materials
-        self._S = S
-
-    def eval_cell(self, value, x, ufc_cell):
-        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
-        subdomain_id = self._vm[cell]
-        material = self._materials.find_material_from_id(subdomain_id)
-        # TODO this requires changes for Henry's law
-        if material.solubility_law == "sieverts":
-            theta = self._theta(x)
-            S = self._S(x)
-            value[0] = theta*S
         else:
             assert False
 
