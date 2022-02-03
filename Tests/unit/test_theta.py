@@ -8,10 +8,18 @@ class TestInitialise:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     u = f.Function(V)
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    T = FESTIM.Temperature(10)
+    T.create_functions(FESTIM.Mesh(mesh))
 
     def test_from_expresion_chemical_pot(self):
         my_theta = FESTIM.Theta()
         S = f.interpolate(f.Constant(2), self.V)
+        my_theta.materials = FESTIM.Materials([
+            FESTIM.Material(1, 1, 0, S_0=2, E_S=0)
+        ])
+        my_theta.volume_markers = self.vm
+        my_theta.T = self.T
         my_theta.S = S
         my_theta.previous_solution = self.u
         value = 1 + FESTIM.x
@@ -22,8 +30,7 @@ class TestInitialise:
         my_theta.initialise(self.V, value)
 
         # test
-        for x in [0, 0.5, 0.3, 0.6]:
-            assert my_theta.previous_solution(x) == expected_sol(x)
+        assert f.errornorm(my_theta.previous_solution, expected_sol) == pytest.approx(0)
 
 
 class TestCreateDiffusionForm:
@@ -104,10 +111,21 @@ def test_mobile_concentration():
 
 
 def test_post_processing_solution_to_concentration():
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "CG", 1)
+    S = 3
+    value_theta = 5
+    materials = FESTIM.Materials([
+        FESTIM.Material(1, 1, 0, S, E_S=0)
+    ])
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=vm)
     my_theta = FESTIM.Theta()
-    my_theta.S = 3
-    my_theta.post_processing_solution = 5
+    my_theta.S = S
+    my_theta.solution = f.interpolate(f.Constant(value_theta), V)
 
+    expected_concentration = f.project(f.Constant(S)*value_theta, V)
+    my_theta.create_form_post_processing(V, materials, dx)
     my_theta.post_processing_solution_to_concentration()
 
-    assert my_theta.post_processing_solution == 5*3
+    assert f.errornorm(my_theta.post_processing_solution, expected_concentration) == pytest.approx(0)

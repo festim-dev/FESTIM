@@ -93,6 +93,7 @@ def test_initialisation_with_expression_chemical_pot():
 
     S = 2
     mesh = fenics.UnitSquareMesh(8, 8)
+    vm = fenics.MeshFunction("size_t", mesh, 2, 1)
     V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
@@ -110,6 +111,12 @@ def test_initialisation_with_expression_chemical_pot():
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
     my_theta = FESTIM.Theta()
+    my_theta.materials = FESTIM.Materials([
+        FESTIM.Material(1, 1, 0, S_0=S, E_S=0)
+    ])
+    my_theta.volume_markers = vm
+    my_theta.T = FESTIM.Temperature(10)
+    my_theta.T.create_functions(FESTIM.Mesh(mesh))
     my_theta.S = S
 
     my_problem = FESTIM.HTransportProblem(
