@@ -285,13 +285,12 @@ def create_settings(self, parameters):
 
 def create_concentration_objects(self, parameters):
     """Creates FESTIM.Mobile and FESTIM.Traps objects from a parameters
-    dict.
+    dict. self.mobile is created in Simulation.init
     To be deprecated.
 
     Args:
         parameters (dict): parameters dict (<= 0.7.1)
     """
-    self.mobile = FESTIM.Mobile()
     traps = []
     if "traps" in parameters:
         for trap in parameters["traps"]:

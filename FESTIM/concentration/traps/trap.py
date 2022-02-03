@@ -126,6 +126,7 @@ class Trap(Concentration):
             corresponding_material = \
                 materials.find_material_from_id(mat_id)
             if chemical_pot:
+                # TODO this needs changing for Henry
                 # change of variable
                 S_0 = corresponding_material.S_0
                 E_S = corresponding_material.E_S

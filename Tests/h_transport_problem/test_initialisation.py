@@ -45,7 +45,7 @@ def test_initialisation_from_xdmf(tmpdir):
     my_problem.V = V
     my_mats = FESTIM.Materials()
     my_mats.S = None
-    my_problem.initialise_concentrations(my_mats)
+    my_problem.initialise_concentrations()
     w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
@@ -66,19 +66,6 @@ def test_initialisation_with_expression():
     ini_u = fenics.interpolate(ini_u, V.sub(1).collapse())
     fenics.assign(u.sub(1), ini_u)
 
-    parameters = {
-        "boundary_conditions": [],
-        "initial_conditions": [
-            {
-                "value": 1+FESTIM.x + FESTIM.y,
-                "component": 0,
-            },
-            {
-                "value": 1+FESTIM.x,
-                "component": 1,
-            },
-        ],
-    }
     initial_conditions = [
         FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
         FESTIM.InitialCondition(field=1, value=1+FESTIM.x),
@@ -93,9 +80,7 @@ def test_initialisation_with_expression():
         initial_conditions)
 
     my_problem.V = V
-    my_mats = FESTIM.Materials()
-    my_mats.S = None
-    my_problem.initialise_concentrations(my_mats)
+    my_problem.initialise_concentrations()
     w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
@@ -124,17 +109,18 @@ def test_initialisation_with_expression_chemical_pot():
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
+    my_theta = FESTIM.Theta()
+    my_theta.S = S
+
     my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(),
+        my_theta,
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),
         initial_conditions)
 
     my_problem.V = V
-    my_mats = FESTIM.Materials()
-    my_mats.S = S
-    my_problem.initialise_concentrations(my_mats)
+    my_problem.initialise_concentrations()
     w = my_problem.u_n
     assert fenics.errornorm(u, w) == pytest.approx(0)
 
@@ -159,9 +145,7 @@ def test_initialisation_default():
         initial_conditions)
 
     my_problem.V = V
-    my_mats = FESTIM.Materials()
-    my_mats.S = None
-    my_problem.initialise_concentrations(my_mats)
+    my_problem.initialise_concentrations()
     w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
@@ -191,9 +175,7 @@ def test_initialisation_solute_only():
         initial_conditions)
 
     my_problem.V = V
-    my_mats = FESTIM.Materials()
-    my_mats.S = None
-    my_problem.initialise_concentrations(my_mats)
+    my_problem.initialise_concentrations()
     w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0
 
@@ -224,8 +206,6 @@ def test_initialisation_no_component():
         initial_conditions)
 
     my_problem.V = V
-    my_mats = FESTIM.Materials()
-    my_mats.S = None
-    my_problem.initialise_concentrations(my_mats)
+    my_problem.initialise_concentrations()
     w = my_problem.u_n
     assert fenics.errornorm(u, w) == 0

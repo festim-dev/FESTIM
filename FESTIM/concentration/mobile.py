@@ -22,31 +22,7 @@ class Mobile(Concentration):
         self.sources = []
         self.boundary_conditions = []
 
-    def initialise(self, V, value, label=None, time_step=None, S=None):
-        """Assign a value to self.previous_solution
-
-        Args:
-            V (fenics.FunctionSpace): the function space
-            value (sp.Add, float, int, str): the value of the initialisation.
-            label (str, optional): the label in the XDMF file. Defaults to
-                None.
-            time_step (int, optional): the time step to read in the XDMF file.
-                Defaults to None.
-            S (FESTIM.ArheniusCoeff, optional): the solubility. If not None,
-                conservation of chemical potential is assumed. Defaults to
-                None.
-        """
-        comp = self.get_comp(V, value, label=label, time_step=time_step)
-        if S is None:
-            comp = interpolate(comp, V)
-        else:
-            comp = comp/S
-            # Product must be projected
-            comp = project(comp, V)
-
-        assign(self.previous_solution, comp)
-
-    def create_form(self, materials, dx, ds, T,  dt=None, traps=None, chemical_pot=False, soret=False):
+    def create_form(self, materials, dx, ds, T,  dt=None, traps=None, soret=False):
         """Creates the variational formulation.
 
         Args:
@@ -61,11 +37,11 @@ class Mobile(Concentration):
                 to False.
         """
         self.F = 0
-        self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, chemical_pot=chemical_pot, soret=soret)
+        self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, soret=soret)
         self.create_source_form(dx)
-        self.create_fluxes_form(materials, T, ds, chemical_pot=chemical_pot)
+        self.create_fluxes_form(T, ds)
 
-    def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, chemical_pot=False, soret=False):
+    def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, soret=False):
         """Creates the variational formulation for the diffusive part.
 
         Args:
@@ -80,21 +56,10 @@ class Mobile(Concentration):
                 to False.
         """
         F = 0
-        c_0 = self.solution
-        c_0_n = self.previous_solution
-        if chemical_pot:
-            theta = c_0
-            theta_n = c_0_n
-        T, T_n = T.T, T.T_n
-
         for material in materials.materials:
             D_0 = material.D_0
             E_D = material.E_D
-            if chemical_pot:
-                E_S = material.E_S
-                S_0 = material.S_0
-                c_0 = theta*S_0*exp(-E_S/k_B/T)
-                c_0_n = theta_n*S_0*exp(-E_S/k_B/T_n)
+            c_0, c_0_n = self.get_concentration_for_a_given_material(material, T)
 
             subdomains = material.id  # list of subdomains with this material
             if type(subdomains) is not list:
@@ -105,13 +70,13 @@ class Mobile(Concentration):
                 # transient form
                 if dt is not None:
                     F += ((c_0-c_0_n)/dt.value)*self.test_function*dx(subdomain)
-                F += dot(D_0 * exp(-E_D/k_B/T)*grad(c_0),
-                        grad(self.test_function))*dx(subdomain)
+                F += dot(D_0 * exp(-E_D/k_B/T.T)*grad(c_0),
+                         grad(self.test_function))*dx(subdomain)
                 if soret:
-                    Q = material.free_enthalpy*T + material.entropy
-                    F += dot(D_0 * exp(-E_D/k_B/T) *
-                            Q * c_0 / (R * T**2) * grad(T),
-                            grad(self.test_function))*dx(subdomain)
+                    Q = material.free_enthalpy*T.T + material.entropy
+                    F += dot(D_0 * exp(-E_D/k_B/T.T) *
+                             Q * c_0 / (R * T.T**2) * grad(T.T),
+                             grad(self.test_function))*dx(subdomain)
 
         # add the traps transient terms
         if dt is not None:
@@ -148,7 +113,7 @@ class Mobile(Concentration):
         self.F += F_source
         self.sub_expressions += expressions_source
 
-    def create_fluxes_form(self, materials, T, ds, chemical_pot):
+    def create_fluxes_form(self, T, ds):
         """Modifies the formulation and adds fluxes based
         on parameters in self.boundary_conditions
         """
@@ -156,10 +121,7 @@ class Mobile(Concentration):
         expressions_fluxes = []
         F = 0
 
-        if chemical_pot:
-            solute = self.solution*materials.S
-        else:
-            solute = self.solution
+        solute = self.mobile_concentration()
 
         for bc in self.boundary_conditions:
             if bc.component != "T":
@@ -173,3 +135,9 @@ class Mobile(Concentration):
         self.F_fluxes = F
         self.F += F
         self.sub_expressions += expressions_fluxes
+
+    def get_concentration_for_a_given_material(self, material, T):
+        return self.solution, self.previous_solution
+
+    def mobile_concentration(self):
+        return self.solution

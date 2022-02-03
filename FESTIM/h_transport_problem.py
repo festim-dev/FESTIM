@@ -57,7 +57,7 @@ class HTransportProblem:
         self.attribute_flux_boundary_conditions()
         # Define functions
         self.define_function_space(mesh)
-        self.initialise_concentrations(materials)
+        self.initialise_concentrations()
         self.traps.initialise_extrinsic_traps(self.V_CG1)
 
         # Define variational problem H transport
@@ -92,7 +92,7 @@ class HTransportProblem:
         self.V_CG1 = FunctionSpace(mesh.mesh, "CG", 1)
         self.V_DG1 = FunctionSpace(mesh.mesh, "DG", 1)
 
-    def initialise_concentrations(self, materials):
+    def initialise_concentrations(self):
         """Creates the main fenics.Function (holding all the concentrations),
         eventually split it and assign it to Trap and Mobile.
         Then initialise self.u_n based on self.initial_conditions
@@ -135,7 +135,7 @@ class HTransportProblem:
                 functionspace = self.V.sub(component).collapse()
 
             if component == 0:
-                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step, S=materials.S)
+                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
             else:
                 trap = self.traps.get_trap(component)
                 trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
@@ -166,7 +166,7 @@ class HTransportProblem:
         self.mobile.create_form(
             materials, dx, ds, self.T, dt,
             traps=self.traps,
-            chemical_pot=self.settings.chemical_pot, soret=self.settings.soret)
+            soret=self.settings.soret)
         F += self.mobile.F
         expressions += self.mobile.sub_expressions
 
@@ -260,22 +260,22 @@ class HTransportProblem:
         self.u_n.assign(self.u)
         self.traps.update_extrinsic_traps_density()
 
-    def update_post_processing_solutions(self, S, exports):
+    def update_post_processing_solutions(self, exports):
         if self.u.function_space().num_sub_spaces() == 0:
             res = [self.u]
         else:
             res = list(self.u.split())
-        if self.settings.chemical_pot:  # c_m = theta * S
-            solute = res[0]*S
-            if self.need_projecting_solute(exports):
-                # project solute on V_DG1
-                solute = project(solute, self.V_DG1)
-        else:
-            solute = res[0]
 
-        self.mobile.post_processing_solution = solute
+        self.mobile.post_processing_solution = res[0]
         for i, trap in enumerate(self.traps.traps, 1):
             trap.post_processing_solution = res[i]
+
+        if self.settings.chemical_pot:
+            self.mobile.post_processing_solution_to_concentration()
+            if self.need_projecting_solute(exports):
+                # project solute on V_DG1
+                self.mobile.post_processing_solution = \
+                    project(self.mobile.post_processing_solution, self.V_DG1)
 
     def need_projecting_solute(self, exports):
         """Checks if the user computes a Hydrogen surface flux or exports the

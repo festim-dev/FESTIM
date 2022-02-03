@@ -122,7 +122,6 @@ class Simulation:
         self.sources = sources
 
         # internal attributes
-        self.mobile = FESTIM.Mobile()
         self.h_transport_problem = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
@@ -166,6 +165,11 @@ class Simulation:
         spaces, the functions, the variational forms...
         """
         set_log_level(self.log_level)
+
+        if self.settings.chemical_pot:
+            self.mobile = FESTIM.Theta()
+        else:
+            self.mobile = FESTIM.Mobile()
         self.h_transport_problem = HTransportProblem(
             self.mobile, self.traps, self.T, self.settings,
             self.initial_conditions)
@@ -190,9 +194,10 @@ class Simulation:
         self.materials.create_properties(self.mesh.volume_markers, self.T.T)
 
         # if the temperature is not time-dependent, solubility can be projected
-        if self.settings.chemical_pot and self.T.is_steady_state():
-            self.materials.S = project(self.materials.S, self.V_DG1)
-
+        if self.settings.chemical_pot:
+            if self.T.is_steady_state():
+                self.materials.S = project(self.materials.S, self.V_DG1)
+            self.mobile.S = self.materials.S
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
         self.exports.initialise_derived_quantities(
@@ -299,7 +304,7 @@ class Simulation:
             dict: a mapping of the field ("solute", "T", "retention") to its
             post_processsing_solution
         """
-        self.h_transport_problem.update_post_processing_solutions(self.materials.S, self.exports)
+        self.h_transport_problem.update_post_processing_solutions(self.exports)
 
         label_to_function = {
             "solute": self.mobile.post_processing_solution,

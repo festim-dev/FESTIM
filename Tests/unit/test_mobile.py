@@ -124,34 +124,6 @@ class TestCreateDiffusionForm:
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
 
-    def test_chemical_potential(self):
-        # build
-        Index._globalcount = 8
-        my_mobile = FESTIM.Mobile()
-        my_mobile.F = 0
-        my_mobile.solution = f.Function(self.V, name="c_t")
-        my_mobile.previous_solution = f.Function(self.V, name="c_t_n")
-        my_mobile.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1])
-
-        # run
-        my_mobile.create_diffusion_form(my_mats, self.dx, self.my_temp, dt=self.dt, chemical_pot=True)
-
-        # test
-        Index._globalcount = 8
-        v = my_mobile.test_function
-        D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
-        c_0 = my_mobile.solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
-        c_0_n = my_mobile.previous_solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
-        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.dx(1)
-        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
-
-        print("expected F:")
-        print(expected_form)
-        print("produced F:")
-        print(my_mobile.F)
-        assert my_mobile.F.equals(expected_form)
-
     def test_with_traps_transient(self):
         # build
         Index._globalcount = 8
@@ -207,71 +179,6 @@ class TestInitialise:
         for x in [0, 0.5, 0.3, 0.6]:
             assert my_mobile.previous_solution(x) == expected_sol(x)
 
-    def test_from_expresion_chemical_pot(self):
-        my_mobile = FESTIM.Mobile()
-        my_mobile.previous_solution = self.u
-        value = 1 + FESTIM.x
-        S = f.interpolate(f.Constant(2), self.V)
-        expected_sol = my_mobile.get_comp(self.V, value)
-        expected_sol = f.project(expected_sol/S)
-
-        # run
-        my_mobile.initialise(self.V, value, S=S)
-
-        # test
-        for x in [0, 0.5, 0.3, 0.6]:
-            assert my_mobile.previous_solution(x) == expected_sol(x)
-
-
-def test_fluxes_chemical_pot():
-    '''
-    This test that the function boundary_conditions.create_H_fluxes()
-    returns the correct formulation in the case of conservation
-    of chemical potential
-    '''
-
-    Kr_0 = 2
-    E_Kr = 3
-    S_0 = 2
-    E_S = 3
-    order = 2
-    k_B = FESTIM.k_B
-
-    mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, "P", 1)
-    my_mesh = FESTIM.Mesh(mesh)
-    my_mesh.dx = f.dx()
-    my_mesh.ds = f.ds()
-
-    my_mobile = FESTIM.Mobile()
-    my_mobile.F = 0
-    my_mobile.solution = f.Function(V)
-    my_mobile.test_function = f.TestFunction(V)
-    my_mobile.boundary_conditions = [
-        FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
-        FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
-    ]
-    T = FESTIM.Temperature(value=1000)
-    T.create_functions(my_mesh)
-
-    S = S_0*f.exp(-E_S/k_B/T.T)
-    my_mats = FESTIM.Materials()
-    my_mats.S = S
-
-    my_mobile.create_fluxes_form(my_mats, T, my_mesh.ds, chemical_pot=True)
-
-    test_sol = my_mobile.test_function
-    sol = my_mobile.solution
-    Kr_0 = my_mobile.sub_expressions[0]
-    E_Kr = my_mobile.sub_expressions[1]
-    Kr = Kr_0 * f.exp(-E_Kr/k_B/T.T)
-    expected_form = 0
-    expected_form += -test_sol * (-Kr*(sol*S)**order)*f.ds(1)
-    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(1)
-    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(2)
-    assert expected_form.equals(my_mobile.F)
-    assert expected_form.equals(my_mobile.F_fluxes)
-
 
 def test_fluxes():
     Kr_0 = 2
@@ -296,9 +203,7 @@ def test_fluxes():
     T = FESTIM.Temperature(value=1000)
     T.create_functions(my_mesh)
 
-    my_mats = FESTIM.Materials()
-
-    my_mobile.create_fluxes_form(my_mats, T, my_mesh.ds, chemical_pot=False)
+    my_mobile.create_fluxes_form(T, my_mesh.ds)
 
     test_sol = my_mobile.test_function
     sol = my_mobile.solution
