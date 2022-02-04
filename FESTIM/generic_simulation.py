@@ -212,8 +212,17 @@ class Simulation:
             self.run_steady()
 
         # End
-        print('\007')
+        if self.settings.completion_tone:
+            self.completion_tone_option()
+
         return self.make_output()
+
+    def completion_tone_option(self):
+        """
+        Checks to see if user has requested a tone
+        """
+        if "enabled" in self.settings.completion_tone:
+            print('\007')
 
     def run_transient(self):
         # add final_time to Exports

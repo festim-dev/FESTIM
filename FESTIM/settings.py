@@ -14,7 +14,7 @@ class Settings:
             the solver to converge
         traps_element_type (str): Finite element used for traps.
         update_jacobian (bool):
-
+        completion_tone (str): a tone alerting completion of current run
     """
     def __init__(
         self,
@@ -26,7 +26,8 @@ class Settings:
         chemical_pot=False,
         soret=False,
         traps_element_type="CG",
-        update_jacobian=True
+        update_jacobian=True,
+        completion_tone="disabled"
     ):
         """Inits Settings
 
@@ -51,6 +52,9 @@ class Settings:
             update_jacobian (bool, optional): If set to False, the Jacobian of
                 the formulation will be computed only once at the beggining.
                 Else it will be computed at each time step. Defaults to True.
+            completion_tone (str, optional): If "enabled", an native os alert
+                tone will alert user upon completion of current run. Defaults
+                to "disabled".
         """
         # TODO maybe transient and final_time are redundant
         self.transient = transient
@@ -64,3 +68,5 @@ class Settings:
 
         self.traps_element_type = traps_element_type
         self.update_jacobian = update_jacobian
+
+        self.completion_tone = completion_tone
