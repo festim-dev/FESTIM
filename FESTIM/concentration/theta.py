@@ -46,11 +46,18 @@ class Theta(Mobile):
             fenics.Product, fenics.Product: the current concentration and
                 previous concentration
         """
-        # TODO this needs changing for Henry
         E_S = material.E_S
         S_0 = material.S_0
-        c_0 = self.solution*S_0*f.exp(-E_S/k_B/T.T)
-        c_0_n = self.previous_solution*S_0*f.exp(-E_S/k_B/T.T_n)
+        S = S_0*f.exp(-E_S/k_B/T.T)
+        S_n = S_0*f.exp(-E_S/k_B/T.T_n)
+        if material.solubility_law == "sieverts":
+            c_0 = self.solution*S
+            c_0_n = self.previous_solution*S_n
+        elif material.solubility_law == "henry":
+            # for some reason this doesn't work without dolfin_eps
+            # makes the first iteration longer to converge
+            c_0 = (self.solution + f.DOLFIN_EPS)**2*S
+            c_0_n = self.previous_solution**2*S_n
         return c_0, c_0_n
 
     def mobile_concentration(self):
@@ -89,6 +96,8 @@ class Theta(Mobile):
         for mat in materials.materials:
             if mat.solubility_law == "sieverts":
                 F += self.solution*self.S*v*dx(mat.id)
+            elif mat.solubility_law == "henry":
+                F += self.solution**2*self.S*v*dx(mat.id)
         self.F = F
 
 
@@ -116,15 +125,14 @@ class ConcentrationToTheta(f.UserExpression):
         cell = f.Cell(self._vm.mesh(), ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
-        # TODO this requires changes for Henry's law
+        S_0 = material.S_0
+        E_S = material.E_S
+        c = self._comp(x)
+        S = S_0*f.exp(-E_S/k_B/self._T(x))
         if material.solubility_law == "sieverts":
-            S_0 = material.S_0
-            E_S = material.E_S
-            c = self._comp(x)
-            S = S_0*f.exp(-E_S/k_B/self._T(x))
             value[0] = c/S
-        else:
-            assert False
+        elif material.solubility_law == "henry":
+            value[0] = (c/S + f.DOLFIN_EPS)**0.5
 
     def value_shape(self):
         return ()
