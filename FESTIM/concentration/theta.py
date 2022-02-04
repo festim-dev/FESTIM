@@ -56,7 +56,7 @@ class Theta(Mobile):
         elif material.solubility_law == "henry":
             # for some reason this doesn't work without dolfin_eps
             # makes the first iteration longer to converge
-            c_0 = (self.solution + f.DOLFIN_EPS)**2*S
+            c_0 = (self.solution)**2*S
             c_0_n = self.previous_solution**2*S_n
         return c_0, c_0_n
 

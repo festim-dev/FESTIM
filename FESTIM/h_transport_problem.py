@@ -144,6 +144,9 @@ class HTransportProblem:
                 trap = self.traps.get_trap(component)
                 trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
 
+        # initial guess needs to be non zero if chemical pot
+        if self.settings.chemical_pot:
+            self.mobile.solution.interpolate(Constant(DOLFIN_EPS))
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
