@@ -115,7 +115,8 @@ class HTransportProblem:
             self.mobile.test_function = self.v
         else:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
-                concentration.solution = list(split(self.u))[i]
+                concentration.solution = self.u.sub(i)
+                # concentration.solution = list(split(self.u))[i]
                 concentration.previous_solution = self.u_n.sub(i)
                 concentration.test_function = list(split(self.v))[i]
 
@@ -146,12 +147,17 @@ class HTransportProblem:
 
         # initial guess needs to be non zero if chemical pot
         if self.settings.chemical_pot:
-            self.mobile.solution.interpolate(Constant(DOLFIN_EPS))
+            if self.V.num_sub_spaces() == 0:
+                functionspace = self.V
+            else:
+                functionspace = self.V.sub(component).collapse()
+            self.mobile.solution.assign(interpolate(Constant(DOLFIN_EPS), functionspace))
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
+                concentration.solution = list(split(self.u))[i]
 
     def define_variational_problem(self, materials, dx, ds, dt=None):
         """Creates the variational problem for hydrogen transport (form,
