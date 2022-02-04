@@ -63,13 +63,13 @@ class Theta(Mobile):
     def mobile_concentration(self):
         """Returns the hydrogen concentration as c=theta*S
         Where S is FESTIM.ArheniusCoeff defines on all materials.
-        This is needed when adding neuman or robin BCs to the form.
+        This is needed when adding robin BCs to the form.
 
         Returns:
             fenics.Product: the hydrogen mobile concentration
         """
-        # TODO this needs changing for Henry
-        return self.solution*self.S
+        return ThetaToConcentration(
+            self.solution, self.materials, self.volume_markers, self.T.T)
 
     def post_processing_solution_to_concentration(self):
         """Converts the post_processing_solution from theta to mobile
@@ -132,7 +132,40 @@ class ConcentrationToTheta(f.UserExpression):
         if material.solubility_law == "sieverts":
             value[0] = c/S
         elif material.solubility_law == "henry":
-            value[0] = (c/S + f.DOLFIN_EPS)**0.5
+            value[0] = (c/S)**0.5
+
+    def value_shape(self):
+        return ()
+
+
+class ThetaToConcentration(f.UserExpression):
+    def __init__(self, comp, materials, vm, T, **kwargs):
+        """initialisation
+
+        Args:
+            comp (fenics.Expression): value of BC
+            materials (FESTIM.Materials): contains materials objects
+            vm (fenics.MeshFunction): volume markers
+            T (fenics.Function): Temperature
+        """
+        super().__init__(kwargs)
+        self._comp = comp
+        self._vm = vm
+        self._T = T
+        self._materials = materials
+
+    def eval_cell(self, value, x, ufc_cell):
+        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
+        subdomain_id = self._vm[cell]
+        material = self._materials.find_material_from_id(subdomain_id)
+        S_0 = material.S_0
+        E_S = material.E_S
+        c = self._comp(x)
+        S = S_0*f.exp(-E_S/k_B/self._T(x))
+        if material.solubility_law == "sieverts":
+            value[0] = c*S
+        elif material.solubility_law == "henry":
+            value[0] = c**2*S
 
     def value_shape(self):
         return ()
