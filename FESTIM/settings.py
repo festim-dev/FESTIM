@@ -52,9 +52,9 @@ class Settings:
             update_jacobian (bool, optional): If set to False, the Jacobian of
                 the formulation will be computed only once at the beggining.
                 Else it will be computed at each time step. Defaults to True.
-            completion_tone (str, optional): If "enabled", an native os alert
+            completion_tone (bool, optional): If True, a native os alert
                 tone will alert user upon completion of current run. Defaults
-                to "disabled".
+                to False.
         """
         # TODO maybe transient and final_time are redundant
         self.transient = transient
