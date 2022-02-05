@@ -14,7 +14,7 @@ class Settings:
             the solver to converge
         traps_element_type (str): Finite element used for traps.
         update_jacobian (bool):
-        completion_tone (str): a tone alerting completion of current run
+        completion_tone (bool): a tone alerting completion of current run
     """
     def __init__(
         self,
