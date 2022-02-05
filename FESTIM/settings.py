@@ -27,7 +27,7 @@ class Settings:
         soret=False,
         traps_element_type="CG",
         update_jacobian=True,
-        completion_tone="disabled"
+        completion_tone=False
     ):
         """Inits Settings
 
