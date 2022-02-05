@@ -1059,7 +1059,7 @@ def test_completion_tone():
         absolute_tolerance=1e-9,
         relative_tolerance=1e-9,
         final_time=1,
-        completion_tone="enabled"
+        completion_tone=True
     )
     my_model.initialise()
     my_model.run()

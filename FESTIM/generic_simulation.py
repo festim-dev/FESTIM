@@ -215,6 +215,8 @@ class Simulation:
         if self.settings.completion_tone:
             print('\007')
 
+        return self.make_output()
+
     def run_transient(self):
         # add final_time to Exports
         self.exports.final_time = self.settings.final_time
