@@ -217,7 +217,9 @@ class Simulation:
             self.run_steady()
 
         # End
-        print('\007')
+        if self.settings.completion_tone:
+            print('\007')
+
         return self.make_output()
 
     def run_transient(self):
