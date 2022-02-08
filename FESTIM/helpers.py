@@ -1,7 +1,8 @@
 import FESTIM
 import warnings
-warnings.simplefilter('always', DeprecationWarning)
 import fenics as f
+# from FESTIM import k_B, R, E_D, E_S
+warnings.simplefilter('always', DeprecationWarning)
 
 
 def update_expressions(expressions, t):
@@ -531,3 +532,14 @@ def define_mesh(self, parameters):
             self.mesh = FESTIM.MeshFromVertices(mesh_parameters["vertices"])
         else:
             self.mesh = FESTIM.MeshFromRefinements(**mesh_parameters)
+
+
+def kJmol_to_eV(energy):
+    """Converts an energy value given in units kJ mol^{-1} to eV
+
+    Args:
+        energy_in_kJ (int)
+    """
+    energy_in_eV = FESTIM.k_B*energy*1e3/FESTIM.R
+
+    return energy_in_eV

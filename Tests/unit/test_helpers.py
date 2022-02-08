@@ -1,6 +1,4 @@
-from FESTIM.helpers import help_key
-from FESTIM.materials import Material
-import pytest
+from FESTIM import help_key, kJmol_to_eV
 
 
 def test_help_key():
@@ -11,3 +9,14 @@ def test_help_key():
     help_key("volumes")
     help_key("surfaces")
     help_key("E_p")
+
+
+def test_energy_converter():
+    energy_in_kJ = 1
+    energy_in_eV = kJmol_to_eV(energy_in_kJ)
+
+    if energy_in_eV == 0.010364266093811426:
+        pass
+    else:
+        print("Energy converter function not working properly")
+        assert False
