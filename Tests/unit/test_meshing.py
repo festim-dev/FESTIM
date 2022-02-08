@@ -1,7 +1,7 @@
 # Unit tests meshing
 from FESTIM.materials import Materials, Material
-from FESTIM.meshing import Mesh, Mesh1D, MeshFromXDMF, MeshFromRefinements, \
-    MeshFromVertices
+from FESTIM import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, \
+    MeshFromXDMF
 import fenics
 import pytest
 from pathlib import Path
