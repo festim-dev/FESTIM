@@ -1,7 +1,6 @@
 import FESTIM
 import warnings
 import fenics as f
-# from FESTIM import k_B, R, E_D, E_S
 warnings.simplefilter('always', DeprecationWarning)
 
 
@@ -538,7 +537,7 @@ def kJmol_to_eV(energy):
     """Converts an energy value given in units kJ mol^{-1} to eV
 
     Args:
-        energy_in_kJ (int)
+        energy (float): Energy in kJ mol^{-1}
     """
     energy_in_eV = FESTIM.k_B*energy*1e3/FESTIM.R
 

@@ -15,8 +15,4 @@ def test_energy_converter():
     energy_in_kJ = 1
     energy_in_eV = kJmol_to_eV(energy_in_kJ)
 
-    if energy_in_eV == 0.010364266093811426:
-        pass
-    else:
-        print("Energy converter function not working properly")
-        assert False
+    assert 0.010364266093811426 == energy_in_eV
