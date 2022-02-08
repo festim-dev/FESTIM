@@ -538,6 +538,9 @@ def kJmol_to_eV(energy):
 
     Args:
         energy (float): Energy in kJ mol^{-1}
+
+    Returns:
+        energy (float): Energy in eV
     """
     energy_in_eV = FESTIM.k_B*energy*1e3/FESTIM.R
 

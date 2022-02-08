@@ -1,4 +1,4 @@
-from FESTIM import help_key, kJmol_to_eV
+from FESTIM import help_key, kJmol_to_eV, k_B, R
 
 
 def test_help_key():
@@ -12,7 +12,9 @@ def test_help_key():
 
 
 def test_energy_converter():
-    energy_in_kJ = 1
-    energy_in_eV = kJmol_to_eV(energy_in_kJ)
+    test_values = [2, 20, 30, 20.5]
+    for energy_value in test_values:
+        energy_in_eV = kJmol_to_eV(energy_value)
+        expected_value = k_B*energy_value*1e3/R
 
-    assert 0.010364266093811426 == energy_in_eV
+        assert energy_in_eV == expected_value
