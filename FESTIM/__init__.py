@@ -6,7 +6,12 @@ k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 from .helpers import update_expressions, help_key, \
     parameters_helper, read_parameters
 
-from .meshing import Mesh, Mesh1D, MeshFromVertices, MeshFromRefinements, MeshFromXDMF
+from .meshing.mesh import Mesh
+from .meshing.mesh_1d import Mesh1D
+from .meshing.mesh_from_refinements import MeshFromRefinements
+from .meshing.mesh_from_vertices import MeshFromVertices
+from .meshing.mesh_from_xdmf import MeshFromXDMF
+
 from .temperature.temperature import Temperature
 from .temperature.temperature_solver import HeatTransferProblem
 
