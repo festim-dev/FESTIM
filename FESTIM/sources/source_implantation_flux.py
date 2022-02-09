@@ -6,9 +6,7 @@ import numpy as np
 class ImplantationFlux(Source):
     """
     Implantation flux represented by a volumetric mobile particle source
-    emulating the implantation of ions with a 1D gaussian distribution.
-
-    Current gaussian formulation only supports 1D cases
+    with a 1D gaussian distribution in the x direction.
 
     Usage:
     my_source = ImplantationFlux(
