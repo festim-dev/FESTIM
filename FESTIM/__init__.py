@@ -50,7 +50,8 @@ from .exports.txt_export import TXTExport, TXTExports
 from .settings import Settings
 from .stepsize import Stepsize
 
-from .source import Source
+from .sources.source import Source
+from .sources.source_implantation_flux import ImplantationFlux
 
 from .materials import Material, Materials
 from .concentration.concentration import Concentration
