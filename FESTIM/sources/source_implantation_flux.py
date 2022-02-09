@@ -18,16 +18,15 @@ class ImplantationFlux(Source):
 
     Attributes:
         flux (float, sympy.Expr): The flux of the implatation source (m-2 s-1)
-        imp_depth (float, sympy.Expr): Depth of implantation (m)
-        width (float, sympy.Expr): The dispersion of the ion beam (m)
+        imp_depth (float, sympy.Expr): The implantation depth (m)
+        width (float, sympy.Expr): The standard deviation of the ion beam (m)
     """
     def __init__(self, flux, imp_depth, width, volume):
         """
         Args:
             flux (float, sympy.Expr): The flux of the implatation source (m-2 s-1)
-            imp_depth (float, sympy.Expr): Implantation depth of
-                mobile particles (m)
-            width (float, sympy.Expr): The dispersion of the ion beam (m)
+            imp_depth (float, sympy.Expr): The implantation depth (m)
+            width (float, sympy.Expr): The standard deviation of the ion beam (m)
             volume (int): the volume in which the source is applied
         """
         self.flux = flux
