@@ -51,6 +51,7 @@ from .settings import Settings
 from .stepsize import Stepsize
 
 from .source import Source
+from .source import ImplantationFlux
 
 from .materials import Material, Materials
 from .concentration.concentration import Concentration
