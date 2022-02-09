@@ -6,9 +6,9 @@ import numpy as np
 class ImplantationFlux(Source):
     """
     Implantation flux represented by a volumetric mobile particle source
-    representing implantaion of ions with a 1D gaussian distribution.
+    emulating the implantation of ions with a 1D gaussian distribution.
 
-    Only can be used in 1D cases
+    Current gaussian formulation only supports 1D cases
 
     Usage:
     my_source = ImplantationFlux(
@@ -17,24 +17,23 @@ class ImplantationFlux(Source):
 
 
     Attributes:
-        flux (float, sympy.expr): The flux of the implatation source (m-2 s-1)
-        imp_depth (float, sympy.expr): Depth of implantation (m)
-        width (float, sympy.expr): The dispersion of the ion beam (m)
+        flux (float, sympy.Expr): The flux of the implatation source (m-2 s-1)
+        imp_depth (float, sympy.Expr): Depth of implantation (m)
+        width (float, sympy.Expr): The dispersion of the ion beam (m)
     """
-    def __init__(self, flux, imp_depth, width, volume, field="0"):
+    def __init__(self, flux, imp_depth, width, volume):
         """
         Args:
-            flux (float): The flux of the implatation source (m2/s)
-            imp_depth (float): Depth of implantation (m)
-            width (float): The dispersion of the ion beam (m)
+            flux (float, sympy.Expr): The flux of the implatation source (m-2 s-1)
+            imp_depth (float, sympy.Expr): Implantation depth of
+                mobile particles (m)
+            width (float, sympy.Expr): The dispersion of the ion beam (m)
             volume (int): the volume in which the source is applied
         """
-        self.volume = volume
-        self.field = field
         self.flux = flux
         self.imp_depth = imp_depth
         self.width = width
         distribution = 1/(self.width*(2*np.pi)**0.5) * \
             sp.exp(-0.5*((x-self.imp_depth)/self.width)**2)
         value = self.flux*distribution
-        super().__init__(value, volume, field)
+        super().__init__(value, volume, field="0")
