@@ -1,4 +1,4 @@
-from fenics import Constant, Expression, Function
+from fenics import Constant, Expression, Function, UserExpression
 import sympy as sp
 
 
@@ -30,5 +30,5 @@ class Source:
         elif isinstance(value, sp.Expr):
             self.value = Expression(
                 sp.printing.ccode(value), t=0, degree=2)
-        elif isinstance(value, (Expression, Function)):
+        elif isinstance(value, (Expression, UserExpression, Function)):
             self.value = value
