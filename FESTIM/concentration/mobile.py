@@ -97,17 +97,15 @@ class Mobile(Concentration):
         expressions_source = []
 
         print('Defining source terms')
-        for source_term in self.sources:
-            source = Expression(
-                sp.printing.ccode(
-                    source_term.value), t=0, degree=2)
-            if type(source_term.volume) is list:
-                volumes = source_term.volume
+        for source in self.sources:
+            if type(source.volume) is list:
+                volumes = source.volume
             else:
-                volumes = [source_term.volume]
+                volumes = [source.volume]
             for volume in volumes:
-                F_source += - source*self.test_function*dx(volume)
-            expressions_source.append(source)
+                F_source += - source.value*self.test_function*dx(volume)
+            if isinstance(source.value, Expression):
+                expressions_source.append(source.value)
 
         self.F_source = F_source
         self.F += F_source
