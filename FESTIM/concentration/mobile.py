@@ -104,7 +104,7 @@ class Mobile(Concentration):
                 volumes = [source.volume]
             for volume in volumes:
                 F_source += - source.value*self.test_function*dx(volume)
-            if isinstance(source.value, Expression):
+            if isinstance(source.value, (Expression, UserExpression)):
                 expressions_source.append(source.value)
 
         self.F_source = F_source
