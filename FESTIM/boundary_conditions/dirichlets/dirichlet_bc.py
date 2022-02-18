@@ -150,7 +150,10 @@ class BoundaryConditionExpression(f.UserExpression):
         new_prms = {}
         for key, prm_val in self.prms.items():
             if callable(prm_val):
-                new_prms[key] = prm_val(x)
+                if isinstance(prm_val, f.Constant):
+                    new_prms[key] = float(prm_val)
+                else:
+                    new_prms[key] = prm_val(x)
             else:
                 new_prms[key] = prm_val
 

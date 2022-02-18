@@ -108,15 +108,13 @@ class HeatTransferProblem(FESTIM.Temperature):
 
         # source term
         for source in self.sources:
-            src = sp.printing.ccode(source.value)
-            src = f.Expression(src, degree=2, t=0)
-            self.sub_expressions.append(src)
+            self.sub_expressions.append(source.value)
             if type(source.volume) is list:
                 volumes = source.volume
             else:
                 volumes = [source.volume]
             for volume in volumes:
-                self.F += - src*v_T*dx(volume)
+                self.F += - source.value*v_T*dx(volume)
 
         # Boundary conditions
         for bc in self.boundary_conditions:
