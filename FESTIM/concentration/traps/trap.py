@@ -149,9 +149,7 @@ class Trap(Concentration):
         Args:
             dx (fenics.Measure): the dx measure of the sim
         """
-        for source_term in self.sources:
-            source = sp.printing.ccode(source_term.value)
-            source = Expression(source, t=0, degree=2, name="source_trap_{}".format(self.id))
-            self.F_source = -source*self.test_function*dx(source_term.volume)
+        for source in self.sources:
+            self.F_source = -source.value*self.test_function*dx(source.volume)
             self.F += self.F_source
-            self.sub_expressions.append(source)
+            self.sub_expressions.append(source.value)
