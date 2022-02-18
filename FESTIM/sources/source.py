@@ -6,7 +6,8 @@ class Source:
     """Volumetric source term.
 
     Attributes:
-        value (sympy.Add, float): the value of the volumetric source term
+        value (fenics.Expression, fenics.Constant): the value of the
+            volumetric source term
         volume (int): the volume in which the source is applied
         field (str): the field on which the source is applied ("0", "solute",
             "1", "T")
@@ -15,10 +16,11 @@ class Source:
         """Inits Source
 
         Args:
-            value (sympy.Add, float): the value of the volumetric source term
+            value (sympy.Expr, float, int, fenics.Expression,
+                fenics.Function): the value of the volumetric source term
             volume (int): the volume in which the source is applied
-            field (str): the field on which the source is applied ("0", "solute",
-                "1", "T")
+            field (str): the field on which the source is applied ("0",
+                "solute", "1", "T")
         """
         self.volume = volume
         self.field = field
