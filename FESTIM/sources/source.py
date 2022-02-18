@@ -1,4 +1,4 @@
-from fenics import Constant, Expression, Function
+from fenics import Constant, Expression, Function, UserExpression
 import sympy as sp
 
 
@@ -6,8 +6,8 @@ class Source:
     """Volumetric source term.
 
     Attributes:
-        value (fenics.Expression, fenics.Constant): the value of the
-            volumetric source term
+        value (fenics.Expression, fenics.UserExpression, fenics.Constant): the
+            value of the volumetric source term
         volume (int): the volume in which the source is applied
         field (str): the field on which the source is applied ("0", "solute",
             "1", "T")
@@ -17,7 +17,8 @@ class Source:
 
         Args:
             value (sympy.Expr, float, int, fenics.Expression,
-                fenics.Function): the value of the volumetric source term
+                fenics.UserExpression, fenics.Function): the value of the
+                volumetric source term
             volume (int): the volume in which the source is applied
             field (str): the field on which the source is applied ("0",
                 "solute", "1", "T")
@@ -30,5 +31,5 @@ class Source:
         elif isinstance(value, sp.Expr):
             self.value = Expression(
                 sp.printing.ccode(value), t=0, degree=2)
-        elif isinstance(value, (Expression, Function)):
+        elif isinstance(value, (Expression, UserExpression, Function)):
             self.value = value

@@ -68,3 +68,19 @@ def test_source_with_expression_value():
     value = f.Expression("2", degree=1)
     source = FESTIM.Source(value, volume=1, field="solute")
     assert isinstance(source.value, f.Expression)
+
+
+def test_source_with_userexpression_value():
+    """
+    Tests that Source can be created with a fenics.UserExpression value and
+    that the .value attribute is fenics.UserExpression
+    """
+    class CustomExpr(f.UserExpression):
+        def __init__(self):
+            super().__init__()
+
+        def eval(self, value, x):
+            value[0] = 1
+
+    source = FESTIM.Source(CustomExpr(), volume=1, field="solute")
+    assert isinstance(source.value, f.UserExpression)
