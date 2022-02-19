@@ -1,4 +1,3 @@
-import sys
 import fenics as f
 
 
@@ -50,7 +49,7 @@ class Stepsize:
         if not converged:
             self.value.assign(float(self.value)/change_ratio)
             if float(self.value) < dt_min:
-                sys.exit('Error: stepsize reached minimal value')
+                raise ValueError('stepsize reached minimal value')
         if nb_it < 5:
             self.value.assign(float(self.value)*change_ratio)
         else:
