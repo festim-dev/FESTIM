@@ -195,8 +195,11 @@ class Simulation:
 
         # if the temperature is not time-dependent, solubility can be projected
         if self.settings.chemical_pot:
+            # TODO this could be moved to Materials.create_properties()
             if self.T.is_steady_state():
-                self.materials.S = project(self.materials.S, self.V_DG1)
+                # self.materials.S = project(self.materials.S, self.V_DG1)
+                self.materials.solubility_as_function(self.mesh, self.T.T)
+
             # TODO move this to self.h_transport_problem
             self.mobile.S = self.materials.S
             self.mobile.materials = self.materials
@@ -297,10 +300,10 @@ class Simulation:
     def run_post_processing(self):
         """Create post processing functions and compute/write the exports
         """
-        label_to_function = self.update_post_processing_solutions()
+        self.update_post_processing_solutions()
 
         self.exports.t = self.t
-        self.exports.write(label_to_function, self.dt)
+        self.exports.write(self.label_to_function, self.dt)
 
     def update_post_processing_solutions(self):
         """Creates the post-processing functions by splitting self.u. Projects
@@ -323,7 +326,7 @@ class Simulation:
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
-        return label_to_function
+        self.label_to_function = label_to_function
 
     def make_output(self):
         """Creates a dictionary with some useful information such as derived
@@ -332,17 +335,18 @@ class Simulation:
         Returns:
             dict: the output
         """
-        label_to_function = self.update_post_processing_solutions()
+        # TODO we don't need that
+        # label_to_function = self.update_post_processing_solutions()
 
-        for key, val in label_to_function.items():
+        for key, val in self.label_to_function.items():
             if not isinstance(val, Function):
-                label_to_function[key] = project(val, self.V_DG1)
+                self.label_to_function[key] = project(val, self.V_DG1)
 
         output = dict()  # Final output
         # Compute error
         for export in self.exports.exports:
             if isinstance(export, FESTIM.Error):
-                export.function = label_to_function[export.field]
+                export.function = self.label_to_function[export.field]
                 if "error" not in output:
                     output["error"] = []
                 output["error"].append(export.compute(self.t))
@@ -356,14 +360,14 @@ class Simulation:
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
-            "solute": label_to_function["solute"],
-            "T": label_to_function["T"]
+            "solute": self.label_to_function["solute"],
+            "T": self.label_to_function["T"]
         }
         # add traps to output
         for trap in self.traps.traps:
             output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
         # compute retention and add it to output
-        output["solutions"]["retention"] = project(label_to_function["retention"], self.V_DG1)
+        output["solutions"]["retention"] = project(self.label_to_function["retention"], self.V_DG1)
         return output
 
 
