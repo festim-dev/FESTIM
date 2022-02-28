@@ -150,8 +150,12 @@ class HTransportProblem:
             if self.V.num_sub_spaces() == 0:
                 functionspace = self.V
             else:
-                functionspace = self.V.sub(component).collapse()
-            self.mobile.solution.assign(interpolate(Constant(DOLFIN_EPS), functionspace))
+                functionspace = self.V.sub(0).collapse()
+            initial_guess = project(
+                self.mobile.previous_solution + Constant(DOLFIN_EPS),
+                functionspace
+            )
+            self.mobile.solution.assign(initial_guess)
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:

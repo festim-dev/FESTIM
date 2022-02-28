@@ -25,13 +25,28 @@ class Theta(Mobile):
                 Defaults to None.
         """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
-        comp = ConcentrationToTheta(
-            comp, self.materials, self.volume_markers, self.T.T
-        )
+        # comp = ConcentrationToTheta(
+        #     comp, self.materials, self.volume_markers, self.T.T
+        # )
 
-        # Product must be projected
-        comp = f.project(comp, V)
-        f.assign(self.previous_solution, comp)
+        # # Product must be projected
+        # comp = f.project(comp, V)
+        # f.assign(self.previous_solution, comp)
+
+        prev_sol = f.Function(V)
+        v = f.TestFunction(V)
+        dx = f.Measure("dx", subdomain_data=self.volume_markers)
+        F = 0
+        for mat in self.materials.materials:
+            S = mat.S_0*f.exp(-mat.E_S/k_B/self.T.T)
+            F += -prev_sol*v*dx(mat.id)
+            if mat.solubility_law == "sieverts":
+                F += comp/S*v*dx(mat.id)
+            elif mat.solubility_law == "henry":
+                F += (comp/S)**0.5*v*dx(mat.id)
+        f.solve(F == 0, prev_sol, bcs=[])
+
+        self.previous_solution.assign(prev_sol)
 
     def get_concentration_for_a_given_material(self, material, T):
         """Returns the concentration (and previous concentration) for a given
