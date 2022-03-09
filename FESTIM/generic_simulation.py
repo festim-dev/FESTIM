@@ -1,438 +1,277 @@
 import FESTIM
+from FESTIM.h_transport_problem import HTransportProblem
 from fenics import *
-import sympy as sp
-import numpy as np
-import warnings
 
 
-class Simulation():
-    def __init__(self, parameters, log_level=40):
-        self.parameters = parameters
+class Simulation:
+    """
+    Main FESTIM class representing a FESTIM model
+
+    Attributes:
+        log_level (int): set what kind of FEniCS messsages are
+            displayed.
+            CRITICAL  = 50, errors that may lead to data corruption
+            ERROR     = 40, errors
+            WARNING   = 30, warnings
+            INFO      = 20, information of general interest
+            PROGRESS  = 16, what's happening (broadly)
+            TRACE     = 13,  what's happening (in detail)
+            DBG       = 10  sundry
+        settings (FESTIM.Settings): The model's settings.
+        dt (FESTIM.Stepsize): The model's stepsize.
+        traps (FESTIM.Traps): The model's traps.
+        materials (FESTIM.Materials): The model materials.
+        boundary_conditions (list of FESTIM.BoundaryCondition):
+            The model's boundary conditions (temperature of H
+            concentration).
+        initial_conditions (list of FESTIM.InitialCondition):
+            The model's initial conditions (H or T).
+        T (FESTIM.Temperature): The model's temperature.
+        exports (FESTIM.Exports): The model's exports
+            (derived quantities, XDMF exports, txt exports...).
+        mesh (FESTIM.Mesh): The mesh of the model.
+        sources (list of FESTIM.Source): Volumetric sources
+            (particle or heat sources).
+        mobile (FESTIM.Mobile): the mobile concentration (c_m or theta)
+        t (fenics.Constant): the current time of simulation
+        timer (fenics.timer): the elapsed time of simulation
+    """
+    def __init__(
+        self,
+        parameters=None,
+        mesh=None,
+        materials=None,
+        sources=[],
+        boundary_conditions=[],
+        traps=None,
+        dt=None,
+        settings=None,
+        temperature=None,
+        initial_conditions=[],
+        exports=None,
+        log_level=40
+    ):
+        """Inits FESTIM.Simulation
+
+        Args:
+            parameters (dict, optional): Soon to be deprecated. Defaults to
+                None.
+            mesh (FESTIM.Mesh, optional): The mesh of the model. Defaults to
+                None.
+            materials (FESTIM.Materials or [FESTIM.Material, ...], optional):
+                The model materials. Defaults to None.
+            sources (list of FESTIM.Source, optional): Volumetric sources
+                (particle or heat sources). Defaults to [].
+            boundary_conditions (list of FESTIM.BoundaryCondition, optional):
+                The model's boundary conditions (temperature of H
+                concentration). Defaults to None.
+            traps (FESTIM.Traps or list, optional): The model's traps. Defaults
+                to None.
+            dt (FESTIM.Stepsize, optional): The model's stepsize. Defaults to
+                None.
+            settings (FESTIM.Settings, optional): The model's settings.
+                Defaults to None.
+            temperature (FESTIM.Temperature, optional): The model's
+                temperature. Can be an expression or a heat transfer model.
+                Defaults to None.
+            initial_conditions (list of FESTIM.InitialCondition, optional):
+                The model's initial conditions (H or T). Defaults to [].
+            exports (FESTIM.Exports or list, optional): The model's exports
+                (derived quantities, XDMF exports, txt exports...). Defaults
+                to None.
+            log_level (int, optional): set what kind of FEniCS messsages are
+                displayed. Defaults to 40.
+                CRITICAL  = 50, errors that may lead to data corruption
+                ERROR     = 40, errors
+                WARNING   = 30, warnings
+                INFO      = 20, information of general interest
+                PROGRESS  = 16, what's happening (broadly)
+                TRACE     = 13,  what's happening (in detail)
+                DBG       = 10  sundry
+        """
         self.log_level = log_level
-        self.chemical_pot = False
-        self.transient = True
-        self.expressions = []
-        self.files = []
-        self.derived_quantities_global = [
-            FESTIM.post_processing.header_derived_quantities(self.parameters)
-            ]
-        self.dt = Constant(0, name="dt")
-        self.nb_iterations = 0
-        self.nb_iterations_between_exports = 1
-        self.nb_iterations_between_export_derived_quantities = None
-        self.nb_iterations_between_compute_derived_quantities = 1
-        self.export_xdmf_last_only = False
-        self.J = None
 
-        self.soret = False
+        self.settings = settings
+        self.dt = dt
+        if traps is None:
+            self.traps = FESTIM.Traps([])
+        elif type(traps) is list:
+            self.traps = FESTIM.Traps(traps)
+        elif isinstance(traps, FESTIM.Traps):
+            self.traps = traps
+        elif isinstance(traps, FESTIM.Trap):
+            self.traps = FESTIM.Traps([traps])
+
+        if type(materials) is list:
+            self.materials = FESTIM.Materials(materials)
+        elif isinstance(materials, FESTIM.Materials):
+            self.materials = materials
+        else:
+            self.materials = materials
+
+        self.boundary_conditions = boundary_conditions
+        self.initial_conditions = initial_conditions
+        self.T = temperature
+        if exports is None:
+            self.exports = FESTIM.Exports([])
+        elif type(exports) is list:
+            self.exports = FESTIM.Exports(exports)
+        elif isinstance(exports, FESTIM.Exports):
+            self.exports = exports
+        self.mesh = mesh
+        self.sources = sources
+
+        # internal attributes
+        self.h_transport_problem = None
+        self.t = 0  # Initialising time to 0s
+        self.timer = None
+
+        # parse the parameters dict if given
+        if parameters is not None:
+            FESTIM.read_parameters(self, parameters)
+
+    def attribute_source_terms(self):
+        """Assigns the source terms (in self.sources) to the correct field
+        (self.mobile, self.T, or traps)
+        """
+        field_to_object = {
+            "solute": self.mobile,
+            "0": self.mobile,
+            0: self.mobile,
+            "mobile": self.mobile,
+            "T": self.T
+        }
+        for i, trap in enumerate(self.traps.traps, 1):
+            field_to_object[i] = trap
+            field_to_object[str(i)] = trap
+
+        for source in self.sources:
+            field_to_object[source.field].sources.append(source)
+
+    def attribute_boundary_conditions(self):
+        """Assigns boundary_conditions to mobile and T
+        """
+        self.T.boundary_conditions = []
+        self.h_transport_problem.boundary_conditions = []
+
+        for bc in self.boundary_conditions:
+            if bc.component == "T":
+                self.T.boundary_conditions.append(bc)
+            else:
+                self.h_transport_problem.boundary_conditions.append(bc)
 
     def initialise(self):
-        # Export parameters
-        if "parameters" in self.parameters["exports"].keys():
-            try:
-                FESTIM.export_parameters(self.parameters)
-            except TypeError:
-                pass
-
+        """Initialise the model. Defines markers, create the suitable function
+        spaces, the functions, the variational forms...
+        """
         set_log_level(self.log_level)
 
-        # Check if transient
-        solving_parameters = self.parameters["solving_parameters"]
-        if "type" in solving_parameters.keys():
-            if solving_parameters["type"] == "solve_transient":
-                self.transient = True
-            elif solving_parameters["type"] == "solve_stationary":
-                self.transient = False
-            else:
-                raise ValueError(
-                    str(solving_parameters["type"]) + ' unkown')
+        if self.settings.chemical_pot:
+            self.mobile = FESTIM.Theta()
+        else:
+            self.mobile = FESTIM.Mobile()
+        self.h_transport_problem = HTransportProblem(
+            self.mobile, self.traps, self.T, self.settings,
+            self.initial_conditions)
+        self.attribute_source_terms()
+        self.attribute_boundary_conditions()
 
-        # Declaration of variables
-        if self.transient:
-            self.final_time = solving_parameters["final_time"]
-            initial_stepsize = solving_parameters["initial_stepsize"]
-            self.dt.assign(initial_stepsize)  # time step size
+        if isinstance(self.mesh, FESTIM.Mesh1D):
+            self.mesh.define_measures(self.materials)
+        else:
+            self.mesh.define_measures()
 
-        # create mesh and markers
-        self.define_mesh()
-        self.define_materials()
-        self.define_markers()
-
-        # Define function space for system of concentrations and properties
-        self.define_function_spaces()
+        self.V_DG1 = FunctionSpace(self.mesh.mesh, 'DG', 1)
+        self.exports.V_DG1 = self.V_DG1
 
         # Define temperature
-        self.define_temperature()
-
-        # check if the soret effect has to be taken into account
-        if "soret" in self.parameters["temperature"]:
-            if self.parameters["temperature"]["soret"]:
-                self.soret = True
+        if isinstance(self.T, FESTIM.HeatTransferProblem):
+            self.T.create_functions(self.materials, self.mesh, self.dt)
+        elif isinstance(self.T, FESTIM.Temperature):
+            self.T.create_functions(self.mesh)
 
         # Create functions for properties
-        self.D, self.thermal_cond, self.cp, self.rho, self.H, self.S =\
-            FESTIM.create_properties(
-                self.mesh, self.parameters["materials"],
-                self.volume_markers, self.T)
-        if self.S is not None:
-            self.chemical_pot = True
+        self.materials.create_properties(self.mesh.volume_markers, self.T.T)
 
-            # if the temperature is of type "solve_stationary" or "expression"
-            # the solubility needs to be projected
-            project_S = False
-            temp_type = self.parameters["temperature"]["type"]
-            if temp_type == "solve_stationary":
-                project_S = True
-            elif temp_type == "expression":
-                if "t" not in sp.printing.ccode(
-                        self.parameters["temperature"]["value"]):
-                    project_S = True
-            if project_S:
-                self.S = project(self.S, self.V_DG1)
+        # if the temperature is not time-dependent, solubility can be projected
+        if self.settings.chemical_pot:
+            if self.T.is_steady_state():
+                self.materials.S = project(self.materials.S, self.V_DG1)
+            self.mobile.S = self.materials.S
+        self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
-        # Define functions
-        self.initialise_concentrations()
-        self.initialise_extrinsic_traps()
-
-        # Define variational problem H transport
-        self.define_variational_problem_H_transport()
-        self.define_variational_problem_extrinsic_traps()
-
-        # Solution files
-        self.append = False
-        exports = self.parameters["exports"]
-        if "xdmf" in exports.keys():
-            if "last_timestep_only" in exports["xdmf"].keys():
-                self.export_xdmf_last_only = True
-            self.files = FESTIM.define_xdmf_files(exports)
-            if "nb_iterations_between_exports" in exports["xdmf"]:
-                self.nb_iterations_between_exports = \
-                   exports["xdmf"]["nb_iterations_between_exports"]
-
-        if "derived_quantities" in exports:
-            derived_quant = exports["derived_quantities"]
-            if "nb_iterations_between_exports" in derived_quant:
-                self.nb_iterations_between_export_derived_quantities = \
-                   derived_quant["nb_iterations_between_exports"]
-            if "nb_iterations_between_compute" in derived_quant:
-                self.nb_iterations_between_compute_derived_quantities = \
-                   derived_quant["nb_iterations_between_compute"]
-
-    def define_materials(self):
-        materials = self.parameters["materials"]
-        # check the keys in the materials are known
-        for mat in materials:
-            for key in mat.keys():
-                if key not in FESTIM.parameters_helper["materials"]:
-                    warnings.warn(
-                        key + " key in materials is unknown",
-                        UserWarning)
-
-        # check the materials keys match
-        if len(materials) > 1:
-            old = set(materials[0].keys())
-            for mat in materials:
-                if not old == set(mat.keys()):
-                    raise ValueError("Materials dicts keys are not the same")
-                old = set(mat.keys())
-
-        # warn about unused keys
-        transient_properties = ["rho", "heat_capacity"]
-        if self.parameters["temperature"]["type"] != "solve_transient":
-            for key in transient_properties:
-                if key in materials[0].keys():
-                    warnings.warn(key + " key will be ignored", UserWarning)
-
-        if "thermal_cond" in materials[0].keys():
-            warn = True
-            if self.parameters["temperature"]["type"] != "expression":
-                warn = False
-            elif "derived_quantities" in self.parameters["exports"].keys():
-                derived_quantities = \
-                    self.parameters["exports"]["derived_quantities"]
-                if "surface_flux" in derived_quantities:
-                    for surface_flux in derived_quantities["surface_flux"]:
-                        if surface_flux["field"] == "T":
-                            warn = False
-            if warn:
-                warnings.warn("thermal_cond key will be ignored", UserWarning)
-
-        # check that ids are different
-        mat_ids = []
-        for mat in materials:
-            if type(mat["id"]) is list:
-                mat_ids += mat["id"]
-            else:
-                mat_ids.append(mat["id"])
-
-        if len(mat_ids) != len(np.unique(mat_ids)):
-            raise ValueError("Some materials have the same id")
-
-        self.materials = materials
-
-    def define_mesh(self):
-
-        mesh_parameters = self.parameters["mesh_parameters"]
-        if "mesh_file" in mesh_parameters.keys():
-            # Read volumetric mesh
-            mesh = Mesh()
-            XDMFFile(mesh_parameters["mesh_file"]).read(mesh)
-        elif ("mesh" in mesh_parameters.keys() and
-                isinstance(mesh_parameters["mesh"], type(Mesh()))):
-            # use provided fenics mesh
-            mesh = mesh_parameters["mesh"]
-        elif "vertices" in mesh_parameters.keys():
-            # mesh from list of vertices
-            mesh = FESTIM.generate_mesh_from_vertices(
-                mesh_parameters["vertices"])
-        else:
-            mesh = FESTIM.mesh_and_refine(mesh_parameters)
-        self.mesh = mesh
-        return mesh
-
-    def define_markers(self):
-        # Define and mark subdomains
-
-        mesh_parameters = self.parameters["mesh_parameters"]
-        if "cells_file" in mesh_parameters.keys():
-            volume_markers, surface_markers = \
-                FESTIM.read_subdomains_from_xdmf(
-                    self.mesh,
-                    mesh_parameters["cells_file"],
-                    mesh_parameters["facets_file"])
-        elif "meshfunction_cells" in mesh_parameters.keys():
-            volume_markers = mesh_parameters["meshfunction_cells"]
-            surface_markers = mesh_parameters["meshfunction_facets"]
-        else:
-            if "vertices" in mesh_parameters.keys():
-                size = max(mesh_parameters["vertices"])
-            else:
-                size = mesh_parameters["size"]
-            if len(self.parameters["materials"]) > 1:
-                FESTIM.check_borders(
-                    size, self.parameters["materials"])
-            volume_markers, surface_markers = \
-                FESTIM.subdomains_1D(
-                    self.mesh, self.parameters["materials"], size)
-
-        self.volume_markers, self.surface_markers = \
-            volume_markers, surface_markers
-
-        self.ds = Measure(
-            'ds', domain=self.mesh, subdomain_data=self.surface_markers)
-        self.dx = Measure(
-            'dx', domain=self.mesh, subdomain_data=self.volume_markers)
-
-    def define_function_spaces(self):
-        solving_parameters = self.parameters["solving_parameters"]
-        if "traps_element_type" in solving_parameters.keys():
-            trap_element = solving_parameters["traps_element_type"]
-        else:
-            trap_element = "CG"  # Default is CG
-        order_trap = 1
-        element_solute, order_solute = "CG", 1
-
-        # function space for H concentrations
-        nb_traps = len(self.parameters["traps"])
-
-        if nb_traps == 0:
-            V = FunctionSpace(self.mesh, element_solute, order_solute)
-        else:
-            solute = FiniteElement(
-                element_solute, self.mesh.ufl_cell(), order_solute)
-            traps = FiniteElement(
-                trap_element, self.mesh.ufl_cell(), order_trap)
-            element = [solute] + [traps]*nb_traps
-            V = FunctionSpace(self.mesh, MixedElement(element))
-        self.V = V
-        # function space for T and ext trap dens
-        self.V_CG1 = FunctionSpace(self.mesh, 'CG', 1)
-        self.V_DG1 = FunctionSpace(self.mesh, 'DG', 1)
-
-    def define_temperature(self):
-        self.T = Function(self.V_CG1, name="T")
-        self.T_n = Function(self.V_CG1, name="T_n")
-
-        if self.parameters["temperature"]["type"] == "expression":
-            self.T_expr = Expression(
-                sp.printing.ccode(
-                    self.parameters["temperature"]['value']), t=0, degree=2)
-            self.T.assign(interpolate(self.T_expr, self.V_CG1))
-            self.T_n.assign(self.T)
-        else:
-            # Define variational problem for heat transfers
-
-            self.vT = TestFunction(self.V_CG1)
-            if self.parameters["temperature"]["type"] == "solve_transient":
-                T_ini = sp.printing.ccode(
-                    self.parameters["temperature"]["initial_condition"])
-                T_ini = Expression(T_ini, degree=2, t=0)
-                self.T_n.assign(interpolate(T_ini, self.V_CG1))
-            self.bcs_T, expressions_bcs_T = FESTIM.define_dirichlet_bcs_T(self)
-            self.FT, expressions_FT = \
-                FESTIM.define_variational_problem_heat_transfers(self)
-            self.expressions += expressions_bcs_T + expressions_FT
-
-            if self.parameters["temperature"]["type"] == "solve_stationary":
-                print("Solving stationary heat equation")
-                solve(self.FT == 0, self.T, self.bcs_T)
-                self.T_n.assign(self.T)
-
-    def initialise_concentrations(self):
-        self.u = Function(self.V)  # Function for concentrations
-
-        self.v = TestFunction(self.V)  # TestFunction for concentrations
-
-        if hasattr(self, "S"):
-            S = self.S
-        else:
-            S = None
-
-        print('Defining initial values')
-        V = self.V
-        u_n = Function(V)
-        components = list(split(u_n))
-
-        parameters = self.parameters
-        if "initial_conditions" in parameters.keys():
-            initial_conditions = parameters["initial_conditions"]
-        else:
-            initial_conditions = []
-        FESTIM.check_no_duplicates(initial_conditions)
-
-        for ini in initial_conditions:
-            if 'component' not in ini.keys():
-                ini["component"] = 0
-            if type(ini['value']) == str and ini['value'].endswith(".xdmf"):
-                comp = FESTIM.read_from_xdmf(ini, V)
-            else:
-                value = ini["value"]
-                value = sp.printing.ccode(value)
-                comp = Expression(value, degree=3, t=0)
-
-            if ini["component"] == 0 and self.chemical_pot:
-                comp = comp/S  # variable change
-            if V.num_sub_spaces() > 0:
-                if ini["component"] == 0 and self.chemical_pot:
-                    # Product must be projected
-                    comp = project(
-                        comp, V.sub(ini["component"]).collapse())
-                else:
-                    comp = interpolate(
-                        comp, V.sub(ini["component"]).collapse())
-                assign(u_n.sub(ini["component"]), comp)
-            else:
-                if ini["component"] == 0 and self.chemical_pot:
-                    u_n = project(comp, V)
-                else:
-                    u_n = interpolate(comp, V)
-        self.u_n = u_n
-
-    def initialise_extrinsic_traps(self):
-        traps = self.parameters["traps"]
-        self.extrinsic_traps = [Function(self.V_CG1) for d in traps
-                                if "type" in d.keys() if
-                                d["type"] == "extrinsic"]
-        self.testfunctions_traps = [TestFunction(self.V_CG1) for d in traps
-                                    if "type" in d.keys() if
-                                    d["type"] == "extrinsic"]
-
-        self.previous_solutions_traps = []
-        for i in range(len(self.extrinsic_traps)):
-            ini = Expression("0", degree=2)
-            self.previous_solutions_traps.append(interpolate(ini, self.V_CG1))
-
-    def define_variational_problem_H_transport(self):
-        print('Defining variational problem')
-        self.F, expressions_F = FESTIM.formulation(self)
-        self.expressions += expressions_F
-
-        # Boundary conditions
-        print('Defining boundary conditions')
-        self.bcs, expressions_BC = FESTIM.apply_boundary_conditions(self)
-        fluxes, expressions_fluxes = FESTIM.apply_fluxes(self)
-        self.F += fluxes
-        self.expressions += expressions_BC + expressions_fluxes
-
-    def define_variational_problem_extrinsic_traps(self):
-        # Define variational problem for extrinsic traps
-        if self.transient:
-            self.extrinsic_formulations, expressions_extrinsic = \
-                FESTIM.formulation_extrinsic_traps(self)
-            self.expressions.extend(expressions_extrinsic)
+        self.exports.initialise_derived_quantities(
+            self.mesh.dx, self.mesh.ds, self.materials)
 
     def run(self):
-        self.t = 0  # Initialising time to 0s
+        """Runs the model.
+
+        Returns:
+            dict: output containing solutions, mesh, derived quantities
+        """
         self.timer = Timer()  # start timer
 
-        if self.transient:
-            # compute Jacobian before iterating if required
-            solving_params = self.parameters["solving_parameters"]
-            if "update_jacobian" in solving_params:
-                if not solving_params["update_jacobian"]:
-                    du = TrialFunction(self.u.function_space())
-                    self.J = derivative(self.F, self.u, du)
+        if self.settings.transient:
+            self.run_transient()
+        else:
+            self.run_steady()
 
-            #  Time-stepping
-            print('Time stepping...')
-            while self.t < self.final_time:
-                self.iterate()
-            # print final message
-            elapsed_time = round(self.timer.elapsed()[0], 1)
+        # End
+        if self.settings.completion_tone:
+            print('\007')
+
+        return self.make_output()
+
+    def run_transient(self):
+        # add final_time to Exports
+        self.exports.final_time = self.settings.final_time
+
+        # compute Jacobian before iterating if required
+        if not self.settings.update_jacobian:
+            self.h_transport_problem.compute_jacobian()
+
+        #  Time-stepping
+        print('Time stepping...')
+        while self.t < self.settings.final_time:
+            self.iterate()
+        # print final message
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+        msg = "Solved problem in {:.2f} s".format(elapsed_time)
+        print(msg)
+
+    def run_steady(self):
+        # Solve steady state
+        print('Solving steady state problem...')
+
+        nb_iterations, converged = self.h_transport_problem.solve_once()
+
+        # Post processing
+        self.run_post_processing()
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+
+        # print final message
+        if converged:
             msg = "Solved problem in {:.2f} s".format(elapsed_time)
             print(msg)
         else:
-            # Solve steady state
-            print('Solving steady state problem...')
-
-            nb_iterations, converged = FESTIM.solve_once(
-                self.F, self.u,
-                self.bcs, self.parameters["solving_parameters"], J=self.J)
-
-            # Post processing
-            FESTIM.run_post_processing(self)
-            elapsed_time = round(self.timer.elapsed()[0], 1)
-
-            # print final message
-            if converged:
-                msg = "Solved problem in {:.2f} s".format(elapsed_time)
-                print(msg)
-            else:
-                msg = "The solver diverged in "
-                msg += "{:.0f} iteration(s) ({:.2f} s)".format(
-                    nb_iterations, elapsed_time)
-                raise ValueError(msg)
-
-        # export derived quantities to CSV
-        if "derived_quantities" in self.parameters["exports"].keys():
-            FESTIM.write_to_csv(
-                self.parameters["exports"]["derived_quantities"],
-                self.derived_quantities_global)
-
-        # End
-        print('\007')
-        return self.make_output()
+            msg = "The solver diverged in "
+            msg += "{:.0f} iteration(s) ({:.2f} s)".format(
+                nb_iterations, elapsed_time)
+            raise ValueError(msg)
 
     def iterate(self):
+        """Advance the model by one iteration
+        """
         # Update current time
-        self.t += float(self.dt)
+        self.t += float(self.dt.value)
         FESTIM.update_expressions(
-            self.expressions, self.t)
-
-        if self.parameters["temperature"]["type"] == "expression":
-            self.T_n.assign(self.T)
-            self.T_expr.t = self.t
-            self.T.assign(interpolate(self.T_expr, self.V_CG1))
-        self.D._T = self.T
-        if self.H is not None:
-            self.H._T = self.T
-        if self.thermal_cond is not None:
-            self.thermal_cond._T = self.T
-        if self.chemical_pot:
-            self.S._T = self.T
+            self.h_transport_problem.expressions, self.t)
+        self.T.update(self.t)
+        self.materials.update_properties_temperature(self.T)
 
         # Display time
-        simulation_percentage = round(self.t/self.final_time*100, 2)
+        # TODO this should be a method
+        simulation_percentage = round(self.t/self.settings.final_time*100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = '{:.1f} %        '.format(simulation_percentage)
@@ -441,77 +280,86 @@ class Simulation():
 
         print(msg, end="\r")
 
-        # Solve heat transfers
-        if self.parameters["temperature"]["type"] == "solve_transient":
-            dT = TrialFunction(self.T.function_space())
-            JT = derivative(self.FT, self.T, dT)  # Define the Jacobian
-            problem = NonlinearVariationalProblem(
-                self.FT, self.T, self.bcs_T, JT)
-            solver = NonlinearVariationalSolver(problem)
-            newton_solver_prm = solver.parameters["newton_solver"]
-            newton_solver_prm["absolute_tolerance"] = 1e-3
-            newton_solver_prm["relative_tolerance"] = 1e-10
-            solver.solve()
-            self.T_n.assign(self.T)
-
-        # Solve main problem
-        FESTIM.solve_it(
-            self.F, self.u, self.bcs, self.t,
-            self.dt, self.parameters["solving_parameters"], J=self.J)
-
-        # Solve extrinsic traps formulation
-        for j, form in enumerate(self.extrinsic_formulations):
-            solve(form == 0, self.extrinsic_traps[j], [])
+        # update H problem
+        self.h_transport_problem.update(self.t, self.dt)
 
         # Post processing
-        FESTIM.run_post_processing(self)
-
-        # Update previous solutions
-        self.u_n.assign(self.u)
-        for j, prev_sol in enumerate(self.previous_solutions_traps):
-            prev_sol.assign(self.extrinsic_traps[j])
-        self.nb_iterations += 1
+        self.run_post_processing()
 
         # avoid t > final_time
-        if self.t + float(self.dt) > self.final_time:
-            self.dt.assign(self.final_time - self.t)
+        if self.t + float(self.dt.value) > self.settings.final_time:
+            self.dt.value.assign(self.settings.final_time - self.t)
+
+    def run_post_processing(self):
+        """Create post processing functions and compute/write the exports
+        """
+        label_to_function = self.update_post_processing_solutions()
+
+        self.exports.t = self.t
+        self.exports.write(label_to_function, self.dt)
+
+    def update_post_processing_solutions(self):
+        """Creates the post-processing functions by splitting self.u. Projects
+        the function on a suitable functionspace if needed.
+
+        Returns:
+            dict: a mapping of the field ("solute", "T", "retention") to its
+            post_processsing_solution
+        """
+        self.h_transport_problem.update_post_processing_solutions(self.exports)
+
+        label_to_function = {
+            "solute": self.mobile.post_processing_solution,
+            "0": self.mobile.post_processing_solution,
+            0: self.mobile.post_processing_solution,
+            "T": self.T.T,
+            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
+        }
+        for trap in self.traps.traps:
+            label_to_function[trap.id] = trap.post_processing_solution
+            label_to_function[str(trap.id)] = trap.post_processing_solution
+
+        return label_to_function
 
     def make_output(self):
+        """Creates a dictionary with some useful information such as derived
+        quantities, solutions, etc.
 
-        if self.u.function_space().num_sub_spaces() == 0:
-            res = [self.u]
-        else:
-            res = list(self.u.split())
+        Returns:
+            dict: the output
+        """
+        label_to_function = self.update_post_processing_solutions()
 
-        if self.chemical_pot:  # c_m = theta * S
-            solute = project(res[0]*self.S, self.V_DG1)
-            res[0] = solute
+        for key, val in label_to_function.items():
+            if not isinstance(val, Function):
+                label_to_function[key] = project(val, self.V_DG1)
 
         output = dict()  # Final output
         # Compute error
-        if "error" in self.parameters["exports"].keys():
-            error = FESTIM.compute_error(
-                self.parameters["exports"]["error"], self.t,
-                [*res, self.T], self.mesh)
-            output["error"] = error
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.Error):
+                export.function = label_to_function[export.field]
+                if "error" not in output:
+                    output["error"] = []
+                output["error"].append(export.compute(self.t))
 
-        output["parameters"] = self.parameters
-        output["mesh"] = self.mesh
+        output["mesh"] = self.mesh.mesh
 
         # add derived quantities to output
-        if "derived_quantities" in self.parameters["exports"].keys():
-            output["derived_quantities"] = self.derived_quantities_global
+        for export in self.exports.exports:
+            if isinstance(export, FESTIM.DerivedQuantities):
+                output["derived_quantities"] = export.data
 
         # initialise output["solutions"] with solute and temperature
         output["solutions"] = {
-            "solute": res[0],
-            "T": self.T
+            "solute": label_to_function["solute"],
+            "T": label_to_function["T"]
         }
         # add traps to output
-        for i in range(len(self.parameters["traps"])):
-            output["solutions"]["trap_{}".format(i + 1)] = res[i + 1]
+        for trap in self.traps.traps:
+            output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
         # compute retention and add it to output
-        output["solutions"]["retention"] = project(sum(res), self.V_DG1)
+        output["solutions"]["retention"] = project(label_to_function["retention"], self.V_DG1)
         return output
 
 

@@ -1,12 +1,9 @@
 # Unit tests meshing
-from FESTIM.meshing import mesh_and_refine, subdomains_1D,\
-    read_subdomains_from_xdmf, check_borders,\
-    generate_mesh_from_vertices
-from FESTIM import Simulation
+from FESTIM.materials import Materials, Material
+from FESTIM import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, \
+    MeshFromXDMF
 import fenics
 import pytest
-import sympy as sp
-import numpy as np
 from pathlib import Path
 
 
@@ -22,25 +19,19 @@ def test_mesh_and_refine_meets_refinement_conditions():
         domain = domain()
         return domain
 
-    def mesh_parameters(ini, size, refs, pos):
-        param = {
-            "initial_number_of_cells": ini,
-            "size": size,
-            "refinements":  []
-        }
-        for i in range(len(refs)):
-            param["refinements"].append({"cells": refs[i], "x": pos[i]})
-        return param
-    refinements = [[[2, 3], [0.5, 0.25]], [[3, 11], [0.5, 0.25]]]
-    for i in range(len(refinements)):
-        param = mesh_parameters(2, 1, refinements[i][0], refinements[i][1])
-        mesh = mesh_and_refine(param)
+    refinements = [
+            [{"cells": 2, "x": 0.5}, {"cells": 3, "x": 0.25}],
+            [{"cells": 3, "x": 0.5}, {"cells": 11, "x": 0.25}]
+            ]
+    for refinement in refinements:
+        my_mesh = MeshFromRefinements(initial_number_of_cells=2, size=1, refinements=refinement)
+        mesh = my_mesh.mesh
 
         mf1 = fenics.MeshFunction('size_t', mesh, 1)
         mf2 = fenics.MeshFunction('size_t', mesh, 1)
-        subdomain1 = create_subdomains(0, refinements[i][1][1])
+        subdomain1 = create_subdomains(0, refinement[1]["x"])
         subdomain1.mark(mf1, 1)
-        subdomain2 = create_subdomains(0, refinements[i][1][0])
+        subdomain2 = create_subdomains(0, refinement[0]["x"])
         subdomain2.mark(mf2, 2)
         nb_cell_1 = 0
         nb_cell_2 = 0
@@ -50,8 +41,8 @@ def test_mesh_and_refine_meets_refinement_conditions():
                 nb_cell_1 += 1
             if mf2.array()[cell_no] == 2:
                 nb_cell_2 += 1
-        assert nb_cell_1 >= refinements[i][0][1]
-        assert nb_cell_2 >= refinements[i][0][0]
+        assert nb_cell_1 >= refinement[0]["cells"]
+        assert nb_cell_2 >= refinement[1]["cells"]
 
 
 def test_subdomains_1D():
@@ -61,78 +52,19 @@ def test_subdomains_1D():
     mesh = fenics.UnitIntervalMesh(20)
 
     materials = [
-        {
-            "borders": [0, 0.5],
-            "id": 1,
-            },
-        {
-            "borders": [0.5, 1],
-            "id": 2,
-            }
-            ]
-    volume_markers, surface_markers = subdomains_1D(mesh, materials, 1)
+        Material(id=1, D_0=None, E_D=None, borders=[0, 0.5]),
+        Material(id=2, D_0=None, E_D=None, borders=[0.5, 1]),
+        ]
+    my_mats = Materials(materials)
+    my_mesh = Mesh1D()
+    my_mesh.mesh = mesh
+    my_mesh.size = 1
+    my_mesh.define_markers(my_mats)
     for cell in fenics.cells(mesh):
         if cell.midpoint().x() < 0.5:
-            assert volume_markers[cell] == 1
+            assert my_mesh.volume_markers[cell] == 1
         else:
-            assert volume_markers[cell] == 2
-
-
-def test_check_borders():
-    materials = [
-        {
-            "borders": [0.5, 0.7],
-            "id": 1,
-            },
-        {
-            "borders": [0, 0.5],
-            "id": 2,
-            }
-            ]
-    size = 0.7
-    assert check_borders(size, materials) is True
-
-    with pytest.raises(ValueError, match=r'zero'):
-        size = 0.7
-        materials = [
-            {
-                "borders": [0.5, 0.7],
-                "id": 1,
-                },
-            {
-                "borders": [0.2, 0.5],
-                "id": 2,
-                }
-                ]
-        check_borders(size, materials)
-
-    with pytest.raises(ValueError, match=r'each other'):
-        materials = [
-            {
-                "borders": [0.5, 1],
-                "id": 1,
-                },
-            {
-                "borders": [0, 0.6],
-                "id": 2,
-                },
-            {
-                "borders": [0.6, 1],
-                "id": 3,
-                }
-                ]
-        size = 1
-        check_borders(size, materials)
-
-    with pytest.raises(ValueError, match=r'size'):
-        materials = [
-            {
-                "borders": [0, 1],
-                "id": 1,
-                }
-                ]
-        size = 3
-        check_borders(size, materials)
+            assert my_mesh.volume_markers[cell] == 2
 
 
 def test_create_mesh_xdmf(tmpdir):
@@ -143,13 +75,16 @@ def test_create_mesh_xdmf(tmpdir):
     f = fenics.XDMFFile(str(Path(file1)))
     f.write(mesh)
 
+    # write files
+    mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
+    mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+    file1 = tmpdir.join("cell_file.xdmf")
+    file2 = tmpdir.join("facet_file.xdmf")
+    fenics.XDMFFile(str(Path(file1))).write(mf_cells)
+    fenics.XDMFFile(str(Path(file2))).write(mf_facets)
+
     # read mesh
-    mesh_parameters = {
-        "mesh_file": str(Path(file1)),
-        }
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
-    my_model.define_mesh()
-    mesh2 = my_model.mesh
+    my_mesh = MeshFromXDMF(volume_file=str(Path(file1)), boundary_file=str(Path(file1)))
 
     # check that vertices are the same
     vertices_mesh = []
@@ -159,7 +94,7 @@ def test_create_mesh_xdmf(tmpdir):
                 [v.point().x(), v.point().y()])
 
     vertices_mesh2 = []
-    for f in fenics.facets(mesh2):
+    for f in fenics.facets(my_mesh.mesh):
         for v in fenics.vertices(f):
             vertices_mesh2.append(
                 [v.point().x(), v.point().y()])
@@ -187,8 +122,8 @@ def test_subdomains_from_xdmf(tmpdir):
     fenics.XDMFFile(str(Path(file2))).write(mf_facets)
 
     # read files
-    mf_cells_2, mf_facets_2 = read_subdomains_from_xdmf(
-        mesh, str(Path(file1)), str(Path(file2)))
+    my_mesh = MeshFromXDMF(volume_file=str(Path(file1)), boundary_file=str(Path(file2)))
+    mf_cells_2, mf_facets_2 = my_mesh.volume_markers, my_mesh.surface_markers
 
     # check
     for cell in fenics.cells(mesh):
@@ -203,14 +138,8 @@ def test_create_mesh_inbuilt():
     # create mesh
     mesh = fenics.UnitSquareMesh(10, 10)
 
-    # read mesh
-    mesh_parameters = {
-        "mesh": mesh
-        }
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
-    my_model.define_mesh()
-    mesh2 = my_model.mesh
-
+    my_mesh = Mesh(mesh=mesh)
+    mesh2 = my_mesh.mesh
     # check that vertices are the same
     vertices_mesh = []
     for f in fenics.facets(mesh):
@@ -238,19 +167,17 @@ def test_subdomains_inbuilt():
     mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
     mesh_parameters = {
             "mesh": mesh,
-            "meshfunction_cells": mf_cells,
-            "meshfunction_facets": mf_facets
+            "volume_markers": mf_cells,
+            "surface_markers": mf_facets
     }
     # read
 
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
-    my_model.mesh = mesh
-    my_model.define_markers()
+    my_mesh = Mesh(**mesh_parameters)
 
     mf_cells_2, mf_facets_2 = \
-        my_model.volume_markers, my_model.surface_markers
+        my_mesh.volume_markers, my_mesh.surface_markers
     # check
-    for cell in fenics.cells(mesh):
+    for cell in fenics.cells(my_mesh.mesh):
         assert mf_cells[cell] == mf_cells_2[cell]
         assert mf_facets[cell] == mf_facets_2[cell]
 
@@ -260,80 +187,18 @@ def test_generate_mesh_from_vertices():
     Test the function generate_mesh_from_vertices
     '''
     points = [0, 1, 2, 3, 5]
-    mesh = generate_mesh_from_vertices(points)
+    my_mesh = MeshFromVertices(points)
+    mesh = my_mesh.mesh
     assert mesh.num_vertices() == len(points)
     assert mesh.num_edges() == len(points) - 1
     assert mesh.num_cells() == len(points) - 1
 
 
-def test_create_mesh_vertices():
+def test_mesh_refinement_course_mesh():
     '''
-    Test the function create_mesh with vertices key
-    '''
-    points = [0, 1, 2, 5, 12, 24]
-    mesh_parameters = {
-        "vertices": points
-    }
-    my_model = Simulation({"mesh_parameters": mesh_parameters})
-    my_model.define_mesh()
-    mesh = my_model.mesh
-    assert mesh.num_vertices() == len(points)
-    assert mesh.num_edges() == len(points) - 1
-    assert mesh.num_cells() == len(points) - 1
-    for cell in fenics.cells(mesh):
-        for v in fenics.vertices(cell):
-            assert v.point().x() in points
-
-
-def test_integration_mesh_from_vertices_subdomains():
-    '''
-    Integration test for meshing and subdomain 1D
-    when parsing a list of vertices
-    Checks that the cells are marked correctly
-    '''
-    points = [0, 1, 2, 5, 12, 24]
-    mesh_parameters = {
-        "vertices": points
-    }
-    materials = [
-        {
-            "borders": [0, 2],
-            "id": 1
-        },
-        {
-            "borders": [2, 24],
-            "id": 2
-        }
-    ]
-    parameters = {
-        "mesh_parameters": mesh_parameters,
-        "materials": materials
-    }
-    my_model = Simulation(parameters)
-    my_model.define_mesh()
-    mesh = my_model.mesh
-    my_model.define_markers()
-    vm, sm = my_model.volume_markers, my_model.surface_markers
-
-    # Testing
-    for cell in fenics.cells(mesh):
-        if cell.midpoint().x() < 2:
-            assert vm[cell] == 1
-        elif cell.midpoint().x() > 2:
-            assert vm[cell] == 2
-    for facet in fenics.facets(mesh):
-        if facet.midpoint().x() == 0:
-            assert sm[facet] == 1
-        if facet.midpoint().x() == max(points):
-            assert sm[facet] == 2
-
-
-def test_mesh_and_refine_course_mesh():
-    '''
-    Test for mesh_and_refine, when mesh too coarse for refinement
+    Test for MeshFromRefinements, when mesh too coarse for refinement
         - return error
     '''
-    vertices = np.linspace(1, 4, num=4)
     mesh_parameters = {
         "initial_number_of_cells": 2,
         "size": 10,
@@ -348,4 +213,4 @@ def test_mesh_and_refine_course_mesh():
     with pytest.raises(ValueError,
                        match="Infinite loop: Initial number " +
                              "of cells might be too small"):
-        mesh_and_refine(mesh_parameters)
+        MeshFromRefinements(**mesh_parameters)

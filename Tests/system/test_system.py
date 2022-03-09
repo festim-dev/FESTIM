@@ -77,13 +77,8 @@ def test_run_temperature_stationary(tmpdir):
             },
         "exports": {
             "parameters":  str(Path(d)) + "/param.json",
-            "txt": {
-                "functions": ['retention'],
-                "times": [100],
-                "labels": ['retention']
-            },
             "xdmf": {
-                    "functions": ['T', 'solute'],
+                    "fields": ['T', 'solute'],
                     "labels":  ['temperature', 'solute'],
                     "folder": str(Path(d))
             },
@@ -99,7 +94,7 @@ def test_run_temperature_stationary(tmpdir):
             },
             "error": [
                 {
-                    "computed_solutions": ['T'],
+                    "fields": ['T'],
                     "exact_solutions": [u],
                     "norm": 'error_max',
                     "degree": 4
@@ -109,7 +104,7 @@ def test_run_temperature_stationary(tmpdir):
 
     }
     output = run(parameters)
-    assert output["error"][0][1] < 1e-9
+    assert output["error"][0] < 1e-9
 
 
 def test_run_temperature_transient(tmpdir):
@@ -189,19 +184,14 @@ def test_run_temperature_transient(tmpdir):
             }
             },
         "exports": {
-            "txt": {
-                "functions": ['retention'],
-                "times": [100],
-                "labels": ['retention']
-            },
             "xdmf": {
-                    "functions": ['T'],
+                    "fields": ['T'],
                     "labels":  ['temperature'],
                     "folder": str(Path(d))
             },
             "error": [
                 {
-                    "computed_solutions": ['T'],
+                    "fields": ['T'],
                     "exact_solutions": [u],
                     "norm": 'error_max',
                     "degree": 4
@@ -212,7 +202,7 @@ def test_run_temperature_transient(tmpdir):
     }
     output = run(parameters)
 
-    assert output["error"][0][1] < 1e-9
+    assert output["error"][0] < 1e-9
 
 
 def test_run_MMS(tmpdir):
@@ -317,13 +307,13 @@ def test_run_MMS(tmpdir):
                 },
             "exports": {
                 "xdmf": {
-                    "functions": ['retention'],
+                    "fields": ['retention'],
                     "labels": ['retention'],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -341,8 +331,8 @@ def test_run_MMS(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -455,14 +445,14 @@ def test_run_MMS_chemical_pot(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
-                    "times": [],
-                    "labels": [],
+                    "functions": ["solute"],
+                    "times": [100],
+                    "labels": ["solute"],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -480,8 +470,8 @@ def test_run_MMS_chemical_pot(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -546,7 +536,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
             },
         "exports": {
             "xdmf": {
-                "functions": ["retention"],
+                "fields": ["retention"],
                 "labels": ["retention"],
                 "folder": str(Path(d))
             },
@@ -659,19 +649,19 @@ def test_run_MMS_soret(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
+                    "fields": [],
                     "times": [],
                     "labels": [],
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": [0, 'T'],
+                    "fields": [0, 'T'],
                     "labels": ["solute", 'T'],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0],
+                        "fields": [0],
                         "exact_solutions": [u],
                         "norm": 'L2',
                         "degree": 4
@@ -688,7 +678,7 @@ def test_run_MMS_soret(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, dt, final_time, u))
-        error_max_u = output["error"][0][1]
+        error_max_u = output["error"][0]
         msg = 'L2 error on u is:' + str(error_max_u) + '\n \
             with h = ' + str(h) + '\n \
             with dt = ' + str(dt)
@@ -783,19 +773,19 @@ def test_run_MMS_steady_state(tmpdir):
                 },
             "exports": {
                 "txt": {
-                    "functions": [],
+                    "fields": [],
                     "times": [],
                     "labels": [],
                     "folder": str(Path(d))
                 },
                 "xdmf": {
-                    "functions": ['solute', '1', 'T', 'retention'],
+                    "fields": ['solute', '1', 'T', 'retention'],
                     "labels":  ['solute', '1', 'temp', 'retention'],
                     "folder": str(Path(d))
                 },
                 "error": [
                     {
-                        "computed_solutions": [0, 1],
+                        "fields": [0, 1],
                         "exact_solutions": [u, v],
                         "norm": 'error_max',
                         "degree": 4
@@ -811,8 +801,8 @@ def test_run_MMS_steady_state(tmpdir):
     for h in sizes:
         output = run(
             parameters(h, u, v))
-        error_max_u = output["error"][0][1]
-        error_max_v = output["error"][0][2]
+        error_max_u = output["error"][0]
+        error_max_v = output["error"][1]
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h)
@@ -820,12 +810,13 @@ def test_run_MMS_steady_state(tmpdir):
         assert error_max_u < tol_u and error_max_v < tol_v
 
 
-def test_chemical_pot_T_solve_stationary():
+def test_chemical_pot_T_solve_stationary(tmpdir):
     """checks that the chemical potential conservation is well computed with
     type solve_stationary for temperature
 
     adapted to catch bug described in issue #310
     """
+    d = tmpdir.mkdir("Solution_Test")
     parameters = {
         "mesh_parameters": {
             "size": 1,
@@ -895,14 +886,14 @@ def test_chemical_pot_T_solve_stationary():
                 ]
             },
             "xdmf": {
-                "functions": ['solute'],
+                "fields": ['solute'],
                 "labels": ["solute"],
-                "folder": 'results',
+                "folder": str(Path(d)),
             },
         }
     }
     out = run(parameters)
-    assert out["derived_quantities"][-1][1] > 0.97
+    assert out["derived_quantities"][-1][1] == pytest.approx(1)
 
 
 def test_performance_xdmf(tmpdir):
@@ -945,7 +936,7 @@ def test_performance_xdmf(tmpdir):
             },
         "exports": {
             "xdmf": {
-                    "functions": ['retention', 'T'],
+                    "fields": ['retention', 'T'],
                     "labels":  ['retention', 'temperature'],
                     "folder": str(Path(d))
             },
@@ -1007,7 +998,7 @@ def test_performance_xdmf_last_timestep(tmpdir):
             },
         "exports": {
             "xdmf": {
-                    "functions": ['retention', 'T'],
+                    "fields": ['retention', 'T'],
                     "labels":  ['retention', 'temperature'],
                     "folder": str(Path(d))
             },
@@ -1070,11 +1061,11 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
                 "surface_flux": [
                     {
                         "field": "solute",
-                        "surfaces": [0],
+                        "surfaces": [1],
                     },
                     {
                         "field": "T",
-                        "surfaces": [0],
+                        "surfaces": [1],
                     }
                 ],
                 "total_volume": [
@@ -1208,8 +1199,8 @@ def test_steady_state_with_2_materials():
 
     parameters["mesh_parameters"] = {
         "mesh": mesh,
-        "meshfunction_cells": vm,
-        "meshfunction_facets": sm,
+        "volume_markers": vm,
+        "surface_markers": sm,
     }
 
     parameters["traps"] = [
@@ -1251,7 +1242,7 @@ def test_steady_state_with_2_materials():
 
     # test
 
-    assert my_sim.u(0.5, 0.5) != 0
+    assert my_sim.h_transport_problem.u(0.5, 0.5) != 0
 
 
 def test_steady_state_traps_not_everywhere():
@@ -1320,7 +1311,7 @@ def test_steady_state_traps_not_everywhere():
     my_sim = FESTIM.Simulation(parameters)
     my_sim.initialise()
     my_sim.run()
-    assert not np.isnan(my_sim.u.split()[1](0.5))
+    assert not np.isnan(my_sim.h_transport_problem.u.split()[1](0.5))
 
 
 def test_no_jacobian_update():
@@ -1355,9 +1346,6 @@ def test_no_jacobian_update():
         "solving_parameters": {
             "final_time": 10,
             "initial_stepsize": 1,
-            "adaptive_stepsize": {
-                "stepsize_change_ratio": 1,
-                },
             "newton_solver": {
                 "absolute_tolerance": 1e-10,
                 "relative_tolerance": 1e-9,

@@ -1,5 +1,4 @@
-from FESTIM.helpers import help_key, find_material_from_id
-import pytest
+from FESTIM import help_key, kJmol_to_eV, k_B, R
 
 
 def test_help_key():
@@ -12,47 +11,10 @@ def test_help_key():
     help_key("E_p")
 
 
-def test_find_material_from_id():
-    """Tests the function find_material_from_id() for cases with one id per
-    material
-    """
-    materials = [
-        {
-            "id": 1
-        },
-        {
-            "id": 2
-        },
-    ]
-    assert find_material_from_id(materials, 1) == materials[0]
-    assert find_material_from_id(materials, 2) == materials[1]
+def test_energy_converter():
+    test_values = [2, 30, 20.5, -2, -12.2]
+    for energy_value in test_values:
+        energy_in_eV = kJmol_to_eV(energy_value)
+        expected_value = k_B*energy_value*1e3/R
 
-
-def test_find_material_from_id_with_several_ids():
-    """Tests the function find_material_from_id() for cases with several ids
-    per material
-    """
-    materials = [
-        {
-            "id": [1, 2]
-        },
-    ]
-    assert find_material_from_id(materials, 1) == materials[0]
-    assert find_material_from_id(materials, 2) == materials[0]
-
-
-def test_find_material_from_id_unfound_id():
-    """
-    Tests the function find_material_from_id with a list of materials
-    without the searched ID
-        - check that an error is rasied
-    """
-    materials = [
-        {"id": 5},
-        {"id": 2},
-        {"id": -1},
-    ]
-    id_test = 1
-    with pytest.raises(ValueError,
-                       match="Couldn't find ID {}".format(id_test)):
-        find_material_from_id(materials, id_test)
+        assert energy_in_eV == expected_value
