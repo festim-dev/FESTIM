@@ -44,7 +44,7 @@ class HTransportProblem:
         self.V_CG1 = None
         self.expressions = []
 
-    def initialise(self, mesh, materials, T, dt=None):
+    def initialise(self, mesh, materials, dt=None):
         """Assigns BCs, create suitable function space, initialise
         concentration fields, define variational problem
 
@@ -66,7 +66,8 @@ class HTransportProblem:
         print('Defining boundary conditions')
         self.create_dirichlet_bcs(materials, mesh)
         if self.settings.transient:
-            self.traps.define_variational_problem_extrinsic_traps(mesh.dx, T, dt)
+            self.traps.define_variational_problem_extrinsic_traps(mesh.dx,
+                                                                  dt, self.T)
 
     def define_function_space(self, mesh):
         """Creates a suitable function space for H transport problem
