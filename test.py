@@ -1,10 +1,5 @@
 import FESTIM
 
-
-def dyn_traps(T):  # units in m-3
-    return 1 - 2*T
-
-
 my_model = FESTIM.Simulation(log_level=20)
 my_model.mesh = FESTIM.MeshFromRefinements(10, size=1)
 my_model.materials = FESTIM.Materials(
@@ -13,13 +8,17 @@ my_model.materials = FESTIM.Materials(
     ])
 my_model.T = FESTIM.Temperature(100)
 my_model.traps = FESTIM.Traps([
-            FESTIM.Trap(
+            FESTIM.CustomTrap(
                 k_0=1,
                 E_k=1,
-                p_0=1,  # modifying p_0 helps
+                p_0=1,
                 E_p=1,
                 materials=1,
-                density=dyn_traps)])
+                form_parameters={
+                    'prm1': 1,
+                    'prm2': 2,
+                })
+                ])
 
 my_model.boundary_conditions = [
     FESTIM.DirichletBC(surfaces=[1, 2], value=0)]
