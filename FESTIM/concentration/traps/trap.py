@@ -6,7 +6,7 @@ import numpy as np
 
 class Trap(Concentration):
     def __init__(
-            self, k_0, E_k, p_0, E_p, materials, density, T, id=None):
+            self, k_0, E_k, p_0, E_p, materials, density, id=None):
         """Inits Trap
 
         Args:
@@ -33,7 +33,6 @@ class Trap(Concentration):
         if len(self.materials) != len(np.unique(self.materials)):
             raise ValueError("Duplicate materials in trap")
 
-        self.T = T
         self.density = []
         self.make_density(density)
         self.sources = []
@@ -44,13 +43,9 @@ class Trap(Concentration):
 
         for i, density in enumerate(densities):
             if density is not None:
-                if callable(density):  # if density is a function
-                    density_expr = density(T)
-                    self.density.append(density_expr)
-                if not callable(density):
-                    density_expr = sp.printing.ccode(density)
-                    self.density.append(Expression(density_expr,
-                                                   degree=2, t=0))
+                density_expr = sp.printing.ccode(density)
+                self.density.append(Expression(density_expr, degree=2, t=0,
+                                    name="density_{}_{}".format(self.id, i)))
 
     def create_form(
             self, mobile, materials, T, dx, dt=None,

@@ -33,8 +33,7 @@ class ExtrinsicTrap(Trap):
                 self.form_parameters[key] = Constant(value)
             else:
                 self.form_parameters[key] = Expression(sp.printing.ccode(value),
-                                       t=0,
-                                       degree=1)
+                                                       t=0, degree=1)
                 self.sub_expressions.append(self.form_parameters[key])
 
     def create_form_density(self, dx, dt):

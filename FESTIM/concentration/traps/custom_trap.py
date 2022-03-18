@@ -15,12 +15,16 @@ class CustomTrap(ExtrinsicTrap):
             form_parameters (dict): dict with keys ["prm1", "prm2"]
             id (int, optional): The trap id. Defaults to None.
         """
-        super().__init__(k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None)
+        super().__init__(k_0, E_k, p_0, E_p, materials, form_parameters,
+                         id=None, type=None)
 
-    def create_form_density(self, dx, dt):
+    def create_form_density(self, dx, dt, T):
         prm1 = self.form_parameters["prm1"]
         prm2 = self.form_parameters["prm2"]
         density = self.density[0]
+
+        print(prm1)
+        quit()
         F = ((density - self.density_previous_solution)/dt.value) * \
             self.density_test_function*dx
         F += -prm1*(T + prm2) * self.density_test_function*dx
