@@ -1,9 +1,9 @@
-import FESTIM
+from FESTIM import Trap
 from fenics import *
 import sympy as sp
 
 
-class ExtrinsicTrap(FESTIM.Trap):
+class ExtrinsicTrap(Trap):
     def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None):
         """Inits ExtrinsicTrap
 
