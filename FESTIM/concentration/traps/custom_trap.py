@@ -22,11 +22,10 @@ class CustomTrap(ExtrinsicTrap):
         prm1 = self.form_parameters["prm1"]
         prm2 = self.form_parameters["prm2"]
         density = self.density[0]
+        T = T.T
 
-        print(prm1)
-        quit()
         F = ((density - self.density_previous_solution)/dt.value) * \
             self.density_test_function*dx
-        F += -prm1*(T + prm2) * self.density_test_function*dx
+        F += -prm1 * (T + prm2) * self.density_test_function*dx
 
         self.form_density = F
