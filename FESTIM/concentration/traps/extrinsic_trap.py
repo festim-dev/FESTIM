@@ -44,7 +44,7 @@ class ExtrinsicTrap(Trap):
             dx (fenics.Measure): the dx measure of the sim
             dt (FESTIM.Stepsize): If None assuming steady state.
             T (FESTIM.Temperature): the temperature of the
-                simulation, NULL ARGUMENT
+                simulation
 
         Notes:
             T is an argument, although is not used in the formulation of
