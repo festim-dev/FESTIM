@@ -45,9 +45,8 @@ class Traps:
 
         Args:
             dx (fenics.Measure): the dx measure of the sim
-            dt (FESTIM.Stepsize, optional): If None assuming steady state.
-                Defaults to None.
-            T (FESTIM.Temperature, optional): the temperature of the simulation
+            dt (FESTIM.Stepsize): If None assuming steady state.
+            T (FESTIM.Temperature): the temperature of the simulation
         """
         self.extrinsic_formulations = []
         expressions_extrinsic = []

@@ -42,11 +42,10 @@ class ExtrinsicTrap(Trap):
 
         Args:
             dx (fenics.Measure): the dx measure of the sim
-            dt (FESTIM.Stepsize, optional): If None assuming steady state.
-                Defaults to None.
+            dt (FESTIM.Stepsize): If None assuming steady state.
             T (FESTIM.Temperature, optional): the temperature of the
                 simulation, NULL ARGUMENT
-        
+
         Notes:
             T is an argument, although is not used in the formulation of
             extrinsic traps, but potential for subclasses of extrinsic traps
@@ -59,7 +58,6 @@ class ExtrinsicTrap(Trap):
         f_a = self.form_parameters["f_a"]
         f_b = self.form_parameters["f_b"]
         density = self.density[0]
-        T = T.T
         F = ((density - self.density_previous_solution)/dt.value) * \
             self.density_test_function*dx
         F += -phi_0*(
