@@ -20,7 +20,7 @@ class TestCustomTrap:
 
     def test_that_form_parameters_are_expressions(self):
         """
-        test to ensure the parameters within form_prms are contants
+        test to ensure the parameters within form_prms are either of type fenics.Expression or fenics.Constant
         """
         for prm in self.my_trap.form_parameters.values():
             assert isinstance(prm, (f.Expression, f.Constant))
