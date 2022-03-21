@@ -40,8 +40,14 @@ class Traps:
                     f.project(f.Constant(0), V)
 
     def define_variational_problem_extrinsic_traps(self, dx, dt, T):
-        """Creates the variational formulations for the extrinsic traps
-        densities
+        """
+        Creates the variational formulations for the extrinsic traps densities
+
+        Args:
+            dx (fenics.Measure): the dx measure of the sim
+            dt (FESTIM.Stepsize, optional): If None assuming steady state.
+                Defaults to None.
+            T (FESTIM.Temperature, optional): the temperature of the simulation
         """
         self.extrinsic_formulations = []
         expressions_extrinsic = []
