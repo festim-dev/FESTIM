@@ -37,6 +37,20 @@ class ExtrinsicTrap(Trap):
                 self.sub_expressions.append(self.form_parameters[key])
 
     def create_form_density(self, dx, dt, T):
+        """
+        Creates the variational formulation for the extrinsic trap density.
+
+        Args:
+            dx (fenics.Measure): the dx measure of the sim
+            dt (FESTIM.Stepsize, optional): If None assuming steady state.
+                Defaults to None.
+            T (FESTIM.Temperature, optional): the temperature of the
+                simulation, NULL ARGUMENT
+        
+        Notes:
+            T is an argument, although is not used in the formulation of
+            extrinsic traps, but potential for subclasses of extrinsic traps
+        """
         phi_0 = self.form_parameters["phi_0"]
         n_amax = self.form_parameters["n_amax"]
         n_bmax = self.form_parameters["n_bmax"]
