@@ -1,9 +1,9 @@
-import FESTIM
+from FESTIM import Trap
 from fenics import *
 import sympy as sp
 
 
-class ExtrinsicTrap(FESTIM.Trap):
+class ExtrinsicTrap(Trap):
     def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None):
         """Inits ExtrinsicTrap
 
@@ -33,11 +33,23 @@ class ExtrinsicTrap(FESTIM.Trap):
                 self.form_parameters[key] = Constant(value)
             else:
                 self.form_parameters[key] = Expression(sp.printing.ccode(value),
-                                       t=0,
-                                       degree=1)
+                                                       t=0, degree=1)
                 self.sub_expressions.append(self.form_parameters[key])
 
-    def create_form_density(self, dx, dt):
+    def create_form_density(self, dx, dt, T):
+        """
+        Creates the variational formulation for the extrinsic trap density.
+
+        Args:
+            dx (fenics.Measure): the dx measure of the sim
+            dt (FESTIM.Stepsize): If None assuming steady state.
+            T (FESTIM.Temperature): the temperature of the
+                simulation
+
+        Notes:
+            T is an argument, although is not used in the formulation of
+            extrinsic traps, but potential for subclasses of extrinsic traps
+        """
         phi_0 = self.form_parameters["phi_0"]
         n_amax = self.form_parameters["n_amax"]
         n_bmax = self.form_parameters["n_bmax"]
