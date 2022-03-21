@@ -62,7 +62,6 @@ from .concentration.theta import Theta
 from .concentration.traps.trap import Trap
 from .concentration.traps.traps import Traps
 from .concentration.traps.extrinsic_trap import ExtrinsicTrap
-from .concentration.traps.custom_trap import CustomTrap
 
 from .h_transport_problem import HTransportProblem
 
