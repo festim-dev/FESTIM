@@ -27,8 +27,7 @@ class TestCustomTrap:
 
     def test_create_form_density(self):
         """
-        Creates the formulation for the density function using paramters
-        defined in my_trap and my_temps
+        Checks that create_form_density produces the expected formulation
         """
         form_prms = self.my_trap.form_parameters
         density = self.my_trap.density[0]
