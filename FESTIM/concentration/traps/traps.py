@@ -48,8 +48,10 @@ class Traps:
         expressions_extrinsic = []
         for trap in self.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
-                trap.create_form_density(dx, dt, T)
+                trap.create_form_density(dx, dt)
                 self.extrinsic_formulations.append(trap.form_density)
+            elif isinstance(trap, FESTIM.CustomTrap):
+                trap.create_form_density(dx, dt, T)
         self.sub_expressions.extend(expressions_extrinsic)
 
     def solve_extrinsic_traps(self):
