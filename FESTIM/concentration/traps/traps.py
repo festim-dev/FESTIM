@@ -43,15 +43,12 @@ class Traps:
         """Creates the variational formulations for the extrinsic traps
         densities
         """
-
         self.extrinsic_formulations = []
         expressions_extrinsic = []
         for trap in self.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
-                trap.create_form_density(dx, dt)
-                self.extrinsic_formulations.append(trap.form_density)
-            elif isinstance(trap, FESTIM.CustomTrap):
                 trap.create_form_density(dx, dt, T)
+                self.extrinsic_formulations.append(trap.form_density)
         self.sub_expressions.extend(expressions_extrinsic)
 
     def solve_extrinsic_traps(self):

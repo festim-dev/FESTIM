@@ -36,7 +36,7 @@ class ExtrinsicTrap(Trap):
                                                        t=0, degree=1)
                 self.sub_expressions.append(self.form_parameters[key])
 
-    def create_form_density(self, dx, dt):
+    def create_form_density(self, dx, dt, T):
         phi_0 = self.form_parameters["phi_0"]
         n_amax = self.form_parameters["n_amax"]
         n_bmax = self.form_parameters["n_bmax"]
@@ -45,6 +45,7 @@ class ExtrinsicTrap(Trap):
         f_a = self.form_parameters["f_a"]
         f_b = self.form_parameters["f_b"]
         density = self.density[0]
+        T = T.T
         F = ((density - self.density_previous_solution)/dt.value) * \
             self.density_test_function*dx
         F += -phi_0*(
