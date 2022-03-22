@@ -35,7 +35,8 @@ class Trap(Concentration):
                 density=[1, 2])
 
             This will act as a singular trap but with seperate properties for
-            respective materials
+            respective materials. Parameters k_0, E_k, p_0, E_p, materials and
+            density MUST have the same length for this method to be valid.
         """
         super().__init__()
         self.id = id
