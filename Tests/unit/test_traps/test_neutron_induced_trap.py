@@ -27,7 +27,7 @@ class TestNeutronInducedTrap:
 
     def test_create_form_density(self):
         """
-        Creates the formulation for the density function using paramters
+        Creates the formulation for the density function using parameters
         defined in my_trap and my_temps
         """
         phi = self.my_trap.form_parameters["phi"]
