@@ -16,9 +16,9 @@ class NeutronInducedTrap(ExtrinsicTrap):
         Inits NeutronInducedTrap
 
         Args:
-            E_k (float, list): trapping pre-exponential factor (m2/s)
-            k_0 (float, list): trapping activation energy (eV)
-            p_0 (float, list): detrapping pre-exponential factor (m2/s)
+            k_0 (float, list): trapping pre-exponential factor (m3 s-1)
+            E_k (float, list): trapping activation energy (eV)
+            p_0 (float, list): detrapping pre-exponential factor (s-1)
             E_p (float, list): detrapping activation energy (eV)
             materials (list or int): the materials ids the trap is living in
             form_parameters (dict): dict with keys ["phi", "K", "n_max",
