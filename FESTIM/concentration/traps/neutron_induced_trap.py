@@ -24,7 +24,7 @@ class NeutronInducedTrap(ExtrinsicTrap):
             form_parameters (dict): dict with keys ["phi", "K", "n_max",
                 "A_0", "E_A"].
                 phi: damage rate (dpa s-1),
-                K: trap creation factor (m-3 s-1),
+                K: trap creation factor (m-3 dpa-1),
                 n_max: maximum trap density (m-3),
                 A_0: trap_annealing_factor (s-1),
                 E_A: annealing activation energy (eV).
