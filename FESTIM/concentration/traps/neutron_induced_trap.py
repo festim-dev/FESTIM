@@ -33,28 +33,14 @@ class NeutronInducedTrap(ExtrinsicTrap):
             K (float): trap creation factor (m-3 s-1)
             n_max (float): maximum trap density (m-3)
             A_0 (float): trap_annealing_factor (s-1)
-            E_A (float, list): annealing activation energy (eV)
+            E_A (float): annealing activation energy (eV)
             n_0 (float): number of initial traps (m-3)
         """
         super().__init__(k_0, E_k, p_0, E_p, materials, form_parameters,
                          id=None, type=None)
         self.form_parameters = form_parameters
-        self.convert_prms()
         self.density_previous_solution = None
         self.density_test_function = None
-
-    def convert_prms(self):
-        """Converts all the form parameters into fenics.Expression or
-        fenics.Constant
-        """
-        # create Expressions or Constant for all parameters
-        for key, value in self.form_parameters.items():
-            if isinstance(value, (int, float)):
-                self.form_parameters[key] = Constant(value)
-            else:
-                self.form_parameters[key] = Expression(sp.printing.ccode(value),
-                                                       t=0, degree=1)
-                self.sub_expressions.append(self.form_parameters[key])
 
     def create_form_density(self, dx, dt, T):
         """
