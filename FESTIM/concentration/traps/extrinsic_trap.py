@@ -4,15 +4,16 @@ import sympy as sp
 
 
 class ExtrinsicTrap(Trap):
-    def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None):
+    def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters,
+                 id=None):
         """Inits ExtrinsicTrap
 
         Args:
-            E_k (float): trapping pre-exponential factor
-            k_0 (float): trapping activation energy
-            p_0 (float): detrapping pre-exponential factor
-            E_p (float): detrapping activation energy
-            materials (list or int): the materials ids the trap is living in
+            E_k (float, list): trapping pre-exponential factor (m3 s-1)
+            k_0 (float, list): trapping activation energy (eV)
+            p_0 (float, list): detrapping pre-exponential factor (s-1)
+            E_p (float, list): detrapping activation energy (eV)
+            materials (list, int): the materials ids the trap is living in
             form_parameters (dict): dict with keys ["phi_0", "n_amax",
                 "n_bmax", "eta_a", "eta_b", "f_a", "f_b"]
             id (int, optional): The trap id. Defaults to None.

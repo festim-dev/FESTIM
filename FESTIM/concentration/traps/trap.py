@@ -10,16 +10,33 @@ class Trap(Concentration):
         """Inits Trap
 
         Args:
-            k_0 (float): trapping pre-exponential factor
-            E_k (float): trapping activation energy
-            p_0 (float): detrapping pre-exponential factor
-            E_p (float): detrapping activation energy
-            materials (list or int): the materials ids the trap is living in
-            density (sp.Add, float): the trap density
+            k_0 (float, list): trapping pre-exponential factor (m3 s-1)
+            E_k (float, list): trapping activation energy (eV)
+            p_0 (float, list): detrapping pre-exponential factor (s-1)
+            E_p (float, list): detrapping activation energy (eV)
+            materials (list, int): the materials ids the trap is living in
+            density (sp.Add, float, list): the trap density (m-3)
             id (int, optional): The trap id. Defaults to None.
 
         Raises:
             ValueError: if duplicates are found in materials
+
+        Notes:
+            Should multiple traps in muliple materials be used, to save on
+            dof's, traps can be conglomerated and described in lists in the
+            format:
+
+            FESTIM.Trap(
+                k_0=[1, 2],
+                E_k=[1, 2],
+                p_0=[1, 2],
+                E_p=[1, 2],
+                materials=[1, 2]
+                density=[1, 2])
+
+            This will act as a singular trap but with seperate properties for
+            respective materials. Parameters k_0, E_k, p_0, E_p, materials and
+            density MUST have the same length for this method to be valid.
         """
         super().__init__()
         self.id = id

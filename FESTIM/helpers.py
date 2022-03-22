@@ -295,7 +295,9 @@ def create_concentration_objects(self, parameters):
     if "traps" in parameters:
         for trap in parameters["traps"]:
             if "type" in trap:
-                traps.append(FESTIM.ExtrinsicTrap(**trap))
+                traps.append(FESTIM.ExtrinsicTrap(**{key: val for key,
+                                                  val in trap.items() if
+                                                  key != "type"}))
             else:
                 traps.append(
                     FESTIM.Trap(trap["k_0"], trap["E_k"], trap["p_0"], trap["E_p"], trap["materials"], trap["density"])
