@@ -27,8 +27,8 @@ class TestNeutronInducedTrap:
 
     def test_create_form_density(self):
         """
-        Creates the formulation for the density function using parameters
-        defined in my_trap and my_temps
+        Checks that the forumlation produced by the create_form_density
+        function produces the expected formulation
         """
         phi = self.my_trap.form_parameters["phi"]
         K = self.my_trap.form_parameters["K"]
@@ -75,7 +75,7 @@ class TestNeutronInducedTrapVaryingTime:
 
     def test_create_form_density(self):
         """
-        Creates the formulation for the density function using paramters
+        Creates the formulation for the density function using parameters
         defined in my_trap and my_temps
         """
         phi = self.my_trap.form_parameters["phi"]
@@ -148,7 +148,7 @@ class TestNeutronInducedTrapVaryingPhiSpatially:
 
 class TestNeutronInducedTrapTempVaryingTime:
     """
-    Test for NeutronInducedTrap class, with varying phi with x
+    Test for NeutronInducedTrap class, with varying temperature with time
     """
     form_prms = {
         "phi": 100,
