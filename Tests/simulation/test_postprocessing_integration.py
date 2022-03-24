@@ -199,4 +199,6 @@ class TestPostProcessing:
 
         my_sim.t = my_sim.exports.final_time
         my_sim.run_post_processing()
-        assert path.exists(str(Path(d)) + '/solute.xdmf')
+        times = FESTIM.extract_times_values(str(Path(d)) + '/solute.xdmf')
+        assert len(times) == 1
+        assert pytest.approx(float(times[0])) == my_sim.t
