@@ -5,17 +5,17 @@ warnings.simplefilter('always', DeprecationWarning)
 
 
 class XDMFExport(Export):
-    def __init__(self, field, label, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
+    def __init__(self, field, label, folder, mode=1, checkpoint=True) -> None:
         """Inits XDMFExport
 
         Args:
             field (str): the exported field ("solute", "1", "retention", "T"...)
             label (str): label of the field in the written file
             folder (str): path of the export folder
-            last_timestep_only (bool, optional): If set to True, will only
-                export at the last time step. Defaults to False.
-            nb_iterations_between_exports (int, optional): Number of
-                iterations between each export. Defaults to 1.
+            mode (int, str, optional): if "last" ("first") only the last
+                (first) timestep will be exported. Otherwise the number of
+                iterations between each export can be provided as an integer.
+                Defaults to 1.
             checkpoint (bool, optional): If set to True,
                 fenics.XDMFFile.write_checkpoint will be use, else
                 fenics.XDMFFile.write. Defaults to True.
@@ -34,8 +34,7 @@ class XDMFExport(Export):
             raise TypeError("folder value must be of type str")
         self.files = None
         self.define_xdmf_file()
-        self.last_time_step_only = last_timestep_only
-        self.nb_iterations_between_exports = nb_iterations_between_exports
+        self.mode = mode
         self.checkpoint = checkpoint
         if type(self.checkpoint) != bool:
             raise TypeError(
@@ -89,7 +88,7 @@ class XDMFExport(Export):
 
 
 class XDMFExports:
-    def __init__(self, fields=[], labels=[], folder=None, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True, functions=[]) -> None:
+    def __init__(self, fields=[], labels=[], folder=None, mode=1, checkpoint=True, functions=[]) -> None:
         self.fields = fields
         self.labels = labels
         if functions != []:
@@ -103,8 +102,7 @@ class XDMFExports:
         self.xdmf_exports = [
             XDMFExport(
                 function, label, folder,
-                last_timestep_only=last_timestep_only,
-                nb_iterations_between_exports=nb_iterations_between_exports,
+                mode=mode,
                 checkpoint=checkpoint)
             for function, label in zip(self.fields, self.labels)
         ]
