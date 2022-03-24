@@ -189,7 +189,7 @@ class TestPostProcessing:
         my_sim.exports.exports = FESTIM.XDMFExports(
                 fields=["solute", "T"],
                 labels=['solute', 'temperature'],
-                last_timestep_only=True,
+                mode="last",
                 folder=str(Path(d))).xdmf_exports
         my_sim.exports.final_time = 1
         my_sim.t = 0
