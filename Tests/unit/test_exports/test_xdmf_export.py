@@ -1,4 +1,4 @@
-from FESTIM import XDMFExport
+from FESTIM import XDMFExport, extract_labels
 import fenics as f
 import pytest
 from pathlib import Path
@@ -68,6 +68,18 @@ class TestWrite:
         my_xdmf.write(t=2)
         u2 = f.Function(self.V)
         my_xdmf.file.read_checkpoint(u2, "foo", 0)
+
+    def test_write_attribute(self, folder):
+        """Checks that the file is written with the appropriate attribute
+        """
+        my_xdmf = XDMFExport("solute", "coucou", folder)
+        my_xdmf.function = self.u
+        my_xdmf.write(t=0)
+
+        labels = extract_labels(folder + "/coucou.xdmf")
+
+        assert len(labels) == 1
+        assert labels[0] == "coucou"
 
 
 def test_error_folder_empty_str():
