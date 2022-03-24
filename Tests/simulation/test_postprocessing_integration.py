@@ -187,6 +187,16 @@ class TestPostProcessing:
                     assert t_expected == pytest.approx(float(t))
 
     def test_xdmf_export_only_last_timestep(self, my_sim, tmpdir):
+        """Runs run_post_processing with mode="last":
+        - when the time is not the final time and checks that nothing has been
+        produced
+        - when the time is the final time and checks the XDMF files have the
+        correct timesteps
+
+        Args:
+            my_sim (_type_): _description_
+            tmpdir (_type_): _description_
+        """
         d = tmpdir.mkdir("test_folder")
         my_sim.exports.exports = FESTIM.XDMFExports(
                 fields=["solute", "T"],
@@ -195,17 +205,18 @@ class TestPostProcessing:
                 folder=str(Path(d))).xdmf_exports
         my_sim.exports.final_time = 1
         my_sim.t = 0
+        filenames = [
+            str(Path(d)) + '/{}.xdmf'.format(f)
+            for f in ["solute", "temperature"]
+            ]
 
         my_sim.run_post_processing()
-        assert not path.exists(str(Path(d)) + '/solute.xdmf')
-        assert not path.exists(str(Path(d)) + '/temperature.xdmf')
+        for filename in filenames:
+            assert not path.exists(filename)
 
         my_sim.t = my_sim.exports.final_time
         my_sim.run_post_processing()
-        times = FESTIM.extract_times_values(str(Path(d)) + '/solute.xdmf')
-        assert len(times) == 1
-        assert pytest.approx(float(times[0])) == my_sim.t
-
-        times = FESTIM.extract_times_values(str(Path(d)) + '/temperature.xdmf')
-        assert len(times) == 1
-        assert pytest.approx(float(times[0])) == my_sim.t
+        for filename in filenames:
+            times = FESTIM.extract_times_values(filename)
+            assert len(times) == 1
+            assert pytest.approx(float(times[0])) == my_sim.t
