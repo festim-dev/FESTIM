@@ -1,5 +1,5 @@
 # Unit tests meshing
-from FESTIM.materials import Materials, Material
+from FESTIM import Materials, Material
 from FESTIM import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, \
     MeshFromXDMF
 import fenics
