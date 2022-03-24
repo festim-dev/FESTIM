@@ -564,7 +564,15 @@ def kJmol_to_eV(energy):
     return energy_in_eV
 
 
-def extract_times_values(filename):
+def extract_xdmf_times(filename):
+    """Returns a list of timesteps in an XDMF file
+
+    Args:
+        filename (str): the XDMF filename (must end with .xdmf)
+
+    Returns:
+        list: the timesteps
+    """
     tree = ET.parse(filename)
     root = tree.getroot()
 
@@ -577,11 +585,19 @@ def extract_times_values(filename):
     for c in grid:
         for element in c:
             if "Time" in element.tag:
-                times.append(element.attrib["Value"])
+                times.append(float(element.attrib["Value"]))
     return times
 
 
-def extract_labels(filename):
+def extract_xdmf_labels(filename):
+    """Returns a list of labels in an XDMF file
+
+    Args:
+        filename (str): the XDMF filename (must end with .xdmf)
+
+    Returns:
+        list: the labels
+    """
     tree = ET.parse(filename)
     root = tree.getroot()
 
