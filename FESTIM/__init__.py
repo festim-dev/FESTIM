@@ -54,7 +54,9 @@ from .stepsize import Stepsize
 from .sources.source import Source
 from .sources.source_implantation_flux import ImplantationFlux
 
-from .materials import Material, Materials
+from .materials.materials import Materials
+from .materials.material import Material
+
 from .concentration.concentration import Concentration
 from .initial_condition import InitialCondition
 from .concentration.mobile import Mobile
