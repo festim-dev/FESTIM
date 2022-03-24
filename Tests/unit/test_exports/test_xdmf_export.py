@@ -1,4 +1,4 @@
-from FESTIM import XDMFExport, extract_labels
+from FESTIM import XDMFExport, extract_xdmf_labels
 import fenics as f
 import pytest
 from pathlib import Path
@@ -76,7 +76,7 @@ class TestWrite:
         my_xdmf.function = self.u
         my_xdmf.write(t=0)
 
-        labels = extract_labels(folder + "/coucou.xdmf")
+        labels = extract_xdmf_labels(folder + "/coucou.xdmf")
 
         assert len(labels) == 1
         assert labels[0] == "coucou"

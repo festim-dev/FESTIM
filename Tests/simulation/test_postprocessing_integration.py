@@ -181,7 +181,7 @@ class TestPostProcessing:
 
             # test
             for filename in filenames:
-                times = FESTIM.extract_times_values(filename)
+                times = FESTIM.extract_xdmf_times(filename)
                 assert len(times) == len(expected_times)
                 for t_expected, t in zip(expected_times, times):
                     assert t_expected == pytest.approx(float(t))
@@ -217,6 +217,6 @@ class TestPostProcessing:
         my_sim.t = my_sim.exports.final_time
         my_sim.run_post_processing()
         for filename in filenames:
-            times = FESTIM.extract_times_values(filename)
+            times = FESTIM.extract_xdmf_times(filename)
             assert len(times) == 1
             assert pytest.approx(float(times[0])) == my_sim.t
