@@ -617,10 +617,10 @@ def test_performance_xdmf(tmpdir):
         my_dt = FESTIM.Stepsize(4)
         xdmf1 = FESTIM.XDMFExport(
             "solute", "solute", folder=str(Path(d)),
-            nb_iterations_between_exports=nb_exports_iter)
+            mode=nb_exports_iter)
         xdmf2 = FESTIM.XDMFExport(
             "retention", "retention", folder=str(Path(d)),
-            nb_iterations_between_exports=nb_exports_iter)
+            mode=nb_exports_iter)
         my_exports = FESTIM.Exports([xdmf1, xdmf2])
 
         my_sim = FESTIM.Simulation(
@@ -653,7 +653,7 @@ def test_performance_xdmf_last_timestep(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
 
-    def init_sim(export_last):
+    def init_sim(mode):
         my_materials = FESTIM.Materials(
             [
                 FESTIM.Material(id=1, D_0=1, E_D=1)
@@ -671,10 +671,10 @@ def test_performance_xdmf_last_timestep(tmpdir):
         my_dt = FESTIM.Stepsize(4)
         xdmf1 = FESTIM.XDMFExport(
             "solute", "solute", folder=str(Path(d)),
-            last_timestep_only=export_last)
+            mode=mode)
         xdmf2 = FESTIM.XDMFExport(
             "retention", "retention", folder=str(Path(d)),
-            last_timestep_only=export_last)
+            mode=mode)
         my_exports = FESTIM.Exports([xdmf1, xdmf2])
 
         my_sim = FESTIM.Simulation(
@@ -687,13 +687,13 @@ def test_performance_xdmf_last_timestep(tmpdir):
 
     # short simulation
     start = timeit.default_timer()
-    init_sim(export_last=True).run()
+    init_sim(mode="last").run()
     stop = timeit.default_timer()
     short_time = stop - start
 
     # long simulation
     start = timeit.default_timer()
-    init_sim(export_last=False).run()
+    init_sim(mode=1).run()
     stop = timeit.default_timer()
     long_time = stop - start
 

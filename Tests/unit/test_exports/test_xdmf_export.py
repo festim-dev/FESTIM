@@ -83,3 +83,24 @@ def test_error_folder_not_a_str():
 def test_error_checkpoint_wrong_type():
     with pytest.raises(TypeError, match="checkpoint should be a bool"):
         XDMFExport("solute", "solute", "my_folder", checkpoint=2)
+
+
+def test_wrong_argument_for_mode():
+    accepted_values_msg = "accepted values for mode are int and 'last'"
+    # test wrong type
+    with pytest.raises(ValueError, match=accepted_values_msg):
+        XDMFExport("solute", "mobile", "out", mode=1.2)
+    with pytest.raises(ValueError, match=accepted_values_msg):
+        XDMFExport("solute", "mobile", "out", mode=[1, 2, 3])
+
+    # test wrong string
+    with pytest.raises(ValueError, match=accepted_values_msg):
+        XDMFExport("solute", "mobile", "out", mode="foo")
+
+    # test negative integer
+    with pytest.raises(ValueError, match="mode must be positive"):
+        XDMFExport("solute", "mobile", "out", mode=-1)
+
+    # test mode=0
+    with pytest.raises(ValueError, match="mode must be positive"):
+        XDMFExport("solute", "mobile", "out", mode=0)
