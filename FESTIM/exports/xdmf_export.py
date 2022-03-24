@@ -12,8 +12,8 @@ class XDMFExport(Export):
             field (str): the exported field ("solute", "1", "retention", "T"...)
             label (str): label of the field in the written file
             folder (str): path of the export folder
-            mode (int, str, optional): if "last" ("first") only the last
-                (first) timestep will be exported. Otherwise the number of
+            mode (int, str, optional): if "last" only the last
+                timestep will be exported. Otherwise the number of
                 iterations between each export can be provided as an integer.
                 Defaults to 1.
             checkpoint (bool, optional): If set to True,
@@ -41,6 +41,22 @@ class XDMFExport(Export):
                 "checkpoint should be a bool")
 
         self.append = False
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, value):
+        accepted_values = "accepted values for mode are int and 'last'"
+        if not isinstance(value, (str, int)):
+            raise ValueError(accepted_values)
+        if isinstance(value, int) and value <= 0:
+            raise ValueError("mode must be positive")
+        if isinstance(value, str) and value != "last":
+            raise ValueError(accepted_values)
+
+        self._mode = value
 
     def define_xdmf_file(self):
         """Creates the file
