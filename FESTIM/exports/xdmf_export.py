@@ -78,7 +78,7 @@ class XDMFExport(Export):
             bool: True if export should be exported, else False
         """
         if (self.mode == "last" and
-            t >= final_time):
+                t >= final_time):
             return True
         elif isinstance(self.mode, int):
             if nb_iterations % self.mode == 0:
