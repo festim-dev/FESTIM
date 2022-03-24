@@ -494,7 +494,22 @@ def create_exports(self, parameters):
     self.exports = FESTIM.Exports([])
     if "exports" in parameters:
         if "xdmf" in parameters["exports"]:
-            my_xdmf_exports = FESTIM.XDMFExports(**parameters["exports"]["xdmf"])
+            export = parameters["exports"]["xdmf"]
+            mode = 1
+            if "last_timestep_only" in export:
+                mode = "last"
+            if "nb_iterations_between_exports" in export:
+                mode = export["nb_iterations_between_exports"]
+            my_xdmf_exports = FESTIM.XDMFExports(
+                **{key: val for key, val in
+                    export.items()
+                    if key not in [
+                        "last_timestep_only",
+                        "nb_iterations_between_exports"
+                        ]
+                   },
+                mode=mode
+                )
             self.exports.exports += my_xdmf_exports.xdmf_exports
 
         if "derived_quantities" in parameters["exports"]:
