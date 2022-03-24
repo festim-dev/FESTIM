@@ -1,0 +1,847 @@
+<?xml version="1.0"?>
+<Xdmf Version="3.0">
+  <Domain>
+    <Grid GridType="Collection" CollectionType="Temporal" Name="solute">
+      <Grid Name="solute_0" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_0/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_0/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.005000" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_0/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_0/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_0/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_0/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_1" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_1/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_1/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.010500" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_1/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_1/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_1/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_1/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_2" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_2/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_2/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.016550" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_2/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_2/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_2/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_2/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_3" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_3/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_3/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.023205" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_3/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_3/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_3/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_3/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_4" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_4/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_4/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.030526" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_4/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_4/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_4/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_4/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_5" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_5/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_5/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.038578" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_5/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_5/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_5/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_5/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_6" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_6/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_6/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.047436" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_6/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_6/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_6/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_6/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_7" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_7/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_7/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.057179" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_7/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_7/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_7/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_7/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_8" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_8/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_8/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.067897" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_8/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_8/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_8/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_8/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_9" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_9/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_9/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.079687" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_9/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_9/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_9/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_9/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_10" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_10/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_10/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.092656" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_10/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_10/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_10/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_10/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_11" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_11/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_11/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.106921" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_11/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_11/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_11/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_11/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_12" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_12/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_12/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.122614" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_12/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_12/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_12/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_12/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_13" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_13/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_13/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.139875" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_13/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_13/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_13/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_13/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_14" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_14/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_14/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.158862" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_14/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_14/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_14/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_14/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_15" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_15/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_15/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.179749" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_15/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_15/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_15/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_15/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_16" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_16/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_16/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.202724" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_16/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_16/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_16/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_16/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_17" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_17/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_17/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.227996" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_17/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_17/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_17/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_17/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_18" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_18/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_18/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.255795" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_18/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_18/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_18/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_18/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_19" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_19/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_19/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.286375" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_19/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_19/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_19/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_19/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_20" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_20/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_20/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.320012" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_20/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_20/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_20/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_20/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_21" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_21/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_21/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.357014" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_21/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_21/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_21/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_21/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_22" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_22/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_22/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.397715" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_22/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_22/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_22/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_22/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_23" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_23/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_23/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.442487" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_23/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_23/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_23/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_23/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_24" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_24/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_24/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.491735" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_24/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_24/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_24/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_24/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_25" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_25/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_25/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.545909" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_25/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_25/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_25/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_25/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_26" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_26/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_26/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.605500" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_26/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_26/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_26/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_26/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_27" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_27/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_27/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.671050" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_27/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_27/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_27/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_27/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_28" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_28/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_28/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.743155" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_28/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_28/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_28/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_28/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_29" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_29/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_29/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.822470" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_29/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_29/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_29/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_29/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_30" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_30/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_30/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0.909717" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_30/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_30/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_30/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_30/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_31" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_31/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_31/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.005689" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_31/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_31/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_31/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_31/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_32" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_32/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_32/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.111258" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_32/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_32/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_32/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_32/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_33" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_33/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_33/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.227383" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_33/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_33/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_33/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_33/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_34" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_34/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_34/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.355122" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_34/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_34/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_34/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_34/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_35" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_35/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_35/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.495634" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_35/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_35/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_35/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_35/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_36" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_36/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_36/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.650197" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_36/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_36/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_36/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_36/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_37" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_37/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_37/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="1.820217" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_37/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_37/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_37/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_37/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_38" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_38/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_38/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="2.007239" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_38/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_38/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_38/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_38/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_39" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_39/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_39/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="2.212963" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_39/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_39/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_39/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_39/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_40" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_40/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_40/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="2.439259" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_40/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_40/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_40/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_40/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_41" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_41/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_41/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="2.688185" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_41/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_41/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_41/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_41/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_42" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_42/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_42/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="2.962003" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_42/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_42/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_42/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_42/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_43" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_43/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_43/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="3.263204" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_43/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_43/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_43/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_43/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_44" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_44/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_44/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="3.594524" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_44/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_44/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_44/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_44/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_45" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_45/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_45/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="3.958977" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_45/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_45/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_45/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_45/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_46" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_46/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_46/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="4.359874" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_46/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_46/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_46/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_46/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_47" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_47/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_47/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="4.800862" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_47/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_47/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_47/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_47/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_48" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_48/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_48/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="5.285948" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_48/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_48/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_48/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_48/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_49" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_49/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_49/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="5.819543" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_49/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_49/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_49/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_49/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_50" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_50/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_50/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="6.406497" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_50/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_50/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_50/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_50/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_51" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_51/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_51/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="7.052147" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_51/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_51/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_51/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_51/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_52" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_52/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_52/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="7.762361" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_52/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_52/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_52/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_52/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_53" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_53/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_53/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="8.543597" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_53/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_53/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_53/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_53/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_54" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_54/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_54/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="9.402957" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_54/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_54/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_54/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_54/cells</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid Name="solute_55" GridType="Uniform">
+        <Topology NumberOfElements="392" TopologyType="Triangle" NodesPerElement="3">
+          <DataItem Dimensions="392 3" NumberType="UInt" Format="HDF">solute.h5:solute/solute_55/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Dimensions="225 2" Format="HDF">solute.h5:solute/solute_55/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="10.000000" />
+        <Attribute ItemType="FiniteElementFunction" ElementFamily="CG" ElementDegree="1" ElementCell="triangle" Name="solute" Center="Other" AttributeType="Scalar">
+          <DataItem Dimensions="1176 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_55/cell_dofs</DataItem>
+          <DataItem Dimensions="2577 1" NumberType="Float" Format="HDF">solute.h5:solute/solute_55/vector</DataItem>
+          <DataItem Dimensions="393 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_55/x_cell_dofs</DataItem>
+          <DataItem Dimensions="392 1" NumberType="UInt" Format="HDF">solute.h5:solute/solute_55/cells</DataItem>
+        </Attribute>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>
