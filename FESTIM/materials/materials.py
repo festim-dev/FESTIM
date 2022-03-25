@@ -37,7 +37,11 @@ class Materials:
         """
         all_borders = []
         for m in self.materials:
-            all_borders.append(m.borders)
+            if isinstance(m.borders[0], list):
+                for border in m.borders:
+                    all_borders.append(border)
+            else:
+                all_borders.append(m.borders)
         all_borders = sorted(all_borders, key=itemgetter(0))
         if all_borders[0][0] is not 0:
             raise ValueError("Borders don't begin at zero")
