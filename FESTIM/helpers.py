@@ -205,8 +205,10 @@ def help_key(key):
 
 
 def read_parameters(simulation, parameters):
-    msg = "The use of parameters will soon be deprecated \
-            please use the object-oriented approach instead"
+    msg = "The use of parameters be deprecated in 0.9"
+    msg += " please use the object-oriented approach"
+    msg += " introduced in 0.8 instead"
+
     warnings.warn(msg, DeprecationWarning)
     create_settings(simulation, parameters)
     create_stepsize(simulation, parameters)
