@@ -114,37 +114,61 @@ def test_non_matching_properties():
         my_mats.check_consistency()
 
 
-def test_check_borders():
-    materials = [
-        Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),
-        Material(id=2, D_0=None, E_D=None, borders=[0, 0.5]),
-            ]
-    size = 0.7
-    assert Materials(materials).check_borders(size) is True
-
-    with pytest.raises(ValueError, match=r'zero'):
-        size = 0.7
+class TestCheckBorders():
+    def test_works(self):
         materials = [
             Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),
-            Material(id=1, D_0=None, E_D=None, borders=[0.2, 0.5]),
-            ]
-        Materials(materials).check_borders(size)
+            Material(id=2, D_0=None, E_D=None, borders=[0, 0.5]),
+                ]
+        size = 0.7
+        assert Materials(materials).check_borders(size) is True
 
-    with pytest.raises(ValueError, match=r'each other'):
-        materials = [
-            Material(id=1, D_0=None, E_D=None, borders=[0.5, 1]),
-            Material(id=1, D_0=None, E_D=None, borders=[0, 0.6]),
-            Material(id=1, D_0=None, E_D=None, borders=[0.6, 1]),
-            ]
-        size = 1
-        Materials(materials).check_borders(size)
+    def test_not_beginning_at_zero(self):
+        with pytest.raises(ValueError, match=r'zero'):
+            size = 0.7
+            materials = [
+                Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),
+                Material(id=1, D_0=None, E_D=None, borders=[0.2, 0.5]),
+                ]
+            Materials(materials).check_borders(size)
 
-    with pytest.raises(ValueError, match=r'size'):
-        materials = [
-            Material(id=1, D_0=None, E_D=None, borders=[0, 1]),
-        ]
-        size = 3
-        Materials(materials).check_borders(size)
+    def test_not_matching(self):
+        with pytest.raises(ValueError, match=r'each other'):
+            materials = [
+                Material(id=1, D_0=None, E_D=None, borders=[0.5, 1]),
+                Material(id=1, D_0=None, E_D=None, borders=[0, 0.6]),
+                Material(id=1, D_0=None, E_D=None, borders=[0.6, 1]),
+                ]
+            size = 1
+            Materials(materials).check_borders(size)
+
+    def test_not_matching_with_size(self):
+        with pytest.raises(ValueError, match=r'size'):
+            materials = [
+                Material(id=1, D_0=None, E_D=None, borders=[0, 1]),
+            ]
+            size = 3
+            Materials(materials).check_borders(size)
+
+    def test_1_material_2_subdomains(self):
+        materials = Materials([
+            Material([1, 2], 1, 0, borders=[[0, 1], [1, 9]])
+        ])
+
+        materials.check_borders(size=9)
+
+    def test_2_materials_3_subdomains(self):
+        materials = Materials([
+            Material([1, 2], 1, 0, borders=[[0, 1], [1, 5]]),
+            Material(3, 1, 0, borders=[5, 9])
+        ])
+        materials.check_borders(size=9)
+
+    def test_1_material_1_id_2_borders(self):
+        materials = Materials([
+            Material(1, 1, 0, borders=[[0, 1], [1, 9]]),
+        ])
+        materials.check_borders(size=9)
 
 
 def test_material_with_multiple_ids_solubility():

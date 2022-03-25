@@ -1,5 +1,5 @@
 class Material:
-    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=[], H=None) -> None:
+    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=None, H=None) -> None:
         """Inits Material class
 
         Args:
@@ -17,7 +17,7 @@ class Material:
             rho (float or callable, optional): volumetric density (kg/m3). Can
                 be a function of T. Defaults to None.
             borders (list, optional): The borders of the 1D subdomain.
-                Only needed in 1D with several materials. Defaults to [].
+                Only needed in 1D with several materials. Defaults to None.
             H (dict, optional): heat of transport (J/mol).
                 {"free_enthalpy": ..., "entropy": ...} so that
                 H = free_enthalpy + entropy*T. Defaults to None.
