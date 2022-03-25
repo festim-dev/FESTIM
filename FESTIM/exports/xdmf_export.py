@@ -1,7 +1,6 @@
 import warnings
 from FESTIM import Export
 import fenics as f
-warnings.simplefilter('always', DeprecationWarning)
 
 
 class XDMFExport(Export):
@@ -76,6 +75,15 @@ class XDMFExport(Export):
         self.function.rename(self.label, "label")
 
         if self.checkpoint:
+
+            # warn users if checkpoint is True and 1D
+            dimension = self.function.function_space().mesh().topology().dim()
+            if dimension == 1:
+                msg = "in 1D, checkpointing is needed to visualise the XDMF "
+                msg += "file in Paraview (see issue "
+                msg += "https://github.com/RemDelaporteMathurin/FESTIM/issues/134)"
+                warnings.warn(msg)
+
             self.file.write_checkpoint(
                 self.function, self.label, t, f.XDMFFile.Encoding.HDF5,
                 append=self.append)
