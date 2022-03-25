@@ -21,10 +21,29 @@ class Mesh1D(Mesh):
         Arguments:
             materials {FESTIM.Materials} -- contains the materials
         """
-        mesh = self.mesh
-        size = self.size
-        volume_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
-        for cell in f.cells(mesh):
+        self.volume_markers = self.define_volume_markers(materials)
+
+        self.surface_markers = self.define_surface_markers()
+
+    def define_surface_markers(self):
+        surface_markers = f.MeshFunction(
+            "size_t", self.mesh, self.mesh.topology().dim()-1, 0)
+        surface_markers.set_all(0)
+        i = 0
+        for facet in f.facets(self.mesh):
+            i += 1
+            x0 = facet.midpoint()
+            surface_markers[facet] = 0
+            if f.near(x0.x(), 0):
+                surface_markers[facet] = 1
+            if f.near(x0.x(), self.size):
+                surface_markers[facet] = 2
+        return surface_markers
+
+    def define_volume_markers(self, materials):
+        volume_markers = f.MeshFunction("size_t", self.mesh, self.mesh.topology().dim(), 0)
+        # iterate through the cells of the mesh
+        for cell in f.cells(self.mesh):
             for material in materials.materials:
                 if material.borders is None:
                     volume_markers[cell] = material.id
@@ -41,21 +60,7 @@ class Mesh1D(Mesh):
                     for borders, subdomain in zip(list_of_borders, subdomains):
                         if borders[0] <= cell.midpoint().x() <= borders[1]:
                             volume_markers[cell] = subdomain
-
-        surface_markers = f.MeshFunction(
-            "size_t", mesh, mesh.topology().dim()-1, 0)
-        surface_markers.set_all(0)
-        i = 0
-        for facet in f.facets(mesh):
-            i += 1
-            x0 = facet.midpoint()
-            surface_markers[facet] = 0
-            if f.near(x0.x(), 0):
-                surface_markers[facet] = 1
-            if f.near(x0.x(), size):
-                surface_markers[facet] = 2
-        self.volume_markers = volume_markers
-        self.surface_markers = surface_markers
+        return volume_markers
 
     def define_measures(self, materials):
         """Creates the fenics.Measure objects for self.dx and self.ds
