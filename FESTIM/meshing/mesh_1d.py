@@ -26,6 +26,12 @@ class Mesh1D(Mesh):
         self.surface_markers = self.define_surface_markers()
 
     def define_surface_markers(self):
+        """Creates the surface markers
+
+        Returns:
+            fenics.MeshFunction: the meshfunction containing the surface
+                markers
+        """
         surface_markers = f.MeshFunction(
             "size_t", self.mesh, self.mesh.topology().dim()-1, 0)
         surface_markers.set_all(0)
@@ -41,6 +47,15 @@ class Mesh1D(Mesh):
         return surface_markers
 
     def define_volume_markers(self, materials):
+        """Creates the volume markers
+
+        Args:
+            materials (FESTIM.Materials): the materials
+
+        Returns:
+            fenics.MeshFunction: the meshfunction containing the volume
+                markers
+        """
         volume_markers = f.MeshFunction("size_t", self.mesh, self.mesh.topology().dim(), 0)
         # iterate through the cells of the mesh
         for cell in f.cells(self.mesh):
