@@ -30,7 +30,7 @@ class Mesh1D(Mesh):
                     volume_markers[cell] = material.id
                 else:
                     if cell.midpoint().x() >= material.borders[0] \
-                    and cell.midpoint().x() <= material.borders[1]:
+                     and cell.midpoint().x() <= material.borders[1]:
                         volume_markers[cell] = material.id
         surface_markers = f.MeshFunction(
             "size_t", mesh, mesh.topology().dim()-1, 0)
