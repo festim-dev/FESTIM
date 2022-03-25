@@ -151,6 +151,38 @@ class Materials:
                 return material
         raise ValueError("Couldn't find ID " + str(mat_id) + " in materials list")
 
+    def find_subdomain_from_x_coordinate(self, x):
+        """Finds the correct subdomain at a given x coordinate
+
+        Args:
+            x (float): the x coordinate
+
+        Returns:
+            int: the corresponding subdomain id
+        """
+        for material in self.materials:
+            # if no borders are provided, assume only one subdomain
+            if material.borders is None:
+                return material.id
+            # else find the correct material
+            else:
+                if isinstance(material.borders[0], list) and \
+                        len(material.borders) > 1:
+                    list_of_borders = material.borders
+                else:
+                    list_of_borders = [material.borders]
+                if isinstance(material.id, list):
+                    subdomains = material.id
+                else:
+                    subdomains = [
+                        material.id for _ in range(len(list_of_borders))]
+
+                for borders, subdomain in zip(list_of_borders, subdomains):
+                    if borders[0] <= x <= borders[1]:
+                        return subdomain
+        # if no subdomain was found, return 0
+        return 0
+
     def create_properties(self, vm, T):
         """Creates the properties fields needed for post processing
 

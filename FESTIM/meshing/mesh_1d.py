@@ -57,24 +57,12 @@ class Mesh1D(Mesh):
                 markers
         """
         volume_markers = f.MeshFunction("size_t", self.mesh, self.mesh.topology().dim(), 0)
-        # iterate through the cells of the mesh
+        # iterate through the cells of the mesh and mark them
         for cell in f.cells(self.mesh):
-            for material in materials.materials:
-                if material.borders is None:
-                    volume_markers[cell] = material.id
-                else:
-                    if isinstance(material.borders[0], list) and len(material.borders) > 1:
-                        list_of_borders = material.borders
-                    else:
-                        list_of_borders = [material.borders]
-                    if isinstance(material.id, list):
-                        subdomains = material.id
-                    else:
-                        subdomains = [material.id for _ in range(len(list_of_borders))]
+            x = cell.midpoint().x()
+            subdomain_id = materials.find_subdomain_from_x_coordinate(x)
+            volume_markers[cell] = subdomain_id
 
-                    for borders, subdomain in zip(list_of_borders, subdomains):
-                        if borders[0] <= cell.midpoint().x() <= borders[1]:
-                            volume_markers[cell] = subdomain
         return volume_markers
 
     def define_measures(self, materials):
