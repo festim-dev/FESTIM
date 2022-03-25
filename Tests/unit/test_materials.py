@@ -217,3 +217,13 @@ def test_create_properties():
         assert rho(cell.midpoint().x()) == mf[cell] + 5
         assert H(cell.midpoint().x()) == mf[cell] + 10
         assert S(cell.midpoint().x()) == mf[cell] + 6
+
+
+def test_E_S_without_S_0():
+    with pytest.raises(ValueError, match="S_0 cannot be None"):
+        Material(1, 1, 1, S_0=None, E_S=1)
+
+
+def test_S_0_without_E_S():
+    with pytest.raises(ValueError, match="E_S cannot be None"):
+        Material(1, 1, 1, S_0=1, E_S=None)
