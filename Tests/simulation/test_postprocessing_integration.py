@@ -3,7 +3,6 @@ import FESTIM
 import fenics as f
 import numpy as np
 from pathlib import Path
-import timeit
 import pytest
 
 
@@ -152,51 +151,72 @@ class TestPostProcessing:
         assert np.isclose(data[1][4], -1*grad_T*lambda_x_1*-1)
 
     def test_performance_xdmf_export_every_N_iterations(self, my_sim, tmpdir):
+        """Runs run_post_processing several times with different export.mode
+        values and checks that the xdmf
+        files have the correct timesteps
+        """
+        # build
         d = tmpdir.mkdir("test_folder")
         my_sim.exports.exports = FESTIM.XDMFExports(
                 fields=["solute", "T"],
                 labels=['solute', 'temperature'],
                 folder=str(Path(d))).xdmf_exports
+        filenames = [
+            str(Path(d)) + '/{}.xdmf'.format(f)
+            for f in ["solute", "temperature"]
+            ]
 
-        # export every 10 iterations
-        for export in my_sim.exports.exports:
-            export.nb_iterations_between_exports = 30
-        my_sim.nb_iterations = 0
-        start = timeit.default_timer()
-        for i in range(40):
-            my_sim.run_post_processing()
+        # run and test
+        for mode in [10, 2, 1]:
+            for export in my_sim.exports.exports:
+                export.mode = mode
+                export.append = False
+            my_sim.nb_iterations = 0
+            expected_times = []
+            for t in range(40):
+                my_sim.t = t
+                my_sim.run_post_processing()
+                if t % mode == 0:
+                    expected_times.append(t)
 
-        stop = timeit.default_timer()
-        short_time = stop - start
-        print(short_time)
-
-        # export every time
-        my_sim.nb_iterations = 0
-        for export in my_sim.exports.exports:
-            export.nb_iterations_between_exports = 1
-        start = timeit.default_timer()
-        for i in range(40):
-            my_sim.run_post_processing()
-
-        stop = timeit.default_timer()
-        long_time = stop - start
-        print(long_time)
-
-        assert short_time < long_time
+            # test
+            for filename in filenames:
+                times = FESTIM.extract_xdmf_times(filename)
+                assert len(times) == len(expected_times)
+                for t_expected, t in zip(expected_times, times):
+                    assert t_expected == pytest.approx(float(t))
 
     def test_xdmf_export_only_last_timestep(self, my_sim, tmpdir):
+        """Runs run_post_processing with mode="last":
+        - when the time is not the final time and checks that nothing has been
+        produced
+        - when the time is the final time and checks the XDMF files have the
+        correct timesteps
+
+        Args:
+            my_sim (_type_): _description_
+            tmpdir (_type_): _description_
+        """
         d = tmpdir.mkdir("test_folder")
         my_sim.exports.exports = FESTIM.XDMFExports(
                 fields=["solute", "T"],
                 labels=['solute', 'temperature'],
-                last_timestep_only=True,
+                mode="last",
                 folder=str(Path(d))).xdmf_exports
         my_sim.exports.final_time = 1
         my_sim.t = 0
+        filenames = [
+            str(Path(d)) + '/{}.xdmf'.format(f)
+            for f in ["solute", "temperature"]
+            ]
 
         my_sim.run_post_processing()
-        assert not path.exists(str(Path(d)) + '/solute.xdmf')
+        for filename in filenames:
+            assert not path.exists(filename)
 
         my_sim.t = my_sim.exports.final_time
         my_sim.run_post_processing()
-        assert path.exists(str(Path(d)) + '/solute.xdmf')
+        for filename in filenames:
+            times = FESTIM.extract_xdmf_times(filename)
+            assert len(times) == 1
+            assert pytest.approx(float(times[0])) == my_sim.t

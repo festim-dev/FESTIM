@@ -39,16 +39,20 @@ class Traps:
                 trap.density_previous_solution = \
                     f.project(f.Constant(0), V)
 
-    def define_variational_problem_extrinsic_traps(self, dx, dt):
-        """Creates the variational formulations for the extrinsic traps
-        densities
+    def define_variational_problem_extrinsic_traps(self, dx, dt, T):
         """
+        Creates the variational formulations for the extrinsic traps densities
 
+        Args:
+            dx (fenics.Measure): the dx measure of the sim
+            dt (FESTIM.Stepsize): If None assuming steady state.
+            T (FESTIM.Temperature): the temperature of the simulation
+        """
         self.extrinsic_formulations = []
         expressions_extrinsic = []
         for trap in self.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
-                trap.create_form_density(dx, dt)
+                trap.create_form_density(dx, dt, T)
                 self.extrinsic_formulations.append(trap.form_density)
         self.sub_expressions.extend(expressions_extrinsic)
 

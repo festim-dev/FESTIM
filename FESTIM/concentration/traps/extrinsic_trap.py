@@ -1,18 +1,19 @@
-import FESTIM
+from FESTIM import Trap
 from fenics import *
 import sympy as sp
 
 
-class ExtrinsicTrap(FESTIM.Trap):
-    def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters, id=None, type=None):
+class ExtrinsicTrap(Trap):
+    def __init__(self, k_0, E_k, p_0, E_p, materials, form_parameters,
+                 id=None):
         """Inits ExtrinsicTrap
 
         Args:
-            E_k (float): trapping pre-exponential factor
-            k_0 (float): trapping activation energy
-            p_0 (float): detrapping pre-exponential factor
-            E_p (float): detrapping activation energy
-            materials (list or int): the materials ids the trap is living in
+            E_k (float, list): trapping pre-exponential factor (m3 s-1)
+            k_0 (float, list): trapping activation energy (eV)
+            p_0 (float, list): detrapping pre-exponential factor (s-1)
+            E_p (float, list): detrapping activation energy (eV)
+            materials (list, int): the materials ids the trap is living in
             form_parameters (dict): dict with keys ["phi_0", "n_amax",
                 "n_bmax", "eta_a", "eta_b", "f_a", "f_b"]
             id (int, optional): The trap id. Defaults to None.
@@ -33,11 +34,23 @@ class ExtrinsicTrap(FESTIM.Trap):
                 self.form_parameters[key] = Constant(value)
             else:
                 self.form_parameters[key] = Expression(sp.printing.ccode(value),
-                                       t=0,
-                                       degree=1)
+                                                       t=0, degree=1)
                 self.sub_expressions.append(self.form_parameters[key])
 
-    def create_form_density(self, dx, dt):
+    def create_form_density(self, dx, dt, T):
+        """
+        Creates the variational formulation for the extrinsic trap density.
+
+        Args:
+            dx (fenics.Measure): the dx measure of the sim
+            dt (FESTIM.Stepsize): the stepsize of the simulation.
+            T (FESTIM.Temperature): the temperature of the
+                simulation
+
+        Notes:
+            T is an argument, although is not used in the formulation of
+            extrinsic traps, but potential for subclasses of extrinsic traps
+        """
         phi_0 = self.form_parameters["phi_0"]
         n_amax = self.form_parameters["n_amax"]
         n_bmax = self.form_parameters["n_bmax"]

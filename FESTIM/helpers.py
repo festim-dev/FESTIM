@@ -1,6 +1,7 @@
 import FESTIM
 import warnings
 import fenics as f
+import xml.etree.ElementTree as ET
 warnings.simplefilter('always', DeprecationWarning)
 
 
@@ -204,8 +205,10 @@ def help_key(key):
 
 
 def read_parameters(simulation, parameters):
-    msg = "The use of parameters will soon be deprecated \
-            please use the object-oriented approach instead"
+    msg = "The use of parameters be deprecated in 0.9"
+    msg += " please use the object-oriented approach"
+    msg += " introduced in 0.8 instead"
+
     warnings.warn(msg, DeprecationWarning)
     create_settings(simulation, parameters)
     create_stepsize(simulation, parameters)
@@ -295,7 +298,9 @@ def create_concentration_objects(self, parameters):
     if "traps" in parameters:
         for trap in parameters["traps"]:
             if "type" in trap:
-                traps.append(FESTIM.ExtrinsicTrap(**trap))
+                traps.append(FESTIM.ExtrinsicTrap(**{key: val for key,
+                                                  val in trap.items() if
+                                                  key != "type"}))
             else:
                 traps.append(
                     FESTIM.Trap(trap["k_0"], trap["E_k"], trap["p_0"], trap["E_p"], trap["materials"], trap["density"])
@@ -492,7 +497,22 @@ def create_exports(self, parameters):
     self.exports = FESTIM.Exports([])
     if "exports" in parameters:
         if "xdmf" in parameters["exports"]:
-            my_xdmf_exports = FESTIM.XDMFExports(**parameters["exports"]["xdmf"])
+            export = parameters["exports"]["xdmf"]
+            mode = 1
+            if "last_timestep_only" in export:
+                mode = "last"
+            if "nb_iterations_between_exports" in export:
+                mode = export["nb_iterations_between_exports"]
+            my_xdmf_exports = FESTIM.XDMFExports(
+                **{key: val for key, val in
+                    export.items()
+                    if key not in [
+                        "last_timestep_only",
+                        "nb_iterations_between_exports"
+                        ]
+                   },
+                mode=mode
+                )
             self.exports.exports += my_xdmf_exports.xdmf_exports
 
         if "derived_quantities" in parameters["exports"]:
@@ -544,3 +564,55 @@ def kJmol_to_eV(energy):
     energy_in_eV = FESTIM.k_B*energy*1e3/FESTIM.R
 
     return energy_in_eV
+
+
+def extract_xdmf_times(filename):
+    """Returns a list of timesteps in an XDMF file
+
+    Args:
+        filename (str): the XDMF filename (must end with .xdmf)
+
+    Returns:
+        list: the timesteps
+    """
+    tree = ET.parse(filename)
+    root = tree.getroot()
+
+    domains = list(root)
+    domain = domains[0]
+    grids = list(domain)
+    grid = grids[0]
+
+    times = []
+    for c in grid:
+        for element in c:
+            if "Time" in element.tag:
+                times.append(float(element.attrib["Value"]))
+    return times
+
+
+def extract_xdmf_labels(filename):
+    """Returns a list of labels in an XDMF file
+
+    Args:
+        filename (str): the XDMF filename (must end with .xdmf)
+
+    Returns:
+        list: the labels
+    """
+    tree = ET.parse(filename)
+    root = tree.getroot()
+
+    domains = list(root)
+    domain = domains[0]
+    grids = list(domain)
+    grid = grids[0]
+
+    labels = []
+    for c in grid:
+        for element in c:
+            if "Attribute" in element.tag:
+                labels.append(element.attrib["Name"])
+
+    unique_labels = list(set(labels))
+    return unique_labels
