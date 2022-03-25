@@ -63,7 +63,7 @@ class TestDefineMarkers:
 
         self.my_mesh.define_markers(my_mats)
         for cell in fenics.cells(self.my_mesh.mesh):
-            if cell.midpoint().x() < 0.5:
+            if cell.midpoint().x() <= 0.5:
                 assert self.my_mesh.volume_markers[cell] == 1
             else:
                 assert self.my_mesh.volume_markers[cell] == 2
@@ -75,7 +75,7 @@ class TestDefineMarkers:
 
         self.my_mesh.define_markers(my_mats)
         for cell in fenics.cells(self.my_mesh.mesh):
-            if cell.midpoint().x() < 0.5:
+            if cell.midpoint().x() <= 0.5:
                 assert self.my_mesh.volume_markers[cell] == 1
             else:
                 assert self.my_mesh.volume_markers[cell] == 2
@@ -88,9 +88,9 @@ class TestDefineMarkers:
 
         self.my_mesh.define_markers(my_mats)
         for cell in fenics.cells(self.my_mesh.mesh):
-            if cell.midpoint().x() < 0.25:
+            if 0 <= cell.midpoint().x() <= 0.25:
                 assert self.my_mesh.volume_markers[cell] == 1
-            elif cell.midpoint().x() < 0.5:
+            elif 0.25 <= cell.midpoint().x() <= 0.5:
                 assert self.my_mesh.volume_markers[cell] == 2
             else:
                 assert self.my_mesh.volume_markers[cell] == 3
