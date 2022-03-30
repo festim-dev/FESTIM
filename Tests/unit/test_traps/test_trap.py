@@ -207,6 +207,65 @@ class TestCreateTrappingForm:
         assert my_trap.F.equals(expected_form)
         assert my_trap.F_trapping.equals(expected_form)
 
+    def test_expression_as_density(self):
+        """Test that create_trapping_form creates the correct formulation when
+        a fenics.Expression is given as density
+        """
+        # build
+        density = f.Expression("2 + x[0]", degree=2)
+        my_trap = FESTIM.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4,
+            materials=self.mat1.id, density=density)
+        my_trap.F = 0
+        add_functions(my_trap, self.V, id=1)
+        my_mats = FESTIM.Materials([self.mat1])
+
+        # run
+        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+
+        # test
+        v = my_trap.test_function
+        k = my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T)
+        p = my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)
+        expected_form = -k * self.my_mobile.solution * (my_trap.density[0] - my_trap.solution) * v * self.dx(1)
+        expected_form += p * my_trap.solution * v * self.dx(1)
+        print("expected F:", expected_form)
+        print("produced F_trapping:", my_trap.F_trapping)
+        print("produced F:", my_trap.F)
+        assert my_trap.F.equals(expected_form)
+        assert my_trap.F_trapping.equals(expected_form)
+
+    def test_user_expression_as_density(self):
+        """Test that create_trapping_form creates the correct formulation when
+        a fenics.UserExpression is given as density
+        """
+        # build
+        class CustomExpression(f.UserExpression):
+            def eval(self, value, x):
+                value[0] = x
+
+        my_trap = FESTIM.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4,
+            materials=self.mat1.id, density=CustomExpression())
+        my_trap.F = 0
+        add_functions(my_trap, self.V, id=1)
+        my_mats = FESTIM.Materials([self.mat1])
+
+        # run
+        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+
+        # test
+        v = my_trap.test_function
+        k = my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T)
+        p = my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)
+        expected_form = -k * self.my_mobile.solution * (my_trap.density[0] - my_trap.solution) * v * self.dx(1)
+        expected_form += p * my_trap.solution * v * self.dx(1)
+        print("expected F:", expected_form)
+        print("produced F_trapping:", my_trap.F_trapping)
+        print("produced F:", my_trap.F)
+        assert my_trap.F.equals(expected_form)
+        assert my_trap.F_trapping.equals(expected_form)
+
 
 class TestCreateSourceForm:
     mesh = f.UnitIntervalMesh(10)
