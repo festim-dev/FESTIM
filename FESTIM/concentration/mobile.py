@@ -83,6 +83,7 @@ class Mobile(Concentration):
                         F += dot(D * Q * c_0 / (R * T.T**2) * grad(T.T),
                                     grad(self.test_function))*dx
 
+                # see https://fenicsproject.discourse.group/t/method-of-manufactured-solution-cylindrical/7963
                 elif mesh.type == "cylindrical":
                     r = SpatialCoordinate(mesh.mesh)[0]
                     F += r*dot(D*grad(c_0), grad(self.test_function/r))*dx
