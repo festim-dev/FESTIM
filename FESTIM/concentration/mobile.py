@@ -22,12 +22,12 @@ class Mobile(Concentration):
         self.sources = []
         self.boundary_conditions = []
 
-    def create_form(self, materials, dx, ds, T,  dt=None, traps=None, soret=False):
+    def create_form(self, materials, mesh, T,  dt=None, traps=None, soret=False):
         """Creates the variational formulation.
 
         Args:
             materials (FESTIM.Materials): the materials
-            dx (fenics.Measure): the measure dx
+            mesh (FESTIM.Mesh): the mesh of the simulation
             T (FESTIM.Temperature): the temperature
             dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
             traps (FESTIM.Traps, optional): the traps. Defaults to None.
@@ -37,9 +37,9 @@ class Mobile(Concentration):
                 to False.
         """
         self.F = 0
-        self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, soret=soret)
-        self.create_source_form(dx)
-        self.create_fluxes_form(T, ds)
+        self.create_diffusion_form(materials, mesh.dx, T, dt=dt, traps=traps, soret=soret)
+        self.create_source_form(mesh.dx)
+        self.create_fluxes_form(T, mesh.ds)
 
     def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, soret=False):
         """Creates the variational formulation for the diffusive part.

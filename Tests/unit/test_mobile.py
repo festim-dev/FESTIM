@@ -93,13 +93,14 @@ def test_mobile_create_form():
 
     mat = FESTIM.Material(1, D_0=1, E_D=1)
     my_mats = FESTIM.Materials([mat])
-    dx = f.dx()
-    ds = f.ds()
+    mesh = FESTIM.Mesh()
+    mesh.dx = f.dx()
+    mesh.ds = f.ds()
     T = FESTIM.Temperature(value=100)
     T.T = f.interpolate(f.Constant(100), V)
 
     # run
-    my_mobile.create_form(my_mats, dx, ds, T)
+    my_mobile.create_form(my_mats, mesh, T)
 
     # test
     Index._globalcount = 8
