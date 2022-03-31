@@ -10,13 +10,13 @@ def test_run_MMS():
     '''
     r = FESTIM.x
 
-    u = 1 + r**2 #+ sp.sin(2*fenics.pi*r)
+    u = 1 + r**2
     T = 700 + 30*r
     E_D = 0.1
     D_0 = 2
     k_B = FESTIM.k_B
     D = D_0 * sp.exp(-E_D/k_B/T)
-    f = -1/(r**2) * sp.diff(D * r**2 * sp.diff(u, r), r)
+    f =  - 1/r * sp.diff(D *r * sp.diff(u, r), r)
 
     my_materials = FESTIM.Materials(
         [
@@ -24,7 +24,7 @@ def test_run_MMS():
         ]
     )
 
-    my_mesh = FESTIM.MeshFromVertices(np.linspace(1, 2, 500), type="spherical")
+    my_mesh = FESTIM.MeshFromVertices(np.linspace(1, 2, 500), type="cylindrical")
 
     my_bcs = [
         FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
@@ -43,6 +43,7 @@ def test_run_MMS():
         transient=False
     )
 
+
     my_sim = FESTIM.Simulation(
         mesh=my_mesh, materials=my_materials,
         boundary_conditions=my_bcs,
@@ -55,4 +56,5 @@ def test_run_MMS():
     u_expr = fenics.Expression(sp.printing.ccode(u), degree=3)
     expected_solution = fenics.interpolate(u_expr, my_sim.h_transport_problem.V)
     error_L2 = fenics.errornorm(expected_solution, produced_solution, 'L2')
+    print(error_L2)
     assert error_L2 < 1e-7
