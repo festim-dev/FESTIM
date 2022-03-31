@@ -89,7 +89,7 @@ class Mobile(Concentration):
 
                 elif mesh.type == "spherical":
                     r = SpatialCoordinate(mesh.mesh)[0]
-                    F += dot(D*grad(c_0), grad(self.test_function))*dx - D*c_0.dx(0)*2*self.test_function/r*dx
+                    F += D*r*r*dot(grad(c_0), grad(self.test_function/r/r))*dx
 
         # add the traps transient terms
         if dt is not None:
