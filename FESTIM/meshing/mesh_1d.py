@@ -8,13 +8,11 @@ class Mesh1D(Mesh):
 
     Attributes:
         size (float): the size of the 1D mesh
-        start (float): the starting point of the 1D mesh
 
     """
     def __init__(self) -> None:
         super().__init__()
         self.size = None
-        self.start = 0
 
     def define_markers(self, materials):
         """Iterates through the mesh and mark them
@@ -42,7 +40,7 @@ class Mesh1D(Mesh):
             i += 1
             x0 = facet.midpoint()
             surface_markers[facet] = 0
-            if f.near(x0.x(), self.start):
+            if f.near(x0.x(), 0):
                 surface_markers[facet] = 1
             if f.near(x0.x(), self.size):
                 surface_markers[facet] = 2
