@@ -106,7 +106,6 @@ class Mobile(Concentration):
         Args:
             dx (fenics.Measure): the measure dx
         """
-        # TODO sources should be multiplied by r in cylindrical and spherical
         F_source = 0
         expressions_source = []
 
