@@ -20,6 +20,7 @@ class MeshFromVertices(Mesh1D):
         super().__init__()
         self.vertices = vertices
         self.size = max(vertices)
+        self.start = min(vertices)
         self.generate_mesh_from_vertices()
 
     def generate_mesh_from_vertices(self):
