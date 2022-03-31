@@ -80,8 +80,7 @@ class Mobile(Concentration):
                     F += dot(D*grad(c_0), grad(self.test_function))*dx
                     if soret:
                         Q = material.free_enthalpy*T.T + material.entropy
-                        F += dot(D_0 * exp(-E_D/k_B/T.T) *
-                                    Q * c_0 / (R * T.T**2) * grad(T.T),
+                        F += dot(D * Q * c_0 / (R * T.T**2) * grad(T.T),
                                     grad(self.test_function))*dx
 
                 elif mesh.type == "cylindrical":
@@ -90,7 +89,7 @@ class Mobile(Concentration):
 
                 elif mesh.type == "spherical":
                     r = SpatialCoordinate(mesh.mesh)[0]
-                    F += (r*self.test_function.dx(0)-self.test_function)*c_0.dx(0)*dx
+                    F += D*(r*self.test_function.dx(0)-self.test_function)*c_0.dx(0)*dx
 
         # add the traps transient terms
         if dt is not None:
@@ -107,6 +106,7 @@ class Mobile(Concentration):
         Args:
             dx (fenics.Measure): the measure dx
         """
+        # TODO sources should be multiplied by r in cylindrical and spherical
         F_source = 0
         expressions_source = []
 
