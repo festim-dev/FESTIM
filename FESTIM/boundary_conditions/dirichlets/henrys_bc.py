@@ -3,11 +3,11 @@ import fenics as f
 import sympy as sp
 
 
-def Henrys_law(T, H_0, E_H, pressure):
+def henrys_law(T, H_0, E_H, pressure):
 	H = H_0*f.exp(-E_H/k_B/T)
 	return H*pressure
 
-def HenrysBC(DirichletBC):
+class HenrysBC(DirichletBC):
 	'''Subclass of DirichletBC for Henry's law: cm = H*pressure
 	'''
 	def __init__(self, surfaces, H_0, E_H, pressure) -> None:
@@ -24,9 +24,16 @@ def HenrysBC(DirichletBC):
 		self.E_H = E_H
 		self.pressure = pressure
 
-#	def creat_expression(self, T):
-#		pressure  = f.Expression(
-#				sp.printing.ccode(self.pressure),
-#                t = 0, degree = 1)
+	def create_expression(self, T):
+		pressure  = f.Expression(
+				sp.printing.ccode(self.pressure),
+                t = 0, degree = 1)
+		value_BC = BoundaryConditionExpression(
+				T, henrys_law,
+				H_0 = self.H_0, E_H = self.E_H,
+				pressure = pressure,
+		)
+		self.expression = value_BC
+		self.sub_expressions = [pressure]
 
 
