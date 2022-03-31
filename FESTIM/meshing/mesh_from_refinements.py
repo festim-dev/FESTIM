@@ -11,7 +11,7 @@ class MeshFromRefinements(Mesh1D):
         size (float): total size of the 1D mesh
         refinements (list): list of refinements
     """
-    def __init__(self, initial_number_of_cells, size, refinements=[]) -> None:
+    def __init__(self, initial_number_of_cells, size, refinements=[], **kwargs) -> None:
         """Inits MeshFromRefinements
 
         Args:
@@ -22,7 +22,7 @@ class MeshFromRefinements(Mesh1D):
                 {"x": ..., "cells": ...}. For each refinement, the mesh will
                 have at least ["cells"] in [0, "x"]. Defaults to [].
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self.initial_number_of_cells = initial_number_of_cells
         self.size = size
         self.refinements = refinements

@@ -37,16 +37,16 @@ class Mobile(Concentration):
                 to False.
         """
         self.F = 0
-        self.create_diffusion_form(materials, mesh.dx, T, dt=dt, traps=traps, soret=soret)
+        self.create_diffusion_form(materials, mesh, T, dt=dt, traps=traps, soret=soret)
         self.create_source_form(mesh.dx)
         self.create_fluxes_form(T, mesh.ds)
 
-    def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, soret=False):
+    def create_diffusion_form(self, materials, mesh, T, dt=None, traps=None, soret=False):
         """Creates the variational formulation for the diffusive part.
 
         Args:
             materials (FESTIM.Materials): the materials
-            dx (fenics.Measure): the measure dx
+            mesh (FESTIM.Mesh): the mesh
             T (FESTIM.Temperature): the temperature
             dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
             traps (FESTIM.Traps, optional): the traps. Defaults to None.
@@ -55,6 +55,10 @@ class Mobile(Concentration):
             soret (bool, optional): If True, Soret effect is assumed. Defaults
                 to False.
         """
+        if soret and mesh.type in ["cylindrical", "spherical"]:
+            msg = "Soret effect not implemented in {} coordinates".format(system)
+            raise ValueError(msg)
+
         F = 0
         for material in materials.materials:
             D_0 = material.D_0
@@ -62,28 +66,38 @@ class Mobile(Concentration):
             c_0, c_0_n = self.get_concentration_for_a_given_material(material, T)
 
             subdomains = material.id  # list of subdomains with this material
-            if type(subdomains) is not list:
+            if not isinstance(subdomains, list):
                 subdomains = [subdomains]  # make sure subdomains is a list
 
             # add to the formulation F for every subdomain
             for subdomain in subdomains:
+                dx = mesh.dx(subdomain)
                 # transient form
                 if dt is not None:
-                    F += ((c_0-c_0_n)/dt.value)*self.test_function*dx(subdomain)
-                F += dot(D_0 * exp(-E_D/k_B/T.T)*grad(c_0),
-                         grad(self.test_function))*dx(subdomain)
-                if soret:
-                    Q = material.free_enthalpy*T.T + material.entropy
-                    F += dot(D_0 * exp(-E_D/k_B/T.T) *
-                             Q * c_0 / (R * T.T**2) * grad(T.T),
-                             grad(self.test_function))*dx(subdomain)
+                    F += ((c_0-c_0_n)/dt.value)*self.test_function*dx
+                D = D_0 * exp(-E_D/k_B/T.T)
+                if mesh.type == "cartesian":
+                    F += dot(D*grad(c_0), grad(self.test_function))*dx
+                    if soret:
+                        Q = material.free_enthalpy*T.T + material.entropy
+                        F += dot(D_0 * exp(-E_D/k_B/T.T) *
+                                    Q * c_0 / (R * T.T**2) * grad(T.T),
+                                    grad(self.test_function))*dx
+
+                elif mesh.type == "cylindrical":
+                    r = SpatialCoordinate(mesh.mesh)[0]
+                    F += r*dot(D*grad(c_0), grad(self.test_function))*dx
+
+                elif mesh.type == "spherical":
+                    r = SpatialCoordinate(mesh.mesh)[0]
+                    F += (r*self.test_function.dx(0)-self.test_function)*c_0.dx(0)*dx
 
         # add the traps transient terms
         if dt is not None:
             if traps is not None:
                 for trap in traps.traps:
                     F += ((trap.solution - trap.previous_solution) / dt.value) * \
-                        self.test_function * dx
+                        self.test_function * mesh.dx
         self.F_diffusion = F
         self.F += F
 

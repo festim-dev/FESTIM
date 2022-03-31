@@ -10,8 +10,8 @@ class Mesh1D(Mesh):
         size (float): the size of the 1D mesh
 
     """
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.size = None
 
     def define_markers(self, materials):
