@@ -1,0 +1,32 @@
+from FESTIM import DirichletBC, BoundaryConditionExpression, k_B
+import fenics as f
+import sympy as sp
+
+
+def Henrys_law(T, H_0, E_H, pressure):
+	H = H_0*f.exp(-E_H/k_B/T)
+	return H*pressure
+
+def HenrysBC(DirichletBC):
+	'''Subclass of DirichletBC for Henry's law: cm = H*pressure
+	'''
+	def __init__(self, surfaces, H_0, E_H, pressure) -> None:
+		''' Init HenrysBC
+
+		Args:
+			surfaces (list or int): the surfaces on which the BC is applied
+			H_0 (float): Henry's constant pre-erxponential factor (m-3.Pa-1)
+			E_H (float): Henry's constant solution energy (eV)
+			pressure (float or sp.Expr): hydrogen partial pressure (Pa)
+		'''
+		super().__init__(surfaces, component=0)
+		self.H_0 = H_0
+		self.E_H = E_H
+		self.pressure = pressure
+
+#	def creat_expression(self, T):
+#		pressure  = f.Expression(
+#				sp.printing.ccode(self.pressure),
+#                t = 0, degree = 1)
+
+
