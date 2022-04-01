@@ -206,6 +206,10 @@ class Simulation:
     def run(self, output=False):
         """Runs the model.
 
+        Args:
+            output (bool, optional): If True, an output dict will be returned.
+                Defaults to False.
+
         Returns:
             dict: output containing solutions, mesh, derived quantities
         """
