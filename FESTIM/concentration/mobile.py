@@ -56,7 +56,7 @@ class Mobile(Concentration):
                 to False.
         """
         if soret and mesh.type in ["cylindrical", "spherical"]:
-            msg = "Soret effect not implemented in {} coordinates".format(system)
+            msg = "Soret effect not implemented in {} coordinates".format(mesh.type)
             raise ValueError(msg)
 
         F = 0
