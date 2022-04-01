@@ -203,13 +203,15 @@ class Simulation:
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
 
-    def run(self, output=False):
+    def run(self, output=False, completion_tone=False):
         """Runs the model.
 
         Args:
             output (bool, optional): If True, an output dict will be returned.
                 Defaults to False.
-
+            completion_tone (bool, optional): If True, a native os alert
+                tone will alert user upon completion of current run. Defaults
+                to False.
         Returns:
             dict: output containing solutions, mesh, derived quantities
         """
@@ -221,7 +223,7 @@ class Simulation:
             self.run_steady()
 
         # End
-        if self.settings.completion_tone:
+        if completion_tone:
             print('\007')
 
         if output:
