@@ -5,10 +5,10 @@ import numpy as np
 
 
 def test_run_MMS():
-    '''
+    """
     Tests that FESTIM produces the correct concentration field in cylindrical
     coordinates
-    '''
+    """
     r = FESTIM.x
 
     u = 1 + r**2
@@ -63,10 +63,10 @@ def test_run_MMS():
 
 
 def test_temperature_MMS():
-    '''
+    """
     Tests that FESTIM produces the correct temperature field in cylindrical
     coordinates
-    '''
+    """
     r = FESTIM.x
 
     T = 700 + 30*r
