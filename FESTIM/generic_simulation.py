@@ -203,7 +203,7 @@ class Simulation:
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
 
-    def run(self):
+    def run(self, output=False):
         """Runs the model.
 
         Returns:
@@ -220,7 +220,8 @@ class Simulation:
         if self.settings.completion_tone:
             print('\007')
 
-        return self.make_output()
+        if output:
+            return self.make_output()
 
     def run_transient(self):
         # add final_time to Exports
@@ -388,5 +389,6 @@ def run(parameters, log_level=40):
     """
     my_sim = FESTIM.Simulation(parameters, log_level)
     my_sim.initialise()
-    output = my_sim.run()
+    # print output by default on scripts using the v0.7.1 format and earlier
+    output = my_sim.run(output=True)
     return output

@@ -52,7 +52,7 @@ def test_run_temperature_stationary(tmpdir):
         dt=my_stepsize, settings=my_settings,
         temperature=my_temperature, exports=my_exports)
     my_sim.initialise()
-    output = my_sim.run()
+    output = my_sim.run(output=True)
     assert output["error"][0] < 1e-9
 
 
@@ -110,7 +110,7 @@ def test_run_temperature_transient(tmpdir):
         exports=my_exports
     )
     my_sim.initialise()
-    output = my_sim.run()
+    output = my_sim.run(output=True)
 
     assert output["error"][0] < 1e-9
 
@@ -194,7 +194,7 @@ def test_run_MMS(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-7
     tol_v = 1e-6
@@ -293,7 +293,7 @@ def test_run_MMS_chemical_pot(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-7
     tol_v = 1e-6
@@ -384,6 +384,7 @@ def test_run_MMS_soret(tmpdir):
             (D*(sp.diff(u, FESTIM.x) +
                 (H*T+S)*u/(R*T**2)*sp.diff(T, FESTIM.x))),
             FESTIM.x)
+
     def run(h):
         my_materials = FESTIM.Materials(
             [
@@ -430,7 +431,7 @@ def test_run_MMS_soret(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-7
     sizes = [1/1000, 1/2000]
@@ -527,7 +528,7 @@ def test_run_MMS_steady_state(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-10
     tol_v = 1e-7
@@ -588,7 +589,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
         dt=my_dt, exports=my_exports)
 
     my_sim.initialise()
-    out = my_sim.run()
+    out = my_sim.run(output=True)
     assert out["derived_quantities"][-1][1] == pytest.approx(1)
 
 
@@ -840,8 +841,8 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
         my_sim.initialise()
         return my_sim
 
-    short_derived_quantities = init_sim(10).run()["derived_quantities"]
-    long_derived_quantities = init_sim(1).run()["derived_quantities"]
+    short_derived_quantities = init_sim(10).run(output=True)["derived_quantities"]
+    long_derived_quantities = init_sim(1).run(output=True)["derived_quantities"]
 
     assert len(long_derived_quantities) > len(short_derived_quantities)
 
