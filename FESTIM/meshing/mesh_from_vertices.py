@@ -11,13 +11,13 @@ class MeshFromVertices(Mesh1D):
         vertices (list): the mesh vertices
         size (type): the size of the 1D mesh
     """
-    def __init__(self, vertices) -> None:
+    def __init__(self, vertices, **kwargs) -> None:
         """Inits MeshFromVertices
 
         Args:
             vertices (list): the mesh vertices
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self.vertices = vertices
         self.size = max(vertices)
         self.start = min(vertices)
