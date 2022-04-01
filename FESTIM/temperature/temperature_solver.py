@@ -106,11 +106,11 @@ class HeatTransferProblem(FESTIM.Temperature):
                         mesh.dx(vol)
                 elif mesh.type == "cylindrical":
                     r = f.SpatialCoordinate(mesh.mesh)[0]
-                    F += r*f.dot(thermal_cond*f.grad(T), f.grad(v_T/r)) * \
+                    self.F += r*f.dot(thermal_cond*f.grad(T), f.grad(v_T/r)) * \
                         mesh.dx(vol)
                 elif mesh.type == "spherical":
                     r = f.SpatialCoordinate(mesh.mesh)[0]
-                    F += thermal_cond*r*r*f.dot(f.grad(T), f.grad(v_T/r/r)) * \
+                    self.F += thermal_cond*r*r*f.dot(f.grad(T), f.grad(v_T/r/r)) * \
                         mesh.dx(vol)
         # source term
         for source in self.sources:
