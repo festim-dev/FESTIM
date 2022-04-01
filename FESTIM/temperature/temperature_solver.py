@@ -42,10 +42,8 @@ class HeatTransferProblem(FESTIM.Temperature):
         False.
 
         Args:
-            V (fenics.FunctionSpace): the function space of Temperature
             materials (FESTIM.Materials): the materials.
-            dx (fenics.Measure): measure for dx.
-            ds (fenics.Measure): measure for ds.
+            mesh (FESTIM.Mesh): the mesh
             dt (FESTIM.Stepsize, optional): the stepsize. Only needed if
                 self.transient is True. Defaults to None.
         """
@@ -60,7 +58,7 @@ class HeatTransferProblem(FESTIM.Temperature):
             self.initial_value = f.Expression(ccode_T_ini, degree=2, t=0)
             self.T_n.assign(f.interpolate(self.initial_value, V))
 
-        self.define_variational_problem(materials, mesh.dx, mesh.ds, dt)
+        self.define_variational_problem(materials, mesh, dt)
         self.create_dirichlet_bcs(mesh.surface_markers)
 
         if not self.transient:
@@ -104,13 +102,16 @@ class HeatTransferProblem(FESTIM.Temperature):
             # Diffusion term
             for vol in subdomains:
                 if mesh.type == "cartesian":
-                    self.F += f.dot(thermal_cond*f.grad(T), f.grad(v_T))*mesh.dx(vol)
+                    self.F += f.dot(thermal_cond*f.grad(T), f.grad(v_T)) * \
+                        mesh.dx(vol)
                 elif mesh.type == "cylindrical":
-                    # TODO add cylindrical
-                    pass
+                    r = f.SpatialCoordinate(mesh.mesh)[0]
+                    F += r*f.dot(thermal_cond*f.grad(T), f.grad(v_T/r)) * \
+                        mesh.dx(vol)
                 elif mesh.type == "spherical":
-                    # TODO add spherical
-                    pass
+                    r = f.SpatialCoordinate(mesh.mesh)[0]
+                    F += thermal_cond*r*r*f.dot(f.grad(T), f.grad(v_T/r/r)) * \
+                        mesh.dx(vol)
         # source term
         for source in self.sources:
             self.sub_expressions.append(source.value)
@@ -119,7 +120,7 @@ class HeatTransferProblem(FESTIM.Temperature):
             else:
                 volumes = [source.volume]
             for volume in volumes:
-                self.F += - source.value*v_T*dx(volume)
+                self.F += - source.value*v_T*mesh.dx(volume)
 
         # Boundary conditions
         for bc in self.boundary_conditions:
@@ -130,7 +131,7 @@ class HeatTransferProblem(FESTIM.Temperature):
                 self.sub_expressions += bc.sub_expressions
 
                 for surf in bc.surfaces:
-                    self.F += -bc.form*self.v_T*ds(surf)
+                    self.F += -bc.form*self.v_T*mesh.ds(surf)
 
     def create_dirichlet_bcs(self, surface_markers):
         """Creates a list of fenics.DirichletBC and add time dependent
