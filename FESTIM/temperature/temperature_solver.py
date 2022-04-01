@@ -68,13 +68,12 @@ class HeatTransferProblem(FESTIM.Temperature):
             f.solve(self.F == 0, self.T, self.dirichlet_bcs)
             self.T_n.assign(self.T)
 
-    def define_variational_problem(self, materials, dx, ds, dt=None):
+    def define_variational_problem(self, materials, mesh, dt=None):
         """Create a variational form for heat transfer problem
 
         Args:
             materials (FESTIM.Materials): the materials.
-            dx (fenics.Measure): measure for dx.
-            ds (fenics.Measure): measure for ds.
+            mesh (FESTIM.Mesh): the mesh.
             dt (FESTIM.Stepsize, optional): the stepsize. Only needed if
                 self.transient is True. Defaults to None.
         """
@@ -101,11 +100,17 @@ class HeatTransferProblem(FESTIM.Temperature):
                     rho = rho(T)
                 # Transien term
                 for vol in subdomains:
-                    self.F += rho*cp*(T-T_n)/dt.value*v_T*dx(vol)
+                    self.F += rho*cp*(T-T_n)/dt.value*v_T*mesh.dx(vol)
             # Diffusion term
             for vol in subdomains:
-                self.F += f.dot(thermal_cond*f.grad(T), f.grad(v_T))*dx(vol)
-
+                if mesh.type == "cartesian":
+                    self.F += f.dot(thermal_cond*f.grad(T), f.grad(v_T))*mesh.dx(vol)
+                elif mesh.type == "cylindrical":
+                    # TODO add cylindrical
+                    pass
+                elif mesh.type == "spherical":
+                    # TODO add spherical
+                    pass
         # source term
         for source in self.sources:
             self.sub_expressions.append(source.value)
