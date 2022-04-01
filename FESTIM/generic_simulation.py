@@ -389,6 +389,6 @@ def run(parameters, log_level=40):
     """
     my_sim = FESTIM.Simulation(parameters, log_level)
     my_sim.initialise()
-    # print output by default on scripts using FESTIM v0.7.1 and earlier
+    # print output by default on scripts using the v0.7.1 format and earlier
     output = my_sim.run(output=True)
     return output
