@@ -1,21 +1,20 @@
 import warnings
 from FESTIM import Export
 import fenics as f
-warnings.simplefilter('always', DeprecationWarning)
 
 
 class XDMFExport(Export):
-    def __init__(self, field, label, folder, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True) -> None:
+    def __init__(self, field, label, folder, mode=1, checkpoint=True) -> None:
         """Inits XDMFExport
 
         Args:
             field (str): the exported field ("solute", "1", "retention", "T"...)
             label (str): label of the field in the written file
             folder (str): path of the export folder
-            last_timestep_only (bool, optional): If set to True, will only
-                export at the last time step. Defaults to False.
-            nb_iterations_between_exports (int, optional): Number of
-                iterations between each export. Defaults to 1.
+            mode (int, str, optional): if "last" only the last
+                timestep will be exported. Otherwise the number of
+                iterations between each export can be provided as an integer.
+                Defaults to 1.
             checkpoint (bool, optional): If set to True,
                 fenics.XDMFFile.write_checkpoint will be use, else
                 fenics.XDMFFile.write. Defaults to True.
@@ -34,14 +33,29 @@ class XDMFExport(Export):
             raise TypeError("folder value must be of type str")
         self.files = None
         self.define_xdmf_file()
-        self.last_time_step_only = last_timestep_only
-        self.nb_iterations_between_exports = nb_iterations_between_exports
+        self.mode = mode
         self.checkpoint = checkpoint
         if type(self.checkpoint) != bool:
             raise TypeError(
                 "checkpoint should be a bool")
 
         self.append = False
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @mode.setter
+    def mode(self, value):
+        accepted_values = "accepted values for mode are int and 'last'"
+        if not isinstance(value, (str, int)):
+            raise ValueError(accepted_values)
+        if isinstance(value, int) and value <= 0:
+            raise ValueError("mode must be positive")
+        if isinstance(value, str) and value != "last":
+            raise ValueError(accepted_values)
+
+        self._mode = value
 
     def define_xdmf_file(self):
         """Creates the file
@@ -61,6 +75,15 @@ class XDMFExport(Export):
         self.function.rename(self.label, "label")
 
         if self.checkpoint:
+
+            # warn users if checkpoint is True and 1D
+            dimension = self.function.function_space().mesh().topology().dim()
+            if dimension == 1:
+                msg = "in 1D, checkpointing is needed to visualise the XDMF "
+                msg += "file in Paraview (see issue "
+                msg += "https://github.com/RemDelaporteMathurin/FESTIM/issues/134)"
+                warnings.warn(msg)
+
             self.file.write_checkpoint(
                 self.function, self.label, t, f.XDMFFile.Encoding.HDF5,
                 append=self.append)
@@ -78,18 +101,18 @@ class XDMFExport(Export):
         Returns:
             bool: True if export should be exported, else False
         """
-        if (self.last_time_step_only and
-            t >= final_time) or \
-                not self.last_time_step_only:
-            if nb_iterations % \
-                    self.nb_iterations_between_exports == 0:
+        if (self.mode == "last" and
+                t >= final_time):
+            return True
+        elif isinstance(self.mode, int):
+            if nb_iterations % self.mode == 0:
                 return True
 
         return False
 
 
 class XDMFExports:
-    def __init__(self, fields=[], labels=[], folder=None, last_timestep_only=False, nb_iterations_between_exports=1, checkpoint=True, functions=[]) -> None:
+    def __init__(self, fields=[], labels=[], folder=None, mode=1, checkpoint=True, functions=[]) -> None:
         self.fields = fields
         self.labels = labels
         if functions != []:
@@ -103,8 +126,7 @@ class XDMFExports:
         self.xdmf_exports = [
             XDMFExport(
                 function, label, folder,
-                last_timestep_only=last_timestep_only,
-                nb_iterations_between_exports=nb_iterations_between_exports,
+                mode=mode,
                 checkpoint=checkpoint)
             for function, label in zip(self.fields, self.labels)
         ]

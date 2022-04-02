@@ -1,6 +1,7 @@
 import FESTIM
 import fenics as f
 from ufl.core.multiindex import Index
+import pytest
 
 
 def test_mobile_create_diffusion_form():
@@ -17,10 +18,12 @@ def test_mobile_create_diffusion_form():
     mat = FESTIM.Material(1, D_0=1, E_D=1)
     my_mats = FESTIM.Materials([mat])
     dx = f.dx()
+    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh.dx = dx
     T = FESTIM.Temperature(value=100)
     T.T = f.interpolate(f.Constant(100), V)
     # run
-    my_mobile.create_diffusion_form(my_mats, dx, T)
+    my_mobile.create_diffusion_form(my_mats, my_mesh, T)
 
     # test
     c_0 = my_mobile.solution
@@ -93,13 +96,14 @@ def test_mobile_create_form():
 
     mat = FESTIM.Material(1, D_0=1, E_D=1)
     my_mats = FESTIM.Materials([mat])
-    dx = f.dx()
-    ds = f.ds()
+    mesh = FESTIM.Mesh()
+    mesh.dx = f.dx()
+    mesh.ds = f.ds()
     T = FESTIM.Temperature(value=100)
     T.T = f.interpolate(f.Constant(100), V)
 
     # run
-    my_mobile.create_form(my_mats, dx, ds, T)
+    my_mobile.create_form(my_mats, mesh, T)
 
     # test
     Index._globalcount = 8
@@ -118,7 +122,7 @@ class TestCreateDiffusionForm:
     my_mesh = FESTIM.Mesh(mesh)
     my_temp = FESTIM.Temperature(value=100)
     my_temp.create_functions(my_mesh)
-    dx = f.dx()
+    my_mesh.dx = f.dx()
     dt = FESTIM.Stepsize(initial_value=1)
     V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
@@ -142,7 +146,7 @@ class TestCreateDiffusionForm:
         my_traps = FESTIM.Traps([trap1, trap2])
 
         # run
-        my_mobile.create_diffusion_form(my_mats, self.dx, self.my_temp, dt=self.dt, traps=my_traps)
+        my_mobile.create_diffusion_form(my_mats, self.my_mesh, self.my_temp, dt=self.dt, traps=my_traps)
 
         # test
         Index._globalcount = 8
@@ -150,17 +154,31 @@ class TestCreateDiffusionForm:
         D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
         c_0 = my_mobile.solution
         c_0_n = my_mobile.previous_solution
-        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.dx(1)
-        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
+        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.my_mesh.dx(1)
+        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.my_mesh.dx(1)
         for trap in my_traps.traps:
             expected_form += ((trap.solution - trap.previous_solution) / self.dt.value) * \
-                v * self.dx
+                v * self.my_mesh.dx
 
         print("expected F:")
         print(expected_form)
         print("produced F:")
         print(my_mobile.F)
         assert my_mobile.F.equals(expected_form)
+
+    def test_error_soret_cylindrical_spherical(self):
+        """Tests that the appropriate error is raised when trying to use Soret
+        with cylindrical or spherical system
+        """
+        my_mobile = FESTIM.Mobile()
+
+        for system in ["cylindrical", "spherical"]:
+            mesh = FESTIM.Mesh(type=system)
+            expected_error_msg = "not implemented " + \
+                "in {} coordinates".format(system)
+            with pytest.raises(ValueError, match=expected_error_msg):
+                my_mobile.create_diffusion_form(
+                    materials=None, mesh=mesh, T=None, soret=True)
 
 
 class TestInitialise:

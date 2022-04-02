@@ -52,7 +52,7 @@ def test_run_temperature_stationary(tmpdir):
         dt=my_stepsize, settings=my_settings,
         temperature=my_temperature, exports=my_exports)
     my_sim.initialise()
-    output = my_sim.run()
+    output = my_sim.run(output=True)
     assert output["error"][0] < 1e-9
 
 
@@ -110,7 +110,7 @@ def test_run_temperature_transient(tmpdir):
         exports=my_exports
     )
     my_sim.initialise()
-    output = my_sim.run()
+    output = my_sim.run(output=True)
 
     assert output["error"][0] < 1e-9
 
@@ -194,7 +194,7 @@ def test_run_MMS(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-7
     tol_v = 1e-6
@@ -293,7 +293,7 @@ def test_run_MMS_chemical_pot(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-7
     tol_v = 1e-6
@@ -384,6 +384,7 @@ def test_run_MMS_soret(tmpdir):
             (D*(sp.diff(u, FESTIM.x) +
                 (H*T+S)*u/(R*T**2)*sp.diff(T, FESTIM.x))),
             FESTIM.x)
+
     def run(h):
         my_materials = FESTIM.Materials(
             [
@@ -430,7 +431,7 @@ def test_run_MMS_soret(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-7
     sizes = [1/1000, 1/2000]
@@ -527,7 +528,7 @@ def test_run_MMS_steady_state(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run()
+        return my_sim.run(output=True)
 
     tol_u = 1e-10
     tol_v = 1e-7
@@ -588,116 +589,8 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
         dt=my_dt, exports=my_exports)
 
     my_sim.initialise()
-    out = my_sim.run()
+    out = my_sim.run(output=True)
     assert out["derived_quantities"][-1][1] == pytest.approx(1)
-
-
-def test_performance_xdmf(tmpdir):
-    '''
-    Check that the computation time when exporting every 10 iterations to XDMF
-    is reduced
-    '''
-    d = tmpdir.mkdir("Solution_Test")
-
-    def init_sim(nb_exports_iter):
-        my_materials = FESTIM.Materials(
-            [
-                FESTIM.Material(id=1, D_0=1, E_D=1)
-            ]
-        )
-        my_mesh = FESTIM.MeshFromRefinements(200, 1)
-
-        my_temp = FESTIM.Temperature(300)
-
-        my_settings = FESTIM.Settings(
-            absolute_tolerance=1e10,
-            relative_tolerance=1e-9,
-            transient=True, final_time=30,
-        )
-        my_dt = FESTIM.Stepsize(4)
-        xdmf1 = FESTIM.XDMFExport(
-            "solute", "solute", folder=str(Path(d)),
-            nb_iterations_between_exports=nb_exports_iter)
-        xdmf2 = FESTIM.XDMFExport(
-            "retention", "retention", folder=str(Path(d)),
-            nb_iterations_between_exports=nb_exports_iter)
-        my_exports = FESTIM.Exports([xdmf1, xdmf2])
-
-        my_sim = FESTIM.Simulation(
-            mesh=my_mesh, materials=my_materials,
-            temperature=my_temp, settings=my_settings,
-            dt=my_dt, exports=my_exports)
-
-        my_sim.initialise()
-        return my_sim
-
-    # short simulation
-    start = timeit.default_timer()
-    init_sim(10).run()
-    stop = timeit.default_timer()
-    short_time = stop - start
-
-    # long simulation
-    start = timeit.default_timer()
-    init_sim(1).run()
-    stop = timeit.default_timer()
-    long_time = stop - start
-
-    assert short_time < long_time
-
-
-def test_performance_xdmf_last_timestep(tmpdir):
-    '''
-    Check that the computation time when exporting only the last timestep to
-    XDMF is reduced
-    '''
-    d = tmpdir.mkdir("Solution_Test")
-
-    def init_sim(export_last):
-        my_materials = FESTIM.Materials(
-            [
-                FESTIM.Material(id=1, D_0=1, E_D=1)
-            ]
-        )
-        my_mesh = FESTIM.MeshFromRefinements(200, 1)
-
-        my_temp = FESTIM.Temperature(300)
-
-        my_settings = FESTIM.Settings(
-            absolute_tolerance=1e10,
-            relative_tolerance=1e-9,
-            transient=True, final_time=30,
-        )
-        my_dt = FESTIM.Stepsize(4)
-        xdmf1 = FESTIM.XDMFExport(
-            "solute", "solute", folder=str(Path(d)),
-            last_timestep_only=export_last)
-        xdmf2 = FESTIM.XDMFExport(
-            "retention", "retention", folder=str(Path(d)),
-            last_timestep_only=export_last)
-        my_exports = FESTIM.Exports([xdmf1, xdmf2])
-
-        my_sim = FESTIM.Simulation(
-            mesh=my_mesh, materials=my_materials,
-            temperature=my_temp, settings=my_settings,
-            dt=my_dt, exports=my_exports)
-
-        my_sim.initialise()
-        return my_sim
-
-    # short simulation
-    start = timeit.default_timer()
-    init_sim(export_last=True).run()
-    stop = timeit.default_timer()
-    short_time = stop - start
-
-    # long simulation
-    start = timeit.default_timer()
-    init_sim(export_last=False).run()
-    stop = timeit.default_timer()
-    long_time = stop - start
-
-    assert short_time < long_time
 
 
 def test_export_particle_flux_with_chemical_pot(tmpdir):
@@ -948,8 +841,8 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
         my_sim.initialise()
         return my_sim
 
-    short_derived_quantities = init_sim(10).run()["derived_quantities"]
-    long_derived_quantities = init_sim(1).run()["derived_quantities"]
+    short_derived_quantities = init_sim(10).run(output=True)["derived_quantities"]
+    long_derived_quantities = init_sim(1).run(output=True)["derived_quantities"]
 
     assert len(long_derived_quantities) > len(short_derived_quantities)
 
@@ -1059,7 +952,6 @@ def test_completion_tone():
         absolute_tolerance=1e-9,
         relative_tolerance=1e-9,
         final_time=1,
-        completion_tone=True
     )
     my_model.initialise()
-    my_model.run()
+    my_model.run(completion_tone=True)

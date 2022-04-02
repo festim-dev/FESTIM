@@ -8,11 +8,13 @@ class Mesh1D(Mesh):
 
     Attributes:
         size (float): the size of the 1D mesh
+        start (float): the starting point of the 1D mesh
 
     """
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.size = None
+        self.start = 0
 
     def define_markers(self, materials):
         """Iterates through the mesh and mark them
@@ -21,36 +23,54 @@ class Mesh1D(Mesh):
         Arguments:
             materials {FESTIM.Materials} -- contains the materials
         """
-        mesh = self.mesh
-        size = self.size
-        volume_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim(), 0)
-        for cell in f.cells(mesh):
-            for material in materials.materials:
-                if len(materials.materials) == 1:
-                    volume_markers[cell] = material.id
-                else:
-                    if cell.midpoint().x() >= material.borders[0] \
-                    and cell.midpoint().x() <= material.borders[1]:
-                        volume_markers[cell] = material.id
+        self.volume_markers = self.define_volume_markers(materials)
+
+        self.surface_markers = self.define_surface_markers()
+
+    def define_surface_markers(self):
+        """Creates the surface markers
+
+        Returns:
+            fenics.MeshFunction: the meshfunction containing the surface
+                markers
+        """
         surface_markers = f.MeshFunction(
-            "size_t", mesh, mesh.topology().dim()-1, 0)
+            "size_t", self.mesh, self.mesh.topology().dim()-1, 0)
         surface_markers.set_all(0)
         i = 0
-        for facet in f.facets(mesh):
+        for facet in f.facets(self.mesh):
             i += 1
             x0 = facet.midpoint()
             surface_markers[facet] = 0
-            if f.near(x0.x(), 0):
+            if f.near(x0.x(), self.start):
                 surface_markers[facet] = 1
-            if f.near(x0.x(), size):
+            if f.near(x0.x(), self.size):
                 surface_markers[facet] = 2
-        self.volume_markers = volume_markers
-        self.surface_markers = surface_markers
+        return surface_markers
+
+    def define_volume_markers(self, materials):
+        """Creates the volume markers
+
+        Args:
+            materials (FESTIM.Materials): the materials
+
+        Returns:
+            fenics.MeshFunction: the meshfunction containing the volume
+                markers
+        """
+        volume_markers = f.MeshFunction("size_t", self.mesh, self.mesh.topology().dim(), 0)
+        # iterate through the cells of the mesh and mark them
+        for cell in f.cells(self.mesh):
+            x = cell.midpoint().x()
+            subdomain_id = materials.find_subdomain_from_x_coordinate(x)
+            volume_markers[cell] = subdomain_id
+
+        return volume_markers
 
     def define_measures(self, materials):
         """Creates the fenics.Measure objects for self.dx and self.ds
         """
-        if len(materials.materials) > 1:
+        if materials.materials[0].borders is not None:
             materials.check_borders(self.size)
         self.define_markers(materials)
         super().define_measures()

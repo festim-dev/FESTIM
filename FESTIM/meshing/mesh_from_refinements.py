@@ -11,7 +11,7 @@ class MeshFromRefinements(Mesh1D):
         size (float): total size of the 1D mesh
         refinements (list): list of refinements
     """
-    def __init__(self, initial_number_of_cells, size, refinements=[]) -> None:
+    def __init__(self, initial_number_of_cells, size, refinements=[], start=0., **kwargs) -> None:
         """Inits MeshFromRefinements
 
         Args:
@@ -21,10 +21,13 @@ class MeshFromRefinements(Mesh1D):
             refinements (list, optional): list of dicts
                 {"x": ..., "cells": ...}. For each refinement, the mesh will
                 have at least ["cells"] in [0, "x"]. Defaults to [].
+            start (float, optional): the starting point of the mesh. Defaults to
+                0.
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self.initial_number_of_cells = initial_number_of_cells
         self.size = size
+        self.start = start
         self.refinements = refinements
         self.mesh_and_refine()
 
@@ -36,7 +39,7 @@ class MeshFromRefinements(Mesh1D):
         print('Meshing ...')
         initial_number_of_cells = self.initial_number_of_cells
         size = self.size
-        mesh = f.IntervalMesh(initial_number_of_cells, 0, size)
+        mesh = f.IntervalMesh(initial_number_of_cells, self.start, size)
         for refinement in self.refinements:
             nb_cells_ref = refinement["cells"]
             refinement_point = refinement["x"]

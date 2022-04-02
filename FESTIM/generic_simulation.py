@@ -203,9 +203,15 @@ class Simulation:
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
 
-    def run(self):
+    def run(self, output=False, completion_tone=False):
         """Runs the model.
 
+        Args:
+            output (bool, optional): If True, an output dict will be returned.
+                Defaults to False.
+            completion_tone (bool, optional): If True, a native os alert
+                tone will alert user upon completion of current run. Defaults
+                to False.
         Returns:
             dict: output containing solutions, mesh, derived quantities
         """
@@ -217,10 +223,11 @@ class Simulation:
             self.run_steady()
 
         # End
-        if self.settings.completion_tone:
+        if completion_tone:
             print('\007')
 
-        return self.make_output()
+        if output:
+            return self.make_output()
 
     def run_transient(self):
         # add final_time to Exports
@@ -388,5 +395,6 @@ def run(parameters, log_level=40):
     """
     my_sim = FESTIM.Simulation(parameters, log_level)
     my_sim.initialise()
-    output = my_sim.run()
+    # print output by default on scripts using the v0.7.1 format and earlier
+    output = my_sim.run(output=True)
     return output

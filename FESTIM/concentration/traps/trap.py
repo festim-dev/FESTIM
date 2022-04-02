@@ -15,7 +15,8 @@ class Trap(Concentration):
             p_0 (float, list): detrapping pre-exponential factor (s-1)
             E_p (float, list): detrapping activation energy (eV)
             materials (list, int): the materials ids the trap is living in
-            density (sp.Add, float, list): the trap density (m-3)
+            density (sp.Add, float, list, fenics.Expresion,
+                fenics.UserExpression): the trap density (m-3)
             id (int, optional): The trap id. Defaults to None.
 
         Raises:
@@ -60,9 +61,14 @@ class Trap(Concentration):
 
         for i, density in enumerate(densities):
             if density is not None:
-                density_expr = sp.printing.ccode(density)
-                self.density.append(Expression(density_expr, degree=2, t=0,
-                                    name="density_{}_{}".format(self.id, i)))
+                # if density is already a fenics Expression, use it as is
+                if isinstance(density, (Expression, UserExpression)):
+                    self.density.append(density)
+                # else assume it's a sympy expression
+                else:
+                    density_expr = sp.printing.ccode(density)
+                    self.density.append(Expression(density_expr, degree=2, t=0,
+                                        name="density_{}_{}".format(self.id, i)))
 
     def create_form(
             self, mobile, materials, T, dx, dt=None,

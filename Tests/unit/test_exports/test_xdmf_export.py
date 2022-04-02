@@ -1,4 +1,4 @@
-from FESTIM import XDMFExport
+from FESTIM import XDMFExport, extract_xdmf_labels
 import fenics as f
 import pytest
 from pathlib import Path
@@ -69,6 +69,18 @@ class TestWrite:
         u2 = f.Function(self.V)
         my_xdmf.file.read_checkpoint(u2, "foo", 0)
 
+    def test_write_attribute(self, folder):
+        """Checks that the file is written with the appropriate attribute
+        """
+        my_xdmf = XDMFExport("solute", "coucou", folder)
+        my_xdmf.function = self.u
+        my_xdmf.write(t=0)
+
+        labels = extract_xdmf_labels(folder + "/coucou.xdmf")
+
+        assert len(labels) == 1
+        assert labels[0] == "coucou"
+
 
 def test_error_folder_empty_str():
     with pytest.raises(ValueError, match="empty string"):
@@ -83,3 +95,24 @@ def test_error_folder_not_a_str():
 def test_error_checkpoint_wrong_type():
     with pytest.raises(TypeError, match="checkpoint should be a bool"):
         XDMFExport("solute", "solute", "my_folder", checkpoint=2)
+
+
+def test_wrong_argument_for_mode():
+    accepted_values_msg = "accepted values for mode are int and 'last'"
+    # test wrong type
+    with pytest.raises(ValueError, match=accepted_values_msg):
+        XDMFExport("solute", "mobile", "out", mode=1.2)
+    with pytest.raises(ValueError, match=accepted_values_msg):
+        XDMFExport("solute", "mobile", "out", mode=[1, 2, 3])
+
+    # test wrong string
+    with pytest.raises(ValueError, match=accepted_values_msg):
+        XDMFExport("solute", "mobile", "out", mode="foo")
+
+    # test negative integer
+    with pytest.raises(ValueError, match="mode must be positive"):
+        XDMFExport("solute", "mobile", "out", mode=-1)
+
+    # test mode=0
+    with pytest.raises(ValueError, match="mode must be positive"):
+        XDMFExport("solute", "mobile", "out", mode=0)
