@@ -1,8 +1,5 @@
 import FESTIM
-import warnings
-import fenics as f
 import xml.etree.ElementTree as ET
-warnings.simplefilter('always', DeprecationWarning)
 
 
 def update_expressions(expressions, t):
