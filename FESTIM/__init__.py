@@ -3,8 +3,7 @@ x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
 R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
-from .helpers import update_expressions, help_key, \
-    parameters_helper, read_parameters, kJmol_to_eV, \
+from .helpers import update_expressions, kJmol_to_eV, \
     extract_xdmf_labels, extract_xdmf_times
 
 from .meshing.mesh import Mesh
@@ -69,4 +68,4 @@ from .concentration.traps.neutron_induced_trap import NeutronInducedTrap
 
 from .h_transport_problem import HTransportProblem
 
-from .generic_simulation import Simulation, run
+from .generic_simulation import Simulation
