@@ -12,8 +12,8 @@ def test_output_of_run_without_traps_no_chemical_pot():
     mesh = fenics.UnitSquareMesh(10, 10)
     V_CG1 = fenics.FunctionSpace(mesh, 'CG', 1)
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
-    my_sim = FESTIM.Simulation(
-        {"boundary_conditions": [], "exports": {}, "traps": []})
+    my_sim = FESTIM.Simulation()
+    my_sim.settings = FESTIM.Settings(1e10, 1e10)
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
@@ -65,10 +65,9 @@ def test_output_of_run_without_traps_with_chemical_pot():
     mesh = fenics.UnitSquareMesh(10, 10)
     V_CG1 = fenics.FunctionSpace(mesh, 'CG', 1)
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
-    my_sim = FESTIM.Simulation(
-        {"boundary_conditions": [], "exports": {}, "traps": []})
+    my_sim = FESTIM.Simulation()
+    my_sim.settings = FESTIM.Settings(1e10, 1e10, chemical_pot=True)
     my_sim.mesh = FESTIM.Mesh(mesh)
-    my_sim.settings.chemical_pot = True
     my_sim.mobile = FESTIM.Theta()
     my_sim.mobile.S = fenics.Constant(3)
     my_temp = FESTIM.Temperature("solve_stationary")
