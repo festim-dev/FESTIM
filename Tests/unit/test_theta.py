@@ -61,8 +61,10 @@ class TestCreateDiffusionForm:
         Index._globalcount = 8
         v = my_theta.test_function
         D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
-        c_0 = my_theta.solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
-        c_0_n = my_theta.previous_solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
+        S = self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
+        S_n = self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
+        c_0 = my_theta.solution*S
+        c_0_n = my_theta.previous_solution*S_n
         expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.dx(1)
         expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
 
