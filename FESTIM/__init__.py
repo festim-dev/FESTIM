@@ -4,7 +4,7 @@ R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 from .helpers import update_expressions, kJmol_to_eV, \
-    extract_xdmf_labels, extract_xdmf_times, as_expression, as_constant_or_expression
+    extract_xdmf_labels, extract_xdmf_times, as_constant, as_expression, as_constant_or_expression
 
 from .meshing.mesh import Mesh
 from .meshing.mesh_1d import Mesh1D
