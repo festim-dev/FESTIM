@@ -54,6 +54,11 @@ class HTransportProblem:
             dt (FESTIM.Stepsize, optional): the stepsize, only needed if
                 self.settings.transient is True. Defaults to None.
         """
+        if self.settings.chemical_pot:
+            self.mobile.S = materials.S
+            self.mobile.materials = materials
+            self.mobile.volume_markers = mesh.volume_markers
+            self.mobile.T = self.T
         self.attribute_flux_boundary_conditions()
         # Define functions
         self.define_function_space(mesh)

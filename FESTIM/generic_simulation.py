@@ -193,11 +193,6 @@ class Simulation:
                 # self.materials.S = project(self.materials.S, self.V_DG1)
                 self.materials.solubility_as_function(self.mesh, self.T.T)
 
-            # TODO move this to self.h_transport_problem
-            self.mobile.S = self.materials.S
-            self.mobile.materials = self.materials
-            self.mobile.volume_markers = self.mesh.volume_markers
-            self.mobile.T = self.T
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
         self.exports.initialise_derived_quantities(
