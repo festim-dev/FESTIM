@@ -95,8 +95,8 @@ class Theta(Mobile):
         FESTIM.ArheniusCoeff)
         """
         du = f.TrialFunction(self.post_processing_solution.function_space())
-        J = f.derivative(self.F, self.post_processing_solution, du)
-        problem = f.NonlinearVariationalProblem(self.F, self.post_processing_solution, [], J)
+        J = f.derivative(self.form_post_processing, self.post_processing_solution, du)
+        problem = f.NonlinearVariationalProblem(self.form_post_processing, self.post_processing_solution, [], J)
         solver = f.NonlinearVariationalSolver(problem)
         # TODO these prms should be the same as in Simulation.settings I think
         solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-10
@@ -114,7 +114,7 @@ class Theta(Mobile):
                 F += self.solution*self.S*v*dx(mat.id)
             elif mat.solubility_law == "henry":
                 F += self.solution**2*self.S*v*dx(mat.id)
-        self.F = F
+        self.form_post_processing = F
 
 
 # TODO merge this with dirichlet_bc.BoundaryConditionTheta
