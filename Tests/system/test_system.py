@@ -646,14 +646,13 @@ def test_extrinsic_trap():
 
     my_traps = FESTIM.ExtrinsicTrap(
         k_0=1, E_k=0.1, p_0=1e13, E_p=0.1, materials=[1],
-        form_parameters={
-            "phi_0": 2.5e19,
-            "n_amax": 1e-1*6.3e28,
-            "f_a": 1,
-            "eta_a": 6e-4,
-            "n_bmax": 1e-2*6.3e28,
-            "f_b": 2,
-            "eta_b": 2e-4}
+        phi_0=2.5e19,
+        n_amax=1e-1*6.3e28,
+        f_a=1,
+        eta_a=6e-4,
+        n_bmax=1e-2*6.3e28,
+        f_b=2,
+        eta_b=2e-4
     )
 
     my_temp = FESTIM.Temperature(300)
