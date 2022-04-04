@@ -35,7 +35,9 @@ class ExtrinsicTrapBase(Trap):
 class ExtrinsicTrap(ExtrinsicTrapBase):
     def __init__(self, k_0, E_k, p_0, E_p, materials, phi_0, n_amax, n_bmax,
                  eta_a, eta_b, f_a, f_b, id=None):
-        """Inits ExtrinsicTrap
+        """Inits ExtrinsicTrap.
+        For details in the forumation see
+        http://www.sciencedirect.com/science/article/pii/S2352179119300547
 
         Args:
             E_k (float, list): trapping pre-exponential factor (m3 s-1)
