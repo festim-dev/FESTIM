@@ -61,16 +61,18 @@ class HTransportProblem:
         self.traps.initialise_extrinsic_traps(self.V_CG1)
 
         # Define variational problem H transport
-        self.define_variational_problem(materials, mesh.dx, mesh.ds, dt)
-
         # if chemical pot create form to convert theta to concentration
         if self.settings.chemical_pot:
             self.mobile.create_form_post_processing(self.V_DG1, materials, mesh.dx)
+
+        self.define_variational_problem(materials, mesh, dt)
+
         # Boundary conditions
         print('Defining boundary conditions')
         self.create_dirichlet_bcs(materials, mesh)
         if self.settings.transient:
-            self.traps.define_variational_problem_extrinsic_traps(mesh.dx, dt)
+            self.traps.define_variational_problem_extrinsic_traps(mesh.dx,
+                                                                  dt, self.T)
 
     def define_function_space(self, mesh):
         """Creates a suitable function space for H transport problem
@@ -163,14 +165,13 @@ class HTransportProblem:
                 concentration.previous_solution = list(split(self.u_n))[i]
                 concentration.solution = list(split(self.u))[i]
 
-    def define_variational_problem(self, materials, dx, ds, dt=None):
+    def define_variational_problem(self, materials, mesh, dt=None):
         """Creates the variational problem for hydrogen transport (form,
         Dirichlet boundary conditions)
 
         Args:
             materials (FESTIM.Materials): the materials
-            dx (fenics.Measure): the measure for dx
-            ds (fenics.Measure): the measure for ds
+            mesh (FESTIM.Mesh): the mesh
             dt (FESTIM.Stepsize, optional): the stepsize, only needed if
                 self.settings.transient is True. Defaults to None.
         """
@@ -181,7 +182,7 @@ class HTransportProblem:
         # diffusion + transient terms
 
         self.mobile.create_form(
-            materials, dx, ds, self.T, dt,
+            materials, mesh, self.T, dt,
             traps=self.traps,
             soret=self.settings.soret)
         F += self.mobile.F
@@ -190,7 +191,7 @@ class HTransportProblem:
         # Add traps
         self.traps.create_forms(
             self.mobile, materials,
-            self.T, dx, dt,
+            self.T, mesh.dx, dt,
             self.settings.chemical_pot)
         F += self.traps.F
         expressions += self.traps.sub_expressions

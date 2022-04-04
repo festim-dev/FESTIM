@@ -13,8 +13,8 @@ def test_output_of_run_without_traps_no_chemical_pot():
     mesh = fenics.UnitSquareMesh(10, 10)
     V_CG1 = fenics.FunctionSpace(mesh, 'CG', 1)
     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
-    my_sim = FESTIM.Simulation(
-        {"boundary_conditions": [], "exports": {}, "traps": []})
+    my_sim = FESTIM.Simulation()
+    my_sim.settings = FESTIM.Settings(1e10, 1e10)
     my_sim.mesh = FESTIM.Mesh(mesh)
     my_temp = FESTIM.Temperature("solve_stationary")
     my_temp.T = fenics.Function(V_CG1)
@@ -57,57 +57,56 @@ def test_output_of_run_without_traps_no_chemical_pot():
         pytest.approx(0)
 
 
-# def test_output_of_run_without_traps_with_chemical_pot():
-#     '''
-#     Test method make_output() returns a dict with the appropriate keys
-#     without traps with chemical pot
-#     '''
-#     # build
-#     mesh = fenics.UnitSquareMesh(10, 10)
-#     V_CG1 = fenics.FunctionSpace(mesh, 'CG', 1)
-#     V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
-#     my_sim = FESTIM.Simulation(
-#         {"boundary_conditions": [], "exports": {}, "traps": []})
-#     my_sim.mesh = FESTIM.Mesh(mesh)
-#     my_sim.settings.chemical_pot = True
-#     my_sim.mobile = FESTIM.Theta()
-#     my_sim.mobile.S = fenics.Constant(3)
-#     my_temp = FESTIM.Temperature("solve_stationary")
-#     my_temp.T = fenics.Function(V_CG1)
-#     my_sim.T = my_temp
-#     my_sim.V_DG1 = V_DG1
-#     my_sim.h_transport_problem = FESTIM.HTransportProblem(
-#         my_sim.mobile, my_sim.traps, my_sim.T, my_sim.settings,
-#         my_sim.initial_conditions)
-#     # concentrations
-#     val_solute = 1
+def test_output_of_run_without_traps_with_chemical_pot():
+    '''
+    Test method make_output() returns a dict with the appropriate keys
+    without traps with chemical pot
+    '''
+    # build
+    mesh = fenics.UnitSquareMesh(10, 10)
+    V_CG1 = fenics.FunctionSpace(mesh, 'CG', 1)
+    V_DG1 = fenics.FunctionSpace(mesh, 'DG', 1)
+    my_sim = FESTIM.Simulation()
+    my_sim.settings = FESTIM.Settings(1e10, 1e10, chemical_pot=True)
+    my_sim.mesh = FESTIM.Mesh(mesh)
+    my_sim.mobile = FESTIM.Theta()
+    my_sim.mobile.S = fenics.Constant(3)
+    my_temp = FESTIM.Temperature("solve_stationary")
+    my_temp.T = fenics.Function(V_CG1)
+    my_sim.T = my_temp
+    my_sim.V_DG1 = V_DG1
+    my_sim.h_transport_problem = FESTIM.HTransportProblem(
+        my_sim.mobile, my_sim.traps, my_sim.T, my_sim.settings,
+        my_sim.initial_conditions)
+    # concentrations
+    val_solute = 1
 
-#     solute = fenics.project(
-#         fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S,
-#         V_CG1)
+    solute = fenics.project(
+        fenics.Expression(str(val_solute), degree=0)/my_sim.mobile.S,
+        V_CG1)
 
-#     retention_expected = fenics.project(val_solute, V_CG1)
-#     my_sim.h_transport_problem.u = solute
-#     my_sim.exports = FESTIM.Exports([])
-#     # run
-#     output = my_sim.make_output()
+    retention_expected = fenics.project(val_solute, V_CG1)
+    my_sim.h_transport_problem.u = solute
+    my_sim.exports = FESTIM.Exports([])
+    # run
+    output = my_sim.make_output()
 
-#     # test
-#     for key in ["mesh", "solutions"]:
-#         assert key in output.keys()
+    # test
+    for key in ["mesh", "solutions"]:
+        assert key in output.keys()
 
-#     assert isinstance(output["mesh"], fenics.Mesh)
+    assert isinstance(output["mesh"], fenics.Mesh)
 
-#     for key in ["solute", "T", "retention"]:
-#         assert key in output["solutions"].keys()
-#         assert isinstance(output["solutions"][key], fenics.Function)
+    for key in ["solute", "T", "retention"]:
+        assert key in output["solutions"].keys()
+        assert isinstance(output["solutions"][key], fenics.Function)
 
-#     retention_computed = output["solutions"]["retention"]
-#     solute = output["solutions"]["solute"]
-#     print(retention_expected(0.5, 0.5))
-#     print(retention_computed(0.5, 0.5))
-#     assert fenics.errornorm(retention_computed, retention_expected) == \
-#         pytest.approx(0)
+    retention_computed = output["solutions"]["retention"]
+    solute = output["solutions"]["solute"]
+    print(retention_expected(0.5, 0.5))
+    print(retention_computed(0.5, 0.5))
+    assert fenics.errornorm(retention_computed, retention_expected) == \
+        pytest.approx(0)
 
 
 def test_output_of_run_with_traps_with_chemical_pot():

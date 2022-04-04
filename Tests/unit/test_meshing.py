@@ -1,10 +1,11 @@
 # Unit tests meshing
-from FESTIM.materials import Materials, Material
+from FESTIM import Materials, Material
 from FESTIM import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, \
     MeshFromXDMF
 import fenics
 import pytest
 from pathlib import Path
+import numpy as np
 
 
 def test_mesh_and_refine_meets_refinement_conditions():
@@ -45,26 +46,124 @@ def test_mesh_and_refine_meets_refinement_conditions():
         assert nb_cell_2 >= refinement[1]["cells"]
 
 
-def test_subdomains_1D():
-    '''
-    Test that subdomains are assigned properly
-    '''
-    mesh = fenics.UnitIntervalMesh(20)
+class TestDefineMarkers:
+    my_mesh = Mesh1D()
+    my_mesh.mesh = fenics.UnitIntervalMesh(19)
+    my_mesh.size = 1
 
+    def test_2_materials_2_subdomains(self):
+        '''
+        Test that subdomains are assigned properly
+        '''
+        materials = [
+            Material(id=1, D_0=None, E_D=None, borders=[0, 0.5]),
+            Material(id=2, D_0=None, E_D=None, borders=[0.5, 1]),
+            ]
+        my_mats = Materials(materials)
+
+        self.my_mesh.define_markers(my_mats)
+        for cell in fenics.cells(self.my_mesh.mesh):
+            if cell.midpoint().x() <= 0.5:
+                assert self.my_mesh.volume_markers[cell] == 1
+            else:
+                assert self.my_mesh.volume_markers[cell] == 2
+
+    def test_1_material_2_subdomains(self):
+        my_mats = Materials([
+            Material([1, 2], 1, 0, borders=[[0, 0.5], [0.5, 1]])
+        ])
+
+        self.my_mesh.define_markers(my_mats)
+        for cell in fenics.cells(self.my_mesh.mesh):
+            if cell.midpoint().x() <= 0.5:
+                assert self.my_mesh.volume_markers[cell] == 1
+            else:
+                assert self.my_mesh.volume_markers[cell] == 2
+
+    def test_2_materials_3_subdomains(self):
+        my_mats = Materials([
+            Material([1, 2], 1, 0, borders=[[0, 0.25], [0.25, 0.5]]),
+            Material(3, 1, 0, borders=[0.5, 1])
+        ])
+
+        self.my_mesh.define_markers(my_mats)
+        for cell in fenics.cells(self.my_mesh.mesh):
+            if 0 <= cell.midpoint().x() <= 0.25:
+                assert self.my_mesh.volume_markers[cell] == 1
+            elif 0.25 <= cell.midpoint().x() <= 0.5:
+                assert self.my_mesh.volume_markers[cell] == 2
+            else:
+                assert self.my_mesh.volume_markers[cell] == 3
+
+    def test_1_material_1_id_2_borders(self):
+        my_mats = Materials([
+            Material(1, 1, 0, borders=[[0, 0.5], [0.7, 1]])
+        ])
+
+        self.my_mesh.define_markers(my_mats)
+
+        for cell in fenics.cells(self.my_mesh.mesh):
+            if 0 < cell.midpoint().x() < 0.5:
+                assert self.my_mesh.volume_markers[cell] == 1
+            elif 0.7 < cell.midpoint().x() < 1:
+                assert self.my_mesh.volume_markers[cell] == 1
+
+
+class TestMeshVerticesStartNonZero:
+    """Tests to check that MeshFromVertices that don't start
+    at zero are correctly tagged
+    """
+    my_mesh = MeshFromVertices([1, 2, 3])
     materials = [
-        Material(id=1, D_0=None, E_D=None, borders=[0, 0.5]),
-        Material(id=2, D_0=None, E_D=None, borders=[0.5, 1]),
+        Material(id=1, D_0=None, E_D=None, borders=[1, 2]),
+        Material(id=2, D_0=None, E_D=None, borders=[2, 3]),
         ]
     my_mats = Materials(materials)
-    my_mesh = Mesh1D()
-    my_mesh.mesh = mesh
-    my_mesh.size = 1
+
     my_mesh.define_markers(my_mats)
-    for cell in fenics.cells(mesh):
-        if cell.midpoint().x() < 0.5:
-            assert my_mesh.volume_markers[cell] == 1
-        else:
-            assert my_mesh.volume_markers[cell] == 2
+
+    def test_volume_markers(self):
+        for cell in fenics.cells(self.my_mesh.mesh):
+            if 1 < cell.midpoint().x() < 2:
+                assert self.my_mesh.volume_markers[cell] == 1
+            elif 2 < cell.midpoint().x() < 3:
+                assert self.my_mesh.volume_markers[cell] == 2
+
+    def test_surface_markers(self):
+        for facet in fenics.facets(self.my_mesh.mesh):
+            x0 = facet.midpoint()
+            if fenics.near(x0.x(), 1):
+                assert self.my_mesh.surface_markers[facet] == 1
+            if fenics.near(x0.x(), 3):
+                assert self.my_mesh.surface_markers[facet] == 2
+
+
+class TestDefineMarkersStartNonZero:
+    """Tests to check that MeshFromRefinements that don't start at zero are correctly tagged
+    """
+    my_mesh = MeshFromRefinements(initial_number_of_cells=10, size=2, start=1)
+    materials = [
+        Material(id=1, D_0=None, E_D=None, borders=[1, 2]),
+        Material(id=2, D_0=None, E_D=None, borders=[2, 3]),
+        ]
+    my_mats = Materials(materials)
+
+    my_mesh.define_markers(my_mats)
+
+    def test_volume_markers(self):
+        for cell in fenics.cells(self.my_mesh.mesh):
+            if 1 < cell.midpoint().x() < 2:
+                assert self.my_mesh.volume_markers[cell] == 1
+            elif 2 < cell.midpoint().x() < 3:
+                assert self.my_mesh.volume_markers[cell] == 2
+
+    def test_surface_markers(self):
+        for facet in fenics.facets(self.my_mesh.mesh):
+            x0 = facet.midpoint()
+            if fenics.near(x0.x(), 1):
+                assert self.my_mesh.surface_markers[facet] == 1
+            if fenics.near(x0.x(), 3):
+                assert self.my_mesh.surface_markers[facet] == 2
 
 
 def test_create_mesh_xdmf(tmpdir):

@@ -11,14 +11,14 @@ class MeshFromXDMF(Mesh):
         boundary_file (str): name of the boundary file
         mesh (fenics.Mesh): the mesh
     """
-    def __init__(self, volume_file, boundary_file) -> None:
+    def __init__(self, volume_file, boundary_file, **kwargs) -> None:
         """Inits MeshFromXDMF
 
         Args:
             volume_file (str): path to the volume file
             boundary_file (str): path the boundary file
         """
-        super().__init__()
+        super().__init__(**kwargs)
 
         self.volume_file = volume_file
         self.boundary_file = boundary_file

@@ -7,8 +7,8 @@ class TestAdapt():
     def my_stepsize(self):
         return FESTIM.Stepsize(initial_value=1e-8, stepsize_change_ratio=2, dt_min=1)
 
-    def test_system_is_exited(self, my_stepsize):
-        with pytest.raises(SystemExit):
+    def test_stepsize_reaches_minimal_size(self, my_stepsize):
+        with pytest.raises(ValueError, match="stepsize reached minimal value"):
             my_stepsize.adapt(t=2, nb_it=3, converged=False)
 
     def test_value_is_increased(self, my_stepsize):

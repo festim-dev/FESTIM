@@ -38,7 +38,6 @@ class Simulation:
     """
     def __init__(
         self,
-        parameters=None,
         mesh=None,
         materials=None,
         sources=[],
@@ -54,8 +53,6 @@ class Simulation:
         """Inits FESTIM.Simulation
 
         Args:
-            parameters (dict, optional): Soon to be deprecated. Defaults to
-                None.
             mesh (FESTIM.Mesh, optional): The mesh of the model. Defaults to
                 None.
             materials (FESTIM.Materials or [FESTIM.Material, ...], optional):
@@ -125,10 +122,6 @@ class Simulation:
         self.h_transport_problem = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
-
-        # parse the parameters dict if given
-        if parameters is not None:
-            FESTIM.read_parameters(self, parameters)
 
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
@@ -210,9 +203,15 @@ class Simulation:
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
 
-    def run(self):
+    def run(self, output=False, completion_tone=False):
         """Runs the model.
 
+        Args:
+            output (bool, optional): If True, an output dict will be returned.
+                Defaults to False.
+            completion_tone (bool, optional): If True, a native os alert
+                tone will alert user upon completion of current run. Defaults
+                to False.
         Returns:
             dict: output containing solutions, mesh, derived quantities
         """
@@ -224,10 +223,11 @@ class Simulation:
             self.run_steady()
 
         # End
-        if self.settings.completion_tone:
+        if completion_tone:
             print('\007')
 
-        return self.make_output()
+        if output:
+            return self.make_output()
 
     def run_transient(self):
         # add final_time to Exports
@@ -369,32 +369,3 @@ class Simulation:
         # compute retention and add it to output
         output["solutions"]["retention"] = project(self.label_to_function["retention"], self.V_DG1)
         return output
-
-
-def run(parameters, log_level=40):
-    """Main FESTIM function for complete simulations
-
-    Arguments:
-        parameters {dict} -- contains simulation parameters
-
-    Keyword Arguments:
-        log_level {int} -- set what kind of messsages are displayed
-            (default: {40})
-            CRITICAL  = 50, errors that may lead to data corruption
-            ERROR     = 40, errors
-            WARNING   = 30, warnings
-            INFO      = 20, information of general interest
-            PROGRESS  = 16, what's happening (broadly)
-            TRACE     = 13,  what's happening (in detail)
-            DBG       = 10  sundry
-
-    Raises:
-        ValueError: if solving type is unknown
-
-    Returns:
-        dict -- contains derived quantities, parameters and errors
-    """
-    my_sim = FESTIM.Simulation(parameters, log_level)
-    my_sim.initialise()
-    output = my_sim.run()
-    return output
