@@ -102,12 +102,13 @@ def test_get_concentration_for_a_given_material():
     assert f.errornorm(c_n, expected_c_n) == pytest.approx(0)
 
 
-def test_mobile_concentration():
-    my_theta = FESTIM.Theta()
-    my_theta.S = 3
-    my_theta.solution = 12
+# TODO try to replace
+# def test_mobile_concentration():
+#     my_theta = FESTIM.Theta()
+#     my_theta.S = 3
+#     my_theta.solution = 12
 
-    assert my_theta.mobile_concentration() == 3*12
+#     assert my_theta.mobile_concentration() == 3*12
 
 
 def test_post_processing_solution_to_concentration():
