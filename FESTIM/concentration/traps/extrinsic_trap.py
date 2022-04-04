@@ -19,18 +19,6 @@ class ExtrinsicTrapBase(Trap):
         self.density_previous_solution = None
         self.density_test_function = None
 
-    def create_form_density(self, dx, dt, T):
-        """
-        Creates the variational formulation for the extrinsic trap density.
-
-        Args:
-            dx (fenics.Measure): the dx measure of the sim
-            dt (FESTIM.Stepsize): the stepsize of the simulation.
-            T (FESTIM.Temperature): the temperature of the
-                simulation
-        """
-        pass
-
 
 class ExtrinsicTrap(ExtrinsicTrapBase):
     def __init__(self, k_0, E_k, p_0, E_p, materials, phi_0, n_amax, n_bmax,
