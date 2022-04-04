@@ -1,5 +1,5 @@
 from FESTIM import ExtrinsicTrapBase, k_B
-from fenics import *
+import fenics as f
 
 
 class NeutronInducedTrap(ExtrinsicTrapBase):
@@ -21,11 +21,16 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
             p_0 (float, list): detrapping pre-exponential factor (s-1)
             E_p (float, list): detrapping activation energy (eV)
             materials (list or int): the materials ids the trap is living in
-            phi (float, sympy.Expr): damage rate (dpa s-1),
-            K (float, sympy.Expr): trap creation factor (m-3 dpa-1),
-            n_max (float, sympy.Expr): maximum trap density (m-3),
-            A_0 (float, sympy.Expr): trap_annealing_factor (s-1),
-            E_A (float, sympy.Expr): annealing activation energy (eV).
+            phi (float, sympy.Expr, f.Expression, f.UserExpression):
+                damage rate (dpa s-1),
+            K (float, sympy.Expr, f.Expression, f.UserExpression):
+                trap creation factor (m-3 dpa-1),
+            n_max (float, sympy.Expr, f.Expression,
+                f.UserExpression): maximum trap density (m-3),
+            A_0 (float, sympy.Expr, f.Expression, f.UserExpression):
+                trap_annealing_factor (s-1),
+            E_A (float, sympy.Expr, f.Expression, f.UserExpression):
+                annealing activation energy (eV).
             id (int, optional): The trap id. Defaults to None.
         """
         super().__init__(k_0, E_k, p_0, E_p, materials, phi=phi, K=K,
@@ -47,7 +52,9 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
 
         F = ((density - self.density_previous_solution)/dt.value) * \
             self.density_test_function*dx
-        F += -self.phi*self.K*(1 - (density/self.n_max)) * self.density_test_function*dx
-        F += self.A_0*exp(-self.E_A/(k_B*T))*density * self.density_test_function*dx
+        F += -self.phi*self.K*(1 - (density/self.n_max)) * \
+            self.density_test_function*dx
+        F += self.A_0*f.exp(-self.E_A/(k_B*T))*density * \
+            self.density_test_function*dx
 
         self.form_density = F
