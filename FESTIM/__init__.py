@@ -4,7 +4,7 @@ R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 from .helpers import update_expressions, kJmol_to_eV, \
-    extract_xdmf_labels, extract_xdmf_times
+    extract_xdmf_labels, extract_xdmf_times, as_constant, as_expression, as_constant_or_expression
 
 from .meshing.mesh import Mesh
 from .meshing.mesh_1d import Mesh1D
@@ -63,6 +63,7 @@ from .concentration.theta import Theta
 
 from .concentration.traps.trap import Trap
 from .concentration.traps.traps import Traps
+from .concentration.traps.extrinsic_trap import ExtrinsicTrapBase
 from .concentration.traps.extrinsic_trap import ExtrinsicTrap
 from .concentration.traps.neutron_induced_trap import NeutronInducedTrap
 

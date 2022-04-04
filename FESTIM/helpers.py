@@ -1,5 +1,7 @@
 import FESTIM
 import xml.etree.ElementTree as ET
+from fenics import Expression, UserExpression, Constant
+import sympy as sp
 
 
 def update_expressions(expressions, t):
@@ -13,6 +15,33 @@ def update_expressions(expressions, t):
     for expression in expressions:
         expression.t = t
     return expressions
+
+
+def as_expression(expr):
+    # if expr is already a fenics Expression, use it as is
+    if isinstance(expr, (Expression, UserExpression)):
+        return expr
+    # else assume it's a sympy expression
+    else:
+        expr_ccode = sp.printing.ccode(expr)
+        return Expression(expr_ccode, degree=2, t=0)
+
+
+def as_constant(constant):
+    if isinstance(constant, Constant):
+        return constant
+    elif isinstance(constant, (int, float)):
+        return Constant(constant)
+
+
+def as_constant_or_expression(val):
+    if isinstance(val, (Constant, Expression, UserExpression)):
+        return val
+    elif isinstance(val, (int, float)):
+        return Constant(val)
+    else:
+        expr_ccode = sp.printing.ccode(val)
+        return Expression(expr_ccode, degree=2, t=0)
 
 
 def kJmol_to_eV(energy):
