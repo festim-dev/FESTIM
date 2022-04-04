@@ -128,8 +128,9 @@ def test_initialisation_with_expression_chemical_pot():
 
     my_problem.V = V
     my_problem.initialise_concentrations()
-    w = my_problem.u_n
-    assert fenics.errornorm(u, w) == pytest.approx(0)
+    expected = u
+    produced = my_problem.u_n
+    assert fenics.errornorm(expected, produced) == pytest.approx(0)
 
 
 def test_initialisation_default():

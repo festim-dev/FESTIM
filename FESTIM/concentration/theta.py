@@ -46,7 +46,7 @@ class Theta(Mobile):
                 F += (comp/S)**0.5*v*dx(mat.id)
         f.solve(F == 0, prev_sol, bcs=[])
 
-        self.previous_solution.assign(prev_sol)
+        f.assign(self.previous_solution, prev_sol)
 
     def get_concentration_for_a_given_material(self, material, T):
         """Returns the concentration (and previous concentration) for a given
