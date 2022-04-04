@@ -1,6 +1,4 @@
 from FESTIM import Trap, as_constant_or_expression
-from fenics import *
-import sympy as sp
 
 
 class ExtrinsicTrapBase(Trap):
