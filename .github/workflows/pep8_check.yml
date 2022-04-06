@@ -1,0 +1,15 @@
+- name: PEP8 Checker
+on: [pull_request]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@master
+    - name: Setup Python 3.7
+      uses: actions/setup-python@master
+      with:
+        version: 3.7
+    - name: flake8
+      run: |
+        pip install pycodestyle
+        pycodestyle
