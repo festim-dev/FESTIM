@@ -30,9 +30,11 @@ def test_initialisation_from_xdmf(tmpdir):
                            append=True)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=str(Path(file1)), label="1", time_step=0),
-        FESTIM.InitialCondition(field=1, value=str(Path(file2)), label="2", time_step=0)
-    ]
+        FESTIM.InitialCondition(
+            field=0, value=str(
+                Path(file1)), label="1", time_step=0), FESTIM.InitialCondition(
+            field=1, value=str(
+                Path(file2)), label="2", time_step=0)]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
     my_problem = FESTIM.HTransportProblem(
@@ -67,8 +69,8 @@ def test_initialisation_with_expression():
     fenics.assign(u.sub(1), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
-        FESTIM.InitialCondition(field=1, value=1+FESTIM.x),
+        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
@@ -104,8 +106,8 @@ def test_initialisation_with_expression_chemical_pot():
     fenics.assign(u.sub(1), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
-        FESTIM.InitialCondition(field=1, value=1+FESTIM.x),
+        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
@@ -163,7 +165,7 @@ def test_initialisation_solute_only():
     u = fenics.interpolate(ini_u, V)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
@@ -194,7 +196,7 @@ def test_initialisation_no_component():
     fenics.assign(u.sub(0), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(value=1+FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(value=1 + FESTIM.x + FESTIM.y),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 

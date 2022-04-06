@@ -34,11 +34,11 @@ class TestNeutronInducedTrap:
         density = self.my_trap.density[0]
 
         expected_form = (density - self.my_trap.density_previous_solution) /\
-            self.dt.value * self.my_trap.density_test_function*self.dx
-        expected_form += -phi*K*(1 - (density/n_max)) *\
-            self.my_trap.density_test_function*self.dx
-        expected_form += A_0*f.exp(-E_A/(FESTIM.k_B*T))*density *\
-            self.my_trap.density_test_function*self.dx
+            self.dt.value * self.my_trap.density_test_function * self.dx
+        expected_form += -phi * K * (1 - (density / n_max)) *\
+            self.my_trap.density_test_function * self.dx
+        expected_form += A_0 * f.exp(-E_A / (FESTIM.k_B * T)) * density *\
+            self.my_trap.density_test_function * self.dx
         self.my_trap.create_form_density(self.dx, self.dt, self.my_temp)
         print(expected_form)
         print(self.my_trap.form_density)
@@ -80,11 +80,11 @@ class TestNeutronInducedTrapVaryingTime:
         density = self.my_trap.density[0]
 
         expected_form = (density - self.my_trap.density_previous_solution) /\
-            self.dt.value * self.my_trap.density_test_function*self.dx
-        expected_form += -phi*K*(1 - (density/n_max)) *\
-            self.my_trap.density_test_function*self.dx
-        expected_form += A_0*f.exp(-E_A/(FESTIM.k_B*T))*density *\
-            self.my_trap.density_test_function*self.dx
+            self.dt.value * self.my_trap.density_test_function * self.dx
+        expected_form += -phi * K * (1 - (density / n_max)) *\
+            self.my_trap.density_test_function * self.dx
+        expected_form += A_0 * f.exp(-E_A / (FESTIM.k_B * T)) * density *\
+            self.my_trap.density_test_function * self.dx
         self.my_trap.create_form_density(self.dx, self.dt, self.my_temp)
         print(expected_form)
         print(self.my_trap.form_density)
