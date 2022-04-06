@@ -29,7 +29,7 @@ def test_run_MMS():
         np.linspace(1, 2, 500), type="cylindrical")
 
     my_bcs = [
-        FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
+        FESTIM.DirichletBC(surfaces=[1, 2], value=u, field=0),
     ]
 
     my_temp = FESTIM.Temperature(T)
@@ -83,7 +83,7 @@ def test_temperature_MMS():
         np.linspace(1, 2, 500), type="cylindrical")
 
     my_bcs = [
-        FESTIM.DirichletBC(surfaces=[1, 2], value=T, component="T"),
+        FESTIM.DirichletBC(surfaces=[1, 2], value=T, field="T"),
     ]
 
     my_temp = FESTIM.HeatTransferProblem(transient=False)
