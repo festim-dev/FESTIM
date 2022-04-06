@@ -100,6 +100,7 @@ def test_initialisation_with_expression_chemical_pot():
 
     S = 2
     mesh = fenics.UnitSquareMesh(8, 8)
+    vm = fenics.MeshFunction("size_t", mesh, 2, 1)
     V = fenics.VectorFunctionSpace(mesh, "P", 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
