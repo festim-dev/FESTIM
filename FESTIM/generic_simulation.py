@@ -148,7 +148,7 @@ class Simulation:
         self.h_transport_problem.boundary_conditions = []
 
         for bc in self.boundary_conditions:
-            if bc.component == "T":
+            if bc.field == "T":
                 self.T.boundary_conditions.append(bc)
             else:
                 self.h_transport_problem.boundary_conditions.append(bc)

@@ -182,10 +182,10 @@ class HTransportProblem:
 
     def attribute_flux_boundary_conditions(self):
         """Iterates through self.boundary_conditions, checks if it's a FluxBC
-        and its component is 0, and assign fluxes to self.mobile
+        and its field is 0, and assign fluxes to self.mobile
         """
         for bc in self.boundary_conditions:
-            if isinstance(bc, FESTIM.FluxBC) and bc.component == 0:
+            if isinstance(bc, FESTIM.FluxBC) and bc.field == 0:
                 self.mobile.boundary_conditions.append(bc)
 
     def create_dirichlet_bcs(self, materials, mesh):
@@ -194,7 +194,7 @@ class HTransportProblem:
         """
         self.bcs = []
         for bc in self.boundary_conditions:
-            if bc.component != "T" and isinstance(bc, FESTIM.DirichletBC):
+            if bc.field != "T" and isinstance(bc, FESTIM.DirichletBC):
                 bc.create_dirichletbc(
                     self.V, self.T.T, mesh.surface_markers,
                     chemical_pot=self.settings.chemical_pot,

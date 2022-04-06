@@ -14,7 +14,7 @@ class CustomFlux(FluxBC):
         param1=2*FESTIM.x + FESTIM.t
     )
     """
-    def __init__(self, surfaces, function, **prms) -> None:
+    def __init__(self, surfaces, function, field, **prms) -> None:
         """Inits CustomFlux
 
         Args:
@@ -23,8 +23,7 @@ class CustomFlux(FluxBC):
                 def fun(T, solute, param1):
                     return 2*T + solute - param1
         """
-        # TODO: the component shouldn't be "T" here
-        super().__init__(surfaces=surfaces, component="T")
+        super().__init__(surfaces=surfaces, field=field)
         self.function = function
         self.prms = prms
         self.convert_prms()

@@ -136,7 +136,7 @@ class Mobile(Concentration):
         solute = self.mobile_concentration()
 
         for bc in self.boundary_conditions:
-            if bc.component != "T":
+            if bc.field != "T":
                 if isinstance(bc, FluxBC):
                     bc.create_form(T.T, solute)
                     # TODO : one day we will get rid of this huge expressions list

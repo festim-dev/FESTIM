@@ -37,7 +37,7 @@ class ImplantationDirichlet(DirichletBC):
             E_Kr (float, optional): recombination coefficient activation
                 energy (eV). Defaults to None.
         """
-        super().__init__(surfaces, component=0)
+        super().__init__(surfaces, field=0)
         self.phi = phi
         self.R_p = R_p
         self.D_0 = D_0
