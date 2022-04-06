@@ -31,6 +31,7 @@ from .boundary_conditions.dirichlets.dirichlet_bc import (
 )
 from .boundary_conditions.dirichlets.dc_imp import ImplantationDirichlet
 from .boundary_conditions.dirichlets.sieverts_bc import SievertsBC
+from .boundary_conditions.dirichlets.henrys_bc import HenrysBC
 from .boundary_conditions.dirichlets.custom_dc import CustomDirichlet
 
 from .boundary_conditions.fluxes.flux_bc import FluxBC
