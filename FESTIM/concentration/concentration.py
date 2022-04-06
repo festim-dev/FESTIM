@@ -14,6 +14,7 @@ class Concentration:
             "previous" timestep
         test_function (fenics.TestFunction or ufl.Indexed): test function
     """
+
     def __init__(self, solution=None, previous_solution=None, test_function=None):
         self.solution = solution
         self.previous_solution = previous_solution

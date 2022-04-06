@@ -7,6 +7,7 @@ class ConvectiveFlux(FluxBC):
     """FluxBC subclass for convective heat flux
     -lambda * grad(T) * n = h_coeff * (T - T_ext)
     """
+
     def __init__(self, h_coeff, T_ext, surfaces) -> None:
         """Inits ConvectiveFlux
 
@@ -20,12 +21,8 @@ class ConvectiveFlux(FluxBC):
         super().__init__(surfaces=surfaces, field="T")
 
     def create_form(self, T, solute):
-        h_coeff = f.Expression(
-            sp.printing.ccode(self.h_coeff),
-            t=0, degree=1)
-        T_ext = f.Expression(
-            sp.printing.ccode(self.T_ext),
-            t=0, degree=1)
+        h_coeff = f.Expression(sp.printing.ccode(self.h_coeff), t=0, degree=1)
+        T_ext = f.Expression(sp.printing.ccode(self.T_ext), t=0, degree=1)
 
         # TODO check the sign here....
         self.form = h_coeff * (T - T_ext)

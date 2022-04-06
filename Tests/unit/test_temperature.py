@@ -4,10 +4,10 @@ from ufl.core.multiindex import Index
 
 
 def test_formulation_heat_transfer_2_ids_per_mat():
-    '''
+    """
     Test function define_variational_problem_heat_transfers
     catching bug described in issue #305
-    '''
+    """
 
     my_mesh = FESTIM.Mesh(fenics.UnitIntervalMesh(10))
     my_mesh.dx = fenics.dx
@@ -23,22 +23,21 @@ def test_formulation_heat_transfer_2_ids_per_mat():
 
 
 def test_formulation_heat_transfer():
-    '''
+    """
     Test function define_variational_problem_heat_transfers
-    '''
+    """
 
     def thermal_cond(a):
         return a**2
 
     Index._globalcount = 8
-    u = 1 + 2*FESTIM.x**2
+    u = 1 + 2 * FESTIM.x**2
     dt = FESTIM.Stepsize(initial_value=2)
     mesh = fenics.UnitIntervalMesh(10)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
+    V = fenics.FunctionSpace(mesh, "P", 1)
 
     # create mesh functions
-    surface_markers = fenics.MeshFunction(
-        "size_t", mesh, mesh.topology().dim()-1, 0)
+    surface_markers = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1, 0)
     surface_markers.set_all(0)
     for f in fenics.facets(mesh):
         x0 = f.midpoint()
@@ -46,15 +45,23 @@ def test_formulation_heat_transfer():
             surface_markers[f] = 1
         if fenics.near(x0.x(), 1):
             surface_markers[f] = 2
-    volume_markers = fenics.MeshFunction('size_t', mesh, 1, 1)
-    ds = fenics.Measure('ds', domain=mesh, subdomain_data=surface_markers)
-    dx = fenics.Measure('dx', domain=mesh, subdomain_data=volume_markers)
+    volume_markers = fenics.MeshFunction("size_t", mesh, 1, 1)
+    ds = fenics.Measure("ds", domain=mesh, subdomain_data=surface_markers)
+    dx = fenics.Measure("dx", domain=mesh, subdomain_data=volume_markers)
 
     my_mesh = FESTIM.Mesh(mesh, volume_markers, surface_markers)
     my_mesh.dx = dx
     my_mesh.ds = ds
 
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, thermal_cond=thermal_cond, rho=5, heat_capacity=4, borders=[0, 1])
+    mat1 = FESTIM.Material(
+        1,
+        D_0=1,
+        E_D=1,
+        thermal_cond=thermal_cond,
+        rho=5,
+        heat_capacity=4,
+        borders=[0, 1],
+    )
     my_mats = FESTIM.Materials([mat1])
     bc1 = FESTIM.DirichletBC(surfaces=[1], value=u, field="T")
     bc2 = FESTIM.FluxBC(surfaces=[2], value=2, field="T")
@@ -73,9 +80,10 @@ def test_formulation_heat_transfer():
     Index._globalcount = 8
 
     source = expressions[0]
-    expected_form = 5*4*(T - T_n)/dt.value * v * dx(1) + \
-        fenics.dot(thermal_cond(T)*fenics.grad(T), fenics.grad(v))*dx(1)
-    expected_form += - source*v*dx(1)
+    expected_form = 5 * 4 * (T - T_n) / dt.value * v * dx(1) + fenics.dot(
+        thermal_cond(T) * fenics.grad(T), fenics.grad(v)
+    ) * dx(1)
+    expected_form += -source * v * dx(1)
 
     neumann_flux = expressions[1]
     expected_form += -neumann_flux * v * ds(2)

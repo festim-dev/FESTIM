@@ -45,8 +45,8 @@ class Materials:
         all_borders = sorted(all_borders, key=itemgetter(0))
         if all_borders[0][0] is not 0:
             raise ValueError("Borders don't begin at zero")
-        for i in range(0, len(all_borders)-1):
-            if all_borders[i][1] != all_borders[i+1][0]:
+        for i in range(0, len(all_borders) - 1):
+            if all_borders[i][1] != all_borders[i + 1][0]:
                 raise ValueError("Borders don't match to each other")
         if all_borders[len(all_borders) - 1][1] != size:
             raise ValueError("Borders don't match with size")
@@ -121,8 +121,7 @@ class Materials:
                 raise ValueError("{} is not defined for all materials".format(attr))
 
     def check_missing_properties(self, temp_type, derived_quantities):
-        if temp_type != "expression" and \
-                self.materials[0].thermal_cond is None:
+        if temp_type != "expression" and self.materials[0].thermal_cond is None:
             raise NameError("Missing thermal_cond key in materials")
         if temp_type == "solve_transient":
             if self.materials[0].heat_capacity is None:
@@ -166,16 +165,14 @@ class Materials:
                 return material.id
             # else find the correct material
             else:
-                if isinstance(material.borders[0], list) and \
-                        len(material.borders) > 1:
+                if isinstance(material.borders[0], list) and len(material.borders) > 1:
                     list_of_borders = material.borders
                 else:
                     list_of_borders = [material.borders]
                 if isinstance(material.id, list):
                     subdomains = material.id
                 else:
-                    subdomains = [
-                        material.id for _ in range(len(list_of_borders))]
+                    subdomains = [material.id for _ in range(len(list_of_borders))]
 
                 for borders, subdomain in zip(list_of_borders, subdomains):
                     if borders[0] <= x <= borders[1]:
@@ -195,12 +192,9 @@ class Materials:
         if self.materials[0].S_0 is not None:
             self.S = ArheniusCoeff(self, vm, T, "S_0", "E_S", degree=2)
         if self.materials[0].thermal_cond is not None:
-            self.thermal_cond = ThermalProp(self, vm, T,
-                                        'thermal_cond', degree=2)
-            self.heat_capacity = ThermalProp(self, vm, T,
-                                'heat_capacity', degree=2)
-            self.density = ThermalProp(self, vm, T,
-                                'rho', degree=2)
+            self.thermal_cond = ThermalProp(self, vm, T, "thermal_cond", degree=2)
+            self.heat_capacity = ThermalProp(self, vm, T, "heat_capacity", degree=2)
+            self.density = ThermalProp(self, vm, T, "rho", degree=2)
         if self.materials[0].H is not None:
             self.H = HCoeff(self, vm, T, degree=2)
 
@@ -234,7 +228,7 @@ class ArheniusCoeff(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
         D_0 = getattr(material, self._pre_exp)
         E_D = getattr(material, self._E)
-        value[0] = D_0*f.exp(-E_D/k_B/self._T(x))
+        value[0] = D_0 * f.exp(-E_D / k_B / self._T(x))
 
     def value_shape(self):
         return ()
@@ -274,8 +268,7 @@ class HCoeff(f.UserExpression):
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
 
-        value[0] = material.free_enthalpy + \
-            self._T(x)*material.entropy
+        value[0] = material.free_enthalpy + self._T(x) * material.entropy
 
     def value_shape(self):
         return ()

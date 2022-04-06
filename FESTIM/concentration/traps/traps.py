@@ -14,12 +14,10 @@ class Traps:
             if trap.id is None:
                 trap.id = i
 
-    def create_forms(self, mobile, materials, T, dx, dt=None,
-                     chemical_pot=False):
+    def create_forms(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
         self.F = 0
         for trap in self.traps:
-            trap.create_form(mobile, materials, T, dx, dt=dt,
-                             chemical_pot=chemical_pot)
+            trap.create_form(mobile, materials, T, dx, dt=dt, chemical_pot=chemical_pot)
             self.F += trap.F
             self.sub_expressions += trap.sub_expressions
 
@@ -30,14 +28,12 @@ class Traps:
         raise ValueError("Couldn't find trap {}".format(id))
 
     def initialise_extrinsic_traps(self, V):
-        """Add functions to ExtrinsicTrap objects for density form
-        """
+        """Add functions to ExtrinsicTrap objects for density form"""
         for trap in self.traps:
             if isinstance(trap, FESTIM.ExtrinsicTrap):
                 trap.density = [f.Function(V)]
                 trap.density_test_function = f.TestFunction(V)
-                trap.density_previous_solution = \
-                    f.project(f.Constant(0), V)
+                trap.density_previous_solution = f.project(f.Constant(0), V)
 
     def define_variational_problem_extrinsic_traps(self, dx, dt, T):
         """

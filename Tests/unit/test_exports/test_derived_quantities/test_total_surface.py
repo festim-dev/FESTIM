@@ -19,7 +19,7 @@ def test_title_T():
 
 class TestCompute:
     mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, 'P', 1)
+    V = f.FunctionSpace(mesh, "P", 1)
 
     c = f.interpolate(f.Expression("x[0]", degree=1), V)
 
@@ -27,7 +27,7 @@ class TestCompute:
     surface_markers = f.MeshFunction("size_t", mesh, 1, 1)
     left.mark(surface_markers, 2)
 
-    ds = f.Measure('dx', domain=mesh, subdomain_data=surface_markers)
+    ds = f.Measure("dx", domain=mesh, subdomain_data=surface_markers)
 
     surface = 1
     my_total = TotalSurface("solute", surface)
@@ -35,7 +35,7 @@ class TestCompute:
     my_total.ds = ds
 
     def test_minimum(self):
-        expected = f.assemble(self.c*self.ds(self.surface))
+        expected = f.assemble(self.c * self.ds(self.surface))
 
         produced = self.my_total.compute()
         assert produced == expected

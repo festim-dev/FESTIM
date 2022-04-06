@@ -11,7 +11,10 @@ class MeshFromRefinements(Mesh1D):
         size (float): total size of the 1D mesh
         refinements (list): list of refinements
     """
-    def __init__(self, initial_number_of_cells, size, refinements=[], start=0., **kwargs) -> None:
+
+    def __init__(
+        self, initial_number_of_cells, size, refinements=[], start=0.0, **kwargs
+    ) -> None:
         """Inits MeshFromRefinements
 
         Args:
@@ -36,20 +39,17 @@ class MeshFromRefinements(Mesh1D):
         conditions.
         """
 
-        print('Meshing ...')
+        print("Meshing ...")
         initial_number_of_cells = self.initial_number_of_cells
         size = self.size
         mesh = f.IntervalMesh(initial_number_of_cells, self.start, size)
         for refinement in self.refinements:
             nb_cells_ref = refinement["cells"]
             refinement_point = refinement["x"]
-            print("Mesh size before local refinement is " +
-                  str(len(mesh.cells())))
+            print("Mesh size before local refinement is " + str(len(mesh.cells())))
             coarse_mesh = True
-            while len(mesh.cells()) < \
-                    initial_number_of_cells + nb_cells_ref:
-                cell_markers = f.MeshFunction(
-                    "bool", mesh, mesh.topology().dim())
+            while len(mesh.cells()) < initial_number_of_cells + nb_cells_ref:
+                cell_markers = f.MeshFunction("bool", mesh, mesh.topology().dim())
                 cell_markers.set_all(False)
                 for cell in f.cells(mesh):
                     if cell.midpoint().x() < refinement_point:
@@ -57,10 +57,10 @@ class MeshFromRefinements(Mesh1D):
                         coarse_mesh = False
                 mesh = f.refine(mesh, cell_markers)
                 if coarse_mesh:
-                    msg = "Infinite loop: Initial number " + \
-                        "of cells might be too small"
+                    msg = (
+                        "Infinite loop: Initial number " + "of cells might be too small"
+                    )
                     raise ValueError(msg)
-            print("Mesh size after local refinement is " +
-                  str(len(mesh.cells())))
+            print("Mesh size after local refinement is " + str(len(mesh.cells())))
             initial_number_of_cells = len(mesh.cells())
         self.mesh = mesh

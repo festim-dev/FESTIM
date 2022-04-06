@@ -16,7 +16,8 @@ class HeatTransferProblem(FESTIM.Temperature):
             sources
         boundary_conditions (list): contains FESTIM.BoundaryConditions
     """
-    def __init__(self, transient=True, initial_value=0.) -> None:
+
+    def __init__(self, transient=True, initial_value=0.0) -> None:
         """Inits HeatTransferProblem
 
         Args:
@@ -76,7 +77,7 @@ class HeatTransferProblem(FESTIM.Temperature):
                 self.transient is True. Defaults to None.
         """
 
-        print('Defining variational problem heat transfers')
+        print("Defining variational problem heat transfers")
         T, T_n = self.T, self.T_n
         v_T = self.v_T
 
@@ -98,20 +99,29 @@ class HeatTransferProblem(FESTIM.Temperature):
                     rho = rho(T)
                 # Transien term
                 for vol in subdomains:
-                    self.F += rho*cp*(T-T_n)/dt.value*v_T*mesh.dx(vol)
+                    self.F += rho * cp * (T - T_n) / dt.value * v_T * mesh.dx(vol)
             # Diffusion term
             for vol in subdomains:
                 if mesh.type == "cartesian":
-                    self.F += f.dot(thermal_cond*f.grad(T), f.grad(v_T)) * \
-                        mesh.dx(vol)
+                    self.F += f.dot(thermal_cond * f.grad(T), f.grad(v_T)) * mesh.dx(
+                        vol
+                    )
                 elif mesh.type == "cylindrical":
                     r = f.SpatialCoordinate(mesh.mesh)[0]
-                    self.F += r*f.dot(thermal_cond*f.grad(T), f.grad(v_T/r)) * \
-                        mesh.dx(vol)
+                    self.F += (
+                        r
+                        * f.dot(thermal_cond * f.grad(T), f.grad(v_T / r))
+                        * mesh.dx(vol)
+                    )
                 elif mesh.type == "spherical":
                     r = f.SpatialCoordinate(mesh.mesh)[0]
-                    self.F += thermal_cond*r*r*f.dot(f.grad(T), f.grad(v_T/r/r)) * \
-                        mesh.dx(vol)
+                    self.F += (
+                        thermal_cond
+                        * r
+                        * r
+                        * f.dot(f.grad(T), f.grad(v_T / r / r))
+                        * mesh.dx(vol)
+                    )
         # source term
         for source in self.sources:
             self.sub_expressions.append(source.value)
@@ -120,7 +130,7 @@ class HeatTransferProblem(FESTIM.Temperature):
             else:
                 volumes = [source.volume]
             for volume in volumes:
-                self.F += - source.value*v_T*mesh.dx(volume)
+                self.F += -source.value * v_T * mesh.dx(volume)
 
         # Boundary conditions
         for bc in self.boundary_conditions:
@@ -131,7 +141,7 @@ class HeatTransferProblem(FESTIM.Temperature):
                 self.sub_expressions += bc.sub_expressions
 
                 for surf in bc.surfaces:
-                    self.F += -bc.form*self.v_T*mesh.ds(surf)
+                    self.F += -bc.form * self.v_T * mesh.ds(surf)
 
     def create_dirichlet_bcs(self, surface_markers):
         """Creates a list of fenics.DirichletBC and add time dependent
@@ -147,8 +157,7 @@ class HeatTransferProblem(FESTIM.Temperature):
             if isinstance(bc, FESTIM.DirichletBC) and bc.field == "T":
                 bc.create_expression(self.T)
                 for surf in bc.surfaces:
-                    bci = f.DirichletBC(
-                        V, bc.expression, surface_markers, surf)
+                    bci = f.DirichletBC(V, bc.expression, surface_markers, surf)
                     self.dirichlet_bcs.append(bci)
                 self.sub_expressions += bc.sub_expressions
                 self.sub_expressions.append(bc.expression)
@@ -166,7 +175,8 @@ class HeatTransferProblem(FESTIM.Temperature):
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)  # Define the Jacobian
             problem = f.NonlinearVariationalProblem(
-                self.F, self.T, self.dirichlet_bcs, JT)
+                self.F, self.T, self.dirichlet_bcs, JT
+            )
             solver = f.NonlinearVariationalSolver(problem)
             newton_solver_prm = solver.parameters["newton_solver"]
             newton_solver_prm["absolute_tolerance"] = 1e-3

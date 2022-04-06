@@ -16,6 +16,7 @@ class HTransportProblem:
         u_n (fenics.Function): the "previous" function
         bcs (list): list of fenics.DirichletBC for H transport
     """
+
     def __init__(self, mobile, traps, T, settings, initial_conditions) -> None:
         """Inits HTransportProblem
 
@@ -63,11 +64,10 @@ class HTransportProblem:
         # Define variational problem H transport
         self.define_variational_problem(materials, mesh, dt)
         # Boundary conditions
-        print('Defining boundary conditions')
+        print("Defining boundary conditions")
         self.create_dirichlet_bcs(materials, mesh)
         if self.settings.transient:
-            self.traps.define_variational_problem_extrinsic_traps(mesh.dx,
-                                                                  dt, self.T)
+            self.traps.define_variational_problem_extrinsic_traps(mesh.dx, dt, self.T)
 
     def define_function_space(self, mesh):
         """Creates a suitable function space for H transport problem
@@ -83,11 +83,11 @@ class HTransportProblem:
         if nb_traps == 0:
             V = FunctionSpace(mesh.mesh, element_solute, order_solute)
         else:
-            solute = FiniteElement(
-                element_solute, mesh.mesh.ufl_cell(), order_solute)
+            solute = FiniteElement(element_solute, mesh.mesh.ufl_cell(), order_solute)
             traps = FiniteElement(
-                self.settings.traps_element_type, mesh.mesh.ufl_cell(), order_trap)
-            element = [solute] + [traps]*nb_traps
+                self.settings.traps_element_type, mesh.mesh.ufl_cell(), order_trap
+            )
+            element = [solute] + [traps] * nb_traps
             V = FunctionSpace(mesh.mesh, MixedElement(element))
         self.V = V
         self.V_CG1 = FunctionSpace(mesh.mesh, "CG", 1)
@@ -116,7 +116,7 @@ class HTransportProblem:
                 concentration.previous_solution = self.u_n.sub(i)
                 concentration.test_function = list(split(self.v))[i]
 
-        print('Defining initial values')
+        print("Defining initial values")
         field_to_component = {
             "solute": 0,
             "0": 0,
@@ -136,10 +136,14 @@ class HTransportProblem:
                 functionspace = self.V.sub(component).collapse()
 
             if component == 0:
-                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
+                self.mobile.initialise(
+                    functionspace, value, label=ini.label, time_step=ini.time_step
+                )
             else:
                 trap = self.traps.get_trap(component)
-                trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
+                trap.initialise(
+                    functionspace, value, label=ini.label, time_step=ini.time_step
+                )
 
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
@@ -157,24 +161,22 @@ class HTransportProblem:
             dt (FESTIM.Stepsize, optional): the stepsize, only needed if
                 self.settings.transient is True. Defaults to None.
         """
-        print('Defining variational problem')
+        print("Defining variational problem")
         expressions = []
         F = 0
 
         # diffusion + transient terms
 
         self.mobile.create_form(
-            materials, mesh, self.T, dt,
-            traps=self.traps,
-            soret=self.settings.soret)
+            materials, mesh, self.T, dt, traps=self.traps, soret=self.settings.soret
+        )
         F += self.mobile.F
         expressions += self.mobile.sub_expressions
 
         # Add traps
         self.traps.create_forms(
-            self.mobile, materials,
-            self.T, mesh.dx, dt,
-            self.settings.chemical_pot)
+            self.mobile, materials, self.T, mesh.dx, dt, self.settings.chemical_pot
+        )
         F += self.traps.F
         expressions += self.traps.sub_expressions
         self.F = F
@@ -196,10 +198,13 @@ class HTransportProblem:
         for bc in self.boundary_conditions:
             if bc.field != "T" and isinstance(bc, FESTIM.DirichletBC):
                 bc.create_dirichletbc(
-                    self.V, self.T.T, mesh.surface_markers,
+                    self.V,
+                    self.T.T,
+                    mesh.surface_markers,
                     chemical_pot=self.settings.chemical_pot,
                     materials=materials,
-                    volume_markers=mesh.volume_markers)
+                    volume_markers=mesh.volume_markers,
+                )
                 self.bcs += bc.dirichlet_bc
                 self.expressions += bc.sub_expressions
                 self.expressions.append(bc.expression)
@@ -246,12 +251,15 @@ class HTransportProblem:
         problem = NonlinearVariationalProblem(self.F, self.u, self.bcs, J)
         solver = NonlinearVariationalSolver(problem)
         solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
-        solver.parameters["newton_solver"]["absolute_tolerance"] = \
-            self.settings.absolute_tolerance
-        solver.parameters["newton_solver"]["relative_tolerance"] = \
-            self.settings.relative_tolerance
-        solver.parameters["newton_solver"]["maximum_iterations"] = \
-            self.settings.maximum_iterations
+        solver.parameters["newton_solver"][
+            "absolute_tolerance"
+        ] = self.settings.absolute_tolerance
+        solver.parameters["newton_solver"][
+            "relative_tolerance"
+        ] = self.settings.relative_tolerance
+        solver.parameters["newton_solver"][
+            "maximum_iterations"
+        ] = self.settings.maximum_iterations
         nb_it, converged = solver.solve()
 
         return nb_it, converged
@@ -274,8 +282,9 @@ class HTransportProblem:
             self.mobile.post_processing_solution_to_concentration()
             if self.need_projecting_solute(exports):
                 # project solute on V_DG1
-                self.mobile.post_processing_solution = \
-                    project(self.mobile.post_processing_solution, self.V_DG1)
+                self.mobile.post_processing_solution = project(
+                    self.mobile.post_processing_solution, self.V_DG1
+                )
 
     def need_projecting_solute(self, exports):
         """Checks if the user computes a Hydrogen surface flux or exports the
