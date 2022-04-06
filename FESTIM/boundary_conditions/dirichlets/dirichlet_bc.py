@@ -6,17 +6,17 @@ import sympy as sp
 class DirichletBC(BoundaryCondition):
     """Class to enforce the solution on boundaries.
     """
-    def __init__(self, surfaces, value=None, component=0) -> None:
+    def __init__(self, surfaces, value=None, field=0) -> None:
         """Inits DirichletBC
 
         Args:
             surfaces (list or int): the surfaces of the BC
             value (float or sp.Expr, optional): the value of the boundary
                 condition. Defaults to None.
-            component (int, optional): the field the boundary condition is
+            field (int, optional): the field the boundary condition is
                 applied to. Defaults to 0.
         """
-        super().__init__(surfaces, component=component)
+        super().__init__(surfaces, field=field)
         self.value = value
         self.dirichlet_bc = []
 
@@ -73,15 +73,15 @@ class DirichletBC(BoundaryCondition):
         self.dirichlet_bc = []
         self.create_expression(T)
         # TODO: this should be more generic
-        mobile_components = [0, "0", "solute"]
-        if self.component in mobile_components and chemical_pot:
+        mobile_fields = [0, "0", "solute"]
+        if self.field in mobile_fields and chemical_pot:
             self.normalise_by_solubility(materials, volume_markers, T)
 
         # create a DirichletBC and add it to bcs
         if V.num_sub_spaces() == 0:
             funspace = V
-        else:  # if only one component, use subspace
-            funspace = V.sub(self.component)
+        else:  # if only one field, use subspace
+            funspace = V.sub(self.field)
         for surface in self.surfaces:
             bci = f.DirichletBC(funspace, self.expression,
                                 surface_markers, surface)

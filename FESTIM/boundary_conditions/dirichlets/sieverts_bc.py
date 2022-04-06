@@ -20,7 +20,7 @@ class SievertsBC(DirichletBC):
             E_S (float): Sievert's constant activation energy (eV)
             pressure (float or sp.Expr): hydrogen partial pressure (Pa)
         """
-        super().__init__(surfaces, component=0)
+        super().__init__(surfaces, field=0)
         self.S_0 = S_0
         self.E_S = E_S
         self.pressure = pressure
