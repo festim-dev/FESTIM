@@ -12,15 +12,19 @@ jobs:
         uses: peter-evans/autopep8@v1
         with:
           args: --exit-code --recursive --in-place --aggressive --aggressive .
-      # - name: Exit if fails
-      #   if: steps.autopep8.outputs.exit-code == 2
-      #   run: exit 1
+      - name: Set autopep8 branch name
+        id: vars
+        run: echo ::set-output name=branch-name::"autopep8-patches/${{ github.head_ref }}"
       - name: Create Pull Request
+        if: steps.autopep8.outputs.exit-code == 2
         uses: peter-evans/create-pull-request@v3
         with:
           commit-message: autopep8 action fixes
           title: Fixes by autopep8 action
           body: This is an auto-generated PR with fixes by autopep8.
-          # labels: autopep8, automated pr
-          # reviewers: peter-evans
-          branch: autopep8-patches
+          labels: autopep8, automated pr
+          reviewers: peter-evans
+          branch: ${{ steps.vars.outputs.branch-name }}
+      - name: Fail if autopep8 made changes
+        if: steps.autopep8.outputs.exit-code == 2
+        run: exit 1
