@@ -7,6 +7,7 @@ def henrys_law(T, H_0, E_H, pressure):
     H = H_0*f.exp(-E_H/k_B/T)
     return H*pressure
 
+
 class HenrysBC(DirichletBC):
     """Subclass of DirichletBC for Henry's law: cm = H*pressure
     """
@@ -15,8 +16,8 @@ class HenrysBC(DirichletBC):
 
         Args:
             surfaces (list or int): the surfaces on which the BC is applied
-            H_0 (float): Henry"s constant pre-erxponential factor (m-3.Pa-1)
-            E_H (float): Henry"s constant solution energy (eV)
+            H_0 (float): Henry's constant pre-exponential factor (m-3.Pa-1)
+            E_H (float): Henry's constant solution energy (eV)
             pressure (float or sp.Expr): hydrogen partial pressure (Pa)
         """
         super().__init__(surfaces, component=0)
@@ -35,5 +36,3 @@ class HenrysBC(DirichletBC):
         )
         self.expression = value_BC
         self.sub_expressions = [pressure]
-
-
