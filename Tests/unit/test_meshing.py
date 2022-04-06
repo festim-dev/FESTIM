@@ -21,11 +21,14 @@ def test_mesh_and_refine_meets_refinement_conditions():
         return domain
 
     refinements = [
-            [{"cells": 2, "x": 0.5}, {"cells": 3, "x": 0.25}],
-            [{"cells": 3, "x": 0.5}, {"cells": 11, "x": 0.25}]
-            ]
+        [{"cells": 2, "x": 0.5}, {"cells": 3, "x": 0.25}],
+        [{"cells": 3, "x": 0.5}, {"cells": 11, "x": 0.25}]
+    ]
     for refinement in refinements:
-        my_mesh = MeshFromRefinements(initial_number_of_cells=2, size=1, refinements=refinement)
+        my_mesh = MeshFromRefinements(
+            initial_number_of_cells=2,
+            size=1,
+            refinements=refinement)
         mesh = my_mesh.mesh
 
         mf1 = fenics.MeshFunction('size_t', mesh, 1)
@@ -58,7 +61,7 @@ class TestDefineMarkers:
         materials = [
             Material(id=1, D_0=None, E_D=None, borders=[0, 0.5]),
             Material(id=2, D_0=None, E_D=None, borders=[0.5, 1]),
-            ]
+        ]
         my_mats = Materials(materials)
 
         self.my_mesh.define_markers(my_mats)
@@ -117,7 +120,7 @@ class TestMeshVerticesStartNonZero:
     materials = [
         Material(id=1, D_0=None, E_D=None, borders=[1, 2]),
         Material(id=2, D_0=None, E_D=None, borders=[2, 3]),
-        ]
+    ]
     my_mats = Materials(materials)
 
     my_mesh.define_markers(my_mats)
@@ -145,7 +148,7 @@ class TestDefineMarkersStartNonZero:
     materials = [
         Material(id=1, D_0=None, E_D=None, borders=[1, 2]),
         Material(id=2, D_0=None, E_D=None, borders=[2, 3]),
-        ]
+    ]
     my_mats = Materials(materials)
 
     my_mesh.define_markers(my_mats)
@@ -183,7 +186,10 @@ def test_create_mesh_xdmf(tmpdir):
     fenics.XDMFFile(str(Path(file2))).write(mf_facets)
 
     # read mesh
-    my_mesh = MeshFromXDMF(volume_file=str(Path(file1)), boundary_file=str(Path(file1)))
+    my_mesh = MeshFromXDMF(
+        volume_file=str(
+            Path(file1)), boundary_file=str(
+            Path(file1)))
 
     # check that vertices are the same
     vertices_mesh = []
@@ -221,7 +227,10 @@ def test_subdomains_from_xdmf(tmpdir):
     fenics.XDMFFile(str(Path(file2))).write(mf_facets)
 
     # read files
-    my_mesh = MeshFromXDMF(volume_file=str(Path(file1)), boundary_file=str(Path(file2)))
+    my_mesh = MeshFromXDMF(
+        volume_file=str(
+            Path(file1)), boundary_file=str(
+            Path(file2)))
     mf_cells_2, mf_facets_2 = my_mesh.volume_markers, my_mesh.surface_markers
 
     # check
@@ -265,9 +274,9 @@ def test_subdomains_inbuilt():
     mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())
     mf_facets = fenics.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
     mesh_parameters = {
-            "mesh": mesh,
-            "volume_markers": mf_cells,
-            "surface_markers": mf_facets
+        "mesh": mesh,
+        "volume_markers": mf_cells,
+        "surface_markers": mf_facets
     }
     # read
 
