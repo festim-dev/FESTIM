@@ -116,7 +116,6 @@ class BoundaryConditionTheta(f.UserExpression):
         cell = f.Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
-        # TODO this requires changes for Henry's law
         S_0 = material.S_0
         E_S = material.E_S
         value[0] = self._bci(x)/(S_0*f.exp(-E_S/k_B/self._T(x)))
