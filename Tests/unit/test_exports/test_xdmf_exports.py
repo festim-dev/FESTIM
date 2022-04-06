@@ -3,8 +3,10 @@ import pytest
 
 
 def test_error_different_lengths_functions_labels():
-    with pytest.raises(ValueError, match="doesn't match number of labels in xdmf exports"):
-        XDMFExports(['solute', "T"], ["solute"], "my_folder")
+    with pytest.raises(
+        ValueError, match="doesn't match number of labels in xdmf exports"
+    ):
+        XDMFExports(["solute", "T"], ["solute"], "my_folder")
 
 
 class TestListXDMFExports:

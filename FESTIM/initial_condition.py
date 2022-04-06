@@ -2,7 +2,9 @@ import warnings
 
 
 class InitialCondition:
-    def __init__(self, field=0, value=0., component=None, label=None, time_step=None) -> None:
+    def __init__(
+        self, field=0, value=0.0, component=None, label=None, time_step=None
+    ) -> None:
         """Inits InitialCondition
 
         Args:

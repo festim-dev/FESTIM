@@ -18,7 +18,7 @@ def test_title_T():
 
 class TestCompute:
     mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, 'P', 1)
+    V = f.FunctionSpace(mesh, "P", 1)
 
     c = f.interpolate(f.Expression("x[0]", degree=1), V)
 
@@ -26,7 +26,7 @@ class TestCompute:
     volume_markers = f.MeshFunction("size_t", mesh, 1, 1)
     left.mark(volume_markers, 2)
 
-    dx = f.Measure('dx', domain=mesh, subdomain_data=volume_markers)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=volume_markers)
 
     volume = 1
     my_average = AverageVolume("solute", volume)
@@ -34,6 +34,8 @@ class TestCompute:
     my_average.dx = dx
 
     def test_h_average(self):
-        expected = f.assemble(self.c*self.dx(self.volume))/f.assemble(1*self.dx(self.volume))
+        expected = f.assemble(self.c * self.dx(self.volume)) / f.assemble(
+            1 * self.dx(self.volume)
+        )
         computed = self.my_average.compute()
         assert computed == expected

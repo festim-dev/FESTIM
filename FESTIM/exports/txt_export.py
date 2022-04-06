@@ -2,7 +2,8 @@ import fenics as f
 import numpy as np
 import FESTIM
 import warnings
-warnings.simplefilter('always', DeprecationWarning)
+
+warnings.simplefilter("always", DeprecationWarning)
 
 
 class TXTExport(FESTIM.Export):
@@ -44,16 +45,19 @@ class TXTExport(FESTIM.Export):
         if self.is_it_time_to_export(current_time):
             filename = "{}/{}_{}s.txt".format(self.folder, self.label, current_time)
             busy = True
-            x = f.interpolate(f.Expression('x[0]', degree=1), V_DG1)
+            x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
             while busy is True:
                 try:
-                    np.savetxt(filename, np.transpose(
-                                [x.vector()[:], solution.vector()[:]]))
+                    np.savetxt(
+                        filename, np.transpose([x.vector()[:], solution.vector()[:]])
+                    )
                     break
                 except OSError as err:
                     print("OS error: {0}".format(err))
-                    print("The file " + filename + " might currently be busy."
-                          "Please close the application then press any key.")
+                    print(
+                        "The file " + filename + " might currently be busy."
+                        "Please close the application then press any key."
+                    )
                     input()
 
         #  TODO maybe this should be in another method
@@ -64,7 +68,9 @@ class TXTExport(FESTIM.Export):
 
 
 class TXTExports:
-    def __init__(self, fields=[], times=[], labels=[], folder=None, functions=[]) -> None:
+    def __init__(
+        self, fields=[], times=[], labels=[], folder=None, functions=[]
+    ) -> None:
         self.fields = fields
         if functions != []:
             self.fields = functions
@@ -72,8 +78,10 @@ class TXTExports:
             warnings.warn(msg, DeprecationWarning)
 
         if len(self.fields) != len(labels):
-            raise ValueError("Number of fields to be exported "
-                             "doesn't match number of labels in txt exports")
+            raise ValueError(
+                "Number of fields to be exported "
+                "doesn't match number of labels in txt exports"
+            )
         self.times = sorted(times)
         self.labels = labels
         self.folder = folder

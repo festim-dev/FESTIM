@@ -1,4 +1,3 @@
-
 class Settings:
     """
     Attributes:
@@ -15,6 +14,7 @@ class Settings:
         traps_element_type (str): Finite element used for traps.
         update_jacobian (bool):
     """
+
     def __init__(
         self,
         absolute_tolerance,
@@ -25,7 +25,7 @@ class Settings:
         chemical_pot=False,
         soret=False,
         traps_element_type="CG",
-        update_jacobian=True
+        update_jacobian=True,
     ):
         """Inits Settings
 

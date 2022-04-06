@@ -5,13 +5,13 @@ import sympy as sp
 
 
 def update_expressions(expressions, t):
-    '''Update all FEniCS Expression() in expressions.
+    """Update all FEniCS Expression() in expressions.
 
     Arguments:
     - expressions: list, contains the fenics Expression
     to be updated.
     - t: float, time.
-    '''
+    """
     for expression in expressions:
         expression.t = t
     return expressions
@@ -53,7 +53,7 @@ def kJmol_to_eV(energy):
     Returns:
         energy (float): Energy in eV
     """
-    energy_in_eV = FESTIM.k_B*energy*1e3/FESTIM.R
+    energy_in_eV = FESTIM.k_B * energy * 1e3 / FESTIM.R
 
     return energy_in_eV
 

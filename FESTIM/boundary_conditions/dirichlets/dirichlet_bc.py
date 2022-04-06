@@ -4,8 +4,8 @@ import sympy as sp
 
 
 class DirichletBC(BoundaryCondition):
-    """Class to enforce the solution on boundaries.
-    """
+    """Class to enforce the solution on boundaries."""
+
     def __init__(self, surfaces, value=None, field=0) -> None:
         """Inits DirichletBC
 
@@ -47,14 +47,19 @@ class DirichletBC(BoundaryCondition):
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
         expression_BC = BoundaryConditionTheta(
-                            self.expression,
-                            materials,
-                            volume_markers, T)
+            self.expression, materials, volume_markers, T
+        )
         self.expression = expression_BC
 
     def create_dirichletbc(
-            self, V, T, surface_markers, chemical_pot=False, materials=None,
-            volume_markers=None):
+        self,
+        V,
+        T,
+        surface_markers,
+        chemical_pot=False,
+        materials=None,
+        volume_markers=None,
+    ):
         """creates a list of fenics.DirichletBC and stores it in
         self.dirichlet_bc
 
@@ -83,8 +88,7 @@ class DirichletBC(BoundaryCondition):
         else:  # if only one field, use subspace
             funspace = V.sub(self.field)
         for surface in self.surfaces:
-            bci = f.DirichletBC(funspace, self.expression,
-                                surface_markers, surface)
+            bci = f.DirichletBC(funspace, self.expression, surface_markers, surface)
             self.dirichlet_bc.append(bci)
 
 
@@ -95,6 +99,7 @@ class BoundaryConditionTheta(f.UserExpression):
     Args:
         UserExpression (fenics.UserExpression):
     """
+
     def __init__(self, bci, materials, vm, T, **kwargs):
         """initialisation
 
@@ -118,7 +123,7 @@ class BoundaryConditionTheta(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
         S_0 = material.S_0
         E_S = material.E_S
-        value[0] = self._bci(x)/(S_0*f.exp(-E_S/k_B/self._T(x)))
+        value[0] = self._bci(x) / (S_0 * f.exp(-E_S / k_B / self._T(x)))
 
     def value_shape(self):
         return ()
@@ -126,7 +131,7 @@ class BoundaryConditionTheta(f.UserExpression):
 
 class BoundaryConditionExpression(f.UserExpression):
     def __init__(self, T, eval_function, **kwargs):
-        """"[summary]"
+        """ "[summary]"
 
         Args:
             T (fenics.Function): the temperature
