@@ -196,12 +196,10 @@ class Simulation:
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
 
-    def run(self, output=False, completion_tone=False):
+    def run(self, completion_tone=False):
         """Runs the model.
 
         Args:
-            output (bool, optional): If True, an output dict will be returned.
-                Defaults to False.
             completion_tone (bool, optional): If True, a native os alert
                 tone will alert user upon completion of current run. Defaults
                 to False.
@@ -218,9 +216,6 @@ class Simulation:
         # End
         if completion_tone:
             print('\007')
-
-        if output:
-            return self.make_output()
 
     def run_transient(self):
         # add final_time to Exports
