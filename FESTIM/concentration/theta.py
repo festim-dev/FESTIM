@@ -6,9 +6,9 @@ class Theta(Mobile):
     """Class representing the "chemical potential" c/S where S is the
     solubility of the metal
     """
+
     def __init__(self):
-        """Inits Theta
-        """
+        """Inits Theta"""
         super().__init__()
         self.S = None
         self.F = None
@@ -38,12 +38,12 @@ class Theta(Mobile):
         dx = f.Measure("dx", subdomain_data=self.volume_markers)
         F = 0
         for mat in self.materials.materials:
-            S = mat.S_0*f.exp(-mat.E_S/k_B/self.T.T)
-            F += -prev_sol*v*dx(mat.id)
+            S = mat.S_0 * f.exp(-mat.E_S / k_B / self.T.T)
+            F += -prev_sol * v * dx(mat.id)
             if mat.solubility_law == "sieverts":
-                F += comp/S*v*dx(mat.id)
+                F += comp / S * v * dx(mat.id)
             elif mat.solubility_law == "henry":
-                F += (comp/S)**0.5*v*dx(mat.id)
+                F += (comp / S) ** 0.5 * v * dx(mat.id)
         f.solve(F == 0, prev_sol, bcs=[])
 
         f.assign(self.previous_solution, prev_sol)
@@ -63,17 +63,17 @@ class Theta(Mobile):
         """
         E_S = material.E_S
         S_0 = material.S_0
-        S = S_0*f.exp(-E_S/k_B/T.T)
-        S_n = S_0*f.exp(-E_S/k_B/T.T_n)
+        S = S_0 * f.exp(-E_S / k_B / T.T)
+        S_n = S_0 * f.exp(-E_S / k_B / T.T_n)
         if material.solubility_law == "sieverts":
-            c_0 = self.solution*S
-            c_0_n = self.previous_solution*S_n
+            c_0 = self.solution * S
+            c_0_n = self.previous_solution * S_n
         elif material.solubility_law == "henry":
             # for some reason this doesn't work without dolfin_eps
             # makes the first iteration longer to converge
             # https://fenicsproject.discourse.group/t/formulation-with-grad-of-function-squared/7608
-            c_0 = (self.solution)**2*S
-            c_0_n = self.previous_solution**2*S_n
+            c_0 = (self.solution) ** 2 * S
+            c_0_n = self.previous_solution**2 * S_n
         return c_0, c_0_n
 
     def mobile_concentration(self):
@@ -85,7 +85,8 @@ class Theta(Mobile):
             fenics.Product: the hydrogen mobile concentration
         """
         return ThetaToConcentration(
-            self.solution, self.materials, self.volume_markers, self.T.T)
+            self.solution, self.materials, self.volume_markers, self.T.T
+        )
 
     def post_processing_solution_to_concentration(self):
         """Converts the post_processing_solution from theta to mobile
@@ -96,7 +97,9 @@ class Theta(Mobile):
         """
         du = f.TrialFunction(self.post_processing_solution.function_space())
         J = f.derivative(self.form_post_processing, self.post_processing_solution, du)
-        problem = f.NonlinearVariationalProblem(self.form_post_processing, self.post_processing_solution, [], J)
+        problem = f.NonlinearVariationalProblem(
+            self.form_post_processing, self.post_processing_solution, [], J
+        )
         solver = f.NonlinearVariationalSolver(problem)
         # TODO these prms should be the same as in Simulation.settings I think
         solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-10
@@ -108,12 +111,12 @@ class Theta(Mobile):
         F = 0
         v = f.TestFunction(V)
         self.post_processing_solution = f.Function(V)
-        F += -self.post_processing_solution*v*dx
+        F += -self.post_processing_solution * v * dx
         for mat in materials.materials:
             if mat.solubility_law == "sieverts":
-                F += self.solution*self.S*v*dx(mat.id)
+                F += self.solution * self.S * v * dx(mat.id)
             elif mat.solubility_law == "henry":
-                F += self.solution**2*self.S*v*dx(mat.id)
+                F += self.solution**2 * self.S * v * dx(mat.id)
         self.form_post_processing = F
 
 
@@ -122,6 +125,7 @@ class ConcentrationToTheta(f.UserExpression):
     """Creates an Expression for converting dirichlet bcs in the case
     of chemical potential conservation
     """
+
     def __init__(self, comp, materials, vm, T, **kwargs):
         """initialisation
 
@@ -144,11 +148,11 @@ class ConcentrationToTheta(f.UserExpression):
         S_0 = material.S_0
         E_S = material.E_S
         c = self._comp(x)
-        S = S_0*f.exp(-E_S/k_B/self._T(x))
+        S = S_0 * f.exp(-E_S / k_B / self._T(x))
         if material.solubility_law == "sieverts":
-            value[0] = c/S
+            value[0] = c / S
         elif material.solubility_law == "henry":
-            value[0] = (c/S)**0.5
+            value[0] = (c / S) ** 0.5
 
     def value_shape(self):
         return ()
@@ -177,11 +181,11 @@ class ThetaToConcentration(f.UserExpression):
         S_0 = material.S_0
         E_S = material.E_S
         c = self._comp(x)
-        S = S_0*f.exp(-E_S/k_B/self._T(x))
+        S = S_0 * f.exp(-E_S / k_B / self._T(x))
         if material.solubility_law == "sieverts":
-            value[0] = c*S
+            value[0] = c * S
         elif material.solubility_law == "henry":
-            value[0] = c**2*S
+            value[0] = c**2 * S
 
     def value_shape(self):
         return ()

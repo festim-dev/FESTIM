@@ -15,16 +15,14 @@ class TestInitialise:
     def test_from_expresion_chemical_pot(self):
         my_theta = FESTIM.Theta()
         S = f.interpolate(f.Constant(2), self.V)
-        my_theta.materials = FESTIM.Materials([
-            FESTIM.Material(1, 1, 0, S_0=2, E_S=0)
-        ])
+        my_theta.materials = FESTIM.Materials([FESTIM.Material(1, 1, 0, S_0=2, E_S=0)])
         my_theta.volume_markers = self.vm
         my_theta.T = self.T
         my_theta.S = S
         my_theta.previous_solution = self.u
         value = 1 + FESTIM.x
         expected_sol = my_theta.get_comp(self.V, value)
-        expected_sol = f.project(expected_sol/S)
+        expected_sol = f.project(expected_sol / S)
 
         # run
         my_theta.initialise(self.V, value)
@@ -60,13 +58,13 @@ class TestCreateDiffusionForm:
         # test
         Index._globalcount = 8
         v = my_theta.test_function
-        D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
-        S = self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
-        S_n = self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
-        c_0 = my_theta.solution*S
-        c_0_n = my_theta.previous_solution*S_n
-        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.my_mesh.dx(1)
-        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.my_mesh.dx(1)
+        D = self.mat1.D_0 * f.exp(-self.mat1.E_D / FESTIM.k_B / self.my_temp.T)
+        S = self.mat1.S_0 * f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T)
+        S_n = self.mat1.S_0 * f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T_n)
+        c_0 = my_theta.solution * S
+        c_0_n = my_theta.previous_solution * S_n
+        expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
+        expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
 
         print("expected F:")
         print(expected_form)
@@ -97,9 +95,11 @@ def test_get_concentration_for_a_given_material():
 
     # test
     expected_c = f.project(
-        my_theta.solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T), V)
+        my_theta.solution * S_0 * f.exp(-E_S / FESTIM.k_B / my_temp.T), V
+    )
     expected_c_n = f.project(
-        my_theta.previous_solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T_n), V)
+        my_theta.previous_solution * S_0 * f.exp(-E_S / FESTIM.k_B / my_temp.T_n), V
+    )
     assert f.errornorm(c, expected_c) == pytest.approx(0)
     assert f.errornorm(c_n, expected_c_n) == pytest.approx(0)
 
@@ -118,17 +118,17 @@ def test_post_processing_solution_to_concentration():
     V = f.FunctionSpace(mesh, "CG", 1)
     S = 3
     value_theta = 5
-    materials = FESTIM.Materials([
-        FESTIM.Material(1, 1, 0, S, E_S=0)
-    ])
+    materials = FESTIM.Materials([FESTIM.Material(1, 1, 0, S, E_S=0)])
     vm = f.MeshFunction("size_t", mesh, 1, 1)
     dx = f.Measure("dx", domain=mesh, subdomain_data=vm)
     my_theta = FESTIM.Theta()
     my_theta.S = S
     my_theta.solution = f.interpolate(f.Constant(value_theta), V)
 
-    expected_concentration = f.project(f.Constant(S)*value_theta, V)
+    expected_concentration = f.project(f.Constant(S) * value_theta, V)
     my_theta.create_form_post_processing(V, materials, dx)
     my_theta.post_processing_solution_to_concentration()
 
-    assert f.errornorm(my_theta.post_processing_solution, expected_concentration) == pytest.approx(0)
+    assert f.errornorm(
+        my_theta.post_processing_solution, expected_concentration
+    ) == pytest.approx(0)

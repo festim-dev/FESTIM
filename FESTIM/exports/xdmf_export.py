@@ -36,8 +36,7 @@ class XDMFExport(Export):
         self.mode = mode
         self.checkpoint = checkpoint
         if type(self.checkpoint) != bool:
-            raise TypeError(
-                "checkpoint should be a bool")
+            raise TypeError("checkpoint should be a bool")
 
         self.append = False
 
@@ -58,11 +57,9 @@ class XDMFExport(Export):
         self._mode = value
 
     def define_xdmf_file(self):
-        """Creates the file
-        """
+        """Creates the file"""
 
-        self.file = f.XDMFFile(self.folder + '/' +
-                               self.label + '.xdmf')
+        self.file = f.XDMFFile(self.folder + "/" + self.label + ".xdmf")
         self.file.parameters["flush_output"] = True
         self.file.parameters["rewrite_function_mesh"] = False
 
@@ -79,14 +76,18 @@ class XDMFExport(Export):
             # warn users if checkpoint is True and 1D
             dimension = self.function.function_space().mesh().topology().dim()
             if dimension == 1:
-                msg = "in 1D, checkpointing is needed to visualise the XDMF "
-                msg += "file in Paraview (see issue "
+                msg = "in 1D, checkpoint needs to be set to False to "
+                msg += "visualise the XDMF file in Paraview (see issue "
                 msg += "https://github.com/RemDelaporteMathurin/FESTIM/issues/134)"
                 warnings.warn(msg)
 
             self.file.write_checkpoint(
-                self.function, self.label, t, f.XDMFFile.Encoding.HDF5,
-                append=self.append)
+                self.function,
+                self.label,
+                t,
+                f.XDMFFile.Encoding.HDF5,
+                append=self.append,
+            )
         else:
             self.file.write(self.function, t)
 
@@ -101,8 +102,7 @@ class XDMFExport(Export):
         Returns:
             bool: True if export should be exported, else False
         """
-        if (self.mode == "last" and
-                t >= final_time):
+        if self.mode == "last" and t >= final_time:
             return True
         elif isinstance(self.mode, int):
             if nb_iterations % self.mode == 0:
@@ -112,7 +112,9 @@ class XDMFExport(Export):
 
 
 class XDMFExports:
-    def __init__(self, fields=[], labels=[], folder=None, mode=1, checkpoint=True, functions=[]) -> None:
+    def __init__(
+        self, fields=[], labels=[], folder=None, mode=1, checkpoint=True, functions=[]
+    ) -> None:
         self.fields = fields
         self.labels = labels
         if functions != []:
@@ -121,12 +123,11 @@ class XDMFExports:
             warnings.warn(msg, DeprecationWarning)
 
         if len(self.fields) != len(self.labels):
-            raise ValueError("Number of fields to be exported "
-                             "doesn't match number of labels in xdmf exports")
+            raise ValueError(
+                "Number of fields to be exported "
+                "doesn't match number of labels in xdmf exports"
+            )
         self.xdmf_exports = [
-            XDMFExport(
-                function, label, folder,
-                mode=mode,
-                checkpoint=checkpoint)
+            XDMFExport(function, label, folder, mode=mode, checkpoint=checkpoint)
             for function, label in zip(self.fields, self.labels)
         ]

@@ -24,7 +24,9 @@ class TestCreateTrappingForms:
     mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
     my_mats = FESTIM.Materials([mat1, mat2])
 
-    trap1 = FESTIM.Trap(k_0=1, E_k=2, p_0=1, E_p=2, materials=[1, 2], density=1 + FESTIM.x)
+    trap1 = FESTIM.Trap(
+        k_0=1, E_k=2, p_0=1, E_p=2, materials=[1, 2], density=1 + FESTIM.x
+    )
     add_functions(trap1, V, id=1)
     trap2 = FESTIM.Trap(k_0=2, E_k=3, p_0=1, E_p=2, materials=1, density=1 + FESTIM.t)
     add_functions(trap2, V, id=2)
@@ -40,7 +42,9 @@ class TestCreateTrappingForms:
     def test_one_trap_transient(self):
         my_traps = FESTIM.Traps([self.trap1])
 
-        my_traps.create_forms(self.my_mobile, self.my_mats, self.my_temp, self.dx, dt=self.dt)
+        my_traps.create_forms(
+            self.my_mobile, self.my_mats, self.my_temp, self.dx, dt=self.dt
+        )
 
         for trap in my_traps.traps:
             assert trap.F is not None
@@ -48,7 +52,9 @@ class TestCreateTrappingForms:
     def test_two_traps_transient(self):
         my_traps = FESTIM.Traps([self.trap1, self.trap2])
 
-        my_traps.create_forms(self.my_mobile, self.my_mats, self.my_temp, self.dx, dt=self.dt)
+        my_traps.create_forms(
+            self.my_mobile, self.my_mats, self.my_temp, self.dx, dt=self.dt
+        )
 
         for trap in my_traps.traps:
             assert trap.F is not None

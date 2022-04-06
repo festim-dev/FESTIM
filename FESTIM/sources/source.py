@@ -12,6 +12,7 @@ class Source:
         field (str): the field on which the source is applied ("0", "solute",
             "1", "T")
     """
+
     def __init__(self, value, volume, field) -> None:
         """Inits Source
 
@@ -29,7 +30,6 @@ class Source:
         if isinstance(value, (float, int)):
             self.value = Constant(value)
         elif isinstance(value, sp.Expr):
-            self.value = Expression(
-                sp.printing.ccode(value), t=0, degree=2)
+            self.value = Expression(sp.printing.ccode(value), t=0, degree=2)
         elif isinstance(value, (Expression, UserExpression, Function)):
             self.value = value

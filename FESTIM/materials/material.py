@@ -1,9 +1,24 @@
 class Material:
-    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=None, H=None, solubility_law="sieverts") -> None:
+    def __init__(
+        self,
+        id,
+        D_0,
+        E_D,
+        S_0=None,
+        E_S=None,
+        thermal_cond=None,
+        heat_capacity=None,
+        rho=None,
+        borders=None,
+        H=None,
+        solubility_law="sieverts",
+    ) -> None:
         """Inits Material class
 
         Args:
-            id (int): the id of the material
+            id (int, list): the id of the material. If a list is provided, the
+                properties will be applied to all the subdomains with the
+                corresponding ids.
             D_0 (float): diffusion coefficient pre-exponential factor (m2/s)
             E_D (float): diffusion coefficient activation energy (eV)
             S_0 (float, optional): Solubility pre-exponential factor

@@ -1,10 +1,18 @@
 import sympy as sp
-x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
+
+x, y, z, t = sp.symbols("x[0] x[1] x[2] t")
 R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
-from .helpers import update_expressions, kJmol_to_eV, \
-    extract_xdmf_labels, extract_xdmf_times, as_constant, as_expression, as_constant_or_expression
+from .helpers import (
+    update_expressions,
+    kJmol_to_eV,
+    extract_xdmf_labels,
+    extract_xdmf_times,
+    as_constant,
+    as_expression,
+    as_constant_or_expression,
+)
 
 from .meshing.mesh import Mesh
 from .meshing.mesh_1d import Mesh1D
@@ -16,8 +24,11 @@ from .temperature.temperature import Temperature
 from .temperature.temperature_solver import HeatTransferProblem
 
 from .boundary_conditions.boundary_condition import BoundaryCondition
-from .boundary_conditions.dirichlets.dirichlet_bc import DirichletBC, \
-    BoundaryConditionTheta, BoundaryConditionExpression
+from .boundary_conditions.dirichlets.dirichlet_bc import (
+    DirichletBC,
+    BoundaryConditionTheta,
+    BoundaryConditionExpression,
+)
 from .boundary_conditions.dirichlets.dc_imp import ImplantationDirichlet
 from .boundary_conditions.dirichlets.sieverts_bc import SievertsBC
 from .boundary_conditions.dirichlets.custom_dc import CustomDirichlet
@@ -29,7 +40,6 @@ from .boundary_conditions.fluxes.flux_custom import CustomFlux
 
 from .exports.exports import Exports
 from .exports.export import Export
-from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
 
 from .exports.derived_quantities.derived_quantity import DerivedQuantity
