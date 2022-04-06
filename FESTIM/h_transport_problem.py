@@ -301,11 +301,8 @@ class HTransportProblem:
 
         if self.settings.chemical_pot:
             self.mobile.post_processing_solution_to_concentration()
-            if self.need_projecting_solute(exports):
-                # project solute on V_DG1
-                self.mobile.post_processing_solution = project(
-                    self.mobile.post_processing_solution, self.V_DG1
-                )
+        else:
+            self.mobile.post_processing_solution = res[0]
 
     # TODO remove this unused method
     def need_projecting_solute(self, exports):
