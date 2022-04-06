@@ -20,7 +20,7 @@ class HenrysBC(DirichletBC):
             E_H (float): Henry's constant solution energy (eV)
             pressure (float or sp.Expr): hydrogen partial pressure (Pa)
         """
-        super().__init__(surfaces, component=0)
+        super().__init__(surfaces, field=0)
         self.H_0 = H_0
         self.E_H = E_H
         self.pressure = pressure
