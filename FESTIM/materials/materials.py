@@ -222,8 +222,8 @@ class Materials:
         dx = mesh.dx
         F = 0
         for mat in self.materials:
-            F += -S*vS*dx(mat.id)
-            F += mat.S_0*f.exp(-mat.E_S/k_B/T)*vS*dx(mat.id)
+            F += -S * vS * dx(mat.id)
+            F += mat.S_0 * f.exp(-mat.E_S / k_B / T) * vS * dx(mat.id)
         f.solve(F == 0, S, bcs=[])
 
         self.S = S
