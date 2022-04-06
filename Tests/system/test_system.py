@@ -23,8 +23,8 @@ def test_run_temperature_stationary(tmpdir):
 
     my_mesh = FESTIM.MeshFromRefinements(200, size=size)
     my_boundary_conditions = [
-        FESTIM.DirichletBC(value=1, component=0, surfaces=[1]),
-        FESTIM.DirichletBC(value=u, component="T", surfaces=[1, 2])
+        FESTIM.DirichletBC(value=1, field=0, surfaces=[1]),
+        FESTIM.DirichletBC(value=u, field="T", surfaces=[1, 2])
     ]
 
     my_sources = [FESTIM.Source(-4, 1, "T")]
@@ -75,8 +75,8 @@ def test_run_temperature_transient(tmpdir):
     my_mesh = FESTIM.MeshFromRefinements(200, size)
 
     my_bcs = [
-        FESTIM.DirichletBC(surfaces=[1], value=1, component=0),
-        FESTIM.DirichletBC(surfaces=[1, 2], value=u, component="T")
+        FESTIM.DirichletBC(surfaces=[1], value=1, field=0),
+        FESTIM.DirichletBC(surfaces=[1, 2], value=u, field="T")
     ]
 
     my_temp = FESTIM.HeatTransferProblem(transient=True, initial_value=u)
@@ -161,8 +161,8 @@ def test_run_MMS(tmpdir):
         my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
 
         my_bcs = [
-            FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
-            FESTIM.DirichletBC(surfaces=[1, 2], value=v, component=1),
+            FESTIM.DirichletBC(surfaces=[1, 2], value=u, field=0),
+            FESTIM.DirichletBC(surfaces=[1, 2], value=v, field=1),
         ]
 
         my_temp = FESTIM.Temperature(T)
@@ -259,8 +259,8 @@ def test_run_MMS_chemical_pot(tmpdir):
         my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
 
         my_bcs = [
-            FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
-            FESTIM.DirichletBC(surfaces=[1, 2], value=v, component=1),
+            FESTIM.DirichletBC(surfaces=[1, 2], value=u, field=0),
+            FESTIM.DirichletBC(surfaces=[1, 2], value=v, field=1),
         ]
 
         my_temp = FESTIM.Temperature(T)
@@ -403,7 +403,7 @@ def test_run_MMS_soret(tmpdir):
         my_temp = FESTIM.Temperature(T)
 
         my_bcs = [
-            FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
+            FESTIM.DirichletBC(surfaces=[1, 2], value=u, field=0),
         ]
 
         my_settings = FESTIM.Settings(
@@ -496,8 +496,8 @@ def test_run_MMS_steady_state(tmpdir):
         my_temp = FESTIM.Temperature(T)
 
         my_bcs = [
-            FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
-            FESTIM.DirichletBC(surfaces=[1, 2], value=v, component=1),
+            FESTIM.DirichletBC(surfaces=[1, 2], value=u, field=0),
+            FESTIM.DirichletBC(surfaces=[1, 2], value=v, field=1),
         ]
 
         my_settings = FESTIM.Settings(
@@ -560,9 +560,9 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
 
     my_temp = FESTIM.HeatTransferProblem(transient=False)
     my_bcs = [
-        FESTIM.DirichletBC(surfaces=[1, 2], value=1, component="solute"),
-        FESTIM.DirichletBC(surfaces=[1], value=300, component="T"),
-        FESTIM.DirichletBC(surfaces=[2], value=300, component="T"),
+        FESTIM.DirichletBC(surfaces=[1, 2], value=1, field="solute"),
+        FESTIM.DirichletBC(surfaces=[1], value=300, field="T"),
+        FESTIM.DirichletBC(surfaces=[2], value=300, field="T"),
     ]
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e-10,
