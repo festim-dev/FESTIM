@@ -7,7 +7,26 @@ from pathlib import Path
 import timeit
 
 
+def compute_error(exact, computed, t, norm):
+    exact_sol = fenics.Expression(
+        sp.printing.ccode(exact),
+        degree=4,
+        t=t
+    )
+
+    if norm == "error_max":
+        mesh = computed.function_space().mesh()
+        vertex_values_u = computed.compute_vertex_values(mesh)
+        vertex_values_sol = exact_sol.compute_vertex_values(mesh)
+        error_max = np.max(np.abs(vertex_values_u - vertex_values_sol))
+        return error_max
+    else:
+        error_L2 = fenics.errornorm(
+            exact_sol, computed, norm)
+        return error_L2
+
 # System tests
+
 
 def test_run_temperature_stationary(tmpdir):
     '''
@@ -40,9 +59,8 @@ def test_run_temperature_stationary(tmpdir):
     my_derived_quantities.derived_quantities = [FESTIM.TotalVolume("solute", 1)]
 
     my_exports = [
-            FESTIM.XDMFExports(fields=['T', 'solute'], labels=["temperature", "solute"], folder=str(Path(d))),
+            FESTIM.XDMFExports(fields=['T', 'solute'], labels=["temperature", "solute"], folder=str(Path(d)), checkpoint=False),
             my_derived_quantities,
-            FESTIM.Error("T", exact_solution=u)
     ]
 
     my_sim = FESTIM.Simulation(
@@ -52,8 +70,10 @@ def test_run_temperature_stationary(tmpdir):
         dt=my_stepsize, settings=my_settings,
         temperature=my_temperature, exports=my_exports)
     my_sim.initialise()
-    output = my_sim.run(output=True)
-    assert output["error"][0] < 1e-9
+    output = my_sim.run()
+
+    error = compute_error(u, computed=my_sim.T.T, t=my_sim.t, norm="error_max")
+    assert error < 1e-9
 
 
 def test_run_temperature_transient(tmpdir):
@@ -98,8 +118,7 @@ def test_run_temperature_transient(tmpdir):
 
     my_exports = FESTIM.Exports(
         [
-            FESTIM.XDMFExport("T", "temperature", str(Path(d))),
-            FESTIM.Error("T", u)
+            FESTIM.XDMFExport("T", "temperature", str(Path(d)), checkpoint=False),
         ]
     )
 
@@ -110,9 +129,10 @@ def test_run_temperature_transient(tmpdir):
         exports=my_exports
     )
     my_sim.initialise()
-    output = my_sim.run(output=True)
+    my_sim.run()
 
-    assert output["error"][0] < 1e-9
+    error = compute_error(u, computed=my_sim.T.T, t=my_sim.t, norm="error_max")
+    assert error < 1e-9
 
 
 def test_run_MMS(tmpdir):
@@ -181,9 +201,7 @@ def test_run_MMS(tmpdir):
 
         my_dt = FESTIM.Stepsize(0.1/50)
         my_exports = FESTIM.Exports([
-                FESTIM.XDMFExport("retention", "retention", str(Path(d))),
-                FESTIM.Error(0, u),
-                FESTIM.Error(1, v),
+                FESTIM.XDMFExport("retention", "retention", str(Path(d)), checkpoint=False),
             ]
         )
 
@@ -194,16 +212,22 @@ def test_run_MMS(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run(output=True)
+        my_sim.run()
+        error_u = compute_error(
+            u, computed=my_sim.mobile.post_processing_solution,
+            t=my_sim.t, norm="error_max")
+        error_v = compute_error(
+            v, computed=my_sim.traps.traps[0].post_processing_solution,
+            t=my_sim.t, norm="error_max")
+
+        return error_u, error_v
 
     tol_u = 1e-7
     tol_v = 1e-6
     sizes = [1/1600, 1/1700]
     dt = 0.1/50
     for h in sizes:
-        output = run(h)
-        error_max_u = output["error"][0]
-        error_max_v = output["error"][1]
+        error_max_u, error_max_v = run(h)
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -281,8 +305,6 @@ def test_run_MMS_chemical_pot(tmpdir):
         my_dt = FESTIM.Stepsize(0.1/50)
         my_exports = FESTIM.Exports([
                 FESTIM.TXTExport("solute", times=[100], label="solute", folder=str(Path(d))),
-                FESTIM.Error(0, u),
-                FESTIM.Error(1, v),
             ]
         )
 
@@ -293,16 +315,31 @@ def test_run_MMS_chemical_pot(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run(output=True)
+        my_sim.run()
+
+        computed_u = fenics.project(
+            my_sim.mobile.post_processing_solution, my_sim.V_DG1
+        )
+
+        computed_v = fenics.project(
+            my_sim.traps.traps[0].post_processing_solution, my_sim.V_DG1
+        )
+
+        error_u = compute_error(
+            u, computed=computed_u,
+            t=my_sim.t, norm="error_max")
+        error_v = compute_error(
+            v, computed=computed_v,
+            t=my_sim.t, norm="error_max")
+
+        return error_u, error_v
 
     tol_u = 1e-7
     tol_v = 1e-6
     sizes = [1/1600]
     dt = 0.1/50
     for h in sizes:
-        output = run(h)
-        error_max_u = output["error"][0]
-        error_max_v = output["error"][1]
+        error_max_u, error_max_v = run(h)
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h) + '\n \
@@ -348,7 +385,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
     derived_quantities = FESTIM.DerivedQuantities()
     derived_quantities.derived_quantities = [total_solute, total_retention]
     my_exports = FESTIM.Exports([
-        FESTIM.XDMFExport("retention", "retention", folder=str(Path(d))),
+        FESTIM.XDMFExport("retention", "retention", folder=str(Path(d)), checkpoint=False),
         derived_quantities
         ]
     )
@@ -417,9 +454,8 @@ def test_run_MMS_soret(tmpdir):
         my_dt = FESTIM.Stepsize(0.1/50)
 
         my_exports = FESTIM.Exports([
-            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
-            FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
-            FESTIM.Error("solute", u, norm="L2")
+            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("T", "T", folder=str(Path(d)), checkpoint=False),
             ]
         )
 
@@ -431,13 +467,17 @@ def test_run_MMS_soret(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run(output=True)
+        my_sim.run()
+        error_u = compute_error(
+            u, computed=my_sim.mobile.post_processing_solution,
+            t=my_sim.t, norm="error_max")
+
+        return error_u
 
     tol_u = 1e-7
     sizes = [1/1000, 1/2000]
     for h in sizes:
-        output = run(h)
-        error_max_u = output["error"][0]
+        error_max_u = run(h)
         msg = 'L2 error on u is:' + str(error_max_u) + '\n \
             with h = ' + str(h)
         print(msg)
@@ -511,12 +551,10 @@ def test_run_MMS_steady_state(tmpdir):
         my_dt = FESTIM.Stepsize(0.1/50)
 
         my_exports = FESTIM.Exports([
-            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
-            FESTIM.XDMFExport("1", "1", folder=str(Path(d))),
-            FESTIM.XDMFExport("retention", "retention", folder=str(Path(d))),
-            FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
-            FESTIM.Error("solute", u),
-            FESTIM.Error("1", v)
+            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("1", "1", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("retention", "retention", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("T", "T", folder=str(Path(d)), checkpoint=False),
             ]
         )
 
@@ -528,15 +566,21 @@ def test_run_MMS_steady_state(tmpdir):
             dt=my_dt, exports=my_exports)
 
         my_sim.initialise()
-        return my_sim.run(output=True)
+        my_sim.run()
+        error_u = compute_error(
+            u, computed=my_sim.mobile.post_processing_solution,
+            t=my_sim.t, norm="error_max")
+        error_v = compute_error(
+            v, computed=my_sim.traps.traps[0].post_processing_solution,
+            t=my_sim.t, norm="error_max")
+
+        return error_u, error_v
 
     tol_u = 1e-10
     tol_v = 1e-7
     sizes = [1/1000, 1/2000]
     for h in sizes:
-        output = run(h)
-        error_max_u = output["error"][0]
-        error_max_v = output["error"][1]
+        error_max_u, error_max_v = run(h)
         msg = 'Maximum error on u is:' + str(error_max_u) + '\n \
             Maximum error on v is:' + str(error_max_v) + '\n \
             with h = ' + str(h)
@@ -577,7 +621,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
         FESTIM.TotalSurface("solute", 2)
     ]
     my_exports = FESTIM.Exports([
-        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
         my_derived_quantities
         ]
     )
@@ -589,8 +633,9 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
         dt=my_dt, exports=my_exports)
 
     my_sim.initialise()
-    out = my_sim.run(output=True)
-    assert out["derived_quantities"][-1][1] == pytest.approx(1)
+    my_sim.run()
+
+    assert my_derived_quantities.data[-1][1] == pytest.approx(1)
 
 
 def test_export_particle_flux_with_chemical_pot(tmpdir):
@@ -620,7 +665,7 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
         FESTIM.TotalVolume("retention", 1),
     ]
     my_exports = FESTIM.Exports([
-        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
         my_derived_quantities
         ]
     )
@@ -840,8 +885,13 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
         my_sim.initialise()
         return my_sim
 
-    short_derived_quantities = init_sim(10).run(output=True)["derived_quantities"]
-    long_derived_quantities = init_sim(1).run(output=True)["derived_quantities"]
+    sim_short = init_sim(10)
+    sim_short.run()
+    short_derived_quantities = sim_short.exports.exports[0].data
+
+    sim_long = init_sim(1)
+    sim_long.run()
+    long_derived_quantities = sim_long.exports.exports[0].data
 
     assert len(long_derived_quantities) > len(short_derived_quantities)
 

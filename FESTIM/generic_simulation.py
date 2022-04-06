@@ -196,12 +196,10 @@ class Simulation:
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials)
 
-    def run(self, output=False, completion_tone=False):
+    def run(self, completion_tone=False):
         """Runs the model.
 
         Args:
-            output (bool, optional): If True, an output dict will be returned.
-                Defaults to False.
             completion_tone (bool, optional): If True, a native os alert
                 tone will alert user upon completion of current run. Defaults
                 to False.
@@ -218,9 +216,6 @@ class Simulation:
         # End
         if completion_tone:
             print('\007')
-
-        if output:
-            return self.make_output()
 
     def run_transient(self):
         # add final_time to Exports
@@ -320,44 +315,3 @@ class Simulation:
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
         return label_to_function
-
-    def make_output(self):
-        """Creates a dictionary with some useful information such as derived
-        quantities, solutions, etc.
-
-        Returns:
-            dict: the output
-        """
-        label_to_function = self.update_post_processing_solutions()
-
-        for key, val in label_to_function.items():
-            if not isinstance(val, Function):
-                label_to_function[key] = project(val, self.V_DG1)
-
-        output = dict()  # Final output
-        # Compute error
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.Error):
-                export.function = label_to_function[export.field]
-                if "error" not in output:
-                    output["error"] = []
-                output["error"].append(export.compute(self.t))
-
-        output["mesh"] = self.mesh.mesh
-
-        # add derived quantities to output
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-                output["derived_quantities"] = export.data
-
-        # initialise output["solutions"] with solute and temperature
-        output["solutions"] = {
-            "solute": label_to_function["solute"],
-            "T": label_to_function["T"]
-        }
-        # add traps to output
-        for trap in self.traps.traps:
-            output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
-        # compute retention and add it to output
-        output["solutions"]["retention"] = project(label_to_function["retention"], self.V_DG1)
-        return output
