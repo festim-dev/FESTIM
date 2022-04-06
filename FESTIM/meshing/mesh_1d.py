@@ -11,6 +11,7 @@ class Mesh1D(Mesh):
         start (float): the starting point of the 1D mesh
 
     """
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.size = None
@@ -35,7 +36,7 @@ class Mesh1D(Mesh):
                 markers
         """
         surface_markers = f.MeshFunction(
-            "size_t", self.mesh, self.mesh.topology().dim()-1, 0)
+            "size_t", self.mesh, self.mesh.topology().dim() - 1, 0)
         surface_markers.set_all(0)
         i = 0
         for facet in f.facets(self.mesh):
@@ -58,7 +59,8 @@ class Mesh1D(Mesh):
             fenics.MeshFunction: the meshfunction containing the volume
                 markers
         """
-        volume_markers = f.MeshFunction("size_t", self.mesh, self.mesh.topology().dim(), 0)
+        volume_markers = f.MeshFunction(
+            "size_t", self.mesh, self.mesh.topology().dim(), 0)
         # iterate through the cells of the mesh and mark them
         for cell in f.cells(self.mesh):
             x = cell.midpoint().x()

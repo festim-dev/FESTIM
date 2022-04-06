@@ -12,6 +12,7 @@ class Source:
         field (str): the field on which the source is applied ("0", "solute",
             "1", "T")
     """
+
     def __init__(self, value, volume, field) -> None:
         """Inits Source
 

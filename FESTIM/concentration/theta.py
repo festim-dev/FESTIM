@@ -6,6 +6,7 @@ class Theta(Mobile):
     """Class representing the "chemical potential" c/S where S is the
     solubility of the metal
     """
+
     def __init__(self):
         """Inits Theta
         """
@@ -25,7 +26,7 @@ class Theta(Mobile):
         """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
         # TODO this needs changing for Henry
-        comp = comp/self.S
+        comp = comp / self.S
         # Product must be projected
         comp = f.project(comp, V)
         f.assign(self.previous_solution, comp)
@@ -46,8 +47,8 @@ class Theta(Mobile):
         # TODO this needs changing for Henry
         E_S = material.E_S
         S_0 = material.S_0
-        c_0 = self.solution*S_0*f.exp(-E_S/k_B/T.T)
-        c_0_n = self.previous_solution*S_0*f.exp(-E_S/k_B/T.T_n)
+        c_0 = self.solution * S_0 * f.exp(-E_S / k_B / T.T)
+        c_0_n = self.previous_solution * S_0 * f.exp(-E_S / k_B / T.T_n)
         return c_0, c_0_n
 
     def mobile_concentration(self):
@@ -59,7 +60,7 @@ class Theta(Mobile):
             fenics.Product: the hydrogen mobile concentration
         """
         # TODO this needs changing for Henry
-        return self.solution*self.S
+        return self.solution * self.S
 
     def post_processing_solution_to_concentration(self):
         """Converts the post_processing_solution from theta to mobile

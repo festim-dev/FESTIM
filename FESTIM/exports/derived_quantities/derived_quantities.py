@@ -6,7 +6,13 @@ import csv
 
 
 class DerivedQuantities:
-    def __init__(self, file=None, folder=None, nb_iterations_between_compute=1, nb_iterations_between_exports=None, **derived_quantities) -> None:
+    def __init__(
+            self,
+            file=None,
+            folder=None,
+            nb_iterations_between_compute=1,
+            nb_iterations_between_exports=None,
+            **derived_quantities) -> None:
         self.file = file
         self.folder = folder
         self.nb_iterations_between_compute = nb_iterations_between_compute
@@ -33,12 +39,12 @@ class DerivedQuantities:
             for prms_dict in list_of_prms_dicts:
                 if "volumes" in prms_dict:
                     for entity in prms_dict["volumes"]:
-                        self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], volume=entity))
+                        self.derived_quantities.append(quantity_class(
+                            field=prms_dict["field"], volume=entity))
                 if "surfaces" in prms_dict:
                     for entity in prms_dict["surfaces"]:
-                        self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], surface=entity))
+                        self.derived_quantities.append(quantity_class(
+                            field=prms_dict["field"], surface=entity))
 
     def make_header(self):
         header = ["t(s)"]
@@ -97,8 +103,11 @@ class DerivedQuantities:
                             writer.writerows([val])
                 except OSError as err:
                     print("OS error: {0}".format(err))
-                    print("The file " + file_export + ".txt might currently be busy."
-                          "Please close the application then press any key.")
+                    print(
+                        "The file " +
+                        file_export +
+                        ".txt might currently be busy."
+                        "Please close the application then press any key.")
                     input()
         return True
 

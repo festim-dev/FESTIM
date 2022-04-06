@@ -6,6 +6,7 @@ import sympy as sp
 class DirichletBC(BoundaryCondition):
     """Class to enforce the solution on boundaries.
     """
+
     def __init__(self, surfaces, value=None, field=0) -> None:
         """Inits DirichletBC
 
@@ -47,9 +48,9 @@ class DirichletBC(BoundaryCondition):
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
         expression_BC = BoundaryConditionTheta(
-                            self.expression,
-                            materials,
-                            volume_markers, T)
+            self.expression,
+            materials,
+            volume_markers, T)
         self.expression = expression_BC
 
     def create_dirichletbc(
@@ -95,6 +96,7 @@ class BoundaryConditionTheta(f.UserExpression):
     Args:
         UserExpression (fenics.UserExpression):
     """
+
     def __init__(self, bci, materials, vm, T, **kwargs):
         """initialisation
 
@@ -118,7 +120,7 @@ class BoundaryConditionTheta(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
         S_0 = material.S_0
         E_S = material.E_S
-        value[0] = self._bci(x)/(S_0*f.exp(-E_S/k_B/self._T(x)))
+        value[0] = self._bci(x) / (S_0 * f.exp(-E_S / k_B / self._T(x)))
 
     def value_shape(self):
         return ()

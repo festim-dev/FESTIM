@@ -14,6 +14,7 @@ class CustomDirichlet(DirichletBC):
         param1=2*FESTIM.x + FESTIM.t
     )
     """
+
     def __init__(self, surfaces, function, field=0, **prms) -> None:
         """Inits CustomDirichlet
 

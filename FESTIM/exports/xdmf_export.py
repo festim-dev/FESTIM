@@ -29,13 +29,13 @@ class XDMFExport(Export):
         self.folder = folder
         if self.folder == "":
             raise ValueError("folder value cannot be an empty string")
-        if type(self.folder) is not str:
+        if not isinstance(self.folder, str):
             raise TypeError("folder value must be of type str")
         self.files = None
         self.define_xdmf_file()
         self.mode = mode
         self.checkpoint = checkpoint
-        if type(self.checkpoint) != bool:
+        if not isinstance(self.checkpoint, bool):
             raise TypeError(
                 "checkpoint should be a bool")
 
@@ -112,7 +112,14 @@ class XDMFExport(Export):
 
 
 class XDMFExports:
-    def __init__(self, fields=[], labels=[], folder=None, mode=1, checkpoint=True, functions=[]) -> None:
+    def __init__(
+            self,
+            fields=[],
+            labels=[],
+            folder=None,
+            mode=1,
+            checkpoint=True,
+            functions=[]) -> None:
         self.fields = fields
         self.labels = labels
         if functions != []:

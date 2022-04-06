@@ -45,8 +45,8 @@ class Materials:
         all_borders = sorted(all_borders, key=itemgetter(0))
         if all_borders[0][0] is not 0:
             raise ValueError("Borders don't begin at zero")
-        for i in range(0, len(all_borders)-1):
-            if all_borders[i][1] != all_borders[i+1][0]:
+        for i in range(0, len(all_borders) - 1):
+            if all_borders[i][1] != all_borders[i + 1][0]:
                 raise ValueError("Borders don't match to each other")
         if all_borders[len(all_borders) - 1][1] != size:
             raise ValueError("Borders don't match with size")
@@ -73,7 +73,7 @@ class Materials:
         # check that ids are different
         mat_ids = []
         for mat in self.materials:
-            if type(mat.id) is list:
+            if isinstance(mat.id, list):
                 mat_ids += mat.id
             else:
                 mat_ids.append(mat.id)
@@ -88,7 +88,8 @@ class Materials:
             for mat in self.materials:
                 for key in transient_properties:
                     if getattr(mat, key) is not None:
-                        warnings.warn(key + " key will be ignored", UserWarning)
+                        warnings.warn(
+                            key + " key will be ignored", UserWarning)
 
         for mat in self.materials:
             if getattr(mat, "thermal_cond") is not None:
@@ -100,7 +101,8 @@ class Materials:
                         if surface_flux["field"] == "T":
                             warn = False
                 if warn:
-                    warnings.warn("thermal_cond key will be ignored", UserWarning)
+                    warnings.warn(
+                        "thermal_cond key will be ignored", UserWarning)
 
     def check_consistency(self):
         # check the materials keys match
@@ -118,7 +120,8 @@ class Materials:
             for mat in self.materials:
                 value.append(getattr(mat, attr))
             if value.count(None) not in [0, len(self.materials)]:
-                raise ValueError("{} is not defined for all materials".format(attr))
+                raise ValueError(
+                    "{} is not defined for all materials".format(attr))
 
     def check_missing_properties(self, temp_type, derived_quantities):
         if temp_type != "expression" and \
@@ -145,11 +148,14 @@ class Materials:
         """
         for material in self.materials:
             mat_ids = material.id
-            if type(mat_ids) is not list:
+            if not isinstance(mat_ids, list):
                 mat_ids = [mat_ids]
             if mat_id in mat_ids:
                 return material
-        raise ValueError("Couldn't find ID " + str(mat_id) + " in materials list")
+        raise ValueError(
+            "Couldn't find ID " +
+            str(mat_id) +
+            " in materials list")
 
     def find_subdomain_from_x_coordinate(self, x):
         """Finds the correct subdomain at a given x coordinate
@@ -191,16 +197,17 @@ class Materials:
             T {fenics.Function()} -- temperature
         """
         self.D = ArheniusCoeff(self, vm, T, "D_0", "E_D", degree=2)
-        # all materials have the same properties so only checking the first is enough
+        # all materials have the same properties so only checking the first is
+        # enough
         if self.materials[0].S_0 is not None:
             self.S = ArheniusCoeff(self, vm, T, "S_0", "E_S", degree=2)
         if self.materials[0].thermal_cond is not None:
             self.thermal_cond = ThermalProp(self, vm, T,
-                                        'thermal_cond', degree=2)
+                                            'thermal_cond', degree=2)
             self.heat_capacity = ThermalProp(self, vm, T,
-                                'heat_capacity', degree=2)
+                                             'heat_capacity', degree=2)
             self.density = ThermalProp(self, vm, T,
-                                'rho', degree=2)
+                                       'rho', degree=2)
         if self.materials[0].H is not None:
             self.H = HCoeff(self, vm, T, degree=2)
 
@@ -234,7 +241,7 @@ class ArheniusCoeff(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
         D_0 = getattr(material, self._pre_exp)
         E_D = getattr(material, self._E)
-        value[0] = D_0*f.exp(-E_D/k_B/self._T(x))
+        value[0] = D_0 * f.exp(-E_D / k_B / self._T(x))
 
     def value_shape(self):
         return ()
@@ -275,7 +282,7 @@ class HCoeff(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
 
         value[0] = material.free_enthalpy + \
-            self._T(x)*material.entropy
+            self._T(x) * material.entropy
 
     def value_shape(self):
         return ()

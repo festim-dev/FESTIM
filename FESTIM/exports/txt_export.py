@@ -42,13 +42,14 @@ class TXTExport(FESTIM.Export):
 
         solution = f.project(self.function, V_DG1)
         if self.is_it_time_to_export(current_time):
-            filename = "{}/{}_{}s.txt".format(self.folder, self.label, current_time)
+            filename = "{}/{}_{}s.txt".format(self.folder,
+                                              self.label, current_time)
             busy = True
             x = f.interpolate(f.Expression('x[0]', degree=1), V_DG1)
             while busy is True:
                 try:
                     np.savetxt(filename, np.transpose(
-                                [x.vector()[:], solution.vector()[:]]))
+                        [x.vector()[:], solution.vector()[:]]))
                     break
                 except OSError as err:
                     print("OS error: {0}".format(err))
@@ -64,7 +65,13 @@ class TXTExport(FESTIM.Export):
 
 
 class TXTExports:
-    def __init__(self, fields=[], times=[], labels=[], folder=None, functions=[]) -> None:
+    def __init__(
+            self,
+            fields=[],
+            times=[],
+            labels=[],
+            folder=None,
+            functions=[]) -> None:
         self.fields = fields
         if functions != []:
             self.fields = functions

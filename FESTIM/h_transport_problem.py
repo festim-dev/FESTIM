@@ -16,6 +16,7 @@ class HTransportProblem:
         u_n (fenics.Function): the "previous" function
         bcs (list): list of fenics.DirichletBC for H transport
     """
+
     def __init__(self, mobile, traps, T, settings, initial_conditions) -> None:
         """Inits HTransportProblem
 
@@ -86,8 +87,10 @@ class HTransportProblem:
             solute = FiniteElement(
                 element_solute, mesh.mesh.ufl_cell(), order_solute)
             traps = FiniteElement(
-                self.settings.traps_element_type, mesh.mesh.ufl_cell(), order_trap)
-            element = [solute] + [traps]*nb_traps
+                self.settings.traps_element_type,
+                mesh.mesh.ufl_cell(),
+                order_trap)
+            element = [solute] + [traps] * nb_traps
             V = FunctionSpace(mesh.mesh, MixedElement(element))
         self.V = V
         self.V_CG1 = FunctionSpace(mesh.mesh, "CG", 1)
@@ -111,7 +114,8 @@ class HTransportProblem:
             self.mobile.previous_solution = self.u_n
             self.mobile.test_function = self.v
         else:
-            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+            for i, concentration in enumerate(
+                    [self.mobile, *self.traps.traps]):
                 concentration.solution = list(split(self.u))[i]
                 concentration.previous_solution = self.u_n.sub(i)
                 concentration.test_function = list(split(self.v))[i]
@@ -125,7 +129,8 @@ class HTransportProblem:
         for i, trap in enumerate(self.traps.traps, 1):
             field_to_component[trap.id] = i
             field_to_component[str(trap.id)] = i
-        # TODO refactore this, attach the initial conditions to the objects directly
+        # TODO refactore this, attach the initial conditions to the objects
+        # directly
         for ini in self.initial_conditions:
             value = ini.value
             component = field_to_component[ini.field]
@@ -136,15 +141,21 @@ class HTransportProblem:
                 functionspace = self.V.sub(component).collapse()
 
             if component == 0:
-                self.mobile.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
+                self.mobile.initialise(
+                    functionspace,
+                    value,
+                    label=ini.label,
+                    time_step=ini.time_step)
             else:
                 trap = self.traps.get_trap(component)
-                trap.initialise(functionspace, value, label=ini.label, time_step=ini.time_step)
+                trap.initialise(functionspace, value,
+                                label=ini.label, time_step=ini.time_step)
 
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
-            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+            for i, concentration in enumerate(
+                    [self.mobile, *self.traps.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
 
     def define_variational_problem(self, materials, mesh, dt=None):

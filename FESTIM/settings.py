@@ -15,6 +15,7 @@ class Settings:
         traps_element_type (str): Finite element used for traps.
         update_jacobian (bool):
     """
+
     def __init__(
         self,
         absolute_tolerance,

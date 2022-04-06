@@ -13,6 +13,7 @@ class Temperature:
         expression (fenics.Expression): the expression of temperature as a
             fenics object
     """
+
     def __init__(self, value=None) -> None:
         """Inits Temperature
 

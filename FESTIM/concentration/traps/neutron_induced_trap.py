@@ -10,6 +10,7 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
     dn_t/dt = phi*K*(1 - n_t/n_max) + A_0*exp(-E_A/(k_B*T))*n_t
 
     """
+
     def __init__(self, k_0, E_k, p_0, E_p, materials, phi, K, n_max, A_0, E_A,
                  id=None):
         """
@@ -50,11 +51,11 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
         density = self.density[0]
         T = T.T
 
-        F = ((density - self.density_previous_solution)/dt.value) * \
-            self.density_test_function*dx
-        F += -self.phi*self.K*(1 - (density/self.n_max)) * \
-            self.density_test_function*dx
-        F += self.A_0*f.exp(-self.E_A/(k_B*T))*density * \
-            self.density_test_function*dx
+        F = ((density - self.density_previous_solution) / dt.value) * \
+            self.density_test_function * dx
+        F += -self.phi * self.K * (1 - (density / self.n_max)) * \
+            self.density_test_function * dx
+        F += self.A_0 * f.exp(-self.E_A / (k_B * T)) * density * \
+            self.density_test_function * dx
 
         self.form_density = F
