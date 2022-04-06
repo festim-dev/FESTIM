@@ -329,42 +329,40 @@ def test_sievert_bc_varying_temperature():
     T.assign(1000)
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
+
 def test_henry_bc_varying_time():
-    """Checks the method HenrysBC.create_expression produces the expected expression
+    """Checks the method HenrysBC.create_expression produces the expected
+    expression
     """
     # build
     T = fenics.Constant(300)
     pressure_expr = 1e5*(1 + FESTIM.t)
     H_0_expr = 100
     E_H_expr = 0.5
-    my_bc = FESTIM.HenrysBC(surfaces = 1, pressure = pressure_expr, H_0 = H_0_expr, E_H = E_H_expr)
-    pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
-                                       t=0,                              # there were 40 spaces before and if I want to have the same as in test_sievert_bc_varying_time, there are 39. Since it is not aligned with the first character after the open paranthesis and not an integer amount of indentation (=4 spaces apparently), I do not understand how the pep 8 rules come up with 39 spaces here.
-                                       degree=1)
-    H_0_expr = fenics.Expression(sp.printing.ccode(H_0_expr),
-                                       t=0,
-                                       degree=1)
-    E_H_expr = fenics.Expression(sp.printing.ccode(E_H_expr),
-                                       t=0,
-                                       degree=1)
-    T_expr = fenics.Expression(sp.printing.ccode(T),
-                                       t=0,
-                                       degree=1)
+    my_bc = FESTIM.HenrysBC(
+        surfaces=1, pressure=pressure_expr, H_0=H_0_expr, E_H=E_H_expr)
+    pressure_expr = fenics.Expression(
+        sp.printing.ccode(pressure_expr), t=0, degree=1)
+    H_0_expr = fenics.Expression(
+        sp.printing.ccode(H_0_expr), t=0, degree=1)
+    E_H_expr = fenics.Expression(
+        sp.printing.ccode(E_H_expr), t=0, degree=1)
+    T_expr = fenics.Expression(
+        sp.printing.ccode(T), t=0, degree=1)
 
-    #run
+    # run
     my_bc.create_expression(T)
-    #test
-# What does pep 8 say about spaces after that my_bc.create_expression ?
-# I just used the form as in test_sievert_bc_varying_time
-# But I feel it would be more readable with a space between #test and my_bc.create_expression(T)
-# And I think the purpose of pep 8 is to make the code more readable
+    # test
 
     def henrys(T, H_0, E_H, pressure):
         H = H_0*fenics.exp(-E_H/FESTIM.k_B/T)
         return H*pressure
     prms = {"H_0": H_0_expr, "E_H": E_H_expr, "pressure": pressure_expr}
 
-    expected = FESTIM.BoundaryConditionExpression(T_expr, eval_function=henrys, pressure=pressure_expr, H_0=H_0_expr, E_H=E_H_expr)
+    expected = FESTIM.BoundaryConditionExpression(
+        T_expr, eval_function=henrys,
+        pressure=pressure_expr,
+        H_0=H_0_expr, E_H=E_H_expr)
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
     for prm in my_bc.sub_expressions:
@@ -374,25 +372,25 @@ def test_henry_bc_varying_time():
         prm.t += 10
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
+
 def test_henry_bc_varying_temperature():
-    """Checks the method HenrysBC.create_expression produces the expected expression
+    """Checks the method HenrysBC.create_expression produces the expected
+    expression
     """
     # build
     T = fenics.Constant(300)
     pressure_expr = 1e5*(1 + FESTIM.t)
     H_0_expr = 100
     E_H_expr = 0.5
-    my_bc = FESTIM.HenrysBC(surfaces=1, pressure=pressure_expr, H_0=H_0_expr, E_H=E_H_expr)
+    my_bc = FESTIM.HenrysBC(
+        surfaces=1, pressure=pressure_expr, H_0=H_0_expr, E_H=E_H_expr)
 
-    pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr),
-                                       t=0,
-                                       degree=1)
-    H_0_expr = fenics.Expression(sp.printing.ccode(H_0_expr),
-                                       t=0,
-                                       degree=1)
-    E_H_expr = fenics.Expression(sp.printing.ccode(E_H_expr),
-                                       t=0,
-                                       degree=1)
+    pressure_expr = fenics.Expression(
+        sp.printing.ccode(pressure_expr), t=0, degree=1)
+    H_0_expr = fenics.Expression(
+        sp.printing.ccode(H_0_expr), t=0, degree=1)
+    E_H_expr = fenics.Expression(
+        sp.printing.ccode(E_H_expr), t=0, degree=1)
 
     # run
     my_bc.create_expression(T)
@@ -401,11 +399,14 @@ def test_henry_bc_varying_temperature():
     def henrys(T, H_0, E_H, pressure):
         H = H_0*fenics.exp(-E_H/FESTIM.k_B/T)
         return H*pressure
-    expected = FESTIM.BoundaryConditionExpression(T, eval_function=henrys, H_0=H_0_expr, E_H=E_H_expr, pressure=pressure_expr)
+    expected = FESTIM.BoundaryConditionExpression(
+        T, eval_function=henrys, H_0=H_0_expr, E_H=E_H_expr,
+        pressure=pressure_expr)
     assert my_bc.expression(0) == pytest.approx(expected(0))
 
     T.assign(1000)
     assert my_bc.expression(0) == pytest.approx(expected(0))
+
 
 def test_create_expression_dc_custom():
     """Creates a dc_custom bc and checks create_expression returns
