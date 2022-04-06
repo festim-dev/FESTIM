@@ -36,9 +36,9 @@ class Simulation:
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
     """
+
     def __init__(
         self,
-        parameters=None,
         mesh=None,
         materials=None,
         sources=[],
@@ -49,13 +49,11 @@ class Simulation:
         temperature=None,
         initial_conditions=[],
         exports=None,
-        log_level=40
+        log_level=40,
     ):
         """Inits FESTIM.Simulation
 
         Args:
-            parameters (dict, optional): Soon to be deprecated. Defaults to
-                None.
             mesh (FESTIM.Mesh, optional): The mesh of the model. Defaults to
                 None.
             materials (FESTIM.Materials or [FESTIM.Material, ...], optional):
@@ -126,10 +124,6 @@ class Simulation:
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
-        # parse the parameters dict if given
-        if parameters is not None:
-            FESTIM.read_parameters(self, parameters)
-
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
         (self.mobile, self.T, or traps)
@@ -139,7 +133,7 @@ class Simulation:
             "0": self.mobile,
             0: self.mobile,
             "mobile": self.mobile,
-            "T": self.T
+            "T": self.T,
         }
         for i, trap in enumerate(self.traps.traps, 1):
             field_to_object[i] = trap
@@ -149,13 +143,12 @@ class Simulation:
             field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
-        """Assigns boundary_conditions to mobile and T
-        """
+        """Assigns boundary_conditions to mobile and T"""
         self.T.boundary_conditions = []
         self.h_transport_problem.boundary_conditions = []
 
         for bc in self.boundary_conditions:
-            if bc.component == "T":
+            if bc.field == "T":
                 self.T.boundary_conditions.append(bc)
             else:
                 self.h_transport_problem.boundary_conditions.append(bc)
@@ -171,8 +164,8 @@ class Simulation:
         else:
             self.mobile = FESTIM.Mobile()
         self.h_transport_problem = HTransportProblem(
-            self.mobile, self.traps, self.T, self.settings,
-            self.initial_conditions)
+            self.mobile, self.traps, self.T, self.settings, self.initial_conditions
+        )
         self.attribute_source_terms()
         self.attribute_boundary_conditions()
 
@@ -181,7 +174,7 @@ class Simulation:
         else:
             self.mesh.define_measures()
 
-        self.V_DG1 = FunctionSpace(self.mesh.mesh, 'DG', 1)
+        self.V_DG1 = FunctionSpace(self.mesh.mesh, "DG", 1)
         self.exports.V_DG1 = self.V_DG1
 
         # Define temperature
@@ -201,11 +194,16 @@ class Simulation:
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
         self.exports.initialise_derived_quantities(
-            self.mesh.dx, self.mesh.ds, self.materials)
+            self.mesh.dx, self.mesh.ds, self.materials
+        )
 
-    def run(self):
+    def run(self, completion_tone=False):
         """Runs the model.
 
+        Args:
+            completion_tone (bool, optional): If True, a native os alert
+                tone will alert user upon completion of current run. Defaults
+                to False.
         Returns:
             dict: output containing solutions, mesh, derived quantities
         """
@@ -217,10 +215,8 @@ class Simulation:
             self.run_steady()
 
         # End
-        if self.settings.completion_tone:
-            print('\007')
-
-        return self.make_output()
+        if completion_tone:
+            print("\007")
 
     def run_transient(self):
         # add final_time to Exports
@@ -231,7 +227,7 @@ class Simulation:
             self.h_transport_problem.compute_jacobian()
 
         #  Time-stepping
-        print('Time stepping...')
+        print("Time stepping...")
         while self.t < self.settings.final_time:
             self.iterate()
         # print final message
@@ -241,7 +237,7 @@ class Simulation:
 
     def run_steady(self):
         # Solve steady state
-        print('Solving steady state problem...')
+        print("Solving steady state problem...")
 
         nb_iterations, converged = self.h_transport_problem.solve_once()
 
@@ -255,27 +251,24 @@ class Simulation:
             print(msg)
         else:
             msg = "The solver diverged in "
-            msg += "{:.0f} iteration(s) ({:.2f} s)".format(
-                nb_iterations, elapsed_time)
+            msg += "{:.0f} iteration(s) ({:.2f} s)".format(nb_iterations, elapsed_time)
             raise ValueError(msg)
 
     def iterate(self):
-        """Advance the model by one iteration
-        """
+        """Advance the model by one iteration"""
         # Update current time
         self.t += float(self.dt.value)
-        FESTIM.update_expressions(
-            self.h_transport_problem.expressions, self.t)
+        FESTIM.update_expressions(self.h_transport_problem.expressions, self.t)
         self.T.update(self.t)
         self.materials.update_properties_temperature(self.T)
 
         # Display time
         # TODO this should be a method
-        simulation_percentage = round(self.t/self.settings.final_time*100, 2)
+        simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
-        msg = '{:.1f} %        '.format(simulation_percentage)
-        msg += '{:.1e} s'.format(simulation_time)
+        msg = "{:.1f} %        ".format(simulation_percentage)
+        msg += "{:.1e} s".format(simulation_time)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
 
         print(msg, end="\r")
@@ -291,8 +284,7 @@ class Simulation:
             self.dt.value.assign(self.settings.final_time - self.t)
 
     def run_post_processing(self):
-        """Create post processing functions and compute/write the exports
-        """
+        """Create post processing functions and compute/write the exports"""
         label_to_function = self.update_post_processing_solutions()
 
         self.exports.t = self.t
@@ -313,80 +305,13 @@ class Simulation:
             "0": self.mobile.post_processing_solution,
             0: self.mobile.post_processing_solution,
             "T": self.T.T,
-            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
+            "retention": sum(
+                [self.mobile.post_processing_solution]
+                + [trap.post_processing_solution for trap in self.traps.traps]
+            ),
         }
         for trap in self.traps.traps:
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
         return label_to_function
-
-    def make_output(self):
-        """Creates a dictionary with some useful information such as derived
-        quantities, solutions, etc.
-
-        Returns:
-            dict: the output
-        """
-        label_to_function = self.update_post_processing_solutions()
-
-        for key, val in label_to_function.items():
-            if not isinstance(val, Function):
-                label_to_function[key] = project(val, self.V_DG1)
-
-        output = dict()  # Final output
-        # Compute error
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.Error):
-                export.function = label_to_function[export.field]
-                if "error" not in output:
-                    output["error"] = []
-                output["error"].append(export.compute(self.t))
-
-        output["mesh"] = self.mesh.mesh
-
-        # add derived quantities to output
-        for export in self.exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
-                output["derived_quantities"] = export.data
-
-        # initialise output["solutions"] with solute and temperature
-        output["solutions"] = {
-            "solute": label_to_function["solute"],
-            "T": label_to_function["T"]
-        }
-        # add traps to output
-        for trap in self.traps.traps:
-            output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
-        # compute retention and add it to output
-        output["solutions"]["retention"] = project(label_to_function["retention"], self.V_DG1)
-        return output
-
-
-def run(parameters, log_level=40):
-    """Main FESTIM function for complete simulations
-
-    Arguments:
-        parameters {dict} -- contains simulation parameters
-
-    Keyword Arguments:
-        log_level {int} -- set what kind of messsages are displayed
-            (default: {40})
-            CRITICAL  = 50, errors that may lead to data corruption
-            ERROR     = 40, errors
-            WARNING   = 30, warnings
-            INFO      = 20, information of general interest
-            PROGRESS  = 16, what's happening (broadly)
-            TRACE     = 13,  what's happening (in detail)
-            DBG       = 10  sundry
-
-    Raises:
-        ValueError: if solving type is unknown
-
-    Returns:
-        dict -- contains derived quantities, parameters and errors
-    """
-    my_sim = FESTIM.Simulation(parameters, log_level)
-    my_sim.initialise()
-    output = my_sim.run()
-    return output

@@ -18,7 +18,7 @@ def test_title_heat():
 
 class TestCompute:
     mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, 'P', 1)
+    V = f.FunctionSpace(mesh, "P", 1)
 
     c = f.interpolate(f.Expression("x[0]", degree=1), V)
     T = f.interpolate(f.Expression("2*x[0]", degree=1), V)
@@ -29,7 +29,7 @@ class TestCompute:
     left.mark(surface_markers, 1)
     right.mark(surface_markers, 2)
 
-    ds = f.Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    ds = f.Measure("ds", domain=mesh, subdomain_data=surface_markers)
     D = f.Constant(2)
     thermal_cond = f.Constant(3)
     H = f.Constant(4)
@@ -53,19 +53,30 @@ class TestCompute:
     my_heat_flux.ds = ds
 
     def test_h_flux_no_soret(self):
-        expected_flux = f.assemble(self.D*f.dot(f.grad(self.c), self.n)*self.ds(self.surface))
+        expected_flux = f.assemble(
+            self.D * f.dot(f.grad(self.c), self.n) * self.ds(self.surface)
+        )
         flux = self.my_h_flux.compute()
         assert flux == expected_flux
 
     def test_heat_flux(self):
-        expected_flux = f.assemble(self.thermal_cond*f.dot(f.grad(self.c), self.n)*self.ds(self.surface))
+        expected_flux = f.assemble(
+            self.thermal_cond * f.dot(f.grad(self.c), self.n) * self.ds(self.surface)
+        )
         flux = self.my_heat_flux.compute()
         assert flux == expected_flux
 
     def test_h_flux_with_soret(self):
-        expected_flux = f.assemble(self.D*f.dot(f.grad(self.c), self.n)*self.ds(self.surface))
+        expected_flux = f.assemble(
+            self.D * f.dot(f.grad(self.c), self.n) * self.ds(self.surface)
+        )
         expected_flux += f.assemble(
-            self.D*self.c*self.H/(R*self.T**2)*f.dot(f.grad(self.T), self.n)*self.ds(self.surface)
+            self.D
+            * self.c
+            * self.H
+            / (R * self.T**2)
+            * f.dot(f.grad(self.T), self.n)
+            * self.ds(self.surface)
         )
         flux = self.my_h_flux.compute(soret=True)
         assert flux == expected_flux

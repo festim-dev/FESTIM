@@ -1,5 +1,13 @@
-from FESTIM import DerivedQuantities, SurfaceFlux, AverageVolume, \
-    TotalSurface, TotalVolume, MaximumVolume, MinimumVolume, Materials
+from FESTIM import (
+    DerivedQuantities,
+    SurfaceFlux,
+    AverageVolume,
+    TotalSurface,
+    TotalVolume,
+    MaximumVolume,
+    MinimumVolume,
+    Materials,
+)
 import fenics as f
 import os
 from pathlib import Path
@@ -19,9 +27,7 @@ class TestMakeHeader:
     max_vol_1 = MaximumVolume("T", 2)
 
     def test_simple(self):
-        self.my_derv_quant.derived_quantities = [
-            self.surface_flux_1
-        ]
+        self.my_derv_quant.derived_quantities = [self.surface_flux_1]
         header = self.my_derv_quant.make_header()
         expected_header = ["t(s)", self.surface_flux_1.title]
         assert header == expected_header
@@ -137,7 +143,7 @@ class TestCompute:
         "solute": f.Function(V),
         "T": T,
         "retention": f.Function(V),
-        "trap1": f.Function(V)
+        "trap1": f.Function(V),
     }
 
     vol_markers = f.MeshFunction("size_t", mesh, 1, 1)
@@ -146,8 +152,8 @@ class TestCompute:
     surface_markers = f.MeshFunction("size_t", mesh, 0)
     left.mark(surface_markers, 1)
     right.mark(surface_markers, 2)
-    dx = f.Measure('dx', domain=mesh, subdomain_data=vol_markers)
-    ds = f.Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=vol_markers)
+    ds = f.Measure("ds", domain=mesh, subdomain_data=surface_markers)
     n = f.FacetNormal(mesh)
 
     T = f.interpolate(f.Constant(2), V)
@@ -158,16 +164,16 @@ class TestCompute:
     my_mats.thermal_cond = f.interpolate(f.Constant(2), V)
 
     def test_simple(self):
-        self.my_derv_quant.derived_quantities = [
-            self.surface_flux_1
-        ]
+        self.my_derv_quant.derived_quantities = [self.surface_flux_1]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
         self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
+        expected_data = [t] + [
+            quantity.compute() for quantity in self.my_derv_quant.derived_quantities
+        ]
 
         self.my_derv_quant.data = []
         self.my_derv_quant.compute(t)
@@ -177,7 +183,7 @@ class TestCompute:
     def test_two_quantities(self):
         self.my_derv_quant.derived_quantities = [
             self.surface_flux_1,
-            self.average_vol_1
+            self.average_vol_1,
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
@@ -185,7 +191,9 @@ class TestCompute:
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
+        expected_data = [t] + [
+            quantity.compute() for quantity in self.my_derv_quant.derived_quantities
+        ]
 
         self.my_derv_quant.data = []
         self.my_derv_quant.compute(t)

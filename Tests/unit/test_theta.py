@@ -16,7 +16,7 @@ class TestInitialise:
         my_theta.previous_solution = self.u
         value = 1 + FESTIM.x
         expected_sol = my_theta.get_comp(self.V, value)
-        expected_sol = f.project(expected_sol/S)
+        expected_sol = f.project(expected_sol / S)
 
         # run
         my_theta.initialise(self.V, value)
@@ -31,7 +31,7 @@ class TestCreateDiffusionForm:
     my_mesh = FESTIM.Mesh(mesh)
     my_temp = FESTIM.Temperature(value=100)
     my_temp.create_functions(my_mesh)
-    dx = f.dx()
+    my_mesh.dx = f.dx()
     dt = FESTIM.Stepsize(initial_value=1)
     V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
     mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
@@ -48,16 +48,24 @@ class TestCreateDiffusionForm:
         my_mats = FESTIM.Materials([self.mat1])
 
         # run
-        my_theta.create_diffusion_form(my_mats, self.dx, self.my_temp, dt=self.dt)
+        my_theta.create_diffusion_form(my_mats, self.my_mesh, self.my_temp, dt=self.dt)
 
         # test
         Index._globalcount = 8
         v = my_theta.test_function
-        D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
-        c_0 = my_theta.solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
-        c_0_n = my_theta.previous_solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
-        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.dx(1)
-        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
+        D = self.mat1.D_0 * f.exp(-self.mat1.E_D / FESTIM.k_B / self.my_temp.T)
+        c_0 = (
+            my_theta.solution
+            * self.mat1.S_0
+            * f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T)
+        )
+        c_0_n = (
+            my_theta.previous_solution
+            * self.mat1.S_0
+            * f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T_n)
+        )
+        expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
+        expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
 
         print("expected F:")
         print(expected_form)
@@ -88,9 +96,11 @@ def test_get_concentration_for_a_given_material():
 
     # test
     expected_c = f.project(
-        my_theta.solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T), V)
+        my_theta.solution * S_0 * f.exp(-E_S / FESTIM.k_B / my_temp.T), V
+    )
     expected_c_n = f.project(
-        my_theta.previous_solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T_n), V)
+        my_theta.previous_solution * S_0 * f.exp(-E_S / FESTIM.k_B / my_temp.T_n), V
+    )
     assert f.errornorm(c, expected_c) == pytest.approx(0)
     assert f.errornorm(c_n, expected_c_n) == pytest.approx(0)
 
@@ -100,7 +110,7 @@ def test_mobile_concentration():
     my_theta.S = 3
     my_theta.solution = 12
 
-    assert my_theta.mobile_concentration() == 3*12
+    assert my_theta.mobile_concentration() == 3 * 12
 
 
 def test_post_processing_solution_to_concentration():
@@ -110,4 +120,4 @@ def test_post_processing_solution_to_concentration():
 
     my_theta.post_processing_solution_to_concentration()
 
-    assert my_theta.post_processing_solution == 5*3
+    assert my_theta.post_processing_solution == 5 * 3

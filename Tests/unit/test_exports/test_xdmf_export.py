@@ -60,8 +60,7 @@ class TestWrite:
             my_xdmf.file.read(u2)
 
     def test_checkpointing(self, folder):
-        """checks that the xdmf file can be read with checkpointing
-        """
+        """checks that the xdmf file can be read with checkpointing"""
         my_xdmf = XDMFExport("solute", "foo", folder)
         my_xdmf.function = self.u
 
@@ -70,8 +69,7 @@ class TestWrite:
         my_xdmf.file.read_checkpoint(u2, "foo", 0)
 
     def test_write_attribute(self, folder):
-        """Checks that the file is written with the appropriate attribute
-        """
+        """Checks that the file is written with the appropriate attribute"""
         my_xdmf = XDMFExport("solute", "coucou", folder)
         my_xdmf.function = self.u
         my_xdmf.write(t=0)
