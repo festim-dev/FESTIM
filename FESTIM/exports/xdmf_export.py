@@ -79,8 +79,8 @@ class XDMFExport(Export):
             # warn users if checkpoint is True and 1D
             dimension = self.function.function_space().mesh().topology().dim()
             if dimension == 1:
-                msg = "in 1D, checkpointing is needed to visualise the XDMF "
-                msg += "file in Paraview (see issue "
+                msg = "in 1D, checkpoint needs to be set to False to "
+                msg += "visualise the XDMF file in Paraview (see issue "
                 msg += "https://github.com/RemDelaporteMathurin/FESTIM/issues/134)"
                 warnings.warn(msg)
 
