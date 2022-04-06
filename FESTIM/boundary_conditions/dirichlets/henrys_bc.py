@@ -32,7 +32,7 @@ class HenrysBC(DirichletBC):
         value_BC = BoundaryConditionExpression(
                 T, henrys_law,
                 H_0=self.H_0, E_H=self.E_H,
-                pressure = pressure,
+                pressure=pressure,
         )
         self.expression = value_BC
         self.sub_expressions = [pressure]
