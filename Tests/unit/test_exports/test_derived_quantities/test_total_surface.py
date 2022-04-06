@@ -35,7 +35,7 @@ class TestCompute:
     my_total.ds = ds
 
     def test_minimum(self):
-        expected = f.assemble(self.c*self.ds(self.surface))
+        expected = f.assemble(self.c * self.ds(self.surface))
 
         produced = self.my_total.compute()
         assert produced == expected

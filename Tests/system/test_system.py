@@ -14,7 +14,7 @@ def test_run_temperature_stationary(tmpdir):
     Check that the temperature module works well in 1D stationary
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + 2*FESTIM.x**2
+    u = 1 + 2 * FESTIM.x**2
     size = 1
 
     my_materials = [
@@ -34,16 +34,23 @@ def test_run_temperature_stationary(tmpdir):
         maximum_iterations=50,
         final_time=30
     )
-    my_stepsize = FESTIM.Stepsize(initial_value=0.5, stepsize_change_ratio=1, dt_min=1e-5)
+    my_stepsize = FESTIM.Stepsize(
+        initial_value=0.5,
+        stepsize_change_ratio=1,
+        dt_min=1e-5)
 
-    my_derived_quantities = FESTIM.DerivedQuantities(file="derived_quantities.csv", folder=str(Path(d)))
-    my_derived_quantities.derived_quantities = [FESTIM.TotalVolume("solute", 1)]
+    my_derived_quantities = FESTIM.DerivedQuantities(
+        file="derived_quantities.csv", folder=str(Path(d)))
+    my_derived_quantities.derived_quantities = [
+        FESTIM.TotalVolume("solute", 1)]
 
     my_exports = [
-            FESTIM.XDMFExports(fields=['T', 'solute'], labels=["temperature", "solute"], folder=str(Path(d))),
-            my_derived_quantities,
-            FESTIM.Error("T", exact_solution=u)
-    ]
+        FESTIM.XDMFExports(
+            fields=[
+                'T', 'solute'], labels=[
+                "temperature", "solute"], folder=str(
+                    Path(d))), my_derived_quantities, FESTIM.Error(
+                        "T", exact_solution=u)]
 
     my_sim = FESTIM.Simulation(
         mesh=my_mesh, materials=my_materials,
@@ -61,7 +68,7 @@ def test_run_temperature_transient(tmpdir):
     Check that the temperature module works well in 1D transient
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + 2*FESTIM.x**2+FESTIM.t
+    u = 1 + 2 * FESTIM.x**2 + FESTIM.t
     size = 1
 
     my_materials = FESTIM.Materials(
@@ -70,7 +77,7 @@ def test_run_temperature_transient(tmpdir):
             D_0=4.1e-7, E_D=0.39,
             thermal_cond=1, rho=1, heat_capacity=1,
             borders=[0, size])
-        ]
+         ]
     )
     my_mesh = FESTIM.MeshFromRefinements(200, size)
 
@@ -82,8 +89,16 @@ def test_run_temperature_transient(tmpdir):
     my_temp = FESTIM.HeatTransferProblem(transient=True, initial_value=u)
 
     my_sources = [
-        FESTIM.Source(value=sp.diff(u, FESTIM.t) - sp.diff(u, FESTIM.x, 2), volume=1, field="T")
-    ]
+        FESTIM.Source(
+            value=sp.diff(
+                u,
+                FESTIM.t) -
+            sp.diff(
+                u,
+                FESTIM.x,
+                2),
+            volume=1,
+            field="T")]
 
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e10,
@@ -120,26 +135,26 @@ def test_run_MMS(tmpdir):
     Test function run() for several refinements
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t
-    v = 1 + sp.cos(2*fenics.pi*FESTIM.x)*FESTIM.t
+    u = 1 + sp.sin(2 * fenics.pi * FESTIM.x) * FESTIM.t
+    v = 1 + sp.cos(2 * fenics.pi * FESTIM.x) * FESTIM.t
     size = 1
     k_0 = 2
     E_k = 1.5
     p_0 = 3
     E_p = 0.2
-    T = 700 + 30*FESTIM.x
+    T = 700 + 30 * FESTIM.x
     n_trap = 1
     E_D = 0.1
     D_0 = 2
     k_B = FESTIM.k_B
-    D = D_0 * sp.exp(-E_D/k_B/T)
-    p = p_0 * sp.exp(-E_p/k_B/T)
-    k = k_0 * sp.exp(-E_k/k_B/T)
+    D = D_0 * sp.exp(-E_D / k_B / T)
+    p = p_0 * sp.exp(-E_p / k_B / T)
+    k = k_0 * sp.exp(-E_k / k_B / T)
 
     f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
         D * sp.diff(u, FESTIM.x, 2) - \
-        sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-    g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
+        sp.diff(D, FESTIM.x) * sp.diff(u, FESTIM.x)
+    g = sp.diff(v, FESTIM.t) + p * v - k * u * (n_trap - v)
 
     def run(h):
         my_materials = FESTIM.Materials(
@@ -158,7 +173,7 @@ def test_run_MMS(tmpdir):
             FESTIM.InitialCondition(field=1, value=v),
         ]
 
-        my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
+        my_mesh = FESTIM.MeshFromRefinements(round(size / h), size)
 
         my_bcs = [
             FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
@@ -179,27 +194,33 @@ def test_run_MMS(tmpdir):
             transient=True, final_time=0.1
         )
 
-        my_dt = FESTIM.Stepsize(0.1/50)
+        my_dt = FESTIM.Stepsize(0.1 / 50)
         my_exports = FESTIM.Exports([
-                FESTIM.XDMFExport("retention", "retention", str(Path(d))),
-                FESTIM.Error(0, u),
-                FESTIM.Error(1, v),
-            ]
+            FESTIM.XDMFExport("retention", "retention", str(Path(d))),
+            FESTIM.Error(0, u),
+            FESTIM.Error(1, v),
+        ]
         )
 
         my_sim = FESTIM.Simulation(
-            mesh=my_mesh, materials=my_materials, traps=my_traps,
-            initial_conditions=my_initial_conditions, boundary_conditions=my_bcs,
-            temperature=my_temp, sources=my_sources, settings=my_settings,
-            dt=my_dt, exports=my_exports)
+            mesh=my_mesh,
+            materials=my_materials,
+            traps=my_traps,
+            initial_conditions=my_initial_conditions,
+            boundary_conditions=my_bcs,
+            temperature=my_temp,
+            sources=my_sources,
+            settings=my_settings,
+            dt=my_dt,
+            exports=my_exports)
 
         my_sim.initialise()
         return my_sim.run(output=True)
 
     tol_u = 1e-7
     tol_v = 1e-6
-    sizes = [1/1600, 1/1700]
-    dt = 0.1/50
+    sizes = [1 / 1600, 1 / 1700]
+    dt = 0.1 / 50
     for h in sizes:
         output = run(h)
         error_max_u = output["error"][0]
@@ -217,27 +238,27 @@ def test_run_MMS_chemical_pot(tmpdir):
     Test function run() with conservation of chemical potential (1 material)
     '''
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.sin(2*fenics.pi*FESTIM.x)*FESTIM.t + FESTIM.t
-    v = 1 + sp.cos(2*fenics.pi*FESTIM.x)*FESTIM.t
+    u = 1 + sp.sin(2 * fenics.pi * FESTIM.x) * FESTIM.t + FESTIM.t
+    v = 1 + sp.cos(2 * fenics.pi * FESTIM.x) * FESTIM.t
 
     size = 1
     k_0 = 2
     E_k = 1.5
     p_0 = 3
     E_p = 0.2
-    T = 700 + 30*FESTIM.x
+    T = 700 + 30 * FESTIM.x
     n_trap = 1
     E_D = 0.1
     D_0 = 2
     k_B = FESTIM.k_B
-    D = D_0 * sp.exp(-E_D/k_B/T)
-    p = p_0 * sp.exp(-E_p/k_B/T)
-    k = k_0 * sp.exp(-E_k/k_B/T)
+    D = D_0 * sp.exp(-E_D / k_B / T)
+    p = p_0 * sp.exp(-E_p / k_B / T)
+    k = k_0 * sp.exp(-E_k / k_B / T)
 
     f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
         D * sp.diff(u, FESTIM.x, 2) - \
-        sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-    g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
+        sp.diff(D, FESTIM.x) * sp.diff(u, FESTIM.x)
+    g = sp.diff(v, FESTIM.t) + p * v - k * u * (n_trap - v)
 
     def run(h):
         my_materials = FESTIM.Materials(
@@ -256,7 +277,7 @@ def test_run_MMS_chemical_pot(tmpdir):
             FESTIM.InitialCondition(field=1, value=v),
         ]
 
-        my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
+        my_mesh = FESTIM.MeshFromRefinements(round(size / h), size)
 
         my_bcs = [
             FESTIM.DirichletBC(surfaces=[1, 2], value=u, component=0),
@@ -278,27 +299,33 @@ def test_run_MMS_chemical_pot(tmpdir):
             chemical_pot=True
         )
 
-        my_dt = FESTIM.Stepsize(0.1/50)
+        my_dt = FESTIM.Stepsize(0.1 / 50)
         my_exports = FESTIM.Exports([
-                FESTIM.TXTExport("solute", times=[100], label="solute", folder=str(Path(d))),
-                FESTIM.Error(0, u),
-                FESTIM.Error(1, v),
-            ]
+            FESTIM.TXTExport("solute", times=[100], label="solute", folder=str(Path(d))),
+            FESTIM.Error(0, u),
+            FESTIM.Error(1, v),
+        ]
         )
 
         my_sim = FESTIM.Simulation(
-            mesh=my_mesh, materials=my_materials, traps=my_traps,
-            initial_conditions=my_initial_conditions, boundary_conditions=my_bcs,
-            temperature=my_temp, sources=my_sources, settings=my_settings,
-            dt=my_dt, exports=my_exports)
+            mesh=my_mesh,
+            materials=my_materials,
+            traps=my_traps,
+            initial_conditions=my_initial_conditions,
+            boundary_conditions=my_bcs,
+            temperature=my_temp,
+            sources=my_sources,
+            settings=my_settings,
+            dt=my_dt,
+            exports=my_exports)
 
         my_sim.initialise()
         return my_sim.run(output=True)
 
     tol_u = 1e-7
     tol_v = 1e-6
-    sizes = [1/1600]
-    dt = 0.1/50
+    sizes = [1 / 1600]
+    dt = 0.1 / 50
     for h in sizes:
         output = run(h)
         error_max_u = output["error"][0]
@@ -331,7 +358,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
 
     my_mesh = FESTIM.MeshFromRefinements(5, 1)
 
-    my_temp = FESTIM.Temperature(700 + 210*FESTIM.t)
+    my_temp = FESTIM.Temperature(700 + 210 * FESTIM.t)
 
     my_settings = FESTIM.Settings(
         absolute_tolerance=1e-10,
@@ -350,7 +377,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
     my_exports = FESTIM.Exports([
         FESTIM.XDMFExport("retention", "retention", folder=str(Path(d))),
         derived_quantities
-        ]
+    ]
     )
 
     my_sim = FESTIM.Simulation(
@@ -371,32 +398,29 @@ def test_run_MMS_soret(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + FESTIM.x**2 + FESTIM.t
-    T = 2 + sp.cos(2*fenics.pi*FESTIM.x)*sp.cos(FESTIM.t)
+    T = 2 + sp.cos(2 * fenics.pi * FESTIM.x) * sp.cos(FESTIM.t)
     E_D = 0
     D_0 = 2
     k_B = FESTIM.k_B
-    D = D_0 * sp.exp(-E_D/k_B/T)
+    D = D_0 * sp.exp(-E_D / k_B / T)
     H = -2
     S = 3
     R = FESTIM.R
     f = sp.diff(u, FESTIM.t) - \
         sp.diff(
-            (D*(sp.diff(u, FESTIM.x) +
-                (H*T+S)*u/(R*T**2)*sp.diff(T, FESTIM.x))),
+            (D * (sp.diff(u, FESTIM.x) +
+                  (H * T + S) * u / (R * T**2) * sp.diff(T, FESTIM.x))),
             FESTIM.x)
 
     def run(h):
-        my_materials = FESTIM.Materials(
-            [
-                FESTIM.Material(id=1, D_0=D_0, E_D=E_D, H={"free_enthalpy": H, "entropy": S})
-            ]
-        )
+        my_materials = FESTIM.Materials([FESTIM.Material(
+            id=1, D_0=D_0, E_D=E_D, H={"free_enthalpy": H, "entropy": S})])
         my_initial_conditions = [
             FESTIM.InitialCondition(field=0, value=u),
         ]
 
         size = 0.1
-        my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
+        my_mesh = FESTIM.MeshFromRefinements(round(size / h), size)
 
         my_source = FESTIM.Source(f, 1, "solute")
 
@@ -414,13 +438,13 @@ def test_run_MMS_soret(tmpdir):
             soret=True
         )
 
-        my_dt = FESTIM.Stepsize(0.1/50)
+        my_dt = FESTIM.Stepsize(0.1 / 50)
 
         my_exports = FESTIM.Exports([
             FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
             FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
             FESTIM.Error("solute", u, norm="L2")
-            ]
+        ]
         )
 
         my_sim = FESTIM.Simulation(
@@ -434,7 +458,7 @@ def test_run_MMS_soret(tmpdir):
         return my_sim.run(output=True)
 
     tol_u = 1e-7
-    sizes = [1/1000, 1/2000]
+    sizes = [1 / 1000, 1 / 2000]
     for h in sizes:
         output = run(h)
         error_max_u = output["error"][0]
@@ -450,25 +474,25 @@ def test_run_MMS_steady_state(tmpdir):
     '''
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + FESTIM.x
-    v = 1 + FESTIM.x*2
+    v = 1 + FESTIM.x * 2
     size = 1
     k_0 = 2
     E_k = 1.5
     p_0 = 0.2
     E_p = 0.1
-    T = 700 + 30*FESTIM.x
+    T = 700 + 30 * FESTIM.x
     n_trap = 1
     E_D = 0.1
     D_0 = 2
     k_B = FESTIM.k_B
-    D = D_0 * sp.exp(-E_D/k_B/T)
-    p = p_0 * sp.exp(-E_p/k_B/T)
-    k = k_0 * sp.exp(-E_k/k_B/T)
+    D = D_0 * sp.exp(-E_D / k_B / T)
+    p = p_0 * sp.exp(-E_p / k_B / T)
+    k = k_0 * sp.exp(-E_k / k_B / T)
 
     f = sp.diff(u, FESTIM.t) + sp.diff(v, FESTIM.t) - \
         D * sp.diff(u, FESTIM.x, 2) - \
-        sp.diff(D, FESTIM.x)*sp.diff(u, FESTIM.x)
-    g = sp.diff(v, FESTIM.t) + p*v - k * u * (n_trap-v)
+        sp.diff(D, FESTIM.x) * sp.diff(u, FESTIM.x)
+    g = sp.diff(v, FESTIM.t) + p * v - k * u * (n_trap - v)
 
     def run(h):
 
@@ -486,7 +510,7 @@ def test_run_MMS_steady_state(tmpdir):
         ]
 
         size = 0.1
-        my_mesh = FESTIM.MeshFromRefinements(round(size/h), size)
+        my_mesh = FESTIM.MeshFromRefinements(round(size / h), size)
 
         my_sources = [
             FESTIM.Source(f, 1, "solute"),
@@ -508,7 +532,7 @@ def test_run_MMS_steady_state(tmpdir):
             traps_element_type="DG"
         )
 
-        my_dt = FESTIM.Stepsize(0.1/50)
+        my_dt = FESTIM.Stepsize(0.1 / 50)
 
         my_exports = FESTIM.Exports([
             FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
@@ -517,7 +541,7 @@ def test_run_MMS_steady_state(tmpdir):
             FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
             FESTIM.Error("solute", u),
             FESTIM.Error("1", v)
-            ]
+        ]
         )
 
         my_sim = FESTIM.Simulation(
@@ -532,7 +556,7 @@ def test_run_MMS_steady_state(tmpdir):
 
     tol_u = 1e-10
     tol_v = 1e-7
-    sizes = [1/1000, 1/2000]
+    sizes = [1 / 1000, 1 / 2000]
     for h in sizes:
         output = run(h)
         error_max_u = output["error"][0]
@@ -579,7 +603,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
     my_exports = FESTIM.Exports([
         FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
         my_derived_quantities
-        ]
+    ]
     )
 
     my_sim = FESTIM.Simulation(
@@ -622,7 +646,7 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
     my_exports = FESTIM.Exports([
         FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
         my_derived_quantities
-        ]
+    ]
     )
 
     my_sim = FESTIM.Simulation(
@@ -647,10 +671,10 @@ def test_extrinsic_trap():
     my_traps = FESTIM.ExtrinsicTrap(
         k_0=1, E_k=0.1, p_0=1e13, E_p=0.1, materials=[1],
         phi_0=2.5e19,
-        n_amax=1e-1*6.3e28,
+        n_amax=1e-1 * 6.3e28,
         f_a=1,
         eta_a=6e-4,
-        n_bmax=1e-2*6.3e28,
+        n_bmax=1e-2 * 6.3e28,
         f_b=2,
         eta_b=2e-4
     )
@@ -691,8 +715,10 @@ def test_steady_state_with_2_materials():
 
     tol = 1E-14
     subdomain_1 = fenics.CompiledSubDomain('x[1] <= 0.5 + tol', tol=tol)
-    subdomain_2 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] >= 0.5 - tol', tol=tol)
-    subdomain_3 = fenics.CompiledSubDomain('x[1] >= 0.5 - tol && x[0] <= 0.5 + tol', tol=tol)
+    subdomain_2 = fenics.CompiledSubDomain(
+        'x[1] >= 0.5 - tol && x[0] >= 0.5 - tol', tol=tol)
+    subdomain_3 = fenics.CompiledSubDomain(
+        'x[1] >= 0.5 - tol && x[0] <= 0.5 + tol', tol=tol)
     subdomain_1.mark(vm, 1)
     subdomain_2.mark(vm, 2)
     subdomain_3.mark(vm, 3)
@@ -823,13 +849,14 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
 
         my_dt = FESTIM.Stepsize(4)
 
-        my_derived_quantities = FESTIM.DerivedQuantities(nb_iterations_between_compute=nb_it_compute)
+        my_derived_quantities = FESTIM.DerivedQuantities(
+            nb_iterations_between_compute=nb_it_compute)
         my_derived_quantities.derived_quantities = [
             FESTIM.TotalVolume("retention", 1),
         ]
         my_exports = FESTIM.Exports([
             my_derived_quantities
-            ]
+        ]
         )
 
         my_sim = FESTIM.Simulation(
@@ -840,8 +867,10 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
         my_sim.initialise()
         return my_sim
 
-    short_derived_quantities = init_sim(10).run(output=True)["derived_quantities"]
-    long_derived_quantities = init_sim(1).run(output=True)["derived_quantities"]
+    short_derived_quantities = init_sim(10).run(output=True)[
+        "derived_quantities"]
+    long_derived_quantities = init_sim(1).run(output=True)[
+        "derived_quantities"]
 
     assert len(long_derived_quantities) > len(short_derived_quantities)
 

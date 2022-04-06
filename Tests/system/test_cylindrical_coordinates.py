@@ -12,12 +12,12 @@ def test_run_MMS():
     r = FESTIM.x
 
     u = 1 + r**2
-    T = 700 + 30*r
+    T = 700 + 30 * r
     E_D = 0.1
     D_0 = 2
     k_B = FESTIM.k_B
-    D = D_0 * sp.exp(-E_D/k_B/T)
-    f = - 1/r * sp.diff(D * r * sp.diff(u, r), r)
+    D = D_0 * sp.exp(-E_D / k_B / T)
+    f = - 1 / r * sp.diff(D * r * sp.diff(u, r), r)
 
     my_materials = FESTIM.Materials(
         [
@@ -69,9 +69,9 @@ def test_temperature_MMS():
     """
     r = FESTIM.x
 
-    T = 700 + 30*r
+    T = 700 + 30 * r
     thermal_cond = 2
-    f = - 1/r * sp.diff(thermal_cond * r * sp.diff(T, r), r)
+    f = - 1 / r * sp.diff(thermal_cond * r * sp.diff(T, r), r)
 
     my_materials = FESTIM.Materials(
         [

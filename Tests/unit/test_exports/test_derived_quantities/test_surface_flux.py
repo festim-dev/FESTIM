@@ -53,19 +53,44 @@ class TestCompute:
     my_heat_flux.ds = ds
 
     def test_h_flux_no_soret(self):
-        expected_flux = f.assemble(self.D*f.dot(f.grad(self.c), self.n)*self.ds(self.surface))
+        expected_flux = f.assemble(
+            self.D *
+            f.dot(
+                f.grad(
+                    self.c),
+                self.n) *
+            self.ds(
+                self.surface))
         flux = self.my_h_flux.compute()
         assert flux == expected_flux
 
     def test_heat_flux(self):
-        expected_flux = f.assemble(self.thermal_cond*f.dot(f.grad(self.c), self.n)*self.ds(self.surface))
+        expected_flux = f.assemble(
+            self.thermal_cond *
+            f.dot(
+                f.grad(
+                    self.c),
+                self.n) *
+            self.ds(
+                self.surface))
         flux = self.my_heat_flux.compute()
         assert flux == expected_flux
 
     def test_h_flux_with_soret(self):
-        expected_flux = f.assemble(self.D*f.dot(f.grad(self.c), self.n)*self.ds(self.surface))
-        expected_flux += f.assemble(
-            self.D*self.c*self.H/(R*self.T**2)*f.dot(f.grad(self.T), self.n)*self.ds(self.surface)
-        )
+        expected_flux = f.assemble(
+            self.D *
+            f.dot(
+                f.grad(
+                    self.c),
+                self.n) *
+            self.ds(
+                self.surface))
+        expected_flux += f.assemble(self.D *
+                                    self.c *
+                                    self.H /
+                                    (R *
+                                     self.T**2) *
+                                    f.dot(f.grad(self.T), self.n) *
+                                    self.ds(self.surface))
         flux = self.my_h_flux.compute(soret=True)
         assert flux == expected_flux

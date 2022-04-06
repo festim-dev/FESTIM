@@ -19,7 +19,9 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     my_mats = FESTIM.Materials([mat1, mat2])
     my_temp = FESTIM.HeatTransferProblem(transient=False)
 
-    my_temp.create_functions(my_mats, my_mesh, dt=FESTIM.Stepsize(initial_value=2))
+    my_temp.create_functions(
+        my_mats, my_mesh, dt=FESTIM.Stepsize(
+            initial_value=2))
 
 
 def test_formulation_heat_transfer():
@@ -31,14 +33,14 @@ def test_formulation_heat_transfer():
         return a**2
 
     Index._globalcount = 8
-    u = 1 + 2*FESTIM.x**2
+    u = 1 + 2 * FESTIM.x**2
     dt = FESTIM.Stepsize(initial_value=2)
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.FunctionSpace(mesh, 'P', 1)
 
     # create mesh functions
     surface_markers = fenics.MeshFunction(
-        "size_t", mesh, mesh.topology().dim()-1, 0)
+        "size_t", mesh, mesh.topology().dim() - 1, 0)
     surface_markers.set_all(0)
     for f in fenics.facets(mesh):
         x0 = f.midpoint()
@@ -54,7 +56,16 @@ def test_formulation_heat_transfer():
     my_mesh.dx = dx
     my_mesh.ds = ds
 
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, thermal_cond=thermal_cond, rho=5, heat_capacity=4, borders=[0, 1])
+    mat1 = FESTIM.Material(
+        1,
+        D_0=1,
+        E_D=1,
+        thermal_cond=thermal_cond,
+        rho=5,
+        heat_capacity=4,
+        borders=[
+            0,
+            1])
     my_mats = FESTIM.Materials([mat1])
     bc1 = FESTIM.DirichletBC(surfaces=[1], value=u, component="T")
     bc2 = FESTIM.FluxBC(surfaces=[2], value=2, component="T")
@@ -73,9 +84,9 @@ def test_formulation_heat_transfer():
     Index._globalcount = 8
 
     source = expressions[0]
-    expected_form = 5*4*(T - T_n)/dt.value * v * dx(1) + \
-        fenics.dot(thermal_cond(T)*fenics.grad(T), fenics.grad(v))*dx(1)
-    expected_form += - source*v*dx(1)
+    expected_form = 5 * 4 * (T - T_n) / dt.value * v * dx(1) + \
+        fenics.dot(thermal_cond(T) * fenics.grad(T), fenics.grad(v)) * dx(1)
+    expected_form += - source * v * dx(1)
 
     neumann_flux = expressions[1]
     expected_form += -neumann_flux * v * ds(2)

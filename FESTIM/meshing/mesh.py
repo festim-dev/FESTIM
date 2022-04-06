@@ -13,7 +13,13 @@ class Mesh:
         dx (fenics.Measure):
         ds (fenics.Measure):
     """
-    def __init__(self, mesh=None, volume_markers=None, surface_markers=None, type="cartesian") -> None:
+
+    def __init__(
+            self,
+            mesh=None,
+            volume_markers=None,
+            surface_markers=None,
+            type="cartesian") -> None:
         """Inits Mesh
 
         Args:

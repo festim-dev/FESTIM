@@ -34,7 +34,7 @@ class TestCompute:
     my_total.dx = dx
 
     def test_minimum(self):
-        expected = f.assemble(self.c*self.dx(self.volume))
+        expected = f.assemble(self.c * self.dx(self.volume))
 
         produced = self.my_total.compute()
         assert produced == expected

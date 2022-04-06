@@ -30,11 +30,12 @@ class TestExtrinsicTrap:
     def test_create_form_density(self):
         density = self.my_trap.density[0]
         T = self.my_temp
-        expected_form = (density - self.my_trap.density_previous_solution)/self.dt.value * self.my_trap.density_test_function*self.dx
+        expected_form = (density - self.my_trap.density_previous_solution) / \
+            self.dt.value * self.my_trap.density_test_function * self.dx
         expected_form += -self.my_trap.phi_0 * (
-            (1 - density/self.my_trap.n_amax)*self.my_trap.eta_a*self.my_trap.f_a +
-            (1 - density/self.my_trap.n_bmax)*self.my_trap.eta_b*self.my_trap.f_b ) * \
-            self.my_trap.density_test_function*self.dx
+            (1 - density / self.my_trap.n_amax) * self.my_trap.eta_a * self.my_trap.f_a +
+            (1 - density / self.my_trap.n_bmax) * self.my_trap.eta_b * self.my_trap.f_b) * \
+            self.my_trap.density_test_function * self.dx
 
         self.my_trap.create_form_density(self.dx, self.dt, T)
         print(expected_form)

@@ -54,10 +54,10 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
             extrinsic traps, but potential for subclasses of extrinsic traps
         """
         density = self.density[0]
-        F = ((density - self.density_previous_solution)/dt.value) * \
-            self.density_test_function*dx
-        F += -self.phi_0*(
-            (1 - density/self.n_amax)*self.eta_a*self.f_a +
-            (1 - density/self.n_bmax)*self.eta_b*self.f_b) \
-            * self.density_test_function*dx
+        F = ((density - self.density_previous_solution) / dt.value) * \
+            self.density_test_function * dx
+        F += -self.phi_0 * (
+            (1 - density / self.n_amax) * self.eta_a * self.f_a +
+            (1 - density / self.n_bmax) * self.eta_b * self.f_b) \
+            * self.density_test_function * dx
         self.form_density = F

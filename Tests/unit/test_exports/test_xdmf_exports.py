@@ -17,7 +17,8 @@ class TestListXDMFExports:
         assert len(self.my_exports.xdmf_exports) == len(self.functions)
 
     def test_function_attributes(self):
-        for export, function in zip(self.my_exports.xdmf_exports, self.functions):
+        for export, function in zip(
+                self.my_exports.xdmf_exports, self.functions):
             assert export.field == function
 
     def test_label_attributes(self):
@@ -31,5 +32,8 @@ class TestListXDMFExports:
 
 def test_deprecation_warning():
     with pytest.warns(DeprecationWarning) as record:
-        XDMFExports(functions=["coucou"], labels=["coucou"], folder="my_folder")
+        XDMFExports(
+            functions=["coucou"],
+            labels=["coucou"],
+            folder="my_folder")
         assert len(record) == 1

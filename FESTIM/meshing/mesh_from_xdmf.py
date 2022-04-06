@@ -11,6 +11,7 @@ class MeshFromXDMF(Mesh):
         boundary_file (str): name of the boundary file
         mesh (fenics.Mesh): the mesh
     """
+
     def __init__(self, volume_file, boundary_file, **kwargs) -> None:
         """Inits MeshFromXDMF
 
@@ -44,6 +45,7 @@ class MeshFromXDMF(Mesh):
         f.XDMFFile(self.boundary_file).read(surface_markers, "f")
         surface_markers = f.MeshFunction("size_t", mesh, surface_markers)
 
-        print("Succesfully load mesh with " + str(len(volume_markers)) + ' cells')
+        print("Succesfully load mesh with " +
+              str(len(volume_markers)) + ' cells')
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers

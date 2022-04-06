@@ -7,6 +7,7 @@ class ConvectiveFlux(FluxBC):
     """FluxBC subclass for convective heat flux
     -lambda * grad(T) * n = h_coeff * (T - T_ext)
     """
+
     def __init__(self, h_coeff, T_ext, surfaces) -> None:
         """Inits ConvectiveFlux
 

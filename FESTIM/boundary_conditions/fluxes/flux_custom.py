@@ -14,6 +14,7 @@ class CustomFlux(FluxBC):
         param1=2*FESTIM.x + FESTIM.t
     )
     """
+
     def __init__(self, surfaces, function, **prms) -> None:
         """Inits CustomFlux
 
@@ -41,5 +42,5 @@ class CustomFlux(FluxBC):
                 self.prms[key] = f.Constant(value)
             else:
                 self.prms[key] = f.Expression(sp.printing.ccode(value),
-                                       t=0,
-                                       degree=1)
+                                              t=0,
+                                              degree=1)

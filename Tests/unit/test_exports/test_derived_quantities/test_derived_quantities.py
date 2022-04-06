@@ -32,7 +32,10 @@ class TestMakeHeader:
             self.tot_surf_1,
         ]
         header = self.my_derv_quant.make_header()
-        expected_header = ["t(s)", self.surface_flux_1.title, self.tot_surf_1.title]
+        expected_header = [
+            "t(s)",
+            self.surface_flux_1.title,
+            self.tot_surf_1.title]
         assert header == expected_header
 
     def test_all_quantities(self):
@@ -167,7 +170,8 @@ class TestCompute:
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
+        expected_data = [t] + [quantity.compute()
+                               for quantity in self.my_derv_quant.derived_quantities]
 
         self.my_derv_quant.data = []
         self.my_derv_quant.compute(t)
@@ -185,7 +189,8 @@ class TestCompute:
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
+        expected_data = [t] + [quantity.compute()
+                               for quantity in self.my_derv_quant.derived_quantities]
 
         self.my_derv_quant.data = []
         self.my_derv_quant.compute(t)

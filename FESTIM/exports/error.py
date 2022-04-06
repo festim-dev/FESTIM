@@ -5,7 +5,12 @@ import sympy as sp
 
 
 class Error(FESTIM.Export):
-    def __init__(self, field, exact_solution, norm="error_max", degree=4) -> None:
+    def __init__(
+            self,
+            field,
+            exact_solution,
+            norm="error_max",
+            degree=4) -> None:
         super().__init__(field)
         self.exact_solution = exact_solution
         self.norm = norm
@@ -13,8 +18,8 @@ class Error(FESTIM.Export):
 
     def compute(self, t):
         exact_sol = f.Expression(sp.printing.ccode(self.exact_solution),
-            degree=self.degree,
-            t=t)
+                                 degree=self.degree,
+                                 t=t)
 
         if self.norm == "error_max":
             mesh = self.function.function_space().mesh()

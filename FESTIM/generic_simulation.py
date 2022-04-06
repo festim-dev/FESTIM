@@ -36,6 +36,7 @@ class Simulation:
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
     """
+
     def __init__(
         self,
         mesh=None,
@@ -271,7 +272,8 @@ class Simulation:
 
         # Display time
         # TODO this should be a method
-        simulation_percentage = round(self.t/self.settings.final_time*100, 2)
+        simulation_percentage = round(
+            self.t / self.settings.final_time * 100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = '{:.1f} %        '.format(simulation_percentage)
@@ -313,8 +315,10 @@ class Simulation:
             "0": self.mobile.post_processing_solution,
             0: self.mobile.post_processing_solution,
             "T": self.T.T,
-            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
-        }
+            "retention": sum(
+                [
+                    self.mobile.post_processing_solution] + [
+                    trap.post_processing_solution for trap in self.traps.traps])}
         for trap in self.traps.traps:
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
@@ -357,7 +361,9 @@ class Simulation:
         }
         # add traps to output
         for trap in self.traps.traps:
-            output["solutions"]["trap_{}".format(trap.id)] = trap.post_processing_solution
+            output["solutions"]["trap_{}".format(
+                trap.id)] = trap.post_processing_solution
         # compute retention and add it to output
-        output["solutions"]["retention"] = project(label_to_function["retention"], self.V_DG1)
+        output["solutions"]["retention"] = project(
+            label_to_function["retention"], self.V_DG1)
         return output

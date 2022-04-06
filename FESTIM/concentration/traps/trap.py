@@ -56,7 +56,7 @@ class Trap(Concentration):
         self.sources = []
 
     def make_density(self, densities):
-        if type(densities) is not list:
+        if not isinstance(densities, list):
             densities = [densities]
 
         for i, density in enumerate(densities):
@@ -67,8 +67,14 @@ class Trap(Concentration):
                 # else assume it's a sympy expression
                 else:
                     density_expr = sp.printing.ccode(density)
-                    self.density.append(Expression(density_expr, degree=2, t=0,
-                                        name="density_{}_{}".format(self.id, i)))
+                    self.density.append(
+                        Expression(
+                            density_expr,
+                            degree=2,
+                            t=0,
+                            name="density_{}_{}".format(
+                                self.id,
+                                i)))
 
     def create_form(
             self, mobile, materials, T, dx, dt=None,
@@ -91,7 +97,14 @@ class Trap(Concentration):
         if self.sources is not None:
             self.create_source_form(dx)
 
-    def create_trapping_form(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
+    def create_trapping_form(
+            self,
+            mobile,
+            materials,
+            T,
+            dx,
+            dt=None,
+            chemical_pot=False):
         """d ct/ dt = k c_m (n - c_t) - p c_t
 
         Args:
@@ -119,7 +132,8 @@ class Trap(Concentration):
 
         if dt is not None:
             # d(c_t)/dt in trapping equation
-            F_trapping += ((solution - prev_solution) / dt.value) * test_function * dx
+            F_trapping += ((solution - prev_solution) /
+                           dt.value) * test_function * dx
         else:
             # if the sim is steady state and
             # if a trap is not defined in one subdomain
@@ -127,10 +141,10 @@ class Trap(Concentration):
             all_mat_ids = [mat.id for mat in materials.materials]
             for mat_id in all_mat_ids:
                 if mat_id not in trap_materials:
-                    F_trapping += solution*test_function*dx(mat_id)
+                    F_trapping += solution * test_function * dx(mat_id)
 
         for i, mat_id in enumerate(trap_materials):
-            if type(self.k_0) is list:
+            if isinstance(self.k_0, list):
                 k_0 = self.k_0[i]
                 E_k = self.E_k[i]
                 p_0 = self.p_0[i]
@@ -154,14 +168,14 @@ class Trap(Concentration):
                 # change of variable
                 S_0 = corresponding_material.S_0
                 E_S = corresponding_material.E_S
-                c_0 = theta*S_0*exp(-E_S/k_B/T)
+                c_0 = theta * S_0 * exp(-E_S / k_B / T)
 
             # k(T)*c_m*(n - c_t) - p(T)*c_t
-            F_trapping += - k_0 * exp(-E_k/k_B/T) * c_0 \
+            F_trapping += - k_0 * exp(-E_k / k_B / T) * c_0 \
                 * (density - solution) * \
-                test_function*dx(mat_id)
-            F_trapping += p_0*exp(-E_p/k_B/T)*solution * \
-                test_function*dx(mat_id)
+                test_function * dx(mat_id)
+            F_trapping += p_0 * exp(-E_p / k_B / T) * solution * \
+                test_function * dx(mat_id)
 
         self.F_trapping = F_trapping
         self.F += self.F_trapping
@@ -174,6 +188,7 @@ class Trap(Concentration):
             dx (fenics.Measure): the dx measure of the sim
         """
         for source in self.sources:
-            self.F_source = -source.value*self.test_function*dx(source.volume)
+            self.F_source = -source.value * \
+                self.test_function * dx(source.volume)
             self.F += self.F_source
             self.sub_expressions.append(source.value)

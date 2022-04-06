@@ -4,11 +4,11 @@ import sympy as sp
 
 
 def dc_imp(T, phi, R_p, D_0, E_D, Kr_0=None, E_Kr=None):
-    D = D_0*f.exp(-E_D/k_B/T)
-    value = phi*R_p/D
+    D = D_0 * f.exp(-E_D / k_B / T)
+    value = phi * R_p / D
     if Kr_0 is not None:
-        Kr = Kr_0*f.exp(-E_Kr/k_B/T)
-        value += (phi/Kr)**0.5
+        Kr = Kr_0 * f.exp(-E_Kr / k_B / T)
+        value += (phi / Kr)**0.5
 
     return value
 
@@ -22,7 +22,16 @@ class ImplantationDirichlet(DirichletBC):
     c = phi*R_p/D + (phi/Kr)**0.5
 
     """
-    def __init__(self, surfaces, phi, R_p, D_0, E_D, Kr_0=None, E_Kr=None) -> None:
+
+    def __init__(
+            self,
+            surfaces,
+            phi,
+            R_p,
+            D_0,
+            E_D,
+            Kr_0=None,
+            E_Kr=None) -> None:
         """Inits ImplantationDirichlet
 
         Args:
@@ -58,6 +67,6 @@ class ImplantationDirichlet(DirichletBC):
             T, dc_imp,
             phi=phi, R_p=R_p, D_0=self.D_0, E_D=self.E_D,
             Kr_0=self.Kr_0, E_Kr=self.E_Kr,
-            )
+        )
         self.expression = value_BC
         self.sub_expressions = sub_expressions

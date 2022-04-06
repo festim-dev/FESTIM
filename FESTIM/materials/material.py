@@ -1,5 +1,16 @@
 class Material:
-    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=None, H=None) -> None:
+    def __init__(
+            self,
+            id,
+            D_0,
+            E_D,
+            S_0=None,
+            E_S=None,
+            thermal_cond=None,
+            heat_capacity=None,
+            rho=None,
+            borders=None,
+            H=None) -> None:
         """Inits Material class
 
         Args:

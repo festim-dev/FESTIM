@@ -9,7 +9,10 @@ def test_error_initialisation_from_xdmf_missing_time_step():
     '''
 
     with pytest.raises(ValueError, match=r'time_step'):
-        FESTIM.InitialCondition(value="my_file.xdmf", label="my_label", time_step=None)
+        FESTIM.InitialCondition(
+            value="my_file.xdmf",
+            label="my_label",
+            time_step=None)
 
 
 def test_error_initialisation_from_xdmf_missing_label():

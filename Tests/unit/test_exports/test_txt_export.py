@@ -25,23 +25,34 @@ class TestWrite:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", [1, 2, 3], "solute_label", str(Path(d)))
+        my_export = TXTExport(
+            "solute", [
+                1, 2, 3], "solute_label", str(
+                Path(d)))
 
         return my_export
 
     def test_file_exists(self, my_export, function):
         current_time = 1
         my_export.function = function
-        my_export.write(current_time=current_time, dt=Stepsize(initial_value=3))
+        my_export.write(
+            current_time=current_time,
+            dt=Stepsize(
+                initial_value=3))
 
-        assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
+        assert os.path.exists(
+            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
     def test_file_doesnt_exist(self, my_export, function):
         current_time = 10
         my_export.function = function
-        my_export.write(current_time=current_time, dt=Stepsize(initial_value=3))
+        my_export.write(
+            current_time=current_time,
+            dt=Stepsize(
+                initial_value=3))
 
-        assert not os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
+        assert not os.path.exists(
+            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
     def test_dt_is_changed(self, my_export, function):
         current_time = 1
@@ -50,21 +61,28 @@ class TestWrite:
         dt = Stepsize(initial_value=initial_value)
         my_export.write(current_time=current_time, dt=dt)
 
-        assert float(dt.value) == my_export.when_is_next_time(current_time) - current_time
+        assert float(dt.value) == my_export.when_is_next_time(
+            current_time) - current_time
 
     def test_subspace(self, my_export, function_subspace):
         current_time = 1
         my_export.function = function_subspace
-        my_export.write(current_time=current_time, dt=Stepsize(initial_value=current_time))
+        my_export.write(
+            current_time=current_time, dt=Stepsize(
+                initial_value=current_time))
 
-        assert os.path.exists("{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
+        assert os.path.exists(
+            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time))
 
 
 class TestIsItTimeToExport:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", [1, 2, 3], "solute_label", str(Path(d)))
+        my_export = TXTExport(
+            "solute", [
+                1, 2, 3], "solute_label", str(
+                Path(d)))
 
         return my_export
 
@@ -84,7 +102,10 @@ class TestWhenIsNextTime:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", [1, 2, 3], "solute_label", str(Path(d)))
+        my_export = TXTExport(
+            "solute", [
+                1, 2, 3], "solute_label", str(
+                Path(d)))
 
         return my_export
 

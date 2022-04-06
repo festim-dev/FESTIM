@@ -4,13 +4,14 @@ import sympy as sp
 
 
 def sieverts_law(T, S_0, E_S, pressure):
-    S = S_0*f.exp(-E_S/k_B/T)
-    return S*pressure**0.5
+    S = S_0 * f.exp(-E_S / k_B / T)
+    return S * pressure**0.5
 
 
 class SievertsBC(DirichletBC):
     """Subclass of DirichletBC for Sievert's law
     """
+
     def __init__(self, surfaces, S_0, E_S, pressure) -> None:
         """Inits SievertsBC
 

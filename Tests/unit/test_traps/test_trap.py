@@ -41,15 +41,16 @@ class TestCreateTrappingForm:
         my_mats = FESTIM.Materials([self.mat1])
 
         # run
-        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+        my_trap.create_trapping_form(
+            self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
-        expected_form = - my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T) * self.my_mobile.solution \
+        expected_form = - my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T) * self.my_mobile.solution \
             * (my_trap.density[0] - my_trap.solution) * \
-            v*self.dx(1)
-        expected_form += my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)*my_trap.solution * \
-            v*self.dx(1)
+            v * self.dx(1)
+        expected_form += my_trap.p_0 * \
+            f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T) * my_trap.solution * v * self.dx(1)
         print("expected F:", expected_form)
         print("produced F_trapping:", my_trap.F_trapping)
         print("produced F:", my_trap.F)
@@ -74,12 +75,13 @@ class TestCreateTrappingForm:
 
         # test
         v = my_trap.test_function
-        expected_form = ((my_trap.solution - my_trap.previous_solution) / self.dt.value) * my_trap.test_function * self.dx
-        expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T) * self.my_mobile.solution \
+        expected_form = ((my_trap.solution - my_trap.previous_solution) /
+                         self.dt.value) * my_trap.test_function * self.dx
+        expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T) * self.my_mobile.solution \
             * (my_trap.density[0] - my_trap.solution) * \
-            v*self.dx(1)
-        expected_form += my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)*my_trap.solution * \
-            v*self.dx(1)
+            v * self.dx(1)
+        expected_form += my_trap.p_0 * \
+            f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T) * my_trap.solution * v * self.dx(1)
         print("expected F:", expected_form)
         print("produced F_trapping:", my_trap.F_trapping)
         print("produced F:", my_trap.F)
@@ -98,16 +100,22 @@ class TestCreateTrappingForm:
         my_mats = FESTIM.Materials([self.mat1])
 
         # run
-        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx, chemical_pot=True)
+        my_trap.create_trapping_form(
+            self.my_mobile,
+            my_mats,
+            self.my_temp,
+            self.dx,
+            chemical_pot=True)
 
         # test
         v = my_trap.test_function
-        c_0 = self.my_mobile.solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
-        expected_form = - my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T) * c_0 \
+        c_0 = self.my_mobile.solution * self.mat1.S_0 * \
+            f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T)
+        expected_form = - my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T) * c_0 \
             * (my_trap.density[0] - my_trap.solution) * \
-            v*self.dx(1)
-        expected_form += my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)*my_trap.solution * \
-            v*self.dx(1)
+            v * self.dx(1)
+        expected_form += my_trap.p_0 * \
+            f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T) * my_trap.solution * v * self.dx(1)
         print("expected F:")
         print(expected_form)
         print("produced F_trapping:")
@@ -129,17 +137,18 @@ class TestCreateTrappingForm:
         my_mats = FESTIM.Materials([self.mat1, self.mat2])
 
         # run
-        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+        my_trap.create_trapping_form(
+            self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
         expected_form = 0
         for mat_id in my_trap.materials:
-            expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T) * self.my_mobile.solution \
+            expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T) * self.my_mobile.solution \
                 * (my_trap.density[0] - my_trap.solution) * \
-                v*self.dx(mat_id)
-            expected_form += my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)*my_trap.solution * \
-                v*self.dx(mat_id)
+                v * self.dx(mat_id)
+            expected_form += my_trap.p_0 * \
+                f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T) * my_trap.solution * v * self.dx(mat_id)
 
         print("expected F:", expected_form)
         print("produced F_trapping:", my_trap.F_trapping)
@@ -160,17 +169,18 @@ class TestCreateTrappingForm:
         my_mats = FESTIM.Materials([self.mat1, self.mat2])
 
         # run
-        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+        my_trap.create_trapping_form(
+            self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
         expected_form = 0
         for i in range(2):
-            expected_form += - my_trap.k_0[i] * f.exp(-my_trap.E_k[i]/FESTIM.k_B/self.my_temp.T) * self.my_mobile.solution \
+            expected_form += - my_trap.k_0[i] * f.exp(-my_trap.E_k[i] / FESTIM.k_B / self.my_temp.T) * self.my_mobile.solution \
                 * (my_trap.density[i] - my_trap.solution) * \
-                v*self.dx(my_trap.materials[i])
-            expected_form += my_trap.p_0[i]*f.exp(-my_trap.E_p[i]/FESTIM.k_B/self.my_temp.T)*my_trap.solution * \
-                v*self.dx(my_trap.materials[i])
+                v * self.dx(my_trap.materials[i])
+            expected_form += my_trap.p_0[i] * f.exp(-my_trap.E_p[i] / FESTIM.k_B / self.my_temp.T) * my_trap.solution * \
+                v * self.dx(my_trap.materials[i])
 
         print("expected F:", expected_form)
         print("produced F_trapping:", my_trap.F_trapping)
@@ -191,15 +201,16 @@ class TestCreateTrappingForm:
         my_mats = FESTIM.Materials([self.mat1, self.mat2])
 
         # run
-        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+        my_trap.create_trapping_form(
+            self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
         expected_form = 0
-        expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T) * self.my_mobile.solution * \
-            (my_trap.density[0] - my_trap.solution) * v * self.dx(self.mat1.id)
-        expected_form += my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)*my_trap.solution * \
-            v*self.dx(self.mat1.id)
+        expected_form += - my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T) * self.my_mobile.solution * (
+            my_trap.density[0] - my_trap.solution) * v * self.dx(self.mat1.id)
+        expected_form += my_trap.p_0 * \
+            f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T) * my_trap.solution * v * self.dx(self.mat1.id)
         expected_form += my_trap.solution * v * self.dx(self.mat2.id)
         print("expected F:", expected_form)
         print("produced F_trapping:", my_trap.F_trapping)
@@ -221,13 +232,15 @@ class TestCreateTrappingForm:
         my_mats = FESTIM.Materials([self.mat1])
 
         # run
-        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+        my_trap.create_trapping_form(
+            self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
-        k = my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T)
-        p = my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)
-        expected_form = -k * self.my_mobile.solution * (my_trap.density[0] - my_trap.solution) * v * self.dx(1)
+        k = my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+        p = my_trap.p_0 * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+        expected_form = -k * self.my_mobile.solution * \
+            (my_trap.density[0] - my_trap.solution) * v * self.dx(1)
         expected_form += p * my_trap.solution * v * self.dx(1)
         print("expected F:", expected_form)
         print("produced F_trapping:", my_trap.F_trapping)
@@ -252,13 +265,15 @@ class TestCreateTrappingForm:
         my_mats = FESTIM.Materials([self.mat1])
 
         # run
-        my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
+        my_trap.create_trapping_form(
+            self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
-        k = my_trap.k_0 * f.exp(-my_trap.E_k/FESTIM.k_B/self.my_temp.T)
-        p = my_trap.p_0*f.exp(-my_trap.E_p/FESTIM.k_B/self.my_temp.T)
-        expected_form = -k * self.my_mobile.solution * (my_trap.density[0] - my_trap.solution) * v * self.dx(1)
+        k = my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+        p = my_trap.p_0 * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+        expected_form = -k * self.my_mobile.solution * \
+            (my_trap.density[0] - my_trap.solution) * v * self.dx(1)
         expected_form += p * my_trap.solution * v * self.dx(1)
         print("expected F:", expected_form)
         print("produced F_trapping:", my_trap.F_trapping)
@@ -284,7 +299,13 @@ class TestCreateSourceForm:
 
     def test(self):
         # build
-        my_trap = FESTIM.Trap(k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1)
+        my_trap = FESTIM.Trap(
+            k_0=1,
+            E_k=2,
+            p_0=3,
+            E_p=4,
+            materials=1,
+            density=1)
         my_trap.sources = [
             FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")
         ]
@@ -297,7 +318,7 @@ class TestCreateSourceForm:
         # test
         source = my_trap.sub_expressions[0]
         v = my_trap.test_function
-        expected_form = - source*v*self.dx(1)
+        expected_form = - source * v * self.dx(1)
         assert my_trap.F.equals(expected_form)
         assert my_trap.F_source.equals(expected_form)
 
@@ -322,7 +343,11 @@ class TestCreateForm:
         my_empty_mats = FESTIM.Materials([])
         my_trap = FESTIM.Trap(1, 1, 1, 1, [], 1)
 
-        my_trap.create_form(self.my_mobile, my_empty_mats, self.my_temp, self.dx)
+        my_trap.create_form(
+            self.my_mobile,
+            my_empty_mats,
+            self.my_temp,
+            self.dx)
 
         assert my_trap.F == 0
 
@@ -332,10 +357,15 @@ class TestCreateForm:
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
-        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx)
+        my_trap.create_trapping_form(
+            self.my_mobile, self.my_mats, self.my_temp, self.dx)
         expected_form = my_trap.F
         # run
-        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx)
+        my_trap.create_form(
+            self.my_mobile,
+            self.my_mats,
+            self.my_temp,
+            self.dx)
 
         # test
         print(my_trap.F)
@@ -348,10 +378,20 @@ class TestCreateForm:
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
-        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        my_trap.create_trapping_form(
+            self.my_mobile,
+            self.my_mats,
+            self.my_temp,
+            self.dx,
+            self.dt)
         expected_form = my_trap.F
         # run
-        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        my_trap.create_form(
+            self.my_mobile,
+            self.my_mats,
+            self.my_temp,
+            self.dx,
+            self.dt)
 
         # test
         print(my_trap.F)
@@ -364,10 +404,20 @@ class TestCreateForm:
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
-        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        my_trap.create_trapping_form(
+            self.my_mobile,
+            self.my_mats,
+            self.my_temp,
+            self.dx,
+            self.dt)
         expected_form = my_trap.F
         # run
-        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        my_trap.create_form(
+            self.my_mobile,
+            self.my_mats,
+            self.my_temp,
+            self.dx,
+            self.dt)
 
         # test
         print(my_trap.F)
@@ -382,10 +432,20 @@ class TestCreateForm:
         ]
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
-        my_trap.create_trapping_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        my_trap.create_trapping_form(
+            self.my_mobile,
+            self.my_mats,
+            self.my_temp,
+            self.dx,
+            self.dt)
         expected_form = my_trap.F
         # run
-        my_trap.create_form(self.my_mobile, self.my_mats, self.my_temp, self.dx, self.dt)
+        my_trap.create_form(
+            self.my_mobile,
+            self.my_mats,
+            self.my_temp,
+            self.dx,
+            self.dt)
 
         # test
         expected_form += my_trap.F_source
