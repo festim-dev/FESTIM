@@ -1,16 +1,20 @@
-name: PEP8 Checker
-
-on: [pull_request]
+name: autopep8
+on: pull_request
 jobs:
-  run:
+  autopep8:
+    # Check if the PR is not from a fork
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
-    - name: Setup Python 3.7
-      uses: actions/setup-python@master
-      with:
-        version: 3.7
-    - name: flake8
-      run: |
-        pip install pycodestyle
-        pycodestyle
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          ref: ${{ github.head_ref }}
+      - name: autopep8
+        id: autopep8
+        uses: peter-evans/autopep8@v1
+        with:
+          args: --exit-code --recursive --in-place --aggressive --aggressive .
+      - name: Exit if fails
+        if: steps.autopep8.outputs.exit-code == 2
+        run: exit 1
