@@ -29,8 +29,9 @@ def test_mobile_create_diffusion_form():
     c_0 = my_mobile.solution
     v = my_mobile.test_function
     Index._globalcount = 8
-    expected_form = f.dot(mat.D_0 * f.exp(-mat.E_D/FESTIM.k_B/T.T)*f.grad(c_0),
-                          f.grad(v))*dx(1)
+    expected_form = f.dot(
+        mat.D_0 * f.exp(-mat.E_D / FESTIM.k_B / T.T) * f.grad(c_0), f.grad(v)
+    ) * dx(1)
     assert my_mobile.F.equals(expected_form)
     assert my_mobile.F_diffusion.equals(expected_form)
 
@@ -51,7 +52,7 @@ def test_mobile_create_source_form_one_dict():
     # test
     source = my_mobile.sub_expressions[0]
     v = my_mobile.test_function
-    expected_form = - source*v*dx(1)
+    expected_form = -source * v * dx(1)
     assert my_mobile.F.equals(expected_form)
     assert my_mobile.F_source.equals(expected_form)
 
@@ -75,9 +76,9 @@ def test_mobile_create_source_form_several_sources():
 
     # test
     v = my_mobile.test_function
-    expected_form = - my_mobile.sub_expressions[0]*v*dx(1)
-    expected_form += - my_mobile.sub_expressions[1]*v*dx(2)
-    expected_form += - my_mobile.sub_expressions[2]*v*dx(3)
+    expected_form = -my_mobile.sub_expressions[0] * v * dx(1)
+    expected_form += -my_mobile.sub_expressions[1] * v * dx(2)
+    expected_form += -my_mobile.sub_expressions[2] * v * dx(3)
     assert my_mobile.F.equals(expected_form)
     assert my_mobile.F_source.equals(expected_form)
 
@@ -146,19 +147,24 @@ class TestCreateDiffusionForm:
         my_traps = FESTIM.Traps([trap1, trap2])
 
         # run
-        my_mobile.create_diffusion_form(my_mats, self.my_mesh, self.my_temp, dt=self.dt, traps=my_traps)
+        my_mobile.create_diffusion_form(
+            my_mats, self.my_mesh, self.my_temp, dt=self.dt, traps=my_traps
+        )
 
         # test
         Index._globalcount = 8
         v = my_mobile.test_function
-        D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
+        D = self.mat1.D_0 * f.exp(-self.mat1.E_D / FESTIM.k_B / self.my_temp.T)
         c_0 = my_mobile.solution
         c_0_n = my_mobile.previous_solution
-        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.my_mesh.dx(1)
-        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.my_mesh.dx(1)
+        expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
+        expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
         for trap in my_traps.traps:
-            expected_form += ((trap.solution - trap.previous_solution) / self.dt.value) * \
-                v * self.my_mesh.dx
+            expected_form += (
+                ((trap.solution - trap.previous_solution) / self.dt.value)
+                * v
+                * self.my_mesh.dx
+            )
 
         print("expected F:")
         print(expected_form)
@@ -174,11 +180,11 @@ class TestCreateDiffusionForm:
 
         for system in ["cylindrical", "spherical"]:
             mesh = FESTIM.Mesh(type=system)
-            expected_error_msg = "not implemented " + \
-                "in {} coordinates".format(system)
+            expected_error_msg = "not implemented " + "in {} coordinates".format(system)
             with pytest.raises(ValueError, match=expected_error_msg):
                 my_mobile.create_diffusion_form(
-                    materials=None, mesh=mesh, T=None, soret=True)
+                    materials=None, mesh=mesh, T=None, soret=True
+                )
 
 
 class TestInitialise:
@@ -216,7 +222,7 @@ def test_fluxes():
     my_mobile.test_function = f.TestFunction(V)
     my_mobile.boundary_conditions = [
         FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
-        FESTIM.FluxBC(value=2*FESTIM.x + FESTIM.t, surfaces=[1, 2]),
+        FESTIM.FluxBC(value=2 * FESTIM.x + FESTIM.t, surfaces=[1, 2]),
     ]
     T = FESTIM.Temperature(value=1000)
     T.create_functions(my_mesh)
@@ -227,10 +233,10 @@ def test_fluxes():
     sol = my_mobile.solution
     Kr_0 = my_mobile.sub_expressions[0]
     E_Kr = my_mobile.sub_expressions[1]
-    Kr = Kr_0 * f.exp(-E_Kr/k_B/T.T)
+    Kr = Kr_0 * f.exp(-E_Kr / k_B / T.T)
     expected_form = 0
-    expected_form += -test_sol * (-Kr*(sol)**order)*f.ds(1)
-    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(1)
-    expected_form += -test_sol*my_mobile.sub_expressions[2]*f.ds(2)
+    expected_form += -test_sol * (-Kr * (sol) ** order) * f.ds(1)
+    expected_form += -test_sol * my_mobile.sub_expressions[2] * f.ds(1)
+    expected_form += -test_sol * my_mobile.sub_expressions[2] * f.ds(2)
     assert expected_form.equals(my_mobile.F)
     assert expected_form.equals(my_mobile.F_fluxes)

@@ -18,7 +18,7 @@ def test_title_T():
 
 class TestCompute:
     mesh = f.UnitIntervalMesh(10)
-    V = f.FunctionSpace(mesh, 'P', 1)
+    V = f.FunctionSpace(mesh, "P", 1)
 
     c = f.interpolate(f.Expression("x[0]", degree=1), V)
 
@@ -26,7 +26,7 @@ class TestCompute:
     volume_markers = f.MeshFunction("size_t", mesh, 1, 1)
     left.mark(volume_markers, 2)
 
-    dx = f.Measure('dx', domain=mesh, subdomain_data=volume_markers)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=volume_markers)
 
     volume = 1
     my_total = TotalVolume("solute", volume)
@@ -34,7 +34,7 @@ class TestCompute:
     my_total.dx = dx
 
     def test_minimum(self):
-        expected = f.assemble(self.c*self.dx(self.volume))
+        expected = f.assemble(self.c * self.dx(self.volume))
 
         produced = self.my_total.compute()
         assert produced == expected

@@ -9,7 +9,9 @@ class TestWrite:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExports(["solute", "T"], [1, 2, 3], ["solute_label", "T_label"], str(Path(d)))
+        my_export = TXTExports(
+            ["solute", "T"], [1, 2, 3], ["solute_label", "T_label"], str(Path(d))
+        )
 
         return my_export
 

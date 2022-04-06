@@ -9,4 +9,4 @@ class TotalVolume(DerivedQuantity):
         self.title = "Total {} volume {}".format(self.field, self.volume)
 
     def compute(self):
-        return f.assemble(self.function*self.dx(self.volume))
+        return f.assemble(self.function * self.dx(self.volume))

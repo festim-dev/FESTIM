@@ -36,6 +36,7 @@ class Simulation:
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
     """
+
     def __init__(
         self,
         mesh=None,
@@ -48,7 +49,7 @@ class Simulation:
         temperature=None,
         initial_conditions=[],
         exports=None,
-        log_level=40
+        log_level=40,
     ):
         """Inits FESTIM.Simulation
 
@@ -132,7 +133,7 @@ class Simulation:
             "0": self.mobile,
             0: self.mobile,
             "mobile": self.mobile,
-            "T": self.T
+            "T": self.T,
         }
         for i, trap in enumerate(self.traps.traps, 1):
             field_to_object[i] = trap
@@ -142,8 +143,7 @@ class Simulation:
             field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
-        """Assigns boundary_conditions to mobile and T
-        """
+        """Assigns boundary_conditions to mobile and T"""
         self.T.boundary_conditions = []
         self.h_transport_problem.boundary_conditions = []
 
@@ -164,8 +164,8 @@ class Simulation:
         else:
             self.mobile = FESTIM.Mobile()
         self.h_transport_problem = HTransportProblem(
-            self.mobile, self.traps, self.T, self.settings,
-            self.initial_conditions)
+            self.mobile, self.traps, self.T, self.settings, self.initial_conditions
+        )
         self.attribute_source_terms()
         self.attribute_boundary_conditions()
 
@@ -174,7 +174,7 @@ class Simulation:
         else:
             self.mesh.define_measures()
 
-        self.V_DG1 = FunctionSpace(self.mesh.mesh, 'DG', 1)
+        self.V_DG1 = FunctionSpace(self.mesh.mesh, "DG", 1)
         self.exports.V_DG1 = self.V_DG1
 
         # Define temperature
@@ -194,7 +194,8 @@ class Simulation:
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
         self.exports.initialise_derived_quantities(
-            self.mesh.dx, self.mesh.ds, self.materials)
+            self.mesh.dx, self.mesh.ds, self.materials
+        )
 
     def run(self, completion_tone=False):
         """Runs the model.
@@ -215,7 +216,7 @@ class Simulation:
 
         # End
         if completion_tone:
-            print('\007')
+            print("\007")
 
     def run_transient(self):
         # add final_time to Exports
@@ -226,7 +227,7 @@ class Simulation:
             self.h_transport_problem.compute_jacobian()
 
         #  Time-stepping
-        print('Time stepping...')
+        print("Time stepping...")
         while self.t < self.settings.final_time:
             self.iterate()
         # print final message
@@ -236,7 +237,7 @@ class Simulation:
 
     def run_steady(self):
         # Solve steady state
-        print('Solving steady state problem...')
+        print("Solving steady state problem...")
 
         nb_iterations, converged = self.h_transport_problem.solve_once()
 
@@ -250,27 +251,24 @@ class Simulation:
             print(msg)
         else:
             msg = "The solver diverged in "
-            msg += "{:.0f} iteration(s) ({:.2f} s)".format(
-                nb_iterations, elapsed_time)
+            msg += "{:.0f} iteration(s) ({:.2f} s)".format(nb_iterations, elapsed_time)
             raise ValueError(msg)
 
     def iterate(self):
-        """Advance the model by one iteration
-        """
+        """Advance the model by one iteration"""
         # Update current time
         self.t += float(self.dt.value)
-        FESTIM.update_expressions(
-            self.h_transport_problem.expressions, self.t)
+        FESTIM.update_expressions(self.h_transport_problem.expressions, self.t)
         self.T.update(self.t)
         self.materials.update_properties_temperature(self.T)
 
         # Display time
         # TODO this should be a method
-        simulation_percentage = round(self.t/self.settings.final_time*100, 2)
+        simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
-        msg = '{:.1f} %        '.format(simulation_percentage)
-        msg += '{:.1e} s'.format(simulation_time)
+        msg = "{:.1f} %        ".format(simulation_percentage)
+        msg += "{:.1e} s".format(simulation_time)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
 
         print(msg, end="\r")
@@ -286,8 +284,7 @@ class Simulation:
             self.dt.value.assign(self.settings.final_time - self.t)
 
     def run_post_processing(self):
-        """Create post processing functions and compute/write the exports
-        """
+        """Create post processing functions and compute/write the exports"""
         label_to_function = self.update_post_processing_solutions()
 
         self.exports.t = self.t
@@ -308,7 +305,10 @@ class Simulation:
             "0": self.mobile.post_processing_solution,
             0: self.mobile.post_processing_solution,
             "T": self.T.T,
-            "retention": sum([self.mobile.post_processing_solution] + [trap.post_processing_solution for trap in self.traps.traps])
+            "retention": sum(
+                [self.mobile.post_processing_solution]
+                + [trap.post_processing_solution for trap in self.traps.traps]
+            ),
         }
         for trap in self.traps.traps:
             label_to_function[trap.id] = trap.post_processing_solution

@@ -9,6 +9,7 @@ class FluxBC(BoundaryCondition):
     -D * grad(c) * n = f  or -lambda * grad(T) * n = f
     depending if applied to mobile concentration or temperature
     """
+
     def __init__(self, surfaces, value=None, **kwargs) -> None:
         """Inits FluxBC
 

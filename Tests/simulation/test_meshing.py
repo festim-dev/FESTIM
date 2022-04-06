@@ -39,11 +39,11 @@ def test_define_markers(tmpdir):
 
 
 def test_integration_mesh_from_vertices_subdomains():
-    '''
+    """
     Integration test for meshing and subdomain 1D
     when parsing a list of vertices
     Checks that the cells are marked correctly
-    '''
+    """
     points = [0, 1, 2, 5, 12, 24]
 
     my_model = FESTIM.Simulation()

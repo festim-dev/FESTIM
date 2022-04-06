@@ -1,12 +1,25 @@
-from FESTIM import SurfaceFlux, AverageVolume, MinimumVolume, MaximumVolume, \
-    TotalVolume, TotalSurface
+from FESTIM import (
+    SurfaceFlux,
+    AverageVolume,
+    MinimumVolume,
+    MaximumVolume,
+    TotalVolume,
+    TotalSurface,
+)
 import fenics as f
 import os
 import csv
 
 
 class DerivedQuantities:
-    def __init__(self, file=None, folder=None, nb_iterations_between_compute=1, nb_iterations_between_exports=None, **derived_quantities) -> None:
+    def __init__(
+        self,
+        file=None,
+        folder=None,
+        nb_iterations_between_compute=1,
+        nb_iterations_between_exports=None,
+        **derived_quantities
+    ) -> None:
         self.file = file
         self.folder = folder
         self.nb_iterations_between_compute = nb_iterations_between_compute
@@ -34,11 +47,13 @@ class DerivedQuantities:
                 if "volumes" in prms_dict:
                     for entity in prms_dict["volumes"]:
                         self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], volume=entity))
+                            quantity_class(field=prms_dict["field"], volume=entity)
+                        )
                 if "surfaces" in prms_dict:
                     for entity in prms_dict["surfaces"]:
                         self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], surface=entity))
+                            quantity_class(field=prms_dict["field"], surface=entity)
+                        )
 
     def make_header(self):
         header = ["t(s)"]
@@ -79,9 +94,9 @@ class DerivedQuantities:
 
     def write(self):
         if self.file is not None:
-            file_export = ''
+            file_export = ""
             if self.folder is not None:
-                file_export += self.folder + '/'
+                file_export += self.folder + "/"
                 os.makedirs(os.path.dirname(file_export), exist_ok=True)
             if self.file.endswith(".csv"):
                 file_export += self.file
@@ -92,13 +107,15 @@ class DerivedQuantities:
                 try:
                     with open(file_export, "w+") as f:
                         busy = False
-                        writer = csv.writer(f, lineterminator='\n')
+                        writer = csv.writer(f, lineterminator="\n")
                         for val in self.data:
                             writer.writerows([val])
                 except OSError as err:
                     print("OS error: {0}".format(err))
-                    print("The file " + file_export + ".txt might currently be busy."
-                          "Please close the application then press any key.")
+                    print(
+                        "The file " + file_export + ".txt might currently be busy."
+                        "Please close the application then press any key."
+                    )
                     input()
         return True
 
@@ -116,8 +133,7 @@ class DerivedQuantities:
             bool: True if the derived quantities should be exported, else False
         """
         if final_time is not None:
-            nb_its_between_exports = \
-                self.nb_iterations_between_exports
+            nb_its_between_exports = self.nb_iterations_between_exports
             if nb_its_between_exports is None:
                 # export at the end
                 return t >= final_time

@@ -19,6 +19,7 @@ class ImplantationFlux(Source):
         imp_depth (float, sympy.Expr): The implantation depth (m)
         width (float, sympy.Expr): The standard deviation of the ion beam (m)
     """
+
     def __init__(self, flux, imp_depth, width, volume):
         """
         Args:
@@ -30,7 +31,10 @@ class ImplantationFlux(Source):
         self.flux = flux
         self.imp_depth = imp_depth
         self.width = width
-        distribution = 1/(self.width*(2*np.pi)**0.5) * \
-            sp.exp(-0.5*((x-self.imp_depth)/self.width)**2)
-        value = self.flux*distribution
+        distribution = (
+            1
+            / (self.width * (2 * np.pi) ** 0.5)
+            * sp.exp(-0.5 * ((x - self.imp_depth) / self.width) ** 2)
+        )
+        value = self.flux * distribution
         super().__init__(value, volume, field="0")

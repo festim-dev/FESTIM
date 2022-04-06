@@ -14,6 +14,7 @@ class CustomFlux(FluxBC):
         param1=2*FESTIM.x + FESTIM.t
     )
     """
+
     def __init__(self, surfaces, function, field, **prms) -> None:
         """Inits CustomFlux
 
@@ -30,8 +31,7 @@ class CustomFlux(FluxBC):
 
     def create_form(self, T, solute):
         self.form = self.function(T, solute, **self.prms)
-        self.sub_expressions += [
-            expression for expression in self.prms.values()]
+        self.sub_expressions += [expression for expression in self.prms.values()]
 
     def convert_prms(self):
         # create Expressions or Constant for all parameters
@@ -39,6 +39,4 @@ class CustomFlux(FluxBC):
             if isinstance(value, (int, float)):
                 self.prms[key] = f.Constant(value)
             else:
-                self.prms[key] = f.Expression(sp.printing.ccode(value),
-                                       t=0,
-                                       degree=1)
+                self.prms[key] = f.Expression(sp.printing.ccode(value), t=0, degree=1)
