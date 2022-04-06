@@ -59,7 +59,7 @@ def test_run_temperature_stationary(tmpdir):
     my_derived_quantities.derived_quantities = [FESTIM.TotalVolume("solute", 1)]
 
     my_exports = [
-            FESTIM.XDMFExports(fields=['T', 'solute'], labels=["temperature", "solute"], folder=str(Path(d))),
+            FESTIM.XDMFExports(fields=['T', 'solute'], labels=["temperature", "solute"], folder=str(Path(d)), checkpoint=False),
             my_derived_quantities,
     ]
 
@@ -118,8 +118,7 @@ def test_run_temperature_transient(tmpdir):
 
     my_exports = FESTIM.Exports(
         [
-            FESTIM.XDMFExport("T", "temperature", str(Path(d))),
-            FESTIM.Error("T", u)
+            FESTIM.XDMFExport("T", "temperature", str(Path(d)), checkpoint=False),
         ]
     )
 
@@ -202,9 +201,7 @@ def test_run_MMS(tmpdir):
 
         my_dt = FESTIM.Stepsize(0.1/50)
         my_exports = FESTIM.Exports([
-                FESTIM.XDMFExport("retention", "retention", str(Path(d))),
-                FESTIM.Error(0, u),
-                FESTIM.Error(1, v),
+                FESTIM.XDMFExport("retention", "retention", str(Path(d)), checkpoint=False),
             ]
         )
 
@@ -388,7 +385,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
     derived_quantities = FESTIM.DerivedQuantities()
     derived_quantities.derived_quantities = [total_solute, total_retention]
     my_exports = FESTIM.Exports([
-        FESTIM.XDMFExport("retention", "retention", folder=str(Path(d))),
+        FESTIM.XDMFExport("retention", "retention", folder=str(Path(d)), checkpoint=False),
         derived_quantities
         ]
     )
@@ -457,9 +454,8 @@ def test_run_MMS_soret(tmpdir):
         my_dt = FESTIM.Stepsize(0.1/50)
 
         my_exports = FESTIM.Exports([
-            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
-            FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
-            FESTIM.Error("solute", u, norm="L2")
+            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("T", "T", folder=str(Path(d)), checkpoint=False),
             ]
         )
 
@@ -555,10 +551,10 @@ def test_run_MMS_steady_state(tmpdir):
         my_dt = FESTIM.Stepsize(0.1/50)
 
         my_exports = FESTIM.Exports([
-            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
-            FESTIM.XDMFExport("1", "1", folder=str(Path(d))),
-            FESTIM.XDMFExport("retention", "retention", folder=str(Path(d))),
-            FESTIM.XDMFExport("T", "T", folder=str(Path(d))),
+            FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("1", "1", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("retention", "retention", folder=str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport("T", "T", folder=str(Path(d)), checkpoint=False),
             ]
         )
 
@@ -625,7 +621,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
         FESTIM.TotalSurface("solute", 2)
     ]
     my_exports = FESTIM.Exports([
-        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
         my_derived_quantities
         ]
     )
@@ -669,7 +665,7 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
         FESTIM.TotalVolume("retention", 1),
     ]
     my_exports = FESTIM.Exports([
-        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d))),
+        FESTIM.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
         my_derived_quantities
         ]
     )
