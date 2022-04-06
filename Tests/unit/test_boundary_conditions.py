@@ -374,7 +374,7 @@ def test_create_form_flux_custom():
     expressions = [T, solute]
 
     # run
-    my_BC = FESTIM.CustomFlux(surfaces=[1, 0], function=func, prm1=expr_prm1, prm2=expr_prm2)
+    my_BC = FESTIM.CustomFlux(surfaces=[1, 0], field="T", function=func, prm1=expr_prm1, prm2=expr_prm2)
     my_BC.create_form(T, solute)
     value_BC = my_BC.form
 

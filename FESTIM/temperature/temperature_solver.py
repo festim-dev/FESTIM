@@ -144,7 +144,7 @@ class HeatTransferProblem(FESTIM.Temperature):
         V = self.T.function_space()
         self.dirichlet_bcs = []
         for bc in self.boundary_conditions:
-            if isinstance(bc, FESTIM.DirichletBC) and bc.component == "T":
+            if isinstance(bc, FESTIM.DirichletBC) and bc.field == "T":
                 bc.create_expression(self.T)
                 for surf in bc.surfaces:
                     bci = f.DirichletBC(

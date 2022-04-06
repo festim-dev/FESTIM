@@ -14,16 +14,16 @@ class CustomDirichlet(DirichletBC):
         param1=2*FESTIM.x + FESTIM.t
     )
     """
-    def __init__(self, surfaces, function, component=0, **prms) -> None:
+    def __init__(self, surfaces, function, field=0, **prms) -> None:
         """Inits CustomDirichlet
 
         Args:
             surfaces (list or int): the surfaces of the BC
             function (callable): the custom function
-            component (int, optional): the field the boundary condition is
+            field (int, optional): the field the boundary condition is
                 applied to. Defaults to 0.
         """
-        super().__init__(surfaces, component=component)
+        super().__init__(surfaces, field=field)
         self.function = function
         self.prms = prms
         self.convert_prms()

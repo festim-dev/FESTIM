@@ -17,7 +17,7 @@ class ConvectiveFlux(FluxBC):
         """
         self.h_coeff = h_coeff
         self.T_ext = T_ext
-        super().__init__(surfaces=surfaces, component="T")
+        super().__init__(surfaces=surfaces, field="T")
 
     def create_form(self, T, solute):
         h_coeff = f.Expression(
