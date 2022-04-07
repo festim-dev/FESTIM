@@ -5,10 +5,12 @@ from FESTIM import (
     MaximumVolume,
     TotalVolume,
     TotalSurface,
+    DerivedQuantity,
 )
 import fenics as f
 import os
 import csv
+from typing import Union
 
 
 class DerivedQuantities:
@@ -155,3 +157,71 @@ class DerivedQuantities:
             bool: True if it's time to compute, else False
         """
         return nb_iterations % self.nb_iterations_between_compute == 0
+
+    def filter(
+        self,
+        surfaces: Union[list, int] = None,
+        volumes: Union[list, int] = None,
+        fields: Union[list, str] = None,
+        instances: DerivedQuantity = None,
+    ):
+        """_summary_
+
+        Args:
+            surfaces (Union[list, int], optional): _description_. Defaults to None.
+            volumes (Union[list, int], optional): _description_. Defaults to None.
+            fields (Union[list, str], optional): _description_. Defaults to None.
+            instances (DerivedQuantity, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
+        if surfaces is not None and not isinstance(surfaces, list):
+            surfaces = [surfaces]
+        if volumes is not None and not isinstance(volumes, list):
+            volumes = [volumes]
+        if fields is not None and not isinstance(fields, list):
+            fields = [fields]
+        if instances is not None and not isinstance(instances, list):
+            instances = [instances]
+
+        quantities = []
+
+        for quantity in self.derived_quantities:
+            match_surface, match_volume, match_field, match_instance = (
+                False,
+                False,
+                False,
+                False,
+            )
+
+            if surfaces is not None:
+                if hasattr(quantity, "surface") and quantity.surface in surfaces:
+                    match_surface = True
+            else:
+                match_surface = True
+
+            if volumes is not None:
+                if hasattr(quantity, "volume") and quantity.volume in volumes:
+                    match_volume = True
+            else:
+                match_volume = True
+
+            if fields is not None:
+                if quantity.field in fields:
+                    match_field = True
+            else:
+                match_field = True
+
+            if instances is not None:
+                if isinstance(quantity, tuple(instances)):
+                    match_instance = True
+            else:
+                match_instance = True
+
+            if match_surface and match_volume and match_field and match_instance:
+                quantities.append(quantity)
+
+        if len(quantities) == 1:
+            quantities = quantities[0]
+        return quantities
