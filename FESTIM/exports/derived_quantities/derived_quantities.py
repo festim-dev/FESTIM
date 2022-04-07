@@ -165,17 +165,23 @@ class DerivedQuantities:
         fields: Union[list, str] = None,
         instances: DerivedQuantity = None,
     ):
-        """_summary_
+        """Finds DerivedQuantity objects that match surfaces, volumes, and instances.
 
         Args:
-            surfaces (Union[list, int], optional): _description_. Defaults to None.
-            volumes (Union[list, int], optional): _description_. Defaults to None.
-            fields (Union[list, str], optional): _description_. Defaults to None.
-            instances (DerivedQuantity, optional): _description_. Defaults to None.
+            surfaces (Union[list, int], optional): the surface ids to match.
+                Defaults to None.
+            volumes (Union[list, int], optional): the volume ids to match.
+                Defaults to None.
+            fields (Union[list, str], optional): the fields to match.
+                Defaults to None.
+            instances (DerivedQuantity, optional): the DerivedQuantity
+                instances to match. Defaults to None.
 
         Returns:
-            _type_: _description_
+            list, DerivedQuantity: if only one quantity matches returns this
+                quantity, else returs a list of DerivedQuantity
         """
+        # ensure arguments are list
         if surfaces is not None and not isinstance(surfaces, list):
             surfaces = [surfaces]
         if volumes is not None and not isinstance(volumes, list):
@@ -187,7 +193,10 @@ class DerivedQuantities:
 
         quantities = []
 
+        # iterate through derived_quantities
         for quantity in self.derived_quantities:
+
+            # initialise flags to False
             match_surface, match_volume, match_field, match_instance = (
                 False,
                 False,
@@ -195,30 +204,35 @@ class DerivedQuantities:
                 False,
             )
 
+            # check if matches surface
             if surfaces is not None:
                 if hasattr(quantity, "surface") and quantity.surface in surfaces:
                     match_surface = True
             else:
                 match_surface = True
 
+            # check if matches volume
             if volumes is not None:
                 if hasattr(quantity, "volume") and quantity.volume in volumes:
                     match_volume = True
             else:
                 match_volume = True
 
+            # check if matches field
             if fields is not None:
                 if quantity.field in fields:
                     match_field = True
             else:
                 match_field = True
 
+            # check if matches instance
             if instances is not None:
                 if isinstance(quantity, tuple(instances)):
                     match_instance = True
             else:
                 match_instance = True
 
+            # if all flags are True, append to the list
             if match_surface and match_volume and match_field and match_instance:
                 quantities.append(quantity)
 
