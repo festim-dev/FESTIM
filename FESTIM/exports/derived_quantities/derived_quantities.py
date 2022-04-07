@@ -30,6 +30,7 @@ class DerivedQuantities:
         # TODO remove this
         self.make_derived_quantities(derived_quantities)
         self.data = [self.make_header()]
+        self.t = []
 
     def make_derived_quantities(self, derived_quantities):
         for derived_quantity, list_of_prms_dicts in derived_quantities.items():
@@ -89,10 +90,14 @@ class DerivedQuantities:
         row = [t]
         for quantity in self.derived_quantities:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):
-                row.append(quantity.compute(self.volume_markers))
+                value = quantity.compute(self.volume_markers)
             else:
-                row.append(quantity.compute())
+                value = quantity.compute()
+            quantity.data.append(value)
+            quantity.t.append(t)
+            row.append(value)
         self.data.append(row)
+        self.t.append(t)
 
     def write(self):
         if self.file is not None:
