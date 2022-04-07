@@ -87,9 +87,12 @@ class DerivedQuantities:
         row = [t]
         for quantity in self.derived_quantities:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):
-                row.append(quantity.compute(self.volume_markers))
+                value = quantity.compute(self.volume_markers)
             else:
-                row.append(quantity.compute())
+                value = quantity.compute()
+            quantity.data.append(value)
+            quantity.t.append(t)
+            row.append(value)
         self.data.append(row)
 
     def write(self):
