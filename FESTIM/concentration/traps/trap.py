@@ -13,7 +13,9 @@ class Trap(Concentration):
             E_k (float, list): trapping activation energy (eV)
             p_0 (float, list): detrapping pre-exponential factor (s-1)
             E_p (float, list): detrapping activation energy (eV)
-            materials (list, int): the materials ids the trap is living in
+            materials (list, int, str, FESTIM.Material): the materials
+                the trap is living in. The material's name, id or the
+                material itself can be set.
             density (sp.Add, float, list, fenics.Expresion,
                 fenics.UserExpression): the trap density (m-3)
             id (int, optional): The trap id. Defaults to None.
