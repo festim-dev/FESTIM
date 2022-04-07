@@ -39,18 +39,17 @@ class TestCreateDiffusionForm:
     my_mesh.dx = f.dx()
     dt = FESTIM.Stepsize(initial_value=1)
     V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
-    mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
 
-    def test_chemical_potential(self):
+    def test_sieverts(self):
         # build
+        mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3, solubility_law="sieverts")
         Index._globalcount = 8
         my_theta = FESTIM.Theta()
         my_theta.F = 0
         my_theta.solution = f.Function(self.V, name="c_t")
         my_theta.previous_solution = f.Function(self.V, name="c_t_n")
         my_theta.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = FESTIM.Materials([mat1])
 
         # run
         my_theta.create_diffusion_form(my_mats, self.my_mesh, self.my_temp, dt=self.dt)
@@ -58,13 +57,45 @@ class TestCreateDiffusionForm:
         # test
         Index._globalcount = 8
         v = my_theta.test_function
-        D = self.mat1.D_0 * f.exp(-self.mat1.E_D / FESTIM.k_B / self.my_temp.T)
-        S = self.mat1.S_0 * f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T)
-        S_n = self.mat1.S_0 * f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T_n)
+        D = mat1.D_0 * f.exp(-mat1.E_D / FESTIM.k_B / self.my_temp.T)
+        S = mat1.S_0 * f.exp(-mat1.E_S / FESTIM.k_B / self.my_temp.T)
+        S_n = mat1.S_0 * f.exp(-mat1.E_S / FESTIM.k_B / self.my_temp.T_n)
         c_0 = my_theta.solution * S
         c_0_n = my_theta.previous_solution * S_n
         expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
         expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
+
+        print("expected F:")
+        print(expected_form)
+        print("produced F:")
+        print(my_theta.F)
+        assert my_theta.F.equals(expected_form)
+
+    def test_henry(self):
+        # build
+        mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4, solubility_law="henry")
+
+        Index._globalcount = 8
+        my_theta = FESTIM.Theta()
+        my_theta.F = 0
+        my_theta.solution = f.Function(self.V, name="c_t")
+        my_theta.previous_solution = f.Function(self.V, name="c_t_n")
+        my_theta.test_function = f.TestFunction(self.V)
+        my_mats = FESTIM.Materials([mat2])
+
+        # run
+        my_theta.create_diffusion_form(my_mats, self.my_mesh, self.my_temp, dt=self.dt)
+
+        # test
+        Index._globalcount = 8
+        v = my_theta.test_function
+        D = mat2.D_0 * f.exp(-mat2.E_D / FESTIM.k_B / self.my_temp.T)
+        K_H = mat2.S_0 * f.exp(-mat2.E_S / FESTIM.k_B / self.my_temp.T)
+        K_H_n = mat2.S_0 * f.exp(-mat2.E_S / FESTIM.k_B / self.my_temp.T_n)
+        c_0 = my_theta.solution**2 * K_H
+        c_0_n = my_theta.previous_solution**2 * K_H_n
+        expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(2)
+        expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(2)
 
         print("expected F:")
         print(expected_form)
