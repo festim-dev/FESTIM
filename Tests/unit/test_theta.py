@@ -145,6 +145,9 @@ def test_get_concentration_for_a_given_material():
 
 
 def test_post_processing_solution_to_concentration():
+    """Checks that post_processing_solution_to_concentration produces the
+    expected function with sieverts solubility law"""
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "CG", 1)
     S = 3
@@ -157,6 +160,31 @@ def test_post_processing_solution_to_concentration():
     my_theta.solution = f.interpolate(f.Constant(value_theta), V)
 
     expected_concentration = f.project(f.Constant(S) * value_theta, V)
+    my_theta.create_form_post_processing(V, materials, dx)
+    my_theta.post_processing_solution_to_concentration()
+
+    assert f.errornorm(
+        my_theta.post_processing_solution, expected_concentration
+    ) == pytest.approx(0)
+
+
+def test_post_processing_solution_to_concentration_henry():
+    """Checks that post_processing_solution_to_concentration produces the
+    expected function with henry solubility law"""
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "CG", 1)
+    S = 3
+    value_theta = 5
+    materials = FESTIM.Materials(
+        [FESTIM.Material(1, 1, 0, S, E_S=0, solubility_law="henry")]
+    )
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=vm)
+    my_theta = FESTIM.Theta()
+    my_theta.S = S
+    my_theta.solution = f.interpolate(f.Constant(value_theta), V)
+
+    expected_concentration = f.project(f.Constant(S) * value_theta**2, V)
     my_theta.create_form_post_processing(V, materials, dx)
     my_theta.post_processing_solution_to_concentration()
 
