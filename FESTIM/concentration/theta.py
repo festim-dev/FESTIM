@@ -69,20 +69,16 @@ class Theta(Mobile):
             c_0 = self.solution * S
             c_0_n = self.previous_solution * S_n
         elif material.solubility_law == "henry":
-            # for some reason this doesn't work without dolfin_eps
-            # makes the first iteration longer to converge
-            # https://fenicsproject.discourse.group/t/formulation-with-grad-of-function-squared/7608
             c_0 = (self.solution) ** 2 * S
             c_0_n = self.previous_solution**2 * S_n
         return c_0, c_0_n
 
     def mobile_concentration(self):
-        """Returns the hydrogen concentration as c=theta*S
-        Where S is FESTIM.ArheniusCoeff defines on all materials.
+        """Returns the hydrogen concentration as c=theta*K_S or c=theta**2*K_H
         This is needed when adding robin BCs to the form.
 
         Returns:
-            fenics.Product: the hydrogen mobile concentration
+            ThetaToConcentration: the hydrogen mobile concentration
         """
         return ThetaToConcentration(
             self.solution, self.materials, self.volume_markers, self.T.T
@@ -142,12 +138,12 @@ class ThetaToConcentration(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
         S_0 = material.S_0
         E_S = material.E_S
-        c = self._comp(x)
+        theta = self._comp(x)
         S = S_0 * f.exp(-E_S / k_B / self._T(x))
         if material.solubility_law == "sieverts":
-            value[0] = c * S
+            value[0] = theta * S
         elif material.solubility_law == "henry":
-            value[0] = c**2 * S
+            value[0] = theta**2 * S
 
     def value_shape(self):
         return ()
