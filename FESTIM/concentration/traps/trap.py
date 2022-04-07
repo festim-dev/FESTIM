@@ -53,13 +53,13 @@ class Trap(Concentration):
         self.sources = []
 
     def make_materials(self, materials):
-        """_summary_
+        """Ensure all entries in self.materials are of type FESTIM.Material
 
         Args:
-            materials (FESTIM.Materials): _description_
+            materials (FESTIM.Materials): the materials
 
         Raises:
-            ValueError: _description_
+            ValueError: if some duplicates are found
         """
         new_materials = []
 
