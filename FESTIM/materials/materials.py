@@ -1,7 +1,7 @@
 from operator import itemgetter
 import warnings
 import numpy as np
-from FESTIM import k_B
+from FESTIM import k_B, Material
 import fenics as f
 
 
@@ -168,6 +168,14 @@ class Materials:
 
         msg = "No material with name {} was found".format(name)
         raise ValueError(msg)
+
+    def find_material(self, mat):
+        if isinstance(mat, int):
+            return self.find_material_from_id(mat)
+        elif isinstance(mat, str):
+            return self.find_material_from_name(mat)
+        elif isinstance(mat, Material):
+            return mat
 
     def find_subdomain_from_x_coordinate(self, x):
         """Finds the correct subdomain at a given x coordinate
