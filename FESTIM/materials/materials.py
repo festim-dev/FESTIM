@@ -212,6 +212,25 @@ class Materials:
         if self.S is not None:
             self.S._T = T.T
 
+    def find_material(self, name):
+        """Returns the material with the correct name
+
+        Args:
+            name (str): the name of the material
+
+        Raises:
+            ValueError: when no match was found
+
+        Returns:
+            FESTIM.Material: the material object
+        """
+        for material in self.materials:
+            if material.name == name:
+                return material
+
+        msg = "No material with name {} was found".format(name)
+        raise ValueError(msg)
+
 
 class ArheniusCoeff(f.UserExpression):
     def __init__(self, materials, vm, T, pre_exp, E, **kwargs):
