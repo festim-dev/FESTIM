@@ -14,6 +14,10 @@ class Traps:
             if trap.id is None:
                 trap.id = i
 
+    def make_traps_materials(self, materials):
+        for trap in self.traps:
+            trap.make_materials(materials)
+
     def create_forms(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
         self.F = 0
         for trap in self.traps:
