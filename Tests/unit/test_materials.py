@@ -41,6 +41,31 @@ def test_find_material_from_id_unfound_id():
         my_Mats.find_material_from_id(id_test)
 
 
+def test_find_material_from_name():
+    """Checks the function find_material_from_name() returns the correct material"""
+    mat_1 = Material(id=1, D_0=None, E_D=None, name="mat1")
+    mat_2 = Material(id=2, D_0=None, E_D=None, name="mat2")
+    my_Mats = Materials([mat_1, mat_2])
+    assert my_Mats.find_material_from_name("mat1") == mat_1
+    assert my_Mats.find_material_from_name("mat2") == mat_2
+
+
+def test_find_material_from_name_unfound_name():
+    """
+    Check find_material_from_name raises an error when the name is not found
+    """
+    mat_1 = Material(id=5, D_0=None, E_D=None)
+    mat_2 = Material(id=2, D_0=None, E_D=None)
+    mat_3 = Material(id=-1, D_0=None, E_D=None)
+
+    my_Mats = Materials([mat_1, mat_2, mat_3])
+    name_test = "coucou"
+    with pytest.raises(
+        ValueError, match="No material with name {} was found".format(name_test)
+    ):
+        my_Mats.find_material_from_name(name_test)
+
+
 def test_unused_thermal_cond():
     """
     Checks warnings when some keys are unused
