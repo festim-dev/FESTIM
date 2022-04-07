@@ -5,10 +5,12 @@ from FESTIM import (
     MaximumVolume,
     TotalVolume,
     TotalSurface,
+    DerivedQuantity,
 )
 import fenics as f
 import os
 import csv
+from typing import Union
 
 
 class DerivedQuantities:
@@ -28,6 +30,7 @@ class DerivedQuantities:
         # TODO remove this
         self.make_derived_quantities(derived_quantities)
         self.data = [self.make_header()]
+        self.t = []
 
     def make_derived_quantities(self, derived_quantities):
         for derived_quantity, list_of_prms_dicts in derived_quantities.items():
@@ -87,10 +90,14 @@ class DerivedQuantities:
         row = [t]
         for quantity in self.derived_quantities:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):
-                row.append(quantity.compute(self.volume_markers))
+                value = quantity.compute(self.volume_markers)
             else:
-                row.append(quantity.compute())
+                value = quantity.compute()
+            quantity.data.append(value)
+            quantity.t.append(t)
+            row.append(value)
         self.data.append(row)
+        self.t.append(t)
 
     def write(self):
         if self.file is not None:
@@ -155,3 +162,85 @@ class DerivedQuantities:
             bool: True if it's time to compute, else False
         """
         return nb_iterations % self.nb_iterations_between_compute == 0
+
+    def filter(
+        self,
+        surfaces: Union[list, int] = None,
+        volumes: Union[list, int] = None,
+        fields: Union[list, str] = None,
+        instances: DerivedQuantity = None,
+    ):
+        """Finds DerivedQuantity objects that match surfaces, volumes, and instances.
+
+        Args:
+            surfaces (Union[list, int], optional): the surface ids to match.
+                Defaults to None.
+            volumes (Union[list, int], optional): the volume ids to match.
+                Defaults to None.
+            fields (Union[list, str], optional): the fields to match.
+                Defaults to None.
+            instances (DerivedQuantity, optional): the DerivedQuantity
+                instances to match. Defaults to None.
+
+        Returns:
+            list, DerivedQuantity: if only one quantity matches returns this
+                quantity, else returs a list of DerivedQuantity
+        """
+        # ensure arguments are list
+        if surfaces is not None and not isinstance(surfaces, list):
+            surfaces = [surfaces]
+        if volumes is not None and not isinstance(volumes, list):
+            volumes = [volumes]
+        if fields is not None and not isinstance(fields, list):
+            fields = [fields]
+        if instances is not None and not isinstance(instances, list):
+            instances = [instances]
+
+        quantities = []
+
+        # iterate through derived_quantities
+        for quantity in self.derived_quantities:
+
+            # initialise flags to False
+            match_surface, match_volume, match_field, match_instance = (
+                False,
+                False,
+                False,
+                False,
+            )
+
+            # check if matches surface
+            if surfaces is not None:
+                if hasattr(quantity, "surface") and quantity.surface in surfaces:
+                    match_surface = True
+            else:
+                match_surface = True
+
+            # check if matches volume
+            if volumes is not None:
+                if hasattr(quantity, "volume") and quantity.volume in volumes:
+                    match_volume = True
+            else:
+                match_volume = True
+
+            # check if matches field
+            if fields is not None:
+                if quantity.field in fields:
+                    match_field = True
+            else:
+                match_field = True
+
+            # check if matches instance
+            if instances is not None:
+                if isinstance(quantity, tuple(instances)):
+                    match_instance = True
+            else:
+                match_instance = True
+
+            # if all flags are True, append to the list
+            if match_surface and match_volume and match_field and match_instance:
+                quantities.append(quantity)
+
+        if len(quantities) == 1:
+            quantities = quantities[0]
+        return quantities

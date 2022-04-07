@@ -263,3 +263,58 @@ class TestWrite:
         my_derived_quantities.write()
 
         assert os.path.exists(folder + "/" + file)
+
+
+class TestFilter:
+    """Tests the filter method of DerivedQUantities"""
+
+    def test_simple(self):
+        derived_quantities = DerivedQuantities()
+        flux1 = SurfaceFlux(field="solute", surface=1)
+        flux2 = SurfaceFlux(field="T", surface=2)
+        derived_quantities.derived_quantities = [flux1, flux2]
+
+        assert derived_quantities.filter(surfaces=[1, 2]) == [flux1, flux2]
+        assert derived_quantities.filter(surfaces=[1]) == flux1
+        assert derived_quantities.filter(fields=["T"]) == flux2
+        assert derived_quantities.filter(fields=["T", "solute"], surfaces=[3]) == []
+        assert derived_quantities.filter(fields=["solute"], surfaces=[1, 2]) == flux1
+
+    def test_with_volumes(self):
+        derived_quantities = DerivedQuantities()
+        flux1 = SurfaceFlux(field="solute", surface=1)
+        flux2 = SurfaceFlux(field="T", surface=2)
+        total1 = TotalVolume(field="1", volume=3)
+        total2 = TotalVolume(field="retention", volume=1)
+        derived_quantities.derived_quantities = [flux1, flux2, total1, total2]
+
+        assert derived_quantities.filter() == derived_quantities.derived_quantities
+        assert derived_quantities.filter(surfaces=[1, 2], volumes=[3]) == []
+        assert (
+            derived_quantities.filter(volumes=[1, 3], fields=["retention", "solute"])
+            == total2
+        )
+
+    def test_with_single_args(self):
+        derived_quantities = DerivedQuantities()
+        flux1 = SurfaceFlux(field="solute", surface=1)
+        flux2 = SurfaceFlux(field="T", surface=2)
+        total1 = TotalVolume(field="1", volume=3)
+
+        derived_quantities.derived_quantities = [flux1, flux2, total1]
+
+        assert derived_quantities.filter(surfaces=1) == flux1
+        assert derived_quantities.filter(fields="T") == flux2
+        assert derived_quantities.filter(volumes=3) == total1
+
+    def test_several_quantities_one_surface(self):
+        derived_quantities = DerivedQuantities()
+        surf1 = SurfaceFlux(field="solute", surface=1)
+        surf2 = TotalSurface(field="solute", surface=1)
+        derived_quantities.derived_quantities = [surf1, surf2]
+
+        assert derived_quantities.filter(surfaces=1, instances=SurfaceFlux) == surf1
+        assert derived_quantities.filter(surfaces=1, instances=TotalSurface) == surf2
+        assert derived_quantities.filter(
+            surfaces=1, instances=[TotalSurface, SurfaceFlux]
+        ) == [surf1, surf2]

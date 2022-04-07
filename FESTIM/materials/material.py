@@ -12,6 +12,7 @@ class Material:
         borders=None,
         H=None,
         solubility_law="sieverts",
+        name=None,
     ) -> None:
         """Inits Material class
 
@@ -36,8 +37,10 @@ class Material:
             H (dict, optional): heat of transport (J/mol).
                 {"free_enthalpy": ..., "entropy": ...} so that
                 H = free_enthalpy + entropy*T. Defaults to None.
+            name (str, optional): name of the material. Defaults to None.
         """
         self.id = id
+        self.name = name
         self.D_0 = D_0
         self.E_D = E_D
         self.S_0 = S_0

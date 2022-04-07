@@ -33,7 +33,7 @@ def test_implantation_flux_with_time_dependancy():
     Checks that ImplantationFlux has the correct value attribute when using
     time dependdant arguments
     """
-    flux = 1 * (FESTIM.t < 10)
+    flux = sp.Piecewise((1, FESTIM.t < 10), (0, True))
     imp_depth = 5e-9
     width = 5e-9
     distribution = (
@@ -43,9 +43,7 @@ def test_implantation_flux_with_time_dependancy():
     )
     expected_value = sp.printing.ccode(flux * distribution)
 
-    my_source = FESTIM.ImplantationFlux(
-        flux=1 * (FESTIM.t < 10), imp_depth=5e-9, width=5e-9, volume=1
-    )
+    my_source = FESTIM.ImplantationFlux(flux=flux, imp_depth=5e-9, width=5e-9, volume=1)
 
     assert my_source.value._cppcode == expected_value
 

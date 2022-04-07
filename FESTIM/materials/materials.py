@@ -1,8 +1,9 @@
 from operator import itemgetter
 import warnings
 import numpy as np
-from FESTIM import k_B
+from FESTIM import k_B, Material
 import fenics as f
+from typing import Union
 
 
 class Materials:
@@ -149,6 +150,42 @@ class Materials:
             if mat_id in mat_ids:
                 return material
         raise ValueError("Couldn't find ID " + str(mat_id) + " in materials list")
+
+    def find_material_from_name(self, name):
+        """Returns the material with the correct name
+
+        Args:
+            name (str): the name of the material
+
+        Raises:
+            ValueError: when no match was found
+
+        Returns:
+            FESTIM.Material: the material object
+        """
+        for material in self.materials:
+            if material.name == name:
+                return material
+
+        msg = "No material with name {} was found".format(name)
+        raise ValueError(msg)
+
+    def find_material(self, mat: Union[int, str, Material]):
+        """Returns the correct FESTIM.Material object based on either an id,
+        a name
+
+        Args:
+            mat (Union[int, str, Material]): the material tag
+
+        Returns:
+            FESTIM.Material: the matching material
+        """
+        if isinstance(mat, int):
+            return self.find_material_from_id(mat)
+        elif isinstance(mat, str):
+            return self.find_material_from_name(mat)
+        elif isinstance(mat, Material):
+            return mat
 
     def find_subdomain_from_x_coordinate(self, x):
         """Finds the correct subdomain at a given x coordinate
