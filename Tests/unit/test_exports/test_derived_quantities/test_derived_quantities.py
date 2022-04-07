@@ -266,6 +266,8 @@ class TestWrite:
 
 
 class TestFilter:
+    """Tests the filter method of DerivedQUantities"""
+
     def test_simple(self):
         derived_quantities = DerivedQuantities()
         flux1 = SurfaceFlux(field="solute", surface=1)
