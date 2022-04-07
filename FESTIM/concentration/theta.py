@@ -120,44 +120,6 @@ class Theta(Mobile):
         self.form_post_processing = F
 
 
-# TODO merge this with dirichlet_bc.BoundaryConditionTheta
-class ConcentrationToTheta(f.UserExpression):
-    """Creates an Expression for converting dirichlet bcs in the case
-    of chemical potential conservation
-    """
-
-    def __init__(self, comp, materials, vm, T, **kwargs):
-        """initialisation
-
-        Args:
-            comp (fenics.Expression): value of BC
-            materials (FESTIM.Materials): contains materials objects
-            vm (fenics.MeshFunction): volume markers
-            T (fenics.Function): Temperature
-        """
-        super().__init__(kwargs)
-        self._comp = comp
-        self._vm = vm
-        self._T = T
-        self._materials = materials
-
-    def eval_cell(self, value, x, ufc_cell):
-        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
-        subdomain_id = self._vm[cell]
-        material = self._materials.find_material_from_id(subdomain_id)
-        S_0 = material.S_0
-        E_S = material.E_S
-        c = self._comp(x)
-        S = S_0 * f.exp(-E_S / k_B / self._T(x))
-        if material.solubility_law == "sieverts":
-            value[0] = c / S
-        elif material.solubility_law == "henry":
-            value[0] = (c / S) ** 0.5
-
-    def value_shape(self):
-        return ()
-
-
 class ThetaToConcentration(f.UserExpression):
     def __init__(self, comp, materials, vm, T, **kwargs):
         """initialisation
