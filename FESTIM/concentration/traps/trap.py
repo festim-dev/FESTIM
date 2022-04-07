@@ -1,4 +1,4 @@
-from FESTIM import Concentration, k_B
+from FESTIM import Concentration, k_B, Material
 from fenics import *
 import sympy as sp
 import numpy as np
@@ -47,12 +47,29 @@ class Trap(Concentration):
         self.materials = materials
         if not isinstance(self.materials, list):
             self.materials = [self.materials]
-        if len(self.materials) != len(np.unique(self.materials)):
-            raise ValueError("Duplicate materials in trap")
 
         self.density = []
         self.make_density(density)
         self.sources = []
+
+    def make_materials(self, materials):
+        """_summary_
+
+        Args:
+            materials (FESTIM.Materials): _description_
+
+        Raises:
+            ValueError: _description_
+        """
+        new_materials = []
+
+        for material in self.materials:
+            new_materials.append(materials.find_material(material))
+
+        self.materials = new_materials
+
+        if len(self.materials) != len(list(set(self.materials))):
+            raise ValueError("Duplicate materials in trap")
 
     def make_density(self, densities):
         if type(densities) is not list:
@@ -112,7 +129,9 @@ class Trap(Concentration):
         solution = self.solution
         prev_solution = self.previous_solution
         test_function = self.test_function
-        trap_materials = self.materials
+
+        if not all(isinstance(mat, Material) for mat in self.materials):
+            self.make_materials(materials)
 
         T = T.T
         c_0 = mobile.solution
@@ -129,12 +148,11 @@ class Trap(Concentration):
             # if the sim is steady state and
             # if a trap is not defined in one subdomain
             # add c_t = 0 to the form in this subdomain
-            all_mat_ids = [mat.id for mat in materials.materials]
-            for mat_id in all_mat_ids:
-                if mat_id not in trap_materials:
-                    F_trapping += solution * test_function * dx(mat_id)
+            for mat in materials.materials:
+                if mat not in self.materials:
+                    F_trapping += solution * test_function * dx(mat.id)
 
-        for i, mat_id in enumerate(trap_materials):
+        for i, mat in enumerate(self.materials):
             if type(self.k_0) is list:
                 k_0 = self.k_0[i]
                 E_k = self.E_k[i]
@@ -152,12 +170,11 @@ class Trap(Concentration):
             # expressions to be updated
             expressions_trap.append(density)
 
-            corresponding_material = materials.find_material_from_id(mat_id)
             if chemical_pot:
                 # TODO this needs changing for Henry
                 # change of variable
-                S_0 = corresponding_material.S_0
-                E_S = corresponding_material.E_S
+                S_0 = mat.S_0
+                E_S = mat.E_S
                 c_0 = theta * S_0 * exp(-E_S / k_B / T)
 
             # k(T)*c_m*(n - c_t) - p(T)*c_t
@@ -167,10 +184,10 @@ class Trap(Concentration):
                 * c_0
                 * (density - solution)
                 * test_function
-                * dx(mat_id)
+                * dx(mat.id)
             )
             F_trapping += (
-                p_0 * exp(-E_p / k_B / T) * solution * test_function * dx(mat_id)
+                p_0 * exp(-E_p / k_B / T) * solution * test_function * dx(mat.id)
             )
 
         self.F_trapping = F_trapping
