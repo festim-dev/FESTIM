@@ -150,6 +150,25 @@ class Materials:
                 return material
         raise ValueError("Couldn't find ID " + str(mat_id) + " in materials list")
 
+    def find_material_from_name(self, name):
+        """Returns the material with the correct name
+
+        Args:
+            name (str): the name of the material
+
+        Raises:
+            ValueError: when no match was found
+
+        Returns:
+            FESTIM.Material: the material object
+        """
+        for material in self.materials:
+            if material.name == name:
+                return material
+
+        msg = "No material with name {} was found".format(name)
+        raise ValueError(msg)
+
     def find_subdomain_from_x_coordinate(self, x):
         """Finds the correct subdomain at a given x coordinate
 
@@ -211,25 +230,6 @@ class Materials:
             self.thermal_cond._T = T.T
         if self.S is not None:
             self.S._T = T.T
-
-    def find_material(self, name):
-        """Returns the material with the correct name
-
-        Args:
-            name (str): the name of the material
-
-        Raises:
-            ValueError: when no match was found
-
-        Returns:
-            FESTIM.Material: the material object
-        """
-        for material in self.materials:
-            if material.name == name:
-                return material
-
-        msg = "No material with name {} was found".format(name)
-        raise ValueError(msg)
 
 
 class ArheniusCoeff(f.UserExpression):
