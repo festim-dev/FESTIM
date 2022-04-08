@@ -92,18 +92,23 @@ class TestWrite:
         assert labels[0] == "coucou"
 
 
-def test_error_folder_endswith_xdmf():
-    with pytest.raises(ValueError, match="must end with .xdmf"):
-        XDMFExport("solute", "solute", "coucou")
+def test_error_filename_endswith_xdmf():
+    with pytest.raises(ValueError, match="filename must end with .xdmf"):
+        XDMFExport("solute", label="solute", filename="coucou")
+
+
+def test_error_filename_not_a_str():
+    with pytest.raises(TypeError, match="filename must be a string"):
+        XDMFExport("solute", label="solute", filename=2)
 
 
 def test_error_folder_not_a_str():
-    with pytest.raises(TypeError, match="must be a string"):
-        XDMFExport("solute", "solute", 2)
+    with pytest.raises(TypeError, match="folder must be a string"):
+        XDMFExport("solute", label="solute", folder=2)
 
 
 def test_error_checkpoint_wrong_type():
-    with pytest.raises(TypeError, match="checkpoint should be a bool"):
+    with pytest.raises(TypeError, match="checkpoint must be a bool"):
         XDMFExport("solute", "solute", "my_filename.xdmf", checkpoint=2)
 
 

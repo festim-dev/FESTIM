@@ -33,7 +33,7 @@ class XDMFExport(Export):
         self.mode = mode
         self.checkpoint = checkpoint
         if type(self.checkpoint) != bool:
-            raise TypeError("checkpoint should be a bool")
+            raise TypeError("checkpoint must be a bool")
 
         self.append = False
 
@@ -61,7 +61,7 @@ class XDMFExport(Export):
     def folder(self, value):
         if value is not None:
             if not isinstance(value, str):
-                raise TypeError("folder value must be a string")
+                raise TypeError("folder must be a string")
 
         self._folder = value
 
@@ -73,7 +73,7 @@ class XDMFExport(Export):
     def filename(self, value):
         if value is not None:
             if not isinstance(value, str):
-                raise TypeError("filename value must be a string")
+                raise TypeError("filename must be a string")
             if not value.endswith(".xdmf"):
                 raise ValueError("filename must end with .xdmf")
             self._filename = value
