@@ -1,0 +1,19 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: FESTIM
+message: 'If you use this software, please cite it as below.'
+type: software
+authors:
+  - given-names: Rémi
+    family-names: Delaporte-Mathurin
+    email: rdelaportemathurin@gmail.com
+    affiliation: CEA
+    orcid: 'https://orcid.org/0000-0003-1064-8882'
+identifiers:
+  - type: doi
+    value: 10.1016/j.nme.2019.100709
+    description: Initial FESTIM paper
+repository-code: 'https://github.com/RemDelaporteMathurin/FESTIM'
+version: 0.8.1
