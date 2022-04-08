@@ -254,6 +254,14 @@ class TestWrite:
 
         assert os.path.exists(filename)
 
+    def test_write_folder_doesnt_exist(self, folder, my_derived_quantities):
+        """Checks that write() creates the inexisting folder"""
+        filename = "{}/folder2/my_file.csv".format(folder)
+        my_derived_quantities.filename = filename
+        my_derived_quantities.write()
+
+        assert os.path.exists(filename)
+
 
 class TestFilter:
     """Tests the filter method of DerivedQUantities"""
@@ -308,3 +316,15 @@ class TestFilter:
         assert derived_quantities.filter(
             surfaces=1, instances=[TotalSurface, SurfaceFlux]
         ) == [surf1, surf2]
+
+
+def test_wrong_type_filename():
+    """Checks that an error is raised when filename is not a string"""
+    with pytest.raises(TypeError, match="filename must be a string"):
+        DerivedQuantities(filename=2)
+
+
+def test_filename_ends_with_csv():
+    """Checks that an error is raised when filename doesn't end with .csv"""
+    with pytest.raises(ValueError, match="filename must end with .csv"):
+        DerivedQuantities(filename="coucou")
