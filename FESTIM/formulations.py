@@ -18,6 +18,13 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     '''
     k_B = FESTIM.k_B  # Boltzmann constant
     v_0 = 1e13  # frequency factor s-1
+    # for quiros
+    v_0 = 2.45e13
+    # for hollingsworth
+    v_0 = 1e13
+    # for Baldwin
+    v_0 = 4e12
+    print("Warning: modified value for nu_0")
     expressions = []
     F = 0
 
@@ -44,11 +51,24 @@ def formulation(parameters, extrinsic_traps, solutions, testfunctions,
     # Define flux
     if "source_term" in parameters.keys():
         print('Defining source terms')
-        source = Expression(
-            sp.printing.ccode(
-                parameters["source_term"]["value"]), t=0, degree=2)
-        F += - source*testfunctions[0]*dx
-        expressions.append(source)
+        if isinstance(parameters["source_term"], dict):
+            source = Expression(
+                sp.printing.ccode(
+                    parameters["source_term"]["value"]), t=0, degree=2)
+            F += - source*testfunctions[0]*dx
+            expressions.append(source)
+        elif isinstance(parameters["source_term"], list):
+            for source_dict in parameters["source_term"]:
+                source = Expression(
+                    sp.printing.ccode(
+                        source_dict["value"]), t=0, degree=2)
+                if isinstance(source_dict["volumes"], int):
+                    volumes = [source_dict["volumes"]]
+                else:
+                    volumes = source_dict["volumes"]
+                for vol in volumes:
+                    F += - source*testfunctions[0]*dx(vol)
+                expressions.append(source)
     expressions.append(T)  # Add it to the expressions to be updated
     i = 1  # index in traps
     j = 0  # index in extrinsic_traps
