@@ -1,3 +1,4 @@
+from numpy import isin
 from FESTIM import (
     SurfaceFlux,
     AverageVolume,
@@ -8,7 +9,6 @@ from FESTIM import (
     DerivedQuantity,
 )
 import fenics as f
-import os
 import csv
 from typing import Union
 
@@ -16,14 +16,12 @@ from typing import Union
 class DerivedQuantities:
     def __init__(
         self,
-        file=None,
-        folder=None,
+        filename=None,
         nb_iterations_between_compute=1,
         nb_iterations_between_exports=None,
         **derived_quantities
     ) -> None:
-        self.file = file
-        self.folder = folder
+        self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
         self.derived_quantities = []
@@ -31,6 +29,19 @@ class DerivedQuantities:
         self.make_derived_quantities(derived_quantities)
         self.data = [self.make_header()]
         self.t = []
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if value is not None:
+            if not isinstance(value, str):
+                raise TypeError("filename must be a string")
+            if not value.endswith(".csv"):
+                raise ValueError("filename must end with .csv")
+        self._filename = value
 
     def make_derived_quantities(self, derived_quantities):
         for derived_quantity, list_of_prms_dicts in derived_quantities.items():
@@ -100,19 +111,11 @@ class DerivedQuantities:
         self.t.append(t)
 
     def write(self):
-        if self.file is not None:
-            file_export = ""
-            if self.folder is not None:
-                file_export += self.folder + "/"
-                os.makedirs(os.path.dirname(file_export), exist_ok=True)
-            if self.file.endswith(".csv"):
-                file_export += self.file
-            else:
-                file_export += self.file + ".csv"
+        if self.filename is not None:
             busy = True
             while busy:
                 try:
-                    with open(file_export, "w+") as f:
+                    with open(self.filename, "w+") as f:
                         busy = False
                         writer = csv.writer(f, lineterminator="\n")
                         for val in self.data:
@@ -120,8 +123,10 @@ class DerivedQuantities:
                 except OSError as err:
                     print("OS error: {0}".format(err))
                     print(
-                        "The file " + file_export + ".txt might currently be busy."
-                        "Please close the application then press any key."
+                        "The file {} might currently be busy."
+                        "Please close the application then press any key.".format(
+                            self.filename
+                        )
                     )
                     input()
         return True
