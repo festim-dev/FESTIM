@@ -17,3 +17,13 @@ identifiers:
     description: Initial FESTIM paper
 repository-code: 'https://github.com/RemDelaporteMathurin/FESTIM'
 version: 0.8.1
+preferred-citation:
+  authors:
+    - given-names: Rémi
+      family-names: Delaporte-Mathurin
+      email: rdelaportemathurin@gmail.com
+      affiliation: CEA
+      orcid: 'https://orcid.org/0000-0003-1064-8882'
+  title: "Finite element analysis of hydrogen retention in ITER plasma facing components using FESTIM"
+  type: article
+  year: 2019
