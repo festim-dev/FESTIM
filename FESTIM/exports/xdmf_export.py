@@ -21,7 +21,7 @@ class XDMFExport(Export):
             checkpoint (bool, optional): If set to True,
                 fenics.XDMFFile.write_checkpoint will be use, else
                 fenics.XDMFFile.write. Defaults to True.
-            folder (str, optional): Defaults to None.
+            folder (str, optional): path of the export folder. Defaults to None.
         """
         super().__init__(field=field)
         self.label = label
@@ -54,6 +54,18 @@ class XDMFExport(Export):
         self._mode = value
 
     @property
+    def folder(self):
+        return self._folder
+
+    @folder.setter
+    def folder(self, value):
+        if value is not None:
+            if not isinstance(value, str):
+                raise TypeError("folder value must be a string")
+
+        self._folder = value
+
+    @property
     def filename(self):
         return self._filename
 
@@ -66,16 +78,15 @@ class XDMFExport(Export):
                 raise ValueError("filename must end with .xdmf")
             self._filename = value
         else:
-            if self.folder is not None:
-                filename = "{}/{}.xdmf".format(self.folder, self.label)
-            else:
-                filename = "{}.xdmf".format(self.label)
-            self._filename = filename
+            self._filename = "{}.xdmf".format(self.label)
 
     def define_xdmf_file(self):
         """Creates the file"""
-
-        self.file = f.XDMFFile("{}".format(self.filename))
+        if self.folder is None:
+            filename = self.filename
+        else:
+            filename = "{}/{}".format(self.folder, self.filename)
+        self.file = f.XDMFFile(filename)
         self.file.parameters["flush_output"] = True
         self.file.parameters["rewrite_function_mesh"] = False
 
