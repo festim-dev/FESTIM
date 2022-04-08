@@ -53,7 +53,7 @@ def test_run_temperature_stationary(tmpdir):
     )
 
     my_derived_quantities = FESTIM.DerivedQuantities(
-        file="derived_quantities.csv", folder=str(Path(d))
+        filename="{}/derived_quantities.csv".format(str(Path(d)))
     )
     my_derived_quantities.derived_quantities = [FESTIM.TotalVolume("solute", 1)]
 
