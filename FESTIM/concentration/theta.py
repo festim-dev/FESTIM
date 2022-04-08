@@ -25,13 +25,6 @@ class Theta(Mobile):
                 Defaults to None.
         """
         comp = self.get_comp(V, value, label=label, time_step=time_step)
-        # comp = ConcentrationToTheta(
-        #     comp, self.materials, self.volume_markers, self.T.T
-        # )
-
-        # # Product must be projected
-        # comp = f.project(comp, V)
-        # f.assign(self.previous_solution, comp)
 
         prev_sol = f.Function(V)
         v = f.TestFunction(V)
