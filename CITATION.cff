@@ -11,10 +11,6 @@ authors:
     email: rdelaportemathurin@gmail.com
     affiliation: CEA
     orcid: 'https://orcid.org/0000-0003-1064-8882'
-identifiers:
-  - type: doi
-    value: 10.1016/j.nme.2019.100709
-    description: Initial FESTIM paper
 repository-code: 'https://github.com/RemDelaporteMathurin/FESTIM'
 version: 0.8.1
 preferred-citation:
@@ -27,3 +23,11 @@ preferred-citation:
   title: "Finite element analysis of hydrogen retention in ITER plasma facing components using FESTIM"
   type: article
   year: 2019
+  doi: 10.1016/j.nme.2019.100709
+  url: "http://www.sciencedirect.com/science/article/pii/S2352179119300547"
+  issn: 2352-1791
+  volume: 21
+  pages: 100709
+  journal: "Nuclear Materials and Energy"
+
+
