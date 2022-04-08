@@ -1,4 +1,3 @@
-from numpy import isin
 from FESTIM import (
     SurfaceFlux,
     AverageVolume,
@@ -10,6 +9,8 @@ from FESTIM import (
 )
 import fenics as f
 import csv
+import os
+import numpy as np
 from typing import Union
 
 
@@ -123,23 +124,14 @@ class DerivedQuantities:
 
     def write(self):
         if self.filename is not None:
-            busy = True
-            while busy:
-                try:
-                    with open(self.filename, "w+") as f:
-                        busy = False
-                        writer = csv.writer(f, lineterminator="\n")
-                        for val in self.data:
-                            writer.writerows([val])
-                except OSError as err:
-                    print("OS error: {0}".format(err))
-                    print(
-                        "The file {} might currently be busy."
-                        "Please close the application then press any key.".format(
-                            self.filename
-                        )
-                    )
-                    input()
+            # if the directory doesn't exist
+            # create it
+            dirname = os.path.dirname(self.filename)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname, exist_ok=True)
+
+            # save the data to csv
+            np.savetxt(self.filename, np.array(self.data), fmt="%s", delimiter=",")
         return True
 
     def is_export(self, t, final_time, nb_iterations):
