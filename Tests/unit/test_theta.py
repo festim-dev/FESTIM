@@ -42,7 +42,7 @@ class TestCreateDiffusionForm:
 
     def test_sieverts(self):
         # build
-        mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3, solubility_law="sieverts")
+        mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3, solubility_law="sievert")
         Index._globalcount = 8
         my_theta = FESTIM.Theta()
         my_theta.F = 0
@@ -150,7 +150,7 @@ def test_mobile_concentration_sieverts():
     E_S = 3
     S = S_0 * f.exp(-E_S / FESTIM.k_B / T.T)
     mats = FESTIM.Materials(
-        [FESTIM.Material(1, D_0=1, E_D=0, S_0=S_0, E_S=E_S, solubility_law="sieverts")]
+        [FESTIM.Material(1, D_0=1, E_D=0, S_0=S_0, E_S=E_S, solubility_law="sievert")]
     )
     my_theta.solution = f.project(f.Constant(10), V)
     my_theta.materials = mats

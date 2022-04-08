@@ -40,7 +40,7 @@ class Theta(Mobile):
         for mat in self.materials.materials:
             S = mat.S_0 * f.exp(-mat.E_S / k_B / self.T.T)
             F += -prev_sol * v * dx(mat.id)
-            if mat.solubility_law == "sieverts":
+            if mat.solubility_law == "sievert":
                 F += comp / S * v * dx(mat.id)
             elif mat.solubility_law == "henry":
                 F += (comp / S) ** 0.5 * v * dx(mat.id)
@@ -65,7 +65,7 @@ class Theta(Mobile):
         S_0 = material.S_0
         S = S_0 * f.exp(-E_S / k_B / T.T)
         S_n = S_0 * f.exp(-E_S / k_B / T.T_n)
-        if material.solubility_law == "sieverts":
+        if material.solubility_law == "sievert":
             c_0 = self.solution * S
             c_0_n = self.previous_solution * S_n
         elif material.solubility_law == "henry":
@@ -109,7 +109,7 @@ class Theta(Mobile):
         self.post_processing_solution = f.Function(V)
         F += -self.post_processing_solution * v * dx
         for mat in materials.materials:
-            if mat.solubility_law == "sieverts":
+            if mat.solubility_law == "sievert":
                 F += self.solution * self.S * v * dx(mat.id)
             elif mat.solubility_law == "henry":
                 F += self.solution**2 * self.S * v * dx(mat.id)
@@ -140,7 +140,7 @@ class ThetaToConcentration(f.UserExpression):
         E_S = material.E_S
         theta = self._comp(x)
         S = S_0 * f.exp(-E_S / k_B / self._T(x))
-        if material.solubility_law == "sieverts":
+        if material.solubility_law == "sievert":
             value[0] = theta * S
         elif material.solubility_law == "henry":
             value[0] = theta**2 * S

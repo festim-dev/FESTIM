@@ -125,7 +125,7 @@ class BoundaryConditionTheta(f.UserExpression):
         E_S = material.E_S
         c = self._bci(x)
         S = S_0 * f.exp(-E_S / k_B / self._T(x))
-        if material.solubility_law == "sieverts":
+        if material.solubility_law == "sievert":
             value[0] = c / S
         elif material.solubility_law == "henry":
             value[0] = (c / S + f.DOLFIN_EPS) ** 0.5
