@@ -21,7 +21,7 @@ class DerivedQuantities:
         nb_iterations_between_exports: int = None,
         **derived_quantities
     ) -> None:
-        """_summary_
+        """Inits DerivedQuantities
 
         Args:
             filename (str, optional): the filename (must end with .csv).
