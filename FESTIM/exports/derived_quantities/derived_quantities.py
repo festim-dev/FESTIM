@@ -1,14 +1,9 @@
 from FESTIM import (
-    SurfaceFlux,
-    AverageVolume,
     MinimumVolume,
     MaximumVolume,
-    TotalVolume,
-    TotalSurface,
     DerivedQuantity,
 )
 import fenics as f
-import csv
 import os
 import numpy as np
 from typing import Union
