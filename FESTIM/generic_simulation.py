@@ -188,9 +188,11 @@ class Simulation:
 
         # if the temperature is not time-dependent, solubility can be projected
         if self.settings.chemical_pot:
+            # TODO this could be moved to Materials.create_properties()
             if self.T.is_steady_state():
-                self.materials.S = project(self.materials.S, self.V_DG1)
-            self.mobile.S = self.materials.S
+                # self.materials.S = project(self.materials.S, self.V_DG1)
+                self.materials.solubility_as_function(self.mesh, self.T.T)
+
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
         self.exports.initialise_derived_quantities(
@@ -285,10 +287,10 @@ class Simulation:
 
     def run_post_processing(self):
         """Create post processing functions and compute/write the exports"""
-        label_to_function = self.update_post_processing_solutions()
+        self.update_post_processing_solutions()
 
         self.exports.t = self.t
-        self.exports.write(label_to_function, self.dt)
+        self.exports.write(self.label_to_function, self.dt)
 
     def update_post_processing_solutions(self):
         """Creates the post-processing functions by splitting self.u. Projects
@@ -314,4 +316,4 @@ class Simulation:
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
 
-        return label_to_function
+        self.label_to_function = label_to_function

@@ -11,6 +11,7 @@ class Material:
         rho=None,
         borders=None,
         H=None,
+        solubility_law="sievert",
         name=None,
     ) -> None:
         """Inits Material class
@@ -36,6 +37,8 @@ class Material:
             H (dict, optional): heat of transport (J/mol).
                 {"free_enthalpy": ..., "entropy": ...} so that
                 H = free_enthalpy + entropy*T. Defaults to None.
+            solubility_law (str, optional): the material's solubility law.
+                Can be "henry" or "sievert". Defaults to "sievert".
             name (str, optional): name of the material. Defaults to None.
         """
         self.id = id
@@ -52,6 +55,11 @@ class Material:
         if H is not None:
             self.free_enthalpy = H["free_enthalpy"]
             self.entropy = H["entropy"]
+        if solubility_law not in ["henry", "sievert"]:
+            raise ValueError(
+                "Acceptable values for solubility_law are 'henry' and 'sieverts'"
+            )
+        self.solubility_law = solubility_law
         self.check_properties()
 
     def check_properties(self):

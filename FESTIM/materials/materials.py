@@ -249,6 +249,22 @@ class Materials:
         if self.S is not None:
             self.S._T = T.T
 
+    def solubility_as_function(self, mesh, T):
+        """
+        Makes solubility as a fenics.Function and stores it in S attribute
+        """
+        V = f.FunctionSpace(mesh.mesh, "DG", 1)
+        S = f.Function(V, name="S")
+        vS = f.TestFunction(V)
+        dx = mesh.dx
+        F = 0
+        for mat in self.materials:
+            F += -S * vS * dx(mat.id)
+            F += mat.S_0 * f.exp(-mat.E_S / k_B / T) * vS * dx(mat.id)
+        f.solve(F == 0, S, bcs=[])
+
+        self.S = S
+
 
 class ArheniusCoeff(f.UserExpression):
     def __init__(self, materials, vm, T, pre_exp, E, **kwargs):

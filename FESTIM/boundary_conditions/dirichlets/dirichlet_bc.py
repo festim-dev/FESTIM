@@ -123,7 +123,12 @@ class BoundaryConditionTheta(f.UserExpression):
         material = self._materials.find_material_from_id(subdomain_id)
         S_0 = material.S_0
         E_S = material.E_S
-        value[0] = self._bci(x) / (S_0 * f.exp(-E_S / k_B / self._T(x)))
+        c = self._bci(x)
+        S = S_0 * f.exp(-E_S / k_B / self._T(x))
+        if material.solubility_law == "sievert":
+            value[0] = c / S
+        elif material.solubility_law == "henry":
+            value[0] = (c / S + f.DOLFIN_EPS) ** 0.5
 
     def value_shape(self):
         return ()

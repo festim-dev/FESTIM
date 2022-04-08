@@ -55,6 +55,11 @@ class HTransportProblem:
             dt (FESTIM.Stepsize, optional): the stepsize, only needed if
                 self.settings.transient is True. Defaults to None.
         """
+        if self.settings.chemical_pot:
+            self.mobile.S = materials.S
+            self.mobile.materials = materials
+            self.mobile.volume_markers = mesh.volume_markers
+            self.mobile.T = self.T
         self.attribute_flux_boundary_conditions()
         # Define functions
         self.define_function_space(mesh)
@@ -63,7 +68,12 @@ class HTransportProblem:
         self.traps.initialise_extrinsic_traps(self.V_CG1)
 
         # Define variational problem H transport
+        # if chemical pot create form to convert theta to concentration
+        if self.settings.chemical_pot:
+            self.mobile.create_form_post_processing(self.V_DG1, materials, mesh.dx)
+
         self.define_variational_problem(materials, mesh, dt)
+
         # Boundary conditions
         print("Defining boundary conditions")
         self.create_dirichlet_bcs(materials, mesh)
@@ -113,7 +123,8 @@ class HTransportProblem:
             self.mobile.test_function = self.v
         else:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
-                concentration.solution = list(split(self.u))[i]
+                concentration.solution = self.u.sub(i)
+                # concentration.solution = list(split(self.u))[i]
                 concentration.previous_solution = self.u_n.sub(i)
                 concentration.test_function = list(split(self.v))[i]
 
@@ -146,11 +157,22 @@ class HTransportProblem:
                     functionspace, value, label=ini.label, time_step=ini.time_step
                 )
 
+        # initial guess needs to be non zero if chemical pot
+        if self.settings.chemical_pot:
+            if self.V.num_sub_spaces() == 0:
+                functionspace = self.V
+            else:
+                functionspace = self.V.sub(0).collapse()
+            initial_guess = project(
+                self.mobile.previous_solution + Constant(DOLFIN_EPS), functionspace
+            )
+            self.mobile.solution.assign(initial_guess)
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
             for i, concentration in enumerate([self.mobile, *self.traps.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
+                concentration.solution = list(split(self.u))[i]
 
     def define_variational_problem(self, materials, mesh, dt=None):
         """Creates the variational problem for hydrogen transport (form,
@@ -275,18 +297,15 @@ class HTransportProblem:
         else:
             res = list(self.u.split())
 
-        self.mobile.post_processing_solution = res[0]
         for i, trap in enumerate(self.traps.traps, 1):
             trap.post_processing_solution = res[i]
 
         if self.settings.chemical_pot:
             self.mobile.post_processing_solution_to_concentration()
-            if self.need_projecting_solute(exports):
-                # project solute on V_DG1
-                self.mobile.post_processing_solution = project(
-                    self.mobile.post_processing_solution, self.V_DG1
-                )
+        else:
+            self.mobile.post_processing_solution = res[0]
 
+    # TODO remove this unused method
     def need_projecting_solute(self, exports):
         """Checks if the user computes a Hydrogen surface flux or exports the
         solute to XDMF. If so, the function of mobile particles will have to
