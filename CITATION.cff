@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+title: FESTIM
+message: 'If you use this software, please cite it as below.'
+type: software
+authors:
+  - given-names: Rémi
+    family-names: Delaporte-Mathurin
+    email: rdelaportemathurin@gmail.com
+    orcid: 'https://orcid.org/0000-0003-1064-8882'
+  - given-names: James
+    family-names: Dark
+
+repository-code: 'https://github.com/RemDelaporteMathurin/FESTIM'
+version: 0.8.1
+preferred-citation:
+  authors:
+    - given-names: Rémi
+      family-names: Delaporte-Mathurin
+    - given-names: Etienne
+      family-names: Hodille
+    - given-names: Jonathan
+      family-names: Mougenot
+    - given-names: Yann
+      family-names: Charles
+    - given-names: Christian
+      family-names: Grisolia
+  title: "Finite element analysis of hydrogen retention in ITER plasma facing components using FESTIM"
+  type: article
+  year: 2019
+  doi: 10.1016/j.nme.2019.100709
+  url: "http://www.sciencedirect.com/science/article/pii/S2352179119300547"
+  issn: 2352-1791
+  volume: 21
+  pages: 100709
+  journal: "Nuclear Materials and Energy"
