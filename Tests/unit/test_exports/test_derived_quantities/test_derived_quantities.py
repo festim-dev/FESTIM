@@ -234,9 +234,9 @@ class TestWrite:
         return str(Path(tmpdir.mkdir("test_folder")))
 
     @pytest.fixture
-    def my_derived_quantities(self, folder):
-        file = "my_file"
-        my_derv_quant = DerivedQuantities(file=file, folder=folder)
+    def my_derived_quantities(self):
+        filename = "my_file.csv"
+        my_derv_quant = DerivedQuantities(filename=filename)
         my_derv_quant.data = [
             ["a", "b", "c"],
             [1, 2, 3],
@@ -244,25 +244,15 @@ class TestWrite:
         ]
         return my_derv_quant
 
-    def test_write_no_csv_ext(self, folder, my_derived_quantities):
-        """adds data to DerivedQuantities and checks that write() creates the csv
-        file
-        """
-        file = "my_file"
-        my_derived_quantities.file = file
-        my_derived_quantities.write()
-
-        assert os.path.exists(folder + "/" + file + ".csv")
-
     def test_write(self, folder, my_derived_quantities):
         """adds data to DerivedQuantities and checks that write() creates the csv
         file
         """
-        file = "my_file.csv"
-        my_derived_quantities.file = file
+        filename = "{}/my_file.csv".format(folder)
+        my_derived_quantities.filename = filename
         my_derived_quantities.write()
 
-        assert os.path.exists(folder + "/" + file)
+        assert os.path.exists(filename)
 
 
 class TestFilter:
