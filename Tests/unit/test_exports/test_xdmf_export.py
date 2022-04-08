@@ -20,9 +20,18 @@ def test_define_file_upon_construction(folder):
     f.XDMFFile(filename).read(mesh_in)
 
 
+def test_default_filename():
+    """Checks that when no filename is given a default filename is made
+    from label"""
+    my_xdmf = XDMFExport(field="solute", label="solute_label")
+
+    assert my_xdmf.filename == "solute_label.xdmf"
+    assert my_xdmf.folder == None
+
+
 class TestDefineFile:
     mesh = f.UnitIntervalMesh(10)
-    my_xdmf = XDMFExport("solute", "my_label", "my_filename.xdmf")
+    my_xdmf = XDMFExport("solute", "my_label", filename="my_filename.xdmf")
 
     def test_file_exists(self, folder):
         filename = "{}/my_filename.xdmf".format(folder)
