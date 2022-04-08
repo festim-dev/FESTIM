@@ -16,11 +16,22 @@ from typing import Union
 class DerivedQuantities:
     def __init__(
         self,
-        filename=None,
-        nb_iterations_between_compute=1,
-        nb_iterations_between_exports=None,
+        filename: str = None,
+        nb_iterations_between_compute: int = 1,
+        nb_iterations_between_exports: int = None,
         **derived_quantities
     ) -> None:
+        """_summary_
+
+        Args:
+            filename (str, optional): the filename (must end with .csv).
+                If None, the data will not be exported. Defaults to None.
+            nb_iterations_between_compute (int, optional): number of
+                iterations between each derived quantities computation.
+                Defaults to 1.
+            nb_iterations_between_exports (int, optional): number of
+                iterations between each export. Defaults to None.
+        """
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
