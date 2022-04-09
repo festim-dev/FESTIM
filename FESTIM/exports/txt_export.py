@@ -62,15 +62,8 @@ class TXTExport(FESTIM.Export):
 
 
 class TXTExports:
-    def __init__(
-        self, fields=[], times=[], labels=[], folder=None, functions=[]
-    ) -> None:
+    def __init__(self, fields=[], times=[], labels=[], folder=None) -> None:
         self.fields = fields
-        if functions != []:
-            self.fields = functions
-            msg = "functions key will be deprecated. Please use fields instead"
-            warnings.warn(msg, DeprecationWarning)
-
         if len(self.fields) != len(labels):
             raise ValueError(
                 "Number of fields to be exported "
