@@ -131,3 +131,23 @@ def test_wrong_argument_for_mode():
     # test mode=0
     with pytest.raises(ValueError, match="mode must be positive"):
         XDMFExport("solute", "mobile", "out.xdmf", mode=0)
+
+
+def test_with_default_label():
+    """Checks that the correct defaults labels are produced when label=None"""
+    fields = ["solute", "T", "1", "2"]
+    expected_labels = [
+        "mobile_concentration",
+        "temperature",
+        "trap_1_concentration",
+        "trap_2_concentration",
+    ]
+
+    produced_labels = []
+    for field in fields:
+        produced_labels.append(XDMFExport(field=field).label)
+
+    for produced, expected in zip(produced_labels, expected_labels):
+        print("produced label : {}".format(produced))
+        print("expected label : {}".format(expected))
+        assert produced == expected
