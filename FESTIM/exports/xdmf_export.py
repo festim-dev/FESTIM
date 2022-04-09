@@ -3,15 +3,24 @@ from FESTIM import Export
 import fenics as f
 
 
+field_to_label = {
+    "solute": "mobile_concentration",
+    "T": "temperature",
+    "retention": "retention",
+    "trap": "trap_i_concentration",
+}
+
+
 class XDMFExport(Export):
     def __init__(
-        self, field, label, filename=None, mode=1, checkpoint=True, folder=None
+        self, field, label=None, filename=None, mode=1, checkpoint=True, folder=None
     ) -> None:
         """Inits XDMFExport
 
         Args:
             field (str): the exported field ("solute", "1", "retention", "T"...)
-            label (str): label of the field in the written file
+            label (str, optional): label of the field in the written file.
+                If None, an automatic label will be given. Defaults to None.
             filename (str, optional): the file path, needs to end with '.xdmf'.
                 If None, the label will be used. Defaults to None.
             mode (int, str, optional): if "last" only the last
@@ -36,6 +45,20 @@ class XDMFExport(Export):
             raise TypeError("checkpoint must be a bool")
 
         self.append = False
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, value):
+        if value is None:
+            if self.field in field_to_label.keys():
+                self._label = field_to_label[self.field]
+            elif self.field.isdigit():
+                self._label = field_to_label["trap"].replace("i", self.field, 1)
+        else:
+            self._label = value
 
     @property
     def mode(self):
