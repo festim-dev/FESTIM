@@ -47,6 +47,17 @@ class TestWrite:
             "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time)
         )
 
+    def test_create_folder(self, my_export, function):
+        """Checks that write() creates the folder if it doesn't exist"""
+        current_time = 1
+        my_export.function = function
+        my_export.folder += "/folder2"
+        my_export.write(current_time=current_time, dt=Stepsize(initial_value=3))
+
+        assert os.path.exists(
+            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time)
+        )
+
     def test_dt_is_changed(self, my_export, function):
         current_time = 1
         initial_value = 10

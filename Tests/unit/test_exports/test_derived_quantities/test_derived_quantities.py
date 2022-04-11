@@ -234,9 +234,9 @@ class TestWrite:
         return str(Path(tmpdir.mkdir("test_folder")))
 
     @pytest.fixture
-    def my_derived_quantities(self, folder):
-        file = "my_file"
-        my_derv_quant = DerivedQuantities(file=file, folder=folder)
+    def my_derived_quantities(self):
+        filename = "my_file.csv"
+        my_derv_quant = DerivedQuantities(filename=filename)
         my_derv_quant.data = [
             ["a", "b", "c"],
             [1, 2, 3],
@@ -244,25 +244,23 @@ class TestWrite:
         ]
         return my_derv_quant
 
-    def test_write_no_csv_ext(self, folder, my_derived_quantities):
-        """adds data to DerivedQuantities and checks that write() creates the csv
-        file
-        """
-        file = "my_file"
-        my_derived_quantities.file = file
-        my_derived_quantities.write()
-
-        assert os.path.exists(folder + "/" + file + ".csv")
-
     def test_write(self, folder, my_derived_quantities):
         """adds data to DerivedQuantities and checks that write() creates the csv
         file
         """
-        file = "my_file.csv"
-        my_derived_quantities.file = file
+        filename = "{}/my_file.csv".format(folder)
+        my_derived_quantities.filename = filename
         my_derived_quantities.write()
 
-        assert os.path.exists(folder + "/" + file)
+        assert os.path.exists(filename)
+
+    def test_write_folder_doesnt_exist(self, folder, my_derived_quantities):
+        """Checks that write() creates the inexisting folder"""
+        filename = "{}/folder2/my_file.csv".format(folder)
+        my_derived_quantities.filename = filename
+        my_derived_quantities.write()
+
+        assert os.path.exists(filename)
 
 
 class TestFilter:
@@ -318,3 +316,15 @@ class TestFilter:
         assert derived_quantities.filter(
             surfaces=1, instances=[TotalSurface, SurfaceFlux]
         ) == [surf1, surf2]
+
+
+def test_wrong_type_filename():
+    """Checks that an error is raised when filename is not a string"""
+    with pytest.raises(TypeError, match="filename must be a string"):
+        DerivedQuantities(filename=2)
+
+
+def test_filename_ends_with_csv():
+    """Checks that an error is raised when filename doesn't end with .csv"""
+    with pytest.raises(ValueError, match="filename must end with .csv"):
+        DerivedQuantities(filename="coucou")

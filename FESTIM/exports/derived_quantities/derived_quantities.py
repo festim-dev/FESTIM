@@ -8,22 +8,32 @@ from FESTIM import (
     DerivedQuantity,
 )
 import fenics as f
-import os
 import csv
+import os
+import numpy as np
 from typing import Union
 
 
 class DerivedQuantities:
     def __init__(
         self,
-        file=None,
-        folder=None,
-        nb_iterations_between_compute=1,
-        nb_iterations_between_exports=None,
+        filename: str = None,
+        nb_iterations_between_compute: int = 1,
+        nb_iterations_between_exports: int = None,
         **derived_quantities
     ) -> None:
-        self.file = file
-        self.folder = folder
+        """Inits DerivedQuantities
+
+        Args:
+            filename (str, optional): the filename (must end with .csv).
+                If None, the data will not be exported. Defaults to None.
+            nb_iterations_between_compute (int, optional): number of
+                iterations between each derived quantities computation.
+                Defaults to 1.
+            nb_iterations_between_exports (int, optional): number of
+                iterations between each export. Defaults to None.
+        """
+        self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
         self.derived_quantities = []
@@ -31,6 +41,19 @@ class DerivedQuantities:
         self.make_derived_quantities(derived_quantities)
         self.data = [self.make_header()]
         self.t = []
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if value is not None:
+            if not isinstance(value, str):
+                raise TypeError("filename must be a string")
+            if not value.endswith(".csv"):
+                raise ValueError("filename must end with .csv")
+        self._filename = value
 
     def make_derived_quantities(self, derived_quantities):
         for derived_quantity, list_of_prms_dicts in derived_quantities.items():
@@ -100,30 +123,15 @@ class DerivedQuantities:
         self.t.append(t)
 
     def write(self):
-        if self.file is not None:
-            file_export = ""
-            if self.folder is not None:
-                file_export += self.folder + "/"
-                os.makedirs(os.path.dirname(file_export), exist_ok=True)
-            if self.file.endswith(".csv"):
-                file_export += self.file
-            else:
-                file_export += self.file + ".csv"
-            busy = True
-            while busy:
-                try:
-                    with open(file_export, "w+") as f:
-                        busy = False
-                        writer = csv.writer(f, lineterminator="\n")
-                        for val in self.data:
-                            writer.writerows([val])
-                except OSError as err:
-                    print("OS error: {0}".format(err))
-                    print(
-                        "The file " + file_export + ".txt might currently be busy."
-                        "Please close the application then press any key."
-                    )
-                    input()
+        if self.filename is not None:
+            # if the directory doesn't exist
+            # create it
+            dirname = os.path.dirname(self.filename)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname, exist_ok=True)
+
+            # save the data to csv
+            np.savetxt(self.filename, np.array(self.data), fmt="%s", delimiter=",")
         return True
 
     def is_export(self, t, final_time, nb_iterations):
