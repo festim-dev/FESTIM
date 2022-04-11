@@ -184,6 +184,9 @@ class Simulation:
             self.T.create_functions(self.mesh)
 
         # Create functions for properties
+        self.materials.check_materials(
+            self.T, derived_quantities=[]
+        )  # FIXME derived quantities shouldn't be []
         self.materials.create_properties(self.mesh.volume_markers, self.T.T)
 
         # if the temperature is not time-dependent, solubility can be projected
