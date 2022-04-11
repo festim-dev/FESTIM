@@ -1,6 +1,9 @@
 from FESTIM import Material, Materials
+import FESTIM as F
 from fenics import *
 import pytest
+
+from FESTIM.temperature.temperature_solver import HeatTransferProblem
 
 
 def test_find_material_from_id():
@@ -74,20 +77,45 @@ def test_unused_thermal_cond():
     mat_1 = Material(id=1, D_0=1, E_D=2, thermal_cond=2)
     my_mats = Materials([mat_1])
     with pytest.warns(UserWarning, match=r"thermal_cond key will be ignored"):
-        my_mats.check_for_unused_properties(
-            temp_type="expression", derived_quantities={}
-        )
+        my_mats.check_for_unused_properties(T=F.Temperature(100), derived_quantities=[])
 
     # this shouldn't throw warnings
-    derived_quantities = {"surface_flux": [{"field": "T", "surfaces": [0, 1]}]}
+    derived_quantities = [F.SurfaceFlux("T", surface=[0])]
     # record the warnings
     with pytest.warns(None) as record:
         my_mats.check_for_unused_properties(
-            temp_type="expression", derived_quantities=derived_quantities
+            T=F.Temperature(100), derived_quantities=derived_quantities
         )
 
     # check that no warning were raised
     assert len(record) == 0
+
+
+def test_missing_thermal_cond():
+    """Tests that an error is raised when the thermal cond is missing"""
+    my_mats = Materials([Material(1, D_0=1, E_D=1)])
+    with pytest.raises(ValueError, match="Missing thermal_cond in materials"):
+        my_mats.check_missing_properties(
+            T=F.HeatTransferProblem(), derived_quantities=[]
+        )
+
+
+def test_missing_heat_capacity():
+    """Tests that an error is raised when the heat_capacity is missing"""
+    my_mats = Materials([Material(1, D_0=1, E_D=1, thermal_cond=1, rho=1)])
+    with pytest.raises(ValueError, match="Missing heat_capacity in materials"):
+        my_mats.check_missing_properties(
+            T=F.HeatTransferProblem(), derived_quantities=[]
+        )
+
+
+def test_missing_rho():
+    """Tests that an error is raised when the rho is missing"""
+    my_mats = Materials([Material(1, D_0=1, E_D=1, thermal_cond=1, heat_capacity=1)])
+    with pytest.raises(ValueError, match="Missing rho in materials"):
+        my_mats.check_missing_properties(
+            T=F.HeatTransferProblem(), derived_quantities=[]
+        )
 
 
 def test_different_ids_in_materials():
@@ -111,17 +139,13 @@ def test_unused_keys():
     my_mats = Materials([mat_1])
 
     with pytest.warns(UserWarning, match=r"rho key will be ignored"):
-        my_mats.check_for_unused_properties(
-            temp_type="expression", derived_quantities={}
-        )
+        my_mats.check_for_unused_properties(T=F.Temperature(200), derived_quantities={})
 
     mat_1.rho = None
     mat_1.heat_capacity = 2
 
     with pytest.warns(UserWarning, match=r"heat_capacity key will be ignored"):
-        my_mats.check_for_unused_properties(
-            temp_type="expression", derived_quantities={}
-        )
+        my_mats.check_for_unused_properties(T=F.Temperature(200), derived_quantities={})
 
 
 def test_non_matching_properties():
