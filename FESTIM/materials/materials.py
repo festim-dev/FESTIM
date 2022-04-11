@@ -1,7 +1,8 @@
 from operator import itemgetter
 import warnings
 import numpy as np
-from FESTIM import k_B, Material
+from FESTIM import k_B, Material, HeatTransferProblem
+import FESTIM
 import fenics as f
 from typing import Union
 
@@ -53,22 +54,23 @@ class Materials:
             raise ValueError("Borders don't match with size")
         return True
 
-    def check_materials(self, temp_type, derived_quantities={}):
+    def check_materials(self, T, derived_quantities=[]):
         """Checks the materials keys
 
         Args:
-            temp_type (str): the type of FESTIM.Temperature
-            derived_quantities (dict, optional): [description]. Defaults to {}.
+            T (FESTIM.Temperature): the temperature
+            derived_quantities (list): list of FESTIM.DerivedQuantity
+                objects the derived quantities. Defaults to [].
         """
 
         if len(self.materials) > 0:  # TODO: get rid of this...
             self.check_consistency()
 
-            self.check_for_unused_properties(temp_type, derived_quantities)
+            self.check_for_unused_properties(T, derived_quantities)
 
             self.check_unique_ids()
 
-            self.check_missing_properties(temp_type, derived_quantities)
+            self.check_missing_properties(T, derived_quantities)
 
     def check_unique_ids(self):
         # check that ids are different
@@ -82,10 +84,10 @@ class Materials:
         if len(mat_ids) != len(np.unique(mat_ids)):
             raise ValueError("Some materials have the same id")
 
-    def check_for_unused_properties(self, temp_type, derived_quantities):
+    def check_for_unused_properties(self, T, derived_quantities):
         # warn about unused keys
         transient_properties = ["rho", "heat_capacity"]
-        if temp_type != "solve_transient":
+        if not isinstance(T, HeatTransferProblem):
             for mat in self.materials:
                 for key in transient_properties:
                     if getattr(mat, key) is not None:
@@ -94,11 +96,17 @@ class Materials:
         for mat in self.materials:
             if getattr(mat, "thermal_cond") is not None:
                 warn = True
-                if temp_type != "expression":
+                if isinstance(T, HeatTransferProblem):
                     warn = False
-                elif "surface_flux" in derived_quantities:
-                    for surface_flux in derived_quantities["surface_flux"]:
-                        if surface_flux["field"] == "T":
+                else:
+                    surface_fluxes = list(
+                        quant
+                        for quant in derived_quantities
+                        if isinstance(quant, FESTIM.SurfaceFlux)
+                    )
+
+                    for surface_flux in surface_fluxes:
+                        if surface_flux.field == "T":
                             warn = False
                 if warn:
                     warnings.warn("thermal_cond key will be ignored", UserWarning)
@@ -121,14 +129,15 @@ class Materials:
             if value.count(None) not in [0, len(self.materials)]:
                 raise ValueError("{} is not defined for all materials".format(attr))
 
-    def check_missing_properties(self, temp_type, derived_quantities):
-        if temp_type != "expression" and self.materials[0].thermal_cond is None:
-            raise NameError("Missing thermal_cond key in materials")
-        if temp_type == "solve_transient":
-            if self.materials[0].heat_capacity is None:
-                raise NameError("Missing heat_capacity key in materials")
-            if self.materials[0].rho is None:
-                raise NameError("Missing rho key in materials")
+    def check_missing_properties(self, T, derived_quantities):
+        if isinstance(T, HeatTransferProblem):
+            if self.materials[0].thermal_cond is None:
+                raise ValueError("Missing thermal_cond in materials")
+            if T.transient:
+                if self.materials[0].heat_capacity is None:
+                    raise ValueError("Missing heat_capacity in materials")
+                if self.materials[0].rho is None:
+                    raise ValueError("Missing rho in materials")
         # TODO: add check for thermal cond for thermal flux computation
 
     def find_material_from_id(self, mat_id):
