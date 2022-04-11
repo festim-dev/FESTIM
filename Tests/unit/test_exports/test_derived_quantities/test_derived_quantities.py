@@ -63,12 +63,13 @@ class TestMakeHeader:
 
 
 class TestAssignMeasuresToQuantities:
-    my_quantities = DerivedQuantities()
-    my_quantities.derived_quantities = [
-        SurfaceFlux("solute", 2),
-        SurfaceFlux("T", 3),
-        AverageVolume("solute", 3),
-    ]
+    my_quantities = DerivedQuantities(
+        [
+            SurfaceFlux("solute", 2),
+            SurfaceFlux("T", 3),
+            AverageVolume("solute", 3),
+        ]
+    )
     mesh = f.UnitIntervalMesh(10)
     vol_markers = f.MeshFunction("size_t", mesh, 1)
     dx = f.dx(subdomain_data=vol_markers)
@@ -92,12 +93,13 @@ class TestAssignMeasuresToQuantities:
 class TestAssignPropertiesToQuantities:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_quantities = DerivedQuantities()
-    my_quantities.derived_quantities = [
-        SurfaceFlux("solute", 2),
-        SurfaceFlux("T", 3),
-        AverageVolume("solute", 3),
-    ]
+    my_quantities = DerivedQuantities(
+        derived_quantities=[
+            SurfaceFlux("solute", 2),
+            SurfaceFlux("T", 3),
+            AverageVolume("solute", 3),
+        ]
+    )
     my_mats = Materials()
     my_mats.D = f.Function(V)
     my_mats.S = f.Function(V)

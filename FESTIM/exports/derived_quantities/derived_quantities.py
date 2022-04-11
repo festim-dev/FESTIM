@@ -1,14 +1,9 @@
 from FESTIM import (
-    SurfaceFlux,
-    AverageVolume,
     MinimumVolume,
     MaximumVolume,
-    TotalVolume,
-    TotalSurface,
     DerivedQuantity,
 )
 import fenics as f
-import csv
 import os
 import numpy as np
 from typing import Union
@@ -17,14 +12,16 @@ from typing import Union
 class DerivedQuantities:
     def __init__(
         self,
+        derived_quantities: list = None,
         filename: str = None,
         nb_iterations_between_compute: int = 1,
         nb_iterations_between_exports: int = None,
-        **derived_quantities
     ) -> None:
         """Inits DerivedQuantities
 
         Args:
+            derived_quantities (list, optional): list of F.DerivedQuantity
+                object. Defaults to None.
             filename (str, optional): the filename (must end with .csv).
                 If None, the data will not be exported. Defaults to None.
             nb_iterations_between_compute (int, optional): number of
@@ -36,9 +33,11 @@ class DerivedQuantities:
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
-        self.derived_quantities = []
-        # TODO remove this
-        self.make_derived_quantities(derived_quantities)
+
+        self.derived_quantities = derived_quantities
+        if derived_quantities is None:
+            self.derived_quantities = []
+
         self.data = [self.make_header()]
         self.t = []
 
@@ -54,32 +53,6 @@ class DerivedQuantities:
             if not value.endswith(".csv"):
                 raise ValueError("filename must end with .csv")
         self._filename = value
-
-    def make_derived_quantities(self, derived_quantities):
-        for derived_quantity, list_of_prms_dicts in derived_quantities.items():
-            if derived_quantity == "surface_flux":
-                quantity_class = SurfaceFlux
-            elif derived_quantity == "average_volume":
-                quantity_class = AverageVolume
-            elif derived_quantity == "minimum_volume":
-                quantity_class = MinimumVolume
-            elif derived_quantity == "maximum_volume":
-                quantity_class = MaximumVolume
-            elif derived_quantity == "total_volume":
-                quantity_class = TotalVolume
-            elif derived_quantity == "total_surface":
-                quantity_class = TotalSurface
-            for prms_dict in list_of_prms_dicts:
-                if "volumes" in prms_dict:
-                    for entity in prms_dict["volumes"]:
-                        self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], volume=entity)
-                        )
-                if "surfaces" in prms_dict:
-                    for entity in prms_dict["surfaces"]:
-                        self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], surface=entity)
-                        )
 
     def make_header(self):
         header = ["t(s)"]
