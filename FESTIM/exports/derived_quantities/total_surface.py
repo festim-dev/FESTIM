@@ -9,4 +9,4 @@ class TotalSurface(DerivedQuantity):
         self.title = "Total {} surface {}".format(self.field, self.surface)
 
     def compute(self):
-        return f.assemble(self.function*self.ds(self.surface))
+        return f.assemble(self.function * self.ds(self.surface))

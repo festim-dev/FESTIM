@@ -7,6 +7,7 @@ class RecombinationFlux(FluxBC):
     """FluxBC subclass for hydrogen recombination flux.
     -D(T) * grad(c) * n = -Kr(T) * c**order
     """
+
     def __init__(self, Kr_0, E_Kr, order, surfaces) -> None:
         """Inits RecombinationFlux
 
@@ -24,13 +25,9 @@ class RecombinationFlux(FluxBC):
         super().__init__(surfaces=surfaces)
 
     def create_form(self, T, solute):
-        Kr_0_expr = f.Expression(
-            sp.printing.ccode(self.Kr_0),
-            t=0, degree=1)
-        E_Kr_expr = f.Expression(
-            sp.printing.ccode(self.E_Kr),
-            t=0, degree=1)
+        Kr_0_expr = f.Expression(sp.printing.ccode(self.Kr_0), t=0, degree=1)
+        E_Kr_expr = f.Expression(sp.printing.ccode(self.E_Kr), t=0, degree=1)
 
-        Kr = Kr_0_expr*f.exp(-E_Kr_expr/k_B/T)
-        self.form = -Kr*solute**self.order
+        Kr = Kr_0_expr * f.exp(-E_Kr_expr / k_B / T)
+        self.form = -Kr * solute**self.order
         self.sub_expressions = [Kr_0_expr, E_Kr_expr]

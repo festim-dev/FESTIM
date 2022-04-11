@@ -14,12 +14,14 @@ class Traps:
             if trap.id is None:
                 trap.id = i
 
-    def create_forms(self, mobile, materials, T, dx, dt=None,
-                     chemical_pot=False):
+    def make_traps_materials(self, materials):
+        for trap in self.traps:
+            trap.make_materials(materials)
+
+    def create_forms(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
         self.F = 0
         for trap in self.traps:
-            trap.create_form(mobile, materials, T, dx, dt=dt,
-                             chemical_pot=chemical_pot)
+            trap.create_form(mobile, materials, T, dx, dt=dt, chemical_pot=chemical_pot)
             self.F += trap.F
             self.sub_expressions += trap.sub_expressions
 
@@ -30,14 +32,12 @@ class Traps:
         raise ValueError("Couldn't find trap {}".format(id))
 
     def initialise_extrinsic_traps(self, V):
-        """Add functions to ExtrinsicTrap objects for density form
-        """
+        """Add functions to ExtrinsicTrapBase objects for density form"""
         for trap in self.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
+            if isinstance(trap, FESTIM.ExtrinsicTrapBase):
                 trap.density = [f.Function(V)]
                 trap.density_test_function = f.TestFunction(V)
-                trap.density_previous_solution = \
-                    f.project(f.Constant(0), V)
+                trap.density_previous_solution = f.project(f.Constant(0), V)
 
     def define_variational_problem_extrinsic_traps(self, dx, dt, T):
         """
@@ -51,17 +51,17 @@ class Traps:
         self.extrinsic_formulations = []
         expressions_extrinsic = []
         for trap in self.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
+            if isinstance(trap, FESTIM.ExtrinsicTrapBase):
                 trap.create_form_density(dx, dt, T)
                 self.extrinsic_formulations.append(trap.form_density)
         self.sub_expressions.extend(expressions_extrinsic)
 
     def solve_extrinsic_traps(self):
         for trap in self.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
+            if isinstance(trap, FESTIM.ExtrinsicTrapBase):
                 f.solve(trap.form_density == 0, trap.density[0], [])
 
     def update_extrinsic_traps_density(self):
         for trap in self.traps:
-            if isinstance(trap, FESTIM.ExtrinsicTrap):
+            if isinstance(trap, FESTIM.ExtrinsicTrapBase):
                 trap.density_previous_solution.assign(trap.density[0])

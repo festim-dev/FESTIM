@@ -1,44 +1,58 @@
-from FESTIM import SurfaceFlux, AverageVolume, MinimumVolume, MaximumVolume, \
-    TotalVolume, TotalSurface
+from FESTIM import (
+    MinimumVolume,
+    MaximumVolume,
+    DerivedQuantity,
+)
 import fenics as f
 import os
-import csv
+import numpy as np
+from typing import Union
 
 
 class DerivedQuantities:
-    def __init__(self, file=None, folder=None, nb_iterations_between_compute=1, nb_iterations_between_exports=None, **derived_quantities) -> None:
-        self.file = file
-        self.folder = folder
+    def __init__(
+        self,
+        derived_quantities: list = None,
+        filename: str = None,
+        nb_iterations_between_compute: int = 1,
+        nb_iterations_between_exports: int = None,
+    ) -> None:
+        """Inits DerivedQuantities
+
+        Args:
+            derived_quantities (list, optional): list of F.DerivedQuantity
+                object. Defaults to None.
+            filename (str, optional): the filename (must end with .csv).
+                If None, the data will not be exported. Defaults to None.
+            nb_iterations_between_compute (int, optional): number of
+                iterations between each derived quantities computation.
+                Defaults to 1.
+            nb_iterations_between_exports (int, optional): number of
+                iterations between each export. Defaults to None.
+        """
+        self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
-        self.derived_quantities = []
-        # TODO remove this
-        self.make_derived_quantities(derived_quantities)
-        self.data = [self.make_header()]
 
-    def make_derived_quantities(self, derived_quantities):
-        for derived_quantity, list_of_prms_dicts in derived_quantities.items():
-            if derived_quantity == "surface_flux":
-                quantity_class = SurfaceFlux
-            elif derived_quantity == "average_volume":
-                quantity_class = AverageVolume
-            elif derived_quantity == "minimum_volume":
-                quantity_class = MinimumVolume
-            elif derived_quantity == "maximum_volume":
-                quantity_class = MaximumVolume
-            elif derived_quantity == "total_volume":
-                quantity_class = TotalVolume
-            elif derived_quantity == "total_surface":
-                quantity_class = TotalSurface
-            for prms_dict in list_of_prms_dicts:
-                if "volumes" in prms_dict:
-                    for entity in prms_dict["volumes"]:
-                        self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], volume=entity))
-                if "surfaces" in prms_dict:
-                    for entity in prms_dict["surfaces"]:
-                        self.derived_quantities.append(
-                            quantity_class(field=prms_dict["field"], surface=entity))
+        self.derived_quantities = derived_quantities
+        if derived_quantities is None:
+            self.derived_quantities = []
+
+        self.data = [self.make_header()]
+        self.t = []
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if value is not None:
+            if not isinstance(value, str):
+                raise TypeError("filename must be a string")
+            if not value.endswith(".csv"):
+                raise ValueError("filename must end with .csv")
+        self._filename = value
 
     def make_header(self):
         header = ["t(s)"]
@@ -72,34 +86,25 @@ class DerivedQuantities:
         row = [t]
         for quantity in self.derived_quantities:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):
-                row.append(quantity.compute(self.volume_markers))
+                value = quantity.compute(self.volume_markers)
             else:
-                row.append(quantity.compute())
+                value = quantity.compute()
+            quantity.data.append(value)
+            quantity.t.append(t)
+            row.append(value)
         self.data.append(row)
+        self.t.append(t)
 
     def write(self):
-        if self.file is not None:
-            file_export = ''
-            if self.folder is not None:
-                file_export += self.folder + '/'
-                os.makedirs(os.path.dirname(file_export), exist_ok=True)
-            if self.file.endswith(".csv"):
-                file_export += self.file
-            else:
-                file_export += self.file + ".csv"
-            busy = True
-            while busy:
-                try:
-                    with open(file_export, "w+") as f:
-                        busy = False
-                        writer = csv.writer(f, lineterminator='\n')
-                        for val in self.data:
-                            writer.writerows([val])
-                except OSError as err:
-                    print("OS error: {0}".format(err))
-                    print("The file " + file_export + ".txt might currently be busy."
-                          "Please close the application then press any key.")
-                    input()
+        if self.filename is not None:
+            # if the directory doesn't exist
+            # create it
+            dirname = os.path.dirname(self.filename)
+            if not os.path.exists(dirname):
+                os.makedirs(dirname, exist_ok=True)
+
+            # save the data to csv
+            np.savetxt(self.filename, np.array(self.data), fmt="%s", delimiter=",")
         return True
 
     def is_export(self, t, final_time, nb_iterations):
@@ -116,8 +121,7 @@ class DerivedQuantities:
             bool: True if the derived quantities should be exported, else False
         """
         if final_time is not None:
-            nb_its_between_exports = \
-                self.nb_iterations_between_exports
+            nb_its_between_exports = self.nb_iterations_between_exports
             if nb_its_between_exports is None:
                 # export at the end
                 return t >= final_time
@@ -139,3 +143,85 @@ class DerivedQuantities:
             bool: True if it's time to compute, else False
         """
         return nb_iterations % self.nb_iterations_between_compute == 0
+
+    def filter(
+        self,
+        surfaces: Union[list, int] = None,
+        volumes: Union[list, int] = None,
+        fields: Union[list, str] = None,
+        instances: DerivedQuantity = None,
+    ):
+        """Finds DerivedQuantity objects that match surfaces, volumes, and instances.
+
+        Args:
+            surfaces (Union[list, int], optional): the surface ids to match.
+                Defaults to None.
+            volumes (Union[list, int], optional): the volume ids to match.
+                Defaults to None.
+            fields (Union[list, str], optional): the fields to match.
+                Defaults to None.
+            instances (DerivedQuantity, optional): the DerivedQuantity
+                instances to match. Defaults to None.
+
+        Returns:
+            list, DerivedQuantity: if only one quantity matches returns this
+                quantity, else returs a list of DerivedQuantity
+        """
+        # ensure arguments are list
+        if surfaces is not None and not isinstance(surfaces, list):
+            surfaces = [surfaces]
+        if volumes is not None and not isinstance(volumes, list):
+            volumes = [volumes]
+        if fields is not None and not isinstance(fields, list):
+            fields = [fields]
+        if instances is not None and not isinstance(instances, list):
+            instances = [instances]
+
+        quantities = []
+
+        # iterate through derived_quantities
+        for quantity in self.derived_quantities:
+
+            # initialise flags to False
+            match_surface, match_volume, match_field, match_instance = (
+                False,
+                False,
+                False,
+                False,
+            )
+
+            # check if matches surface
+            if surfaces is not None:
+                if hasattr(quantity, "surface") and quantity.surface in surfaces:
+                    match_surface = True
+            else:
+                match_surface = True
+
+            # check if matches volume
+            if volumes is not None:
+                if hasattr(quantity, "volume") and quantity.volume in volumes:
+                    match_volume = True
+            else:
+                match_volume = True
+
+            # check if matches field
+            if fields is not None:
+                if quantity.field in fields:
+                    match_field = True
+            else:
+                match_field = True
+
+            # check if matches instance
+            if instances is not None:
+                if isinstance(quantity, tuple(instances)):
+                    match_instance = True
+            else:
+                match_instance = True
+
+            # if all flags are True, append to the list
+            if match_surface and match_volume and match_field and match_instance:
+                quantities.append(quantity)
+
+        if len(quantities) == 1:
+            quantities = quantities[0]
+        return quantities

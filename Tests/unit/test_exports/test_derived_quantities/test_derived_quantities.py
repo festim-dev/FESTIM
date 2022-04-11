@@ -1,5 +1,13 @@
-from FESTIM import DerivedQuantities, SurfaceFlux, AverageVolume, \
-    TotalSurface, TotalVolume, MaximumVolume, MinimumVolume, Materials
+from FESTIM import (
+    DerivedQuantities,
+    SurfaceFlux,
+    AverageVolume,
+    TotalSurface,
+    TotalVolume,
+    MaximumVolume,
+    MinimumVolume,
+    Materials,
+)
 import fenics as f
 import os
 from pathlib import Path
@@ -19,9 +27,7 @@ class TestMakeHeader:
     max_vol_1 = MaximumVolume("T", 2)
 
     def test_simple(self):
-        self.my_derv_quant.derived_quantities = [
-            self.surface_flux_1
-        ]
+        self.my_derv_quant.derived_quantities = [self.surface_flux_1]
         header = self.my_derv_quant.make_header()
         expected_header = ["t(s)", self.surface_flux_1.title]
         assert header == expected_header
@@ -57,12 +63,13 @@ class TestMakeHeader:
 
 
 class TestAssignMeasuresToQuantities:
-    my_quantities = DerivedQuantities()
-    my_quantities.derived_quantities = [
-        SurfaceFlux("solute", 2),
-        SurfaceFlux("T", 3),
-        AverageVolume("solute", 3),
-    ]
+    my_quantities = DerivedQuantities(
+        [
+            SurfaceFlux("solute", 2),
+            SurfaceFlux("T", 3),
+            AverageVolume("solute", 3),
+        ]
+    )
     mesh = f.UnitIntervalMesh(10)
     vol_markers = f.MeshFunction("size_t", mesh, 1)
     dx = f.dx(subdomain_data=vol_markers)
@@ -86,12 +93,13 @@ class TestAssignMeasuresToQuantities:
 class TestAssignPropertiesToQuantities:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_quantities = DerivedQuantities()
-    my_quantities.derived_quantities = [
-        SurfaceFlux("solute", 2),
-        SurfaceFlux("T", 3),
-        AverageVolume("solute", 3),
-    ]
+    my_quantities = DerivedQuantities(
+        derived_quantities=[
+            SurfaceFlux("solute", 2),
+            SurfaceFlux("T", 3),
+            AverageVolume("solute", 3),
+        ]
+    )
     my_mats = Materials()
     my_mats.D = f.Function(V)
     my_mats.S = f.Function(V)
@@ -137,7 +145,7 @@ class TestCompute:
         "solute": f.Function(V),
         "T": T,
         "retention": f.Function(V),
-        "trap1": f.Function(V)
+        "trap1": f.Function(V),
     }
 
     vol_markers = f.MeshFunction("size_t", mesh, 1, 1)
@@ -146,8 +154,8 @@ class TestCompute:
     surface_markers = f.MeshFunction("size_t", mesh, 0)
     left.mark(surface_markers, 1)
     right.mark(surface_markers, 2)
-    dx = f.Measure('dx', domain=mesh, subdomain_data=vol_markers)
-    ds = f.Measure('ds', domain=mesh, subdomain_data=surface_markers)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=vol_markers)
+    ds = f.Measure("ds", domain=mesh, subdomain_data=surface_markers)
     n = f.FacetNormal(mesh)
 
     T = f.interpolate(f.Constant(2), V)
@@ -158,16 +166,16 @@ class TestCompute:
     my_mats.thermal_cond = f.interpolate(f.Constant(2), V)
 
     def test_simple(self):
-        self.my_derv_quant.derived_quantities = [
-            self.surface_flux_1
-        ]
+        self.my_derv_quant.derived_quantities = [self.surface_flux_1]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
         self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
+        expected_data = [t] + [
+            quantity.compute() for quantity in self.my_derv_quant.derived_quantities
+        ]
 
         self.my_derv_quant.data = []
         self.my_derv_quant.compute(t)
@@ -177,7 +185,7 @@ class TestCompute:
     def test_two_quantities(self):
         self.my_derv_quant.derived_quantities = [
             self.surface_flux_1,
-            self.average_vol_1
+            self.average_vol_1,
         ]
         for quantity in self.my_derv_quant.derived_quantities:
             quantity.function = self.label_to_function[quantity.field]
@@ -185,7 +193,9 @@ class TestCompute:
         self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant.derived_quantities]
+        expected_data = [t] + [
+            quantity.compute() for quantity in self.my_derv_quant.derived_quantities
+        ]
 
         self.my_derv_quant.data = []
         self.my_derv_quant.compute(t)
@@ -226,9 +236,9 @@ class TestWrite:
         return str(Path(tmpdir.mkdir("test_folder")))
 
     @pytest.fixture
-    def my_derived_quantities(self, folder):
-        file = "my_file"
-        my_derv_quant = DerivedQuantities(file=file, folder=folder)
+    def my_derived_quantities(self):
+        filename = "my_file.csv"
+        my_derv_quant = DerivedQuantities(filename=filename)
         my_derv_quant.data = [
             ["a", "b", "c"],
             [1, 2, 3],
@@ -236,22 +246,87 @@ class TestWrite:
         ]
         return my_derv_quant
 
-    def test_write_no_csv_ext(self, folder, my_derived_quantities):
-        """adds data to DerivedQuantities and checks that write() creates the csv
-        file
-        """
-        file = "my_file"
-        my_derived_quantities.file = file
-        my_derived_quantities.write()
-
-        assert os.path.exists(folder + "/" + file + ".csv")
-
     def test_write(self, folder, my_derived_quantities):
         """adds data to DerivedQuantities and checks that write() creates the csv
         file
         """
-        file = "my_file.csv"
-        my_derived_quantities.file = file
+        filename = "{}/my_file.csv".format(folder)
+        my_derived_quantities.filename = filename
         my_derived_quantities.write()
 
-        assert os.path.exists(folder + "/" + file)
+        assert os.path.exists(filename)
+
+    def test_write_folder_doesnt_exist(self, folder, my_derived_quantities):
+        """Checks that write() creates the inexisting folder"""
+        filename = "{}/folder2/my_file.csv".format(folder)
+        my_derived_quantities.filename = filename
+        my_derived_quantities.write()
+
+        assert os.path.exists(filename)
+
+
+class TestFilter:
+    """Tests the filter method of DerivedQUantities"""
+
+    def test_simple(self):
+        derived_quantities = DerivedQuantities()
+        flux1 = SurfaceFlux(field="solute", surface=1)
+        flux2 = SurfaceFlux(field="T", surface=2)
+        derived_quantities.derived_quantities = [flux1, flux2]
+
+        assert derived_quantities.filter(surfaces=[1, 2]) == [flux1, flux2]
+        assert derived_quantities.filter(surfaces=[1]) == flux1
+        assert derived_quantities.filter(fields=["T"]) == flux2
+        assert derived_quantities.filter(fields=["T", "solute"], surfaces=[3]) == []
+        assert derived_quantities.filter(fields=["solute"], surfaces=[1, 2]) == flux1
+
+    def test_with_volumes(self):
+        derived_quantities = DerivedQuantities()
+        flux1 = SurfaceFlux(field="solute", surface=1)
+        flux2 = SurfaceFlux(field="T", surface=2)
+        total1 = TotalVolume(field="1", volume=3)
+        total2 = TotalVolume(field="retention", volume=1)
+        derived_quantities.derived_quantities = [flux1, flux2, total1, total2]
+
+        assert derived_quantities.filter() == derived_quantities.derived_quantities
+        assert derived_quantities.filter(surfaces=[1, 2], volumes=[3]) == []
+        assert (
+            derived_quantities.filter(volumes=[1, 3], fields=["retention", "solute"])
+            == total2
+        )
+
+    def test_with_single_args(self):
+        derived_quantities = DerivedQuantities()
+        flux1 = SurfaceFlux(field="solute", surface=1)
+        flux2 = SurfaceFlux(field="T", surface=2)
+        total1 = TotalVolume(field="1", volume=3)
+
+        derived_quantities.derived_quantities = [flux1, flux2, total1]
+
+        assert derived_quantities.filter(surfaces=1) == flux1
+        assert derived_quantities.filter(fields="T") == flux2
+        assert derived_quantities.filter(volumes=3) == total1
+
+    def test_several_quantities_one_surface(self):
+        derived_quantities = DerivedQuantities()
+        surf1 = SurfaceFlux(field="solute", surface=1)
+        surf2 = TotalSurface(field="solute", surface=1)
+        derived_quantities.derived_quantities = [surf1, surf2]
+
+        assert derived_quantities.filter(surfaces=1, instances=SurfaceFlux) == surf1
+        assert derived_quantities.filter(surfaces=1, instances=TotalSurface) == surf2
+        assert derived_quantities.filter(
+            surfaces=1, instances=[TotalSurface, SurfaceFlux]
+        ) == [surf1, surf2]
+
+
+def test_wrong_type_filename():
+    """Checks that an error is raised when filename is not a string"""
+    with pytest.raises(TypeError, match="filename must be a string"):
+        DerivedQuantities(filename=2)
+
+
+def test_filename_ends_with_csv():
+    """Checks that an error is raised when filename doesn't end with .csv"""
+    with pytest.raises(ValueError, match="filename must end with .csv"):
+        DerivedQuantities(filename="coucou")

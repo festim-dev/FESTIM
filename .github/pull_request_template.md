@@ -5,7 +5,7 @@ Describe the big picture of your changes here to communicate to the maintainers 
 ## Types of changes
 
 What types of changes does your code introduce to FESTIM?
-_Put an `x` in the boxes that apply_
+<!--Put an `x` in the boxes that apply-->
 
 - [ ] Bugfix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
@@ -16,9 +16,9 @@ _Put an `x` in the boxes that apply_
 
 ## Checklist
 
-_Put an `x` in the boxes that apply. You can also fill these out after creating the PR. If you're unsure about any of them, don't hesitate to ask. We're here to help! This is simply a reminder of what we are going to look for before merging your code._
+<!--Put an `x` in the boxes that apply. You can also fill these out after creating the PR. If you're unsure about any of them, don't hesitate to ask. We're here to help! This is simply a reminder of what we are going to look for before merging your code.-->
 
-- [ ] Pep8 applied
+- [ ] Black formatted
 - [ ] Unit tests pass locally with my changes
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] I have added necessary documentation (if appropriate)

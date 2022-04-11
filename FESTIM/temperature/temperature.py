@@ -13,6 +13,7 @@ class Temperature:
         expression (fenics.Expression): the expression of temperature as a
             fenics object
     """
+
     def __init__(self, value=None) -> None:
         """Inits Temperature
 
@@ -37,8 +38,7 @@ class Temperature:
         V = f.FunctionSpace(mesh.mesh, "CG", 1)
         self.T = f.Function(V, name="T")
         self.T_n = f.Function(V, name="T_n")
-        self.expression = f.Expression(
-            sp.printing.ccode(self.value), t=0, degree=2)
+        self.expression = f.Expression(sp.printing.ccode(self.value), t=0, degree=2)
         self.T.assign(f.interpolate(self.expression, V))
         self.T_n.assign(self.T)
 

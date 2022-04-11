@@ -3,8 +3,10 @@ import pytest
 
 
 def test_error_different_lengths_functions_labels():
-    with pytest.raises(ValueError, match="doesn't match number of labels in xdmf exports"):
-        XDMFExports(['solute', "T"], ["solute"], "my_folder")
+    with pytest.raises(
+        ValueError, match="doesn't match number of labels in xdmf exports"
+    ):
+        XDMFExports(["solute", "T"], ["solute"], "my_folder")
 
 
 class TestListXDMFExports:
@@ -29,7 +31,7 @@ class TestListXDMFExports:
             assert export.folder == self.folder
 
 
-def test_deprecation_warning():
-    with pytest.warns(DeprecationWarning) as record:
-        XDMFExports(functions=["coucou"], labels=["coucou"], folder="my_folder")
-        assert len(record) == 1
+# def test_deprecation_warning():
+#     with pytest.warns(DeprecationWarning) as record:
+#         XDMFExports(functions=["coucou"], labels=["coucou"], folder="my_folder")
+#         assert len(record) == 1

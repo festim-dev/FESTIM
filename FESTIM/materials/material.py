@@ -1,9 +1,25 @@
 class Material:
-    def __init__(self, id, D_0, E_D, S_0=None, E_S=None, thermal_cond=None, heat_capacity=None, rho=None, borders=None, H=None) -> None:
+    def __init__(
+        self,
+        id,
+        D_0,
+        E_D,
+        S_0=None,
+        E_S=None,
+        thermal_cond=None,
+        heat_capacity=None,
+        rho=None,
+        borders=None,
+        H=None,
+        solubility_law="sievert",
+        name=None,
+    ) -> None:
         """Inits Material class
 
         Args:
-            id (int): the id of the material
+            id (int, list): the id of the material. If a list is provided, the
+                properties will be applied to all the subdomains with the
+                corresponding ids.
             D_0 (float): diffusion coefficient pre-exponential factor (m2/s)
             E_D (float): diffusion coefficient activation energy (eV)
             S_0 (float, optional): Solubility pre-exponential factor
@@ -21,8 +37,12 @@ class Material:
             H (dict, optional): heat of transport (J/mol).
                 {"free_enthalpy": ..., "entropy": ...} so that
                 H = free_enthalpy + entropy*T. Defaults to None.
+            solubility_law (str, optional): the material's solubility law.
+                Can be "henry" or "sievert". Defaults to "sievert".
+            name (str, optional): name of the material. Defaults to None.
         """
         self.id = id
+        self.name = name
         self.D_0 = D_0
         self.E_D = E_D
         self.S_0 = S_0
@@ -35,6 +55,11 @@ class Material:
         if H is not None:
             self.free_enthalpy = H["free_enthalpy"]
             self.entropy = H["entropy"]
+        if solubility_law not in ["henry", "sievert"]:
+            raise ValueError(
+                "Acceptable values for solubility_law are 'henry' and 'sievert'"
+            )
+        self.solubility_law = solubility_law
         self.check_properties()
 
     def check_properties(self):

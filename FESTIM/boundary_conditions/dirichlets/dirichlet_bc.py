@@ -4,19 +4,19 @@ import sympy as sp
 
 
 class DirichletBC(BoundaryCondition):
-    """Class to enforce the solution on boundaries.
-    """
-    def __init__(self, surfaces, value=None, component=0) -> None:
+    """Class to enforce the solution on boundaries."""
+
+    def __init__(self, surfaces, value=None, field=0) -> None:
         """Inits DirichletBC
 
         Args:
             surfaces (list or int): the surfaces of the BC
             value (float or sp.Expr, optional): the value of the boundary
                 condition. Defaults to None.
-            component (int, optional): the field the boundary condition is
+            field (int, optional): the field the boundary condition is
                 applied to. Defaults to 0.
         """
-        super().__init__(surfaces, component=component)
+        super().__init__(surfaces, field=field)
         self.value = value
         self.dirichlet_bc = []
 
@@ -47,14 +47,19 @@ class DirichletBC(BoundaryCondition):
         self.sub_expressions.append(self.expression)
         # create modified BC based on solubility
         expression_BC = BoundaryConditionTheta(
-                            self.expression,
-                            materials,
-                            volume_markers, T)
+            self.expression, materials, volume_markers, T
+        )
         self.expression = expression_BC
 
     def create_dirichletbc(
-            self, V, T, surface_markers, chemical_pot=False, materials=None,
-            volume_markers=None):
+        self,
+        V,
+        T,
+        surface_markers,
+        chemical_pot=False,
+        materials=None,
+        volume_markers=None,
+    ):
         """creates a list of fenics.DirichletBC and stores it in
         self.dirichlet_bc
 
@@ -73,18 +78,17 @@ class DirichletBC(BoundaryCondition):
         self.dirichlet_bc = []
         self.create_expression(T)
         # TODO: this should be more generic
-        mobile_components = [0, "0", "solute"]
-        if self.component in mobile_components and chemical_pot:
+        mobile_fields = [0, "0", "solute"]
+        if self.field in mobile_fields and chemical_pot:
             self.normalise_by_solubility(materials, volume_markers, T)
 
         # create a DirichletBC and add it to bcs
         if V.num_sub_spaces() == 0:
             funspace = V
-        else:  # if only one component, use subspace
-            funspace = V.sub(self.component)
+        else:  # if only one field, use subspace
+            funspace = V.sub(self.field)
         for surface in self.surfaces:
-            bci = f.DirichletBC(funspace, self.expression,
-                                surface_markers, surface)
+            bci = f.DirichletBC(funspace, self.expression, surface_markers, surface)
             self.dirichlet_bc.append(bci)
 
 
@@ -95,6 +99,7 @@ class BoundaryConditionTheta(f.UserExpression):
     Args:
         UserExpression (fenics.UserExpression):
     """
+
     def __init__(self, bci, materials, vm, T, **kwargs):
         """initialisation
 
@@ -116,10 +121,14 @@ class BoundaryConditionTheta(f.UserExpression):
         cell = f.Cell(self._mesh, ufc_cell.index)
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
-        # TODO this requires changes for Henry's law
         S_0 = material.S_0
         E_S = material.E_S
-        value[0] = self._bci(x)/(S_0*f.exp(-E_S/k_B/self._T(x)))
+        c = self._bci(x)
+        S = S_0 * f.exp(-E_S / k_B / self._T(x))
+        if material.solubility_law == "sievert":
+            value[0] = c / S
+        elif material.solubility_law == "henry":
+            value[0] = (c / S + f.DOLFIN_EPS) ** 0.5
 
     def value_shape(self):
         return ()
@@ -127,7 +136,7 @@ class BoundaryConditionTheta(f.UserExpression):
 
 class BoundaryConditionExpression(f.UserExpression):
     def __init__(self, T, eval_function, **kwargs):
-        """"[summary]"
+        """ "[summary]"
 
         Args:
             T (fenics.Function): the temperature

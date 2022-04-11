@@ -6,7 +6,7 @@ from pathlib import Path
 
 def test_initialisation_from_xdmf(tmpdir):
     mesh = fenics.UnitSquareMesh(5, 5)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V = fenics.VectorFunctionSpace(mesh, "P", 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
     ini_u = fenics.Expression("1", degree=1)
@@ -21,17 +21,22 @@ def test_initialisation_from_xdmf(tmpdir):
     file2 = d.join("u_2out.xdmf")
     print(Path(file1))
     with fenics.XDMFFile(str(Path(file1))) as f:
-        f.write_checkpoint(u.sub(0), "1", 2, fenics.XDMFFile.Encoding.HDF5,
-                           append=False)
+        f.write_checkpoint(
+            u.sub(0), "1", 2, fenics.XDMFFile.Encoding.HDF5, append=False
+        )
     with fenics.XDMFFile(str(Path(file2))) as f:
-        f.write_checkpoint(u.sub(1), "2", 2, fenics.XDMFFile.Encoding.HDF5,
-                           append=False)
-        f.write_checkpoint(u.sub(1), "2", 4, fenics.XDMFFile.Encoding.HDF5,
-                           append=True)
+        f.write_checkpoint(
+            u.sub(1), "2", 2, fenics.XDMFFile.Encoding.HDF5, append=False
+        )
+        f.write_checkpoint(u.sub(1), "2", 4, fenics.XDMFFile.Encoding.HDF5, append=True)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=str(Path(file1)), label="1", time_step=0),
-        FESTIM.InitialCondition(field=1, value=str(Path(file2)), label="2", time_step=0)
+        FESTIM.InitialCondition(
+            field=0, value=str(Path(file1)), label="1", time_step=0
+        ),
+        FESTIM.InitialCondition(
+            field=1, value=str(Path(file2)), label="2", time_step=0
+        ),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
@@ -40,7 +45,8 @@ def test_initialisation_from_xdmf(tmpdir):
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),
-        initial_conditions)
+        initial_conditions,
+    )
 
     my_problem.V = V
     my_mats = FESTIM.Materials()
@@ -51,12 +57,12 @@ def test_initialisation_from_xdmf(tmpdir):
 
 
 def test_initialisation_with_expression():
-    '''
+    """
     Test that initialise_solutions interpolates correctly
     from an expression
-    '''
+    """
     mesh = fenics.UnitSquareMesh(8, 8)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V = fenics.VectorFunctionSpace(mesh, "P", 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
     ini_u = fenics.Expression("1+x[0] + x[1]", degree=1)
@@ -67,8 +73,8 @@ def test_initialisation_with_expression():
     fenics.assign(u.sub(1), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
-        FESTIM.InitialCondition(field=1, value=1+FESTIM.x),
+        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
@@ -77,7 +83,8 @@ def test_initialisation_with_expression():
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),
-        initial_conditions)
+        initial_conditions,
+    )
 
     my_problem.V = V
     my_problem.initialise_concentrations()
@@ -86,14 +93,15 @@ def test_initialisation_with_expression():
 
 
 def test_initialisation_with_expression_chemical_pot():
-    '''
+    """
     Test that initialise_solutions interpolates correctly
     from an expression with conservation of chemical potential
-    '''
+    """
 
     S = 2
     mesh = fenics.UnitSquareMesh(8, 8)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    vm = fenics.MeshFunction("size_t", mesh, 2, 1)
+    V = fenics.VectorFunctionSpace(mesh, "P", 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
     ini_u = fenics.Expression("(1+x[0] + x[1])/S", S=S, degree=1)
@@ -104,12 +112,16 @@ def test_initialisation_with_expression_chemical_pot():
     fenics.assign(u.sub(1), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
-        FESTIM.InitialCondition(field=1, value=1+FESTIM.x),
+        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
     my_theta = FESTIM.Theta()
+    my_theta.materials = FESTIM.Materials([FESTIM.Material(1, 1, 0, S_0=S, E_S=0)])
+    my_theta.volume_markers = vm
+    my_theta.T = FESTIM.Temperature(10)
+    my_theta.T.create_functions(FESTIM.Mesh(mesh))
     my_theta.S = S
 
     my_problem = FESTIM.HTransportProblem(
@@ -117,21 +129,23 @@ def test_initialisation_with_expression_chemical_pot():
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),
-        initial_conditions)
+        initial_conditions,
+    )
 
     my_problem.V = V
     my_problem.initialise_concentrations()
-    w = my_problem.u_n
-    assert fenics.errornorm(u, w) == pytest.approx(0)
+    expected = u
+    produced = my_problem.u_n
+    assert fenics.errornorm(expected, produced) == pytest.approx(0)
 
 
 def test_initialisation_default():
-    '''
+    """
     Test that initialise_solutions interpolates correctly
     if nothing is given (default is 0)
-    '''
+    """
     mesh = fenics.UnitSquareMesh(8, 8)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 2)
+    V = fenics.VectorFunctionSpace(mesh, "P", 1, 2)
     u = fenics.Function(V)
     w = fenics.Function(V)
     initial_conditions = []
@@ -142,7 +156,8 @@ def test_initialisation_default():
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),
-        initial_conditions)
+        initial_conditions,
+    )
 
     my_problem.V = V
     my_problem.initialise_concentrations()
@@ -151,19 +166,19 @@ def test_initialisation_default():
 
 
 def test_initialisation_solute_only():
-    '''
+    """
     Test that initialise_solutions interpolates correctly
     if solution has only 1 component (ie solute)
-    '''
+    """
     mesh = fenics.UnitSquareMesh(8, 8)
-    V = fenics.FunctionSpace(mesh, 'P', 1)
+    V = fenics.FunctionSpace(mesh, "P", 1)
     u = fenics.Function(V)
     w = fenics.Function(V)
     ini_u = fenics.Expression("1 + x[0] + x[1]", degree=1)
     u = fenics.interpolate(ini_u, V)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1+FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
@@ -172,7 +187,8 @@ def test_initialisation_solute_only():
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),
-        initial_conditions)
+        initial_conditions,
+    )
 
     my_problem.V = V
     my_problem.initialise_concentrations()
@@ -181,12 +197,12 @@ def test_initialisation_solute_only():
 
 
 def test_initialisation_no_component():
-    '''
+    """
     Test that initialise_solutions set component at 0
     by default
-    '''
+    """
     mesh = fenics.UnitSquareMesh(8, 8)
-    V = fenics.VectorFunctionSpace(mesh, 'P', 1, 3)
+    V = fenics.VectorFunctionSpace(mesh, "P", 1, 3)
     u = fenics.Function(V)
     w = fenics.Function(V)
     ini_u = fenics.Expression("1 + x[0] + x[1]", degree=1)
@@ -194,7 +210,7 @@ def test_initialisation_no_component():
     fenics.assign(u.sub(0), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(value=1+FESTIM.x + FESTIM.y),
+        FESTIM.InitialCondition(value=1 + FESTIM.x + FESTIM.y),
     ]
     my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
 
@@ -203,7 +219,8 @@ def test_initialisation_no_component():
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
         FESTIM.Settings(1e10, 1e-10),
-        initial_conditions)
+        initial_conditions,
+    )
 
     my_problem.V = V
     my_problem.initialise_concentrations()

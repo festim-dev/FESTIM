@@ -15,19 +15,19 @@ class Mobile(Concentration):
             The volumetric source terms
         F (fenics.Form): the variational formulation for mobile
     """
+
     def __init__(self):
-        """Inits FESTIM.Mobile
-        """
+        """Inits FESTIM.Mobile"""
         super().__init__()
         self.sources = []
         self.boundary_conditions = []
 
-    def create_form(self, materials, dx, ds, T,  dt=None, traps=None, soret=False):
+    def create_form(self, materials, mesh, T, dt=None, traps=None, soret=False):
         """Creates the variational formulation.
 
         Args:
             materials (FESTIM.Materials): the materials
-            dx (fenics.Measure): the measure dx
+            mesh (FESTIM.Mesh): the mesh of the simulation
             T (FESTIM.Temperature): the temperature
             dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
             traps (FESTIM.Traps, optional): the traps. Defaults to None.
@@ -37,16 +37,18 @@ class Mobile(Concentration):
                 to False.
         """
         self.F = 0
-        self.create_diffusion_form(materials, dx, T, dt=dt, traps=traps, soret=soret)
-        self.create_source_form(dx)
-        self.create_fluxes_form(T, ds)
+        self.create_diffusion_form(materials, mesh, T, dt=dt, traps=traps, soret=soret)
+        self.create_source_form(mesh.dx)
+        self.create_fluxes_form(T, mesh.ds)
 
-    def create_diffusion_form(self, materials, dx, T, dt=None, traps=None, soret=False):
+    def create_diffusion_form(
+        self, materials, mesh, T, dt=None, traps=None, soret=False
+    ):
         """Creates the variational formulation for the diffusive part.
 
         Args:
             materials (FESTIM.Materials): the materials
-            dx (fenics.Measure): the measure dx
+            mesh (FESTIM.Mesh): the mesh
             T (FESTIM.Temperature): the temperature
             dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
             traps (FESTIM.Traps, optional): the traps. Defaults to None.
@@ -55,6 +57,10 @@ class Mobile(Concentration):
             soret (bool, optional): If True, Soret effect is assumed. Defaults
                 to False.
         """
+        if soret and mesh.type in ["cylindrical", "spherical"]:
+            msg = "Soret effect not implemented in {} coordinates".format(mesh.type)
+            raise ValueError(msg)
+
         F = 0
         for material in materials.materials:
             D_0 = material.D_0
@@ -62,28 +68,52 @@ class Mobile(Concentration):
             c_0, c_0_n = self.get_concentration_for_a_given_material(material, T)
 
             subdomains = material.id  # list of subdomains with this material
-            if type(subdomains) is not list:
+            if not isinstance(subdomains, list):
                 subdomains = [subdomains]  # make sure subdomains is a list
 
             # add to the formulation F for every subdomain
             for subdomain in subdomains:
+                dx = mesh.dx(subdomain)
                 # transient form
                 if dt is not None:
-                    F += ((c_0-c_0_n)/dt.value)*self.test_function*dx(subdomain)
-                F += dot(D_0 * exp(-E_D/k_B/T.T)*grad(c_0),
-                         grad(self.test_function))*dx(subdomain)
-                if soret:
-                    Q = material.free_enthalpy*T.T + material.entropy
-                    F += dot(D_0 * exp(-E_D/k_B/T.T) *
-                             Q * c_0 / (R * T.T**2) * grad(T.T),
-                             grad(self.test_function))*dx(subdomain)
+                    F += ((c_0 - c_0_n) / dt.value) * self.test_function * dx
+                D = D_0 * exp(-E_D / k_B / T.T)
+                if mesh.type == "cartesian":
+                    F += dot(D * grad(c_0), grad(self.test_function)) * dx
+                    if soret:
+                        Q = material.free_enthalpy * T.T + material.entropy
+                        F += (
+                            dot(
+                                D * Q * c_0 / (R * T.T**2) * grad(T.T),
+                                grad(self.test_function),
+                            )
+                            * dx
+                        )
+
+                # see https://fenicsproject.discourse.group/t/method-of-manufactured-solution-cylindrical/7963
+                elif mesh.type == "cylindrical":
+                    r = SpatialCoordinate(mesh.mesh)[0]
+                    F += r * dot(D * grad(c_0), grad(self.test_function / r)) * dx
+
+                elif mesh.type == "spherical":
+                    r = SpatialCoordinate(mesh.mesh)[0]
+                    F += (
+                        D
+                        * r
+                        * r
+                        * dot(grad(c_0), grad(self.test_function / r / r))
+                        * dx
+                    )
 
         # add the traps transient terms
         if dt is not None:
             if traps is not None:
                 for trap in traps.traps:
-                    F += ((trap.solution - trap.previous_solution) / dt.value) * \
-                        self.test_function * dx
+                    F += (
+                        ((trap.solution - trap.previous_solution) / dt.value)
+                        * self.test_function
+                        * mesh.dx
+                    )
         self.F_diffusion = F
         self.F += F
 
@@ -96,14 +126,14 @@ class Mobile(Concentration):
         F_source = 0
         expressions_source = []
 
-        print('Defining source terms')
+        print("Defining source terms")
         for source in self.sources:
             if type(source.volume) is list:
                 volumes = source.volume
             else:
                 volumes = [source.volume]
             for volume in volumes:
-                F_source += - source.value*self.test_function*dx(volume)
+                F_source += -source.value * self.test_function * dx(volume)
             if isinstance(source.value, (Expression, UserExpression)):
                 expressions_source.append(source.value)
 
@@ -122,14 +152,14 @@ class Mobile(Concentration):
         solute = self.mobile_concentration()
 
         for bc in self.boundary_conditions:
-            if bc.component != "T":
+            if bc.field != "T":
                 if isinstance(bc, FluxBC):
                     bc.create_form(T.T, solute)
                     # TODO : one day we will get rid of this huge expressions list
                     expressions_fluxes += bc.sub_expressions
 
                     for surf in bc.surfaces:
-                        F += -self.test_function*bc.form*ds(surf)
+                        F += -self.test_function * bc.form * ds(surf)
         self.F_fluxes = F
         self.F += F
         self.sub_expressions += expressions_fluxes

@@ -8,22 +8,27 @@ class TestInitialise:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     u = f.Function(V)
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    T = FESTIM.Temperature(10)
+    T.create_functions(FESTIM.Mesh(mesh))
 
     def test_from_expresion_chemical_pot(self):
         my_theta = FESTIM.Theta()
         S = f.interpolate(f.Constant(2), self.V)
+        my_theta.materials = FESTIM.Materials([FESTIM.Material(1, 1, 0, S_0=2, E_S=0)])
+        my_theta.volume_markers = self.vm
+        my_theta.T = self.T
         my_theta.S = S
         my_theta.previous_solution = self.u
         value = 1 + FESTIM.x
         expected_sol = my_theta.get_comp(self.V, value)
-        expected_sol = f.project(expected_sol/S)
+        expected_sol = f.project(expected_sol / S)
 
         # run
         my_theta.initialise(self.V, value)
 
         # test
-        for x in [0, 0.5, 0.3, 0.6]:
-            assert my_theta.previous_solution(x) == expected_sol(x)
+        assert f.errornorm(my_theta.previous_solution, expected_sol) == pytest.approx(0)
 
 
 class TestCreateDiffusionForm:
@@ -31,33 +36,66 @@ class TestCreateDiffusionForm:
     my_mesh = FESTIM.Mesh(mesh)
     my_temp = FESTIM.Temperature(value=100)
     my_temp.create_functions(my_mesh)
-    dx = f.dx()
+    my_mesh.dx = f.dx()
     dt = FESTIM.Stepsize(initial_value=1)
     V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
-    mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
 
-    def test_chemical_potential(self):
+    def test_sieverts(self):
         # build
+        mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3, solubility_law="sievert")
         Index._globalcount = 8
         my_theta = FESTIM.Theta()
         my_theta.F = 0
         my_theta.solution = f.Function(self.V, name="c_t")
         my_theta.previous_solution = f.Function(self.V, name="c_t_n")
         my_theta.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = FESTIM.Materials([mat1])
 
         # run
-        my_theta.create_diffusion_form(my_mats, self.dx, self.my_temp, dt=self.dt)
+        my_theta.create_diffusion_form(my_mats, self.my_mesh, self.my_temp, dt=self.dt)
 
         # test
         Index._globalcount = 8
         v = my_theta.test_function
-        D = self.mat1.D_0 * f.exp(-self.mat1.E_D/FESTIM.k_B/self.my_temp.T)
-        c_0 = my_theta.solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T)
-        c_0_n = my_theta.previous_solution*self.mat1.S_0*f.exp(-self.mat1.E_S/FESTIM.k_B/self.my_temp.T_n)
-        expected_form = ((c_0-c_0_n)/self.dt.value)*v*self.dx(1)
-        expected_form += f.dot(D*f.grad(c_0), f.grad(v))*self.dx(1)
+        D = mat1.D_0 * f.exp(-mat1.E_D / FESTIM.k_B / self.my_temp.T)
+        S = mat1.S_0 * f.exp(-mat1.E_S / FESTIM.k_B / self.my_temp.T)
+        S_n = mat1.S_0 * f.exp(-mat1.E_S / FESTIM.k_B / self.my_temp.T_n)
+        c_0 = my_theta.solution * S
+        c_0_n = my_theta.previous_solution * S_n
+        expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
+        expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
+
+        print("expected F:")
+        print(expected_form)
+        print("produced F:")
+        print(my_theta.F)
+        assert my_theta.F.equals(expected_form)
+
+    def test_henry(self):
+        # build
+        mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4, solubility_law="henry")
+
+        Index._globalcount = 8
+        my_theta = FESTIM.Theta()
+        my_theta.F = 0
+        my_theta.solution = f.Function(self.V, name="c_t")
+        my_theta.previous_solution = f.Function(self.V, name="c_t_n")
+        my_theta.test_function = f.TestFunction(self.V)
+        my_mats = FESTIM.Materials([mat2])
+
+        # run
+        my_theta.create_diffusion_form(my_mats, self.my_mesh, self.my_temp, dt=self.dt)
+
+        # test
+        Index._globalcount = 8
+        v = my_theta.test_function
+        D = mat2.D_0 * f.exp(-mat2.E_D / FESTIM.k_B / self.my_temp.T)
+        K_H = mat2.S_0 * f.exp(-mat2.E_S / FESTIM.k_B / self.my_temp.T)
+        K_H_n = mat2.S_0 * f.exp(-mat2.E_S / FESTIM.k_B / self.my_temp.T_n)
+        c_0 = my_theta.solution**2 * K_H
+        c_0_n = my_theta.previous_solution**2 * K_H_n
+        expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(2)
+        expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(2)
 
         print("expected F:")
         print(expected_form)
@@ -88,26 +126,109 @@ def test_get_concentration_for_a_given_material():
 
     # test
     expected_c = f.project(
-        my_theta.solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T), V)
+        my_theta.solution * S_0 * f.exp(-E_S / FESTIM.k_B / my_temp.T), V
+    )
     expected_c_n = f.project(
-        my_theta.previous_solution*S_0*f.exp(-E_S/FESTIM.k_B/my_temp.T_n), V)
+        my_theta.previous_solution * S_0 * f.exp(-E_S / FESTIM.k_B / my_temp.T_n), V
+    )
     assert f.errornorm(c, expected_c) == pytest.approx(0)
     assert f.errornorm(c_n, expected_c_n) == pytest.approx(0)
 
 
-def test_mobile_concentration():
+def test_mobile_concentration_sieverts():
+    """Checks that Theta.mobile_concnetration produces the expected value with Sieverts
+    solubility"""
+    mesh = f.UnitIntervalMesh(10)
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    V = f.FunctionSpace(mesh, "P", 1)
     my_theta = FESTIM.Theta()
-    my_theta.S = 3
-    my_theta.solution = 12
+    my_theta.volume_markers = vm
+    T = FESTIM.Temperature(100)
+    T.T = f.Constant(100)
+    my_theta.T = T
+    S_0 = 2
+    E_S = 3
+    S = S_0 * f.exp(-E_S / FESTIM.k_B / T.T)
+    mats = FESTIM.Materials(
+        [FESTIM.Material(1, D_0=1, E_D=0, S_0=S_0, E_S=E_S, solubility_law="sievert")]
+    )
+    my_theta.solution = f.project(f.Constant(10), V)
+    my_theta.materials = mats
 
-    assert my_theta.mobile_concentration() == 3*12
+    produced_concentration = f.project(my_theta.mobile_concentration(), V)
+    expected_concentration = f.project(my_theta.solution * S, V)
+    assert produced_concentration(0.5) == expected_concentration(0.5)
+
+
+def test_mobile_concentration_henry():
+    """Checks that Theta.mobile_concnetration produces the expected value with Henry
+    solubility"""
+    mesh = f.UnitIntervalMesh(10)
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    V = f.FunctionSpace(mesh, "P", 1)
+    my_theta = FESTIM.Theta()
+    my_theta.volume_markers = vm
+    T = FESTIM.Temperature(100)
+    T.T = f.Constant(100)
+    my_theta.T = T
+    S_0 = 2
+    E_S = 3
+    S = S_0 * f.exp(-E_S / FESTIM.k_B / T.T)
+    mats = FESTIM.Materials(
+        [FESTIM.Material(1, D_0=1, E_D=0, S_0=S_0, E_S=E_S, solubility_law="henry")]
+    )
+    my_theta.solution = f.project(f.Constant(10), V)
+    my_theta.materials = mats
+
+    produced_concentration = f.project(my_theta.mobile_concentration(), V)
+    expected_concentration = f.project(my_theta.solution**2 * S, V)
+    assert produced_concentration(0.5) == expected_concentration(0.5)
 
 
 def test_post_processing_solution_to_concentration():
-    my_theta = FESTIM.Theta()
-    my_theta.S = 3
-    my_theta.post_processing_solution = 5
+    """Checks that post_processing_solution_to_concentration produces the
+    expected function with sieverts solubility law"""
 
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "CG", 1)
+    S = 3
+    value_theta = 5
+    materials = FESTIM.Materials([FESTIM.Material(1, 1, 0, S, E_S=0)])
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=vm)
+    my_theta = FESTIM.Theta()
+    my_theta.S = S
+    my_theta.solution = f.interpolate(f.Constant(value_theta), V)
+
+    expected_concentration = f.project(f.Constant(S) * value_theta, V)
+    my_theta.create_form_post_processing(V, materials, dx)
     my_theta.post_processing_solution_to_concentration()
 
-    assert my_theta.post_processing_solution == 5*3
+    assert f.errornorm(
+        my_theta.post_processing_solution, expected_concentration
+    ) == pytest.approx(0)
+
+
+def test_post_processing_solution_to_concentration_henry():
+    """Checks that post_processing_solution_to_concentration produces the
+    expected function with henry solubility law"""
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "CG", 1)
+    S = 3
+    value_theta = 5
+    materials = FESTIM.Materials(
+        [FESTIM.Material(1, 1, 0, S, E_S=0, solubility_law="henry")]
+    )
+    vm = f.MeshFunction("size_t", mesh, 1, 1)
+    dx = f.Measure("dx", domain=mesh, subdomain_data=vm)
+    my_theta = FESTIM.Theta()
+    my_theta.S = S
+    my_theta.solution = f.interpolate(f.Constant(value_theta), V)
+
+    expected_concentration = f.project(f.Constant(S) * value_theta**2, V)
+    my_theta.create_form_post_processing(V, materials, dx)
+    my_theta.post_processing_solution_to_concentration()
+
+    assert f.errornorm(
+        my_theta.post_processing_solution, expected_concentration
+    ) == pytest.approx(0)

@@ -1,11 +1,18 @@
 import sympy as sp
-x, y, z, t = sp.symbols('x[0] x[1] x[2] t')
+
+x, y, z, t = sp.symbols("x[0] x[1] x[2] t")
 R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
-from .helpers import update_expressions, help_key, \
-    parameters_helper, read_parameters, kJmol_to_eV, \
-    extract_xdmf_labels, extract_xdmf_times
+from .helpers import (
+    update_expressions,
+    kJmol_to_eV,
+    extract_xdmf_labels,
+    extract_xdmf_times,
+    as_constant,
+    as_expression,
+    as_constant_or_expression,
+)
 
 from .meshing.mesh import Mesh
 from .meshing.mesh_1d import Mesh1D
@@ -17,10 +24,14 @@ from .temperature.temperature import Temperature
 from .temperature.temperature_solver import HeatTransferProblem
 
 from .boundary_conditions.boundary_condition import BoundaryCondition
-from .boundary_conditions.dirichlets.dirichlet_bc import DirichletBC, \
-    BoundaryConditionTheta, BoundaryConditionExpression
+from .boundary_conditions.dirichlets.dirichlet_bc import (
+    DirichletBC,
+    BoundaryConditionTheta,
+    BoundaryConditionExpression,
+)
 from .boundary_conditions.dirichlets.dc_imp import ImplantationDirichlet
 from .boundary_conditions.dirichlets.sieverts_bc import SievertsBC
+from .boundary_conditions.dirichlets.henrys_bc import HenrysBC
 from .boundary_conditions.dirichlets.custom_dc import CustomDirichlet
 
 from .boundary_conditions.fluxes.flux_bc import FluxBC
@@ -30,7 +41,6 @@ from .boundary_conditions.fluxes.flux_custom import CustomFlux
 
 from .exports.exports import Exports
 from .exports.export import Export
-from .exports.error import Error
 from .exports.xdmf_export import XDMFExport, XDMFExports
 
 from .exports.derived_quantities.derived_quantity import DerivedQuantity
@@ -54,8 +64,8 @@ from .stepsize import Stepsize
 from .sources.source import Source
 from .sources.source_implantation_flux import ImplantationFlux
 
-from .materials.materials import Materials
 from .materials.material import Material
+from .materials.materials import Materials
 
 from .concentration.concentration import Concentration
 from .initial_condition import InitialCondition
@@ -64,9 +74,10 @@ from .concentration.theta import Theta
 
 from .concentration.traps.trap import Trap
 from .concentration.traps.traps import Traps
+from .concentration.traps.extrinsic_trap import ExtrinsicTrapBase
 from .concentration.traps.extrinsic_trap import ExtrinsicTrap
 from .concentration.traps.neutron_induced_trap import NeutronInducedTrap
 
 from .h_transport_problem import HTransportProblem
 
-from .generic_simulation import Simulation, run
+from .generic_simulation import Simulation
