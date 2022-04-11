@@ -138,7 +138,9 @@ def test_run_temperature_transient(tmpdir):
 
     my_exports = FESTIM.Exports(
         [
-            FESTIM.XDMFExport("T", "temperature", str(Path(d)), checkpoint=False),
+            FESTIM.XDMFExport(
+                "T", "temperature", folder=str(Path(d)), checkpoint=False
+            ),
         ]
     )
 
@@ -220,7 +222,7 @@ def test_run_MMS(tmpdir):
         my_exports = FESTIM.Exports(
             [
                 FESTIM.XDMFExport(
-                    "retention", "retention", str(Path(d)), checkpoint=False
+                    "retention", "retention", folder=str(Path(d)), checkpoint=False
                 ),
             ]
         )
