@@ -54,7 +54,7 @@ class Materials:
             raise ValueError("Borders don't match with size")
         return True
 
-    def check_materials(self, T, derived_quantities=[]):
+    def check_materials(self, T: FESTIM.Temperature, derived_quantities: list = []):
         """Checks the materials keys
 
         Args:
@@ -84,7 +84,17 @@ class Materials:
         if len(mat_ids) != len(np.unique(mat_ids)):
             raise ValueError("Some materials have the same id")
 
-    def check_for_unused_properties(self, T, derived_quantities):
+    def check_for_unused_properties(
+        self, T: FESTIM.Temperature, derived_quantities: list
+    ):
+        """Warns users if properties will be ignored
+
+        Args:
+            T (FESTIM.Temperature): the temperature
+            derived_quantities (list): list of FESTIM.DerivedQuantity
+                objects
+        """
+        # TODO add a check for ignored solubility when chemical_pot is False
         # warn about unused keys
         transient_properties = ["rho", "heat_capacity"]
         if not isinstance(T, HeatTransferProblem):
@@ -112,6 +122,7 @@ class Materials:
                     warnings.warn("thermal_cond key will be ignored", UserWarning)
 
     def check_consistency(self):
+        """Checks that materials have the same attributes"""
         # check the materials keys match
         attributes = {
             "S_0": [],
@@ -129,7 +140,16 @@ class Materials:
             if value.count(None) not in [0, len(self.materials)]:
                 raise ValueError("{} is not defined for all materials".format(attr))
 
-    def check_missing_properties(self, T, derived_quantities):
+    def check_missing_properties(self, T: FESTIM.Temperature, derived_quantities: list):
+        """Checks if the materials miss some properties
+
+        Args:
+            T (FESTIM.Temperature): the temperature
+            derived_quantities (list): list of FESTIM.DerivedQuantity objects
+
+        Raises:
+            ValueError: if thermal_cond, heat_capacity or rho is None when needed
+        """
         if isinstance(T, HeatTransferProblem):
             if self.materials[0].thermal_cond is None:
                 raise ValueError("Missing thermal_cond in materials")
