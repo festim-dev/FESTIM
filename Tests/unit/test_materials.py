@@ -100,6 +100,24 @@ def test_missing_thermal_cond():
         )
 
 
+def test_missing_heat_capacity():
+    """Tests that an error is raised when the heat_capacity is missing"""
+    my_mats = Materials([Material(1, D_0=1, E_D=1, thermal_cond=1, rho=1)])
+    with pytest.raises(ValueError, match="Missing heat_capacity in materials"):
+        my_mats.check_missing_properties(
+            T=F.HeatTransferProblem(), derived_quantities=[]
+        )
+
+
+def test_missing_rho():
+    """Tests that an error is raised when the rho is missing"""
+    my_mats = Materials([Material(1, D_0=1, E_D=1, thermal_cond=1, heat_capacity=1)])
+    with pytest.raises(ValueError, match="Missing rho in materials"):
+        my_mats.check_missing_properties(
+            T=F.HeatTransferProblem(), derived_quantities=[]
+        )
+
+
 def test_different_ids_in_materials():
     """
     Checks that an error is raised when two materials have the same id
