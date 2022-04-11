@@ -57,7 +57,7 @@ class Material:
             self.entropy = H["entropy"]
         if solubility_law not in ["henry", "sievert"]:
             raise ValueError(
-                "Acceptable values for solubility_law are 'henry' and 'sieverts'"
+                "Acceptable values for solubility_law are 'henry' and 'sievert'"
             )
         self.solubility_law = solubility_law
         self.check_properties()
