@@ -291,3 +291,12 @@ def test_E_S_without_S_0():
 def test_S_0_without_E_S():
     with pytest.raises(ValueError, match="E_S cannot be None"):
         Material(1, 1, 1, S_0=1, E_S=None)
+
+
+def test_error_wrong_solubility_law_string():
+    """Tests that an error is raised when the wrong value of solubility_law is set"""
+    with pytest.raises(
+        ValueError,
+        match="Acceptable values for solubility_law are 'henry' and 'sievert'",
+    ):
+        Material(1, 1, 1, solubility_law="foo")
