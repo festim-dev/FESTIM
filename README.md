@@ -8,7 +8,7 @@
 
 FESTIM (Finite Elements Simulation of Tritium in Materials) is a tool for modeling Hydrogen Isotopes (HIs) transport in materials. 
 The governing equations are composed of:
-- **Fick's law** of diffusion of species based on concentration gradient
+- **Fick's law** of diffusion of hydrogen
 - **Soret** effect
 - Trapping/detrapping **macroscopic rate equations**
 - **Heat equation**
@@ -17,18 +17,18 @@ The governing equations are composed of:
 The following features are included in this tool:
 - Mesh import from XDMF files
 - **Adaptive stepsize**
-- **Temperature** is defined by:
-    - user-defined expression
+- **Temperature** can be defined by:
+    - a user-defined expression
     - solving transient/stationnary heat equation
 - Multiple intrinsic/extrinsic traps with **non-homogeneous density distribution**
-- Wide range of built-in boundary conditions (Sievert's law, recombination flux, experimental data, user-defined expression...)
+- Wide range of built-in boundary conditions (Sievert's law, recombination flux, user-defined expression...)
 - **Derived quantities** computation (surface fluxes, volume integrations, extrema over domains, mean values over domains...)
 
 FESTIM spatially discretises the PDEs using the Finite Element Methods. To this extent, we chose to use the C++/Python library [FEniCS](https://fenicsproject.org). 
 The implicit time discretisation method is backward Euler.
 PDEs are solved using FEniCS' Newton nonlinear solver. A library of generic functions is provided so that users can run custom simulations in addition to the flexibility of [FEniCS](https://fenicsproject.org) built-in functions.
 
-## Run FESTIM in Docker (e.g. on Windows, Mac, many Linux distributions)
+## Run FESTIM in Docker
 The FEniCS project provides a [Docker image](https://hub.docker.com/r/fenicsproject/stable/) with FEniCS and its dependencies (python3, UFL, DOLFIN, numpy, sympy...)  already installed. See their ["FEniCS in Docker" manual](https://fenics.readthedocs.io/projects/containers/en/latest/).
 
 Get Docker [here](https://www.docker.com/community-edition).
@@ -43,13 +43,23 @@ For Linux users:
 
     docker run -ti -v $(pwd):/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
 
-Clone FESTIM's git repository:
+Clone FESTIM:
 
     git clone https://github.com/RemDelaporteMathurin/FESTIM
-    
+
+Alternatively, FESTIM can be installed via pip
+
+    pip install git+https://github.com/RemDelaporteMathurin/FESTIM
+
+To install a specific version of FESTIM
+
+    pip install git+https://github.com/RemDelaporteMathurin/FESTIM@v0.9
+
 Run the tests:
 
     pytest-3 Tests/
+
+
 ## Visualisation
 FESTIM allows users to export their data to .csv, .txt or to a XDMF format with an XML interface. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
 <p align="center">
