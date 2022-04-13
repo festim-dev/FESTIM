@@ -157,7 +157,7 @@ def test_mobile_concentration_sieverts():
 
     produced_concentration = f.project(my_theta.mobile_concentration(), V)
     expected_concentration = f.project(my_theta.solution * S, V)
-    assert produced_concentration(0.5) == expected_concentration(0.5)
+    assert produced_concentration(0.5) == pytest.approx(expected_concentration(0.5))
 
 
 def test_mobile_concentration_henry():
@@ -182,7 +182,7 @@ def test_mobile_concentration_henry():
 
     produced_concentration = f.project(my_theta.mobile_concentration(), V)
     expected_concentration = f.project(my_theta.solution**2 * S, V)
-    assert produced_concentration(0.5) == expected_concentration(0.5)
+    assert produced_concentration(0.5) == pytest.approx(expected_concentration(0.5))
 
 
 def test_post_processing_solution_to_concentration():
