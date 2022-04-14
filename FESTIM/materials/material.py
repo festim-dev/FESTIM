@@ -51,6 +51,10 @@ class Material:
         self.rho = rho
         self.borders = borders
         self.heat_transport = heat_transport
+        if solubility_law not in ["henry", "sievert"]:
+            raise ValueError(
+                "Acceptable values for solubility_law are 'henry' and 'sievert'"
+        )
         self.solubility_law = solubility_law
         self.check_properties()
 
