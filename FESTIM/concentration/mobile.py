@@ -82,6 +82,8 @@ class Mobile(Concentration):
                     F += dot(D * grad(c_0), grad(self.test_function)) * dx
                     if soret:
                         Q = material.heat_transport
+                        if callable(Q):
+                            Q = material.heat_transport(T.T)
                         F += (
                             dot(
                                 D * Q * c_0 / (R * T.T**2) * grad(T.T),
