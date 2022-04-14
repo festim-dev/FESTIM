@@ -10,7 +10,6 @@ class Material:
         heat_capacity=None,
         rho=None,
         borders=None,
-        H=None,
         solubility_law="sievert",
         name=None,
     ) -> None:
@@ -34,9 +33,8 @@ class Material:
                 be a function of T. Defaults to None.
             borders (list, optional): The borders of the 1D subdomain.
                 Only needed in 1D with several materials. Defaults to None.
-            H (dict, optional): heat of transport (J/mol).
-                {"free_enthalpy": ..., "entropy": ...} so that
-                H = free_enthalpy + entropy*T. Defaults to None.
+            heat_transport (callable, optional): expression of the heat of transport (J/mol). 
+                Can be a function of T. Defaults to None.
             solubility_law (str, optional): the material's solubility law.
                 Can be "henry" or "sievert". Defaults to "sievert".
             name (str, optional): name of the material. Defaults to None.
@@ -51,14 +49,7 @@ class Material:
         self.heat_capacity = heat_capacity
         self.rho = rho
         self.borders = borders
-        self.H = H
-        if H is not None:
-            self.free_enthalpy = H["free_enthalpy"]
-            self.entropy = H["entropy"]
-        if solubility_law not in ["henry", "sievert"]:
-            raise ValueError(
-                "Acceptable values for solubility_law are 'henry' and 'sievert'"
-            )
+        self.heat_transport = heat_transport
         self.solubility_law = solubility_law
         self.check_properties()
 
