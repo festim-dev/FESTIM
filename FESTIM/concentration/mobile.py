@@ -81,7 +81,7 @@ class Mobile(Concentration):
                 if mesh.type == "cartesian":
                     F += dot(D * grad(c_0), grad(self.test_function)) * dx
                     if soret:
-                        Q = material.free_enthalpy * T.T + material.entropy
+                        Q = material.heat_transport
                         F += (
                             dot(
                                 D * Q * c_0 / (R * T.T**2) * grad(T.T),
