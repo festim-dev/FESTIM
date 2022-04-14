@@ -8,6 +8,7 @@ class Material:
         E_S=None,
         thermal_cond=None,
         heat_capacity=None,
+        heat_transport=None,
         rho=None,
         borders=None,
         solubility_law="sievert",
