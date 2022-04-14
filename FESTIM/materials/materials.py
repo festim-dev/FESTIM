@@ -131,7 +131,7 @@ class Materials:
             "heat_capacity": [],
             "rho": [],
             "borders": [],
-            "H": [],
+            "heat_transport": [],
         }
 
         for attr, value in attributes.items():
@@ -261,8 +261,8 @@ class Materials:
             self.thermal_cond = ThermalProp(self, vm, T, "thermal_cond", degree=2)
             self.heat_capacity = ThermalProp(self, vm, T, "heat_capacity", degree=2)
             self.density = ThermalProp(self, vm, T, "rho", degree=2)
-        if self.materials[0].H is not None:
-            self.H = HCoeff(self, vm, T, degree=2)
+        if self.materials[0].heat_transport is not None:
+            self.heat_transport = HCoeff(self, vm, T, degree=2)
 
     def update_properties_temperature(self, T):
         """Updates the temperature of the properties
