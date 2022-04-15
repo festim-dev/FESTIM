@@ -1,5 +1,7 @@
+from nis import match
 import FESTIM as F
 import numpy as np
+import pytest
 
 
 def test_convective_flux():
@@ -25,3 +27,47 @@ def test_convective_flux():
     sim.run()
 
     assert sim.T.T(0) > T_external
+
+
+def test_error_steady_state_with_stepsize():
+    """Checks that an error is raised when a stepsize is given for a steady state simulation"""
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromRefinements(1000, size=1)
+
+    my_model.materials = F.Materials([F.Material(D_0=1, E_D=0, id=1)])
+
+    my_model.T = F.Temperature(value=400)
+
+    my_model.settings = F.Settings(
+        transient=False,
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+    )
+
+    my_model.dt = F.Stepsize(initial_value=1)
+    with pytest.raises(
+        AttributeError, match="dt must be None in steady state simulations"
+    ):
+        my_model.initialise()
+
+
+def test_error_transient_without_stepsize():
+    """Checks that an error is raised when a stepsize is not given for a transient simulation"""
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromRefinements(1000, size=1)
+
+    my_model.materials = F.Materials([F.Material(D_0=1, E_D=0, id=1)])
+
+    my_model.T = F.Temperature(value=400)
+
+    my_model.settings = F.Settings(
+        transient=True,
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+    )
+
+    my_model.dt = None
+    with pytest.raises(
+        AttributeError, match="dt must be provided in transient simulations"
+    ):
+        my_model.initialise()
