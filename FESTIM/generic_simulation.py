@@ -163,6 +163,11 @@ class Simulation:
             self.mobile = FESTIM.Theta()
         else:
             self.mobile = FESTIM.Mobile()
+        # check that dt attribute is None if the sim is steady state
+        if not self.settings.transient and self.dt is not None:
+            raise AttributeError("dt must be None in steady state simulations")
+        if self.settings.transient and self.dt is None:
+            raise AttributeError("dt must be provided in transient simulations")
         self.h_transport_problem = HTransportProblem(
             self.mobile, self.traps, self.T, self.settings, self.initial_conditions
         )
