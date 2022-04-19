@@ -17,18 +17,39 @@ class HeatTransferProblem(FESTIM.Temperature):
         boundary_conditions (list): contains FESTIM.BoundaryConditions
     """
 
-    def __init__(self, transient=True, initial_value=0.0) -> None:
+    def __init__(
+        self,
+        transient=True,
+        initial_value=0.0,
+        absolute_tolerance=1e-3,
+        relative_tolerance=1e-10,
+        maximum_iterations=30,
+        linear_solver=None,
+    ) -> None:
         """Inits HeatTransferProblem
 
         Args:
             transient (bool, optional): If True, a transient simulation will
                 be run. Defaults to True.
             initial_value (sp.Add, float, optional): The initial value.
-                Only needed if transient is True. Defaults to 0..
+                Only needed if transient is True. Defaults to 0.
+            absolute_tolerance (float): the absolute tolerance of the newton
+                solver. Defaults to 1e-03
+            relative_tolerance (float): the relative tolerance of the newton
+                solver. Defaults to 1e-10
+            maximum_iterations (int, optional): maximum iterations allowed for
+                the solver to converge. Defaults to 30.
+            linear_solver (string): linear solver method for the newton solver,
+                options can be veiwed by print(list_linear_solver_methods()).
+                Defaults to None, for the newton solver this is: "umfpack".
         """
         super().__init__()
         self.transient = transient
         self.initial_value = initial_value
+        self.absolute_tolerance = absolute_tolerance
+        self.relative_tolerance = relative_tolerance
+        self.maximum_iterations = maximum_iterations
+        self.linear_solver = linear_solver
 
         self.F = 0
         self.v_T = None
@@ -64,7 +85,18 @@ class HeatTransferProblem(FESTIM.Temperature):
 
         if not self.transient:
             print("Solving stationary heat equation")
-            f.solve(self.F == 0, self.T, self.dirichlet_bcs)
+            dT = f.TrialFunction(self.T.function_space())
+            JT = f.derivative(self.F, self.T, dT)
+            problem = f.NonlinearVariationalProblem(
+                self.F, self.T, self.dirichlet_bcs, JT
+            )
+            solver = f.NonlinearVariationalSolver(problem)
+            newton_solver_prm = solver.parameters["newton_solver"]
+            newton_solver_prm["absolute_tolerance"] = self.absolute_tolerance
+            newton_solver_prm["relative_tolerance"] = self.relative_tolerance
+            newton_solver_prm["maximum_iterations"] = self.maximum_iterations
+            newton_solver_prm["linear_solver"] = self.linear_solver
+            solver.solve()
             self.T_n.assign(self.T)
 
     def define_variational_problem(self, materials, mesh, dt=None):
@@ -179,8 +211,10 @@ class HeatTransferProblem(FESTIM.Temperature):
             )
             solver = f.NonlinearVariationalSolver(problem)
             newton_solver_prm = solver.parameters["newton_solver"]
-            newton_solver_prm["absolute_tolerance"] = 1e-3
-            newton_solver_prm["relative_tolerance"] = 1e-10
+            newton_solver_prm["absolute_tolerance"] = self.absolute_tolerance
+            newton_solver_prm["relative_tolerance"] = self.relative_tolerance
+            newton_solver_prm["maximum_iterations"] = self.maximum_iterations
+            newton_solver_prm["linear_solver"] = self.linear_solver
             solver.solve()
             self.T_n.assign(self.T)
 
