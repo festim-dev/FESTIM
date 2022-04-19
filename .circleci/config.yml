@@ -16,6 +16,10 @@ jobs:
           command: |
             python3 -m pytest Tests/h_transport_problem/ --cov FESTIM --cov-append --cov-report xml --cov-report term
       - run:
+          name: Run HeatTransferProblem tests
+          command: |
+            python3 -m pytest Tests/heat_transfer_problem/ --cov FESTIM --cov-append --cov-report xml --cov-report term
+      - run:
           name: Run Simulation tests
           command: |
             python3 -m pytest Tests/simulation/ --cov FESTIM --cov-append --cov-report xml --cov-report term
