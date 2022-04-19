@@ -54,6 +54,7 @@ class Settings:
                 Else it will be computed at each time step. Defaults to True.
             linear_solver (str): linear solver method for the newton solver,
                 options can be veiwed by print(list_linear_solver_methods()).
+                More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
                 Defaults to None, for the newton solver this is: "umfpack".
         """
         # TODO maybe transient and final_time are redundant

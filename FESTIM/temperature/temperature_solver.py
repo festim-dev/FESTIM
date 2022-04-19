@@ -44,6 +44,7 @@ class HeatTransferProblem(FESTIM.Temperature):
             linear_solver (str, optional): linear solver method for the newton solver,
                 options can be viewed with print(list_linear_solver_methods()).
                 If None, the default fenics linear solver will be used ("umfpack").
+                More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
                 Defaults to None.
 
         """
