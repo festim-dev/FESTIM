@@ -473,15 +473,14 @@ def test_run_MMS_soret(tmpdir):
     D_0 = 2
     k_B = FESTIM.k_B
     D = D_0 * sp.exp(-E_D / k_B / T)
-    H = -2
-    S = 3
+    heat_transport = lambda T:-2*T+3
     R = FESTIM.R
     f = sp.diff(u, FESTIM.t) - sp.diff(
         (
             D
             * (
                 sp.diff(u, FESTIM.x)
-                + (H * T + S) * u / (R * T**2) * sp.diff(T, FESTIM.x)
+                + (heat_transport(T)) * u / (R * T**2) * sp.diff(T, FESTIM.x)
             )
         ),
         FESTIM.x,
@@ -491,7 +490,7 @@ def test_run_MMS_soret(tmpdir):
         my_materials = FESTIM.Materials(
             [
                 FESTIM.Material(
-                    id=1, D_0=D_0, E_D=E_D, H={"free_enthalpy": H, "entropy": S}
+                    id=1, D_0=D_0, E_D=E_D, heat_transport=heat_transport,
                 )
             ]
         )
