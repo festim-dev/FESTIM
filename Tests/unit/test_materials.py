@@ -255,7 +255,7 @@ def test_create_properties():
         thermal_cond=5,
         heat_capacity=6,
         rho=7,
-        heat_transport=7,
+        heat_transport=8,
     )
     materials = Materials([mat_1, mat_2])
     mf = MeshFunction("size_t", mesh, 1, 0)
@@ -278,7 +278,7 @@ def test_create_properties():
         assert thermal_cond(cell.midpoint().x()) == mf[cell] + 3
         assert cp(cell.midpoint().x()) == mf[cell] + 4
         assert rho(cell.midpoint().x()) == mf[cell] + 5
-        assert heat_transport(cell.midpoint().x()) == mf[cell] + 10
+        assert heat_transport(cell.midpoint().x()) == mf[cell] + 6
 
 
 def test_E_S_without_S_0():
