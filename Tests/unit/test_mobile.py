@@ -139,9 +139,9 @@ class TestCreateDiffusionForm:
         my_mobile.test_function = f.TestFunction(self.V)
         my_mats = FESTIM.Materials([self.mat1])
 
-        trap1 = FESTIM.Trap(1, 1, 1, 1, [1, 2], 1)
+        trap1 = FESTIM.Trap(1, 1, 1, 1, self.mat1, 1)
         add_functions(trap1, self.V, id=1)
-        trap2 = FESTIM.Trap(2, 2, 2, 2, [1, 2], 2)
+        trap2 = FESTIM.Trap(2, 2, 2, 2, self.mat1, 2)
         add_functions(trap2, self.V, id=1)
 
         my_traps = FESTIM.Traps([trap1, trap2])

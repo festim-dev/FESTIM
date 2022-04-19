@@ -38,7 +38,7 @@ def test_initialisation_from_xdmf(tmpdir):
             field=1, value=str(Path(file2)), label="2", time_step=0
         ),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
     my_problem = FESTIM.HTransportProblem(
         FESTIM.Mobile(),
@@ -76,7 +76,7 @@ def test_initialisation_with_expression():
         FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
         FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
     my_problem = FESTIM.HTransportProblem(
         FESTIM.Mobile(),
@@ -115,7 +115,7 @@ def test_initialisation_with_expression_chemical_pot():
         FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
         FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
     my_theta = FESTIM.Theta()
     my_theta.materials = FESTIM.Materials([FESTIM.Material(1, 1, 0, S_0=S, E_S=0)])
@@ -149,7 +149,7 @@ def test_initialisation_default():
     u = fenics.Function(V)
     w = fenics.Function(V)
     initial_conditions = []
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
     my_problem = FESTIM.HTransportProblem(
         FESTIM.Mobile(),
@@ -180,7 +180,7 @@ def test_initialisation_solute_only():
     initial_conditions = [
         FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
     my_problem = FESTIM.HTransportProblem(
         FESTIM.Mobile(),
@@ -212,7 +212,7 @@ def test_initialisation_no_component():
     initial_conditions = [
         FESTIM.InitialCondition(value=1 + FESTIM.x + FESTIM.y),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, [1], 1)
+    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
     my_problem = FESTIM.HTransportProblem(
         FESTIM.Mobile(),

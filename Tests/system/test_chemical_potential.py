@@ -54,11 +54,17 @@ def test_run_MMS_chemical_pot(tmpdir):
         my_materials = FESTIM.Materials(
             [
                 FESTIM.Material(
-                    id=1, D_0=D_0, E_D=E_D, S_0=2, E_S=0.1, solubility_law="henry"
+                    name="mat",
+                    id=1,
+                    D_0=D_0,
+                    E_D=E_D,
+                    S_0=2,
+                    E_S=0.1,
+                    solubility_law="henry",
                 )
             ]
         )
-        my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, 1, n_trap)])
+        my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
 
         my_initial_conditions = [
             FESTIM.InitialCondition(field=0, value=u),

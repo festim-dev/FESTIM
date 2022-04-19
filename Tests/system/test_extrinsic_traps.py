@@ -3,7 +3,7 @@ import FESTIM as F
 
 def test_extrinsic_trap():
     """Runs a FESTIM sim with an extrinsic trap"""
-    my_materials = F.Materials([F.Material(id=1, D_0=2, E_D=1)])
+    my_materials = F.Materials([F.Material(id=1, D_0=2, E_D=1, name="mat")])
     my_mesh = F.MeshFromRefinements(10, 1)
 
     my_traps = F.ExtrinsicTrap(
@@ -11,7 +11,7 @@ def test_extrinsic_trap():
         E_k=0.1,
         p_0=1e13,
         E_p=0.1,
-        materials=[1],
+        materials=["mat"],
         phi_0=2.5e19,
         n_amax=1e-1 * 6.3e28,
         f_a=1,
@@ -50,10 +50,10 @@ def test_neutron_induced_trap():
     mesh = F.MeshFromVertices([0, 1, 2, 3, 4])
     my_sim.mesh = mesh
 
-    my_sim.materials = F.Materials([F.Material(1, 1, 0)])
+    my_sim.materials = F.Materials([F.Material(1, 1, 0, name="mat")])
 
     trap_1 = F.NeutronInducedTrap(
-        0, 0, 0, 0, materials=[1], phi=F.x**2, K=1, n_max=10, A_0=0, E_A=0
+        0, 0, 0, 0, materials=["mat"], phi=F.x**2, K=1, n_max=10, A_0=0, E_A=0
     )
     my_sim.traps = F.Traps([trap_1])
 
