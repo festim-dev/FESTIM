@@ -4,7 +4,8 @@ import fenics as f
 
 
 def test_create_functions_linear_solver_mumps():
-    """Checks that create_functions() works when an alternative linear solver is used rather than the default"""
+    """Checks that the function created by create_functions() has the expected value when an
+    alternative linear solver is used rather than the default"""
 
     mesh = FESTIM.MeshFromRefinements(10, size=0.1)
 
