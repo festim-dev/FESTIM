@@ -13,7 +13,7 @@ class Settings:
             the solver to converge
         traps_element_type (str): Finite element used for traps.
         update_jacobian (bool):
-        linear_solver (string): linear solver method for the newton solver
+        linear_solver (str): linear solver method for the newton solver
     """
 
     def __init__(
