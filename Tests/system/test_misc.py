@@ -71,3 +71,27 @@ def test_error_transient_without_stepsize():
         AttributeError, match="dt must be provided in transient simulations"
     ):
         my_model.initialise()
+
+
+def test_high_recombination_flux():
+    """Added test that catches the bug #465
+    Checks that with chemical potential and a high recombination coefficient
+    the solver doesn't diverge
+    """
+    model = F.Simulation()
+
+    model.mesh = F.MeshFromVertices(range(10))
+
+    model.boundary_conditions = [
+        F.DirichletBC(surfaces=1, value=1, field=0),
+        F.RecombinationFlux(Kr_0=1000000, E_Kr=0, order=2, surfaces=2),
+    ]
+
+    model.T = F.Temperature(100)
+
+    model.materials = F.Materials([F.Material(id=1, D_0=1, E_D=0, S_0=1, E_S=0)])
+
+    model.settings = F.Settings(1e-10, 1e-10, transient=False, chemical_pot=True)
+
+    model.initialise()
+    model.run()
