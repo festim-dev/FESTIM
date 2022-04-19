@@ -8,7 +8,7 @@ class TestNeutronInducedTrap:
     """
 
     my_trap = FESTIM.NeutronInducedTrap(
-        1, 1, 1, 1, 1, phi=1, K=1, n_max=2, A_0=1, E_A=1
+        1, 1, 1, 1, "mat_name", phi=1, K=1, n_max=2, A_0=1, E_A=1
     )
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
@@ -70,7 +70,7 @@ class TestNeutronInducedTrapVaryingTime:
         1,
         1,
         1,
-        1,
+        "mat_name",
         phi=1 + FESTIM.t,
         K=2 + FESTIM.x,
         n_max=3 + FESTIM.y,

@@ -25,10 +25,12 @@ class TestCreateTrappingForms:
     my_mats = FESTIM.Materials([mat1, mat2])
 
     trap1 = FESTIM.Trap(
-        k_0=1, E_k=2, p_0=1, E_p=2, materials=[1, 2], density=1 + FESTIM.x
+        k_0=1, E_k=2, p_0=1, E_p=2, materials=[mat1, mat2], density=1 + FESTIM.x
     )
     add_functions(trap1, V, id=1)
-    trap2 = FESTIM.Trap(k_0=2, E_k=3, p_0=1, E_p=2, materials=1, density=1 + FESTIM.t)
+    trap2 = FESTIM.Trap(
+        k_0=2, E_k=3, p_0=1, E_p=2, materials=mat1, density=1 + FESTIM.t
+    )
     add_functions(trap2, V, id=2)
 
     def test_one_trap_steady_state(self):
@@ -72,9 +74,9 @@ class TestGetTrap:
     dx = f.dx()
     dt = f.Constant(1)
 
-    trap1 = FESTIM.Trap(k_0=1, E_k=2, p_0=1, E_p=2, materials=1, density=1)
+    trap1 = FESTIM.Trap(k_0=1, E_k=2, p_0=1, E_p=2, materials="mat_name", density=1)
     add_functions(trap1, V, id=1)
-    trap2 = FESTIM.Trap(k_0=2, E_k=3, p_0=1, E_p=2, materials=1, density=1)
+    trap2 = FESTIM.Trap(k_0=2, E_k=3, p_0=1, E_p=2, materials="mat_name", density=1)
     add_functions(trap2, V, id=2)
     my_traps = FESTIM.Traps([trap1, trap2])
 
