@@ -73,8 +73,11 @@ class Theta(Mobile):
         Returns:
             ThetaToConcentration: the hydrogen mobile concentration
         """
-        return ThetaToConcentration(
-            self.solution, self.materials, self.volume_markers, self.T.T
+        henry_to_concentration = self.solution**2 * self.S
+        sieverts_to_concentration = self.solution * self.S
+        return (
+            self.materials.henry_marker * henry_to_concentration
+            + self.materials.sievert_marker * sieverts_to_concentration
         )
 
     def post_processing_solution_to_concentration(self):
