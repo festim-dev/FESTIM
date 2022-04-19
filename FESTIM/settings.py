@@ -52,7 +52,7 @@ class Settings:
             update_jacobian (bool, optional): If set to False, the Jacobian of
                 the formulation will be computed only once at the beggining.
                 Else it will be computed at each time step. Defaults to True.
-            linear_solver (string): linear solver method for the newton solver,
+            linear_solver (str): linear solver method for the newton solver,
                 options can be veiwed by print(list_linear_solver_methods()).
                 Defaults to None, for the newton solver this is: "umfpack".
         """
