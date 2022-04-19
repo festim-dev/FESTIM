@@ -9,6 +9,24 @@ def add_functions(trap, V, id=1):
     trap.test_function = f.TestFunction(V)
 
 
+def test_error_wrong_type_material():
+    """Checks that an error is raised when the wrong type is given to
+    materials
+    """
+    msg = "Accepted types for materials are str or FESTIM.Material"
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=True, density=1)
+
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=[True, "mat_name"], density=1)
+
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=1, density=1)
+
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=[1, 2], density=1)
+
+
 def test_error_if_duplicate_material():
     mat1 = FESTIM.Material(1, D_0=1, E_D=0, name="name1")
     mat2 = FESTIM.Material(2, D_0=1, E_D=0, name="name2")
