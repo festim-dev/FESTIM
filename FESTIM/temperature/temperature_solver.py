@@ -37,7 +37,6 @@ class HeatTransferProblem(FESTIM.Temperature):
                 solver. Defaults to 1e-03
 
             relative_tolerance (float, optional): the relative tolerance of the newton
-
                 solver. Defaults to 1e-10
             maximum_iterations (int, optional): maximum iterations allowed for
                 the solver to converge. Defaults to 30.
