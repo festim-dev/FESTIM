@@ -41,9 +41,11 @@ class HeatTransferProblem(FESTIM.Temperature):
                 solver. Defaults to 1e-10
             maximum_iterations (int, optional): maximum iterations allowed for
                 the solver to converge. Defaults to 30.
-            linear_solver (string): linear solver method for the newton solver,
-                options can be veiwed by print(list_linear_solver_methods()).
-                Defaults to None, for the newton solver this is: "umfpack".
+            linear_solver (str, optional): linear solver method for the newton solver,
+                options can be viewed with print(list_linear_solver_methods()).
+                If None, the default fenics linear solver will be used ("umfpack").
+                Defaults to None.
+
         """
         super().__init__()
         self.transient = transient
