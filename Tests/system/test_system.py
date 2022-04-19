@@ -191,7 +191,9 @@ def test_run_MMS(tmpdir):
     g = sp.diff(v, FESTIM.t) + p * v - k * u * (n_trap - v)
 
     def run(h):
-        my_materials = FESTIM.Materials([FESTIM.Material(name="mat", id=1, D_0=D_0, E_D=E_D)])
+        my_materials = FESTIM.Materials(
+            [FESTIM.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
+        )
         my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
 
         my_initial_conditions = [
