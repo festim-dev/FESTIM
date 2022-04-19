@@ -629,8 +629,6 @@ def test_run_MMS_steady_state(tmpdir):
             traps_element_type="DG",
         )
 
-        my_dt = FESTIM.Stepsize(0.1 / 50)
-
         my_exports = FESTIM.Exports(
             [
                 FESTIM.XDMFExport(
@@ -653,7 +651,6 @@ def test_run_MMS_steady_state(tmpdir):
             sources=my_sources,
             temperature=my_temp,
             settings=my_settings,
-            dt=my_dt,
             exports=my_exports,
         )
 
