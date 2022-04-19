@@ -1,4 +1,5 @@
 import FESTIM
+import pytest
 import fenics as f
 
 
@@ -25,3 +26,5 @@ def test_create_functions_linear_solver_mumps():
 
     # run
     my_problem.create_functions(materials=materials, mesh=mesh)
+
+    assert my_problem.T(0.05) == pytest.approx(1)
