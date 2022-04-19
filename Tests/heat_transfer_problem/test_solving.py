@@ -11,8 +11,7 @@ def test_create_functions_linear_solver_mumps():
     mesh.define_measures(materials)
 
     bcs = [
-        FESTIM.DirichletBC(surfaces=0, value=1, field="T"),
-        FESTIM.DirichletBC(surfaces=1, value=0, field="T"),
+        FESTIM.DirichletBC(surfaces=[1, 2], value=1, field="T"),
     ]
 
     my_problem = FESTIM.HeatTransferProblem(
