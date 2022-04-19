@@ -193,6 +193,7 @@ class Simulation:
             self.T, derived_quantities=[]
         )  # FIXME derived quantities shouldn't be []
         self.materials.create_properties(self.mesh.volume_markers, self.T.T)
+        self.materials.create_solubility_law_markers(self.mesh)
 
         # if the temperature is not time-dependent, solubility can be projected
         if self.settings.chemical_pot:
