@@ -89,3 +89,33 @@ def test_solve_once_returns_false():
 
     # test
     assert not converged
+
+
+def test_solve_once_linear_solver_mumps():
+    """Checks that solve_once() works when an alternative linear solver is used rather than the default"""
+    # build
+    mesh = f.UnitIntervalMesh(8)
+    V = f.FunctionSpace(mesh, "CG", 1)
+
+    my_settings = FESTIM.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        maximum_iterations=50,
+        linear_solver="mumps",
+    )
+    my_problem = FESTIM.HTransportProblem(
+        FESTIM.Mobile(), FESTIM.Traps(), FESTIM.Temperature(200), my_settings, []
+    )
+    my_problem.u = f.Function(V)
+    my_problem.u_n = f.Function(V)
+    my_problem.v = f.TestFunction(V)
+    my_problem.F = (
+        (my_problem.u - my_problem.u_n) * my_problem.v * f.dx
+        + 1 * my_problem.v * f.dx
+        + f.dot(f.grad(my_problem.u), f.grad(my_problem.v)) * f.dx
+    )
+    # run
+    nb_it, converged = my_problem.solve_once()
+
+    # test
+    assert converged
