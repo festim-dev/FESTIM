@@ -294,6 +294,30 @@ class Materials:
 
         self.S = S
 
+    def create_solubility_law_markers(self, mesh: FESTIM.Mesh):
+        V = f.FunctionSpace(mesh.mesh, "DG", 0)
+        henry = f.Function(V)
+        sievert = f.Function(V)
+        test_function_henry = f.TestFunction(V)
+        test_function_sievert = f.TestFunction(V)
+        F_henry = -henry * test_function_henry * mesh.dx
+        F_sievert = -sievert * test_function_sievert * mesh.dx
+        for mat in self.materials:
+            mat_ids = mat.id
+            if not isinstance(mat.id, list):
+                mat_ids = [mat.id]
+            for mat_id in mat_ids:
+                if mat.solubility_law == "henry":
+                    F_henry += 1 * test_function_henry * mesh.dx(mat_id)
+                elif mat.solubility_law == "sievert":
+                    F_sievert += 1 * test_function_sievert * mesh.dx(mat_id)
+
+        f.solve(F_henry == 0, henry, [])
+        f.solve(F_sievert == 0, sievert, [])
+
+        self.henry_marker = henry
+        self.sievert_marker = sievert
+
 
 class ArheniusCoeff(f.UserExpression):
     def __init__(self, materials, vm, T, pre_exp, E, **kwargs):
