@@ -34,7 +34,7 @@ class Material:
                 be a function of T. Defaults to None.
             borders (list, optional): The borders of the 1D subdomain.
                 Only needed in 1D with several materials. Defaults to None.
-            heat_transport (callable, optional): expression of the heat of transport (J/mol). 
+            heat_transport (float or callable, optional): expression of the heat of transport (J/mol). 
                 Can be a function of T. Defaults to None.
             solubility_law (str, optional): the material's solubility law.
                 Can be "henry" or "sievert". Defaults to "sievert".

@@ -350,7 +350,10 @@ class HCoeff(f.UserExpression):
         subdomain_id = self._vm[cell]
         material = self._materials.find_material_from_id(subdomain_id)
 
-        value[0] = material.free_enthalpy + self._T(x) * material.entropy
+        if callable(material.heat_transport):
+            value[0] = material.heat_transport(self._T(x))
+        else:
+            value[0] = material.heat_transport
 
     def value_shape(self):
         return ()
