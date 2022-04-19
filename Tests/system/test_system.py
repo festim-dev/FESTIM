@@ -191,8 +191,8 @@ def test_run_MMS(tmpdir):
     g = sp.diff(v, FESTIM.t) + p * v - k * u * (n_trap - v)
 
     def run(h):
-        my_materials = FESTIM.Materials([FESTIM.Material(id=1, D_0=D_0, E_D=E_D)])
-        my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, 1, n_trap)])
+        my_materials = FESTIM.Materials([FESTIM.Material(name="mat", id=1, D_0=D_0, E_D=E_D)])
+        my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
 
         my_initial_conditions = [
             FESTIM.InitialCondition(field=0, value=u),
@@ -312,9 +312,9 @@ def test_run_MMS_chemical_pot(tmpdir):
 
     def run(h):
         my_materials = FESTIM.Materials(
-            [FESTIM.Material(id=1, D_0=D_0, E_D=E_D, S_0=2, E_S=0.1)]
+            [FESTIM.Material(name="mat", id=1, D_0=D_0, E_D=E_D, S_0=2, E_S=0.1)]
         )
-        my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, 1, n_trap)])
+        my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
 
         my_initial_conditions = [
             FESTIM.InitialCondition(field=0, value=u),
@@ -599,9 +599,11 @@ def test_run_MMS_steady_state(tmpdir):
 
     def run(h):
 
-        my_materials = FESTIM.Materials([FESTIM.Material(id=1, D_0=D_0, E_D=E_D)])
+        my_materials = FESTIM.Materials(
+            [FESTIM.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
+        )
 
-        my_trap = FESTIM.Trap(k_0, E_k, p_0, E_p, [1], n_trap)
+        my_trap = FESTIM.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap)
 
         my_initial_conditions = [
             FESTIM.InitialCondition(field=0, value=u),
@@ -858,15 +860,15 @@ def test_steady_state_traps_not_everywhere():
     # build
     my_materials = FESTIM.Materials(
         [
-            FESTIM.Material(id=1, D_0=1, E_D=0, borders=[0, 0.25]),
-            FESTIM.Material(id=2, D_0=1, E_D=0, borders=[0.25, 0.5]),
-            FESTIM.Material(id=3, D_0=1, E_D=0, borders=[0.5, 1]),
+            FESTIM.Material(name="mat_1", id=1, D_0=1, E_D=0, borders=[0, 0.25]),
+            FESTIM.Material(name="mat_2", id=2, D_0=1, E_D=0, borders=[0.25, 0.5]),
+            FESTIM.Material(name="mat_3", id=3, D_0=1, E_D=0, borders=[0.5, 1]),
         ]
     )
 
     my_mesh = FESTIM.MeshFromRefinements(100, 1)
 
-    my_trap = FESTIM.Trap(1, 0, 1, 0, [1, 3], 1)
+    my_trap = FESTIM.Trap(1, 0, 1, 0, ["mat_1", "mat_3"], 1)
 
     my_temp = FESTIM.Temperature(1)
     my_bc = FESTIM.DirichletBC([1], value=1)
@@ -898,15 +900,12 @@ def test_no_jacobian_update():
     """Runs a transient sim and with the flag "update_jacobian" set to False."""
 
     # build
-    my_materials = FESTIM.Materials(
-        [
-            FESTIM.Material(id=1, D_0=1, E_D=0),
-        ]
-    )
+    mat = FESTIM.Material(id=1, D_0=1, E_D=0)
+    my_materials = FESTIM.Materials([mat])
 
     my_mesh = FESTIM.MeshFromRefinements(10, 1)
 
-    my_trap = FESTIM.Trap(1, 0, 1, 0, [1], 1)
+    my_trap = FESTIM.Trap(1, 0, 1, 0, [mat], 1)
 
     my_temp = FESTIM.Temperature(1)
 
