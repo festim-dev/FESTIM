@@ -152,10 +152,13 @@ class Simulation:
         """Assigns the source terms (in self.sources) to the correct field
         (self.mobile, self.T, or traps)
         """
-        # reinitialise sources for mobile and temperature
+        # reinitialise sources for concentrations and temperature
         self.mobile.sources = []
         self.T.sources = []
+        for t in self.traps.traps:
+            t.sources = []
 
+        # make field_to_object dict
         field_to_object = {
             "solute": self.mobile,
             "0": self.mobile,
@@ -164,11 +167,10 @@ class Simulation:
             "T": self.T,
         }
         for i, trap in enumerate(self.traps.traps, 1):
-            # reinitialise sources for trap
-            trap.sources = []
             field_to_object[i] = trap
             field_to_object[str(i)] = trap
 
+        # set sources
         for source in self.sources:
             field_to_object[source.field].sources.append(source)
 
