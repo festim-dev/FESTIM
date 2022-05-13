@@ -3,6 +3,11 @@ from FESTIM import Export
 
 class DerivedQuantity(Export):
     def __init__(self, field) -> None:
+        """Inits DerivedQuantity
+
+        Args:
+            field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        """
         super().__init__(field=field)
         self.dx = None
         self.ds = None
@@ -16,7 +21,13 @@ class DerivedQuantity(Export):
 
 
 class VolumeQuantity(DerivedQuantity):
-    def __init__(self, field, volume: int) -> None:
+    def __init__(self, field: str or int, volume: int) -> None:
+        """DerivedQuantity relative to a volume
+
+        Args:
+            field (str, int): the field ("solute", 0, 1, "T", "retention")
+            volume (int): the volume id
+        """
         super().__init__(field)
         self.volume = volume
 
@@ -33,7 +44,13 @@ class VolumeQuantity(DerivedQuantity):
 
 
 class SurfaceQuantity(DerivedQuantity):
-    def __init__(self, field, surface: int) -> None:
+    def __init__(self, field: str or int, surface: int) -> None:
+        """DerivedQuantity relative to a surface
+
+        Args:
+            field (str, int):  the field ("solute", 0, 1, "T", "retention")
+            surface (int): the surface id
+        """
         super().__init__(field)
         self.surface = surface
 
