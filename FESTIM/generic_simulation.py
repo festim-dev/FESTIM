@@ -193,6 +193,8 @@ class Simulation:
             self.T.create_functions(self.materials, self.mesh, self.dt)
         elif isinstance(self.T, FESTIM.Temperature):
             self.T.create_functions(self.mesh)
+        elif isinstance(self.T, FESTIM.TempFromXDMF):
+            self.T.create_functions(self.mesh)
 
         # Create functions for properties
         self.materials.check_materials(
