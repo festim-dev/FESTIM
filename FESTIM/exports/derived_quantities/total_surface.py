@@ -1,11 +1,10 @@
-from FESTIM import DerivedQuantity
+from FESTIM import SurfaceQuantity
 import fenics as f
 
 
-class TotalSurface(DerivedQuantity):
+class TotalSurface(SurfaceQuantity):
     def __init__(self, field, surface) -> None:
-        super().__init__(field)
-        self.surface = surface
+        super().__init__(field, surface=surface)
         self.title = "Total {} surface {}".format(self.field, self.surface)
 
     def compute(self):
