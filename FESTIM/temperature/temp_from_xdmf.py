@@ -24,7 +24,9 @@ class TempFromXDMF(Temperature):
 
         # check labels match
         if self.label not in extract_xdmf_labels(self.filename):
-            raise ValueError("Checkpoints may not be assigned in the xdmf file")
+            raise ValueError(
+                "Coudln't find label: {} in {}".format(self.label, self.filename)
+            )
 
     def create_functions(self, mesh):
         """Creates functions self.T, self.T_n
