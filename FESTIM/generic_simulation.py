@@ -275,8 +275,9 @@ class Simulation:
         """Advance the model by one iteration"""
         # Update current time
         self.t += float(self.dt.value)
-        self.T.update(self.t)
         self.materials.update_properties_temperature(self.T)
+
+        # TODO do we need this?
 
         # Display time
         # TODO this should be a method
