@@ -14,6 +14,19 @@ class Traps:
             if trap.id is None:
                 trap.id = i
 
+    @property
+    def traps(self):
+        return self._traps
+
+    @traps.setter
+    def traps(self, value):
+        if isinstance(value, list):
+            if not all(isinstance(t, FESTIM.Trap) for t in value):
+                raise TypeError("traps must be a list of FESTIM.Trap")
+            self._traps = value
+        else:
+            raise TypeError("traps must be a list")
+
     def make_traps_materials(self, materials):
         for trap in self.traps:
             trap.make_materials(materials)

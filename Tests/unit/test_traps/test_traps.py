@@ -3,6 +3,42 @@ import fenics as f
 import pytest
 
 
+def test_set_traps():
+    my_traps = FESTIM.Traps()
+
+    my_mat = FESTIM.Material(1, 1, 0)
+    trap1 = FESTIM.Trap(1, 1, 1, 1, [my_mat], density=1)
+    trap2 = FESTIM.Trap(2, 2, 2, 2, [my_mat], density=1)
+
+    combinations = [[trap1], [trap1, trap2]]
+
+    for trap_combination in combinations:
+        my_traps.traps = trap_combination
+
+
+def test_set_traps_wrong_type():
+    """Checks an error is raised when traps is set with the wrong type"""
+    my_traps = FESTIM.Traps()
+
+    my_mat = FESTIM.Material(1, 1, 0)
+    trap1 = FESTIM.Trap(1, 1, 1, 1, [my_mat], density=1)
+
+    combinations = [trap1, "coucou", 1, True]
+
+    for trap_combination in combinations:
+        with pytest.raises(
+            TypeError,
+            match="traps must be a list",
+        ):
+            my_traps.traps = trap_combination
+
+    with pytest.raises(
+        TypeError,
+        match="traps must be a list of FESTIM.Trap",
+    ):
+        my_traps.traps = [trap1, 2]
+
+
 def add_functions(trap, V, id=1):
     trap.solution = f.Function(V, name="c_t_{}".format(id))
     trap.previous_solution = f.Function(V, name="c_t_n_{}".format(id))
