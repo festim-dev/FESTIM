@@ -91,31 +91,14 @@ class Simulation:
 
         self.settings = settings
         self.dt = dt
-        if traps is None:
-            self.traps = FESTIM.Traps([])
-        elif type(traps) is list:
-            self.traps = FESTIM.Traps(traps)
-        elif isinstance(traps, FESTIM.Traps):
-            self.traps = traps
-        elif isinstance(traps, FESTIM.Trap):
-            self.traps = FESTIM.Traps([traps])
 
-        if type(materials) is list:
-            self.materials = FESTIM.Materials(materials)
-        elif isinstance(materials, FESTIM.Materials):
-            self.materials = materials
-        else:
-            self.materials = materials
+        self.traps = traps
+        self.materials = materials
 
         self.boundary_conditions = boundary_conditions
         self.initial_conditions = initial_conditions
         self.T = temperature
-        if exports is None:
-            self.exports = FESTIM.Exports([])
-        elif type(exports) is list:
-            self.exports = FESTIM.Exports(exports)
-        elif isinstance(exports, FESTIM.Exports):
-            self.exports = exports
+        self.exports = exports
         self.mesh = mesh
         self.sources = sources
 
@@ -123,6 +106,47 @@ class Simulation:
         self.h_transport_problem = None
         self.t = 0  # Initialising time to 0s
         self.timer = None
+
+    @property
+    def traps(self):
+        return self._traps
+
+    @traps.setter
+    def traps(self, value):
+        if value is None:
+            self._traps = FESTIM.Traps([])
+        elif isinstance(value, list):
+            self._traps = FESTIM.Traps(value)
+        elif isinstance(value, FESTIM.Traps):
+            self._traps = value
+        elif isinstance(value, FESTIM.Trap):
+            self._traps = FESTIM.Traps([value])
+
+    @property
+    def materials(self):
+        return self._materials
+
+    @materials.setter
+    def materials(self, value):
+        if isinstance(value, list):
+            self._materials = FESTIM.Materials(value)
+        elif isinstance(value, FESTIM.Materials):
+            self._materials = value
+        else:
+            self._materials = value
+
+    @property
+    def exports(self):
+        return self._exports
+
+    @exports.setter
+    def exports(self, value):
+        if value is None:
+            self._exports = FESTIM.Exports([])
+        elif isinstance(value, list):
+            self._exports = FESTIM.Exports(value)
+        elif isinstance(value, FESTIM.Exports):
+            self._exports = value
 
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
