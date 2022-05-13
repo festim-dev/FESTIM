@@ -134,10 +134,14 @@ class Simulation:
     def materials(self, value):
         if isinstance(value, list):
             self._materials = FESTIM.Materials(value)
+        elif isinstance(value, FESTIM.Material):
+            self._materials = FESTIM.Materials([value])
         elif isinstance(value, FESTIM.Materials):
             self._materials = value
-        else:
+        elif value is None:
             self._materials = value
+        else:
+            raise TypeError("accepted types for materials are list or FESTIM.Materials")
 
     @property
     def exports(self):
