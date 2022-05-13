@@ -275,21 +275,22 @@ class Simulation:
         """Advance the model by one iteration"""
         # Update current time
         self.t += float(self.dt.value)
+        # update temperature
         self.T.update(self.t)
         # TODO do we need this?
         self.materials.update_properties_temperature(self.T)
+        # update H problem
+        self.h_transport_problem.update(self.t, self.dt)
 
         # Display time
         self.display_time()
-
-        # update H problem
-        self.h_transport_problem.update(self.t, self.dt)
 
         # Post processing
         self.run_post_processing()
 
         # avoid t > final_time
-        if self.t + float(self.dt.value) > self.settings.final_time:
+        next_time = self.t + float(self.dt.value)
+        if next_time > self.settings.final_time:
             self.dt.value.assign(self.settings.final_time - self.t)
 
     def display_time(self):
