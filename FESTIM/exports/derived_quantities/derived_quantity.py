@@ -1,6 +1,3 @@
-from typing import Type
-
-from scipy import isin
 from FESTIM import Export
 
 
