@@ -121,6 +121,10 @@ class Simulation:
             self._traps = value
         elif isinstance(value, FESTIM.Trap):
             self._traps = FESTIM.Traps([value])
+        else:
+            raise TypeError(
+                "Accepted types for traps are list, FESTIM.Traps or FESTIM.Trap"
+            )
 
     @property
     def materials(self):
