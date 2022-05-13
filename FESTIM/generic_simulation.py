@@ -275,20 +275,12 @@ class Simulation:
         """Advance the model by one iteration"""
         # Update current time
         self.t += float(self.dt.value)
+        self.T.update(self.t)
+        # TODO do we need this?
         self.materials.update_properties_temperature(self.T)
 
-        # TODO do we need this?
-
         # Display time
-        # TODO this should be a method
-        simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
-        simulation_time = round(self.t, 1)
-        elapsed_time = round(self.timer.elapsed()[0], 1)
-        msg = "{:.1f} %        ".format(simulation_percentage)
-        msg += "{:.1e} s".format(simulation_time)
-        msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-
-        print(msg, end="\r")
+        self.display_time()
 
         # update H problem
         self.h_transport_problem.update(self.t, self.dt)
@@ -299,6 +291,16 @@ class Simulation:
         # avoid t > final_time
         if self.t + float(self.dt.value) > self.settings.final_time:
             self.dt.value.assign(self.settings.final_time - self.t)
+
+    def display_time(self):
+        """Displays the current time"""
+        simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
+        simulation_time = round(self.t, 1)
+        elapsed_time = round(self.timer.elapsed()[0], 1)
+        msg = "{:.1f} %        ".format(simulation_percentage)
+        msg += "{:.1e} s".format(simulation_time)
+        msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
+        print(msg, end="\r")
 
     def run_post_processing(self):
         """Create post processing functions and compute/write the exports"""
