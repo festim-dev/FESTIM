@@ -2,6 +2,7 @@ import fenics
 import FESTIM
 from ufl.core.multiindex import Index
 from pathlib import Path
+import pytest
 
 
 def test_formulation_heat_transfer_2_ids_per_mat():
@@ -92,10 +93,35 @@ def test_formulation_heat_transfer():
 
 
 def test_temp_from_xdmf_create_functions(tmpdir):
-    """Test for the TempFromXDMF class
-    A function is created and exported to xdmf. The reads
-    same mesh from the xdmf and compares the two
+    """Test for the create function method of TempFromXDMF class,
+    ensures the function read is same as that created previously.
     """
+    # create function to be comapared
+    mesh = fenics.UnitSquareMesh(10, 10)
+    V = fenics.FunctionSpace(mesh, "CG", 1)
+    expr = fenics.Expression("1 + x[0] + 2*x[1]", degree=2)
+    T = fenics.interpolate(expr, V)
+    # write function to temporary file
+    T_file = tmpdir.join("T.xdmf")
+    fenics.XDMFFile(str(Path(T_file))).write_checkpoint(
+        T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
+    )
+    # TempFromXDMF needs a FESTIM mesh
+    my_mesh = FESTIM.Mesh()
+    my_mesh.mesh = mesh
+    my_T = FESTIM.TempFromXDMF(filename=str(Path(T_file)), label="T")
+    my_T.create_functions(my_mesh)
+    # evaluate error between original and read function
+    error_L2 = fenics.errornorm(T, my_T.T, "L2")
+    assert error_L2 < 1e-9
+
+
+def test_temp_from_xdmf_label_checker(tmpdir):
+    """Test for the label check test within the TempFromXDMF class,
+    ensures that a ValueError is raised when reading a file with an
+    incorrect label.
+    """
+    # create function to be written
     mesh = fenics.UnitSquareMesh(10, 10)
     V = fenics.FunctionSpace(mesh, "CG", 1)
     expr = fenics.Expression("1 + x[0] + 2*x[1]", degree=2)
@@ -105,9 +131,6 @@ def test_temp_from_xdmf_create_functions(tmpdir):
     fenics.XDMFFile(str(Path(T_file))).write_checkpoint(
         T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
     )
-    my_mesh = FESTIM.Mesh()
-    my_mesh.mesh = mesh
-    my_T = FESTIM.TempFromXDMF(filename=str(Path(T_file)), label="T")
-    my_T.create_functions(my_mesh)
-    error_L2 = fenics.errornorm(T, my_T.T, "L2")
-    assert error_L2 < 1e-9
+    # read file with wrong label specified
+    with pytest.raises(ValueError):
+        FESTIM.TempFromXDMF(filename=str(Path(T_file)), label="coucou")
