@@ -56,14 +56,14 @@ class Simulation:
         Args:
             mesh (FESTIM.Mesh, optional): The mesh of the model. Defaults to
                 None.
-            materials (FESTIM.Materials or [FESTIM.Material, ...], optional):
+            materials (FESTIM.Materials or list or FESTIM.Material, optional):
                 The model materials. Defaults to None.
             sources (list of FESTIM.Source, optional): Volumetric sources
                 (particle or heat sources). Defaults to [].
             boundary_conditions (list of FESTIM.BoundaryCondition, optional):
                 The model's boundary conditions (temperature of H
                 concentration). Defaults to None.
-            traps (FESTIM.Traps or list, optional): The model's traps. Defaults
+            traps (FESTIM.Traps or list or FESTIM.Trap, optional): The model's traps. Defaults
                 to None.
             dt (FESTIM.Stepsize, optional): The model's stepsize. Defaults to
                 None.
@@ -74,7 +74,7 @@ class Simulation:
                 Defaults to None.
             initial_conditions (list of FESTIM.InitialCondition, optional):
                 The model's initial conditions (H or T). Defaults to [].
-            exports (FESTIM.Exports or list, optional): The model's exports
+            exports (FESTIM.Exports or list or FESTIM.Export, optional): The model's exports
                 (derived quantities, XDMF exports, txt exports...). Defaults
                 to None.
             log_level (int, optional): set what kind of FEniCS messsages are
@@ -141,7 +141,9 @@ class Simulation:
         elif value is None:
             self._materials = value
         else:
-            raise TypeError("accepted types for materials are list or FESTIM.Materials")
+            raise TypeError(
+                "accepted types for materials are list, FESTIM.Material or FESTIM.Materials"
+            )
 
     @property
     def exports(self):
@@ -153,8 +155,14 @@ class Simulation:
             self._exports = FESTIM.Exports([])
         elif isinstance(value, list):
             self._exports = FESTIM.Exports(value)
+        elif isinstance(value, FESTIM.Export):
+            self._exports = FESTIM.Exports([value])
         elif isinstance(value, FESTIM.Exports):
             self._exports = value
+        else:
+            raise TypeError(
+                "accepted types for exports are list, FESTIM.Export or FESTIM.Exports"
+            )
 
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field

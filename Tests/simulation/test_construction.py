@@ -11,8 +11,8 @@ def test_setting_traps():
 
     combinations = [trap1, [trap1], [trap1, trap2], F.Traps([trap1, trap2])]
 
-    for trap_combination in combinations:
-        my_sim.traps = trap_combination
+    for combination in combinations:
+        my_sim.traps = combination
 
 
 def test_setting_traps_wrong_type():
@@ -21,12 +21,12 @@ def test_setting_traps_wrong_type():
 
     combinations = ["coucou", True]
 
-    for trap_combination in combinations:
+    for combination in combinations:
         with pytest.raises(
             TypeError,
             match="Accepted types for traps are list, FESTIM.Traps or FESTIM.Trap",
         ):
-            my_sim.traps = trap_combination
+            my_sim.traps = combination
 
 
 def test_setting_materials():
@@ -37,8 +37,8 @@ def test_setting_materials():
 
     combinations = [mat1, [mat1], [mat1, mat2], F.Materials([mat1, mat2])]
 
-    for trap_combination in combinations:
-        my_sim.materials = trap_combination
+    for combination in combinations:
+        my_sim.materials = combination
 
 
 def test_setting_materials_wrong_type():
@@ -47,9 +47,40 @@ def test_setting_materials_wrong_type():
 
     combinations = ["coucou", True]
 
+    for combination in combinations:
+        with pytest.raises(
+            TypeError,
+            match="accepted types for materials are list, FESTIM.Material or FESTIM.Materials",
+        ):
+            my_sim.materials = combination
+
+
+def test_setting_exports():
+    """Checks exports can be set with the expected types (F.Material, list, or F.Exports)"""
+    my_sim = F.Simulation()
+    export1 = F.XDMFExport("solute")
+    export2 = F.XDMFExport("solute")
+
+    combinations = [
+        export1,
+        [export1],
+        [export1, export2],
+        F.Exports([export1, export2]),
+    ]
+
+    for trap_combination in combinations:
+        my_sim.exports = trap_combination
+
+
+def test_setting_exports_wrong_type():
+    """Checks an error is raised when exports is set with the wrong type"""
+    my_sim = F.Simulation()
+
+    combinations = ["coucou", True]
+
     for trap_combination in combinations:
         with pytest.raises(
             TypeError,
-            match="accepted types for materials are list or FESTIM.Materials",
+            match="accepted types for exports are list, FESTIM.Export or FESTIM.Exports",
         ):
-            my_sim.materials = trap_combination
+            my_sim.exports = trap_combination
