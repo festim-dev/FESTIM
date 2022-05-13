@@ -247,10 +247,10 @@ class Simulation:
         print("Time stepping...")
         while self.t < self.settings.final_time:
             self.iterate()
-        # print final message
-        elapsed_time = round(self.timer.elapsed()[0], 1)
-        msg = "Solved problem in {:.2f} s".format(elapsed_time)
-        print(msg)
+        # # print final message
+        # elapsed_time = round(self.timer.elapsed()[0], 1)
+        # msg = "Solved problem in {:.2f} s".format(elapsed_time)
+        # print(msg)
 
     def run_steady(self):
         # Solve steady state
@@ -301,7 +301,10 @@ class Simulation:
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(simulation_time)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-        print(msg, end="\r")
+        if self.t != self.settings.final_time:
+            print(msg, end="\r")
+        else:
+            print(msg)
 
     def run_post_processing(self):
         """Create post processing functions and compute/write the exports"""
