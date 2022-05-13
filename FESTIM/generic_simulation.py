@@ -277,8 +277,6 @@ class Simulation:
         self.t += float(self.dt.value)
         # update temperature
         self.T.update(self.t)
-        # TODO do we need this?
-        self.materials.update_properties_temperature(self.T)
         # update H problem
         self.h_transport_problem.update(self.t, self.dt)
 

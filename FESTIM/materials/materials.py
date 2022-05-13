@@ -264,20 +264,6 @@ class Materials:
         if self.materials[0].H is not None:
             self.H = HCoeff(self, vm, T, degree=2)
 
-    def update_properties_temperature(self, T):
-        """Updates the temperature of the properties
-
-        Args:
-            T (FESTIM.Temperature): the temperature
-        """
-        self.D._T = T.T
-        if self.H is not None:
-            self.H._T = T.T
-        if self.thermal_cond is not None:
-            self.thermal_cond._T = T.T
-        if self.S is not None:
-            self.S._T = T.T
-
     def solubility_as_function(self, mesh, T):
         """
         Makes solubility as a fenics.Function and stores it in S attribute
