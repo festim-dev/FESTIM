@@ -275,7 +275,6 @@ class Simulation:
         """Advance the model by one iteration"""
         # Update current time
         self.t += float(self.dt.value)
-        FESTIM.update_expressions(self.h_transport_problem.expressions, self.t)
         self.T.update(self.t)
         self.materials.update_properties_temperature(self.T)
 
