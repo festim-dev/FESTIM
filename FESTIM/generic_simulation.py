@@ -165,6 +165,8 @@ class Simulation:
         """
         set_log_level(self.log_level)
 
+        self.t = 0  # reinitialise t to zero
+
         if self.settings.chemical_pot:
             self.mobile = FESTIM.Theta()
         else:
