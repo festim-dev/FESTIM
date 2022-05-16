@@ -50,6 +50,8 @@ from .exports.derived_quantities.thermal_flux import ThermalFlux
 from .exports.derived_quantities.average_volume import AverageVolume
 from .exports.derived_quantities.maximum_volume import MaximumVolume
 from .exports.derived_quantities.minimum_volume import MinimumVolume
+from .exports.derived_quantities.minimum_surface import MinimumSurface
+from .exports.derived_quantities.maximum_surface import MaximumSurface
 from .exports.derived_quantities.total_surface import TotalSurface
 from .exports.derived_quantities.total_volume import TotalVolume
 from .exports.derived_quantities.average_surface import AverageSurface
