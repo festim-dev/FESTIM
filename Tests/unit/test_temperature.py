@@ -109,7 +109,7 @@ def test_temp_from_xdmf_create_functions(tmpdir):
     # TempFromXDMF needs a FESTIM mesh
     my_mesh = FESTIM.Mesh()
     my_mesh.mesh = mesh
-    my_T = FESTIM.TempFromXDMF(filename=str(Path(T_file)), label="T")
+    my_T = FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
     my_T.create_functions(my_mesh)
     # evaluate error between original and read function
     error_L2 = fenics.errornorm(T, my_T.T, "L2")
@@ -133,4 +133,4 @@ def test_temp_from_xdmf_label_checker(tmpdir):
     )
     # read file with wrong label specified
     with pytest.raises(ValueError):
-        FESTIM.TempFromXDMF(filename=str(Path(T_file)), label="coucou")
+        FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="coucou")

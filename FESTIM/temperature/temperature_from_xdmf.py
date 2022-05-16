@@ -3,7 +3,7 @@ from FESTIM.helpers import extract_xdmf_labels
 import fenics as f
 
 
-class TempFromXDMF(Temperature):
+class TemperatureFromXDMF(Temperature):
     """
     Temperature read from an XDMF file
     Attributes:

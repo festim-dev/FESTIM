@@ -22,7 +22,7 @@ from .meshing.mesh_from_xdmf import MeshFromXDMF
 
 from .temperature.temperature import Temperature
 from .temperature.temperature_solver import HeatTransferProblem
-from .temperature.temp_from_xdmf import TempFromXDMF
+from .temperature.temperature_from_xdmf import TemperatureFromXDMF
 
 from .boundary_conditions.boundary_condition import BoundaryCondition
 from .boundary_conditions.dirichlets.dirichlet_bc import (
