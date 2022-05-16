@@ -243,6 +243,9 @@ class HTransportProblem:
             t (float): the current time (s)
             dt (FESTIM.Stepsize): the stepsize
         """
+
+        FESTIM.update_expressions(self.expressions, t)
+
         converged = False
         u_ = Function(self.u.function_space())
         u_.assign(self.u)
