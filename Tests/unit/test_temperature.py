@@ -1,6 +1,8 @@
 import fenics
 import FESTIM
 from ufl.core.multiindex import Index
+from pathlib import Path
+import pytest
 
 
 def test_formulation_heat_transfer_2_ids_per_mat():
@@ -88,3 +90,49 @@ def test_formulation_heat_transfer():
     neumann_flux = expressions[1]
     expected_form += -neumann_flux * v * ds(2)
     assert expected_form.equals(F)
+
+
+def test_temperature_from_xdmf_create_functions(tmpdir):
+    """Test for the TemperatureFromXDMF.create_functions().
+    Creates a function, writes it to an XDMF file, then a TemperatureFromXDMF
+    class is created from this file and the error norm between the written and
+    read fuctions is computed to ensure they are the same.
+    """
+    # create function to be comapared
+    mesh = fenics.UnitSquareMesh(10, 10)
+    V = fenics.FunctionSpace(mesh, "CG", 1)
+    expr = fenics.Expression("1 + x[0] + 2*x[1]", degree=2)
+    T = fenics.interpolate(expr, V)
+    # write function to temporary file
+    T_file = tmpdir.join("T.xdmf")
+    fenics.XDMFFile(str(Path(T_file))).write_checkpoint(
+        T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
+    )
+    # TempFromXDMF needs a FESTIM mesh
+    my_mesh = FESTIM.Mesh()
+    my_mesh.mesh = mesh
+    my_T = FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
+    my_T.create_functions(my_mesh)
+    # evaluate error between original and read function
+    error_L2 = fenics.errornorm(T, my_T.T, "L2")
+    assert error_L2 < 1e-9
+
+
+def test_temperature_from_xdmf_label_checker(tmpdir):
+    """Test for the label check test within the TemperatureFromXDMF class,
+    ensures that a ValueError is raised when reading a file with an
+    incorrect label.
+    """
+    # create function to be written
+    mesh = fenics.UnitSquareMesh(10, 10)
+    V = fenics.FunctionSpace(mesh, "CG", 1)
+    expr = fenics.Expression("1 + x[0] + 2*x[1]", degree=2)
+    T = fenics.interpolate(expr, V)
+
+    T_file = tmpdir.join("T.xdmf")
+    fenics.XDMFFile(str(Path(T_file))).write_checkpoint(
+        T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
+    )
+    # read file with wrong label specified
+    with pytest.raises(ValueError):
+        FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="coucou")
