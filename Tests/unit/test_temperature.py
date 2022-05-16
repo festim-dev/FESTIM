@@ -92,9 +92,11 @@ def test_formulation_heat_transfer():
     assert expected_form.equals(F)
 
 
-def test_temp_from_xdmf_create_functions(tmpdir):
-    """Test for the create function method of TempFromXDMF class,
-    ensures the function read is same as that created previously.
+def test_temperature_from_xdmf_create_functions(tmpdir):
+    """Test for the TemperatureFromXDMF.create_functions().
+    Creates a function, writes it to an XDMF file, then a TemperatureFromXDMF
+    class is created from this file and the error norm between the written and
+    read fuctions is computed to ensure they are the same.
     """
     # create function to be comapared
     mesh = fenics.UnitSquareMesh(10, 10)
@@ -116,8 +118,8 @@ def test_temp_from_xdmf_create_functions(tmpdir):
     assert error_L2 < 1e-9
 
 
-def test_temp_from_xdmf_label_checker(tmpdir):
-    """Test for the label check test within the TempFromXDMF class,
+def test_temperature_from_xdmf_label_checker(tmpdir):
+    """Test for the label check test within the TemperatureFromXDMF class,
     ensures that a ValueError is raised when reading a file with an
     incorrect label.
     """
