@@ -22,3 +22,30 @@ def test_initialise_changes_nb_of_sources():
     for _ in range(4):
         my_model.initialise()
         assert len(my_model.T.sources) == 1
+
+
+def test_initialise_sets_t_to_zero():
+    """Creates a Simulation object and checks that .initialise() sets
+    the t attribute to zero
+    """
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3])
+    my_model.materials = F.Materials([F.Material(id=1, D_0=1, E_D=0, thermal_cond=1)])
+    my_model.T = F.Temperature(100)
+    my_model.settings = F.Settings(
+        transient=False,
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+    )
+
+    # assign a value to my_model.t
+    my_model.t = 2
+
+    # run
+    my_model.initialise()
+
+    # test
+
+    # check that my_model.t is reinitialised to zero
+    assert my_model.t == 0
