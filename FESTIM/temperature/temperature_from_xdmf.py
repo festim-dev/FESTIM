@@ -14,7 +14,7 @@ class TemperatureFromXDMF(Temperature):
     def __init__(self, filename, label) -> None:
         """Inits Temperature
         Args:
-            filename (str): The temperature file.
+            filename (str): The temperature file. Must end in ".xdmf"
             label (str): How the checkpoints have been labelled
         """
         super().__init__()
