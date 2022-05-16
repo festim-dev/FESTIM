@@ -1,11 +1,10 @@
-from FESTIM import DerivedQuantity
+from FESTIM import SurfaceQuantity
 import fenics as f
 
 
-class AverageSurface(DerivedQuantity):
+class AverageSurface(SurfaceQuantity):
     def __init__(self, field, surface) -> None:
-        super().__init__(field)
-        self.surface = surface
+        super().__init__(field=field, surface=surface)
         self.title = "Average {} surface {}".format(self.field, self.surface)
 
     def compute(self):
