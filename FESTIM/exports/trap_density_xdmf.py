@@ -16,6 +16,11 @@ class TrapDensityXDMF(XDMFExport):
         self.trap = trap
 
     def write(self, t):
+        """Writes to file
+
+        Args:
+            t (float): the time
+        """
         functionspace = self.function.function_space().collapse()
         density_as_function = f.project(self.trap.density[0], functionspace)
         self.function = density_as_function
