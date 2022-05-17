@@ -1,12 +1,15 @@
 import FESTIM
 from fenics import *
 import sympy as sp
-import pytest
 from pathlib import Path
 
 
 def test_trap_density_xdmf_export_intergration_with_simultion(tmpdir):
-    """Test"""
+    """Integration test for TrapDensityXDMF.write().
+    Creates a FESTIM simulation and exports the trap density as an .xmdf file.
+    An equivalent fenics function is created and is compared to that that read
+    from the .xdmf file created. Ensures compatability with FESTIM.Simulation()
+    """
     density_expr = 2 + FESTIM.x**2 + 2 * FESTIM.y
 
     my_model = FESTIM.Simulation(log_level=20)
@@ -47,10 +50,10 @@ def test_trap_density_xdmf_export_intergration_with_simultion(tmpdir):
 
 
 def test_trap_density_xdmf_export_write(tmpdir):
-    """_summary_
-
-    Args:
-        tmpdir (_type_): _description_
+    """Test for TrapDensityXDMF.write()
+    Creates a FESTIM density function and exports as an .xmdf file.
+    An equivalent fenics function is created and is compared to that that read
+    from the .xdmf file created.
     """
     # build
     mesh = UnitSquareMesh(30, 30)
