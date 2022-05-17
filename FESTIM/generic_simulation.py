@@ -218,6 +218,11 @@ class Simulation:
             raise AttributeError("dt must be None in steady state simulations")
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
+
+        # initialise dt
+        if self.settings.transient:
+            self.dt.initialise_value()
+
         self.h_transport_problem = HTransportProblem(
             self.mobile, self.traps, self.T, self.settings, self.initial_conditions
         )
@@ -328,7 +333,7 @@ class Simulation:
 
         # avoid t > final_time
         next_time = self.t + float(self.dt.value)
-        if next_time > self.settings.final_time:
+        if next_time > self.settings.final_time and self.t != self.settings.final_time:
             self.dt.value.assign(self.settings.final_time - self.t)
 
     def display_time(self):
