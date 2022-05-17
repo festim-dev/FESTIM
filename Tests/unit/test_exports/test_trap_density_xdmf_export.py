@@ -1,5 +1,6 @@
 import FESTIM
 from fenics import *
+import sympy as sp
 import pytest
 from pathlib import Path
 
@@ -36,10 +37,45 @@ def test_trap_density_xdmf_export_intergration_with_simultion(tmpdir):
 
     V = FunctionSpace(my_model.mesh.mesh, "CG", 1)
 
-    density_out = interpolate(FESTIM.as_expression(density_expr), V)
+    density_expected = interpolate(FESTIM.as_expression(density_expr), V)
 
-    density_in = Function(V)
-    XDMFFile(str(Path(density_file))).read_checkpoint(density_in, "density1", -1)
+    density_read = Function(V)
+    XDMFFile(str(Path(density_file))).read_checkpoint(density_read, "density1", -1)
 
-    l2_error = errornorm(density_in, density_out, "L2")
+    l2_error = errornorm(density_expected, density_read, "L2")
     assert l2_error < 2e-3
+
+
+def test_trap_density_xdmf_export_write(tmpdir):
+    """_summary_
+
+    Args:
+        tmpdir (_type_): _description_
+    """
+    # build
+    mesh = UnitSquareMesh(30, 30)
+    V = FunctionSpace(mesh, "CG", 1)
+    V_vector = VectorFunctionSpace(mesh, "CG", 1, 2)
+    density_expr = 2 + FESTIM.x + FESTIM.y
+    expr = Expression(sp.printing.ccode(density_expr), degree=2)
+    density_expected = interpolate(expr, V)
+
+    density_file = tmpdir.join("density1.xdmf")
+
+    trap_1 = FESTIM.Trap(1, 0, 1, 0, materials="1", density=density_expr)
+    my_export = FESTIM.TrapDensityXDMF(
+        trap=trap_1,
+        label="density1",
+        filename=str(Path(density_file)),
+    )
+    my_export.function = Function(V_vector).sub(1)
+
+    # run
+    my_export.write(t=1)
+
+    # test
+    density_read = Function(V)
+    XDMFFile(str(Path(density_file))).read_checkpoint(density_read, "density1", -1)
+    error_L2 = errornorm(density_expected, density_read, "L2")
+    print(error_L2)
+    assert error_L2 < 1e-10
