@@ -66,8 +66,7 @@ def test_initialise_initialise_dt():
     )
 
     # run
-    my_model.initialise()
-    my_model.run()
+    my_model.dt.value.assign(26)
 
     my_model.initialise()
 
