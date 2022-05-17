@@ -40,7 +40,12 @@ class Stepsize:
                 "stepsize_stop_max": stepsize_stop_max,
                 "dt_min": dt_min,
             }
-        self.value = f.Constant(initial_value, name="dt")
+        self.initial_value = initial_value
+        self.value = None
+        self.initialise_value()
+
+    def initialise_value(self):
+        self.value = f.Constant(self.initial_value, name="dt")
 
     def adapt(self, t, nb_it, converged):
         """Changes the stepsize based on convergence.
