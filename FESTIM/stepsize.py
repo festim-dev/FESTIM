@@ -45,6 +45,8 @@ class Stepsize:
         self.initialise_value()
 
     def initialise_value(self):
+        """Creates a fenics.Constant object initialised with self.initial_value
+        and stores it in self.value"""
         self.value = f.Constant(self.initial_value, name="dt")
 
     def adapt(self, t, nb_it, converged):
