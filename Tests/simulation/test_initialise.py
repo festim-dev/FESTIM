@@ -64,10 +64,9 @@ def test_initialise_initialise_dt():
     my_model.settings = F.Settings(
         absolute_tolerance=1e-10, relative_tolerance=1e-10, final_time=4
     )
-
-    # run
     my_model.dt.value.assign(26)
 
+    # run
     my_model.initialise()
 
     # test
