@@ -42,6 +42,7 @@ from .boundary_conditions.fluxes.flux_custom import CustomFlux
 from .exports.exports import Exports
 from .exports.export import Export
 from .exports.xdmf_export import XDMFExport, XDMFExports
+from .exports.trap_density_xdmf import TrapDensityXDMF
 
 from .exports.derived_quantities.derived_quantity import DerivedQuantity
 from .exports.derived_quantities.surface_flux import SurfaceFlux
