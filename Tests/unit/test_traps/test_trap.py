@@ -9,16 +9,34 @@ def add_functions(trap, V, id=1):
     trap.test_function = f.TestFunction(V)
 
 
+def test_error_wrong_type_material():
+    """Checks that an error is raised when the wrong type is given to
+    materials
+    """
+    msg = "Accepted types for materials are str or FESTIM.Material"
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=True, density=1)
+
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=[True, "mat_name"], density=1)
+
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=1, density=1)
+
+    with pytest.raises(TypeError, match=msg):
+        FESTIM.Trap(1, 1, 1, 1, materials=[1, 2], density=1)
+
+
 def test_error_if_duplicate_material():
     mat1 = FESTIM.Material(1, D_0=1, E_D=0, name="name1")
     mat2 = FESTIM.Material(2, D_0=1, E_D=0, name="name2")
 
     materials = FESTIM.Materials([mat1, mat2])
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, [1, 1], 1).make_materials(materials)
+        FESTIM.Trap(1, 1, 1, 1, [mat1, mat1], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, ["name1", "name1", 2], 1).make_materials(materials)
+        FESTIM.Trap(1, 1, 1, 1, ["name1", "name1", mat2], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
         FESTIM.Trap(1, 1, 1, 1, ["name1", mat1, mat1], 1).make_materials(materials)
@@ -27,10 +45,10 @@ def test_error_if_duplicate_material():
         FESTIM.Trap(1, 1, 1, 1, ["name2", mat2], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, [2, mat2], 1).make_materials(materials)
+        FESTIM.Trap(1, 1, 1, 1, [mat2, mat2], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, ["name1", 1], 1).make_materials(materials)
+        FESTIM.Trap(1, 1, 1, 1, ["name1", mat1], 1).make_materials(materials)
 
 
 class TestCreateTrappingForm:
@@ -51,7 +69,7 @@ class TestCreateTrappingForm:
     def test_steady_state(self):
         # build
         my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1 + FESTIM.x
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
@@ -88,7 +106,7 @@ class TestCreateTrappingForm:
     def test_transient(self):
         # build
         my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1 + FESTIM.x
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
@@ -133,7 +151,7 @@ class TestCreateTrappingForm:
     def test_chemical_potential(self):
         # build
         my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1 + FESTIM.x
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
@@ -180,7 +198,12 @@ class TestCreateTrappingForm:
     def test_2_materials(self):
         # build
         my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=[1, 2], density=1 + FESTIM.x
+            k_0=1,
+            E_k=2,
+            p_0=3,
+            E_p=4,
+            materials=[self.mat1, self.mat2],
+            density=1 + FESTIM.x,
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
@@ -224,7 +247,7 @@ class TestCreateTrappingForm:
             E_k=[2, 2],
             p_0=[3, 2],
             E_p=[4, 2],
-            materials=[1, 2],
+            materials=[self.mat1, self.mat2],
             density=[1 + FESTIM.x, 1 + FESTIM.t],
         )
         my_trap.sources = [FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")]
@@ -264,7 +287,7 @@ class TestCreateTrappingForm:
     def test_steady_state_trap_not_defined_everywhere(self):
         # build
         my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1.id, density=1 + FESTIM.x
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
         )
         my_trap.sources = [FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")]
         my_trap.F = 0
@@ -306,7 +329,7 @@ class TestCreateTrappingForm:
         # build
         density = f.Expression("2 + x[0]", degree=2)
         my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1.id, density=density
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=density
         )
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
@@ -347,7 +370,7 @@ class TestCreateTrappingForm:
             E_k=2,
             p_0=3,
             E_p=4,
-            materials=self.mat1.id,
+            materials=self.mat1,
             density=CustomExpression(),
         )
         my_trap.F = 0
@@ -472,7 +495,9 @@ class TestCreateSourceForm:
 
     def test(self):
         # build
-        my_trap = FESTIM.Trap(k_0=1, E_k=2, p_0=3, E_p=4, materials=1, density=1)
+        my_trap = FESTIM.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1
+        )
         my_trap.sources = [FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")]
         my_trap.F = 0
         my_trap.test_function = f.TestFunction(self.V)
@@ -514,7 +539,7 @@ class TestCreateForm:
 
     def test_1_mat_steady(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=1, density=1)
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
@@ -532,7 +557,7 @@ class TestCreateForm:
 
     def test_1_mat_transient(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=1, density=1)
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
@@ -552,7 +577,7 @@ class TestCreateForm:
 
     def test_2_mats_transient(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=[1, 2], density=1)
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=[self.mat1, self.mat2], density=1)
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
@@ -572,7 +597,7 @@ class TestCreateForm:
 
     def test_1_mat_and_source(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=2, density=1)
+        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=self.mat2, density=1)
         my_trap.sources = [FESTIM.Source(1 + FESTIM.x + FESTIM.y, volume=1, field="1")]
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0

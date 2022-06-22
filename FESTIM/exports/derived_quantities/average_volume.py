@@ -1,11 +1,10 @@
-from FESTIM import DerivedQuantity
+from FESTIM import VolumeQuantity
 import fenics as f
 
 
-class AverageVolume(DerivedQuantity):
-    def __init__(self, field, volume) -> None:
-        super().__init__(field)
-        self.volume = volume
+class AverageVolume(VolumeQuantity):
+    def __init__(self, field, volume: int) -> None:
+        super().__init__(field, volume)
         self.title = "Average {} volume {}".format(self.field, self.volume)
 
     def compute(self):

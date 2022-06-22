@@ -9,7 +9,7 @@ class TestExtrinsicTrap:
         1,
         1,
         1,
-        1,
+        "mat_name",
         phi_0=1 + FESTIM.t + FESTIM.x,
         n_amax=2,
         n_bmax=2,

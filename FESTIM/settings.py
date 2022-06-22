@@ -13,6 +13,7 @@ class Settings:
             the solver to converge
         traps_element_type (str): Finite element used for traps.
         update_jacobian (bool):
+        linear_solver (str): linear solver method for the newton solver
     """
 
     def __init__(
@@ -26,6 +27,7 @@ class Settings:
         soret=False,
         traps_element_type="CG",
         update_jacobian=True,
+        linear_solver=None,
     ):
         """Inits Settings
 
@@ -50,6 +52,10 @@ class Settings:
             update_jacobian (bool, optional): If set to False, the Jacobian of
                 the formulation will be computed only once at the beggining.
                 Else it will be computed at each time step. Defaults to True.
+            linear_solver (str, optional): linear solver method for the newton solver,
+                options can be veiwed by print(list_linear_solver_methods()).
+                More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
+                Defaults to None, for the newton solver this is: "umfpack".
         """
         # TODO maybe transient and final_time are redundant
         self.transient = transient
@@ -63,3 +69,4 @@ class Settings:
 
         self.traps_element_type = traps_element_type
         self.update_jacobian = update_jacobian
+        self.linear_solver = linear_solver

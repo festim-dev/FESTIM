@@ -1,3 +1,18 @@
+try:
+    # Python 3.8+
+    from importlib import metadata
+except ImportError:
+    try:
+        import importlib_metadata as metadata
+    except ImportError:
+        __version__ = "unknown"
+
+try:
+    __version__ = metadata.version("FESTIM")
+except Exception:
+    __version__ = "unknown"
+
+
 import sympy as sp
 
 x, y, z, t = sp.symbols("x[0] x[1] x[2] t")
@@ -22,6 +37,7 @@ from .meshing.mesh_from_xdmf import MeshFromXDMF
 
 from .temperature.temperature import Temperature
 from .temperature.temperature_solver import HeatTransferProblem
+from .temperature.temperature_from_xdmf import TemperatureFromXDMF
 
 from .boundary_conditions.boundary_condition import BoundaryCondition
 from .boundary_conditions.dirichlets.dirichlet_bc import (
@@ -42,16 +58,24 @@ from .boundary_conditions.fluxes.flux_custom import CustomFlux
 from .exports.exports import Exports
 from .exports.export import Export
 from .exports.xdmf_export import XDMFExport, XDMFExports
+from .exports.trap_density_xdmf import TrapDensityXDMF
 
-from .exports.derived_quantities.derived_quantity import DerivedQuantity
+from .exports.derived_quantities.derived_quantity import (
+    DerivedQuantity,
+    VolumeQuantity,
+    SurfaceQuantity,
+)
 from .exports.derived_quantities.surface_flux import SurfaceFlux
 from .exports.derived_quantities.hydrogen_flux import HydrogenFlux
 from .exports.derived_quantities.thermal_flux import ThermalFlux
 from .exports.derived_quantities.average_volume import AverageVolume
 from .exports.derived_quantities.maximum_volume import MaximumVolume
 from .exports.derived_quantities.minimum_volume import MinimumVolume
+from .exports.derived_quantities.minimum_surface import MinimumSurface
+from .exports.derived_quantities.maximum_surface import MaximumSurface
 from .exports.derived_quantities.total_surface import TotalSurface
 from .exports.derived_quantities.total_volume import TotalVolume
+from .exports.derived_quantities.average_surface import AverageSurface
 
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 

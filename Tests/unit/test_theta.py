@@ -138,51 +138,57 @@ def test_get_concentration_for_a_given_material():
 def test_mobile_concentration_sieverts():
     """Checks that Theta.mobile_concnetration produces the expected value with Sieverts
     solubility"""
-    mesh = f.UnitIntervalMesh(10)
-    vm = f.MeshFunction("size_t", mesh, 1, 1)
-    V = f.FunctionSpace(mesh, "P", 1)
+    my_mesh = FESTIM.Mesh(mesh=f.UnitIntervalMesh(10))
+    my_mesh.volume_markers = f.MeshFunction("size_t", my_mesh.mesh, 1, 1)
+    my_mesh.define_measures()
+    V = f.FunctionSpace(my_mesh.mesh, "P", 1)
     my_theta = FESTIM.Theta()
-    my_theta.volume_markers = vm
+    my_theta.volume_markers = my_mesh.volume_markers
     T = FESTIM.Temperature(100)
     T.T = f.Constant(100)
     my_theta.T = T
     S_0 = 2
     E_S = 3
     S = S_0 * f.exp(-E_S / FESTIM.k_B / T.T)
+    my_theta.S = S
     mats = FESTIM.Materials(
         [FESTIM.Material(1, D_0=1, E_D=0, S_0=S_0, E_S=E_S, solubility_law="sievert")]
     )
+    mats.create_solubility_law_markers(my_mesh)
     my_theta.solution = f.project(f.Constant(10), V)
     my_theta.materials = mats
 
     produced_concentration = f.project(my_theta.mobile_concentration(), V)
     expected_concentration = f.project(my_theta.solution * S, V)
-    assert produced_concentration(0.5) == expected_concentration(0.5)
+    assert produced_concentration(0.5) == pytest.approx(expected_concentration(0.5))
 
 
 def test_mobile_concentration_henry():
     """Checks that Theta.mobile_concnetration produces the expected value with Henry
     solubility"""
-    mesh = f.UnitIntervalMesh(10)
-    vm = f.MeshFunction("size_t", mesh, 1, 1)
-    V = f.FunctionSpace(mesh, "P", 1)
+    my_mesh = FESTIM.Mesh(mesh=f.UnitIntervalMesh(10))
+    my_mesh.volume_markers = f.MeshFunction("size_t", my_mesh.mesh, 1, 1)
+    my_mesh.define_measures()
+    V = f.FunctionSpace(my_mesh.mesh, "P", 1)
     my_theta = FESTIM.Theta()
-    my_theta.volume_markers = vm
+    my_theta.volume_markers = my_mesh.volume_markers
     T = FESTIM.Temperature(100)
     T.T = f.Constant(100)
     my_theta.T = T
     S_0 = 2
     E_S = 3
     S = S_0 * f.exp(-E_S / FESTIM.k_B / T.T)
+    my_theta.S = S
     mats = FESTIM.Materials(
         [FESTIM.Material(1, D_0=1, E_D=0, S_0=S_0, E_S=E_S, solubility_law="henry")]
     )
+    mats.create_solubility_law_markers(my_mesh)
     my_theta.solution = f.project(f.Constant(10), V)
     my_theta.materials = mats
 
     produced_concentration = f.project(my_theta.mobile_concentration(), V)
     expected_concentration = f.project(my_theta.solution**2 * S, V)
-    assert produced_concentration(0.5) == expected_concentration(0.5)
+    assert produced_concentration(0.5) == pytest.approx(expected_concentration(0.5))
 
 
 def test_post_processing_solution_to_concentration():

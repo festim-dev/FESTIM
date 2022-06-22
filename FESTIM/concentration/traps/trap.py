@@ -13,9 +13,8 @@ class Trap(Concentration):
             E_k (float, list): trapping activation energy (eV)
             p_0 (float, list): detrapping pre-exponential factor (s-1)
             E_p (float, list): detrapping activation energy (eV)
-            materials (list, int, str, FESTIM.Material): the materials
-                the trap is living in. The material's name, id or the
-                material itself can be set.
+            materials (list, str, FESTIM.Material): the materials
+                the trap is living in. The material's name.
             density (sp.Add, float, list, fenics.Expresion,
                 fenics.UserExpression): the trap density (m-3)
             id (int, optional): The trap id. Defaults to None.
@@ -47,12 +46,25 @@ class Trap(Concentration):
         self.p_0 = p_0
         self.E_p = E_p
         self.materials = materials
-        if not isinstance(self.materials, list):
-            self.materials = [self.materials]
 
         self.density = []
         self.make_density(density)
         self.sources = []
+
+    @property
+    def materials(self):
+        return self._materials
+
+    @materials.setter
+    def materials(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        for entry in value:
+            if not isinstance(entry, (str, Material)):
+                raise TypeError(
+                    "Accepted types for materials are str or FESTIM.Material"
+                )
+        self._materials = value
 
     def make_materials(self, materials):
         """Ensure all entries in self.materials are of type FESTIM.Material

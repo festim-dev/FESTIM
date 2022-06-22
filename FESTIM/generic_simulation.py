@@ -56,14 +56,14 @@ class Simulation:
         Args:
             mesh (FESTIM.Mesh, optional): The mesh of the model. Defaults to
                 None.
-            materials (FESTIM.Materials or [FESTIM.Material, ...], optional):
+            materials (FESTIM.Materials or list or FESTIM.Material, optional):
                 The model materials. Defaults to None.
             sources (list of FESTIM.Source, optional): Volumetric sources
                 (particle or heat sources). Defaults to [].
             boundary_conditions (list of FESTIM.BoundaryCondition, optional):
                 The model's boundary conditions (temperature of H
                 concentration). Defaults to None.
-            traps (FESTIM.Traps or list, optional): The model's traps. Defaults
+            traps (FESTIM.Traps or list or FESTIM.Trap, optional): The model's traps. Defaults
                 to None.
             dt (FESTIM.Stepsize, optional): The model's stepsize. Defaults to
                 None.
@@ -74,7 +74,7 @@ class Simulation:
                 Defaults to None.
             initial_conditions (list of FESTIM.InitialCondition, optional):
                 The model's initial conditions (H or T). Defaults to [].
-            exports (FESTIM.Exports or list, optional): The model's exports
+            exports (FESTIM.Exports or list or FESTIM.Export, optional): The model's exports
                 (derived quantities, XDMF exports, txt exports...). Defaults
                 to None.
             log_level (int, optional): set what kind of FEniCS messsages are
@@ -91,31 +91,14 @@ class Simulation:
 
         self.settings = settings
         self.dt = dt
-        if traps is None:
-            self.traps = FESTIM.Traps([])
-        elif type(traps) is list:
-            self.traps = FESTIM.Traps(traps)
-        elif isinstance(traps, FESTIM.Traps):
-            self.traps = traps
-        elif isinstance(traps, FESTIM.Trap):
-            self.traps = FESTIM.Traps([traps])
 
-        if type(materials) is list:
-            self.materials = FESTIM.Materials(materials)
-        elif isinstance(materials, FESTIM.Materials):
-            self.materials = materials
-        else:
-            self.materials = materials
+        self.traps = traps
+        self.materials = materials
 
         self.boundary_conditions = boundary_conditions
         self.initial_conditions = initial_conditions
         self.T = temperature
-        if exports is None:
-            self.exports = FESTIM.Exports([])
-        elif type(exports) is list:
-            self.exports = FESTIM.Exports(exports)
-        elif isinstance(exports, FESTIM.Exports):
-            self.exports = exports
+        self.exports = exports
         self.mesh = mesh
         self.sources = sources
 
@@ -124,10 +107,74 @@ class Simulation:
         self.t = 0  # Initialising time to 0s
         self.timer = None
 
+    @property
+    def traps(self):
+        return self._traps
+
+    @traps.setter
+    def traps(self, value):
+        if value is None:
+            self._traps = FESTIM.Traps([])
+        elif isinstance(value, list):
+            self._traps = FESTIM.Traps(value)
+        elif isinstance(value, FESTIM.Traps):
+            self._traps = value
+        elif isinstance(value, FESTIM.Trap):
+            self._traps = FESTIM.Traps([value])
+        else:
+            raise TypeError(
+                "Accepted types for traps are list, FESTIM.Traps or FESTIM.Trap"
+            )
+
+    @property
+    def materials(self):
+        return self._materials
+
+    @materials.setter
+    def materials(self, value):
+        if isinstance(value, list):
+            self._materials = FESTIM.Materials(value)
+        elif isinstance(value, FESTIM.Material):
+            self._materials = FESTIM.Materials([value])
+        elif isinstance(value, FESTIM.Materials):
+            self._materials = value
+        elif value is None:
+            self._materials = value
+        else:
+            raise TypeError(
+                "accepted types for materials are list, FESTIM.Material or FESTIM.Materials"
+            )
+
+    @property
+    def exports(self):
+        return self._exports
+
+    @exports.setter
+    def exports(self, value):
+        if value is None:
+            self._exports = FESTIM.Exports([])
+        elif isinstance(value, list):
+            self._exports = FESTIM.Exports(value)
+        elif isinstance(value, FESTIM.Export):
+            self._exports = FESTIM.Exports([value])
+        elif isinstance(value, FESTIM.Exports):
+            self._exports = value
+        else:
+            raise TypeError(
+                "accepted types for exports are list, FESTIM.Export or FESTIM.Exports"
+            )
+
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
         (self.mobile, self.T, or traps)
         """
+        # reinitialise sources for concentrations and temperature
+        self.mobile.sources = []
+        self.T.sources = []
+        for t in self.traps.traps:
+            t.sources = []
+
+        # make field_to_object dict
         field_to_object = {
             "solute": self.mobile,
             "0": self.mobile,
@@ -139,6 +186,7 @@ class Simulation:
             field_to_object[i] = trap
             field_to_object[str(i)] = trap
 
+        # set sources
         for source in self.sources:
             field_to_object[source.field].sources.append(source)
 
@@ -159,10 +207,22 @@ class Simulation:
         """
         set_log_level(self.log_level)
 
+        self.t = 0  # reinitialise t to zero
+
         if self.settings.chemical_pot:
             self.mobile = FESTIM.Theta()
         else:
             self.mobile = FESTIM.Mobile()
+        # check that dt attribute is None if the sim is steady state
+        if not self.settings.transient and self.dt is not None:
+            raise AttributeError("dt must be None in steady state simulations")
+        if self.settings.transient and self.dt is None:
+            raise AttributeError("dt must be provided in transient simulations")
+
+        # initialise dt
+        if self.settings.transient:
+            self.dt.initialise_value()
+
         self.h_transport_problem = HTransportProblem(
             self.mobile, self.traps, self.T, self.settings, self.initial_conditions
         )
@@ -188,6 +248,7 @@ class Simulation:
             self.T, derived_quantities=[]
         )  # FIXME derived quantities shouldn't be []
         self.materials.create_properties(self.mesh.volume_markers, self.T.T)
+        self.materials.create_solubility_law_markers(self.mesh)
 
         # if the temperature is not time-dependent, solubility can be projected
         if self.settings.chemical_pot:
@@ -235,10 +296,6 @@ class Simulation:
         print("Time stepping...")
         while self.t < self.settings.final_time:
             self.iterate()
-        # print final message
-        elapsed_time = round(self.timer.elapsed()[0], 1)
-        msg = "Solved problem in {:.2f} s".format(elapsed_time)
-        print(msg)
 
     def run_steady(self):
         # Solve steady state
@@ -263,30 +320,34 @@ class Simulation:
         """Advance the model by one iteration"""
         # Update current time
         self.t += float(self.dt.value)
-        FESTIM.update_expressions(self.h_transport_problem.expressions, self.t)
+        # update temperature
         self.T.update(self.t)
-        self.materials.update_properties_temperature(self.T)
+        # update H problem
+        self.h_transport_problem.update(self.t, self.dt)
 
         # Display time
-        # TODO this should be a method
+        self.display_time()
+
+        # Post processing
+        self.run_post_processing()
+
+        # avoid t > final_time
+        next_time = self.t + float(self.dt.value)
+        if next_time > self.settings.final_time and self.t != self.settings.final_time:
+            self.dt.value.assign(self.settings.final_time - self.t)
+
+    def display_time(self):
+        """Displays the current time"""
         simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
         simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(simulation_time)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-
-        print(msg, end="\r")
-
-        # update H problem
-        self.h_transport_problem.update(self.t, self.dt)
-
-        # Post processing
-        self.run_post_processing()
-
-        # avoid t > final_time
-        if self.t + float(self.dt.value) > self.settings.final_time:
-            self.dt.value.assign(self.settings.final_time - self.t)
+        if self.t != self.settings.final_time:
+            print(msg, end="\r")
+        else:
+            print(msg)
 
     def run_post_processing(self):
         """Create post processing functions and compute/write the exports"""

@@ -243,6 +243,9 @@ class HTransportProblem:
             t (float): the current time (s)
             dt (FESTIM.Stepsize): the stepsize
         """
+
+        FESTIM.update_expressions(self.expressions, t)
+
         converged = False
         u_ = Function(self.u.function_space())
         u_.assign(self.u)
@@ -283,6 +286,9 @@ class HTransportProblem:
         solver.parameters["newton_solver"][
             "maximum_iterations"
         ] = self.settings.maximum_iterations
+        solver.parameters["newton_solver"][
+            "linear_solver"
+        ] = self.settings.linear_solver
         nb_it, converged = solver.solve()
 
         return nb_it, converged

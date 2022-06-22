@@ -1,11 +1,10 @@
-from FESTIM import DerivedQuantity, R
+from FESTIM import SurfaceQuantity, R
 import fenics as f
 
 
-class SurfaceFlux(DerivedQuantity):
+class SurfaceFlux(SurfaceQuantity):
     def __init__(self, field, surface) -> None:
-        super().__init__(field=field)
-        self.surface = surface
+        super().__init__(field=field, surface=surface)
         self.title = "Flux surface {}: {}".format(self.surface, self.field)
 
     def compute(self, soret=False):

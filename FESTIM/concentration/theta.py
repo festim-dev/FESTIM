@@ -68,13 +68,17 @@ class Theta(Mobile):
 
     def mobile_concentration(self):
         """Returns the hydrogen concentration as c=theta*K_S or c=theta**2*K_H
-        This is needed when adding robin BCs to the form.
+        This is needed when adding robin BCs (eg RecombinationFlux).
 
         Returns:
-            ThetaToConcentration: the hydrogen mobile concentration
+            ufl.algebra.Sum: the hydrogen mobile concentration
         """
-        return ThetaToConcentration(
-            self.solution, self.materials, self.volume_markers, self.T.T
+        henry_to_concentration = self.solution**2 * self.S
+        sieverts_to_concentration = self.solution * self.S
+        # henry_marker is equal to 1 in Henry materials and 0 elsewhere
+        return (
+            self.materials.henry_marker * henry_to_concentration
+            + self.materials.sievert_marker * sieverts_to_concentration
         )
 
     def post_processing_solution_to_concentration(self):
@@ -107,36 +111,3 @@ class Theta(Mobile):
             elif mat.solubility_law == "henry":
                 F += self.solution**2 * self.S * v * dx(mat.id)
         self.form_post_processing = F
-
-
-class ThetaToConcentration(f.UserExpression):
-    def __init__(self, comp, materials, vm, T, **kwargs):
-        """initialisation
-
-        Args:
-            comp (fenics.Expression): value of BC
-            materials (FESTIM.Materials): contains materials objects
-            vm (fenics.MeshFunction): volume markers
-            T (fenics.Function): Temperature
-        """
-        super().__init__(kwargs)
-        self._comp = comp
-        self._vm = vm
-        self._T = T
-        self._materials = materials
-
-    def eval_cell(self, value, x, ufc_cell):
-        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
-        subdomain_id = self._vm[cell]
-        material = self._materials.find_material_from_id(subdomain_id)
-        S_0 = material.S_0
-        E_S = material.E_S
-        theta = self._comp(x)
-        S = S_0 * f.exp(-E_S / k_B / self._T(x))
-        if material.solubility_law == "sievert":
-            value[0] = theta * S
-        elif material.solubility_law == "henry":
-            value[0] = theta**2 * S
-
-    def value_shape(self):
-        return ()

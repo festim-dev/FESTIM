@@ -80,7 +80,7 @@ def test_unused_thermal_cond():
         my_mats.check_for_unused_properties(T=F.Temperature(100), derived_quantities=[])
 
     # this shouldn't throw warnings
-    derived_quantities = [F.SurfaceFlux("T", surface=[0])]
+    derived_quantities = [F.SurfaceFlux("T", surface=0)]
     # record the warnings
     with pytest.warns(None) as record:
         my_mats.check_for_unused_properties(

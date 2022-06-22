@@ -1,12 +1,11 @@
-from FESTIM import DerivedQuantity
+from FESTIM import VolumeQuantity
 import fenics as f
 import numpy as np
 
 
-class MinimumVolume(DerivedQuantity):
+class MinimumVolume(VolumeQuantity):
     def __init__(self, field, volume) -> None:
-        super().__init__(field)
-        self.volume = volume
+        super().__init__(field, volume=volume)
         self.title = "Minimum {} volume {}".format(self.field, self.volume)
 
     def compute(self, volume_markers):

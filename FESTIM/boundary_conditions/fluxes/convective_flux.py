@@ -24,6 +24,5 @@ class ConvectiveFlux(FluxBC):
         h_coeff = f.Expression(sp.printing.ccode(self.h_coeff), t=0, degree=1)
         T_ext = f.Expression(sp.printing.ccode(self.T_ext), t=0, degree=1)
 
-        # TODO check the sign here....
-        self.form = h_coeff * (T - T_ext)
+        self.form = -h_coeff * (T - T_ext)
         self.sub_expressions = [h_coeff, T_ext]

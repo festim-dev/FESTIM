@@ -264,20 +264,6 @@ class Materials:
         if self.materials[0].H is not None:
             self.H = HCoeff(self, vm, T, degree=2)
 
-    def update_properties_temperature(self, T):
-        """Updates the temperature of the properties
-
-        Args:
-            T (FESTIM.Temperature): the temperature
-        """
-        self.D._T = T.T
-        if self.H is not None:
-            self.H._T = T.T
-        if self.thermal_cond is not None:
-            self.thermal_cond._T = T.T
-        if self.S is not None:
-            self.S._T = T.T
-
     def solubility_as_function(self, mesh, T):
         """
         Makes solubility as a fenics.Function and stores it in S attribute
@@ -293,6 +279,45 @@ class Materials:
         f.solve(F == 0, S, bcs=[])
 
         self.S = S
+
+    def create_solubility_law_markers(self, mesh: FESTIM.Mesh):
+        """Creates the attributes henry_marker and sievert_marker
+        These fenics.Function are equal to one or zero depending
+        on the material solubility_law
+
+        Args:
+            mesh (FESTIM.Mesh): the mesh
+        """
+        V = f.FunctionSpace(mesh.mesh, "DG", 0)
+        henry = f.Function(V)
+        sievert = f.Function(V)
+
+        test_function_henry = f.TestFunction(V)
+        test_function_sievert = f.TestFunction(V)
+
+        # initialise formulations
+        F_henry = -henry * test_function_henry * mesh.dx
+        F_sievert = -sievert * test_function_sievert * mesh.dx
+
+        # build the formulation depending on the
+        for mat in self.materials:
+            # make sure mat_ids is a list
+            mat_ids = mat.id
+            if not isinstance(mat.id, list):
+                mat_ids = [mat.id]
+
+            for mat_id in mat_ids:  # iterate through the subdomains
+                if mat.solubility_law == "henry":
+                    F_henry += 1 * test_function_henry * mesh.dx(mat_id)
+                elif mat.solubility_law == "sievert":
+                    F_sievert += 1 * test_function_sievert * mesh.dx(mat_id)
+
+        # solve the problems
+        f.solve(F_henry == 0, henry, [])
+        f.solve(F_sievert == 0, sievert, [])
+
+        self.henry_marker = henry
+        self.sievert_marker = sievert
 
 
 class ArheniusCoeff(f.UserExpression):
