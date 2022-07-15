@@ -170,11 +170,7 @@ def test_temperature_from_xdmf_transient_case(tmpdir):
     # run transient simulation with TemperatureFromXDMF class
     my_model.T = FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
     my_model.dt = FESTIM.Stepsize(initial_value=1)
-    my_model.settings = FESTIM.Settings(
-        transient=True,
-        final_time=10,
-        absolute_tolerance=1e12,
-        relative_tolerance=1e-08,
-    )
+    my_model.settings.transient = True
+    my_model.settings.final_time = 10
     my_model.initialise()
     my_model.run()
