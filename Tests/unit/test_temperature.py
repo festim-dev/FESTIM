@@ -3,6 +3,7 @@ import FESTIM
 from ufl.core.multiindex import Index
 from pathlib import Path
 import pytest
+import numpy as np
 
 
 def test_formulation_heat_transfer_2_ids_per_mat():
@@ -136,3 +137,44 @@ def test_temperature_from_xdmf_label_checker(tmpdir):
     # read file with wrong label specified
     with pytest.raises(ValueError):
         FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="coucou")
+
+
+def test_temperature_from_xdmf_transient_case(tmpdir):
+    """Test that the TemperatureFromXdmf class works in a transient
+    h transport case"""
+    # create temperature field xdmf
+    my_model = FESTIM.Simulation(log_level=20)
+    my_model.mesh = FESTIM.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
+    my_model.materials = FESTIM.Materials(
+        [
+            FESTIM.Material(
+                id=1,
+                D_0=1,
+                E_D=1,
+            ),
+        ]
+    )
+    my_model.T = FESTIM.Temperature(value=300)
+    my_model.settings = FESTIM.Settings(
+        transient=False,
+        absolute_tolerance=1e12,
+        relative_tolerance=1e-08,
+    )
+    my_model.initialise()
+    T = my_model.T.T
+    T_file = tmpdir.join("T.xdmf")
+    fenics.XDMFFile(str(Path(T_file))).write_checkpoint(
+        T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
+    )
+
+    # run transient simulation with TemperatureFromXDMF class
+    my_model.T = FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
+    my_model.dt = FESTIM.Stepsize(initial_value=1)
+    my_model.settings = FESTIM.Settings(
+        transient=True,
+        final_time=10,
+        absolute_tolerance=1e12,
+        relative_tolerance=1e-08,
+    )
+    my_model.initialise()
+    my_model.run()
