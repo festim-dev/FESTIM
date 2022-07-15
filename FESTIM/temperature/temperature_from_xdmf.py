@@ -42,4 +42,10 @@ class TemperatureFromXDMF(Temperature):
         self.T_n.assign(self.T)
 
     def update(self, t):
+        """Allows for the use of this class in transient h transport cases,
+        refer to issue #499
+
+        Args:
+            t (float): the time
+        """
         pass
