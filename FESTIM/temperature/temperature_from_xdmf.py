@@ -40,3 +40,6 @@ class TemperatureFromXDMF(Temperature):
 
         self.T_n = f.Function(V, name="T_n")
         self.T_n.assign(self.T)
+
+    def update(self, t):
+        pass
