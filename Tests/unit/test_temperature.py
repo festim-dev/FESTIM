@@ -145,15 +145,7 @@ def test_temperature_from_xdmf_transient_case(tmpdir):
     # create temperature field xdmf
     my_model = FESTIM.Simulation(log_level=20)
     my_model.mesh = FESTIM.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
-    my_model.materials = FESTIM.Materials(
-        [
-            FESTIM.Material(
-                id=1,
-                D_0=1,
-                E_D=1,
-            ),
-        ]
-    )
+    my_model.materials = FESTIM.Materials([FESTIM.Material(1, 1, 1)])
     my_model.T = FESTIM.Temperature(value=300)
     my_model.settings = FESTIM.Settings(
         transient=False,
