@@ -1,4 +1,4 @@
-from FESTIM import BoundaryCondition, k_B
+from festim import BoundaryCondition, k_B
 import fenics as f
 import sympy as sp
 
@@ -37,7 +37,7 @@ class DirichletBC(BoundaryCondition):
         theta = c/S
 
         Args:
-            materials (FESTIM.Materials): the materials
+            materials (festim.Materials): the materials
             volume_markers (fenics.MeshFunction): the volume markers
             T (fenics.Function): the temperature
         """
@@ -70,7 +70,7 @@ class DirichletBC(BoundaryCondition):
             surface_markers (fenics.MeshFunction): the surface markers
             chemical_pot (bool, optional): if True, conservation of chemical
                 pot will be assumed. Defaults to False.
-            materials (FESTIM.Materials): The materials, only needed when
+            materials (festim.Materials): The materials, only needed when
                 chemical_pot is True. Defaults to None.
             volume_markers (fenics.MeshFunction, optional): the volume markers,
                 only needed when chemical_pot is True. Defaults to None.
@@ -106,7 +106,7 @@ class BoundaryConditionTheta(f.UserExpression):
         Args:
             bci (fenics.Expression): value of BC
             mesh (fenics.mesh): mesh
-            materials (FESTIM.Materials): contains materials objects
+            materials (festim.Materials): contains materials objects
             vm (fenics.MeshFunction): volume markers
             T (fenics.Function): Temperature
         """

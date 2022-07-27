@@ -1,4 +1,4 @@
-from FESTIM import DirichletBC, BoundaryConditionExpression
+from festim import DirichletBC, BoundaryConditionExpression
 import fenics as f
 import sympy as sp
 
@@ -11,7 +11,7 @@ class CustomDirichlet(DirichletBC):
     my_bc = CustomDirichlet(
         surfaces=[1, 2],
         function=fun,
-        param1=2*FESTIM.x + FESTIM.t
+        param1=2*festim.x + festim.t
     )
     """
 

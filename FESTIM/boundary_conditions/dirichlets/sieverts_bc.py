@@ -1,4 +1,4 @@
-from FESTIM import DirichletBC, BoundaryConditionExpression, k_B
+from festim import DirichletBC, BoundaryConditionExpression, k_B
 import fenics as f
 import sympy as sp
 

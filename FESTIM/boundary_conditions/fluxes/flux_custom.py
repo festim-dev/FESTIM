@@ -1,4 +1,4 @@
-from FESTIM import FluxBC
+from festim import FluxBC
 import sympy as sp
 import fenics as f
 
@@ -11,7 +11,7 @@ class CustomFlux(FluxBC):
     my_bc = CustomFlux(
         surfaces=[1, 2],
         function=fun,
-        param1=2*FESTIM.x + FESTIM.t
+        param1=2*festim.x + festim.t
     )
     """
 

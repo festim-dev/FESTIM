@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics as f
 import sympy as sp
 

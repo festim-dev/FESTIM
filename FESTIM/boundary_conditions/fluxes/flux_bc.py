@@ -1,4 +1,4 @@
-from FESTIM import BoundaryCondition
+from festim import BoundaryCondition
 import sympy as sp
 import fenics as f
 
