@@ -1,5 +1,5 @@
 import fenics as f
-from FESTIM import Mesh
+from festim import Mesh
 
 
 class Mesh1D(Mesh):
@@ -22,7 +22,7 @@ class Mesh1D(Mesh):
         based on their position in the domain
 
         Arguments:
-            materials {FESTIM.Materials} -- contains the materials
+            materials {festim.Materials} -- contains the materials
         """
         self.volume_markers = self.define_volume_markers(materials)
 
@@ -54,7 +54,7 @@ class Mesh1D(Mesh):
         """Creates the volume markers
 
         Args:
-            materials (FESTIM.Materials): the materials
+            materials (festim.Materials): the materials
 
         Returns:
             fenics.MeshFunction: the meshfunction containing the volume

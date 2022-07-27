@@ -1,5 +1,5 @@
 import fenics as f
-from FESTIM import Mesh1D
+from festim import Mesh1D
 
 
 class MeshFromRefinements(Mesh1D):

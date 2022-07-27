@@ -1,5 +1,5 @@
 import fenics as f
-import FESTIM
+import festim
 
 
 class Mesh:

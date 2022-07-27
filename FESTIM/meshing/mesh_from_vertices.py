@@ -1,6 +1,6 @@
 import fenics as f
 import numpy as np
-from FESTIM import Mesh1D
+from festim import Mesh1D
 
 
 class MeshFromVertices(Mesh1D):

@@ -1,5 +1,5 @@
 import fenics as f
-from FESTIM import Mesh
+from festim import Mesh
 
 
 class MeshFromXDMF(Mesh):
