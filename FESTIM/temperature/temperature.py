@@ -33,7 +33,7 @@ class Temperature:
         """Creates functions self.T, self.T_n
 
         Args:
-            mesh (FESTIM.Mesh): the mesh
+            mesh (festim.Mesh): the mesh
         """
         V = f.FunctionSpace(mesh.mesh, "CG", 1)
         self.T = f.Function(V, name="T")

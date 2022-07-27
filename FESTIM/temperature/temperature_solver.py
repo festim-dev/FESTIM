@@ -1,9 +1,9 @@
-import FESTIM
+import festim
 import fenics as f
 import sympy as sp
 
 
-class HeatTransferProblem(FESTIM.Temperature):
+class HeatTransferProblem(festim.Temperature):
     """[summary]
 
     Attributes:
@@ -12,9 +12,9 @@ class HeatTransferProblem(FESTIM.Temperature):
         initial_value (sp.Add, int, float): the initial value
         sub_expressions (list): contains time dependent fenics.Expression to
             be updated
-        sources (list): contains FESTIM.Source objects for volumetric heat
+        sources (list): contains festim.Source objects for volumetric heat
             sources
-        boundary_conditions (list): contains FESTIM.BoundaryConditions
+        boundary_conditions (list): contains festim.BoundaryConditions
     """
 
     def __init__(
@@ -67,9 +67,9 @@ class HeatTransferProblem(FESTIM.Temperature):
         False.
 
         Args:
-            materials (FESTIM.Materials): the materials.
-            mesh (FESTIM.Mesh): the mesh
-            dt (FESTIM.Stepsize, optional): the stepsize. Only needed if
+            materials (festim.Materials): the materials.
+            mesh (festim.Mesh): the mesh
+            dt (festim.Stepsize, optional): the stepsize. Only needed if
                 self.transient is True. Defaults to None.
         """
         # Define variational problem for heat transfers
@@ -106,9 +106,9 @@ class HeatTransferProblem(FESTIM.Temperature):
         """Create a variational form for heat transfer problem
 
         Args:
-            materials (FESTIM.Materials): the materials.
-            mesh (FESTIM.Mesh): the mesh.
-            dt (FESTIM.Stepsize, optional): the stepsize. Only needed if
+            materials (festim.Materials): the materials.
+            mesh (festim.Mesh): the mesh.
+            dt (festim.Stepsize, optional): the stepsize. Only needed if
                 self.transient is True. Defaults to None.
         """
 
@@ -169,7 +169,7 @@ class HeatTransferProblem(FESTIM.Temperature):
 
         # Boundary conditions
         for bc in self.boundary_conditions:
-            if isinstance(bc, FESTIM.FluxBC):
+            if isinstance(bc, festim.FluxBC):
                 bc.create_form(self.T, solute=None)
 
                 # TODO: maybe that's not necessary
@@ -189,7 +189,7 @@ class HeatTransferProblem(FESTIM.Temperature):
         V = self.T.function_space()
         self.dirichlet_bcs = []
         for bc in self.boundary_conditions:
-            if isinstance(bc, FESTIM.DirichletBC) and bc.field == "T":
+            if isinstance(bc, festim.DirichletBC) and bc.field == "T":
                 bc.create_expression(self.T)
                 for surf in bc.surfaces:
                     bci = f.DirichletBC(V, bc.expression, surface_markers, surf)
@@ -205,7 +205,7 @@ class HeatTransferProblem(FESTIM.Temperature):
             t (float): the time
         """
         if self.transient:
-            FESTIM.update_expressions(self.sub_expressions, t)
+            festim.update_expressions(self.sub_expressions, t)
             # Solve heat transfers
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)  # Define the Jacobian

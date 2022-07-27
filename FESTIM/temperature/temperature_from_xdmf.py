@@ -1,5 +1,5 @@
-from FESTIM.temperature.temperature import Temperature
-from FESTIM.helpers import extract_xdmf_labels
+from festim.temperature.temperature import Temperature
+from festim.helpers import extract_xdmf_labels
 import fenics as f
 
 
@@ -31,7 +31,7 @@ class TemperatureFromXDMF(Temperature):
     def create_functions(self, mesh):
         """Creates functions self.T, self.T_n
         Args:
-            mesh (FESTIM.Mesh): the mesh
+            mesh (festim.Mesh): the mesh
         """
         V = f.FunctionSpace(mesh.mesh, "CG", 1)
         self.T = f.Function(V, name="T")
