@@ -1,8 +1,8 @@
 from operator import itemgetter
 import warnings
 import numpy as np
-from FESTIM import k_B, Material, HeatTransferProblem
-import FESTIM
+from festim import k_B, Material, HeatTransferProblem
+import festim
 import fenics as f
 from typing import Union
 
@@ -12,7 +12,7 @@ class Materials:
         """Inits Materials
 
         Args:
-            materials (list, optional): contains FESTIM.Material objects.
+            materials (list, optional): contains festim.Material objects.
                 Defaults to [].
         """
         self.materials = materials
@@ -54,12 +54,12 @@ class Materials:
             raise ValueError("Borders don't match with size")
         return True
 
-    def check_materials(self, T: FESTIM.Temperature, derived_quantities: list = []):
+    def check_materials(self, T: festim.Temperature, derived_quantities: list = []):
         """Checks the materials keys
 
         Args:
-            T (FESTIM.Temperature): the temperature
-            derived_quantities (list): list of FESTIM.DerivedQuantity
+            T (festim.Temperature): the temperature
+            derived_quantities (list): list of festim.DerivedQuantity
                 objects the derived quantities. Defaults to [].
         """
 
@@ -85,13 +85,13 @@ class Materials:
             raise ValueError("Some materials have the same id")
 
     def check_for_unused_properties(
-        self, T: FESTIM.Temperature, derived_quantities: list
+        self, T: festim.Temperature, derived_quantities: list
     ):
         """Warns users if properties will be ignored
 
         Args:
-            T (FESTIM.Temperature): the temperature
-            derived_quantities (list): list of FESTIM.DerivedQuantity
+            T (festim.Temperature): the temperature
+            derived_quantities (list): list of festim.DerivedQuantity
                 objects
         """
         # TODO add a check for ignored solubility when chemical_pot is False
@@ -112,7 +112,7 @@ class Materials:
                     surface_fluxes = list(
                         quant
                         for quant in derived_quantities
-                        if isinstance(quant, FESTIM.SurfaceFlux)
+                        if isinstance(quant, festim.SurfaceFlux)
                     )
 
                     for surface_flux in surface_fluxes:
@@ -140,12 +140,12 @@ class Materials:
             if value.count(None) not in [0, len(self.materials)]:
                 raise ValueError("{} is not defined for all materials".format(attr))
 
-    def check_missing_properties(self, T: FESTIM.Temperature, derived_quantities: list):
+    def check_missing_properties(self, T: festim.Temperature, derived_quantities: list):
         """Checks if the materials miss some properties
 
         Args:
-            T (FESTIM.Temperature): the temperature
-            derived_quantities (list): list of FESTIM.DerivedQuantity objects
+            T (festim.Temperature): the temperature
+            derived_quantities (list): list of festim.DerivedQuantity objects
 
         Raises:
             ValueError: if thermal_cond, heat_capacity or rho is None when needed
@@ -170,7 +170,7 @@ class Materials:
             ValueError: if the id isn't found
 
         Returns:
-            FESTIM.Material: the material that has the id mat_id
+            festim.Material: the material that has the id mat_id
         """
         for material in self.materials:
             mat_ids = material.id
@@ -190,7 +190,7 @@ class Materials:
             ValueError: when no match was found
 
         Returns:
-            FESTIM.Material: the material object
+            festim.Material: the material object
         """
         for material in self.materials:
             if material.name == name:
@@ -200,14 +200,14 @@ class Materials:
         raise ValueError(msg)
 
     def find_material(self, mat: Union[int, str, Material]):
-        """Returns the correct FESTIM.Material object based on either an id,
+        """Returns the correct festim.Material object based on either an id,
         a name
 
         Args:
             mat (Union[int, str, Material]): the material tag
 
         Returns:
-            FESTIM.Material: the matching material
+            festim.Material: the matching material
         """
         if isinstance(mat, int):
             return self.find_material_from_id(mat)
@@ -280,13 +280,13 @@ class Materials:
 
         self.S = S
 
-    def create_solubility_law_markers(self, mesh: FESTIM.Mesh):
+    def create_solubility_law_markers(self, mesh: festim.Mesh):
         """Creates the attributes henry_marker and sievert_marker
         These fenics.Function are equal to one or zero depending
         on the material solubility_law
 
         Args:
-            mesh (FESTIM.Mesh): the mesh
+            mesh (festim.Mesh): the mesh
         """
         V = f.FunctionSpace(mesh.mesh, "DG", 0)
         henry = f.Function(V)
