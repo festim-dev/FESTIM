@@ -6,34 +6,35 @@
 ![GitHub stars](https://img.shields.io/github/stars/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Stars&logoColor=white)
 ![GitHub forks](https://img.shields.io/github/forks/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Forks&logoColor=white)
 
-FESTIM (Finite Elements Simulation of Tritium in Materials) is a tool for modeling Hydrogen Isotopes (HIs) transport in materials. 
-The governing equations are composed of:
-- **Fick's law** of diffusion of hydrogen
-- **Soret** effect
-- Trapping/detrapping **macroscopic rate equations**
-- **Heat equation**
+FESTIM (Finite Elements Simulation of Tritium in Materials) is a tool for modeling hydrogen transport in materials. 
+FESTIM simulates the diffusion and trapping of hydrogen, coupled to heat transfer.
 
 
-The following features are included in this tool:
+The following features are included:
 - Mesh import from XDMF files
 - **Adaptive stepsize**
-- **Temperature** can be defined by:
-    - a user-defined expression
-    - solving transient/stationnary heat equation
+- **Temperature** from solving transient/stationnary heat equation
 - Multiple intrinsic/extrinsic traps with **non-homogeneous density distribution**
 - Wide range of built-in boundary conditions (Sievert's law, recombination flux, user-defined expression...)
 - **Derived quantities** computation (surface fluxes, volume integrations, extrema over domains, mean values over domains...)
+- Soret effect
+- ...
 
-FESTIM spatially discretises the PDEs using the Finite Element Methods. To this extent, we chose to use the C++/Python library [FEniCS](https://fenicsproject.org). 
-The implicit time discretisation method is backward Euler.
-PDEs are solved using FEniCS' Newton nonlinear solver. A library of generic functions is provided so that users can run custom simulations in addition to the flexibility of [FEniCS](https://fenicsproject.org) built-in functions.
+FESTIM spatially discretises the PDEs using the Finite Element Methods and heavily relies on [FEniCS](https://fenicsproject.org).
 
-## Run FESTIM in Docker
+## Examples
+
+Examples can be found [here](https://github.com/RemDelaporteMathurin/FESTIM/tree/ready_for_opensource/demos).
+
+
+## Installation
+
+FESTIM can be installed via pip
+
+    pip install FESTIM
+
+FESTIM requires FEniCS to run.
 The FEniCS project provides a [Docker image](https://hub.docker.com/r/fenicsproject/stable/) with FEniCS and its dependencies (python3, UFL, DOLFIN, numpy, sympy...)  already installed. See their ["FEniCS in Docker" manual](https://fenics.readthedocs.io/projects/containers/en/latest/).
-
-Get Docker [here](https://www.docker.com/community-edition).
-
-Pull the Docker image and run the container, sharing a folder between the host and container:
 
 For Windows users:
 
@@ -43,29 +44,27 @@ For Linux users:
 
     docker run -ti -v $(pwd):/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
 
-Clone FESTIM:
-
-    git clone https://github.com/RemDelaporteMathurin/FESTIM
-
-Alternatively, FESTIM can be installed via pip
-
-    pip install git+https://github.com/RemDelaporteMathurin/FESTIM
-
-To install a specific version of FESTIM
-
-    pip install git+https://github.com/RemDelaporteMathurin/FESTIM@v0.9
-
 Run the tests:
 
-    pytest-3 Tests/
+    pytest-3 test/
 
 
 ## Visualisation
-FESTIM allows users to export their data to .csv, .txt or to a XDMF format with an XML interface. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
+FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
 <p align="center">
   <img alt="performance" src="https://user-images.githubusercontent.com/40028739/69346147-9abb6980-0c72-11ea-80e7-9c0a76659268.png" width="40%"> <img alt="performance" src="https://user-images.githubusercontent.com/40028739/69346752-9d6a8e80-0c73-11ea-96c1-27b6104eb9ff.png" width="40%">
 </p>
 
 ## References
 - R. Delaporte-Mathurin, _et al._, _Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components using FESTIM_. Nuclear Materials and Energy 21: 100709. DOI: [10.1016/j.nme.2019.100709](https://doi.org/10.1016/j.nme.2019.100709).
+
+- R. Delaporte-Mathurin, _et al._, _Parametric Optimisation Based on TDS Experiments for Rapid and Efficient Identification of Hydrogen Transport Materials Properties_. Nuclear Materials and Energy, 26 mars 2021, 100984. https://doi.org/10.1016/j.nme.2021.100984.
+
+- R. Delaporte-Mathurin, _et al._, _Parametric Study of Hydrogenic Inventory in the ITER Divertor Based on Machine Learning_. Scientific Reports 10: 17798. https://doi.org/10.1038/s41598-020-74844-w.
+
+- R. Delaporte-Mathurin, _et al._, _Influence of Interface Conditions on Hydrogen Transport Studies_. Nuclear Fusion 61 (2021): 036038. https://doi.org/10.1088/1741-4326/abd95f.
+
+- R. Delaporte-Mathurin, _et al._, _Fuel Retention in WEST and ITER Divertors Based on FESTIM Monoblock Simulations_. Nuclear Fusion 61, nᵒ 12: 126001. https://doi.org/10.1088/1741-4326/ac2bbd.
+
+- E. A. Hodille _et al._, _Modelling of Hydrogen Isotopes Trapping, Diffusion and Permeation in Divertor Monoblocks under ITER-like Conditions_. Nuclear Fusion, 2021. https://doi.org/10.1088/1741-4326/ac2abc.
 
