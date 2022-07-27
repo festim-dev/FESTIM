@@ -1,4 +1,4 @@
-from FESTIM import Concentration, FluxBC, k_B, R
+from festim import Concentration, FluxBC, k_B, R
 from fenics import *
 import sympy as sp
 
@@ -11,13 +11,13 @@ class Mobile(Concentration):
     If not, Mobile represents c_m.
 
     Attributes:
-        sources (list): list of FESTIM.Source objects.
+        sources (list): list of festim.Source objects.
             The volumetric source terms
         F (fenics.Form): the variational formulation for mobile
     """
 
     def __init__(self):
-        """Inits FESTIM.Mobile"""
+        """Inits festim.Mobile"""
         super().__init__()
         self.sources = []
         self.boundary_conditions = []
@@ -26,11 +26,11 @@ class Mobile(Concentration):
         """Creates the variational formulation.
 
         Args:
-            materials (FESTIM.Materials): the materials
-            mesh (FESTIM.Mesh): the mesh of the simulation
-            T (FESTIM.Temperature): the temperature
-            dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
-            traps (FESTIM.Traps, optional): the traps. Defaults to None.
+            materials (festim.Materials): the materials
+            mesh (festim.Mesh): the mesh of the simulation
+            T (festim.Temperature): the temperature
+            dt (festim.Stepsize, optional): the stepsize. Defaults to None.
+            traps (festim.Traps, optional): the traps. Defaults to None.
             chemical_pot (bool, optional): if True, conservation of chemical
                 potential is assumed. Defaults to False.
             soret (bool, optional): If True, Soret effect is assumed. Defaults
@@ -47,11 +47,11 @@ class Mobile(Concentration):
         """Creates the variational formulation for the diffusive part.
 
         Args:
-            materials (FESTIM.Materials): the materials
-            mesh (FESTIM.Mesh): the mesh
-            T (FESTIM.Temperature): the temperature
-            dt (FESTIM.Stepsize, optional): the stepsize. Defaults to None.
-            traps (FESTIM.Traps, optional): the traps. Defaults to None.
+            materials (festim.Materials): the materials
+            mesh (festim.Mesh): the mesh
+            T (festim.Temperature): the temperature
+            dt (festim.Stepsize, optional): the stepsize. Defaults to None.
+            traps (festim.Traps, optional): the traps. Defaults to None.
             chemical_pot (bool, optional): if True, conservation of chemical
                 potential is assumed. Defaults to False.
             soret (bool, optional): If True, Soret effect is assumed. Defaults

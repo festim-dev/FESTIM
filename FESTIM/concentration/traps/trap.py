@@ -1,4 +1,4 @@
-from FESTIM import Concentration, k_B, Material
+from festim import Concentration, k_B, Material
 from fenics import *
 import sympy as sp
 import numpy as np
@@ -13,7 +13,7 @@ class Trap(Concentration):
             E_k (float, list): trapping activation energy (eV)
             p_0 (float, list): detrapping pre-exponential factor (s-1)
             E_p (float, list): detrapping activation energy (eV)
-            materials (list, str, FESTIM.Material): the materials
+            materials (list, str, festim.Material): the materials
                 the trap is living in. The material's name.
             density (sp.Add, float, list, fenics.Expresion,
                 fenics.UserExpression): the trap density (m-3)
@@ -27,7 +27,7 @@ class Trap(Concentration):
             dof's, traps can be conglomerated and described in lists in the
             format:
 
-            FESTIM.Trap(
+            festim.Trap(
                 k_0=[1, 2],
                 E_k=[1, 2],
                 p_0=[1, 2],
@@ -62,15 +62,15 @@ class Trap(Concentration):
         for entry in value:
             if not isinstance(entry, (str, Material)):
                 raise TypeError(
-                    "Accepted types for materials are str or FESTIM.Material"
+                    "Accepted types for materials are str or festim.Material"
                 )
         self._materials = value
 
     def make_materials(self, materials):
-        """Ensure all entries in self.materials are of type FESTIM.Material
+        """Ensure all entries in self.materials are of type festim.Material
 
         Args:
-            materials (FESTIM.Materials): the materials
+            materials (festim.Materials): the materials
 
         Raises:
             ValueError: if some duplicates are found
@@ -111,11 +111,11 @@ class Trap(Concentration):
         d ct/ dt = k c_m (n - c_t) - p c_t + S
 
         Args:
-            mobile (FESTIM.Mobile): the mobile concentration of the simulation
-            materials (FESTIM.Materials): the materials of the simulation
-            T (FESTIM.Temperature): the temperature of the simulation
+            mobile (festim.Mobile): the mobile concentration of the simulation
+            materials (festim.Materials): the materials of the simulation
+            T (festim.Temperature): the temperature of the simulation
             dx (fenics.Measure): the dx measure of the sim
-            dt (FESTIM.Stepsize, optional): If None assuming steady state.
+            dt (festim.Stepsize, optional): If None assuming steady state.
                 Defaults to None.
             chemical_pot (bool, optional): If True, continuity of chemical
                 potential is assumed. Defaults to False.
@@ -131,11 +131,11 @@ class Trap(Concentration):
         """d ct/ dt = k c_m (n - c_t) - p c_t
 
         Args:
-            mobile (FESTIM.Mobile): the mobile concentration of the simulation
-            materials (FESTIM.Materials): the materials of the simulation
-            T (FESTIM.Temperature): the temperature of the simulation
+            mobile (festim.Mobile): the mobile concentration of the simulation
+            materials (festim.Materials): the materials of the simulation
+            T (festim.Temperature): the temperature of the simulation
             dx (fenics.Measure): the dx measure of the sim
-            dt (FESTIM.Stepsize, optional): If None assuming steady state.
+            dt (festim.Stepsize, optional): If None assuming steady state.
                 Defaults to None.
             chemical_pot (bool, optional): If True, continuity of chemical
                 potential is assumed. Defaults to False.

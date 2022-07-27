@@ -1,4 +1,4 @@
-from FESTIM import Mobile, k_B
+from festim import Mobile, k_B
 import fenics as f
 
 
@@ -46,9 +46,9 @@ class Theta(Mobile):
         material
 
         Args:
-            material (FESTIM.Material): the material with attributes S_0 and
+            material (festim.Material): the material with attributes S_0 and
                 E_S
-            T (FESTIM.Temperature): the temperature with attributest T and T_n
+            T (festim.Temperature): the temperature with attributest T and T_n
 
         Returns:
             fenics.Product, fenics.Product: the current concentration and
@@ -86,7 +86,7 @@ class Theta(Mobile):
         concentration.
         c = theta * S.
         The attribute post_processing_solution is fenics.Product (if self.S is
-        FESTIM.ArheniusCoeff)
+        festim.ArheniusCoeff)
         """
         du = f.TrialFunction(self.post_processing_solution.function_space())
         J = f.derivative(self.form_post_processing, self.post_processing_solution, du)

@@ -1,4 +1,4 @@
-from FESTIM import Trap, as_constant_or_expression
+from festim import Trap, as_constant_or_expression
 
 
 class ExtrinsicTrapBase(Trap):
@@ -71,8 +71,8 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
 
         Args:
             dx (fenics.Measure): the dx measure of the sim
-            dt (FESTIM.Stepsize): the stepsize of the simulation.
-            T (FESTIM.Temperature): the temperature of the
+            dt (festim.Stepsize): the stepsize of the simulation.
+            T (festim.Temperature): the temperature of the
                 simulation
 
         Notes:
