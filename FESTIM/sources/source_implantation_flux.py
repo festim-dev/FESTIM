@@ -1,4 +1,4 @@
-from FESTIM import Source, x
+from festim import Source, x
 import sympy as sp
 import numpy as np
 
@@ -10,7 +10,7 @@ class ImplantationFlux(Source):
 
     Usage:
     my_source = ImplantationFlux(
-        flux=2*FESTIM.x * (FESTIM.t < 10),
+        flux=2*festim.x * (festim.t < 10),
         imp_depth=5e-9, width=5e-9, volume=1)
 
 
