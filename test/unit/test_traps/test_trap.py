@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics as f
 import pytest
 
@@ -13,69 +13,69 @@ def test_error_wrong_type_material():
     """Checks that an error is raised when the wrong type is given to
     materials
     """
-    msg = "Accepted types for materials are str or FESTIM.Material"
+    msg = "Accepted types for materials are str or festim.Material"
     with pytest.raises(TypeError, match=msg):
-        FESTIM.Trap(1, 1, 1, 1, materials=True, density=1)
+        festim.Trap(1, 1, 1, 1, materials=True, density=1)
 
     with pytest.raises(TypeError, match=msg):
-        FESTIM.Trap(1, 1, 1, 1, materials=[True, "mat_name"], density=1)
+        festim.Trap(1, 1, 1, 1, materials=[True, "mat_name"], density=1)
 
     with pytest.raises(TypeError, match=msg):
-        FESTIM.Trap(1, 1, 1, 1, materials=1, density=1)
+        festim.Trap(1, 1, 1, 1, materials=1, density=1)
 
     with pytest.raises(TypeError, match=msg):
-        FESTIM.Trap(1, 1, 1, 1, materials=[1, 2], density=1)
+        festim.Trap(1, 1, 1, 1, materials=[1, 2], density=1)
 
 
 def test_error_if_duplicate_material():
-    mat1 = FESTIM.Material(1, D_0=1, E_D=0, name="name1")
-    mat2 = FESTIM.Material(2, D_0=1, E_D=0, name="name2")
+    mat1 = festim.Material(1, D_0=1, E_D=0, name="name1")
+    mat2 = festim.Material(2, D_0=1, E_D=0, name="name2")
 
-    materials = FESTIM.Materials([mat1, mat2])
+    materials = festim.Materials([mat1, mat2])
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, [mat1, mat1], 1).make_materials(materials)
-
-    with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, ["name1", "name1", mat2], 1).make_materials(materials)
+        festim.Trap(1, 1, 1, 1, [mat1, mat1], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, ["name1", mat1, mat1], 1).make_materials(materials)
+        festim.Trap(1, 1, 1, 1, ["name1", "name1", mat2], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, ["name2", mat2], 1).make_materials(materials)
+        festim.Trap(1, 1, 1, 1, ["name1", mat1, mat1], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, [mat2, mat2], 1).make_materials(materials)
+        festim.Trap(1, 1, 1, 1, ["name2", mat2], 1).make_materials(materials)
 
     with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        FESTIM.Trap(1, 1, 1, 1, ["name1", mat1], 1).make_materials(materials)
+        festim.Trap(1, 1, 1, 1, [mat2, mat2], 1).make_materials(materials)
+
+    with pytest.raises(ValueError, match="Duplicate materials in trap"):
+        festim.Trap(1, 1, 1, 1, ["name1", mat1], 1).make_materials(materials)
 
 
 class TestCreateTrappingForm:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.solution = f.Function(V, name="c_m")
     my_mobile.previous_solution = f.Function(V, name="c_m_n")
     my_mobile.test_function = f.TestFunction(V)
-    my_temp = FESTIM.Temperature(value=100)
+    my_temp = festim.Temperature(value=100)
     my_temp.T = f.interpolate(f.Constant(100), V)
     dx = f.dx()
-    dt = FESTIM.Stepsize(initial_value=1)
+    dt = festim.Stepsize(initial_value=1)
 
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3, name="mat1")
-    mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4, name="mat2")
+    mat1 = festim.Material(1, D_0=1, E_D=1, S_0=2, E_S=3, name="mat1")
+    mat2 = festim.Material(2, D_0=2, E_D=2, S_0=3, E_S=4, name="mat2")
 
     def test_steady_state(self):
         # build
-        my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
+        my_trap = festim.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
         my_trap.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = festim.Materials([self.mat1])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
@@ -84,7 +84,7 @@ class TestCreateTrappingForm:
         v = my_trap.test_function
         expected_form = (
             -my_trap.k_0
-            * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
             * self.my_mobile.solution
             * (my_trap.density[0] - my_trap.solution)
             * v
@@ -92,7 +92,7 @@ class TestCreateTrappingForm:
         )
         expected_form += (
             my_trap.p_0
-            * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
             * my_trap.solution
             * v
             * self.dx(1)
@@ -105,15 +105,15 @@ class TestCreateTrappingForm:
 
     def test_transient(self):
         # build
-        my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
+        my_trap = festim.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
         my_trap.test_function = f.TestFunction(self.V)
 
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = festim.Materials([self.mat1])
 
         # run
         my_trap.create_trapping_form(
@@ -129,7 +129,7 @@ class TestCreateTrappingForm:
         )
         expected_form += (
             -my_trap.k_0
-            * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
             * self.my_mobile.solution
             * (my_trap.density[0] - my_trap.solution)
             * v
@@ -137,7 +137,7 @@ class TestCreateTrappingForm:
         )
         expected_form += (
             my_trap.p_0
-            * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
             * my_trap.solution
             * v
             * self.dx(1)
@@ -150,14 +150,14 @@ class TestCreateTrappingForm:
 
     def test_chemical_potential(self):
         # build
-        my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
+        my_trap = festim.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
         my_trap.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = festim.Materials([self.mat1])
 
         # run
         my_trap.create_trapping_form(
@@ -169,11 +169,11 @@ class TestCreateTrappingForm:
         c_0 = (
             self.my_mobile.solution
             * self.mat1.S_0
-            * f.exp(-self.mat1.E_S / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-self.mat1.E_S / festim.k_B / self.my_temp.T)
         )
         expected_form = (
             -my_trap.k_0
-            * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
             * c_0
             * (my_trap.density[0] - my_trap.solution)
             * v
@@ -181,7 +181,7 @@ class TestCreateTrappingForm:
         )
         expected_form += (
             my_trap.p_0
-            * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
             * my_trap.solution
             * v
             * self.dx(1)
@@ -197,19 +197,19 @@ class TestCreateTrappingForm:
 
     def test_2_materials(self):
         # build
-        my_trap = FESTIM.Trap(
+        my_trap = festim.Trap(
             k_0=1,
             E_k=2,
             p_0=3,
             E_p=4,
             materials=[self.mat1, self.mat2],
-            density=1 + FESTIM.x,
+            density=1 + festim.x,
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
         my_trap.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1, self.mat2])
+        my_mats = festim.Materials([self.mat1, self.mat2])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
@@ -220,7 +220,7 @@ class TestCreateTrappingForm:
         for mat in my_trap.materials:
             expected_form += (
                 -my_trap.k_0
-                * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+                * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
                 * self.my_mobile.solution
                 * (my_trap.density[0] - my_trap.solution)
                 * v
@@ -228,7 +228,7 @@ class TestCreateTrappingForm:
             )
             expected_form += (
                 my_trap.p_0
-                * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+                * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
                 * my_trap.solution
                 * v
                 * self.dx(mat.id)
@@ -242,18 +242,18 @@ class TestCreateTrappingForm:
 
     def test_multi_parameters_trap(self):
         # build
-        my_trap = FESTIM.Trap(
+        my_trap = festim.Trap(
             k_0=[1, 2],
             E_k=[2, 2],
             p_0=[3, 2],
             E_p=[4, 2],
             materials=[self.mat1, self.mat2],
-            density=[1 + FESTIM.x, 1 + FESTIM.t],
+            density=[1 + festim.x, 1 + festim.t],
         )
-        my_trap.sources = [FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")]
+        my_trap.sources = [festim.Source(2 + festim.x + festim.t, volume=1, field="1")]
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
-        my_mats = FESTIM.Materials([self.mat1, self.mat2])
+        my_mats = festim.Materials([self.mat1, self.mat2])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
@@ -264,7 +264,7 @@ class TestCreateTrappingForm:
         for i in range(2):
             expected_form += (
                 -my_trap.k_0[i]
-                * f.exp(-my_trap.E_k[i] / FESTIM.k_B / self.my_temp.T)
+                * f.exp(-my_trap.E_k[i] / festim.k_B / self.my_temp.T)
                 * self.my_mobile.solution
                 * (my_trap.density[i] - my_trap.solution)
                 * v
@@ -272,7 +272,7 @@ class TestCreateTrappingForm:
             )
             expected_form += (
                 my_trap.p_0[i]
-                * f.exp(-my_trap.E_p[i] / FESTIM.k_B / self.my_temp.T)
+                * f.exp(-my_trap.E_p[i] / festim.k_B / self.my_temp.T)
                 * my_trap.solution
                 * v
                 * self.dx(my_trap.materials[i].id)
@@ -286,13 +286,13 @@ class TestCreateTrappingForm:
 
     def test_steady_state_trap_not_defined_everywhere(self):
         # build
-        my_trap = FESTIM.Trap(
-            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + FESTIM.x
+        my_trap = festim.Trap(
+            k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
         )
-        my_trap.sources = [FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")]
+        my_trap.sources = [festim.Source(2 + festim.x + festim.t, volume=1, field="1")]
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
-        my_mats = FESTIM.Materials([self.mat1, self.mat2])
+        my_mats = festim.Materials([self.mat1, self.mat2])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
@@ -302,7 +302,7 @@ class TestCreateTrappingForm:
         expected_form = 0
         expected_form += (
             -my_trap.k_0
-            * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
             * self.my_mobile.solution
             * (my_trap.density[0] - my_trap.solution)
             * v
@@ -310,7 +310,7 @@ class TestCreateTrappingForm:
         )
         expected_form += (
             my_trap.p_0
-            * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+            * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
             * my_trap.solution
             * v
             * self.dx(self.mat1.id)
@@ -328,20 +328,20 @@ class TestCreateTrappingForm:
         """
         # build
         density = f.Expression("2 + x[0]", degree=2)
-        my_trap = FESTIM.Trap(
+        my_trap = festim.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=density
         )
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = festim.Materials([self.mat1])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
-        k = my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
-        p = my_trap.p_0 * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+        k = my_trap.k_0 * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
+        p = my_trap.p_0 * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
         expected_form = (
             -k
             * self.my_mobile.solution
@@ -365,7 +365,7 @@ class TestCreateTrappingForm:
             def eval(self, value, x):
                 value[0] = x
 
-        my_trap = FESTIM.Trap(
+        my_trap = festim.Trap(
             k_0=1,
             E_k=2,
             p_0=3,
@@ -375,15 +375,15 @@ class TestCreateTrappingForm:
         )
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = festim.Materials([self.mat1])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
-        k = my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
-        p = my_trap.p_0 * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+        k = my_trap.k_0 * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
+        p = my_trap.p_0 * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
         expected_form = (
             -k
             * self.my_mobile.solution
@@ -399,7 +399,7 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
     def test_with_trap_names(self):
-        my_trap = FESTIM.Trap(
+        my_trap = festim.Trap(
             k_0=1,
             E_k=2,
             p_0=3,
@@ -409,15 +409,15 @@ class TestCreateTrappingForm:
         )
         my_trap.F = 0
         add_functions(my_trap, self.V, id=1)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = festim.Materials([self.mat1])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
-        k = my_trap.k_0 * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
-        p = my_trap.p_0 * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+        k = my_trap.k_0 * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
+        p = my_trap.p_0 * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
         expected_form = (
             -k
             * self.my_mobile.solution
@@ -434,19 +434,19 @@ class TestCreateTrappingForm:
 
     def test_2_materials_names_and_object(self):
         # build
-        my_trap = FESTIM.Trap(
+        my_trap = festim.Trap(
             k_0=1,
             E_k=2,
             p_0=3,
             E_p=4,
             materials=[self.mat1, "mat2"],
-            density=1 + FESTIM.x,
+            density=1 + festim.x,
         )
         my_trap.F = 0
         my_trap.solution = f.Function(self.V, name="c_t")
         my_trap.previous_solution = f.Function(self.V, name="c_t_n")
         my_trap.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1, self.mat2])
+        my_mats = festim.Materials([self.mat1, self.mat2])
 
         # run
         my_trap.create_trapping_form(self.my_mobile, my_mats, self.my_temp, self.dx)
@@ -457,7 +457,7 @@ class TestCreateTrappingForm:
         for mat_id in [self.mat1.id, self.mat2.id]:
             expected_form += (
                 -my_trap.k_0
-                * f.exp(-my_trap.E_k / FESTIM.k_B / self.my_temp.T)
+                * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)
                 * self.my_mobile.solution
                 * (my_trap.density[0] - my_trap.solution)
                 * v
@@ -465,7 +465,7 @@ class TestCreateTrappingForm:
             )
             expected_form += (
                 my_trap.p_0
-                * f.exp(-my_trap.E_p / FESTIM.k_B / self.my_temp.T)
+                * f.exp(-my_trap.E_p / festim.k_B / self.my_temp.T)
                 * my_trap.solution
                 * v
                 * self.dx(mat_id)
@@ -481,24 +481,24 @@ class TestCreateTrappingForm:
 class TestCreateSourceForm:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.solution = f.Function(V, name="c_m")
     my_mobile.previous_solution = f.Function(V, name="c_m_n")
     my_mobile.test_function = f.TestFunction(V)
-    my_temp = FESTIM.Temperature(value=100)
+    my_temp = festim.Temperature(value=100)
     my_temp.T = f.interpolate(f.Constant(100), V)
     dx = f.dx()
-    dt = FESTIM.Stepsize(initial_value=1)
+    dt = festim.Stepsize(initial_value=1)
 
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
-    mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
+    mat1 = festim.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
+    mat2 = festim.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
 
     def test(self):
         # build
-        my_trap = FESTIM.Trap(
+        my_trap = festim.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1
         )
-        my_trap.sources = [FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="1")]
+        my_trap.sources = [festim.Source(2 + festim.x + festim.t, volume=1, field="1")]
         my_trap.F = 0
         my_trap.test_function = f.TestFunction(self.V)
 
@@ -516,22 +516,22 @@ class TestCreateSourceForm:
 class TestCreateForm:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.solution = f.Function(V, name="c_m")
     my_mobile.previous_solution = f.Function(V, name="c_m_n")
     my_mobile.test_function = f.TestFunction(V)
-    my_temp = FESTIM.Temperature(value=100)
+    my_temp = festim.Temperature(value=100)
     my_temp.T = f.interpolate(f.Constant(100), V)
     dx = f.dx()
-    dt = FESTIM.Stepsize(initial_value=1)
+    dt = festim.Stepsize(initial_value=1)
 
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
-    mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
-    my_mats = FESTIM.Materials([mat1, mat2])
+    mat1 = festim.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
+    mat2 = festim.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
+    my_mats = festim.Materials([mat1, mat2])
 
     def test_form_is_zero_by_default(self):
-        my_empty_mats = FESTIM.Materials([])
-        my_trap = FESTIM.Trap(1, 1, 1, 1, [], 1)
+        my_empty_mats = festim.Materials([])
+        my_trap = festim.Trap(1, 1, 1, 1, [], 1)
 
         my_trap.create_form(self.my_mobile, my_empty_mats, self.my_temp, self.dx)
 
@@ -539,7 +539,7 @@ class TestCreateForm:
 
     def test_1_mat_steady(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
+        my_trap = festim.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
@@ -557,7 +557,7 @@ class TestCreateForm:
 
     def test_1_mat_transient(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
+        my_trap = festim.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
@@ -577,7 +577,7 @@ class TestCreateForm:
 
     def test_2_mats_transient(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=[self.mat1, self.mat2], density=1)
+        my_trap = festim.Trap(1, 1, 1, 1, materials=[self.mat1, self.mat2], density=1)
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
 
@@ -597,8 +597,8 @@ class TestCreateForm:
 
     def test_1_mat_and_source(self):
         # build
-        my_trap = FESTIM.Trap(1, 1, 1, 1, materials=self.mat2, density=1)
-        my_trap.sources = [FESTIM.Source(1 + FESTIM.x + FESTIM.y, volume=1, field="1")]
+        my_trap = festim.Trap(1, 1, 1, 1, materials=self.mat2, density=1)
+        my_trap.sources = [festim.Source(1 + festim.x + festim.y, volume=1, field="1")]
         add_functions(my_trap, self.V, id=1)
         my_trap.F = 0
         my_trap.create_trapping_form(

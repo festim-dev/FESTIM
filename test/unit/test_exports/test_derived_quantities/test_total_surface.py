@@ -1,5 +1,5 @@
 from this import s
-from FESTIM import TotalSurface
+from festim import TotalSurface
 import fenics as f
 
 

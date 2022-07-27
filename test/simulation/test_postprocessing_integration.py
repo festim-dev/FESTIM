@@ -1,5 +1,5 @@
 from os import path
-import FESTIM
+import festim
 import fenics as f
 import numpy as np
 from pathlib import Path
@@ -9,24 +9,24 @@ import pytest
 class TestPostProcessing:
     @pytest.fixture
     def my_sim(self):
-        my_sim = FESTIM.Simulation({})
+        my_sim = festim.Simulation({})
         my_sim.t = 0
-        my_sim.mesh = FESTIM.MeshFromRefinements(10, 1)
-        my_sim.settings = FESTIM.Settings(None, None, final_time=10)
-        mat1 = FESTIM.Material(1, D_0=1, E_D=1)
-        my_sim.materials = FESTIM.Materials([mat1])
+        my_sim.mesh = festim.MeshFromRefinements(10, 1)
+        my_sim.settings = festim.Settings(None, None, final_time=10)
+        mat1 = festim.Material(1, D_0=1, E_D=1)
+        my_sim.materials = festim.Materials([mat1])
 
-        my_sim.mobile = FESTIM.Mobile()
-        trap_1 = FESTIM.Trap(1, 1, 1, 1, mat1, 1)
-        my_sim.traps = FESTIM.Traps([trap_1])
+        my_sim.mobile = festim.Mobile()
+        trap_1 = festim.Trap(1, 1, 1, 1, mat1, 1)
+        my_sim.traps = festim.Traps([trap_1])
 
         my_sim.mesh.define_measures(my_sim.materials)
 
         my_sim.V_DG1 = f.FunctionSpace(my_sim.mesh.mesh, "DG", 1)
 
-        my_sim.T = FESTIM.Temperature(value=20)
+        my_sim.T = festim.Temperature(value=20)
         my_sim.T.create_functions(my_sim.mesh)
-        my_sim.h_transport_problem = FESTIM.HTransportProblem(
+        my_sim.h_transport_problem = festim.HTransportProblem(
             my_sim.mobile,
             my_sim.traps,
             my_sim.T,
@@ -37,16 +37,16 @@ class TestPostProcessing:
         my_sim.h_transport_problem.initialise_concentrations()
 
         my_sim.materials.create_properties(my_sim.mesh.volume_markers, my_sim.T.T)
-        my_sim.exports = FESTIM.Exports([])
+        my_sim.exports = festim.Exports([])
 
         return my_sim
 
     def test_derived_quantities_size(self, my_sim):
-        derived_quantities = FESTIM.DerivedQuantities()
+        derived_quantities = festim.DerivedQuantities()
         derived_quantities.derived_quantities = [
-            FESTIM.SurfaceFlux("solute", 1),
-            FESTIM.AverageVolume("T", 1),
-            FESTIM.TotalVolume("1", 1),
+            festim.SurfaceFlux("solute", 1),
+            festim.AverageVolume("T", 1),
+            festim.TotalVolume("1", 1),
         ]
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
@@ -63,10 +63,10 @@ class TestPostProcessing:
         assert my_sim.exports.exports[0].data[i][0] == t
 
     def test_pure_diffusion(self, my_sim):
-        my_sim.materials = FESTIM.Materials(
+        my_sim.materials = festim.Materials(
             [
-                FESTIM.Material(1, D_0=1, E_D=1, borders=[0, 0.5]),
-                FESTIM.Material(2, D_0=1, E_D=1, borders=[0.5, 1]),
+                festim.Material(1, D_0=1, E_D=1, borders=[0, 0.5]),
+                festim.Material(2, D_0=1, E_D=1, borders=[0.5, 1]),
             ]
         )
 
@@ -85,12 +85,12 @@ class TestPostProcessing:
             ),
         )
 
-        derived_quantities = FESTIM.DerivedQuantities()
+        derived_quantities = festim.DerivedQuantities()
         derived_quantities.derived_quantities = [
-            FESTIM.AverageVolume("solute", 2),
-            FESTIM.AverageVolume("T", 2),
-            FESTIM.AverageVolume("retention", 2),
-            FESTIM.MinimumVolume("retention", 1),
+            festim.AverageVolume("solute", 2),
+            festim.AverageVolume("T", 2),
+            festim.AverageVolume("retention", 2),
+            festim.MinimumVolume("retention", 1),
         ]
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
 
@@ -113,13 +113,13 @@ class TestPostProcessing:
 
     def test_fluxes(self, my_sim):
 
-        my_sim.T = FESTIM.Temperature(100 * FESTIM.x + 200)
+        my_sim.T = festim.Temperature(100 * festim.x + 200)
         my_sim.T.create_functions(my_sim.mesh)
 
-        my_sim.materials = FESTIM.Materials(
+        my_sim.materials = festim.Materials(
             [
-                FESTIM.Material(1, D_0=5, E_D=0.4, thermal_cond=3, borders=[0, 0.5]),
-                FESTIM.Material(2, D_0=6, E_D=0.5, thermal_cond=5, borders=[0.5, 1]),
+                festim.Material(1, D_0=5, E_D=0.4, thermal_cond=3, borders=[0, 0.5]),
+                festim.Material(2, D_0=6, E_D=0.5, thermal_cond=5, borders=[0.5, 1]),
             ]
         )
 
@@ -133,12 +133,12 @@ class TestPostProcessing:
             f.interpolate(u_expr, my_sim.h_transport_problem.V.sub(0).collapse()),
         )
 
-        derived_quantities = FESTIM.DerivedQuantities()
+        derived_quantities = festim.DerivedQuantities()
         derived_quantities.derived_quantities = [
-            FESTIM.SurfaceFlux("solute", 1),
-            FESTIM.SurfaceFlux("solute", 2),
-            FESTIM.SurfaceFlux("T", 1),
-            FESTIM.SurfaceFlux("T", 2),
+            festim.SurfaceFlux("solute", 1),
+            festim.SurfaceFlux("solute", 2),
+            festim.SurfaceFlux("T", 1),
+            festim.SurfaceFlux("T", 2),
         ]
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
@@ -147,8 +147,8 @@ class TestPostProcessing:
 
         my_sim.run_post_processing()
         data = derived_quantities.data
-        D_x_0 = 5 * f.exp(-0.4 / FESTIM.k_B / my_sim.T.T(0))
-        D_x_1 = 6 * f.exp(-0.5 / FESTIM.k_B / my_sim.T.T(1))
+        D_x_0 = 5 * f.exp(-0.4 / festim.k_B / my_sim.T.T(0))
+        D_x_1 = 6 * f.exp(-0.5 / festim.k_B / my_sim.T.T(1))
         lambda_x_0 = 3
         lambda_x_1 = 5
         grad_c = 2
@@ -165,7 +165,7 @@ class TestPostProcessing:
         """
         # build
         d = tmpdir.mkdir("test_folder")
-        my_sim.exports.exports = FESTIM.XDMFExports(
+        my_sim.exports.exports = festim.XDMFExports(
             fields=["solute", "T"],
             labels=["solute", "temperature"],
             folder=str(Path(d)),
@@ -189,7 +189,7 @@ class TestPostProcessing:
 
             # test
             for filename in filenames:
-                times = FESTIM.extract_xdmf_times(filename)
+                times = festim.extract_xdmf_times(filename)
                 assert len(times) == len(expected_times)
                 for t_expected, t in zip(expected_times, times):
                     assert t_expected == pytest.approx(float(t))
@@ -206,7 +206,7 @@ class TestPostProcessing:
             tmpdir (_type_): _description_
         """
         d = tmpdir.mkdir("test_folder")
-        my_sim.exports.exports = FESTIM.XDMFExports(
+        my_sim.exports.exports = festim.XDMFExports(
             fields=["solute", "T"],
             labels=["solute", "temperature"],
             mode="last",
@@ -225,6 +225,6 @@ class TestPostProcessing:
         my_sim.t = my_sim.exports.final_time
         my_sim.run_post_processing()
         for filename in filenames:
-            times = FESTIM.extract_xdmf_times(filename)
+            times = festim.extract_xdmf_times(filename)
             assert len(times) == 1
             assert pytest.approx(float(times[0])) == my_sim.t

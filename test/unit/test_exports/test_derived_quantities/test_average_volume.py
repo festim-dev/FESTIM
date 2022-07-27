@@ -1,4 +1,4 @@
-from FESTIM import AverageVolume
+from festim import AverageVolume
 import fenics as f
 
 

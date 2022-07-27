@@ -1,9 +1,9 @@
-from FESTIM import Material, Materials
-import FESTIM as F
+from festim import Material, Materials
+import festim as F
 from fenics import *
 import pytest
 
-from FESTIM.temperature.temperature_solver import HeatTransferProblem
+from festim.temperature.temperature_solver import HeatTransferProblem
 
 
 def test_find_material_from_id():

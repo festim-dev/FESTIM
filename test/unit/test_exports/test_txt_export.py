@@ -1,4 +1,4 @@
-from FESTIM import TXTExport, Stepsize
+from festim import TXTExport, Stepsize
 import fenics as f
 import os
 import pytest

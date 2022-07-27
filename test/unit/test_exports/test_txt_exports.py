@@ -1,4 +1,4 @@
-from FESTIM import TXTExports
+from festim import TXTExports
 import fenics as f
 import os
 import pytest

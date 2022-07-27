@@ -1,4 +1,4 @@
-from FESTIM import XDMFExport, extract_xdmf_labels
+from festim import XDMFExport, extract_xdmf_labels
 import fenics as f
 import pytest
 from pathlib import Path

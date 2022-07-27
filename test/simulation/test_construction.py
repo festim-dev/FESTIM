@@ -1,4 +1,4 @@
-import FESTIM as F
+import festim as F
 import pytest
 
 
@@ -24,7 +24,7 @@ def test_setting_traps_wrong_type():
     for combination in combinations:
         with pytest.raises(
             TypeError,
-            match="Accepted types for traps are list, FESTIM.Traps or FESTIM.Trap",
+            match="Accepted types for traps are list, festim.Traps or festim.Trap",
         ):
             my_sim.traps = combination
 
@@ -50,7 +50,7 @@ def test_setting_materials_wrong_type():
     for combination in combinations:
         with pytest.raises(
             TypeError,
-            match="accepted types for materials are list, FESTIM.Material or FESTIM.Materials",
+            match="accepted types for materials are list, festim.Material or festim.Materials",
         ):
             my_sim.materials = combination
 
@@ -81,6 +81,6 @@ def test_setting_exports_wrong_type():
     for trap_combination in combinations:
         with pytest.raises(
             TypeError,
-            match="accepted types for exports are list, FESTIM.Export or FESTIM.Exports",
+            match="accepted types for exports are list, festim.Export or festim.Exports",
         ):
             my_sim.exports = trap_combination

@@ -1,4 +1,4 @@
-from FESTIM import XDMFExports
+from festim import XDMFExports
 import pytest
 
 

@@ -1,4 +1,4 @@
-from FESTIM import MaximumSurface
+from festim import MaximumSurface
 import fenics as f
 import numpy as np
 

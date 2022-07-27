@@ -1,4 +1,4 @@
-from FESTIM import HydrogenFlux
+from festim import HydrogenFlux
 
 
 def test_field_is_solute():

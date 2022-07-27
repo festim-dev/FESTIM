@@ -1,4 +1,4 @@
-from FESTIM import MaximumVolume
+from festim import MaximumVolume
 import fenics as f
 import numpy as np
 

@@ -1,16 +1,16 @@
-import FESTIM
+import festim
 import fenics as f
 
 
 class TestExtrinsicTrap:
 
-    my_trap = FESTIM.ExtrinsicTrap(
+    my_trap = festim.ExtrinsicTrap(
         1,
         1,
         1,
         1,
         "mat_name",
-        phi_0=1 + FESTIM.t + FESTIM.x,
+        phi_0=1 + festim.t + festim.x,
         n_amax=2,
         n_bmax=2,
         eta_a=3,
@@ -23,10 +23,10 @@ class TestExtrinsicTrap:
     my_trap.density = [f.Function(V)]
     my_trap.density_previous_solution = f.Function(V)
     my_trap.density_test_function = f.TestFunction(V)
-    my_temp = FESTIM.Temperature(value=100)
+    my_temp = festim.Temperature(value=100)
     my_temp.T = f.Function(V, name="T")
     dx = f.dx()
-    dt = FESTIM.Stepsize(initial_value=1)
+    dt = festim.Stepsize(initial_value=1)
 
     def test_that_form_parameters_are_expressions(self):
         prms = [
