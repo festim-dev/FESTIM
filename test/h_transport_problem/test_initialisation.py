@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import pytest
 import fenics
 from pathlib import Path
@@ -31,25 +31,25 @@ def test_initialisation_from_xdmf(tmpdir):
         f.write_checkpoint(u.sub(1), "2", 4, fenics.XDMFFile.Encoding.HDF5, append=True)
 
     initial_conditions = [
-        FESTIM.InitialCondition(
+        festim.InitialCondition(
             field=0, value=str(Path(file1)), label="1", time_step=0
         ),
-        FESTIM.InitialCondition(
+        festim.InitialCondition(
             field=1, value=str(Path(file2)), label="2", time_step=0
         ),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(),
-        FESTIM.Traps([my_trap]),
-        FESTIM.Temperature(300),
-        FESTIM.Settings(1e10, 1e-10),
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(),
+        festim.Traps([my_trap]),
+        festim.Temperature(300),
+        festim.Settings(1e10, 1e-10),
         initial_conditions,
     )
 
     my_problem.V = V
-    my_mats = FESTIM.Materials()
+    my_mats = festim.Materials()
     my_mats.S = None
     my_problem.initialise_concentrations()
     w = my_problem.u_n
@@ -73,16 +73,16 @@ def test_initialisation_with_expression():
     fenics.assign(u.sub(1), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
-        FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
+        festim.InitialCondition(field=0, value=1 + festim.x + festim.y),
+        festim.InitialCondition(field=1, value=1 + festim.x),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(),
-        FESTIM.Traps([my_trap]),
-        FESTIM.Temperature(300),
-        FESTIM.Settings(1e10, 1e-10),
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(),
+        festim.Traps([my_trap]),
+        festim.Temperature(300),
+        festim.Settings(1e10, 1e-10),
         initial_conditions,
     )
 
@@ -112,23 +112,23 @@ def test_initialisation_with_expression_chemical_pot():
     fenics.assign(u.sub(1), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
-        FESTIM.InitialCondition(field=1, value=1 + FESTIM.x),
+        festim.InitialCondition(field=0, value=1 + festim.x + festim.y),
+        festim.InitialCondition(field=1, value=1 + festim.x),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
-    my_theta = FESTIM.Theta()
-    my_theta.materials = FESTIM.Materials([FESTIM.Material(1, 1, 0, S_0=S, E_S=0)])
+    my_theta = festim.Theta()
+    my_theta.materials = festim.Materials([festim.Material(1, 1, 0, S_0=S, E_S=0)])
     my_theta.volume_markers = vm
-    my_theta.T = FESTIM.Temperature(10)
-    my_theta.T.create_functions(FESTIM.Mesh(mesh))
+    my_theta.T = festim.Temperature(10)
+    my_theta.T.create_functions(festim.Mesh(mesh))
     my_theta.S = S
 
-    my_problem = FESTIM.HTransportProblem(
+    my_problem = festim.HTransportProblem(
         my_theta,
-        FESTIM.Traps([my_trap]),
-        FESTIM.Temperature(300),
-        FESTIM.Settings(1e10, 1e-10),
+        festim.Traps([my_trap]),
+        festim.Temperature(300),
+        festim.Settings(1e10, 1e-10),
         initial_conditions,
     )
 
@@ -149,13 +149,13 @@ def test_initialisation_default():
     u = fenics.Function(V)
     w = fenics.Function(V)
     initial_conditions = []
-    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(),
-        FESTIM.Traps([my_trap]),
-        FESTIM.Temperature(300),
-        FESTIM.Settings(1e10, 1e-10),
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(),
+        festim.Traps([my_trap]),
+        festim.Temperature(300),
+        festim.Settings(1e10, 1e-10),
         initial_conditions,
     )
 
@@ -178,15 +178,15 @@ def test_initialisation_solute_only():
     u = fenics.interpolate(ini_u, V)
 
     initial_conditions = [
-        FESTIM.InitialCondition(field=0, value=1 + FESTIM.x + FESTIM.y),
+        festim.InitialCondition(field=0, value=1 + festim.x + festim.y),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(),
-        FESTIM.Traps([my_trap]),
-        FESTIM.Temperature(300),
-        FESTIM.Settings(1e10, 1e-10),
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(),
+        festim.Traps([my_trap]),
+        festim.Temperature(300),
+        festim.Settings(1e10, 1e-10),
         initial_conditions,
     )
 
@@ -210,11 +210,11 @@ def test_initialisation_no_component():
     fenics.assign(u.sub(0), ini_u)
 
     initial_conditions = [
-        FESTIM.InitialCondition(value=1 + FESTIM.x + FESTIM.y),
+        festim.InitialCondition(value=1 + festim.x + festim.y),
     ]
-    my_trap = FESTIM.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
-    my_problem = FESTIM.HTransportProblem(
+    my_problem = festim.HTransportProblem(
         FESTIM.Mobile(),
         FESTIM.Traps([my_trap]),
         FESTIM.Temperature(300),
