@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics
 from pathlib import Path
 
@@ -23,8 +23,8 @@ def test_define_markers(tmpdir):
     fenics.XDMFFile(str(Path(filename_surface))).write(sm)
 
     # run
-    my_sim = FESTIM.Simulation()
-    my_sim.mesh = FESTIM.Mesh(mesh, vm, sm)
+    my_sim = festim.Simulation()
+    my_sim.mesh = festim.Mesh(mesh, vm, sm)
     my_sim.mesh.define_measures()
     vm_computed, sm_computed = my_sim.mesh.volume_markers, my_sim.mesh.surface_markers
 
@@ -46,14 +46,14 @@ def test_integration_mesh_from_vertices_subdomains():
     """
     points = [0, 1, 2, 5, 12, 24]
 
-    my_model = FESTIM.Simulation()
-    my_model.materials = FESTIM.Materials(
+    my_model = festim.Simulation()
+    my_model.materials = festim.Materials(
         [
-            FESTIM.Material(1, None, None, borders=[0, 2]),
-            FESTIM.Material(2, None, None, borders=[2, 24]),
+            festim.Material(1, None, None, borders=[0, 2]),
+            festim.Material(2, None, None, borders=[2, 24]),
         ]
     )
-    my_model.mesh = FESTIM.MeshFromVertices(points)
+    my_model.mesh = festim.MeshFromVertices(points)
     my_model.mesh.define_measures(my_model.materials)
     produced_mesh = my_model.mesh.mesh
     vm, sm = my_model.mesh.volume_markers, my_model.mesh.surface_markers

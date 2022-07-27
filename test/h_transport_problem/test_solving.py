@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics as f
 
 
@@ -13,18 +13,18 @@ def test_default_dt_min_value():
     V = f.FunctionSpace(mesh, "CG", 1)
 
     t = 0
-    dt = FESTIM.Stepsize(
+    dt = festim.Stepsize(
         initial_value=0.5, stepsize_change_ratio=1.1, t_stop=430, stepsize_stop_max=0.5
     )
 
-    my_settings = FESTIM.Settings(
+    my_settings = festim.Settings(
         absolute_tolerance=1e-10,
         relative_tolerance=1e-9,
         maximum_iterations=50,
         final_time=500,
     )
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(), FESTIM.Traps(), FESTIM.Temperature(200), my_settings, []
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
@@ -43,11 +43,11 @@ def test_solve_once_jacobian_is_none():
     mesh = f.UnitIntervalMesh(8)
     V = f.FunctionSpace(mesh, "CG", 1)
 
-    my_settings = FESTIM.Settings(
+    my_settings = festim.Settings(
         absolute_tolerance=1e-10, relative_tolerance=1e-10, maximum_iterations=50
     )
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(), FESTIM.Traps(), FESTIM.Temperature(200), my_settings, []
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
@@ -70,11 +70,11 @@ def test_solve_once_returns_false():
     mesh = f.UnitIntervalMesh(8)
     V = f.FunctionSpace(mesh, "CG", 1)
 
-    my_settings = FESTIM.Settings(
+    my_settings = festim.Settings(
         absolute_tolerance=1e-20, relative_tolerance=1e-20, maximum_iterations=1
     )
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(), FESTIM.Traps(), FESTIM.Temperature(200), my_settings, []
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
@@ -97,14 +97,14 @@ def test_solve_once_linear_solver_mumps():
     mesh = f.UnitIntervalMesh(8)
     V = f.FunctionSpace(mesh, "CG", 1)
 
-    my_settings = FESTIM.Settings(
+    my_settings = festim.Settings(
         absolute_tolerance=1e-10,
         relative_tolerance=1e-10,
         maximum_iterations=50,
         linear_solver="mumps",
     )
-    my_problem = FESTIM.HTransportProblem(
-        FESTIM.Mobile(), FESTIM.Traps(), FESTIM.Temperature(200), my_settings, []
+    my_problem = festim.HTransportProblem(
+        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)

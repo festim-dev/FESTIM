@@ -215,10 +215,10 @@ def test_initialisation_no_component():
     my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
 
     my_problem = festim.HTransportProblem(
-        FESTIM.Mobile(),
-        FESTIM.Traps([my_trap]),
-        FESTIM.Temperature(300),
-        FESTIM.Settings(1e10, 1e-10),
+        festim.Mobile(),
+        festim.Traps([my_trap]),
+        festim.Temperature(300),
+        festim.Settings(1e10, 1e-10),
         initial_conditions,
     )
 

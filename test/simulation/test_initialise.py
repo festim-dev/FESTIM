@@ -1,4 +1,4 @@
-import FESTIM as F
+import festim as F
 
 
 def test_initialise_changes_nb_of_sources():
