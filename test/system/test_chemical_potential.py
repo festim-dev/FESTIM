@@ -1,5 +1,5 @@
 import sympy as sp
-import FESTIM
+import festim
 import fenics
 from pathlib import Path
 import numpy as np
@@ -25,35 +25,35 @@ def test_run_MMS_chemical_pot(tmpdir):
     (1 material)
     """
     d = tmpdir.mkdir("Solution_Test")
-    u = 1 + sp.sin(2 * fenics.pi * FESTIM.x) * FESTIM.t + FESTIM.t
-    v = 1 + sp.cos(2 * fenics.pi * FESTIM.x) * FESTIM.t
+    u = 1 + sp.sin(2 * fenics.pi * festim.x) * festim.t + festim.t
+    v = 1 + sp.cos(2 * fenics.pi * festim.x) * festim.t
 
     size = 1
     k_0 = 2
     E_k = 1.5
     p_0 = 3
     E_p = 0.2
-    T = 700 + 30 * FESTIM.x
+    T = 700 + 30 * festim.x
     n_trap = 1
     E_D = 0.1
     D_0 = 2
-    k_B = FESTIM.k_B
+    k_B = festim.k_B
     D = D_0 * sp.exp(-E_D / k_B / T)
     p = p_0 * sp.exp(-E_p / k_B / T)
     k = k_0 * sp.exp(-E_k / k_B / T)
 
     f = (
-        sp.diff(u, FESTIM.t)
-        + sp.diff(v, FESTIM.t)
-        - D * sp.diff(u, FESTIM.x, 2)
-        - sp.diff(D, FESTIM.x) * sp.diff(u, FESTIM.x)
+        sp.diff(u, festim.t)
+        + sp.diff(v, festim.t)
+        - D * sp.diff(u, festim.x, 2)
+        - sp.diff(D, festim.x) * sp.diff(u, festim.x)
     )
-    g = sp.diff(v, FESTIM.t) + p * v - k * u * (n_trap - v)
+    g = sp.diff(v, festim.t) + p * v - k * u * (n_trap - v)
 
     def run(h):
-        my_materials = FESTIM.Materials(
+        my_materials = festim.Materials(
             [
-                FESTIM.Material(
+                festim.Material(
                     name="mat",
                     id=1,
                     D_0=D_0,
@@ -64,25 +64,25 @@ def test_run_MMS_chemical_pot(tmpdir):
                 )
             ]
         )
-        my_traps = FESTIM.Traps([FESTIM.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
+        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
 
         my_initial_conditions = [
-            FESTIM.InitialCondition(field=0, value=u),
-            FESTIM.InitialCondition(field=1, value=v),
+            festim.InitialCondition(field=0, value=u),
+            festim.InitialCondition(field=1, value=v),
         ]
 
-        my_mesh = FESTIM.MeshFromRefinements(round(size / h), size)
+        my_mesh = festim.MeshFromRefinements(round(size / h), size)
 
         my_bcs = [
-            FESTIM.DirichletBC(surfaces=[1, 2], value=u, field=0),
-            FESTIM.DirichletBC(surfaces=[1, 2], value=v, field=1),
+            festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
+            festim.DirichletBC(surfaces=[1, 2], value=v, field=1),
         ]
 
-        my_temp = FESTIM.Temperature(T)
+        my_temp = festim.Temperature(T)
 
-        my_sources = [FESTIM.Source(f, 1, "0"), FESTIM.Source(g, 1, "1")]
+        my_sources = [festim.Source(f, 1, "0"), festim.Source(g, 1, "1")]
 
-        my_settings = FESTIM.Settings(
+        my_settings = festim.Settings(
             absolute_tolerance=1e-10,
             relative_tolerance=1e-9,
             maximum_iterations=50,
@@ -91,16 +91,16 @@ def test_run_MMS_chemical_pot(tmpdir):
             chemical_pot=True,
         )
 
-        my_dt = FESTIM.Stepsize(0.1 / 50)
-        my_exports = FESTIM.Exports(
+        my_dt = festim.Stepsize(0.1 / 50)
+        my_exports = festim.Exports(
             [
-                FESTIM.TXTExport(
+                festim.TXTExport(
                     "solute", times=[100], label="solute", folder=str(Path(d))
                 ),
             ]
         )
 
-        my_sim = FESTIM.Simulation(
+        my_sim = festim.Simulation(
             mesh=my_mesh,
             materials=my_materials,
             traps=my_traps,

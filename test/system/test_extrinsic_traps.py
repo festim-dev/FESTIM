@@ -1,8 +1,8 @@
-import FESTIM as F
+import festim as F
 
 
 def test_extrinsic_trap():
-    """Runs a FESTIM sim with an extrinsic trap"""
+    """Runs a festim sim with an extrinsic trap"""
     my_materials = F.Materials([F.Material(id=1, D_0=2, E_D=1, name="mat")])
     my_mesh = F.MeshFromRefinements(10, 1)
 
