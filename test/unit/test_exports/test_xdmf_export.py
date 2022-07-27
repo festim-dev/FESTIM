@@ -14,6 +14,8 @@ def test_define_file_upon_construction(folder):
     filename = "{}/my_filename.xdmf".format(folder)
     my_xdmf = XDMFExport("solute", label="solute_label", filename=filename)
 
+    my_xdmf.file.write(mesh)
+
     mesh_in = f.Mesh()
     f.XDMFFile(filename).read(mesh_in)
 
