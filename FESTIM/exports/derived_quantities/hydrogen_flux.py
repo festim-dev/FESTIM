@@ -1,4 +1,4 @@
-from FESTIM import SurfaceFlux
+from festim import SurfaceFlux
 
 
 class HydrogenFlux(SurfaceFlux):

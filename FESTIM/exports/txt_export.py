@@ -1,13 +1,13 @@
 import fenics as f
 import numpy as np
-import FESTIM
+import festim
 import warnings
 import os
 
 warnings.simplefilter("always", DeprecationWarning)
 
 
-class TXTExport(FESTIM.Export):
+class TXTExport(festim.Export):
     def __init__(self, field, times, label, folder) -> None:
         """Inits TXTExport
 

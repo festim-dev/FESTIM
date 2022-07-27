@@ -1,4 +1,4 @@
-from FESTIM import DerivedQuantity
+from festim import DerivedQuantity
 import fenics as f
 import numpy as np
 

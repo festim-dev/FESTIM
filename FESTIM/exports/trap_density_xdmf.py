@@ -1,4 +1,4 @@
-from FESTIM.exports.xdmf_export import XDMFExport
+from festim.exports.xdmf_export import XDMFExport
 import fenics as f
 
 
@@ -6,7 +6,7 @@ class TrapDensityXDMF(XDMFExport):
     def __init__(self, trap, **kwargs) -> None:
         """Inits DensityXDMF
         Args:
-            trap (FESTIM.Trap): the trap to export density
+            trap (festim.Trap): the trap to export density
             kwargs (): See XDMFExport
         """
         super().__init__(

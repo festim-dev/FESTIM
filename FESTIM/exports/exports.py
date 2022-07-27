@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics as f
 
 
@@ -12,14 +12,14 @@ class Exports:
 
     def write(self, label_to_function, dt):
         for export in self.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
+            if isinstance(export, festim.DerivedQuantities):
 
                 # compute derived quantities
                 if export.is_compute(self.nb_iterations):
                     # check if function has to be projected
                     for quantity in export.derived_quantities:
                         if isinstance(
-                            quantity, (FESTIM.MaximumVolume, FESTIM.MinimumVolume)
+                            quantity, (festim.MaximumVolume, festim.MinimumVolume)
                         ):
                             if not isinstance(
                                 label_to_function[quantity.field], f.Function
@@ -33,7 +33,7 @@ class Exports:
                 if export.is_export(self.t, self.final_time, self.nb_iterations):
                     export.write()
 
-            elif isinstance(export, FESTIM.XDMFExport):
+            elif isinstance(export, festim.XDMFExport):
                 if export.is_export(self.t, self.final_time, self.nb_iterations):
                     if export.field == "retention":
                         # if not a Function, project it onto V_DG1
@@ -45,7 +45,7 @@ class Exports:
                     export.write(self.t)
                     export.append = True
 
-            elif isinstance(export, FESTIM.TXTExport):
+            elif isinstance(export, festim.TXTExport):
                 # if not a Function, project it onto V_DG1
                 if not isinstance(label_to_function[export.field], f.Function):
                     label_to_function[export.field] = f.project(
@@ -62,10 +62,10 @@ class Exports:
         Args:
             dx (fenics.Measure): the measure for dx
             ds (fenics.Measure): the measure for ds
-            materials (FESTIM.Materials): the materials
+            materials (festim.Materials): the materials
         """
         for export in self.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
+            if isinstance(export, festim.DerivedQuantities):
                 export.data = [export.make_header()]
                 export.assign_measures_to_quantities(dx, ds)
                 export.assign_properties_to_quantities(materials)

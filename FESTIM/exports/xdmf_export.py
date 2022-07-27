@@ -1,5 +1,5 @@
 import warnings
-from FESTIM import Export
+from festim import Export
 import fenics as f
 
 
@@ -128,7 +128,7 @@ class XDMFExport(Export):
             if dimension == 1:
                 msg = "in 1D, checkpoint needs to be set to False to "
                 msg += "visualise the XDMF file in Paraview (see issue "
-                msg += "https://github.com/RemDelaporteMathurin/FESTIM/issues/134)"
+                msg += "https://github.com/RemDelaporteMathurin/festim/issues/134)"
                 warnings.warn(msg)
 
             self.file.write_checkpoint(

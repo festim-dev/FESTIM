@@ -1,4 +1,4 @@
-from FESTIM import (
+from festim import (
     MinimumVolume,
     MaximumVolume,
     DerivedQuantity,
@@ -72,7 +72,7 @@ class DerivedQuantities:
         (D, S, thermal_cond and H) based on the properties stored in materials
 
         Args:
-            materials (FESTIM.Materials): the materials
+            materials (festim.Materials): the materials
         """
         for quantity in self.derived_quantities:
             quantity.D = materials.D

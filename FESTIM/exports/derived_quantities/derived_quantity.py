@@ -1,4 +1,4 @@
-from FESTIM import Export
+from festim import Export
 
 
 class DerivedQuantity(Export):
