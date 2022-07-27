@@ -1,4 +1,4 @@
-from FESTIM import TotalVolume
+from festim import TotalVolume
 import fenics as f
 
 

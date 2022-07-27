@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics as f
 
 
@@ -7,7 +7,7 @@ class TestNeutronInducedTrap:
     General test for the NeutronInducedTrap class
     """
 
-    my_trap = FESTIM.NeutronInducedTrap(
+    my_trap = festim.NeutronInducedTrap(
         1, 1, 1, 1, "mat_name", phi=1, K=1, n_max=2, A_0=1, E_A=1
     )
     mesh = f.UnitIntervalMesh(10)
@@ -15,10 +15,10 @@ class TestNeutronInducedTrap:
     my_trap.density = [f.Function(V)]
     my_trap.density_previous_solution = f.Function(V)
     my_trap.density_test_function = f.TestFunction(V)
-    my_temp = FESTIM.Temperature(value=100)
+    my_temp = festim.Temperature(value=100)
     my_temp.T = f.Function(V, name="T")
     dx = f.dx()
-    dt = FESTIM.Stepsize(initial_value=1)
+    dt = festim.Stepsize(initial_value=1)
 
     def test_create_form_density(self):
         """
@@ -49,7 +49,7 @@ class TestNeutronInducedTrap:
         )
         expected_form += (
             A_0
-            * f.exp(-E_A / (FESTIM.k_B * T))
+            * f.exp(-E_A / (festim.k_B * T))
             * density
             * self.my_trap.density_test_function
             * self.dx
@@ -65,27 +65,27 @@ class TestNeutronInducedTrapVaryingTime:
     Test for NeutronInducedTrap class, with varying phi with time
     """
 
-    my_trap = FESTIM.NeutronInducedTrap(
+    my_trap = festim.NeutronInducedTrap(
         1,
         1,
         1,
         1,
         "mat_name",
-        phi=1 + FESTIM.t,
-        K=2 + FESTIM.x,
-        n_max=3 + FESTIM.y,
-        A_0=4 + FESTIM.z,
-        E_A=5 + FESTIM.x,
+        phi=1 + festim.t,
+        K=2 + festim.x,
+        n_max=3 + festim.y,
+        A_0=4 + festim.z,
+        E_A=5 + festim.x,
     )
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_trap.density = [f.Function(V)]
     my_trap.density_previous_solution = f.Function(V)
     my_trap.density_test_function = f.TestFunction(V)
-    my_temp = FESTIM.Temperature(value=100)
+    my_temp = festim.Temperature(value=100)
     my_temp.T = f.Function(V, name="T")
     dx = f.dx()
-    dt = FESTIM.Stepsize(initial_value=1)
+    dt = festim.Stepsize(initial_value=1)
 
     def test_create_form_density(self):
         """
@@ -115,7 +115,7 @@ class TestNeutronInducedTrapVaryingTime:
         )
         expected_form += (
             A_0
-            * f.exp(-E_A / (FESTIM.k_B * T))
+            * f.exp(-E_A / (festim.k_B * T))
             * density
             * self.my_trap.density_test_function
             * self.dx

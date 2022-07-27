@@ -1,4 +1,4 @@
-from FESTIM import AverageSurface
+from festim import AverageSurface
 import fenics as f
 
 

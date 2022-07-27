@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics as f
 import sympy as sp
 from pathlib import Path
@@ -9,8 +9,8 @@ class TestGetComp:
     V = f.FunctionSpace(mesh, "P", 1)
 
     def test_get_comp_from_expression(self):
-        my_conc = FESTIM.Concentration()
-        comp = my_conc.get_comp(self.V, 1 + FESTIM.t - FESTIM.x)
+        my_conc = festim.Concentration()
+        comp = my_conc.get_comp(self.V, 1 + festim.t - festim.x)
 
         for t in [1, 1.5, 6, 8]:
             comp.t = t
@@ -20,7 +20,7 @@ class TestGetComp:
     def test_get_comp_from_xdmf(self, tmpdir):
 
         # build
-        value = 1 + FESTIM.t - FESTIM.x
+        value = 1 + festim.t - festim.x
 
         u = f.Expression(sp.printing.ccode(value), degree=1, t=0)
         u = f.interpolate(u, self.V)
@@ -34,7 +34,7 @@ class TestGetComp:
                 u, label, time, f.XDMFFile.Encoding.HDF5, append=False
             )
 
-        my_conc = FESTIM.Concentration()
+        my_conc = festim.Concentration()
 
         # run
         comp = my_conc.get_comp(self.V, filename, label=label, time_step=0)
@@ -48,11 +48,11 @@ class TestInitialise:
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     u = f.Function(V)
-    my_conc = FESTIM.Concentration(previous_solution=u)
+    my_conc = festim.Concentration(previous_solution=u)
 
     def test_with_expression(self):
         # build
-        value = 1 + 2 * FESTIM.x**4
+        value = 1 + 2 * festim.x**4
         expected_sol = self.my_conc.get_comp(self.V, value)
 
         # run
@@ -64,7 +64,7 @@ class TestInitialise:
 
     def test_with_xdmf(self, tmpdir):
         # build
-        value = 1 + 2 * FESTIM.x**4
+        value = 1 + 2 * festim.x**4
 
         u = f.Expression(sp.printing.ccode(value), degree=1, t=0)
         u = f.interpolate(u, self.V)

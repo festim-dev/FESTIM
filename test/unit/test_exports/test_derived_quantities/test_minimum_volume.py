@@ -1,4 +1,4 @@
-from FESTIM import MinimumVolume
+from festim import MinimumVolume
 import fenics as f
 import numpy as np
 

@@ -1,6 +1,6 @@
 from attr import has
 from sympy.matrices import expressions
-import FESTIM
+import festim
 import fenics
 import pytest
 import sympy as sp
@@ -41,18 +41,18 @@ def test_define_dirichlet_bcs_theta():
     left.mark(sm, 1)
     right.mark(sm, 2)
 
-    my_mesh = FESTIM.Mesh(mesh, vm, sm)
+    my_mesh = festim.Mesh(mesh, vm, sm)
     my_mesh.dx = fenics.dx()
     my_mesh.ds = fenics.ds()
 
-    my_temp = FESTIM.Temperature(value=200 + (FESTIM.x + 1) * FESTIM.t)
+    my_temp = festim.Temperature(value=200 + (festim.x + 1) * festim.t)
     my_temp.create_functions(my_mesh)
 
-    mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)
-    mat2 = FESTIM.Material(2, None, None, S_0=S_02, E_S=E_S2)
-    my_mats = FESTIM.Materials([mat1, mat2])
+    mat1 = festim.Material(1, None, None, S_0=S_01, E_S=E_S1)
+    mat2 = festim.Material(2, None, None, S_0=S_02, E_S=E_S2)
+    my_mats = festim.Materials([mat1, mat2])
 
-    my_bc = FESTIM.DirichletBC([1, 2], value=200 + FESTIM.t)
+    my_bc = festim.DirichletBC([1, 2], value=200 + festim.t)
     my_bc.create_dirichletbc(
         V,
         my_temp.T,
@@ -76,11 +76,11 @@ def test_define_dirichlet_bcs_theta():
         expr = fenics.interpolate(expressions[1], V)
         assert np.isclose(
             expr(0.25, 0.5),
-            (200 + i) / (S_01 * np.exp(-E_S1 / FESTIM.k_B / my_temp.T(0.25, 0.5))),
+            (200 + i) / (S_01 * np.exp(-E_S1 / festim.k_B / my_temp.T(0.25, 0.5))),
         )
         assert np.isclose(
             expr(0.75, 0.5),
-            (200 + i) / (S_02 * np.exp(-E_S2 / FESTIM.k_B / my_temp.T(0.75, 0.5))),
+            (200 + i) / (S_02 * np.exp(-E_S2 / festim.k_B / my_temp.T(0.75, 0.5))),
         )
 
         # Test that the BCs can be applied to a problem
@@ -88,12 +88,12 @@ def test_define_dirichlet_bcs_theta():
         fenics.solve(F == 0, u, bcs[0])
         assert np.isclose(
             u(0.25, 0.5),
-            (200 + i) / (S_01 * np.exp(-E_S1 / FESTIM.k_B / my_temp.T(0, 0.5))),
+            (200 + i) / (S_01 * np.exp(-E_S1 / festim.k_B / my_temp.T(0, 0.5))),
         )
         fenics.solve(F == 0, u, bcs[1])
         assert np.isclose(
             u(0.75, 0.5),
-            (200 + i) / (S_02 * np.exp(-E_S2 / FESTIM.k_B / my_temp.T(1, 0.5))),
+            (200 + i) / (S_02 * np.exp(-E_S2 / festim.k_B / my_temp.T(1, 0.5))),
         )
 
 
@@ -101,26 +101,26 @@ def test_bc_recomb():
     """Test the function boundary_conditions.define_dirichlet_bcs
     with bc type dc_imp
     """
-    phi = 3 + 10 * FESTIM.t
-    R_p = 5 + FESTIM.x
+    phi = 3 + 10 * festim.t
+    R_p = 5 + festim.x
     D_0 = 2
     E_D = 0.5
     Kr_0 = 2
     E_Kr = 0.35
 
     mesh = fenics.UnitSquareMesh(4, 4)
-    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh = festim.Mesh(mesh)
     my_mesh.dx = fenics.dx()
     my_mesh.ds = fenics.ds()
     V = fenics.FunctionSpace(mesh, "P", 1)
-    T_expr = 500 + (FESTIM.x + 1) * 100 * FESTIM.t
+    T_expr = 500 + (festim.x + 1) * 100 * festim.t
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
 
-    my_temp = FESTIM.Temperature(value=T_expr)
+    my_temp = festim.Temperature(value=T_expr)
     my_temp.create_functions(my_mesh)
 
-    my_bc = FESTIM.ImplantationDirichlet(
+    my_bc = festim.ImplantationDirichlet(
         [1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr
     )
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
@@ -133,12 +133,12 @@ def test_bc_recomb():
         expressions[1].t = current_time
 
         for x_ in [0, 1]:
-            T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
-            D = D_0 * np.exp(-E_D / FESTIM.k_B / T)
-            K = Kr_0 * np.exp(-E_Kr / FESTIM.k_B / T)
+            T = float(T_expr.subs(festim.t, current_time).subs(festim.x, x_))
+            D = D_0 * np.exp(-E_D / festim.k_B / T)
+            K = Kr_0 * np.exp(-E_Kr / festim.k_B / T)
             # Test that the expression is correct at vertices
-            val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
-            val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
+            val_phi = phi.subs(festim.t, current_time).subs(festim.x, x_)
+            val_R_p = R_p.subs(festim.t, current_time).subs(festim.x, x_)
             assert np.isclose(
                 expressions[-1](x_, 0.5),
                 float(val_phi * val_R_p / D + (val_phi / K) ** 0.5),
@@ -149,25 +149,25 @@ def test_bc_recomb_instant_recomb():
     """Test the function boundary_conditions.define_dirichlet_bcs
     with bc type dc_imp (with instantaneous recombination)
     """
-    phi = 3 + 10 * FESTIM.t
-    R_p = 5 + FESTIM.x
+    phi = 3 + 10 * festim.t
+    R_p = 5 + festim.x
     D_0 = 200
     E_D = 0.25
 
     # Set up
     mesh = fenics.UnitSquareMesh(4, 4)
-    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh = festim.Mesh(mesh)
     my_mesh.dx = fenics.dx()
     my_mesh.ds = fenics.ds()
     V = fenics.FunctionSpace(mesh, "P", 1)
-    T_expr = 500 + (FESTIM.x + 1) * 100 * FESTIM.t
+    T_expr = 500 + (festim.x + 1) * 100 * festim.t
 
     sm = fenics.MeshFunction("size_t", mesh, 1, 0)
 
-    my_temp = FESTIM.Temperature(value=T_expr)
+    my_temp = festim.Temperature(value=T_expr)
     my_temp.create_functions(my_mesh)
 
-    my_bc = FESTIM.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D)
+    my_bc = festim.ImplantationDirichlet([1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D)
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
     expressions = my_bc.sub_expressions + [my_bc.expression]
 
@@ -178,11 +178,11 @@ def test_bc_recomb_instant_recomb():
             expr.t = current_time
 
         for x_ in [0, 1]:
-            T = float(T_expr.subs(FESTIM.t, current_time).subs(FESTIM.x, x_))
-            D = D_0 * np.exp(-E_D / FESTIM.k_B / T)
+            T = float(T_expr.subs(festim.t, current_time).subs(festim.x, x_))
+            D = D_0 * np.exp(-E_D / festim.k_B / T)
             # Test that the expression is correct at vertices
-            val_phi = phi.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
-            val_R_p = R_p.subs(FESTIM.t, current_time).subs(FESTIM.x, x_)
+            val_phi = phi.subs(festim.t, current_time).subs(festim.x, x_)
+            val_R_p = R_p.subs(festim.t, current_time).subs(festim.x, x_)
             assert np.isclose(expressions[-1](x_, 0.5), float(val_phi * val_R_p / D))
 
 
@@ -202,7 +202,7 @@ def test_bc_recomb_chemical_pot():
     E_S2 = 0.2
 
     mesh = fenics.UnitSquareMesh(4, 4)
-    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh = festim.Mesh(mesh)
     my_mesh.dx = fenics.dx()
     my_mesh.ds = fenics.ds()
     V = fenics.FunctionSpace(mesh, "P", 1)
@@ -219,16 +219,16 @@ def test_bc_recomb_chemical_pot():
     right = fenics.CompiledSubDomain("x[0] > 0.99999999")
     right.mark(sm, 2)
 
-    my_temp = FESTIM.Temperature(value=200 + (FESTIM.x + 1) * FESTIM.t)
+    my_temp = festim.Temperature(value=200 + (festim.x + 1) * festim.t)
     my_temp.create_functions(my_mesh)
 
-    mat1 = FESTIM.Material(1, None, None, S_0=S_01, E_S=E_S1)
-    mat2 = FESTIM.Material(2, None, None, S_0=S_02, E_S=E_S2)
-    my_mats = FESTIM.Materials([mat1, mat2])
+    mat1 = festim.Material(1, None, None, S_0=S_01, E_S=E_S1)
+    mat2 = festim.Material(2, None, None, S_0=S_02, E_S=E_S2)
+    my_mats = festim.Materials([mat1, mat2])
 
     # bcs, expressions = define_dirichlet_bcs(my_sim)
     V = fenics.FunctionSpace(mesh, "P", 1)
-    my_bc = FESTIM.ImplantationDirichlet(
+    my_bc = festim.ImplantationDirichlet(
         surfaces=[1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr
     )
     my_bc.create_dirichletbc(
@@ -254,12 +254,12 @@ def test_bc_recomb_chemical_pot():
 
         T_left = 200 + i
         T_right = 200 + 2 * i
-        D_left = D_0 * np.exp(-E_D / FESTIM.k_B / T_left)
-        D_right = D_0 * np.exp(-E_D / FESTIM.k_B / T_right)
-        K_left = Kr_0 * np.exp(-E_Kr / FESTIM.k_B / T_left)
-        K_right = Kr_0 * np.exp(-E_Kr / FESTIM.k_B / T_right)
-        S_left = S_01 * np.exp(-E_S1 / FESTIM.k_B / my_temp.T(0, 0.5))
-        S_right = S_02 * np.exp(-E_S2 / FESTIM.k_B / my_temp.T(1, 0.5))
+        D_left = D_0 * np.exp(-E_D / festim.k_B / T_left)
+        D_right = D_0 * np.exp(-E_D / festim.k_B / T_right)
+        K_left = Kr_0 * np.exp(-E_Kr / festim.k_B / T_left)
+        K_right = Kr_0 * np.exp(-E_Kr / festim.k_B / T_right)
+        S_left = S_01 * np.exp(-E_S1 / festim.k_B / my_temp.T(0, 0.5))
+        S_right = S_02 * np.exp(-E_S2 / festim.k_B / my_temp.T(1, 0.5))
 
         # Test that the BCs can be applied to a problem
         # and gives the correct values
@@ -278,10 +278,10 @@ def test_sievert_bc_varying_time():
     """Checks the methode SievertsBC.create_expression produces the expected expression"""
     # build
     T = fenics.Constant(300)
-    pressure_expr = 1e5 * (1 + FESTIM.t)
+    pressure_expr = 1e5 * (1 + festim.t)
     s_0_expr = 100
     E_S_expr = 0.5
-    my_bc = FESTIM.SievertsBC(
+    my_bc = festim.SievertsBC(
         surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr
     )
 
@@ -294,12 +294,12 @@ def test_sievert_bc_varying_time():
     # test
 
     def sieverts(T, S_0, E_S, pressure):
-        S = S_0 * fenics.exp(-E_S / FESTIM.k_B / T)
+        S = S_0 * fenics.exp(-E_S / festim.k_B / T)
         return S * pressure**0.5
 
     prms = {"S_0": s_0_expr, "E_S": E_S_expr, "pressure": pressure_expr}
 
-    expected = FESTIM.BoundaryConditionExpression(
+    expected = festim.BoundaryConditionExpression(
         T_expr,
         eval_function=sieverts,
         pressure=pressure_expr,
@@ -320,10 +320,10 @@ def test_sievert_bc_varying_temperature():
     """Checks the method SievertsBC.create_expression produces the expected expression"""
     # build
     T = fenics.Constant(300)
-    pressure_expr = 1e5 * (1 + FESTIM.t)
+    pressure_expr = 1e5 * (1 + festim.t)
     s_0_expr = 100
     E_S_expr = 0.5
-    my_bc = FESTIM.SievertsBC(
+    my_bc = festim.SievertsBC(
         surfaces=1, pressure=pressure_expr, S_0=s_0_expr, E_S=E_S_expr
     )
 
@@ -336,10 +336,10 @@ def test_sievert_bc_varying_temperature():
     # test
 
     def sieverts(T, S_0, E_S, pressure):
-        S = S_0 * fenics.exp(-E_S / FESTIM.k_B / T)
+        S = S_0 * fenics.exp(-E_S / festim.k_B / T)
         return S * pressure**0.5
 
-    expected = FESTIM.BoundaryConditionExpression(
+    expected = festim.BoundaryConditionExpression(
         T, eval_function=sieverts, S_0=s_0_expr, E_S=E_S_expr, pressure=pressure_expr
     )
     assert my_bc.expression(0) == pytest.approx(expected(0))
@@ -354,10 +354,10 @@ def test_henry_bc_varying_time():
     """
     # build
     T = fenics.Constant(300)
-    pressure_expr = 1e5 * (1 + FESTIM.t)
+    pressure_expr = 1e5 * (1 + festim.t)
     H_0_expr = 100
     E_H_expr = 0.5
-    my_bc = FESTIM.HenrysBC(
+    my_bc = festim.HenrysBC(
         surfaces=1, pressure=pressure_expr, H_0=H_0_expr, E_H=E_H_expr
     )
     pressure_expr = fenics.Expression(sp.printing.ccode(pressure_expr), t=0, degree=1)
@@ -370,12 +370,12 @@ def test_henry_bc_varying_time():
     # test
 
     def henrys(T, H_0, E_H, pressure):
-        H = H_0 * fenics.exp(-E_H / FESTIM.k_B / T)
+        H = H_0 * fenics.exp(-E_H / festim.k_B / T)
         return H * pressure
 
     prms = {"H_0": H_0_expr, "E_H": E_H_expr, "pressure": pressure_expr}
 
-    expected = FESTIM.BoundaryConditionExpression(
+    expected = festim.BoundaryConditionExpression(
         T_expr, eval_function=henrys, pressure=pressure_expr, H_0=H_0_expr, E_H=E_H_expr
     )
     assert my_bc.expression(0) == pytest.approx(expected(0))
@@ -394,10 +394,10 @@ def test_henry_bc_varying_temperature():
     """
     # build
     T = fenics.Constant(300)
-    pressure_expr = 1e5 * (1 + FESTIM.t)
+    pressure_expr = 1e5 * (1 + festim.t)
     H_0_expr = 100
     E_H_expr = 0.5
-    my_bc = FESTIM.HenrysBC(
+    my_bc = festim.HenrysBC(
         surfaces=1, pressure=pressure_expr, H_0=H_0_expr, E_H=E_H_expr
     )
 
@@ -410,10 +410,10 @@ def test_henry_bc_varying_temperature():
     # test
 
     def henrys(T, H_0, E_H, pressure):
-        H = H_0 * fenics.exp(-E_H / FESTIM.k_B / T)
+        H = H_0 * fenics.exp(-E_H / festim.k_B / T)
         return H * pressure
 
-    expected = FESTIM.BoundaryConditionExpression(
+    expected = festim.BoundaryConditionExpression(
         T, eval_function=henrys, H_0=H_0_expr, E_H=E_H_expr, pressure=pressure_expr
     )
     assert my_bc.expression(0) == pytest.approx(expected(0))
@@ -433,14 +433,14 @@ def test_create_expression_dc_custom():
     T = fenics.Expression("2 + x[0] + t", degree=1, t=0)
     expressions = [T]
     # run
-    my_BC = FESTIM.CustomDirichlet(
-        surfaces=[1, 0], function=func, prm1=1 + 2 * FESTIM.t, prm2=2
+    my_BC = festim.CustomDirichlet(
+        surfaces=[1, 0], function=func, prm1=1 + 2 * festim.t, prm2=2
     )
     my_BC.create_expression(T)
     expressions += my_BC.sub_expressions
 
     # test
-    expected = 2 * (2 + FESTIM.x + FESTIM.t) + (1 + 2 * FESTIM.t) * 2
+    expected = 2 * (2 + festim.x + festim.t) + (1 + 2 * festim.t) * 2
     expected = fenics.Expression(sp.printing.ccode(expected), t=0, degree=1)
     for t in range(10):
         expected.t = t
@@ -459,17 +459,17 @@ def test_create_form_flux_custom():
     def func(T, c, prm1, prm2):
         return 2 * T + c + prm1 * prm2
 
-    expr_prm1 = 1 + 2 * FESTIM.t + FESTIM.x
+    expr_prm1 = 1 + 2 * festim.t + festim.x
     expr_prm2 = 2
-    expr_T = 2 + FESTIM.x + FESTIM.t
-    expr_c = FESTIM.x * FESTIM.x
+    expr_T = 2 + festim.x + festim.t
+    expr_c = festim.x * festim.x
 
     T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
     solute = fenics.Expression(sp.printing.ccode(expr_c), degree=1, t=0)
     expressions = [T, solute]
 
     # run
-    my_BC = FESTIM.CustomFlux(
+    my_BC = festim.CustomFlux(
         surfaces=[1, 0], field="T", function=func, prm1=expr_prm1, prm2=expr_prm2
     )
     my_BC.create_form(T, solute)
@@ -492,17 +492,17 @@ def test_create_form_flux_custom():
 
 
 def test_convective_flux():
-    expr_T = 2 + FESTIM.x
+    expr_T = 2 + festim.x
     T = fenics.Expression(sp.printing.ccode(expr_T), degree=1, t=0)
 
-    my_BC = FESTIM.ConvectiveFlux(surfaces=[0], h_coeff=expr_T, T_ext=expr_T)
+    my_BC = festim.ConvectiveFlux(surfaces=[0], h_coeff=expr_T, T_ext=expr_T)
     my_BC.create_form(T, None)
 
 
 def test_recomb_flux():
-    expr = 2 + FESTIM.x
+    expr = 2 + festim.x
     T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
     c = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
 
-    my_BC = FESTIM.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
+    my_BC = festim.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
     my_BC.create_form(T, c)

@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import fenics as f
 from ufl.core.multiindex import Index
 import pytest
@@ -9,18 +9,18 @@ def test_mobile_create_diffusion_form():
     Index._globalcount = 8
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.F = 0
     my_mobile.solution = f.Function(V)
     my_mobile.previous_solution = f.Function(V)
     my_mobile.test_function = f.TestFunction(V)
 
-    mat = FESTIM.Material(1, D_0=1, E_D=1)
-    my_mats = FESTIM.Materials([mat])
+    mat = festim.Material(1, D_0=1, E_D=1)
+    my_mats = festim.Materials([mat])
     dx = f.dx()
-    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh = festim.Mesh(mesh)
     my_mesh.dx = dx
-    T = FESTIM.Temperature(value=100)
+    T = festim.Temperature(value=100)
     T.T = f.interpolate(f.Constant(100), V)
     # run
     my_mobile.create_diffusion_form(my_mats, my_mesh, T)
@@ -30,7 +30,7 @@ def test_mobile_create_diffusion_form():
     v = my_mobile.test_function
     Index._globalcount = 8
     expected_form = f.dot(
-        mat.D_0 * f.exp(-mat.E_D / FESTIM.k_B / T.T) * f.grad(c_0), f.grad(v)
+        mat.D_0 * f.exp(-mat.E_D / festim.k_B / T.T) * f.grad(c_0), f.grad(v)
     ) * dx(1)
     assert my_mobile.F.equals(expected_form)
     assert my_mobile.F_diffusion.equals(expected_form)
@@ -40,12 +40,12 @@ def test_mobile_create_source_form_one_dict():
     # build
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.F = 0
     my_mobile.test_function = f.TestFunction(V)
 
     dx = f.dx()
-    my_mobile.sources = [FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="0")]
+    my_mobile.sources = [festim.Source(2 + festim.x + festim.t, volume=1, field="0")]
     # run
     my_mobile.create_source_form(dx)
 
@@ -61,15 +61,15 @@ def test_mobile_create_source_form_several_sources():
     # build
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.F = 0
     my_mobile.test_function = f.TestFunction(V)
 
     dx = f.dx()
     my_mobile.sources = [
-        FESTIM.Source(2 + FESTIM.x + FESTIM.t, volume=1, field="0"),
-        FESTIM.Source(1 + FESTIM.x + FESTIM.t, volume=2, field="0"),
-        FESTIM.Source(1 + FESTIM.x + FESTIM.t, volume=3, field="0"),
+        festim.Source(2 + festim.x + festim.t, volume=1, field="0"),
+        festim.Source(1 + festim.x + festim.t, volume=2, field="0"),
+        festim.Source(1 + festim.x + festim.t, volume=3, field="0"),
     ]
     # run
     my_mobile.create_source_form(dx)
@@ -88,19 +88,19 @@ def test_mobile_create_form():
     Index._globalcount = 8
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.F = 0
     my_mobile.solution = f.Function(V)
     my_mobile.previous_solution = f.Function(V)
     my_mobile.test_function = f.TestFunction(V)
-    my_mobile.source_term = {"value": 2 + FESTIM.x + FESTIM.t}
+    my_mobile.source_term = {"value": 2 + festim.x + festim.t}
 
-    mat = FESTIM.Material(1, D_0=1, E_D=1)
-    my_mats = FESTIM.Materials([mat])
-    mesh = FESTIM.Mesh()
+    mat = festim.Material(1, D_0=1, E_D=1)
+    my_mats = festim.Materials([mat])
+    mesh = festim.Mesh()
     mesh.dx = f.dx()
     mesh.ds = f.ds()
-    T = FESTIM.Temperature(value=100)
+    T = festim.Temperature(value=100)
     T.T = f.interpolate(f.Constant(100), V)
 
     # run
@@ -120,31 +120,31 @@ def add_functions(trap, V, id=1):
 
 class TestCreateDiffusionForm:
     mesh = f.UnitIntervalMesh(10)
-    my_mesh = FESTIM.Mesh(mesh)
-    my_temp = FESTIM.Temperature(value=100)
+    my_mesh = festim.Mesh(mesh)
+    my_temp = festim.Temperature(value=100)
     my_temp.create_functions(my_mesh)
     my_mesh.dx = f.dx()
-    dt = FESTIM.Stepsize(initial_value=1)
+    dt = festim.Stepsize(initial_value=1)
     V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
-    mat1 = FESTIM.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
-    mat2 = FESTIM.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
+    mat1 = festim.Material(1, D_0=1, E_D=1, S_0=2, E_S=3)
+    mat2 = festim.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
 
     def test_with_traps_transient(self):
         # build
         Index._globalcount = 8
-        my_mobile = FESTIM.Mobile()
+        my_mobile = festim.Mobile()
         my_mobile.F = 0
         my_mobile.solution = f.Function(self.V, name="c_m")
         my_mobile.previous_solution = f.Function(self.V, name="c_m_n")
         my_mobile.test_function = f.TestFunction(self.V)
-        my_mats = FESTIM.Materials([self.mat1])
+        my_mats = festim.Materials([self.mat1])
 
-        trap1 = FESTIM.Trap(1, 1, 1, 1, self.mat1, 1)
+        trap1 = festim.Trap(1, 1, 1, 1, self.mat1, 1)
         add_functions(trap1, self.V, id=1)
-        trap2 = FESTIM.Trap(2, 2, 2, 2, self.mat1, 2)
+        trap2 = festim.Trap(2, 2, 2, 2, self.mat1, 2)
         add_functions(trap2, self.V, id=1)
 
-        my_traps = FESTIM.Traps([trap1, trap2])
+        my_traps = festim.Traps([trap1, trap2])
 
         # run
         my_mobile.create_diffusion_form(
@@ -154,7 +154,7 @@ class TestCreateDiffusionForm:
         # test
         Index._globalcount = 8
         v = my_mobile.test_function
-        D = self.mat1.D_0 * f.exp(-self.mat1.E_D / FESTIM.k_B / self.my_temp.T)
+        D = self.mat1.D_0 * f.exp(-self.mat1.E_D / festim.k_B / self.my_temp.T)
         c_0 = my_mobile.solution
         c_0_n = my_mobile.previous_solution
         expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
@@ -176,10 +176,10 @@ class TestCreateDiffusionForm:
         """Tests that the appropriate error is raised when trying to use Soret
         with cylindrical or spherical system
         """
-        my_mobile = FESTIM.Mobile()
+        my_mobile = festim.Mobile()
 
         for system in ["cylindrical", "spherical"]:
-            mesh = FESTIM.Mesh(type=system)
+            mesh = festim.Mesh(type=system)
             expected_error_msg = "not implemented " + "in {} coordinates".format(system)
             with pytest.raises(ValueError, match=expected_error_msg):
                 my_mobile.create_diffusion_form(
@@ -193,9 +193,9 @@ class TestInitialise:
     u = f.Function(V)
 
     def test_from_expresion(self):
-        my_mobile = FESTIM.Mobile()
+        my_mobile = festim.Mobile()
         my_mobile.previous_solution = self.u
-        value = 1 + FESTIM.x
+        value = 1 + festim.x
         expected_sol = my_mobile.get_comp(self.V, value)
         my_mobile.initialise(self.V, value)
 
@@ -208,23 +208,23 @@ def test_fluxes():
     Kr_0 = 2
     E_Kr = 3
     order = 2
-    k_B = FESTIM.k_B
+    k_B = festim.k_B
 
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
-    my_mesh = FESTIM.Mesh(mesh)
+    my_mesh = festim.Mesh(mesh)
     my_mesh.dx = f.dx()
     my_mesh.ds = f.ds()
 
-    my_mobile = FESTIM.Mobile()
+    my_mobile = festim.Mobile()
     my_mobile.F = 0
     my_mobile.solution = f.Function(V)
     my_mobile.test_function = f.TestFunction(V)
     my_mobile.boundary_conditions = [
-        FESTIM.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
-        FESTIM.FluxBC(value=2 * FESTIM.x + FESTIM.t, surfaces=[1, 2]),
+        festim.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
+        festim.FluxBC(value=2 * festim.x + festim.t, surfaces=[1, 2]),
     ]
-    T = FESTIM.Temperature(value=1000)
+    T = festim.Temperature(value=1000)
     T.create_functions(my_mesh)
 
     my_mobile.create_fluxes_form(T, my_mesh.ds)

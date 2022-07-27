@@ -1,4 +1,4 @@
-from FESTIM import (
+from festim import (
     DerivedQuantities,
     SurfaceFlux,
     AverageVolume,

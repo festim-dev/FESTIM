@@ -1,4 +1,4 @@
-from FESTIM import XDMFExport, extract_xdmf_labels
+from festim import XDMFExport, extract_xdmf_labels
 import fenics as f
 import pytest
 from pathlib import Path
@@ -13,8 +13,6 @@ def test_define_file_upon_construction(folder):
     mesh = f.UnitIntervalMesh(10)
     filename = "{}/my_filename.xdmf".format(folder)
     my_xdmf = XDMFExport("solute", label="solute_label", filename=filename)
-
-    my_xdmf.file.write(mesh)
 
     mesh_in = f.Mesh()
     f.XDMFFile(filename).read(mesh_in)

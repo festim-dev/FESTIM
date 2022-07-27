@@ -1,4 +1,4 @@
-from FESTIM import (
+from festim import (
     kJmol_to_eV,
     k_B,
     R,

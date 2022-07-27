@@ -1,4 +1,4 @@
-from FESTIM import ThermalFlux
+from festim import ThermalFlux
 
 
 def test_field_is_T():

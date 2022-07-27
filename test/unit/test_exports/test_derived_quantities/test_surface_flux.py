@@ -1,4 +1,4 @@
-from FESTIM import SurfaceFlux, R
+from festim import SurfaceFlux, R
 import fenics as f
 
 

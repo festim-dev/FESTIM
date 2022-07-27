@@ -1,5 +1,5 @@
 import fenics
-import FESTIM
+import festim
 from ufl.core.multiindex import Index
 from pathlib import Path
 import pytest
@@ -12,17 +12,17 @@ def test_formulation_heat_transfer_2_ids_per_mat():
     catching bug described in issue #305
     """
 
-    my_mesh = FESTIM.Mesh(fenics.UnitIntervalMesh(10))
+    my_mesh = festim.Mesh(fenics.UnitIntervalMesh(10))
     my_mesh.dx = fenics.dx
     my_mesh.ds = fenics.ds
     # Run function
 
-    mat1 = FESTIM.Material(id=[1, 2], D_0=1, E_D=0, thermal_cond=1)
-    mat2 = FESTIM.Material(id=3, D_0=0.25, E_D=0, thermal_cond=1)
-    my_mats = FESTIM.Materials([mat1, mat2])
-    my_temp = FESTIM.HeatTransferProblem(transient=False)
+    mat1 = festim.Material(id=[1, 2], D_0=1, E_D=0, thermal_cond=1)
+    mat2 = festim.Material(id=3, D_0=0.25, E_D=0, thermal_cond=1)
+    my_mats = festim.Materials([mat1, mat2])
+    my_temp = festim.HeatTransferProblem(transient=False)
 
-    my_temp.create_functions(my_mats, my_mesh, dt=FESTIM.Stepsize(initial_value=2))
+    my_temp.create_functions(my_mats, my_mesh, dt=festim.Stepsize(initial_value=2))
 
 
 def test_formulation_heat_transfer():
@@ -34,8 +34,8 @@ def test_formulation_heat_transfer():
         return a**2
 
     Index._globalcount = 8
-    u = 1 + 2 * FESTIM.x**2
-    dt = FESTIM.Stepsize(initial_value=2)
+    u = 1 + 2 * festim.x**2
+    dt = festim.Stepsize(initial_value=2)
     mesh = fenics.UnitIntervalMesh(10)
     V = fenics.FunctionSpace(mesh, "P", 1)
 
@@ -52,11 +52,11 @@ def test_formulation_heat_transfer():
     ds = fenics.Measure("ds", domain=mesh, subdomain_data=surface_markers)
     dx = fenics.Measure("dx", domain=mesh, subdomain_data=volume_markers)
 
-    my_mesh = FESTIM.Mesh(mesh, volume_markers, surface_markers)
+    my_mesh = festim.Mesh(mesh, volume_markers, surface_markers)
     my_mesh.dx = dx
     my_mesh.ds = ds
 
-    mat1 = FESTIM.Material(
+    mat1 = festim.Material(
         1,
         D_0=1,
         E_D=1,
@@ -65,13 +65,13 @@ def test_formulation_heat_transfer():
         heat_capacity=4,
         borders=[0, 1],
     )
-    my_mats = FESTIM.Materials([mat1])
-    bc1 = FESTIM.DirichletBC(surfaces=[1], value=u, field="T")
-    bc2 = FESTIM.FluxBC(surfaces=[2], value=2, field="T")
+    my_mats = festim.Materials([mat1])
+    bc1 = festim.DirichletBC(surfaces=[1], value=u, field="T")
+    bc2 = festim.FluxBC(surfaces=[2], value=2, field="T")
 
-    my_temp = FESTIM.HeatTransferProblem(transient=True, initial_value=0)
+    my_temp = festim.HeatTransferProblem(transient=True, initial_value=0)
     my_temp.boundary_conditions = [bc1, bc2]
-    my_temp.sources = [FESTIM.Source(-4, volume=[1], field="T")]
+    my_temp.sources = [festim.Source(-4, volume=[1], field="T")]
     my_temp.create_functions(my_mats, my_mesh, dt=dt)
 
     T = my_temp.T
@@ -109,10 +109,10 @@ def test_temperature_from_xdmf_create_functions(tmpdir):
     fenics.XDMFFile(str(Path(T_file))).write_checkpoint(
         T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
     )
-    # TempFromXDMF needs a FESTIM mesh
-    my_mesh = FESTIM.Mesh()
+    # TempFromXDMF needs a festim mesh
+    my_mesh = festim.Mesh()
     my_mesh.mesh = mesh
-    my_T = FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
+    my_T = festim.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
     my_T.create_functions(my_mesh)
     # evaluate error between original and read function
     error_L2 = fenics.errornorm(T, my_T.T, "L2")
@@ -136,18 +136,18 @@ def test_temperature_from_xdmf_label_checker(tmpdir):
     )
     # read file with wrong label specified
     with pytest.raises(ValueError):
-        FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="coucou")
+        festim.TemperatureFromXDMF(filename=str(Path(T_file)), label="coucou")
 
 
 def test_temperature_from_xdmf_transient_case(tmpdir):
     """Test that the TemperatureFromXdmf class works in a transient
     h transport case"""
     # create temperature field xdmf
-    my_model = FESTIM.Simulation(log_level=20)
-    my_model.mesh = FESTIM.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
-    my_model.materials = FESTIM.Materials([FESTIM.Material(1, 1, 1)])
-    my_model.T = FESTIM.Temperature(value=300)
-    my_model.settings = FESTIM.Settings(
+    my_model = festim.Simulation(log_level=20)
+    my_model.mesh = festim.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
+    my_model.materials = festim.Materials([festim.Material(1, 1, 1)])
+    my_model.T = festim.Temperature(value=300)
+    my_model.settings = festim.Settings(
         transient=False,
         absolute_tolerance=1e12,
         relative_tolerance=1e-08,
@@ -160,8 +160,8 @@ def test_temperature_from_xdmf_transient_case(tmpdir):
     )
 
     # run transient simulation with TemperatureFromXDMF class
-    my_model.T = FESTIM.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
-    my_model.dt = FESTIM.Stepsize(initial_value=1)
+    my_model.T = festim.TemperatureFromXDMF(filename=str(Path(T_file)), label="T")
+    my_model.dt = festim.Stepsize(initial_value=1)
     my_model.settings.transient = True
     my_model.settings.final_time = 10
     my_model.initialise()

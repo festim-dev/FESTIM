@@ -1,6 +1,6 @@
 # Unit tests meshing
-from FESTIM import Materials, Material
-from FESTIM import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, MeshFromXDMF
+from festim import Materials, Material
+from festim import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, MeshFromXDMF
 import fenics
 import pytest
 from pathlib import Path

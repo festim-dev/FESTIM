@@ -1,11 +1,11 @@
-import FESTIM
+import festim
 import pytest
 
 
 class TestAdapt:
     @pytest.fixture
     def my_stepsize(self):
-        return FESTIM.Stepsize(initial_value=1e-8, stepsize_change_ratio=2, dt_min=1)
+        return festim.Stepsize(initial_value=1e-8, stepsize_change_ratio=2, dt_min=1)
 
     def test_stepsize_reaches_minimal_size(self, my_stepsize):
         with pytest.raises(ValueError, match="stepsize reached minimal value"):

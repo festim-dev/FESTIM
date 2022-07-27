@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import pytest
 
 
@@ -9,7 +9,7 @@ def test_error_initialisation_from_xdmf_missing_time_step():
     """
 
     with pytest.raises(ValueError, match=r"time_step"):
-        FESTIM.InitialCondition(value="my_file.xdmf", label="my_label", time_step=None)
+        festim.InitialCondition(value="my_file.xdmf", label="my_label", time_step=None)
 
 
 def test_error_initialisation_from_xdmf_missing_label():
@@ -18,4 +18,4 @@ def test_error_initialisation_from_xdmf_missing_label():
     there's a missing key
     """
     with pytest.raises(ValueError, match=r"label"):
-        FESTIM.InitialCondition(value="my_file.xdmf", label=None, time_step=1)
+        festim.InitialCondition(value="my_file.xdmf", label=None, time_step=1)

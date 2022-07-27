@@ -1,4 +1,4 @@
-from FESTIM import MinimumSurface
+from festim import MinimumSurface
 import fenics as f
 import numpy as np
 
