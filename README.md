@@ -57,7 +57,7 @@ To install a specific version of FESTIM
 
 Run the tests:
 
-    pytest-3 Tests/
+    pytest-3 test/
 
 
 ## Visualisation
