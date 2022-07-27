@@ -1,10 +1,10 @@
 from fenics import *
-import FESTIM
+import festim
 
 
 class HTransportProblem:
     """Hydrogen Transport Problem.
-    Used internally in FESTIM.Simulation
+    Used internally in festim.Simulation
 
     Attributes:
         expressions (list): contains time-dependent fenics.Expressions
@@ -21,11 +21,11 @@ class HTransportProblem:
         """Inits HTransportProblem
 
         Args:
-            mobile (FESTIM.Mobile): the mobile concentration
-            traps (FESTIM.Traps): the traps
-            T (FESTIM.Temperature): the temperature
-            settings (FESTIM.Settings): the problem settings
-            initial_conditions (list of FESTIM.initial_conditions): the
+            mobile (festim.Mobile): the mobile concentration
+            traps (festim.Traps): the traps
+            T (festim.Temperature): the temperature
+            settings (festim.Settings): the problem settings
+            initial_conditions (list of festim.initial_conditions): the
                 initial conditions of the h transport problem
         """
         self.mobile = mobile
@@ -50,9 +50,9 @@ class HTransportProblem:
         concentration fields, define variational problem
 
         Args:
-            mesh (FESTIM.Mesh): the mesh
-            materials (FESTIM.Materials): the materials
-            dt (FESTIM.Stepsize, optional): the stepsize, only needed if
+            mesh (festim.Mesh): the mesh
+            materials (festim.Materials): the materials
+            dt (festim.Stepsize, optional): the stepsize, only needed if
                 self.settings.transient is True. Defaults to None.
         """
         if self.settings.chemical_pot:
@@ -84,7 +84,7 @@ class HTransportProblem:
         """Creates a suitable function space for H transport problem
 
         Args:
-            mesh (FESTIM.Mesh): the mesh
+            mesh (festim.Mesh): the mesh
         """
         order_trap = 1
         element_solute, order_solute = "CG", 1
@@ -110,7 +110,7 @@ class HTransportProblem:
         Then initialise self.u_n based on self.initial_conditions
 
         Args:
-            materials (FESTIM.Materials): the materials
+            materials (festim.Materials): the materials
         """
         # TODO rename u and u_n to c and c_n
         self.u = Function(self.V, name="c")  # Function for concentrations
@@ -179,9 +179,9 @@ class HTransportProblem:
         Dirichlet boundary conditions)
 
         Args:
-            materials (FESTIM.Materials): the materials
-            mesh (FESTIM.Mesh): the mesh
-            dt (FESTIM.Stepsize, optional): the stepsize, only needed if
+            materials (festim.Materials): the materials
+            mesh (festim.Mesh): the mesh
+            dt (festim.Stepsize, optional): the stepsize, only needed if
                 self.settings.transient is True. Defaults to None.
         """
         print("Defining variational problem")
@@ -210,7 +210,7 @@ class HTransportProblem:
         and its field is 0, and assign fluxes to self.mobile
         """
         for bc in self.boundary_conditions:
-            if isinstance(bc, FESTIM.FluxBC) and bc.field == 0:
+            if isinstance(bc, festim.FluxBC) and bc.field == 0:
                 self.mobile.boundary_conditions.append(bc)
 
     def create_dirichlet_bcs(self, materials, mesh):
@@ -219,7 +219,7 @@ class HTransportProblem:
         """
         self.bcs = []
         for bc in self.boundary_conditions:
-            if bc.field != "T" and isinstance(bc, FESTIM.DirichletBC):
+            if bc.field != "T" and isinstance(bc, festim.DirichletBC):
                 bc.create_dirichletbc(
                     self.V,
                     self.T.T,
@@ -241,10 +241,10 @@ class HTransportProblem:
 
         Args:
             t (float): the current time (s)
-            dt (FESTIM.Stepsize): the stepsize
+            dt (festim.Stepsize): the stepsize
         """
 
-        FESTIM.update_expressions(self.expressions, t)
+        festim.update_expressions(self.expressions, t)
 
         converged = False
         u_ = Function(self.u.function_space())
@@ -318,19 +318,19 @@ class HTransportProblem:
         be type fenics.Function for the post-processing.
 
         Args:
-            exports (FESTIM.Exports): the exports
+            exports (festim.Exports): the exports
 
         Returns:
             bool: True if the solute needs to be projected, False else.
         """
         need_solute = False  # initialises to false
         for export in exports.exports:
-            if isinstance(export, FESTIM.DerivedQuantities):
+            if isinstance(export, festim.DerivedQuantities):
                 for quantity in export.derived_quantities:
-                    if isinstance(quantity, FESTIM.SurfaceFlux):
+                    if isinstance(quantity, festim.SurfaceFlux):
                         if quantity.field in ["0", 0, "solute"]:
                             need_solute = True
-            elif isinstance(export, FESTIM.XDMFExport):
+            elif isinstance(export, festim.XDMFExport):
                 if export.field in ["0", 0, "solute"]:
                     need_solute = True
         return need_solute

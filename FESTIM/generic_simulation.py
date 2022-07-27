@@ -1,11 +1,11 @@
-import FESTIM
-from FESTIM.h_transport_problem import HTransportProblem
+import festim
+from festim.h_transport_problem import HTransportProblem
 from fenics import *
 
 
 class Simulation:
     """
-    Main FESTIM class representing a FESTIM model
+    Main festim class representing a festim model
 
     Attributes:
         log_level (int): set what kind of FEniCS messsages are
@@ -17,22 +17,22 @@ class Simulation:
             PROGRESS  = 16, what's happening (broadly)
             TRACE     = 13,  what's happening (in detail)
             DBG       = 10  sundry
-        settings (FESTIM.Settings): The model's settings.
-        dt (FESTIM.Stepsize): The model's stepsize.
-        traps (FESTIM.Traps): The model's traps.
-        materials (FESTIM.Materials): The model materials.
-        boundary_conditions (list of FESTIM.BoundaryCondition):
+        settings (festim.Settings): The model's settings.
+        dt (festim.Stepsize): The model's stepsize.
+        traps (festim.Traps): The model's traps.
+        materials (festim.Materials): The model materials.
+        boundary_conditions (list of festim.BoundaryCondition):
             The model's boundary conditions (temperature of H
             concentration).
-        initial_conditions (list of FESTIM.InitialCondition):
+        initial_conditions (list of festim.InitialCondition):
             The model's initial conditions (H or T).
-        T (FESTIM.Temperature): The model's temperature.
-        exports (FESTIM.Exports): The model's exports
+        T (festim.Temperature): The model's temperature.
+        exports (festim.Exports): The model's exports
             (derived quantities, XDMF exports, txt exports...).
-        mesh (FESTIM.Mesh): The mesh of the model.
-        sources (list of FESTIM.Source): Volumetric sources
+        mesh (festim.Mesh): The mesh of the model.
+        sources (list of festim.Source): Volumetric sources
             (particle or heat sources).
-        mobile (FESTIM.Mobile): the mobile concentration (c_m or theta)
+        mobile (festim.Mobile): the mobile concentration (c_m or theta)
         t (fenics.Constant): the current time of simulation
         timer (fenics.timer): the elapsed time of simulation
     """
@@ -51,30 +51,30 @@ class Simulation:
         exports=None,
         log_level=40,
     ):
-        """Inits FESTIM.Simulation
+        """Inits festim.Simulation
 
         Args:
-            mesh (FESTIM.Mesh, optional): The mesh of the model. Defaults to
+            mesh (festim.Mesh, optional): The mesh of the model. Defaults to
                 None.
-            materials (FESTIM.Materials or list or FESTIM.Material, optional):
+            materials (festim.Materials or list or festim.Material, optional):
                 The model materials. Defaults to None.
-            sources (list of FESTIM.Source, optional): Volumetric sources
+            sources (list of festim.Source, optional): Volumetric sources
                 (particle or heat sources). Defaults to [].
-            boundary_conditions (list of FESTIM.BoundaryCondition, optional):
+            boundary_conditions (list of festim.BoundaryCondition, optional):
                 The model's boundary conditions (temperature of H
                 concentration). Defaults to None.
-            traps (FESTIM.Traps or list or FESTIM.Trap, optional): The model's traps. Defaults
+            traps (festim.Traps or list or festim.Trap, optional): The model's traps. Defaults
                 to None.
-            dt (FESTIM.Stepsize, optional): The model's stepsize. Defaults to
+            dt (festim.Stepsize, optional): The model's stepsize. Defaults to
                 None.
-            settings (FESTIM.Settings, optional): The model's settings.
+            settings (festim.Settings, optional): The model's settings.
                 Defaults to None.
-            temperature (FESTIM.Temperature, optional): The model's
+            temperature (festim.Temperature, optional): The model's
                 temperature. Can be an expression or a heat transfer model.
                 Defaults to None.
-            initial_conditions (list of FESTIM.InitialCondition, optional):
+            initial_conditions (list of festim.InitialCondition, optional):
                 The model's initial conditions (H or T). Defaults to [].
-            exports (FESTIM.Exports or list or FESTIM.Export, optional): The model's exports
+            exports (festim.Exports or list or festim.Export, optional): The model's exports
                 (derived quantities, XDMF exports, txt exports...). Defaults
                 to None.
             log_level (int, optional): set what kind of FEniCS messsages are
@@ -114,16 +114,16 @@ class Simulation:
     @traps.setter
     def traps(self, value):
         if value is None:
-            self._traps = FESTIM.Traps([])
+            self._traps = festim.Traps([])
         elif isinstance(value, list):
-            self._traps = FESTIM.Traps(value)
-        elif isinstance(value, FESTIM.Traps):
+            self._traps = festim.Traps(value)
+        elif isinstance(value, festim.Traps):
             self._traps = value
-        elif isinstance(value, FESTIM.Trap):
-            self._traps = FESTIM.Traps([value])
+        elif isinstance(value, festim.Trap):
+            self._traps = festim.Traps([value])
         else:
             raise TypeError(
-                "Accepted types for traps are list, FESTIM.Traps or FESTIM.Trap"
+                "Accepted types for traps are list, festim.Traps or festim.Trap"
             )
 
     @property
@@ -133,16 +133,16 @@ class Simulation:
     @materials.setter
     def materials(self, value):
         if isinstance(value, list):
-            self._materials = FESTIM.Materials(value)
-        elif isinstance(value, FESTIM.Material):
-            self._materials = FESTIM.Materials([value])
-        elif isinstance(value, FESTIM.Materials):
+            self._materials = festim.Materials(value)
+        elif isinstance(value, festim.Material):
+            self._materials = festim.Materials([value])
+        elif isinstance(value, festim.Materials):
             self._materials = value
         elif value is None:
             self._materials = value
         else:
             raise TypeError(
-                "accepted types for materials are list, FESTIM.Material or FESTIM.Materials"
+                "accepted types for materials are list, festim.Material or festim.Materials"
             )
 
     @property
@@ -152,16 +152,16 @@ class Simulation:
     @exports.setter
     def exports(self, value):
         if value is None:
-            self._exports = FESTIM.Exports([])
+            self._exports = festim.Exports([])
         elif isinstance(value, list):
-            self._exports = FESTIM.Exports(value)
-        elif isinstance(value, FESTIM.Export):
-            self._exports = FESTIM.Exports([value])
-        elif isinstance(value, FESTIM.Exports):
+            self._exports = festim.Exports(value)
+        elif isinstance(value, festim.Export):
+            self._exports = festim.Exports([value])
+        elif isinstance(value, festim.Exports):
             self._exports = value
         else:
             raise TypeError(
-                "accepted types for exports are list, FESTIM.Export or FESTIM.Exports"
+                "accepted types for exports are list, festim.Export or festim.Exports"
             )
 
     def attribute_source_terms(self):
@@ -210,9 +210,9 @@ class Simulation:
         self.t = 0  # reinitialise t to zero
 
         if self.settings.chemical_pot:
-            self.mobile = FESTIM.Theta()
+            self.mobile = festim.Theta()
         else:
-            self.mobile = FESTIM.Mobile()
+            self.mobile = festim.Mobile()
         # check that dt attribute is None if the sim is steady state
         if not self.settings.transient and self.dt is not None:
             raise AttributeError("dt must be None in steady state simulations")
@@ -229,7 +229,7 @@ class Simulation:
         self.attribute_source_terms()
         self.attribute_boundary_conditions()
 
-        if isinstance(self.mesh, FESTIM.Mesh1D):
+        if isinstance(self.mesh, festim.Mesh1D):
             self.mesh.define_measures(self.materials)
         else:
             self.mesh.define_measures()
@@ -238,9 +238,9 @@ class Simulation:
         self.exports.V_DG1 = self.V_DG1
 
         # Define temperature
-        if isinstance(self.T, FESTIM.HeatTransferProblem):
+        if isinstance(self.T, festim.HeatTransferProblem):
             self.T.create_functions(self.materials, self.mesh, self.dt)
-        elif isinstance(self.T, FESTIM.Temperature):
+        elif isinstance(self.T, festim.Temperature):
             self.T.create_functions(self.mesh)
 
         # Create functions for properties

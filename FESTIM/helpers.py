@@ -1,4 +1,4 @@
-import FESTIM
+import festim
 import xml.etree.ElementTree as ET
 from fenics import Expression, UserExpression, Constant
 import sympy as sp
@@ -53,7 +53,7 @@ def kJmol_to_eV(energy):
     Returns:
         energy (float): Energy in eV
     """
-    energy_in_eV = FESTIM.k_B * energy * 1e3 / FESTIM.R
+    energy_in_eV = festim.k_B * energy * 1e3 / festim.R
 
     return energy_in_eV
 
