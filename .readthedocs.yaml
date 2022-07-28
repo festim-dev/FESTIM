@@ -7,7 +7,7 @@ version: 2
 
 # Set the version of Python and other tools you might need
 build:
-  os: quay.io/fenicsproject/stable:latest
+  os: ubuntu-20.04
   tools:
     python: "3.9"
     # You can also specify other tool versions:
@@ -23,7 +23,7 @@ sphinx:
 # formats:
 #    - pdf
 
-# Optionally declare the Python requirements required to build your docs
-# python:
-#    install:
-#    - requirements: docs/requirements.txt
+Optionally declare the Python requirements required to build your docs
+python:
+   install:
+   - requirements: docs/requirements.txt
