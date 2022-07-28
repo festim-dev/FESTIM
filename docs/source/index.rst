@@ -33,6 +33,9 @@ FESTIM was originally developped at the `Institute for Magnetic Fusion Research 
    getting_started
    examples
    api/festim
+   userguide/index
+   devguide/index
+   publications
 
 
 Indices and tables
