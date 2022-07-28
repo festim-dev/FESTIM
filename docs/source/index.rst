@@ -10,6 +10,9 @@ Welcome to FESTIM's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   getting_started
+   examples
+   api/festim
 
 
 Indices and tables
