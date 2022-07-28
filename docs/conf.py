@@ -21,7 +21,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
-    "m2r2"
+    # "m2r2"
     # "sphinx_autodoc_typehints"
 ]
 
