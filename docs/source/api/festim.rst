@@ -66,10 +66,10 @@ festim.stepsize module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+.. Module contents
+.. ---------------
 
-.. automodule:: festim
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. .. automodule:: festim
+..    :members:
+..    :undoc-members:
+..    :show-inheritance:
