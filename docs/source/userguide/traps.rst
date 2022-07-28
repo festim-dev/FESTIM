@@ -3,6 +3,7 @@ Traps
 =====
 
 WIP
+
 ------------
 Normal traps
 ------------
