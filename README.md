@@ -22,9 +22,9 @@ The following features are included:
 
 FESTIM spatially discretises the PDEs using the Finite Element Methods and heavily relies on [FEniCS](https://fenicsproject.org).
 
-## Examples
+:point_right: [Examples](https://github.com/RemDelaporteMathurin/FESTIM/tree/main/demos).
 
-Examples can be found [here](https://github.com/RemDelaporteMathurin/FESTIM/tree/main/demos).
+:point_right: [Documentation](https://festim.readthedocs.io/en/latest/)
 
 
 ## Installation
