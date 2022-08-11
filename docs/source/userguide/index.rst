@@ -6,7 +6,7 @@ User's Guide
    :numbered:
    :maxdepth: 1
 
-   begginers_guide
+   beginners_guide
    units
    materials
    boundary_conditions
