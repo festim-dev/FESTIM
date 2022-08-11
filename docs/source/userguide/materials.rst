@@ -23,16 +23,16 @@ Parameters description
 ----------------------
 
 The `Material` class has three required arguments:
-- `id`: a unique id given to the material/volume. It is useful when defining volumetric source terms or exports. Several ids can be given to the same material if multiple volumes have the same material.
-- `D_0`: the diffusivity pre-exponential factor expressed in m2/s
-- `E_D`: the diffusivity activation energy in eV
+* `id`: a unique id given to the material/volume. It is useful when defining volumetric source terms or exports. Several ids can be given to the same material if multiple volumes have the same material.
+* `D_0`: the diffusivity pre-exponential factor expressed in m2/s
+* `E_D`: the diffusivity activation energy in eV
 
 Some other parameters are optional and are only required for some types of simulations:
-- `S_0`: the solubility pre-exponential factor, its units depend on the solubility law (Sievert's or Henry)
-- `E_S`: the solubility activation energy in eV
-- `thermal_cond`: the thermal conductivity in W/m/K
-- `heat_capacity`: the heat capacity in J/kg/K
-- `rho`: the volumetric density in kg/m3
+* `S_0`: the solubility pre-exponential factor, its units depend on the solubility law (Sievert's or Henry)
+* `E_S`: the solubility activation energy in eV
+* `thermal_cond`: the thermal conductivity in W/m/K
+* `heat_capacity`: the heat capacity in J/kg/K
+* `rho`: the volumetric density in kg/m3
 
 
 --------------------
