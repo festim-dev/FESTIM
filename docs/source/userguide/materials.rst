@@ -7,6 +7,7 @@ Materials are key components of hydrogen transport simulations. They hold the pr
 To define a material, use the `Material` class:
 
 .. code-block:: python
+
     mat1 = Material(id=1, D_0=2, E_D=0.1)
     mat2 = Material(id=2, D_0=3, E_D=0.4)
 
@@ -14,6 +15,7 @@ To define a material, use the `Material` class:
 Materials are then assigned to the model:
 
 .. code-block:: python
+
     my_model = Simulation(materials=[mat1, mat2])
 
 ----------------------
