@@ -20,7 +20,7 @@ Imposing the solution
 .. admonition:: Note
    :class: tip
 
-    Here, we set `field` to `0` to specify this BC applies to the mobile hydrogen concentration. `1` would stand for the trap 1 concentration and `"T"` for temperature.
+    Here, we set :code:`field=0` to specify this BC applies to the mobile hydrogen concentration. :code:`1` would stand for the trap 1 concentration and :code:`"T"` for temperature.
 
 The `value` argument can be space and time dependent by making use of the FESTIM variables ``x``, ``y``, ``z`` and ``t``:
 
@@ -41,7 +41,7 @@ To use more complicated mathematical expressions, you can use the sympy package:
 
 - CustomDirichlet
 
-The value of the concentration field can be temperature-dependent (useful when dealing with heat-transfer solvers) with `CustomDirichlet`:
+The value of the concentration field can be temperature-dependent (useful when dealing with heat-transfer solvers) with :code:`CustomDirichlet`:
 
 .. code-block:: python
 
@@ -53,7 +53,7 @@ The value of the concentration field can be temperature-dependent (useful when d
 Imposing the flux
 ^^^^^^^^^^^^^^^^^
 
-When the flux needs to be imposed on a boundary, use the `FluxBC` class.
+When the flux needs to be imposed on a boundary, use the :code:`FluxBC` class.
 
 
 .. code-block:: python

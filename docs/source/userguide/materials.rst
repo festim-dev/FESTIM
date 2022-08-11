@@ -4,7 +4,7 @@ Materials
 
 Materials are key components of hydrogen transport simulations. They hold the properties like diffusivity, solubility and even thermal properties like thermal conductivity or heat capacity.
 
-To define a material, use the `Material` class:
+To define a material, use the :code:`Material` class:
 
 .. code-block:: python
 
@@ -22,19 +22,19 @@ Materials are then assigned to the model:
 Parameters description
 ----------------------
 
-The `Material` class has three required arguments:
+The :code:`Material` class has three required arguments:
 
-* `id`: a unique id given to the material/volume. It is useful when defining volumetric source terms or exports. Several ids can be given to the same material if multiple volumes have the same material.
-* `D_0`: the diffusivity pre-exponential factor expressed in m2/s
-* `E_D`: the diffusivity activation energy in eV
+* :code:`id`: a unique id given to the material/volume. It is useful when defining volumetric source terms or exports. Several ids can be given to the same material if multiple volumes have the same material.
+* :code:`D_0`: the diffusivity pre-exponential factor expressed in m2/s
+* :code:`E_D`: the diffusivity activation energy in eV
 
 Some other parameters are optional and are only required for some types of simulations:
 
-* `S_0`: the solubility pre-exponential factor, its units depend on the solubility law (Sievert's or Henry)
-* `E_S`: the solubility activation energy in eV
-* `thermal_cond`: the thermal conductivity in W/m/K
-* `heat_capacity`: the heat capacity in J/kg/K
-* `rho`: the volumetric density in kg/m3
+* :code:`S_0`: the solubility pre-exponential factor, its units depend on the solubility law (Sievert's or Henry)
+* :code:`E_S`: the solubility activation energy in eV
+* :code:`thermal_cond`: the thermal conductivity in W/m/K
+* :code:`heat_capacity`: the heat capacity in J/kg/K
+* :code:`rho`: the volumetric density in kg/m3
 
 
 --------------------
