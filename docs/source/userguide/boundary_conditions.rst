@@ -115,6 +115,14 @@ Similarily, the mobile concentration can be set from Henry's law of solubility :
 Plasma implantation approximation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+A plasma implantation can be approximated by:
+
+.. math::
+
+    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp}}{Kr}}
+
+Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient and :math:`Kr` is the recombination coefficient.
+
 .. admonition:: Note
    :class: tip
 
@@ -124,7 +132,11 @@ Plasma implantation approximation
 
     from festim import t
 
+    # instantaneous recombination
     my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1)
+
+    # non-instantaneous recombination
+    my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1, Kr_0=2, E_Kr=0.2)
 
 
 -----------------
@@ -132,7 +144,7 @@ Heat transfer BCs
 -----------------
 
 
-A convective heat flux can be set as:
+A convective heat flux can be set as :math:`\mathrm{flux} = - h (T - T_\mathrm{ext})`.
 
 .. code-block:: python
 
