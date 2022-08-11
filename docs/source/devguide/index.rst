@@ -16,6 +16,8 @@ Debugging
 Implementing a new feature
 --------------------------
 
+- good first issues
+
 ----------
 Test suite
 ----------
