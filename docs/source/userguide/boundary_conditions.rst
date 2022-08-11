@@ -80,7 +80,7 @@ Some BCs are specific to hydrogen transport. FESTIM provides a handful of conven
 Recombination flux
 ^^^^^^^^^^^^^^^^^^
 
-Recombination flux can be set on boundaries as: $$ Kr(T) c_m^n $$
+Recombination flux can be set on boundaries as: :math:`Kr(T) c_m^n`
 Where $$Kr$$ is the recombination coefficient, $c_m$ is the mobile hydrogen concentration and $n$ is the recombination order.
 
 .. code-block:: python
@@ -91,7 +91,7 @@ Where $$Kr$$ is the recombination coefficient, $c_m$ is the mobile hydrogen conc
 Sievert's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Impose the mobile concentration of hydrogen as $$ c_m = S(T) \sqrt{P} $$ where $$S$$ is the Sievert's solubility and $$P$$ is the partial pressure of hydrogen.
+Impose the mobile concentration of hydrogen as :math:`c_m = S(T) \\sqrt{P}` where :math:`S` is the Sievert's solubility and :math:`P` is the partial pressure of hydrogen.
 
 .. code-block:: python
 
@@ -103,7 +103,7 @@ Impose the mobile concentration of hydrogen as $$ c_m = S(T) \sqrt{P} $$ where $
 Henry's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Similarily, the mobile concentration can be set from Henry's law of solubility $$ c_m = K_H(T) P $$ where $$K_H$$ is the Henry solubility.
+Similarily, the mobile concentration can be set from Henry's law of solubility :math:`c_m = K_H(T) P` where :math:`K_H` is the Henry solubility.
 
 
 .. code-block:: python
