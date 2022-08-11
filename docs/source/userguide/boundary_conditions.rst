@@ -75,13 +75,67 @@ As for the Dirichlet boundary conditions, the flux can be dependent on temperatu
 Hydrogen transport BCs
 ---------------
 
-- RecombinationFlux
-- SievertsLaw
-- HenrysLaw
-- ImplantationDirichlet (refer to Theory section)
+Some BCs are specific to hydrogen transport. FESTIM provides a handful of convenience classes making things a bit easier for the users.
+
+Recombination flux
+^^^^^^^^^^^^^^^^^^
+
+Recombination flux can be set on boundaries as: $$ Kr(T) c_m^n $$
+Where $$Kr$$ is the recombination coefficient, $c_m$ is the mobile hydrogen concentration and $n$ is the recombination order.
+
+.. code-block:: python
+
+    my_bc = RecombinationFlux(surfaces=3, Kr_0=2, E_Kr=0.1, order=2)
+
+
+Sievert's law of solubility
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Impose the mobile concentration of hydrogen as $$ c_m = S(T) \sqrt{P} $$ where $$S$$ is the Sievert's solubility and $$P$$ is the partial pressure of hydrogen.
+
+.. code-block:: python
+
+    from festim import t
+
+    my_bc = SievertsBC(surfaces=3, S_0=2, E_S=0.1, pressure=2 + t)
+
+
+Henry's law of solubility
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Similarily, the mobile concentration can be set from Henry's law of solubility $$ c_m = K_H(T) P $$ where $$K_H$$ is the Henry solubility.
+
+
+.. code-block:: python
+
+    from festim import t
+
+    my_bc = HenrysBC(surfaces=3, H_0=2, E_H=0.1, pressure=2 + t)
+
+Plasma implantation approximation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. admonition:: Note
+   :class: tip
+
+    Refer to the :ref:`theory` section for more details.
+
+.. code-block:: python
+
+    from festim import t
+
+    my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1)
+
 
 -----------------
 Heat transfer BCs
 -----------------
 
-- ConvectiveFlux
+
+A convective heat flux can be set as:
+
+.. code-block:: python
+
+    from festim import t
+
+    my_bc = ConvectiveFlux(surfaces=3, h_coeff=0.1, T_ext=600 + 10*t)
