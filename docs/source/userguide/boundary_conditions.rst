@@ -71,9 +71,9 @@ As for the Dirichlet boundary conditions, the flux can be dependent on temperatu
     my_bc = CustomFlux(surfaces=3, function=value, field=0)
 
 
----------------
+----------------------
 Hydrogen transport BCs
----------------
+----------------------
 
 Some BCs are specific to hydrogen transport. FESTIM provides a handful of convenience classes making things a bit easier for the users.
 
