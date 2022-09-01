@@ -10,6 +10,7 @@ User's Guide
    units
    materials
    boundary_conditions
+   sources
    temperature
    mesh
    traps
