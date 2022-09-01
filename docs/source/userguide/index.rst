@@ -15,6 +15,6 @@ User's Guide
    mesh
    traps
    settings
-   transient_simulations
    export_post_processing
+   simulations
    troubleshooting
