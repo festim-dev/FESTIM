@@ -6,6 +6,12 @@ class Temperature:
     """
     Description of Temperature
 
+    Args:
+        value (sp.Add, int, float, optional): The value of the temperature.
+            Only needed if type is not "expression". Defaults to None.
+        initial_value (sp.Add, int, float, optional): The initial value.
+            Only needed if type is not "expression". Defaults to None.
+
     Attributes:
         T (fenics.Function): the function attributed with temperature
         T_n (fenics.Function): the previous function
@@ -15,14 +21,6 @@ class Temperature:
     """
 
     def __init__(self, value=None) -> None:
-        """Inits Temperature
-
-        Args:
-            value (sp.Add, int, float, optional): The value of the temperature.
-                Only needed if type is not "expression". Defaults to None.
-            initial_value (sp.Add, int, float, optional): The initial value.
-                Only needed if type is not "expression". Defaults to None.
-        """
         # self.type = type
         self.T = None
         self.T_n = None

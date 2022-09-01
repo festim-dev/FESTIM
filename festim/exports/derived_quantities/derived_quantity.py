@@ -2,12 +2,13 @@ from festim import Export
 
 
 class DerivedQuantity(Export):
-    def __init__(self, field) -> None:
-        """Inits DerivedQuantity
+    """
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+    """
 
-        Args:
-            field (str, int):  the field ("solute", 0, 1, "T", "retention")
-        """
+    def __init__(self, field) -> None:
+
         super().__init__(field=field)
         self.dx = None
         self.ds = None

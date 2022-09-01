@@ -4,18 +4,17 @@ import sympy as sp
 
 
 class ConvectiveFlux(FluxBC):
-    """FluxBC subclass for convective heat flux
+    """
+    FluxBC subclass for convective heat flux
     -lambda * grad(T) * n = h_coeff * (T - T_ext)
+
+    Args:
+        h_coeff (float or sp.Expr): heat exchange coefficient (W/m2/K)
+        T_ext (float or sp.Expr): fluid temperature (K)
+        surfaces (list or int): the surfaces of the BC
     """
 
     def __init__(self, h_coeff, T_ext, surfaces) -> None:
-        """Inits ConvectiveFlux
-
-        Args:
-            h_coeff (float or sp.Expr): heat exchange coefficient (W/m2/K)
-            T_ext (float or sp.Expr): fluid temperature (K)
-            surfaces (list or int): the surfaces of the BC
-        """
         self.h_coeff = h_coeff
         self.T_ext = T_ext
         super().__init__(surfaces=surfaces, field="T")

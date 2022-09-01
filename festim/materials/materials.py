@@ -8,13 +8,14 @@ from typing import Union
 
 
 class Materials:
-    def __init__(self, materials=[]):
-        """Inits Materials
+    """
+    Args:
+        materials (list, optional): contains festim.Material objects.
+            Defaults to [].
+    """
 
-        Args:
-            materials (list, optional): contains festim.Material objects.
-                Defaults to [].
-        """
+    def __init__(self, materials=[]):
+
         self.materials = materials
         self.D = None
         self.S = None

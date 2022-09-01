@@ -4,14 +4,15 @@ import numpy as np
 
 
 class MaximumSurface(DerivedQuantity):
-    def __init__(self, field, surface) -> None:
-        """Inits MaximumSurface
+    """
+    Args:
+        field (str): the field from which the maximum
+            is computed (ex: "solute", "retention", "T"...)
+        surface (int): the surface id where the maximum is computed
+    """
 
-        Args:
-            field (str): the field from which the maximum
-                is computed (ex: "solute", "retention", "T"...)
-            surface (int): the surface id where the maximum is computed
-        """
+    def __init__(self, field, surface) -> None:
+
         super().__init__(field)
         self.surface = surface
         self.title = "Maximum {} surface {}".format(self.field, self.surface)

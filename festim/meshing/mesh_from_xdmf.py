@@ -6,6 +6,10 @@ class MeshFromXDMF(Mesh):
     """
     Mesh read from XDMF files
 
+    Args:
+        volume_file (str): path to the volume file
+        boundary_file (str): path the boundary file
+
     Attributes:
         volume_file (str): name of the volume file
         boundary_file (str): name of the boundary file
@@ -13,12 +17,6 @@ class MeshFromXDMF(Mesh):
     """
 
     def __init__(self, volume_file, boundary_file, **kwargs) -> None:
-        """Inits MeshFromXDMF
-
-        Args:
-            volume_file (str): path to the volume file
-            boundary_file (str): path the boundary file
-        """
         super().__init__(**kwargs)
 
         self.volume_file = volume_file

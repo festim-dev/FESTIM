@@ -12,26 +12,27 @@ field_to_label = {
 
 
 class XDMFExport(Export):
+    """
+    Args:
+        field (str): the exported field ("solute", "1", "retention", "T"...)
+        label (str, optional): label of the field in the written file.
+            If None, an automatic label will be given. Defaults to None.
+        filename (str, optional): the file path, needs to end with '.xdmf'.
+            If None, the label will be used. Defaults to None.
+        mode (int, str, optional): if "last" only the last
+            timestep will be exported. Otherwise the number of
+            iterations between each export can be provided as an integer.
+            Defaults to 1.
+        checkpoint (bool, optional): If set to True,
+            fenics.XDMFFile.write_checkpoint will be use, else
+            fenics.XDMFFile.write. Defaults to True.
+        folder (str, optional): path of the export folder. Defaults to None.
+    """
+
     def __init__(
         self, field, label=None, filename=None, mode=1, checkpoint=True, folder=None
     ) -> None:
-        """Inits XDMFExport
 
-        Args:
-            field (str): the exported field ("solute", "1", "retention", "T"...)
-            label (str, optional): label of the field in the written file.
-                If None, an automatic label will be given. Defaults to None.
-            filename (str, optional): the file path, needs to end with '.xdmf'.
-                If None, the label will be used. Defaults to None.
-            mode (int, str, optional): if "last" only the last
-                timestep will be exported. Otherwise the number of
-                iterations between each export can be provided as an integer.
-                Defaults to 1.
-            checkpoint (bool, optional): If set to True,
-                fenics.XDMFFile.write_checkpoint will be use, else
-                fenics.XDMFFile.write. Defaults to True.
-            folder (str, optional): path of the export folder. Defaults to None.
-        """
         super().__init__(field=field)
         self.label = label
         self.folder = folder

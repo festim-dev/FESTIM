@@ -10,6 +10,19 @@ from typing import Union
 
 
 class DerivedQuantities:
+    """
+    Args:
+        derived_quantities (list, optional): list of F.DerivedQuantity
+            object. Defaults to None.
+        filename (str, optional): the filename (must end with .csv).
+            If None, the data will not be exported. Defaults to None.
+        nb_iterations_between_compute (int, optional): number of
+            iterations between each derived quantities computation.
+            Defaults to 1.
+        nb_iterations_between_exports (int, optional): number of
+            iterations between each export. Defaults to None.
+    """
+
     def __init__(
         self,
         derived_quantities: list = None,
@@ -17,19 +30,7 @@ class DerivedQuantities:
         nb_iterations_between_compute: int = 1,
         nb_iterations_between_exports: int = None,
     ) -> None:
-        """Inits DerivedQuantities
 
-        Args:
-            derived_quantities (list, optional): list of F.DerivedQuantity
-                object. Defaults to None.
-            filename (str, optional): the filename (must end with .csv).
-                If None, the data will not be exported. Defaults to None.
-            nb_iterations_between_compute (int, optional): number of
-                iterations between each derived quantities computation.
-                Defaults to 1.
-            nb_iterations_between_exports (int, optional): number of
-                iterations between each export. Defaults to None.
-        """
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports

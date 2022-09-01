@@ -5,27 +5,25 @@ import numpy as np
 
 
 class Trap(Concentration):
-    def __init__(self, k_0, E_k, p_0, E_p, materials, density, id=None):
-        """Inits Trap
+    """
+    Args:
+        k_0 (float, list): trapping pre-exponential factor (m3 s-1)
+        E_k (float, list): trapping activation energy (eV)
+        p_0 (float, list): detrapping pre-exponential factor (s-1)
+        E_p (float, list): detrapping activation energy (eV)
+        materials (list, str, festim.Material): the materials the
+            trap is living in. The material's name.
+        density (sp.Add, float, list, fenics.Expresion, fenics.UserExpression):
+            the trap density (m-3)
+        id (int, optional): The trap id. Defaults to None.
 
-        Args:
-            k_0 (float, list): trapping pre-exponential factor (m3 s-1)
-            E_k (float, list): trapping activation energy (eV)
-            p_0 (float, list): detrapping pre-exponential factor (s-1)
-            E_p (float, list): detrapping activation energy (eV)
-            materials (list, str, festim.Material): the materials
-                the trap is living in. The material's name.
-            density (sp.Add, float, list, fenics.Expresion,
-                fenics.UserExpression): the trap density (m-3)
-            id (int, optional): The trap id. Defaults to None.
+    Raises:
+        ValueError: if duplicates are found in materials
 
-        Raises:
-            ValueError: if duplicates are found in materials
-
-        Notes:
-            Should multiple traps in muliple materials be used, to save on
-            dof's, traps can be conglomerated and described in lists in the
-            format:
+    Notes:
+        Should multiple traps in muliple materials be used, to save on
+        dof's, traps can be conglomerated and described in lists in the
+        format::
 
             festim.Trap(
                 k_0=[1, 2],
@@ -35,10 +33,13 @@ class Trap(Concentration):
                 materials=[1, 2]
                 density=[1, 2])
 
-            This will act as a singular trap but with seperate properties for
-            respective materials. Parameters k_0, E_k, p_0, E_p, materials and
-            density MUST have the same length for this method to be valid.
-        """
+        This will act as a singular trap but with seperate properties for
+        respective materials. Parameters k_0, E_k, p_0, E_p, materials and
+        density MUST have the same length for this method to be valid.
+    """
+
+    def __init__(self, k_0, E_k, p_0, E_p, materials, density, id=None):
+
         super().__init__()
         self.id = id
         self.k_0 = k_0

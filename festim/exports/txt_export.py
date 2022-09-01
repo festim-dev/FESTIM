@@ -8,17 +8,19 @@ warnings.simplefilter("always", DeprecationWarning)
 
 
 class TXTExport(festim.Export):
-    def __init__(self, field, times, label, folder) -> None:
-        """Inits TXTExport
+    """
 
-        Args:
-            field (str): the exported field ("solute", "1", "retention",
-                "T"...)
-            times (list): times of export. The stepsize will be modified to
-                ensure these timesteps are hit.
-            label (str): label of the field. Will also be the filename.
-            folder (str): the export folder
-        """
+    Args:
+        field (str): the exported field ("solute", "1", "retention",
+            "T"...)
+        times (list): times of export. The stepsize will be modified to
+            ensure these timesteps are hit.
+        label (str): label of the field. Will also be the filename.
+        folder (str): the export folder
+    """
+
+    def __init__(self, field, times, label, folder) -> None:
+
         super().__init__(field=field)
         self.times = sorted(times)
         self.label = label

@@ -4,14 +4,15 @@ import numpy as np
 
 
 class MinimumSurface(DerivedQuantity):
-    def __init__(self, field, surface) -> None:
-        """Inits MinimumSurface
+    """
+    Args:
+        field (str): the field from which the minimum
+            is computed (ex: "solute", "retention", "T"...)
+        surface (int): the surface id where the minimum is computed
+    """
 
-        Args:
-            field (str): the field from which the minimum
-                is computed (ex: "solute", "retention", "T"...)
-            surface (int): the surface id where the minimum is computed
-        """
+    def __init__(self, field, surface) -> None:
+
         super().__init__(field)
         self.surface = surface
         self.title = "Minimum {} surface {}".format(self.field, self.surface)
