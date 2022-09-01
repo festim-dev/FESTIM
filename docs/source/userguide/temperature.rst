@@ -41,7 +41,7 @@ For example, a 1D, transient h-transport problem can use an analtical expression
 
 .. math::
 
-    100 + 2*x +3*t 
+    100 + 2 x +3 t 
 
 would be used in festim as:
 
