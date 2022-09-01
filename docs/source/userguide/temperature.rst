@@ -5,7 +5,7 @@ Temperature
 Definition of a temperature field or problem is essential for hydrogen transport 
 and FESTIM as a whole. 
 
----------------------------------------
+----------------------
 Analytical expressions
 ----------------------
 
