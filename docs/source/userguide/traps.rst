@@ -10,6 +10,7 @@ Basic traps
 
 
 A trap in FESTIM is defined by:
+
 * its trapping coefficient
 * its detrapping coefficient
 * its density
