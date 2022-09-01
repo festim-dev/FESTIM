@@ -21,6 +21,19 @@ class ExtrinsicTrapBase(Trap):
 
 
 class ExtrinsicTrap(ExtrinsicTrapBase):
+    """
+    For details in the forumation see
+    http://www.sciencedirect.com/science/article/pii/S2352179119300547
+
+    Args:
+        E_k (float, list): trapping pre-exponential factor (m3 s-1)
+        k_0 (float, list): trapping activation energy (eV)
+        p_0 (float, list): detrapping pre-exponential factor (s-1)
+        E_p (float, list): detrapping activation energy (eV)
+        materials (list, int): the materials ids the trap is living in
+        id (int, optional): The trap id. Defaults to None.
+    """
+
     def __init__(
         self,
         k_0,
@@ -37,18 +50,7 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
         f_b,
         id=None,
     ):
-        """Inits ExtrinsicTrap.
-        For details in the forumation see
-        http://www.sciencedirect.com/science/article/pii/S2352179119300547
 
-        Args:
-            E_k (float, list): trapping pre-exponential factor (m3 s-1)
-            k_0 (float, list): trapping activation energy (eV)
-            p_0 (float, list): detrapping pre-exponential factor (s-1)
-            E_p (float, list): detrapping activation energy (eV)
-            materials (list, int): the materials ids the trap is living in
-            id (int, optional): The trap id. Defaults to None.
-        """
         super().__init__(
             k_0,
             E_k,

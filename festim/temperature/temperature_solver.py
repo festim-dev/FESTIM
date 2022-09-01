@@ -4,7 +4,23 @@ import sympy as sp
 
 
 class HeatTransferProblem(festim.Temperature):
-    """[summary]
+    """
+    Args:
+        transient (bool, optional): If True, a transient simulation will
+            be run. Defaults to True.
+        initial_value (sp.Add, float, optional): The initial value.
+            Only needed if transient is True. Defaults to 0.
+        absolute_tolerance (float, optional): the absolute tolerance of the newton
+            solver. Defaults to 1e-03
+        relative_tolerance (float, optional): the relative tolerance of the newton
+            solver. Defaults to 1e-10
+        maximum_iterations (int, optional): maximum iterations allowed for
+            the solver to converge. Defaults to 30.
+        linear_solver (str, optional): linear solver method for the newton solver,
+            options can be viewed with print(list_linear_solver_methods()).
+            If None, the default fenics linear solver will be used ("umfpack").
+            More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
+            Defaults to None.
 
     Attributes:
         F (fenics.Form): the variational form of the heat transfer problem
@@ -26,26 +42,6 @@ class HeatTransferProblem(festim.Temperature):
         maximum_iterations=30,
         linear_solver=None,
     ) -> None:
-        """Inits HeatTransferProblem
-
-        Args:
-            transient (bool, optional): If True, a transient simulation will
-                be run. Defaults to True.
-            initial_value (sp.Add, float, optional): The initial value.
-                Only needed if transient is True. Defaults to 0.
-            absolute_tolerance (float, optional): the absolute tolerance of the newton
-                solver. Defaults to 1e-03
-            relative_tolerance (float, optional): the relative tolerance of the newton
-                solver. Defaults to 1e-10
-            maximum_iterations (int, optional): maximum iterations allowed for
-                the solver to converge. Defaults to 30.
-            linear_solver (str, optional): linear solver method for the newton solver,
-                options can be viewed with print(list_linear_solver_methods()).
-                If None, the default fenics linear solver will be used ("umfpack").
-                More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
-                Defaults to None.
-
-        """
         super().__init__()
         self.transient = transient
         self.initial_value = initial_value

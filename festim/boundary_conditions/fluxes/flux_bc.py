@@ -4,20 +4,19 @@ import fenics as f
 
 
 class FluxBC(BoundaryCondition):
-    """Boundary condition ensuring the gradient of the solution
+    """
+    Boundary condition ensuring the gradient of the solution
     so that:
     -D * grad(c) * n = f  or -lambda * grad(T) * n = f
     depending if applied to mobile concentration or temperature
+
+    Args:
+        surfaces (list or int): the surfaces of the BC
+        value (sp.Expr or float, optional): value of the flux. Defaults to
+            None.
     """
 
     def __init__(self, surfaces, value=None, **kwargs) -> None:
-        """Inits FluxBC
-
-        Args:
-            surfaces (list or int): the surfaces of the BC
-            value (sp.Expr or float, optional): value of the flux. Defaults to
-                None.
-        """
         super().__init__(surfaces=surfaces, **kwargs)
         self.value = value
 

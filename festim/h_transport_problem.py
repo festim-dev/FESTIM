@@ -6,6 +6,14 @@ class HTransportProblem:
     """Hydrogen Transport Problem.
     Used internally in festim.Simulation
 
+    Args:
+        mobile (festim.Mobile): the mobile concentration
+        traps (festim.Traps): the traps
+        T (festim.Temperature): the temperature
+        settings (festim.Settings): the problem settings
+        initial_conditions (list of festim.initial_conditions): the
+            initial conditions of the h transport problem
+
     Attributes:
         expressions (list): contains time-dependent fenics.Expressions
         J (ufl.Form): the jacobian of the variational problem
@@ -18,16 +26,6 @@ class HTransportProblem:
     """
 
     def __init__(self, mobile, traps, T, settings, initial_conditions) -> None:
-        """Inits HTransportProblem
-
-        Args:
-            mobile (festim.Mobile): the mobile concentration
-            traps (festim.Traps): the traps
-            T (festim.Temperature): the temperature
-            settings (festim.Settings): the problem settings
-            initial_conditions (list of festim.initial_conditions): the
-                initial conditions of the h transport problem
-        """
         self.mobile = mobile
         self.traps = traps
         self.T = T

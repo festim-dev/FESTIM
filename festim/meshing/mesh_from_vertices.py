@@ -7,17 +7,15 @@ class MeshFromVertices(Mesh1D):
     """
     Description of MeshFromVertices
 
+    Args:
+        vertices (list): the mesh vertices
+
     Attributes:
         vertices (list): the mesh vertices
         size (type): the size of the 1D mesh
     """
 
     def __init__(self, vertices, **kwargs) -> None:
-        """Inits MeshFromVertices
-
-        Args:
-            vertices (list): the mesh vertices
-        """
         super().__init__(**kwargs)
         self.vertices = vertices
         self.size = max(vertices)
