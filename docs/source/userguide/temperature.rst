@@ -9,11 +9,6 @@ and FESTIM as a whole.
 Analytical expressions
 ----------------------
 
-As an analytical expression the temperature can be defined as a constant value or as an expression:
-
-Constant value
-^^^^^^^^^^^^^^
-
 The temperature can be defined as a constant value in Kelvin (K):
 
 .. code-block:: python
@@ -21,10 +16,7 @@ The temperature can be defined as a constant value in Kelvin (K):
     my_temperature = Temperature(value=300)
 
 
-Complex expressions
-^^^^^^^^^^^^^^^^^^^
-
-Temperature can be defined as an expression of time and/or space.
+Temperature can also be defined as an expression of time and/or space.
 For example:
 
 .. math::
