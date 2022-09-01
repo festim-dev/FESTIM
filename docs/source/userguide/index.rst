@@ -16,4 +16,5 @@ User's Guide
    traps
    settings
    transient_simulations
+   export_post_processing
    troubleshooting
