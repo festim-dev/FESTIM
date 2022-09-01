@@ -4,21 +4,20 @@ import sympy as sp
 
 
 class RecombinationFlux(FluxBC):
-    """FluxBC subclass for hydrogen recombination flux.
+    """
+    FluxBC subclass for hydrogen recombination flux.
     -D(T) * grad(c) * n = -Kr(T) * c**order
+
+    Args:
+        Kr_0 (float or sp.Expr): recombination coefficient pre-exponential
+            factor (m^(6-order)/s)
+        E_Kr (float or sp.Expr): recombination coefficient activation
+            energy (eV)
+        order (float): order of the recombination (typically 1 or 2)
+        surfaces (list or int): the surfaces of the BC
     """
 
     def __init__(self, Kr_0, E_Kr, order, surfaces) -> None:
-        """Inits RecombinationFlux
-
-        Args:
-            Kr_0 (float or sp.Expr): recombination coefficient pre-exponential
-                factor (m^(6-order)/s)
-            E_Kr (float or sp.Expr): recombination coefficient activation
-                energy (eV)
-            order (float): order of the recombination (typically 1 or 2)
-            surfaces (list or int): the surfaces of the BC
-        """
         self.Kr_0 = Kr_0
         self.E_Kr = E_Kr
         self.order = order

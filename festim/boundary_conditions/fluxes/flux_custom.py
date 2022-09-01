@@ -4,26 +4,26 @@ import fenics as f
 
 
 class CustomFlux(FluxBC):
-    """FluxBC subclass allowing the use of a user-defined function.
-    Usage:
-    def fun(T, solute, param1):
-        return 2*T + solute - param1
-    my_bc = CustomFlux(
-        surfaces=[1, 2],
-        function=fun,
-        param1=2*festim.x + festim.t
-    )
+    """
+    FluxBC subclass allowing the use of a user-defined function.
+
+    Args:
+        surfaces (list or int): the surfaces of the BC
+        function (callable): the function.
+
+    Example::
+
+        def fun(T, solute, param1):
+            return 2*T + solute - param1
+
+        my_bc = CustomFlux(
+            surfaces=[1, 2],
+            function=fun,
+            param1=2*festim.x + festim.t
+        )
     """
 
     def __init__(self, surfaces, function, field, **prms) -> None:
-        """Inits CustomFlux
-
-        Args:
-            surfaces (list or int): the surfaces of the BC
-            function (callable): the function. Example:
-                def fun(T, solute, param1):
-                    return 2*T + solute - param1
-        """
         super().__init__(surfaces=surfaces, field=field)
         self.function = function
         self.prms = prms

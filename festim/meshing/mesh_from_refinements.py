@@ -3,7 +3,18 @@ from festim import Mesh1D
 
 
 class MeshFromRefinements(Mesh1D):
-    """1D mesh with iterative refinements (on the left hand side of the domain)
+    """
+    1D mesh with iterative refinements (on the left hand side of the domain)
+
+    Args:
+        initial_number_of_cells (float): initial number of cells before
+        refinement
+        size (float): total size of the 1D mesh
+        refinements (list, optional): list of dicts
+            {"x": ..., "cells": ...}. For each refinement, the mesh will
+            have at least ["cells"] in [0, "x"]. Defaults to [].
+        start (float, optional): the starting point of the mesh. Defaults to
+            0.
 
     Attributes:
         initial_number_of_cells (int): initial number of cells before
@@ -15,18 +26,6 @@ class MeshFromRefinements(Mesh1D):
     def __init__(
         self, initial_number_of_cells, size, refinements=[], start=0.0, **kwargs
     ) -> None:
-        """Inits MeshFromRefinements
-
-        Args:
-            initial_number_of_cells (float): initial number of cells before
-            refinement
-            size (float): total size of the 1D mesh
-            refinements (list, optional): list of dicts
-                {"x": ..., "cells": ...}. For each refinement, the mesh will
-                have at least ["cells"] in [0, "x"]. Defaults to [].
-            start (float, optional): the starting point of the mesh. Defaults to
-                0.
-        """
         super().__init__(**kwargs)
         self.initial_number_of_cells = initial_number_of_cells
         self.size = size
