@@ -7,20 +7,9 @@
 ![GitHub forks](https://img.shields.io/github/forks/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Forks&logoColor=white)
 
 FESTIM (Finite Elements Simulation of Tritium in Materials) is a tool for modeling hydrogen transport in materials. 
-FESTIM simulates the diffusion and trapping of hydrogen, coupled to heat transfer.
+It simulates the diffusion and trapping of hydrogen, coupled to heat transfer with [FEniCS](https://fenicsproject.org).
 
-
-The following features are included:
-- Mesh import from XDMF files
-- **Adaptive stepsize**
-- **Temperature** from solving transient/stationnary heat equation
-- Multiple intrinsic/extrinsic traps with **non-homogeneous density distribution**
-- Wide range of built-in boundary conditions (Sievert's law, recombination flux, user-defined expression...)
-- **Derived quantities** computation (surface fluxes, volume integrations, extrema over domains, mean values over domains...)
-- Soret effect
-- ...
-
-FESTIM spatially discretises the PDEs using the Finite Element Methods and heavily relies on [FEniCS](https://fenicsproject.org).
+:point_right: [Documentation](https://festim.readthedocs.io/)
 
 ## Examples
 
@@ -51,9 +40,6 @@ Run the tests:
 
 ## Visualisation
 FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
-<p align="center">
-  <img alt="performance" src="https://user-images.githubusercontent.com/40028739/69346147-9abb6980-0c72-11ea-80e7-9c0a76659268.png" width="40%"> <img alt="performance" src="https://user-images.githubusercontent.com/40028739/69346752-9d6a8e80-0c73-11ea-96c1-27b6104eb9ff.png" width="40%">
-</p>
 
 ## References
 - R. Delaporte-Mathurin, _et al._, _Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components using FESTIM_. Nuclear Materials and Energy 21: 100709. DOI: [10.1016/j.nme.2019.100709](https://doi.org/10.1016/j.nme.2019.100709).
