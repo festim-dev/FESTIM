@@ -13,7 +13,6 @@ It simulates the diffusion and trapping of hydrogen, coupled to heat transfer wi
 
 :point_right: [Examples](https://github.com/RemDelaporteMathurin/FESTIM/tree/main/demos)
 
-
 ## Installation
 
 FESTIM can be installed via pip
@@ -35,7 +34,6 @@ Run the tests:
 
     pytest-3 test/
 
-
 ## Visualisation
 FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
 
@@ -51,4 +49,3 @@ FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened
 - R. Delaporte-Mathurin, _et al._, _Fuel Retention in WEST and ITER Divertors Based on FESTIM Monoblock Simulations_. Nuclear Fusion 61, nᵒ 12: 126001. https://doi.org/10.1088/1741-4326/ac2bbd.
 
 - E. A. Hodille _et al._, _Modelling of Hydrogen Isotopes Trapping, Diffusion and Permeation in Divertor Monoblocks under ITER-like Conditions_. Nuclear Fusion, 2021. https://doi.org/10.1088/1741-4326/ac2abc.
-

@@ -29,7 +29,7 @@ Contributing to the code
 .. admonition:: Tip
    :class: tip
 
-   If you're a begginer, look for `issues tagged with "Good first issue" <https://github.com/RemDelaporteMathurin/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
+   If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/RemDelaporteMathurin/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
 
    These issues are usually fairly easy to tackle and therefore perfect for newcomers.
 
@@ -52,8 +52,8 @@ Test suite
 
 FESTIM uses continuous integration (CI) to ensure code quality and eliminate as much bugs as possible.
 
-In a nutshell, everytime a change is pushed to the repository (or to a PR), a suite of tests is automatically triggered.
-This is to make sure the changes don't break existing functionnalities.
+In a nutshell, every time a change is pushed to the repository (or to a PR), a suite of tests is automatically triggered.
+This is to make sure the changes don't break existing functionalities.
 It is also very useful to catch bugs that developers could have missed.
 Click `here <https://www.atlassian.com/continuous-delivery/continuous-integration>`_ for more information on CI.
 
