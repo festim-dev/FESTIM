@@ -27,6 +27,6 @@ Here you define:
 
 More advanced settings are also available:
 
-* the type of finite elements for traps (DG elements can be useful to acount for discontinuities)
+* the type of finite elements for traps (DG elements can be useful to account for discontinuities)
 * Wether to update the jacobian at each iteration or not
 * the linear solver

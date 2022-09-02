@@ -11,7 +11,7 @@ The tool is based on the finite element methods to solve the McNabb & Foster tra
 It is capable of solving 1D/2D/3D multimaterial simulations and provides support for a wide-range of boundary conditions, which makes it a very versatile tool that can be adapted to many use cases.
 Moreover, users can rapidly get started with FESTIM thanks to its python API.
 
-FESTIM was originally developped at the `Institute for Magnetic Fusion Research (IRFM) <https://irfm.cea.fr/en/index.php>`_ and the `Process and Materials Sciences Laboratory (LSPM) <https://www.lspm.cnrs.fr/en/home/>`_.
+FESTIM was originally developed at the `Institute for Magnetic Fusion Research (IRFM) <https://irfm.cea.fr/en/index.php>`_ and the `Process and Materials Sciences Laboratory (LSPM) <https://www.lspm.cnrs.fr/en/home/>`_.
 
 
 .. admonition:: Recommended publication for citing
