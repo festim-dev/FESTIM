@@ -9,17 +9,16 @@ def sieverts_law(T, S_0, E_S, pressure):
 
 
 class SievertsBC(DirichletBC):
-    """Subclass of DirichletBC for Sievert's law"""
+    """Subclass of DirichletBC for Sievert's law
+
+    Args:
+    surfaces (list or int): the surfaces of the BC
+    S_0 (float): Sievert's constant pre-exponential factor (m-3/Pa0.5)
+    E_S (float): Sievert's constant activation energy (eV)
+    pressure (float or sp.Expr): hydrogen partial pressure (Pa)
+    """
 
     def __init__(self, surfaces, S_0, E_S, pressure) -> None:
-        """Inits SievertsBC
-
-        Args:
-            surfaces (list or int): the surfaces of the BC
-            S_0 (float): Sievert's constant pre-exponential factor (m-3/Pa0.5)
-            E_S (float): Sievert's constant activation energy (eV)
-            pressure (float or sp.Expr): hydrogen partial pressure (Pa)
-        """
         super().__init__(surfaces, field=0)
         self.S_0 = S_0
         self.E_S = E_S

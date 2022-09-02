@@ -6,6 +6,12 @@ class Mesh:
     """
     Mesh class
 
+    Args:
+        mesh (fenics.Mesh, optional): the mesh. Defaults to None.
+        volume_markers (fenics.MeshFunction, optional): markers of the mesh cells. Defaults to None.
+        surface_markers (fenics.MeshFunction, optional): markers of the mesh facets. Defaults to None.
+        type (str, optional): "cartesian", "cylindrical" or "spherical". Defaults to "cartesian".
+
     Attributes:
         mesh (fenics.Mesh): the mesh
         volume_markers (fenics.MeshFunction): markers of the mesh cells
@@ -17,14 +23,7 @@ class Mesh:
     def __init__(
         self, mesh=None, volume_markers=None, surface_markers=None, type="cartesian"
     ) -> None:
-        """Inits Mesh
 
-        Args:
-            mesh (fenics.Mesh, optional): the mesh. Defaults to None.
-            volume_markers (fenics.MeshFunction, optional): markers of the mesh cells. Defaults to None.
-            surface_markers (fenics.MeshFunction, optional): markers of the mesh facets. Defaults to None.
-            type (str, optional): "cartesian", "cylindrical" or "spherical". Defaults to "cartesian".
-        """
         self.mesh = mesh
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers

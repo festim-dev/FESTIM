@@ -4,18 +4,17 @@ import sympy as sp
 
 
 class DirichletBC(BoundaryCondition):
-    """Class to enforce the solution on boundaries."""
+    """Class to enforce the solution on boundaries.
+
+    Args:
+        surfaces (list or int): the surfaces of the BC
+        value (float or sp.Expr, optional): the value of the boundary
+            condition. Defaults to None.
+        field (int, optional): the field the boundary condition is
+            applied to. Defaults to 0.
+    """
 
     def __init__(self, surfaces, value=None, field=0) -> None:
-        """Inits DirichletBC
-
-        Args:
-            surfaces (list or int): the surfaces of the BC
-            value (float or sp.Expr, optional): the value of the boundary
-                condition. Defaults to None.
-            field (int, optional): the field the boundary condition is
-                applied to. Defaults to 0.
-        """
         super().__init__(surfaces, field=field)
         self.value = value
         self.dirichlet_bc = []
@@ -97,19 +96,14 @@ class BoundaryConditionTheta(f.UserExpression):
     of chemical potential conservation
 
     Args:
-        UserExpression (fenics.UserExpression):
+        bci (fenics.Expression): value of BC
+        mesh (fenics.mesh): mesh
+        materials (festim.Materials): contains materials objects
+        vm (fenics.MeshFunction): volume markers
+        T (fenics.Function): Temperature
     """
 
     def __init__(self, bci, materials, vm, T, **kwargs):
-        """initialisation
-
-        Args:
-            bci (fenics.Expression): value of BC
-            mesh (fenics.mesh): mesh
-            materials (festim.Materials): contains materials objects
-            vm (fenics.MeshFunction): volume markers
-            T (fenics.Function): Temperature
-        """
         super().__init__(kwargs)
         self._bci = bci
         self._vm = vm
@@ -135,13 +129,14 @@ class BoundaryConditionTheta(f.UserExpression):
 
 
 class BoundaryConditionExpression(f.UserExpression):
-    def __init__(self, T, eval_function, **kwargs):
-        """ "[summary]"
+    """ "[summary]"
 
-        Args:
-            T (fenics.Function): the temperature
-            eval_function ([type]): [description]
-        """
+    Args:
+        T (fenics.Function): the temperature
+        eval_function ([type]): [description]
+    """
+
+    def __init__(self, T, eval_function, **kwargs):
 
         super().__init__()
 

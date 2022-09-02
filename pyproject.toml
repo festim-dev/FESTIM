@@ -8,4 +8,4 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "FESTIM/_version.py"
+write_to = "festim/_version.py"

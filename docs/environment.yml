@@ -1,0 +1,9 @@
+name: fenics
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - fenics
+  - pip>=20.1
+  - pip:
+    - sympy

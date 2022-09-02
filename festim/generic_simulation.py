@@ -7,6 +7,40 @@ class Simulation:
     """
     Main festim class representing a festim model
 
+    Args:
+        mesh (festim.Mesh, optional): The mesh of the model. Defaults to
+            None.
+        materials (festim.Materials or list or festim.Material, optional):
+            The model materials. Defaults to None.
+        sources (list of festim.Source, optional): Volumetric sources
+            (particle or heat sources). Defaults to [].
+        boundary_conditions (list of festim.BoundaryCondition, optional):
+            The model's boundary conditions (temperature of H
+            concentration). Defaults to None.
+        traps (festim.Traps or list or festim.Trap, optional): The model's traps. Defaults
+            to None.
+        dt (festim.Stepsize, optional): The model's stepsize. Defaults to
+            None.
+        settings (festim.Settings, optional): The model's settings.
+            Defaults to None.
+        temperature (festim.Temperature, optional): The model's
+            temperature. Can be an expression or a heat transfer model.
+            Defaults to None.
+        initial_conditions (list of festim.InitialCondition, optional):
+            The model's initial conditions (H or T). Defaults to [].
+        exports (festim.Exports or list or festim.Export, optional): The model's exports
+            (derived quantities, XDMF exports, txt exports...). Defaults
+            to None.
+        log_level (int, optional): set what kind of FEniCS messsages are
+            displayed. Defaults to 40.
+            CRITICAL  = 50, errors that may lead to data corruption
+            ERROR     = 40, errors
+            WARNING   = 30, warnings
+            INFO      = 20, information of general interest
+            PROGRESS  = 16, what's happening (broadly)
+            TRACE     = 13,  what's happening (in detail)
+            DBG       = 10  sundry
+
     Attributes:
         log_level (int): set what kind of FEniCS messsages are
             displayed.
@@ -51,42 +85,7 @@ class Simulation:
         exports=None,
         log_level=40,
     ):
-        """Inits festim.Simulation
 
-        Args:
-            mesh (festim.Mesh, optional): The mesh of the model. Defaults to
-                None.
-            materials (festim.Materials or list or festim.Material, optional):
-                The model materials. Defaults to None.
-            sources (list of festim.Source, optional): Volumetric sources
-                (particle or heat sources). Defaults to [].
-            boundary_conditions (list of festim.BoundaryCondition, optional):
-                The model's boundary conditions (temperature of H
-                concentration). Defaults to None.
-            traps (festim.Traps or list or festim.Trap, optional): The model's traps. Defaults
-                to None.
-            dt (festim.Stepsize, optional): The model's stepsize. Defaults to
-                None.
-            settings (festim.Settings, optional): The model's settings.
-                Defaults to None.
-            temperature (festim.Temperature, optional): The model's
-                temperature. Can be an expression or a heat transfer model.
-                Defaults to None.
-            initial_conditions (list of festim.InitialCondition, optional):
-                The model's initial conditions (H or T). Defaults to [].
-            exports (festim.Exports or list or festim.Export, optional): The model's exports
-                (derived quantities, XDMF exports, txt exports...). Defaults
-                to None.
-            log_level (int, optional): set what kind of FEniCS messsages are
-                displayed. Defaults to 40.
-                CRITICAL  = 50, errors that may lead to data corruption
-                ERROR     = 40, errors
-                WARNING   = 30, warnings
-                INFO      = 20, information of general interest
-                PROGRESS  = 16, what's happening (broadly)
-                TRACE     = 13,  what's happening (in detail)
-                DBG       = 10  sundry
-        """
         self.log_level = log_level
 
         self.settings = settings

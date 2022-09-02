@@ -4,26 +4,30 @@ import sympy as sp
 
 
 class CustomDirichlet(DirichletBC):
-    """Subclass of DirichletBC allowing the use of a user-defined function.
-    Usage:
-    def fun(T, solute, param1):
-        return 2*T + solute - param1
-    my_bc = CustomDirichlet(
-        surfaces=[1, 2],
-        function=fun,
-        param1=2*festim.x + festim.t
-    )
+    """
+    Subclass of DirichletBC allowing the use of a user-defined function.
+
+    Args:
+        surfaces (list or int): the surfaces of the BC
+        function (callable): the custom function
+        field (int, optional): the field the boundary condition is
+            applied to. Defaults to 0.
+
+    Example::
+
+        def fun(T, solute, param1):
+            return 2*T + solute - param1
+
+        my_bc = CustomDirichlet(
+            surfaces=[1, 2],
+            function=fun,
+            param1=2*festim.x + festim.t
+        )
+
     """
 
     def __init__(self, surfaces, function, field=0, **prms) -> None:
-        """Inits CustomDirichlet
 
-        Args:
-            surfaces (list or int): the surfaces of the BC
-            function (callable): the custom function
-            field (int, optional): the field the boundary condition is
-                applied to. Defaults to 0.
-        """
         super().__init__(surfaces, field=field)
         self.function = function
         self.prms = prms

@@ -5,6 +5,17 @@ class Stepsize:
     """
     Description of Stepsize
 
+    Args:
+        initial_value (float, optional): initial stepsize. Defaults to 0.0.
+        stepsize_change_ratio (float, optional): stepsize change ratio.
+            Defaults to None.
+        t_stop (float, optional): time at which the adaptive stepsize
+            stops. Defaults to None.
+        stepsize_stop_max (float, optional): Maximum stepsize after
+            t_stop. Defaults to None.
+        dt_min (float, optional): Minimum stepsize below which an error is
+            raised. Defaults to None.
+
     Attributes:
         adaptive_stepsize (dict): contains the parameters for adaptive stepsize
         value (fenics.Constant): value of dt
@@ -19,19 +30,7 @@ class Stepsize:
         stepsize_stop_max=None,
         dt_min=None,
     ) -> None:
-        """Inits Stepsize
 
-        Args:
-            initial_value (float, optional): initial stepsize. Defaults to 0.0.
-            stepsize_change_ratio (float, optional): stepsize change ratio.
-                Defaults to None.
-            t_stop (float, optional): time at which the adaptive stepsize
-                stops. Defaults to None.
-            stepsize_stop_max (float, optional): Maximum stepsize after
-                t_stop. Defaults to None.
-            dt_min (float, optional): Minimum stepsize below which an error is
-                raised. Defaults to None.
-        """
         self.adaptive_stepsize = None
         if stepsize_change_ratio is not None:
             self.adaptive_stepsize = {

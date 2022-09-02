@@ -6,17 +6,17 @@ import fenics as f
 class TemperatureFromXDMF(Temperature):
     """
     Temperature read from an XDMF file
+
+    Args:
+        filename (str): The temperature file. Must end in ".xdmf"
+        label (str): How the checkpoints have been labelled
+
     Attributes:
         filename (str): name of the temperature file
         label (str): How the checkpoints have been labelled
     """
 
     def __init__(self, filename, label) -> None:
-        """Inits Temperature
-        Args:
-            filename (str): The temperature file. Must end in ".xdmf"
-            label (str): How the checkpoints have been labelled
-        """
         super().__init__()
 
         self.filename = filename
