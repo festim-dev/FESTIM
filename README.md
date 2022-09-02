@@ -24,7 +24,7 @@ FESTIM spatially discretises the PDEs using the Finite Element Methods and heavi
 
 ## Examples
 
-Examples can be found [here](https://github.com/RemDelaporteMathurin/FESTIM/tree/ready_for_opensource/demos).
+Examples can be found [here](https://github.com/RemDelaporteMathurin/FESTIM/tree/main/demos).
 
 
 ## Installation
