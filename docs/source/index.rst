@@ -21,11 +21,9 @@ FESTIM was originally developped at the `Institute for Magnetic Fusion Research 
    "`Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components Using FESTIM.
    Nuclear Materials and Energy 21 (2019): 100709. <https://doi.org/10.1016/j.nme.2019.100709>`_",
 
-.. only:: html
-
-   --------
-   Contents
-   --------
+--------
+Contents
+--------
 
 .. toctree::
    :maxdepth: 1
