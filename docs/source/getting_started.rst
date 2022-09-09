@@ -10,7 +10,7 @@ Installing FEniCS
 
 FESTIM requires FEniCS to run.
 
-It can be installed using Docker::
+It can be installed using `Docker <https://www.docker.com/>`_::
 
     docker run -ti -v $(pwd):/home/fenics/shared quay.io/fenicsproject/stable:latest
 
