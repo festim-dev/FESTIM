@@ -5,6 +5,9 @@ class BoundaryCondition:
             surfaces = [surfaces]
         self.surfaces = surfaces
 
-        self.field = field
+        if field == "solute":
+            self.field = 0
+        else:
+            self.field = field
         self.expression = None
         self.sub_expressions = []
