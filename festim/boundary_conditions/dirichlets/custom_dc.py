@@ -28,7 +28,7 @@ class CustomDirichlet(DirichletBC):
 
     def __init__(self, surfaces, function, field=0, **prms) -> None:
 
-        super().__init__(surfaces, field=field)
+        super().__init__(surfaces, field=field, value=None)
         self.function = function
         self.prms = prms
         self.convert_prms()

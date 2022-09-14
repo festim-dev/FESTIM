@@ -52,7 +52,7 @@ def test_define_dirichlet_bcs_theta():
     mat2 = festim.Material(2, None, None, S_0=S_02, E_S=E_S2)
     my_mats = festim.Materials([mat1, mat2])
 
-    my_bc = festim.DirichletBC([1, 2], value=200 + festim.t)
+    my_bc = festim.DirichletBC([1, 2], value=200 + festim.t, field=0)
     my_bc.create_dirichletbc(
         V,
         my_temp.T,
@@ -506,3 +506,17 @@ def test_recomb_flux():
 
     my_BC = festim.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
     my_BC.create_form(T, c)
+
+
+def test_string_for_field_in_dirichletbc():
+    """Test catching issue #462"""
+    # build
+    mesh = fenics.UnitSquareMesh(4, 4)
+
+    surface_marker = fenics.MeshFunction("size_t", mesh, 1, 0)
+
+    V = fenics.VectorFunctionSpace(mesh, "P", 1, 2)
+    bc = festim.DirichletBC(surfaces=[0, 1], value=1, field="solute")
+
+    # test
+    bc.create_dirichletbc(V, fenics.Constant(1), surface_marker)

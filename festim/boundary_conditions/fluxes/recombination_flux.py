@@ -21,7 +21,7 @@ class RecombinationFlux(FluxBC):
         self.Kr_0 = Kr_0
         self.E_Kr = E_Kr
         self.order = order
-        super().__init__(surfaces=surfaces)
+        super().__init__(surfaces=surfaces, field=0)
 
     def create_form(self, T, solute):
         Kr_0_expr = f.Expression(sp.printing.ccode(self.Kr_0), t=0, degree=1)

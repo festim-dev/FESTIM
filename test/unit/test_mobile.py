@@ -222,7 +222,7 @@ def test_fluxes():
     my_mobile.test_function = f.TestFunction(V)
     my_mobile.boundary_conditions = [
         festim.RecombinationFlux(Kr_0=Kr_0, E_Kr=E_Kr, order=order, surfaces=1),
-        festim.FluxBC(value=2 * festim.x + festim.t, surfaces=[1, 2]),
+        festim.FluxBC(value=2 * festim.x + festim.t, surfaces=[1, 2], field=0),
     ]
     T = festim.Temperature(value=1000)
     T.create_functions(my_mesh)

@@ -19,7 +19,7 @@ class SievertsBC(DirichletBC):
     """
 
     def __init__(self, surfaces, S_0, E_S, pressure) -> None:
-        super().__init__(surfaces, field=0)
+        super().__init__(surfaces, field=0, value=None)
         self.S_0 = S_0
         self.E_S = E_S
         self.pressure = pressure

@@ -19,7 +19,7 @@ class HenrysBC(DirichletBC):
     """
 
     def __init__(self, surfaces, H_0, E_H, pressure) -> None:
-        super().__init__(surfaces, field=0)
+        super().__init__(surfaces, field=0, value=None)
         self.H_0 = H_0
         self.E_H = E_H
         self.pressure = pressure
