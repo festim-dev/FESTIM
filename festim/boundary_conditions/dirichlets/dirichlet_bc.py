@@ -10,8 +10,9 @@ class DirichletBC(BoundaryCondition):
         surfaces (list or int): the surfaces of the BC
         value (float or sp.Expr): the value of the boundary
             condition.
-        field (int): the field the boundary condition is
-            applied to.
+        field (int or str): the field the boundary condition is
+            applied to. 0 and "solute" stand for the mobile
+            concentration, "T" for temperature
     """
 
     def __init__(self, surfaces, value, field) -> None:
