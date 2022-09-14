@@ -34,6 +34,7 @@ Run the tests:
 
     pytest-3 test/
 
+
 ## Visualisation
 FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
 
