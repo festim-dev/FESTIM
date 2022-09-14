@@ -1,10 +1,5 @@
-import festim
-import fenics as f
-import sympy as sp
-
-
 class BoundaryCondition:
-    def __init__(self, surfaces, field=0) -> None:
+    def __init__(self, surfaces, field) -> None:
 
         if not isinstance(surfaces, list):
             surfaces = [surfaces]

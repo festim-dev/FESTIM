@@ -8,13 +8,13 @@ class DirichletBC(BoundaryCondition):
 
     Args:
         surfaces (list or int): the surfaces of the BC
-        value (float or sp.Expr, optional): the value of the boundary
-            condition. Defaults to None.
-        field (int, optional): the field the boundary condition is
-            applied to. Defaults to 0.
+        value (float or sp.Expr): the value of the boundary
+            condition.
+        field (int): the field the boundary condition is
+            applied to.
     """
 
-    def __init__(self, surfaces, value=None, field=0) -> None:
+    def __init__(self, surfaces, value, field) -> None:
         super().__init__(surfaces, field=field)
         self.value = value
         self.dirichlet_bc = []

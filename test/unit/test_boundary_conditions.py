@@ -52,7 +52,7 @@ def test_define_dirichlet_bcs_theta():
     mat2 = festim.Material(2, None, None, S_0=S_02, E_S=E_S2)
     my_mats = festim.Materials([mat1, mat2])
 
-    my_bc = festim.DirichletBC([1, 2], value=200 + festim.t)
+    my_bc = festim.DirichletBC([1, 2], value=200 + festim.t, field=0)
     my_bc.create_dirichletbc(
         V,
         my_temp.T,
