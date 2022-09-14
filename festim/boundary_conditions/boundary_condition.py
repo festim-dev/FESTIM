@@ -7,6 +7,7 @@ class BoundaryCondition:
             applied to. 0 and "solute" stand for the mobile
             concentration, "T" for temperature
     """
+
     def __init__(self, surfaces, field) -> None:
 
         if not isinstance(surfaces, list):

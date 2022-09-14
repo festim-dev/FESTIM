@@ -507,9 +507,9 @@ def test_recomb_flux():
     my_BC = festim.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
     my_BC.create_form(T, c)
 
+
 def test_string_for_field_in_dirichletbc():
-    """Test catching issue #462
-    """
+    """Test catching issue #462"""
     # build
     mesh = fenics.UnitSquareMesh(4, 4)
 
