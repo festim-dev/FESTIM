@@ -2,6 +2,7 @@ import sympy as sp
 import festim
 import fenics
 from pathlib import Path
+import pytest
 import numpy as np
 
 
@@ -127,3 +128,35 @@ def test_run_MMS_chemical_pot(tmpdir):
         )
         print(msg)
         assert error_max_u < tol_u
+
+
+def test_error_raised_when_henry_and_traps():
+    """Checks an error is raised when adding a trap with
+    chemical potential in a Henry material"""
+
+    my_sim = festim.Simulation()
+    my_sim.materials = festim.Material(
+        name="mat",
+        id=1,
+        D_0=1,
+        E_D=0,
+        S_0=2,
+        E_S=0.1,
+        solubility_law="henry",
+    )
+
+    my_sim.mesh = festim.MeshFromVertices([0, 1, 2, 3, 4])
+
+    my_sim.traps = festim.Trap(k_0=1, E_k=0, p_0=1, E_p=0, materials="mat", density=1)
+    my_sim.T = festim.Temperature(400)
+
+    my_sim.settings = festim.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=50,
+        chemical_pot=True,
+        transient=False,
+    )
+
+    with pytest.raises(NotImplementedError):
+        my_sim.initialise()
