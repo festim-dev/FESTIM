@@ -35,7 +35,7 @@ class ImplantationDirichlet(DirichletBC):
     """
 
     def __init__(self, surfaces, phi, R_p, D_0, E_D, Kr_0=None, E_Kr=None) -> None:
-        super().__init__(surfaces, field=0)
+        super().__init__(surfaces, field=0, value=None)
         self.phi = phi
         self.R_p = R_p
         self.D_0 = D_0

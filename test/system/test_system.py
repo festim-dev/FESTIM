@@ -827,7 +827,7 @@ def test_steady_state_with_2_materials():
     my_mesh = festim.Mesh(mesh=mesh, volume_markers=vm, surface_markers=sm)
 
     my_temp = festim.Temperature(30)
-    my_bc = festim.DirichletBC([1], value=0)
+    my_bc = festim.DirichletBC([1], value=0, field=0)
     my_source = festim.Source(1, [1, 2, 3], "solute")
 
     my_settings = festim.Settings(
@@ -873,7 +873,7 @@ def test_steady_state_traps_not_everywhere():
     my_trap = festim.Trap(1, 0, 1, 0, ["mat_1", "mat_3"], 1)
 
     my_temp = festim.Temperature(1)
-    my_bc = festim.DirichletBC([1], value=1)
+    my_bc = festim.DirichletBC([1], value=1, field=0)
 
     my_settings = festim.Settings(
         absolute_tolerance=1e-10,
@@ -1024,7 +1024,7 @@ def test_completion_tone():
     my_model.materials = festim.Materials([festim.Material(id=1, D_0=1, E_D=0)])
     my_model.T = festim.Temperature(100)
     my_model.boundary_conditions = [
-        festim.DirichletBC(surfaces=[1, 2], value=0),
+        festim.DirichletBC(surfaces=[1, 2], value=0, field=0),
     ]
     my_stepsize = festim.Stepsize(1, stepsize_change_ratio=1.1, dt_min=1e-8)
     my_model.dt = my_stepsize
