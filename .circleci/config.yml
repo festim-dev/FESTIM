@@ -10,21 +10,21 @@ jobs:
       - run:
           name: Run Unit tests
           command: |
-            python3 -m pytest test/unit/ --cov FESTIM --cov-report xml --cov-report term
+            python3 -m pytest test/unit/ --cov festim --cov-report xml --cov-report term
       - run:
           name: Run HTransportProblem tests
           command: |
-            python3 -m pytest test/h_transport_problem/ --cov FESTIM --cov-append --cov-report xml --cov-report term
+            python3 -m pytest test/h_transport_problem/ --cov festim --cov-append --cov-report xml --cov-report term
       - run:
           name: Run HeatTransferProblem tests
           command: |
-            python3 -m pytest test/heat_transfer_problem/ --cov FESTIM --cov-append --cov-report xml --cov-report term
+            python3 -m pytest test/heat_transfer_problem/ --cov festim --cov-append --cov-report xml --cov-report term
       - run:
           name: Run Simulation tests
           command: |
-            python3 -m pytest test/simulation/ --cov FESTIM --cov-append --cov-report xml --cov-report term
+            python3 -m pytest test/simulation/ --cov festim --cov-append --cov-report xml --cov-report term
       - run:
           name: Run System tests
           command: |
-            python3 -m pytest test/system/ --cov FESTIM --cov-append --cov-report xml --cov-report term
+            python3 -m pytest test/system/ --cov festim --cov-append --cov-report xml --cov-report term
             bash <(curl -s https://codecov.io/bash)
