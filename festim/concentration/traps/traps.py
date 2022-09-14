@@ -31,10 +31,10 @@ class Traps:
         for trap in self.traps:
             trap.make_materials(materials)
 
-    def create_forms(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
+    def create_forms(self, mobile, materials, T, dx, dt=None):
         self.F = 0
         for trap in self.traps:
-            trap.create_form(mobile, materials, T, dx, dt=dt, chemical_pot=chemical_pot)
+            trap.create_form(mobile, materials, T, dx, dt=dt)
             self.F += trap.F
             self.sub_expressions += trap.sub_expressions
 

@@ -195,9 +195,7 @@ class HTransportProblem:
         expressions += self.mobile.sub_expressions
 
         # Add traps
-        self.traps.create_forms(
-            self.mobile, materials, self.T, mesh.dx, dt, self.settings.chemical_pot
-        )
+        self.traps.create_forms(self.mobile, materials, self.T, mesh.dx, dt)
         F += self.traps.F
         expressions += self.traps.sub_expressions
         self.F = F
