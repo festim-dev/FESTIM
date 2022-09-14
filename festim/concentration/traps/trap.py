@@ -107,7 +107,7 @@ class Trap(Concentration):
                         )
                     )
 
-    def create_form(self, mobile, materials, T, dx, dt=None, chemical_pot=False):
+    def create_form(self, mobile, materials, T, dx, dt=None):
         """Creates the general form associated with the trap
         d ct/ dt = k c_m (n - c_t) - p c_t + S
 
@@ -118,17 +118,13 @@ class Trap(Concentration):
             dx (fenics.Measure): the dx measure of the sim
             dt (festim.Stepsize, optional): If None assuming steady state.
                 Defaults to None.
-            chemical_pot (bool, optional): If True, continuity of chemical
-                potential is assumed. Defaults to False.
         """
         self.F = 0
-        self.create_trapping_form(mobile, materials, T, dx, dt, chemical_pot)
+        self.create_trapping_form(mobile, materials, T, dx, dt)
         if self.sources is not None:
             self.create_source_form(dx)
 
-    def create_trapping_form(
-        self, mobile, materials, T, dx, dt=None, chemical_pot=False
-    ):
+    def create_trapping_form(self, mobile, materials, T, dx, dt=None):
         """d ct/ dt = k c_m (n - c_t) - p c_t
 
         Args:
@@ -138,8 +134,6 @@ class Trap(Concentration):
             dx (fenics.Measure): the dx measure of the sim
             dt (festim.Stepsize, optional): If None assuming steady state.
                 Defaults to None.
-            chemical_pot (bool, optional): If True, continuity of chemical
-                potential is assumed. Defaults to False.
         """
         solution = self.solution
         prev_solution = self.previous_solution

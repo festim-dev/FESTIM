@@ -166,9 +166,7 @@ class TestCreateTrappingForm:
         mobile.test_function = f.TestFunction(self.V)
 
         # run
-        my_trap.create_trapping_form(
-            mobile, my_mats, self.my_temp, self.dx, chemical_pot=True
-        )
+        my_trap.create_trapping_form(mobile, my_mats, self.my_temp, self.dx)
 
         # test
         v = my_trap.test_function
