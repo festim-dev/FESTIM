@@ -60,6 +60,7 @@ class TestCreateTrappingForm:
     my_mobile.test_function = f.TestFunction(V)
     my_temp = festim.Temperature(value=100)
     my_temp.T = f.interpolate(f.Constant(100), V)
+    my_temp.T_n = f.interpolate(f.Constant(100), V)
     dx = f.dx()
     dt = festim.Stepsize(initial_value=1)
 
@@ -159,18 +160,20 @@ class TestCreateTrappingForm:
         my_trap.test_function = f.TestFunction(self.V)
         my_mats = festim.Materials([self.mat1])
 
+        mobile = festim.Theta()
+        mobile.solution = f.Function(self.V, name="theta_m")
+        mobile.previous_solution = f.Function(self.V, name="theta_m_n")
+        mobile.test_function = f.TestFunction(self.V)
+
         # run
         my_trap.create_trapping_form(
-            self.my_mobile, my_mats, self.my_temp, self.dx, chemical_pot=True
+            mobile, my_mats, self.my_temp, self.dx, chemical_pot=True
         )
 
         # test
         v = my_trap.test_function
-        c_0 = (
-            self.my_mobile.solution
-            * self.mat1.S_0
-            * f.exp(-self.mat1.E_S / festim.k_B / self.my_temp.T)
-        )
+        S = self.mat1.S_0 * f.exp(-self.mat1.E_S / festim.k_B / self.my_temp.T)
+        c_0 = mobile.solution * S
         expected_form = (
             -my_trap.k_0
             * f.exp(-my_trap.E_k / festim.k_B / self.my_temp.T)

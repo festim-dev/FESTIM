@@ -1,4 +1,4 @@
-from festim import Concentration, k_B, Material
+from festim import Concentration, k_B, Material, Theta
 from fenics import *
 import sympy as sp
 import numpy as np
@@ -148,11 +148,6 @@ class Trap(Concentration):
         if not all(isinstance(mat, Material) for mat in self.materials):
             self.make_materials(materials)
 
-        T = T.T
-        c_0 = mobile.solution
-        if chemical_pot:
-            theta = c_0
-
         expressions_trap = []
         F_trapping = 0  # initialise the form
 
@@ -185,24 +180,24 @@ class Trap(Concentration):
             # expressions to be updated
             expressions_trap.append(density)
 
-            if chemical_pot:
-                # TODO this needs changing for Henry
-                # change of variable
-                S_0 = mat.S_0
-                E_S = mat.E_S
-                c_0 = theta * S_0 * exp(-E_S / k_B / T)
+            if isinstance(mobile, Theta) and mat.solubility_law == "henry":
+                raise NotImplementedError(
+                    "Henry law of solubility is not implemented with traps"
+                )
+
+            c_0, c_0_n = mobile.get_concentration_for_a_given_material(mat, T)
 
             # k(T)*c_m*(n - c_t) - p(T)*c_t
             F_trapping += (
                 -k_0
-                * exp(-E_k / k_B / T)
+                * exp(-E_k / k_B / T.T)
                 * c_0
                 * (density - solution)
                 * test_function
                 * dx(mat.id)
             )
             F_trapping += (
-                p_0 * exp(-E_p / k_B / T) * solution * test_function * dx(mat.id)
+                p_0 * exp(-E_p / k_B / T.T) * solution * test_function * dx(mat.id)
             )
 
         self.F_trapping = F_trapping
