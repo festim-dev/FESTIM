@@ -66,8 +66,8 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
         eta_b,
         f_a,
         f_b,
-        **kwargs,
         id=None,
+        **kwargs,
     ):
 
         super().__init__(
@@ -76,7 +76,6 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
             p_0,
             E_p,
             materials,
-            **kwargs,
             phi_0=phi_0,
             n_amax=n_amax,
             n_bmax=n_bmax,
@@ -85,6 +84,7 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
             f_a=f_a,
             f_b=f_b,
             id=id,
+            **kwargs,
         )
 
     def create_form_density(self, dx, dt, T):
