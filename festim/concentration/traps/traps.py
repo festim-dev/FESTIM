@@ -82,7 +82,6 @@ class Traps:
                 solver.parameters["newton_solver"]["maximum_iterations"] = trap.maximum_iterations
                 solver.parameters["newton_solver"]["linear_solver"] = trap.linear_solver
                 solver.solve()
-                # f.solve(trap.form_density == 0, trap.density[0], [])
 
     def update_extrinsic_traps_density(self):
         for trap in self.traps:
