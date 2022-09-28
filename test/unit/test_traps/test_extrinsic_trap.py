@@ -71,7 +71,7 @@ class TestExtrinsicTrap:
 
     def test_solver_parameters(self):
         """
-        A test to ensure the extrinsic trap solver parameters can be accessed 
+        A test to ensure the extrinsic trap solver parameters can be accessed
         """
         self.my_trap.absolute_tolerance = 1
         self.my_trap.relative_tolerance = 1
