@@ -68,3 +68,12 @@ class TestExtrinsicTrap:
         print(expected_form)
         print(self.my_trap.form_density)
         assert self.my_trap.form_density.equals(expected_form)
+
+    def test_solver_parameters(self):
+        """
+        A test to ensure the extrinsic trap solver parameters can be accessed 
+        """
+        self.my_trap.absolute_tolerance = 1
+        self.my_trap.relative_tolerance = 1
+        self.my_trap.maximum_iterations = 1
+        self.my_trap.linear_solver = "mumps"
