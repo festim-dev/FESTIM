@@ -9,12 +9,13 @@ class ExtrinsicTrapBase(Trap):
         p_0,
         E_p,
         materials,
-        id=None,
         absolute_tolerance=1e0,
         relative_tolerance=1e-10,
         maximum_iterations=30,
         linear_solver=None,
-        **kwargs):
+        id=None,
+        **kwargs
+        ):
         """Inits ExtrinsicTrap
 
         Args:
@@ -65,6 +66,10 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
         eta_b,
         f_a,
         f_b,
+        absolute_tolerance=1e0,
+        relative_tolerance=1e-10,
+        maximum_iterations=30,
+        linear_solver=None,
         id=None,
     ):
 
@@ -74,6 +79,10 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
             p_0,
             E_p,
             materials,
+            absolute_tolerance,
+            relative_tolerance,
+            maximum_iterations,
+            linear_solver,
             phi_0=phi_0,
             n_amax=n_amax,
             n_bmax=n_bmax,

@@ -28,13 +28,34 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
         id (int, optional): The trap id. Defaults to None.
     """
 
-    def __init__(self, k_0, E_k, p_0, E_p, materials, phi, K, n_max, A_0, E_A, id=None):
+    def __init__(
+        self,
+        k_0,
+        E_k,
+        p_0,
+        E_p,
+        materials,
+        phi,
+        K,
+        n_max,
+        A_0,
+        E_A,
+        absolute_tolerance=1e0,
+        relative_tolerance=1e-10,
+        maximum_iterations=30,
+        linear_solver=None,
+        id=None,
+        ):
         super().__init__(
             k_0,
             E_k,
             p_0,
             E_p,
             materials,
+            absolute_tolerance,
+            relative_tolerance,
+            maximum_iterations,
+            linear_solver,
             phi=phi,
             K=K,
             n_max=n_max,
