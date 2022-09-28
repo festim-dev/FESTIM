@@ -40,11 +40,8 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
         n_max,
         A_0,
         E_A,
-        absolute_tolerance=1e0,
-        relative_tolerance=1e-10,
-        maximum_iterations=30,
-        linear_solver=None,
         id=None,
+        **kwargs
         ):
         super().__init__(
             k_0,
