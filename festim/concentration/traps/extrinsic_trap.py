@@ -66,10 +66,7 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
         eta_b,
         f_a,
         f_b,
-        absolute_tolerance=1e0,
-        relative_tolerance=1e-10,
-        maximum_iterations=30,
-        linear_solver=None,
+        **kwargs,
         id=None,
     ):
 
