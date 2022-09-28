@@ -2,7 +2,19 @@ from festim import Trap, as_constant_or_expression
 
 
 class ExtrinsicTrapBase(Trap):
-    def __init__(self, k_0, E_k, p_0, E_p, materials, id=None, **kwargs):
+    def __init__(
+        self,
+        k_0,
+        E_k,
+        p_0,
+        E_p,
+        materials,
+        id=None,
+        absolute_tolerance=1e0,
+        relative_tolerance=1e-10,
+        maximum_iterations=30,
+        linear_solver=None,
+        **kwargs):
         """Inits ExtrinsicTrap
 
         Args:
@@ -14,6 +26,11 @@ class ExtrinsicTrapBase(Trap):
             id (int, optional): The trap id. Defaults to None.
         """
         super().__init__(k_0, E_k, p_0, E_p, materials, density=None, id=id)
+        self.absolute_tolerance = absolute_tolerance
+        self.relative_tolerance = relative_tolerance
+        self.maximum_iterations = maximum_iterations
+        self.linear_solver = linear_solver
+        
         for name, val in kwargs.items():
             setattr(self, name, as_constant_or_expression(val))
         self.density_previous_solution = None
