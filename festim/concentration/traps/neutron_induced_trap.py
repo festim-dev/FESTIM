@@ -41,7 +41,7 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
         A_0,
         E_A,
         id=None,
-        **kwargs
+        **kwargs,
         ):
         super().__init__(
             k_0,
