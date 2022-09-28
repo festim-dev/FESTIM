@@ -9,11 +9,11 @@ class ExtrinsicTrapBase(Trap):
         p_0,
         E_p,
         materials,
+        id=None,
         absolute_tolerance=1e0,
         relative_tolerance=1e-10,
         maximum_iterations=30,
         linear_solver=None,
-        id=None,
         **kwargs
         ):
         """Inits ExtrinsicTrap
@@ -25,6 +25,17 @@ class ExtrinsicTrapBase(Trap):
             E_p (float, list): detrapping activation energy (eV)
             materials (list, int): the materials ids the trap is living in
             id (int, optional): The trap id. Defaults to None.
+            absolute_tolerance (float, optional): the absolute tolerance of the newton
+                solver. Defaults to 1e-0
+            relative_tolerance (float, optional): the relative tolerance of the newton
+                solver. Defaults to 1e-10
+            maximum_iterations (int, optional): maximum iterations allowed for
+                the solver to converge. Defaults to 30.
+            linear_solver (str, optional): linear solver method for the newton solver,
+                options can be viewed with print(list_linear_solver_methods()).
+                If None, the default fenics linear solver will be used ("umfpack").
+                More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
+                Defaults to None.
         """
         super().__init__(k_0, E_k, p_0, E_p, materials, density=None, id=id)
         self.absolute_tolerance = absolute_tolerance
