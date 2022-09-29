@@ -14,8 +14,8 @@ class ExtrinsicTrapBase(Trap):
         relative_tolerance=1e-10,
         maximum_iterations=30,
         linear_solver=None,
-        **kwargs
-        ):
+        **kwargs,
+    ):
         """Inits ExtrinsicTrap
 
         Args:
@@ -42,7 +42,7 @@ class ExtrinsicTrapBase(Trap):
         self.relative_tolerance = relative_tolerance
         self.maximum_iterations = maximum_iterations
         self.linear_solver = linear_solver
-        
+
         for name, val in kwargs.items():
             setattr(self, name, as_constant_or_expression(val))
         self.density_previous_solution = None
