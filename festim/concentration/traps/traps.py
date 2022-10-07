@@ -72,7 +72,23 @@ class Traps:
     def solve_extrinsic_traps(self):
         for trap in self.traps:
             if isinstance(trap, festim.ExtrinsicTrapBase):
-                f.solve(trap.form_density == 0, trap.density[0], [])
+                du_t = f.TrialFunction(trap.density[0].function_space())
+                J_t = f.derivative(trap.form_density, trap.density[0], du_t)
+                problem = f.NonlinearVariationalProblem(
+                    trap.form_density, trap.density[0], [], J_t
+                )
+                solver = f.NonlinearVariationalSolver(problem)
+                solver.parameters["newton_solver"][
+                    "absolute_tolerance"
+                ] = trap.absolute_tolerance
+                solver.parameters["newton_solver"][
+                    "relative_tolerance"
+                ] = trap.relative_tolerance
+                solver.parameters["newton_solver"][
+                    "maximum_iterations"
+                ] = trap.maximum_iterations
+                solver.parameters["newton_solver"]["linear_solver"] = trap.linear_solver
+                solver.solve()
 
     def update_extrinsic_traps_density(self):
         for trap in self.traps:

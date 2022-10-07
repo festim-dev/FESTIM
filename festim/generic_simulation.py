@@ -343,7 +343,7 @@ class Simulation:
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(simulation_time)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-        if self.t != self.settings.final_time:
+        if self.t != self.settings.final_time and self.log_level == 40:
             print(msg, end="\r")
         else:
             print(msg)
