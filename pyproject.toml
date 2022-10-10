@@ -1,7 +1,4 @@
 
-
-
-
 [build-system]
 requires = ["setuptools >= 65.4.0", "setuptools_scm[toml]>=7.0.5"]
 build-backend = "setuptools.build_meta"
@@ -14,7 +11,7 @@ authors = [
 license = {file = "LICENSE"}
 description = "Finite element simulations of hydrogen transport"
 readme = "README.md"
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 classifiers = [
     "Natural Language :: English",
     "Topic :: Scientific/Engineering",
