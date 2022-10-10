@@ -1,10 +1,43 @@
+
 [build-system]
-requires = [
-    "setuptools >= 45",
-    "wheel",
-    "setuptools_scm[toml] >= 7.0.5"
-]
+requires = ["setuptools >= 65.4.0", "setuptools_scm[toml]>=7.0.5"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "festim"
+authors = [
+  { name="Remi Delaporte-Mathurin", email="rdelaportemathurin@gmail.com" },
+]
+license = {file = "LICENSE"}
+description = "Finite element simulations of hydrogen transport"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent"
+]
+dynamic = ["version"]
+
+
 [tool.setuptools_scm]
-write_to = "festim/_version.py"
+write_to = "src/_version.py"
+
+
+[project.optional-dependencies]
+tests = [
+    "pytest>=5.4.3"
+]
+
+[project.urls]
+"Homepage" = "hhttps://github.com/RemDelaporteMathurin/FESTIM"
+"Bug Tracker" = "hhttps://github.com/RemDelaporteMathurin/FESTIM/issues"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
