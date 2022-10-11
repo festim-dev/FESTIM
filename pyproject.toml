@@ -32,7 +32,8 @@ write_to = "src/_version.py"
 
 [project.optional-dependencies]
 tests = [
-    "pytest>=5.4.3"
+    "pytest>=5.4.3",
+    "pytest-cov"
 ]
 
 [project.urls]

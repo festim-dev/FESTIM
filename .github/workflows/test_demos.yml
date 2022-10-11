@@ -26,6 +26,7 @@ jobs:
       # Runs a single command using the runners shell
       - name: Run the notebooks
         run: |
+          pip install .
           jupyter-nbconvert --to python demos/demo_multi_materials.ipynb
           mkdir outputs
           python3 -m demos.demo_multi_materials
