@@ -2,12 +2,13 @@ version: 2
 jobs:
   build:
     docker:
-      - image: quay.io/fenicsproject/stable:latest
+      - image: continuumio/miniconda3:4.12.0
     steps:
       - checkout
       # Run tests and upload to codecov
       - run: pip install --upgrade pip
       - run: pip3 install .[tests]
+      - run: conda install -c conda-forge fenics
       - run:
           name: Run Unit tests
           command: |
