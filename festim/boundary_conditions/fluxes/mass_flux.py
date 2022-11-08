@@ -20,8 +20,8 @@ class MassFlux(FluxBC):
         super().__init__(surfaces=surfaces, field=0) 
 
     def create_form(self, T, solute): 
-        h_coeff = fenics.Expression(sp.printing.ccode(self.h_coeff), t=0, degree=1)
-        c_ext = fenics.Expression(sp.printing.ccode(self.c_ext), t=0, degree=1)
+        h_coeff = f.Expression(sp.printing.ccode(self.h_coeff), t=0, degree=1)
+        c_ext = f.Expression(sp.printing.ccode(self.c_ext), t=0, degree=1)
 
         self.form = -h_coeff * (solute - c_ext)
         self.sub_expressions = [h_coeff, c_ext]
