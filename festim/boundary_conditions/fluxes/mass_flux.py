@@ -12,6 +12,9 @@ class MassFlux(FluxBC):
         h_mass (float or sp.Expr): mass transfer coefficient (m/s)
         c_ext (float or sp.Expr): external concentration (1/m3)
         surfaces (list or int): the surfaces of the BC
+
+    Reference: Bergman, T. L., Bergman, T. L., Incropera, F. P., Dewitt, D. P., 
+    & Lavine, A. S. (2011). Fundamentals of heat and mass transfer. John Wiley & Sons.
     """
 
     def __init__(self, h_coeff, c_ext, surfaces) -> None:
