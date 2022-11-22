@@ -507,6 +507,13 @@ def test_recomb_flux():
     my_BC = festim.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
     my_BC.create_form(T, c)
 
+def test_mass_flux():
+    expr = 2 + festim.x
+    T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
+    c = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
+
+    my_BC = festim.MassFlux(surfaces=0, h_coeff=expr, c_ext=expr)
+    my_BC.create_form(T,c)
 
 def test_string_for_field_in_dirichletbc():
     """Test catching issue #462"""
