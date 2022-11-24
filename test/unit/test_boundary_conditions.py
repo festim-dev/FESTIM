@@ -513,7 +513,8 @@ def test_mass_flux():
     c = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
 
     my_BC = festim.MassFlux(surfaces=0, h_coeff=expr, c_ext=expr)
-    my_BC.create_form(T,c)
+    my_BC.create_form(T, c)
+
 
 def test_string_for_field_in_dirichletbc():
     """Test catching issue #462"""
