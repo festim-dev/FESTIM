@@ -507,6 +507,7 @@ def test_recomb_flux():
     my_BC = festim.RecombinationFlux(surfaces=[0], Kr_0=expr, E_Kr=expr, order=2)
     my_BC.create_form(T, c)
 
+
 def test_mass_flux():
     expr = 2 + festim.x
     T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
