@@ -124,3 +124,38 @@ class TestNeutronInducedTrapVaryingTime:
         print(expected_form)
         print(self.my_trap.form_density)
         assert self.my_trap.form_density.equals(expected_form)
+
+
+class TestNeutronInducedTrapSolverParameters:
+    """
+    Test for NeutronInducedTrap class, with defined ExtrinsicTrapBase
+    solver parameters
+    """
+
+    my_trap = festim.NeutronInducedTrap(
+        1,
+        1,
+        1,
+        1,
+        "mat_name",
+        phi=1,
+        K=2,
+        n_max=3,
+        A_0=4,
+        E_A=5,
+        absolute_tolerance=2.5,
+        relative_tolerance=1.2e-10,
+        maximum_iterations=13,
+        linear_solver="mumps",
+    )
+
+    def test(self):
+        """
+        Tests how the solver paramters are assigned and ensures that
+        the default values have been updated
+        """
+
+        assert self.my_trap.absolute_tolerance == 2.5
+        assert self.my_trap.relative_tolerance == 1.2e-10
+        assert self.my_trap.maximum_iterations == 13
+        assert self.my_trap.linear_solver == "mumps"
