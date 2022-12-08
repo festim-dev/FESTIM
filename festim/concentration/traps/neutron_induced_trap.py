@@ -55,6 +55,7 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
             A_0=A_0,
             E_A=E_A,
             id=id,
+            **kwargs,
         )
 
     def create_form_density(self, dx, dt, T):
