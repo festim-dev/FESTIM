@@ -149,7 +149,7 @@ class TestNeutronInducedTrapSolverParameters:
         linear_solver="mumps",
     )
 
-    def test(self):
+    def test_attributes_from_instanciation(self):
         """
         Tests how the solver paramters are assigned and ensures that
         the default values have been updated
