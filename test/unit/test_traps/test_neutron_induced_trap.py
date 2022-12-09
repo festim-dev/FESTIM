@@ -162,8 +162,7 @@ class TestNeutronInducedTrapSolverParameters:
 
     def test_attributes_change_since_instanciation(self):
         """
-        Test to ensure values can be updated from an original
-        instantation
+        Test to ensure values can be updated after instanciation
         """
 
         expected_tolerance= 3.6
