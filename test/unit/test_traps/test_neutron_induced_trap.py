@@ -169,4 +169,4 @@ class TestNeutronInducedTrapSolverParameters:
         expected_tolerance= 3.6
         self.my_trap.absolute_tolerance = 3.6
 
-        assert self.my_trap.absolute_tolerance == expected_form
+        assert self.my_trap.absolute_tolerance == expected_tolerance
