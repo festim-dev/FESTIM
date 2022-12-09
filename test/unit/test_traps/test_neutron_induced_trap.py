@@ -151,7 +151,7 @@ class TestNeutronInducedTrapSolverParameters:
 
     def test_attributes_from_instanciation(self):
         """
-        Tests how the solver paramters are assigned and ensures that
+        Tests the solver paramters are assigned and ensures that
         the default values have been updated
         """
 
@@ -159,3 +159,14 @@ class TestNeutronInducedTrapSolverParameters:
         assert self.my_trap.relative_tolerance == 1.2e-10
         assert self.my_trap.maximum_iterations == 13
         assert self.my_trap.linear_solver == "mumps"
+
+    def test_attributes_change_since_instanciation(self):
+        """
+        Test to ensure values can be updated from an original
+        instantation
+        """
+
+        expected_form = 3.6
+        self.my_trap.absolute_tolerance = 3.6
+
+        assert self.my_trap.absolute_tolerance == expected_form
