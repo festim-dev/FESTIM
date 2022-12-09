@@ -165,7 +165,7 @@ class TestNeutronInducedTrapSolverParameters:
         Test to ensure values can be updated after instanciation
         """
 
-        expected_tolerance= 3.6
+        expected_tolerance = 3.6
         self.my_trap.absolute_tolerance = 3.6
 
         assert self.my_trap.absolute_tolerance == expected_tolerance
