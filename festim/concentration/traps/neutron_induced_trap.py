@@ -7,7 +7,7 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
     Class for neutron induced trap creation with annealing.
     The temporal evolution of the trap density is given by
 
-    dn_t/dt = phi*K*(1 - n_t/n_max) + A_0*exp(-E_A/(k_B*T))*n_t
+    dn_t/dt = phi*K*(1 - n_t/n_max) - A_0*exp(-E_A/(k_B*T))*n_t
 
     Args:
         k_0 (float, list): trapping pre-exponential factor (m3 s-1)
@@ -55,6 +55,7 @@ class NeutronInducedTrap(ExtrinsicTrapBase):
             A_0=A_0,
             E_A=E_A,
             id=id,
+            **kwargs,
         )
 
     def create_form_density(self, dx, dt, T):

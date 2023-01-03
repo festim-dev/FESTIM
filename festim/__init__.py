@@ -54,6 +54,7 @@ from .boundary_conditions.fluxes.flux_bc import FluxBC
 from .boundary_conditions.fluxes.recombination_flux import RecombinationFlux
 from .boundary_conditions.fluxes.convective_flux import ConvectiveFlux
 from .boundary_conditions.fluxes.flux_custom import CustomFlux
+from .boundary_conditions.fluxes.mass_flux import MassFlux
 
 from .exports.exports import Exports
 from .exports.export import Export
