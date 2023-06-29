@@ -600,7 +600,6 @@ def test_run_MMS_steady_state(tmpdir):
     g = sp.diff(v, festim.t) + p * v - k * u * (n_trap - v)
 
     def run(h):
-
         my_materials = festim.Materials(
             [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
         )

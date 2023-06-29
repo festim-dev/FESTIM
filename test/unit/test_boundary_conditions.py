@@ -426,6 +426,7 @@ def test_create_expression_dc_custom():
     """Creates a dc_custom bc and checks create_expression returns
     the correct expression
     """
+
     # build
     def func(T, prm1, prm2):
         return 2 * T + prm1 * prm2
@@ -455,6 +456,7 @@ def test_create_form_flux_custom():
     create_form returns
     the correct form
     """
+
     # build
     def func(T, c, prm1, prm2):
         return 2 * T + c + prm1 * prm2
@@ -481,7 +483,6 @@ def test_create_form_flux_custom():
     expected_expr = 2 * expr_T + expr_c + expr_prm1 * expr_prm2
     expected_expr = fenics.Expression(sp.printing.ccode(expected_expr), t=0, degree=1)
     for t in range(10):
-
         expected_expr.t = t
         for expr in my_BC.sub_expressions + expressions:
             expr.t = t

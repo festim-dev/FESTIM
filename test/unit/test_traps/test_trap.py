@@ -361,6 +361,7 @@ class TestCreateTrappingForm:
         """Test that create_trapping_form creates the correct formulation when
         a fenics.UserExpression is given as density
         """
+
         # build
         class CustomExpression(f.UserExpression):
             def eval(self, value, x):
