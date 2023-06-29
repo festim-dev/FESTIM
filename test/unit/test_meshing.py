@@ -169,7 +169,6 @@ class TestDefineMarkersStartNonZero:
 
 
 def test_create_mesh_xdmf(tmpdir):
-
     # write xdmf file
     mesh = fenics.UnitSquareMesh(10, 10)
     file1 = tmpdir.join("mesh.xdmf")
@@ -202,7 +201,6 @@ def test_create_mesh_xdmf(tmpdir):
 
 
 def test_subdomains_from_xdmf(tmpdir):
-
     # create mesh functions
     mesh = fenics.UnitCubeMesh(6, 6, 6)
     mf_cells = fenics.MeshFunction("size_t", mesh, mesh.topology().dim())

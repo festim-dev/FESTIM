@@ -3,7 +3,6 @@ import fenics as f
 
 
 class TestExtrinsicTrap:
-
     my_trap = festim.ExtrinsicTrap(
         1,
         1,

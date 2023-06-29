@@ -13,7 +13,6 @@ class Exports:
     def write(self, label_to_function, dt):
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
-
                 # compute derived quantities
                 if export.is_compute(self.nb_iterations):
                     # check if function has to be projected

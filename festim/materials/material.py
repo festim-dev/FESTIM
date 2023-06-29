@@ -41,7 +41,6 @@ class Material:
         solubility_law="sievert",
         name=None,
     ) -> None:
-
         self.id = id
         self.name = name
         self.D_0 = D_0

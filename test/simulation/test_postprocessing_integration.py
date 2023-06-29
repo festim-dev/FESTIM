@@ -112,7 +112,6 @@ class TestPostProcessing:
             assert data[i][4] == pytest.approx(11)
 
     def test_fluxes(self, my_sim):
-
         my_sim.T = festim.Temperature(100 * festim.x + 200)
         my_sim.T.create_functions(my_sim.mesh)
 
