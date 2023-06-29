@@ -1,6 +1,7 @@
 import festim
 from festim.h_transport_problem import HTransportProblem
 from fenics import *
+import numpy as np
 
 
 class Simulation:
@@ -331,7 +332,9 @@ class Simulation:
 
         # avoid t > final_time
         next_time = self.t + float(self.dt.value)
-        if next_time > self.settings.final_time and self.t != self.settings.final_time:
+        if next_time > self.settings.final_time and not np.isclose(
+            self.t, self.settings.final_time
+        ):
             self.dt.value.assign(self.settings.final_time - self.t)
 
     def display_time(self):
@@ -342,7 +345,7 @@ class Simulation:
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(simulation_time)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-        if self.t != self.settings.final_time and self.log_level == 40:
+        if not np.isclose(self.t, self.settings.final_time) and self.log_level == 40:
             print(msg, end="\r")
         else:
             print(msg)

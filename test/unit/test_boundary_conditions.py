@@ -1,5 +1,3 @@
-from attr import has
-from sympy.matrices import expressions
 import festim
 import fenics
 import pytest
