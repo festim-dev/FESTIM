@@ -30,7 +30,6 @@ class DerivedQuantities:
         nb_iterations_between_compute: int = 1,
         nb_iterations_between_exports: int = None,
     ) -> None:
-
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
@@ -82,7 +81,6 @@ class DerivedQuantities:
             quantity.H = materials.H
 
     def compute(self, t):
-
         # TODO need to support for soret flag in surface flux
         row = [t]
         for quantity in self.derived_quantities:
@@ -182,7 +180,6 @@ class DerivedQuantities:
 
         # iterate through derived_quantities
         for quantity in self.derived_quantities:
-
             # initialise flags to False
             match_surface, match_volume, match_field, match_instance = (
                 False,

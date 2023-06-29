@@ -21,7 +21,6 @@ class InitialCondition:
     def __init__(
         self, field=0, value=0.0, component=None, label=None, time_step=None
     ) -> None:
-
         # TODO make an inherited class InitialConditionXDMF
         self.field = field
         self.value = value

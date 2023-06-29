@@ -41,7 +41,6 @@ def test_as_expression():
 
 
 def test_as_constant_or_expression():
-
     # constants
     assert isinstance(as_constant_or_expression(3), Constant)
     assert isinstance(as_constant_or_expression(3.0), Constant)

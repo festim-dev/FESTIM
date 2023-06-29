@@ -18,7 +18,6 @@ class TestGetComp:
                 assert comp(x) == 1 + t - x
 
     def test_get_comp_from_xdmf(self, tmpdir):
-
         # build
         value = 1 + festim.t - festim.x
 

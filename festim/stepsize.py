@@ -30,7 +30,6 @@ class Stepsize:
         stepsize_stop_max=None,
         dt_min=None,
     ) -> None:
-
         self.adaptive_stepsize = None
         if stepsize_change_ratio is not None:
             self.adaptive_stepsize = {

@@ -20,7 +20,6 @@ class TXTExport(festim.Export):
     """
 
     def __init__(self, field, times, label, folder) -> None:
-
         super().__init__(field=field)
         self.times = sorted(times)
         self.label = label
@@ -40,7 +39,6 @@ class TXTExport(festim.Export):
         return None
 
     def write(self, current_time, dt):
-
         # create a DG1 functionspace
         V_DG1 = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
 

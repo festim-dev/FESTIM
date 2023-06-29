@@ -80,7 +80,6 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
         id=None,
         **kwargs,
     ):
-
         super().__init__(
             k_0,
             E_k,

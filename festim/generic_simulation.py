@@ -85,7 +85,6 @@ class Simulation:
         exports=None,
         log_level=40,
     ):
-
         self.log_level = log_level
 
         self.settings = settings

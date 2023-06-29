@@ -10,7 +10,6 @@ class TrapDensityXDMF(XDMFExport):
     """
 
     def __init__(self, trap, **kwargs) -> None:
-
         super().__init__(
             field="1", **kwargs
         )  # field is "1" just to make the code not crash

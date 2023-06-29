@@ -12,7 +12,6 @@ class MinimumSurface(DerivedQuantity):
     """
 
     def __init__(self, field, surface) -> None:
-
         super().__init__(field)
         self.surface = surface
         self.title = "Minimum {} surface {}".format(self.field, self.surface)

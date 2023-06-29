@@ -23,7 +23,6 @@ class Mesh:
     def __init__(
         self, mesh=None, volume_markers=None, surface_markers=None, type="cartesian"
     ) -> None:
-
         self.mesh = mesh
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers
