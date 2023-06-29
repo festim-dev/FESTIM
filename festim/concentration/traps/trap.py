@@ -39,7 +39,6 @@ class Trap(Concentration):
     """
 
     def __init__(self, k_0, E_k, p_0, E_p, materials, density, id=None):
-
         super().__init__()
         self.id = id
         self.k_0 = k_0

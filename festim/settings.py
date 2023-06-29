@@ -55,7 +55,6 @@ class Settings:
         update_jacobian=True,
         linear_solver=None,
     ):
-
         # TODO maybe transient and final_time are redundant
         self.transient = transient
         self.final_time = final_time

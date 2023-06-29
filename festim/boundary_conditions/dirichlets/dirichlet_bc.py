@@ -138,7 +138,6 @@ class BoundaryConditionExpression(f.UserExpression):
     """
 
     def __init__(self, T, eval_function, **kwargs):
-
         super().__init__()
 
         self._T = T

@@ -32,7 +32,6 @@ class XDMFExport(Export):
     def __init__(
         self, field, label=None, filename=None, mode=1, checkpoint=True, folder=None
     ) -> None:
-
         super().__init__(field=field)
         self.label = label
         self.folder = folder
@@ -123,7 +122,6 @@ class XDMFExport(Export):
         self.function.rename(self.label, "label")
 
         if self.checkpoint:
-
             # warn users if checkpoint is True and 1D
             dimension = self.function.function_space().mesh().topology().dim()
             if dimension == 1:

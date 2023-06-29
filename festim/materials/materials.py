@@ -15,7 +15,6 @@ class Materials:
     """
 
     def __init__(self, materials=[]):
-
         self.materials = materials
         self.D = None
         self.S = None
