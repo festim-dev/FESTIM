@@ -56,6 +56,8 @@ FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened
 
 - R. Delaporte-Mathurin, _et al._, _Parametric Optimisation Based on TDS Experiments for Rapid and Efficient Identification of Hydrogen Transport Materials Properties_. Nuclear Materials and Energy 21, (2021). https://doi.org/10.1016/j.nme.2021.100984.
 
+- J. Dark, _et al._, _Influence of hydrogen trapping on WCLL breeding blanket performances_. Nuclear Fusion 62, (2021). https://doi.org/10.1088/1741-4326/ac28b0.
+
 - E. A. Hodille _et al._, _Modelling of Hydrogen Isotopes Trapping, Diffusion and Permeation in Divertor Monoblocks under ITER-like Conditions_. Nuclear Fusion 61, (2021). https://doi.org/10.1088/1741-4326/ac2abc.
 
 - R. Delaporte-Mathurin, _et al._, _Fuel Retention in WEST and ITER Divertors Based on FESTIM Monoblock Simulations_. Nuclear Fusion 61, (2021). https://doi.org/10.1088/1741-4326/ac2bbd.
