@@ -48,14 +48,14 @@ Run the tests:
 FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
 
 ## References
-- R. Delaporte-Mathurin, _et al._, _Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components using FESTIM_. Nuclear Materials and Energy 21: 100709. DOI: [10.1016/j.nme.2019.100709](https://doi.org/10.1016/j.nme.2019.100709).
+- R. Delaporte-Mathurin, _et al._, _Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components using FESTIM_. Nuclear Materials and Energy 21, (2019). https://doi.org/10.1016/j.nme.2019.100709.
 
-- R. Delaporte-Mathurin, _et al._, _Parametric Optimisation Based on TDS Experiments for Rapid and Efficient Identification of Hydrogen Transport Materials Properties_. Nuclear Materials and Energy, 26 mars 2021, 100984. https://doi.org/10.1016/j.nme.2021.100984.
+- R. Delaporte-Mathurin, _et al._, _Parametric Study of Hydrogenic Inventory in the ITER Divertor Based on Machine Learning_. Scientific Reports 10, (2020). https://doi.org/10.1038/s41598-020-74844-w.
 
-- R. Delaporte-Mathurin, _et al._, _Parametric Study of Hydrogenic Inventory in the ITER Divertor Based on Machine Learning_. Scientific Reports 10: 17798. https://doi.org/10.1038/s41598-020-74844-w.
+- R. Delaporte-Mathurin, _et al._, _Influence of Interface Conditions on Hydrogen Transport Studies_. Nuclear Fusion 61, (2021). https://doi.org/10.1088/1741-4326/abd95f.
 
-- R. Delaporte-Mathurin, _et al._, _Influence of Interface Conditions on Hydrogen Transport Studies_. Nuclear Fusion 61 (2021): 036038. https://doi.org/10.1088/1741-4326/abd95f.
+- R. Delaporte-Mathurin, _et al._, _Parametric Optimisation Based on TDS Experiments for Rapid and Efficient Identification of Hydrogen Transport Materials Properties_. Nuclear Materials and Energy 21, (2021). https://doi.org/10.1016/j.nme.2021.100984.
 
-- R. Delaporte-Mathurin, _et al._, _Fuel Retention in WEST and ITER Divertors Based on FESTIM Monoblock Simulations_. Nuclear Fusion 61, nᵒ 12: 126001. https://doi.org/10.1088/1741-4326/ac2bbd.
+- E. A. Hodille _et al._, _Modelling of Hydrogen Isotopes Trapping, Diffusion and Permeation in Divertor Monoblocks under ITER-like Conditions_. Nuclear Fusion 61, (2021). https://doi.org/10.1088/1741-4326/ac2abc.
 
-- E. A. Hodille _et al._, _Modelling of Hydrogen Isotopes Trapping, Diffusion and Permeation in Divertor Monoblocks under ITER-like Conditions_. Nuclear Fusion, 2021. https://doi.org/10.1088/1741-4326/ac2abc.
+- R. Delaporte-Mathurin, _et al._, _Fuel Retention in WEST and ITER Divertors Based on FESTIM Monoblock Simulations_. Nuclear Fusion 61, (2021). https://doi.org/10.1088/1741-4326/ac2bbd.
