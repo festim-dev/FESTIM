@@ -59,6 +59,22 @@ Click `here <https://www.atlassian.com/continuous-delivery/continuous-integratio
 
 All the tests can be found in the `test folder <https://github.com/RemDelaporteMathurin/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
 
+.. admonition:: Tip
+   :class: tip
+
+   If you have installed the FEniCS Anaconda python package, make sure to install pytest to run the test suite locally:
+
+      pip install pytest
+
+   And then run the tests using:
+
+      pytest test/
+   
+   Although if you are running the Docker image, pytest packages are prebuilt, thus use the command:
+
+      pytest-3 test/
+
+
 Whenever contributors open a PR, **the tests must pass** in order for the PR to be merged in.
 
 In some cases, new tests need to be written to account for more use cases or to catch bugs that weren't previously caught.
