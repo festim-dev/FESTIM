@@ -11,8 +11,8 @@ Installing FEniCS
 FESTIM requires FEniCS to run.
 
 FEniCS can be installed with Anaconda on MacOs and Linux. 
-In order to use the Anaconda distribution on Windows, use the [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install). 
-First [install Anaconda](https://docs.continuum.io/anaconda/install) then run the following commands 
+In order to use the Anaconda distribution on Windows, use the `Windows Subsystem for Linux <https://learn.microsoft.com/en-us/windows/wsl/install>`_. 
+First `install Anaconda <https://docs.continuum.io/anaconda/install>`_ then run the following commands 
 
     conda create -n festim-env
     source activate festim-env
