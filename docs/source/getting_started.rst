@@ -10,18 +10,20 @@ Installing FEniCS
 
 FESTIM requires FEniCS to run.
 
-It can be installed using `Docker <https://www.docker.com/>`_::
+The FEniCS project provides a prebuilt Anaconda python package (Linux and MacOS only) with FEniCS and its dependencies (python3, UFL, DOLFIN, numpy, sympy...)  already installed. 
+Anaconda can also be used in Windows using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) with your favourite linux distro. 
+First [install Anaconda](https://docs.continuum.io/anaconda/install) then run the following commands 
+
+    conda create -n festim-env -c conda-forge fenics
+    source activate festim-env
+
+Alternatively, It can be installed using `Docker <https://www.docker.com/>`_::
 
     docker run -ti -v $(pwd):/home/fenics/shared quay.io/fenicsproject/stable:latest
 
 .. note::
     :code:`$(pwd)` needs to be replaced by :code:`${PWD}` on Windows
 
-
-Alternatively, FEniCS can be installed using `Conda <https://docs.continuum.io/anaconda/install/>`_::
-
-    conda create -n fenicsproject -c conda-forge fenics
-    source activate fenicsproject
 
 For more information on how to install FEniCS, see `Download <https://fenicsproject.org/download/archive/>`_ on the FEniCS website.
 
