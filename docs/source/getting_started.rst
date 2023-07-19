@@ -15,7 +15,7 @@ In order to use the Anaconda distribution on Windows, use the `Windows Subsystem
 First `install Anaconda <https://docs.continuum.io/anaconda/install>`_ then run the following commands::
 
     conda create -n festim-env
-    source activate festim-env
+    conda activate festim-env
     conda install mamba
     mamba install -c conda-forge fenics
 
