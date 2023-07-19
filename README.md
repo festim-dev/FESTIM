@@ -16,16 +16,7 @@ It simulates the diffusion and trapping of hydrogen, coupled to heat transfer wi
 ## Installation
 
 FESTIM requires FEniCS to run.
-The FEniCS project provides a prebuilt Anaconda python package (Linux and MacOS only) with FEniCS and its dependencies (python3, UFL, DOLFIN, numpy, sympy...)  already installed. Anaconda can also be used in Windows using [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) with your favourite linux distro. First [install Anaconda](https://docs.continuum.io/anaconda/install) then run the following commands:
-
-    conda create -n festim-env -c conda-forge fenics
-    conda activate festim-env
-
-Alternativly, the FEniCS project provides a [Docker image](https://hub.docker.com/r/fenicsproject/stable/). See their ["FEniCS in Docker" manual](https://fenics.readthedocs.io/projects/containers/en/latest/) for more information.
-
-The Docker image can be installed with the following command:
-
-    docker run -ti -v ${PWD}:/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
+To install a FEniCS container consult the [Getting started](https://festim.readthedocs.io/en/latest/getting_started.html) section in the docs.
 
 Once inside a FEniCS container environement, FESTIM can be installed via pip:
 
