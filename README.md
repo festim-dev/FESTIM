@@ -25,24 +25,12 @@ The FEniCS project provides a prebuilt Anaconda python package (Linux and MacOS 
     conda create -n festim-env -c conda-forge fenics
     conda activate festim-env
 
-Install dependencies:
-
-    pip install -r requirements.txt
-
-Run the tests:
-
-    pytest test/
-
-
 Alternativly, the FEniCS project provides a [Docker image](https://hub.docker.com/r/fenicsproject/stable/). See their ["FEniCS in Docker" manual](https://fenics.readthedocs.io/projects/containers/en/latest/) for more information.
 
 The Docker image can be installed with the following commands:
 
     docker run -ti -v ${PWD}:/home/fenics/shared --name fenics quay.io/fenicsproject/stable:latest
 
-Run the tests:
-
-    pytest-3 test/
 
 ## Visualisation
 FESTIM results are exported to .csv, .txt or XDMF. The latter can then be opened in visualisation tools like [ParaView](https://www.paraview.org/) or [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/).
