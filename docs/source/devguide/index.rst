@@ -64,7 +64,7 @@ All the tests can be found in the `test folder <https://github.com/RemDelaporteM
 
    If you have installed the FEniCS Anaconda python package, make sure to install pytest to run the test suite locally:
 
-      pip install pytest==7.4.0
+      pip install pytest
 
    And then run the tests using:
 
