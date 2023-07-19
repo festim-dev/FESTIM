@@ -36,11 +36,3 @@ Installing FESTIM
 FESTIM can then be installed using pip::
 
     pip install FESTIM
-
-
-Tests
-*****
-
-Check that everything is working properly by running the tests::
-
-    pytest test
