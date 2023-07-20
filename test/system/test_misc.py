@@ -96,7 +96,7 @@ def test_high_recombination_flux():
     model.run()
 
 
-@pytest.mark.parametrize("field", ["coucou", "2", "-1"])
+@pytest.mark.parametrize("field", ["coucou", "2", "-1", 2, -1])
 def test_wrong_value_for_bc_field(field):
     """
     Tests that an error is raised when a wrong value of field is
@@ -111,9 +111,9 @@ def test_wrong_value_for_bc_field(field):
 
     sim.materials = F.Materials([F.Material(1, D_0=1, E_D=0)])
 
-    sim.traps = F.Trap(1, 1, 1, 1, materials=1, density=1)
+    sim.traps = F.Trap(1, 1, 1, 1, materials="1", density=1)
 
-    sim.settings = F.Settings(1e-10, 1e-10)
+    sim.settings = F.Settings(1e-10, 1e-10, transient=False)
 
     with pytest.raises(ValueError):
         sim.boundary_conditions = [F.BoundaryCondition(surfaces=1, field=field)]
