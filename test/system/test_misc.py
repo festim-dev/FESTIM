@@ -111,7 +111,7 @@ def test_wrong_value_for_bc_field(field):
 
     sim.materials = F.Materials([F.Material(1, D_0=1, E_D=0)])
 
-    sim.traps = F.Trap(1, 1, 1, 1, materials=1)
+    sim.traps = F.Trap(1, 1, 1, 1, materials=1, density=1)
 
     sim.settings = F.Settings(1e-10, 1e-10)
 
