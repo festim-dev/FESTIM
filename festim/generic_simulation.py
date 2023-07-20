@@ -196,8 +196,8 @@ class Simulation:
 
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
-            + [str(i) for i, _ in enumerate(self.traps.traps)]
-            + [i for i, _ in enumerate(self.traps.traps)]
+            + [str(i + 1) for i, _ in enumerate(self.traps.traps)]
+            + [i + 1 for i, _ in enumerate(self.traps.traps)]
         )
 
         for bc in self.boundary_conditions:
