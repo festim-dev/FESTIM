@@ -1,0 +1,4 @@
+Initial condition
+=================
+
+.. currentmodule:: festim

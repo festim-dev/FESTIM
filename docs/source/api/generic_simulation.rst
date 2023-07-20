@@ -1,0 +1,4 @@
+Generic simulation
+==================
+
+.. currentmodule:: festim

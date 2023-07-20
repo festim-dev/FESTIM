@@ -1,0 +1,4 @@
+Settings
+========
+
+.. currentmodule:: festim
