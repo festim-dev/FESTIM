@@ -30,10 +30,15 @@ release = "v0.10.2"
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
-    # "m2r2"
-    # "sphinx_autodoc_typehints"
+    "sphinx.ext.viewcode",
+    "sphinx_design",
+    "matplotlib.sphinxext.plot_directive",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
