@@ -1,4 +1,3 @@
-from nis import match
 import festim as F
 import numpy as np
 import pytest
@@ -95,3 +94,27 @@ def test_high_recombination_flux():
 
     model.initialise()
     model.run()
+
+
+@pytest.mark.parametrize("field", ["coucou", "2", "-1", 2, -1])
+def test_wrong_value_for_bc_field(field):
+    """
+    Tests that an error is raised when a wrong value of field is
+    given for a boundary condition
+    '2' is not a correct value because there is only one trap in the model
+    """
+    sim = F.Simulation()
+
+    sim.mesh = F.MeshFromVertices(np.linspace(0, 1, num=50))
+
+    sim.T = F.Temperature(500)
+
+    sim.materials = F.Materials([F.Material(1, D_0=1, E_D=0)])
+
+    sim.traps = F.Trap(1, 1, 1, 1, materials="1", density=1)
+
+    sim.settings = F.Settings(1e-10, 1e-10, transient=False)
+
+    with pytest.raises(ValueError):
+        sim.boundary_conditions = [F.BoundaryCondition(surfaces=1, field=field)]
+        sim.initialise()
