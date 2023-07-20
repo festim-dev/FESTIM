@@ -1,4 +1,3 @@
-from nis import match
 import festim as F
 import numpy as np
 import pytest
@@ -96,6 +95,7 @@ def test_high_recombination_flux():
     model.initialise()
     model.run()
 
+
 @pytest.mark.parametrize("field", ["coucou", "2", "-1"])
 def test_wrong_value_for_bc_field(field):
     """
@@ -116,7 +116,5 @@ def test_wrong_value_for_bc_field(field):
     sim.settings = F.Settings(1e-10, 1e-10)
 
     with pytest.raises(ValueError):
-        sim.boundary_conditions = [
-            F.BoundaryCondition(surfaces=1, field=field)
-        ]
+        sim.boundary_conditions = [F.BoundaryCondition(surfaces=1, field=field)]
         sim.initialise()
