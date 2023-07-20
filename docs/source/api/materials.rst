@@ -3,6 +3,10 @@ Materials
 
 .. currentmodule:: festim
 
-.. automodule:: festim.materials
+.. autoclass:: Material
+    :members:
+    :show-inheritance:
+
+.. autoclass:: Materials
     :members:
     :show-inheritance:
