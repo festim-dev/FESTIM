@@ -194,7 +194,15 @@ class Simulation:
         self.T.boundary_conditions = []
         self.h_transport_problem.boundary_conditions = []
 
+        valid_fields = (
+            ["T", 0, "0"]  # temperature and mobile concentration
+            + [str(i) for i, _ in enumerate(self.traps.traps)]
+            + [i for i, _ in enumerate(self.traps.traps)]
+        )
+
         for bc in self.boundary_conditions:
+            if bc.field not in valid_fields:
+                raise ValueError(f"{bc.field} is not a valid field for BC")
             if bc.field == "T":
                 self.T.boundary_conditions.append(bc)
             else:
