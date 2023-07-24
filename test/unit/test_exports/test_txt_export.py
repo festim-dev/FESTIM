@@ -25,7 +25,7 @@ class TestWrite:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", [1, 2, 3], "solute_label", str(Path(d)))
+        my_export = TXTExport("solute", "solute_label", str(Path(d)), times=[1, 2, 3])
 
         return my_export
 
@@ -85,7 +85,7 @@ class TestIsItTimeToExport:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", [1, 2, 3], "solute_label", str(Path(d)))
+        my_export = TXTExport("solute", "solute_label", str(Path(d)), times=[1, 2, 3])
 
         return my_export
 
@@ -105,7 +105,7 @@ class TestWhenIsNextTime:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", [1, 2, 3], "solute_label", str(Path(d)))
+        my_export = TXTExport("solute", "solute_label", str(Path(d)), times=[1, 2, 3])
 
         return my_export
 
