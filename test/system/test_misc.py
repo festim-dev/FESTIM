@@ -1,6 +1,7 @@
 import festim as F
 import numpy as np
 import pytest
+import os
 
 
 def test_convective_flux():
@@ -132,7 +133,12 @@ def test_txt_export_all_times(tmp_path):
     my_model.T = F.Temperature(500)
     my_model.dt = F.Stepsize(0.1)
 
-    my_model.exports = [F.TXTExport("solute", label="mobile_conc", folder=tmp_path)]
+    my_export = F.TXTExport("solute", label="mobile_conc", folder=tmp_path)
+    my_model.exports = [my_export]
 
     my_model.initialise()
     my_model.run()
+
+    assert os.path.exists(
+        "{}/{}_{}s.txt".format(my_export.folder, my_export.label, 0.5)
+    )
