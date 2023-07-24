@@ -118,3 +118,21 @@ def test_wrong_value_for_bc_field(field):
     with pytest.raises(ValueError):
         sim.boundary_conditions = [F.BoundaryCondition(surfaces=1, field=field)]
         sim.initialise()
+
+
+def test_txt_export_all_times(tmp_path):
+    """
+    Tests that TXTExport can be exported at all timesteps
+    """
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1))
+    my_model.materials = F.Material(1, 1, 0)
+    my_model.settings = F.Settings(1e-10, 1e-10, final_time=1)
+    my_model.T = F.Temperature(500)
+    my_model.dt = F.Stepsize(0.1)
+
+    my_model.exports = [F.TXTExport("solute", label="mobile_conc", folder=tmp_path)]
+
+    my_model.initialise()
+    my_model.run()
