@@ -1,6 +1,7 @@
 import festim as F
 import numpy as np
 import pytest
+import os
 
 
 def test_convective_flux():
@@ -118,3 +119,46 @@ def test_wrong_value_for_bc_field(field):
     with pytest.raises(ValueError):
         sim.boundary_conditions = [F.BoundaryCondition(surfaces=1, field=field)]
         sim.initialise()
+
+
+def test_txt_export_all_times(tmp_path):
+    """
+    Tests that TXTExport can be exported at all timesteps
+    """
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1))
+    my_model.materials = F.Material(1, 1, 0)
+    my_model.settings = F.Settings(1e-10, 1e-10, final_time=1)
+    my_model.T = F.Temperature(500)
+    my_model.dt = F.Stepsize(0.1)
+
+    my_export = F.TXTExport("solute", label="mobile_conc", folder=tmp_path)
+    my_model.exports = [my_export]
+
+    my_model.initialise()
+    my_model.run()
+
+    assert os.path.exists(
+        "{}/{}_{}s.txt".format(my_export.folder, my_export.label, 0.5)
+    )
+
+
+def test_txt_export_steady_state(tmp_path):
+    """
+    Tests that TXTExport can be exported in steady state
+    """
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1))
+    my_model.materials = F.Material(1, 1, 0)
+    my_model.settings = F.Settings(1e-10, 1e-10, transient=False)
+    my_model.T = F.Temperature(500)
+
+    my_export = F.TXTExport("solute", label="mobile_conc", folder=tmp_path)
+    my_model.exports = [my_export]
+
+    my_model.initialise()
+    my_model.run()
+
+    assert os.path.exists("{}/{}_steady.txt".format(my_export.folder, my_export.label))
