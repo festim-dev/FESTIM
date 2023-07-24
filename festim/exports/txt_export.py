@@ -53,7 +53,8 @@ class TXTExport(festim.Export):
         solution = f.project(self.function, V_DG1)
         if self.is_it_time_to_export(current_time):
             filename = "{}/{}_{}s.txt".format(self.folder, self.label, current_time)
-            busy = True
+            if dt is None:
+                filename = "{}/{}_steady.txt".format(self.folder, self.label)
             x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
             # if the directory doesn't exist
             # create it
