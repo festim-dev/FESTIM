@@ -301,7 +301,9 @@ class Simulation:
 
         #  Time-stepping
         print("Time stepping...")
-        while self.t < self.settings.final_time:
+        while self.t < self.settings.final_time and not np.isclose(
+            self.t, self.settings.final_time
+        ):
             self.iterate()
 
     def run_steady(self):
@@ -340,9 +342,7 @@ class Simulation:
 
         # avoid t > final_time
         next_time = self.t + float(self.dt.value)
-        if next_time > self.settings.final_time and not np.isclose(
-            self.t, self.settings.final_time
-        ):
+        if next_time > self.settings.final_time:
             self.dt.value.assign(self.settings.final_time - self.t)
 
     def display_time(self):
