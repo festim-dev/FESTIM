@@ -26,7 +26,7 @@ class DissociationFlux(FluxBC):
     def create_form(self, T):
         Kd_0_expr = f.Expression(sp.printing.ccode(self.Kd_0), t=0, degree=1)
         E_Kd_expr = f.Expression(sp.printing.ccode(self.E_Kd), t=0, degree=1)
-        
+
         Kd = Kd_0_expr * f.exp(-E_Kd_expr / k_B / T)
         self.form = -Kd * self.P
         self.sub_expressions = [Kd_0_expr, E_Kd_expr]
