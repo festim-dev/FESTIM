@@ -30,4 +30,4 @@ class DissociationFlux(FluxBC):
 
         Kd = Kd_0_expr * f.exp(-E_Kd_expr / k_B / T)
         self.form = -Kd * P_expr
-        self.sub_expressions = [Kd_0_expr, E_Kd_expr]
+        self.sub_expressions = [Kd_0_expr, E_Kd_expr, P_expr]
