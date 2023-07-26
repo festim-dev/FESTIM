@@ -6,7 +6,7 @@ import sympy as sp
 class DissociationFlux(FluxBC):
     """
     FluxBC subclass for hydrogen dissociation flux.
-    -D(T) * grad(c) * n = -Kd(T) * P
+    -D(T) * grad(c) * n = Kd(T) * P
 
     Args:
         Kd_0 (float or sp.Expr): dissociation coefficient pre-exponential
