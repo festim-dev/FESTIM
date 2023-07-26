@@ -29,5 +29,5 @@ class DissociationFlux(FluxBC):
         P_expr = f.Expression(sp.printing.ccode(self.P), t=0, degree=1)
 
         Kd = Kd_0_expr * f.exp(-E_Kd_expr / k_B / T)
-        self.form = -Kd * P_expr
+        self.form = Kd * P_expr
         self.sub_expressions = [Kd_0_expr, E_Kd_expr, P_expr]
