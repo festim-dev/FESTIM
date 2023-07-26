@@ -71,7 +71,12 @@ class ImplantationDirichlet(DirichletBC):
     def create_expression(self, T):
         phi = f.Expression(sp.printing.ccode(self.phi), t=0, degree=1)
         R_p = f.Expression(sp.printing.ccode(self.R_p), t=0, degree=1)
-        sub_expressions = [phi, R_p]
+        if self.P is not None:
+            P = f.Expression(sp.printing.ccode(self.P), t=0, degree=1)
+            sub_expressions = [phi, R_p, P]
+        else:
+            sub_expressions = [phi, R_p]
+            P = self.P
 
         value_BC = BoundaryConditionExpression(
             T,
@@ -84,7 +89,7 @@ class ImplantationDirichlet(DirichletBC):
             E_Kr=self.E_Kr,
             Kd_0=self.Kd_0,
             E_Kd=self.E_Kd,
-            P=self.P,
+            P=P,
         )
         self.expression = value_BC
         self.sub_expressions = sub_expressions
