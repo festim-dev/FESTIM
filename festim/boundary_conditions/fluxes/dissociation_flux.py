@@ -13,7 +13,7 @@ class DissociationFlux(FluxBC):
             factor (m^(2)/s)
         E_Kd (float or sp.Expr): dissociation coefficient activation
             energy (eV)
-        P (float): partial pressure of H (Pa)
+        P (float or sp.Expr): partial pressure of H (Pa)
         surfaces (list or int): the surfaces of the BC
     """
 
@@ -26,7 +26,8 @@ class DissociationFlux(FluxBC):
     def create_form(self, T):
         Kd_0_expr = f.Expression(sp.printing.ccode(self.Kd_0), t=0, degree=1)
         E_Kd_expr = f.Expression(sp.printing.ccode(self.E_Kd), t=0, degree=1)
+        P_expr = f.Expression(sp.printing.ccode(self.P), t=0, degree=1)
 
         Kd = Kd_0_expr * f.exp(-E_Kd_expr / k_B / T)
-        self.form = -Kd * self.P
+        self.form = -Kd * P_expr
         self.sub_expressions = [Kd_0_expr, E_Kd_expr]
