@@ -10,7 +10,7 @@ class DissociationFlux(FluxBC):
 
     Args:
         Kd_0 (float or sp.Expr): dissociation coefficient pre-exponential
-            factor (m^(2)/s)
+            factor (m-2 s-1 Pa-1)
         E_Kd (float or sp.Expr): dissociation coefficient activation
             energy (eV)
         P (float or sp.Expr): partial pressure of H (Pa)
