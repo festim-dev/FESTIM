@@ -45,7 +45,7 @@ class Materials:
             else:
                 all_borders.append(m.borders)
         all_borders = sorted(all_borders, key=itemgetter(0))
-        if all_borders[0][0] is not 0:
+        if all_borders[0][0] != 0:
             raise ValueError("Borders don't begin at zero")
         for i in range(0, len(all_borders) - 1):
             if all_borders[i][1] != all_borders[i + 1][0]:

@@ -7,3 +7,7 @@ dependencies:
   - pip>=20.1
   - pip:
     - sympy
+    - sphinx_book_theme==1.0.1
+    - sphinx==6.2.1
+    - sphinx-design==0.4.1
+    - matplotlib==3.7.1

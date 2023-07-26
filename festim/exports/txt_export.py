@@ -13,19 +13,25 @@ class TXTExport(festim.Export):
     Args:
         field (str): the exported field ("solute", "1", "retention",
             "T"...)
-        times (list): times of export. The stepsize will be modified to
-            ensure these timesteps are hit.
         label (str): label of the field. Will also be the filename.
         folder (str): the export folder
+        times (list, optional): if provided, the stepsize will be modified to
+            ensure these timesteps are exported. Otherwise exports at all
+            timesteps. Defaults to None.
     """
 
-    def __init__(self, field, times, label, folder) -> None:
+    def __init__(self, field, label, folder, times=None) -> None:
         super().__init__(field=field)
-        self.times = sorted(times)
+        if times:
+            self.times = sorted(times)
+        else:
+            self.times = times
         self.label = label
         self.folder = folder
 
     def is_it_time_to_export(self, current_time):
+        if self.times is None:
+            return True
         for time in self.times:
             if current_time == time:
                 return True
@@ -33,6 +39,8 @@ class TXTExport(festim.Export):
         return False
 
     def when_is_next_time(self, current_time):
+        if self.times is None:
+            return None
         for time in self.times:
             if current_time < time:
                 return time
@@ -45,7 +53,8 @@ class TXTExport(festim.Export):
         solution = f.project(self.function, V_DG1)
         if self.is_it_time_to_export(current_time):
             filename = "{}/{}_{}s.txt".format(self.folder, self.label, current_time)
-            busy = True
+            if dt is None:
+                filename = "{}/{}_steady.txt".format(self.folder, self.label)
             x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
             # if the directory doesn't exist
             # create it
@@ -74,4 +83,4 @@ class TXTExports:
         self.folder = folder
         self.exports = []
         for function, label in zip(self.fields, self.labels):
-            self.exports.append(TXTExport(function, times, label, folder))
+            self.exports.append(TXTExport(function, label, folder, times))
