@@ -41,6 +41,7 @@ class ImplantationDirichlet(DirichletBC):
             assumed. Defaults to None.
         E_Kd (float, optional): dissociation coefficient activation
             energy (eV). Defaults to None.
+        P (float or sp.Expr, optional): partial pressure of H (Pa). Defaults to None.
     """
 
     def __init__(
