@@ -162,3 +162,19 @@ def test_txt_export_steady_state(tmp_path):
     my_model.run()
 
     assert os.path.exists("{}/{}_steady.txt".format(my_export.folder, my_export.label))
+
+
+def test_finaltime_overshoot():
+    """Checks that the time doesn't overshoot the final time"""
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1))
+    my_model.materials = F.Material(1, 1, 0)
+    my_model.settings = F.Settings(1e-10, 1e-10, final_time=1)
+    my_model.T = F.Temperature(500)
+    my_model.dt = F.Stepsize(0.1)
+
+    my_model.initialise()
+    my_model.run()
+
+    assert np.isclose(my_model.t, my_model.settings.final_time)
