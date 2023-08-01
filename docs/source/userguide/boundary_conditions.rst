@@ -89,6 +89,17 @@ Where :math:`Kr` is the recombination coefficient, :math:`c_\mathrm{m}` is the m
     my_bc = RecombinationFlux(surfaces=3, Kr_0=2, E_Kr=0.1, order=2)
 
 
+Dissociation flux
+^^^^^^^^^^^^^^^^^^
+
+Recombination flux can be set on boundaries as: :math:`Kd \, P`
+Where :math:`Kd` is the dissociation coefficient, :math:`P` is the partial pressure of hydrogen.
+
+.. code-block:: python
+
+    my_bc = DissociationFlux(surfaces=2, Kd_0=2, E_Kd=0.1, P=1e05)
+
+
 Sievert's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -120,9 +131,9 @@ A plasma implantation can be approximated by:
 
 .. math::
 
-    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp}}{Kr}}
+    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp} + Kd \cdot P}{Kr}}
 
-Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient and :math:`Kr` is the recombination coefficient.
+Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient, :math:`Kd` is the dissociation coefficient and :math:`Kr` is the recombination coefficient.
 
 .. admonition:: Note
    :class: tip
