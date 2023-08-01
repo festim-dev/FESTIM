@@ -81,7 +81,7 @@ Some BCs are specific to hydrogen transport. FESTIM provides a handful of conven
 Recombination flux
 ^^^^^^^^^^^^^^^^^^
 
-Recombination flux can be set on boundaries as: :math:`Kr \, c_\mathrm{m}^n`
+Recombination flux can be set on boundaries as: :math:`Kr \, c_\mathrm{m}^n`.
 Where :math:`Kr` is the recombination coefficient, :math:`c_\mathrm{m}` is the mobile hydrogen concentration and :math:`n` is the recombination order.
 
 .. code-block:: python
@@ -92,7 +92,7 @@ Where :math:`Kr` is the recombination coefficient, :math:`c_\mathrm{m}` is the m
 Dissociation flux
 ^^^^^^^^^^^^^^^^^^
 
-Recombination flux can be set on boundaries as: :math:`Kd \, P`
+Dissociation flux can be set on boundaries as: :math:`Kd \, P`.
 Where :math:`Kd` is the dissociation coefficient, :math:`P` is the partial pressure of hydrogen.
 
 .. code-block:: python
