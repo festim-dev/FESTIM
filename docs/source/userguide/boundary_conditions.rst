@@ -133,7 +133,17 @@ A plasma implantation can be approximated by:
 
     c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp} + Kd \cdot P}{Kr}}
 
-Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient, :math:`Kd` is the dissociation coefficient and :math:`Kr` is the recombination coefficient.
+Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient, :math:`Kd` is the dissociation coefficient, :math:`P` is the partial pressure of hydrogen,  and :math:`Kr` is the recombination coefficient.
+
+When :math:`P = 0`:
+
+.. math::
+    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp}}{Kr}}
+
+Moreover, assuming an instantaneous recombination :math:`Kr = \infty`:
+
+.. math::
+    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D}
 
 .. admonition:: Note
    :class: tip
