@@ -81,12 +81,23 @@ Some BCs are specific to hydrogen transport. FESTIM provides a handful of conven
 Recombination flux
 ^^^^^^^^^^^^^^^^^^
 
-Recombination flux can be set on boundaries as: :math:`Kr \, c_\mathrm{m}^n`
+Recombination flux can be set on boundaries as: :math:`Kr \, c_\mathrm{m}^n`.
 Where :math:`Kr` is the recombination coefficient, :math:`c_\mathrm{m}` is the mobile hydrogen concentration and :math:`n` is the recombination order.
 
 .. code-block:: python
 
     my_bc = RecombinationFlux(surfaces=3, Kr_0=2, E_Kr=0.1, order=2)
+
+
+Dissociation flux
+^^^^^^^^^^^^^^^^^^
+
+Dissociation flux can be set on boundaries as: :math:`Kd \, P`.
+Where :math:`Kd` is the dissociation coefficient, :math:`P` is the partial pressure of hydrogen.
+
+.. code-block:: python
+
+    my_bc = DissociationFlux(surfaces=2, Kd_0=2, E_Kd=0.1, P=1e05)
 
 
 Sievert's law of solubility
@@ -120,9 +131,19 @@ A plasma implantation can be approximated by:
 
 .. math::
 
+    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp} + Kd \cdot P}{Kr}}
+
+Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient, :math:`Kd` is the dissociation coefficient, :math:`P` is the partial pressure of hydrogen,  and :math:`Kr` is the recombination coefficient.
+
+When :math:`P = 0`:
+
+.. math::
     c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp}}{Kr}}
 
-Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient and :math:`Kr` is the recombination coefficient.
+Moreover, assuming an instantaneous recombination :math:`Kr = \infty`:
+
+.. math::
+    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D}
 
 .. admonition:: Note
    :class: tip

@@ -105,6 +105,9 @@ def test_bc_recomb():
     E_D = 0.5
     Kr_0 = 2
     E_Kr = 0.35
+    Kd_0 = 3
+    E_Kd = 0.1
+    P = 1.5
 
     mesh = fenics.UnitSquareMesh(4, 4)
     my_mesh = festim.Mesh(mesh)
@@ -119,7 +122,16 @@ def test_bc_recomb():
     my_temp.create_functions(my_mesh)
 
     my_bc = festim.ImplantationDirichlet(
-        [1, 2], phi=phi, R_p=R_p, D_0=D_0, E_D=E_D, Kr_0=Kr_0, E_Kr=E_Kr
+        [1, 2],
+        phi=phi,
+        R_p=R_p,
+        D_0=D_0,
+        E_D=E_D,
+        Kr_0=Kr_0,
+        E_Kr=E_Kr,
+        Kd_0=Kd_0,
+        E_Kd=E_Kd,
+        P=P,
     )
     my_bc.create_dirichletbc(V, my_temp.T, surface_markers=sm)
     expressions = my_bc.sub_expressions + [my_bc.expression]
@@ -133,13 +145,14 @@ def test_bc_recomb():
         for x_ in [0, 1]:
             T = float(T_expr.subs(festim.t, current_time).subs(festim.x, x_))
             D = D_0 * np.exp(-E_D / festim.k_B / T)
-            K = Kr_0 * np.exp(-E_Kr / festim.k_B / T)
+            Kr = Kr_0 * np.exp(-E_Kr / festim.k_B / T)
+            Kd = Kd_0 * np.exp(-E_Kd / festim.k_B / T)
             # Test that the expression is correct at vertices
             val_phi = phi.subs(festim.t, current_time).subs(festim.x, x_)
             val_R_p = R_p.subs(festim.t, current_time).subs(festim.x, x_)
             assert np.isclose(
                 expressions[-1](x_, 0.5),
-                float(val_phi * val_R_p / D + (val_phi / K) ** 0.5),
+                float(val_phi * val_R_p / D + ((val_phi + Kd * P) / Kr) ** 0.5),
             )
 
 
@@ -528,3 +541,11 @@ def test_string_for_field_in_dirichletbc():
 
     # test
     bc.create_dirichletbc(V, fenics.Constant(1), surface_marker)
+
+
+def test_dissoc_flux():
+    expr = 2 + festim.x
+    T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
+
+    my_BC = festim.DissociationFlux(surfaces=[0], Kd_0=expr, E_Kd=expr, P=1)
+    my_BC.create_form(T)
