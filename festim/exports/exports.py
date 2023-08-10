@@ -10,7 +10,7 @@ class Exports:
         self.final_time = None
         self.nb_iterations = 0
 
-    def write(self, label_to_function, dt):
+    def write(self, label_to_function, dt, dx):
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
                 # compute derived quantities
@@ -41,7 +41,10 @@ class Exports:
                                 label_to_function["retention"], self.V_DG1
                             )
                     export.function = label_to_function[export.field]
-                    export.write(self.t)
+                    if isinstance(export, festim.TrapDensityXDMF):
+                        export.write(self.t, dx)
+                    else:
+                        export.write(self.t)
                     export.append = True
 
             elif isinstance(export, festim.TXTExport):
@@ -68,3 +71,4 @@ class Exports:
                 export.data = [export.make_header()]
                 export.assign_measures_to_quantities(dx, ds)
                 export.assign_properties_to_quantities(materials)
+
