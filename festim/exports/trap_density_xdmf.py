@@ -33,10 +33,10 @@ class TrapDensityXDMF(XDMFExport):
                 F -= f.inner(self.trap.density[0], v) * dx
             else:
                 F -= f.inner(self.trap.density[0], v) * dx(mat.id)
-        
+
         if log_level < 40:
             print("Solving variational problem for trap density export")
         f.solve(F == 0, u, bcs=[])
         self.function = u
-        
+
         super().write(t)

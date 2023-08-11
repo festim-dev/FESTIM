@@ -78,4 +78,3 @@ class Exports:
                 export.data = [export.make_header()]
                 export.assign_measures_to_quantities(dx, ds)
                 export.assign_properties_to_quantities(materials)
-
