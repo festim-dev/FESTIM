@@ -14,7 +14,7 @@ class Exports:
         """writes to file
 
         Args:
-            label_to_function (str, int): label of function
+            label_to_function (dict): dictionary of labels mapped to solutions
             dt (festim.Stepsize): the model's stepsize
             dx (fenics.Measure): the measure for dx
         """
