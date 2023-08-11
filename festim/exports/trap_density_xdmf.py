@@ -16,13 +16,22 @@ class TrapDensityXDMF(XDMFExport):
 
         self.trap = trap
 
-    def write(self, t):
+    def write(self, t, dx):
         """Writes to file
 
         Args:
             t (float): the time
+            dx (fenics.Measure): the measure for dx
         """
         functionspace = self.function.function_space().collapse()
-        density_as_function = f.project(self.trap.density[0], functionspace)
-        self.function = density_as_function
+        u = f.Function(functionspace)
+        v = f.TestFunction(functionspace)
+        F = f.inner(u, v) * dx
+
+        for mat in self.trap.materials:
+            F -= f.inner(self.trap.density[0], v) * dx(mat.id)
+
+        f.solve(F == 0, u, bcs=[])
+        self.function = u
+
         super().write(t)

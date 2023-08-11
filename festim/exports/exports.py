@@ -10,7 +10,14 @@ class Exports:
         self.final_time = None
         self.nb_iterations = 0
 
-    def write(self, label_to_function, dt):
+    def write(self, label_to_function, dt, dx):
+        """writes to file
+
+        Args:
+            label_to_function (dict): dictionary of labels mapped to solutions
+            dt (festim.Stepsize): the model's stepsize
+            dx (fenics.Measure): the measure for dx
+        """
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
                 # compute derived quantities
@@ -41,7 +48,10 @@ class Exports:
                                 label_to_function["retention"], self.V_DG1
                             )
                     export.function = label_to_function[export.field]
-                    export.write(self.t)
+                    if isinstance(export, festim.TrapDensityXDMF):
+                        export.write(self.t, dx)
+                    else:
+                        export.write(self.t)
                     export.append = True
 
             elif isinstance(export, festim.TXTExport):
