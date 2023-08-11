@@ -100,12 +100,12 @@ def test_trap_density_xdmf_export_traps_materials_mixed(tmpdir):
     density_expr = 2e06 + festim.x**2
 
     my_model = festim.Simulation(log_level=20)
-    vertices = np.linspace(0, 3e-06, num=100)
+    vertices = np.linspace(0, 2e-06, num=100)
     my_model.mesh = festim.MeshFromVertices(vertices=vertices)
 
-    mat_2 = festim.Material(D_0=2, E_D=0, id=2)
+    mat_2 = festim.Material(D_0=2, E_D=0, id=2, borders=[1e-06, 2e-06])
     my_model.materials = festim.Materials(
-        [festim.Material(D_0=1, E_D=0, id=1, name="1"), mat_2]
+        [festim.Material(D_0=1, E_D=0, id=1, name="1", borders=[0, 1e-06]), mat_2]
     )
     trap_1 = festim.Trap(
         k_0=1, E_k=0, p_0=1, E_p=0, density=density_expr, materials="1"
@@ -117,6 +117,7 @@ def test_trap_density_xdmf_export_traps_materials_mixed(tmpdir):
         transient=False,
         absolute_tolerance=1e06,
         relative_tolerance=1e-08,
+        traps_element_type="DG",
     )
     density_file = tmpdir.join("density1.xdmf")
     my_export = festim.TrapDensityXDMF(
@@ -129,12 +130,16 @@ def test_trap_density_xdmf_export_traps_materials_mixed(tmpdir):
     my_model.initialise()
     my_model.run()
 
-    V = FunctionSpace(my_model.mesh.mesh, "CG", 1)
-
-    density_expected = interpolate(festim.as_expression(density_expr), V)
+    V = FunctionSpace(my_model.mesh.mesh, "DG", 1)
+    volume_markers = my_model.mesh.volume_markers
+    dx = Measure("dx", domain=my_model.mesh.mesh, subdomain_data=volume_markers)
+    density_expected = Function(V)
+    v = TestFunction(V)
+    F = inner(density_expected, v) * dx
+    F -= inner(festim.as_expression(density_expr), v) * dx(1)
+    solve(F == 0, density_expected, bcs=[])
 
     density_read = Function(V)
     XDMFFile(str(Path(density_file))).read_checkpoint(density_read, "density1", -1)
-
     l2_error = errornorm(density_expected, density_read, "L2")
     assert l2_error < 2e-3
