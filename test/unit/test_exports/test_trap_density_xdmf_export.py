@@ -136,7 +136,7 @@ def test_trap_density_xdmf_export_traps_materials_mixed(tmpdir):
     density_expected = Function(V)
     v = TestFunction(V)
     F = inner(density_expected, v) * dx
-    F -= inner(festim.as_expression(density_expr), v) * dx(1)
+    F -= inner(density_expr, v) * dx(1)
     solve(F == 0, density_expected, bcs=[])
 
     density_read = Function(V)
