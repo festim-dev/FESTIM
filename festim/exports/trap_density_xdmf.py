@@ -16,7 +16,7 @@ class TrapDensityXDMF(XDMFExport):
 
         self.trap = trap
 
-    def write(self, t, dx, log_level):
+    def write(self, t, dx):
         """Writes to file
 
         Args:
@@ -29,13 +29,12 @@ class TrapDensityXDMF(XDMFExport):
         F = f.inner(u, v) * dx
 
         for mat in self.trap.materials:
+            # F -= f.inner(self.trap.density[0], v) * dx
             if isinstance(mat, str):
                 F -= f.inner(self.trap.density[0], v) * dx
             else:
                 F -= f.inner(self.trap.density[0], v) * dx(mat.id)
 
-        if log_level < 40:
-            print("Solving variational problem for trap density export")
         f.solve(F == 0, u, bcs=[])
         self.function = u
 

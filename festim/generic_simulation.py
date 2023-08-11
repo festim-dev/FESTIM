@@ -364,7 +364,7 @@ class Simulation:
 
         self.exports.t = self.t
         self.exports.write(
-            self.label_to_function, self.dt, self.mesh.dx, self.log_level
+            self.label_to_function, self.dt, self.mesh.dx
         )
 
     def update_post_processing_solutions(self):

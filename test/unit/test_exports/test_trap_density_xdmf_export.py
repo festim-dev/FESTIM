@@ -78,7 +78,7 @@ def test_trap_density_xdmf_export_write(tmpdir):
     my_export.function = Function(V_vector).sub(1)
 
     # run
-    my_export.write(t=1, dx=dx, log_level=20)
+    my_export.write(t=1, dx=dx)
 
     # test
     density_read = Function(V)
