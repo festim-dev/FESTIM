@@ -10,7 +10,7 @@ class Exports:
         self.final_time = None
         self.nb_iterations = 0
 
-    def write(self, label_to_function, dt, dx):
+    def write(self, label_to_function, dt, dx, log_level):
         """writes to file
 
         Args:
@@ -49,7 +49,7 @@ class Exports:
                             )
                     export.function = label_to_function[export.field]
                     if isinstance(export, festim.TrapDensityXDMF):
-                        export.write(self.t, dx)
+                        export.write(self.t, dx, log_level)
                     else:
                         export.write(self.t)
                     export.append = True
