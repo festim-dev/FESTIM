@@ -29,11 +29,7 @@ class TrapDensityXDMF(XDMFExport):
         F = f.inner(u, v) * dx
 
         for mat in self.trap.materials:
-            # F -= f.inner(self.trap.density[0], v) * dx
-            if isinstance(mat, str):
-                F -= f.inner(self.trap.density[0], v) * dx
-            else:
-                F -= f.inner(self.trap.density[0], v) * dx(mat.id)
+            F -= f.inner(self.trap.density[0], v) * dx(mat.id)
 
         f.solve(F == 0, u, bcs=[])
         self.function = u
