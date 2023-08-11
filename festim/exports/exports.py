@@ -11,6 +11,13 @@ class Exports:
         self.nb_iterations = 0
 
     def write(self, label_to_function, dt, dx):
+        """writes to file
+
+        Args:
+            label_to_function (str, int): label of function
+            dt (festim.Stepsize): the model's stepsize
+            dx (fenics.Measure): the measure for dx
+        """
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
                 # compute derived quantities
