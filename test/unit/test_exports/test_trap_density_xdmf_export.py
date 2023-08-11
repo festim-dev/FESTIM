@@ -15,7 +15,9 @@ def test_trap_density_xdmf_export_intergration_with_simultion(tmpdir):
     my_model = festim.Simulation(log_level=20)
     my_model.mesh = festim.Mesh()
     my_model.mesh.mesh = UnitSquareMesh(30, 30)
-    my_model.mesh.volume_markers = MeshFunction("size_t", my_model.mesh.mesh, my_model.mesh.mesh.topology().dim(), 1)
+    my_model.mesh.volume_markers = MeshFunction(
+        "size_t", my_model.mesh.mesh, my_model.mesh.mesh.topology().dim(), 1
+    )
     mat_1 = festim.Material(D_0=1, E_D=0, id=1)
     my_model.materials = festim.Materials([mat_1])
     trap_1 = festim.Trap(
