@@ -178,3 +178,36 @@ def test_finaltime_overshoot():
     my_model.run()
 
     assert np.isclose(my_model.t, my_model.settings.final_time)
+
+
+def test_derived_quantities_exported_last_timestep_with_small_stepsize(tmp_path):
+    """test to catch bug #566"""
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1, num=100))
+
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+
+    my_model.T = F.Temperature(value=300)
+
+    my_model.dt = F.Stepsize(
+        initial_value=99.9999999,
+    )
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, final_time=100
+    )
+
+    list_of_derived_quantities = [F.TotalVolume("solute", volume=1)]
+
+    derived_quantities = F.DerivedQuantities(
+        list_of_derived_quantities,
+        filename=f"{tmp_path}/out.csv",
+    )
+
+    my_model.exports = [derived_quantities]
+
+    my_model.initialise()
+    my_model.run()
+
+    assert os.path.exists(f"{tmp_path}/out.csv")
