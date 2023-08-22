@@ -42,11 +42,19 @@ class Stepsize:
             }
         self.initial_value = initial_value
         self.value = None
-        if milestones:
-            self.milestones = sorted(milestones)
-        else:
-            self.milestones = milestones
+        self.milestones = milestones
         self.initialise_value()
+
+    @property
+    def milestones(self):
+        return self._milestones
+
+    @milestones.setter
+    def milestones(self, value):
+        if value:
+            self._milestones = sorted(value)
+        else:
+            self._milestones = value
 
     def initialise_value(self):
         """Creates a fenics.Constant object initialised with self.initial_value
@@ -83,7 +91,9 @@ class Stepsize:
         # adapt for next milestone
         next_milestone = self.next_milestone(t)
         if next_milestone is not None:
-            if t + float(self.value) > next_milestone and not np.isclose(t, next_milestone):
+            if t + float(self.value) > next_milestone and not np.isclose(
+                t, next_milestone
+            ):
                 print("changing dt")
                 self.value.assign((next_milestone - t))
 
