@@ -16,11 +16,14 @@ class Stepsize:
             t_stop. Defaults to None.
         dt_min (float, optional): Minimum stepsize below which an error is
             raised. Defaults to None.
+        milestones (list, optional): list of times by which the simulation must
+            pass. Defaults to None.
 
     Attributes:
         adaptive_stepsize (dict): contains the parameters for adaptive stepsize
         value (fenics.Constant): value of dt
-
+        milestones (list): list of times by which the simulation must
+            pass.
     """
 
     def __init__(
@@ -94,7 +97,6 @@ class Stepsize:
             if t + float(self.value) > next_milestone and not np.isclose(
                 t, next_milestone
             ):
-                print("changing dt")
                 self.value.assign((next_milestone - t))
 
     def next_milestone(self, current_time):
