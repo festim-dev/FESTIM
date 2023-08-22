@@ -42,7 +42,10 @@ class Stepsize:
             }
         self.initial_value = initial_value
         self.value = None
-        self.milestones = milestones
+        if milestones:
+            self.milestones = sorted(milestones)
+        else:
+            self.milestones = milestones
         self.initialise_value()
 
     def initialise_value(self):
