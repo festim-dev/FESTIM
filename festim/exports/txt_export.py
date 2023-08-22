@@ -15,8 +15,8 @@ class TXTExport(festim.Export):
             "T"...)
         label (str): label of the field. Will also be the filename.
         folder (str): the export folder
-        times (list, optional): if provided, the stepsize will be modified to
-            ensure these timesteps are exported. Otherwise exports at all
+        times (list, optional): if provided, the field will be
+            exported at these timesteps. Otherwise exports at all
             timesteps. Defaults to None.
     """
 
