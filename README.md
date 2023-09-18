@@ -1,6 +1,6 @@
 # FESTIM
 
-[![CircleCI](https://circleci.com/gh/RemDelaporteMathurin/FESTIM.svg?style=svg&circle-token=ecc5a4a8c75955af6c238d255465bc04dfaaaf8e)](https://circleci.com/gh/RemDelaporteMathurin/FESTIM)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/RemDelaporteMathurin/FESTIM/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/RemDelaporteMathurin/FESTIM/tree/main)
 [![codecov](https://codecov.io/gh/RemDelaporteMathurin/FESTIM/branch/master/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/RemDelaporteMathurin/FESTIM)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
 ![GitHub stars](https://img.shields.io/github/stars/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Stars&logoColor=white)
@@ -12,8 +12,6 @@ It simulates the diffusion and trapping of hydrogen, coupled to heat transfer wi
 :point_right: [Getting started](https://festim.readthedocs.io/en/latest/getting_started.html)
 
 :point_right: [Documentation](https://festim.readthedocs.io/)
-
-:point_right: [Examples](https://github.com/RemDelaporteMathurin/FESTIM/tree/main/demos)
 
 :point_right: [Tutorials](https://github.com/RemDelaporteMathurin/FESTIM-workshop)
 
