@@ -13,8 +13,6 @@ It simulates the diffusion and trapping of hydrogen, coupled to heat transfer wi
 
 :point_right: [Documentation](https://festim.readthedocs.io/)
 
-:point_right: [Examples](https://github.com/RemDelaporteMathurin/FESTIM/tree/main/demos)
-
 :point_right: [Tutorials](https://github.com/RemDelaporteMathurin/FESTIM-workshop)
 
 
