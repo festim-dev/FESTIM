@@ -41,6 +41,6 @@ Specific versions of FESTIM can be installed with::
 
     pip install FESTIM==[version]
 
-with the desired version number.  For example::
+with the desired version tag.  For example::
 
     pip install FESTIM==0.9
