@@ -39,7 +39,7 @@ FESTIM can then be installed using pip::
 
 Specific versions of FESTIM can be installed with::
 
-    pip install FESTIM==version
+    pip install FESTIM==[version]
 
 with the desired version number.  For example::
 
