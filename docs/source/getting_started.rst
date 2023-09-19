@@ -36,3 +36,11 @@ Installing FESTIM
 FESTIM can then be installed using pip::
 
     pip install FESTIM
+
+Specific versions of FESTIM can be installed with::
+
+    pip install FESTIM==[version]
+
+with the desired version tag.  For example::
+
+    pip install FESTIM==0.9
