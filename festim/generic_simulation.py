@@ -241,6 +241,9 @@ class Simulation:
         else:
             self.mesh.define_measures()
 
+        # needed to avoid hanging behaviour in parrallel see #498
+        self.mesh.mesh.bounding_box_tree()
+
         self.V_DG1 = FunctionSpace(self.mesh.mesh, "DG", 1)
         self.exports.V_DG1 = self.V_DG1
 
