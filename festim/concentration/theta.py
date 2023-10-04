@@ -88,26 +88,35 @@ class Theta(Mobile):
         The attribute post_processing_solution is fenics.Product (if self.S is
         festim.ArheniusCoeff)
         """
-        du = f.TrialFunction(self.post_processing_solution.function_space())
-        J = f.derivative(self.form_post_processing, self.post_processing_solution, du)
-        problem = f.NonlinearVariationalProblem(
-            self.form_post_processing, self.post_processing_solution, [], J
+        problem = f.LinearVariationalProblem(
+            a=f.lhs(self.form_post_processing),
+            L=f.rhs(self.form_post_processing),
+            u=self.post_processing_solution,
+            bcs=[],
         )
-        solver = f.NonlinearVariationalSolver(problem)
-        # TODO these prms should be the same as in Simulation.settings I think
-        solver.parameters["newton_solver"]["absolute_tolerance"] = 1e-10
-        solver.parameters["newton_solver"]["relative_tolerance"] = 1e-10
-        solver.parameters["newton_solver"]["maximum_iterations"] = 50
+        solver = f.LinearVariationalSolver(problem)
         solver.solve()
 
     def create_form_post_processing(self, V, materials, dx):
+        """Creates a variational formulation for c = theta * S or theta**2 * S
+
+        Args:
+            V (fenics.FunctionSpace): the DG1 function space of the concentration field
+            materials (festim.Materials): the materials
+            dx (fenics.Measurement): the dx measure of the problem
+        """
         F = 0
         v = f.TestFunction(V)
-        self.post_processing_solution = f.Function(V)
-        F += -self.post_processing_solution * v * dx
+        c = f.TrialFunction(V)
+
+        F += -c * v * dx
         for mat in materials.materials:
             if mat.solubility_law == "sievert":
+                # for sievert materials c = theta * S
                 F += self.solution * self.S * v * dx(mat.id)
             elif mat.solubility_law == "henry":
+                # for henry materials c = theta**2 * S
                 F += self.solution**2 * self.S * v * dx(mat.id)
+
         self.form_post_processing = F
+        self.post_processing_solution = f.Function(V)
