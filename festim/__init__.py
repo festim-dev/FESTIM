@@ -59,7 +59,7 @@ from .boundary_conditions.fluxes.mass_flux import MassFlux
 
 from .exports.exports import Exports
 from .exports.export import Export
-from .exports.xdmf_export import XDMFExport, XDMFExports
+from .exports.xdmf_export import XDMFExport
 from .exports.trap_density_xdmf import TrapDensityXDMF
 
 from .exports.derived_quantities.derived_quantity import (
