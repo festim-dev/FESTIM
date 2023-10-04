@@ -13,9 +13,7 @@ class InitialCondition:
         ValueError: if XDMF and time_step is None
     """
 
-    def __init__(
-        self, field=0, value=0.0, label=None, time_step=None
-    ) -> None:
+    def __init__(self, field=0, value=0.0, label=None, time_step=None) -> None:
         # TODO make an inherited class InitialConditionXDMF
         self.field = field
         self.value = value
