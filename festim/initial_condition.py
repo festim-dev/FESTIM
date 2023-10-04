@@ -1,6 +1,3 @@
-import warnings
-
-
 class InitialCondition:
     """
     Args:
@@ -8,8 +5,6 @@ class InitialCondition:
             ("0", "solute", "T", "1",...). Defaults to 0.
         value (float, str, optional): the value of the initial condition.
             Defaults to 0.
-        component (int, str, optional): the field
-            ("0", "solute", "T", "1",...). Soon to be deprecated. Defaults to None.
         label (str, optional): label in the XDMF file. Defaults to None.
         time_step ([type], optional): [description]. Defaults to None.
 
@@ -19,14 +14,11 @@ class InitialCondition:
     """
 
     def __init__(
-        self, field=0, value=0.0, component=None, label=None, time_step=None
+        self, field=0, value=0.0, label=None, time_step=None
     ) -> None:
         # TODO make an inherited class InitialConditionXDMF
         self.field = field
         self.value = value
-        if component is not None:
-            self.field = component
-            warnings.warn("components key will be deprecated", DeprecationWarning)
         self.label = label
         self.time_step = time_step
         if type(self.value) == str:
