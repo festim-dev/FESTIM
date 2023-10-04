@@ -158,28 +158,3 @@ class XDMFExport(Export):
                 return True
 
         return False
-
-
-# TODO should we get rid of XDMFExports?
-
-
-class XDMFExports:
-    def __init__(
-        self, fields=[], labels=[], folder=None, mode=1, checkpoint=True, functions=[]
-    ) -> None:
-        self.fields = fields
-        self.labels = labels
-        if functions != []:
-            self.fields = functions
-            msg = "functions key will be deprecated. Please use fields instead"
-            warnings.warn(msg, DeprecationWarning)
-
-        if len(self.fields) != len(self.labels):
-            raise ValueError(
-                "Number of fields to be exported "
-                "doesn't match number of labels in xdmf exports"
-            )
-        self.xdmf_exports = [
-            XDMFExport(function, label, folder=folder, mode=mode, checkpoint=checkpoint)
-            for function, label in zip(self.fields, self.labels)
-        ]

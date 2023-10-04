@@ -164,11 +164,12 @@ class TestPostProcessing:
         """
         # build
         d = tmpdir.mkdir("test_folder")
-        my_sim.exports.exports = festim.XDMFExports(
-            fields=["solute", "T"],
-            labels=["solute", "temperature"],
-            folder=str(Path(d)),
-        ).xdmf_exports
+
+        my_sim.exports.exports = [
+            festim.XDMFExport("solute", "solute", folder=str(Path(d))),
+            festim.XDMFExport("T", "temperature", folder=str(Path(d))),
+        ]
+
         filenames = [
             str(Path(d)) + "/{}.xdmf".format(f) for f in ["solute", "temperature"]
         ]
@@ -205,12 +206,11 @@ class TestPostProcessing:
             tmpdir (_type_): _description_
         """
         d = tmpdir.mkdir("test_folder")
-        my_sim.exports.exports = festim.XDMFExports(
-            fields=["solute", "T"],
-            labels=["solute", "temperature"],
-            mode="last",
-            folder=str(Path(d)),
-        ).xdmf_exports
+
+        my_sim.exports.exports = [
+            festim.XDMFExport("solute", "solute", mode="last", folder=str(Path(d))),
+            festim.XDMFExport("T", "temperature", mode="last", folder=str(Path(d))),
+        ]
         my_sim.exports.final_time = 1
         my_sim.t = 0
         filenames = [

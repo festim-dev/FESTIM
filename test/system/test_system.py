@@ -4,7 +4,6 @@ import pytest
 import sympy as sp
 import numpy as np
 from pathlib import Path
-import timeit
 
 
 def compute_error(exact, computed, t, norm):
@@ -58,12 +57,8 @@ def test_run_temperature_stationary(tmpdir):
     )
 
     my_exports = [
-        festim.XDMFExports(
-            fields=["T", "solute"],
-            labels=["temperature", "solute"],
-            folder=str(Path(d)),
-            checkpoint=False,
-        ),
+        festim.XDMFExport("T", "temperature", folder=str(Path(d)), checkpoint=False),
+        festim.XDMFExport("solute", "solute", folder=str(Path(d)), checkpoint=False),
         my_derived_quantities,
     ]
 
@@ -78,7 +73,7 @@ def test_run_temperature_stationary(tmpdir):
         exports=my_exports,
     )
     my_sim.initialise()
-    output = my_sim.run()
+    my_sim.run()
 
     error = compute_error(u, computed=my_sim.T.T, t=my_sim.t, norm="error_max")
     assert error < 1e-9
