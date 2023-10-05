@@ -543,6 +543,23 @@ def test_string_for_field_in_dirichletbc():
     bc.create_dirichletbc(V, fenics.Constant(1), surface_marker)
 
 
+def test_dissociation_flux_solve():
+    sim = festim.Simulation()
+    sim.mesh = festim.MeshFromVertices([0, 1, 2, 3])
+    sim.materials = festim.Material(id=1, D_0=1, E_D=0)
+    sim.T = 500
+    sim.boundary_conditions = [
+        festim.DissociationFlux(surfaces=[1], Kd_0=1, E_Kd=0, P=1e4)
+    ]
+    sim.settings = festim.Settings(
+        transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
+    )
+    sim.dt = None
+    sim.exports = []
+    sim.initialise()
+    sim.run()
+
+
 def test_dissoc_flux():
     expr = 2 + festim.x
     T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)
