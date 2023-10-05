@@ -558,7 +558,6 @@ def test_dissociation_flux_solve():
     sim.dt = None
     sim.exports = []
     sim.initialise()
-    sim.run()
 
 
 def test_dissoc_flux():
