@@ -33,7 +33,6 @@ Contents
    theory
    userguide/index
    devguide/index
-   api/festim
    publications
 
 
