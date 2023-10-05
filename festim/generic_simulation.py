@@ -351,10 +351,10 @@ class Simulation:
     def display_time(self):
         """Displays the current time"""
         simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
-        simulation_time = round(self.t, 1)
+        simulation_time = round(self.t, 1) 
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = "{:.1f} %        ".format(simulation_percentage)
-        msg += "{:.1e} s".format(simulation_time)
+        msg += "{:.1e} s".format(self.t)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
         if not np.isclose(self.t, self.settings.final_time) and self.log_level == 40:
             print(msg, end="\r")
