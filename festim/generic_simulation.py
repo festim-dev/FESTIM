@@ -351,7 +351,6 @@ class Simulation:
     def display_time(self):
         """Displays the current time"""
         simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
-        simulation_time = round(self.t, 1) 
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(self.t)
