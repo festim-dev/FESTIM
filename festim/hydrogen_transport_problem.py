@@ -1,14 +1,15 @@
 import numpy as np
+from dolfinx import fem
+import ufl
 
 
 class HydrogenTransportProblem:
     """
     Hydrogen Transport Problem.
-    Used internally in festim.Model
 
     Args:
-        geometry (festim.Geometry): the geometry of the model (mesh, function
-            spaces and subdomains)
+        mesh (festim.Mesh): the mesh of the model
+        subdomains (list of festim.Subdomain):
 
     Attributes:
         geometry (festim.Geometry): the geometry of the model (mesh, function
@@ -18,14 +19,16 @@ class HydrogenTransportProblem:
 
     def __init__(
         self,
-        geometry=None,
+        mesh=None,
+        subdomains=[],
         species=[],
         temperature=None,
         boundary_conditions=[],
         solver_parameters=None,
         exports=[],
     ) -> None:
-        self.geometry = geometry
+        self.mesh = mesh
+        self.subdomains = subdomains
         self.species = species
         self.temperature = temperature
         self.boundary_conditions = boundary_conditions
@@ -34,14 +37,23 @@ class HydrogenTransportProblem:
 
         self.dx = None
         self.ds = None
-        self.function_spaces = []
+        self.function_space = None
+        self.facet_tags = None
+        self.volume_tags = None
 
     def initialise(self):
         """Initialise the model. Creates suitable function
         spaces, the subdomains...
         """
 
-        self.function_spaces.append(self.geometry.define_function_space())
-        self.geometry.subdomains = self.geometry.mesh.define_measures(
-            self.function_spaces[0]
-        )
+        self.define_function_space()
+        (
+            self.dx,
+            self.ds,
+            self.facet_tags,
+            self.volume_tags,
+        ) = self.mesh.create_measures_and_tags(self.function_space)
+
+    def define_function_space(self):
+        elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
+        self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
