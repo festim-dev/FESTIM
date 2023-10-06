@@ -559,7 +559,7 @@ def test_flux_BC_initialise(bc):
     sim.mesh = festim.MeshFromVertices([0, 1, 2, 3])
     sim.materials = festim.Material(id=1, D_0=1, E_D=0)
     sim.T = festim.Temperature(value=500)
-    sim.boundary_conditions = [boundary]
+    sim.boundary_conditions = [bc]
     sim.settings = festim.Settings(
         transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
     )
