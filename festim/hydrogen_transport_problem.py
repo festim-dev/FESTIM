@@ -54,7 +54,7 @@ class HydrogenTransportProblem:
             self.dx,
             self.ds,
         ) = self.mesh.create_measures_and_tags(self.function_space)
-        self.create_functions_for_species()
+        self.assign_functions_to_species()
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
