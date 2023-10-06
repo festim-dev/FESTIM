@@ -7,7 +7,7 @@ version: 2
 
 
 conda:
-  environment: docs/environment.yml
+  environment: docs/source/environment.yml
 
 build:
   os: "ubuntu-20.04"
