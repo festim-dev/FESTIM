@@ -9,11 +9,10 @@ class HydrogenTransportProblem:
 
     Args:
         mesh (festim.Mesh): the mesh of the model
-        subdomains (list of festim.Subdomain):
+        subdomains (list of festim.Subdomain): the subdomains of the model
 
     Attributes:
-        geometry (festim.Geometry): the geometry of the model (mesh, function
-            spaces and subdomains)
+        mesh (festim.Mesh): the mesh of the model
 
     """
 
@@ -43,15 +42,15 @@ class HydrogenTransportProblem:
 
     def initialise(self):
         """Initialise the model. Creates suitable function
-        spaces, the subdomains...
+        spaces, facet and volume tags...
         """
 
         self.define_function_space()
         (
-            self.dx,
-            self.ds,
             self.facet_tags,
             self.volume_tags,
+            self.dx,
+            self.ds,
         ) = self.mesh.create_measures_and_tags(self.function_space)
 
     def define_function_space(self):
