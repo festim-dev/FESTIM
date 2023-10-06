@@ -60,7 +60,7 @@ class HydrogenTransportProblem:
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
 
-    def create_functions_for_species(self):
+    def assign_functions_to_species(self):
         """Creates for each species the solution, prev solution and test function
         """
         for spe in self.species:
