@@ -49,7 +49,7 @@ def test_permeation_problem():
     v = mobile_H.test_function
 
 
-    temperature = 500
+    temperature = Constant(my_mesh.mesh, 500.)
     k_B = F.k_B
 
     # TODO this should be a property of Mesh
@@ -73,12 +73,12 @@ def test_permeation_problem():
     bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
     bcs = [bc_sieverts, bc_outgas]
 
-    D_0 = 1.9e-7
-    E_D = 0.2
+    D_0 = Constant(my_mesh.mesh, 1.9e-7)
+    E_D = Constant(my_mesh.mesh, 0.2)
 
     D = D_0 * exp(-E_D / k_B / temperature)
 
-    dt = 1 / 20
+    dt = Constant(my_mesh.mesh, 1 / 20)
     final_time = 50
 
     # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
@@ -111,8 +111,8 @@ def test_permeation_problem():
     t = 0
     progress = tqdm.autonotebook.tqdm(desc="Solving H transport problem", total=final_time)
     while t < final_time:
-        progress.update(dt)
-        t += dt
+        progress.update(float(dt))
+        t += float(dt)
 
         solver.solve(u)
 
