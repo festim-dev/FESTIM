@@ -42,7 +42,7 @@ class Mesh1D(Mesh):
 
         return mesh.create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
 
-    def define_surface_markers(self, function_space):
+    def create_meshtags(self, function_space):
         """Creates the surface markers
         Returns:
             dolfinx.MeshTags: the tags containing the surface
@@ -63,10 +63,7 @@ class Mesh1D(Mesh):
             self.mesh, facet_dimension, dofs_facets, tags_facets
         )
 
-        return mesh_tags_facets
+        # TODO implement this
+        mesh_tags_volumes = None
 
-    def define_measures(self, function_space):
-        """Creates the fenics.Measure objects for self.ds"""
-
-        self.define_markers(function_space)
-        super().define_measures()
+        return mesh_tags_facets, mesh_tags_volumes
