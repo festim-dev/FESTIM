@@ -8,24 +8,19 @@ from festim import Mesh
 class Mesh1D(Mesh):
     """
     1D Mesh
+
     Attributes:
-        vertices (list): the mesh x-coordinates
-        size (float): the size of the 1D mesh
-        V (dolfinx.fem.FunctionSpace): the function space of the simulation
+        vertices (list): the mesh x-coordinates (m)
     """
 
     def __init__(self, vertices, **kwargs) -> None:
         """Inits Mesh1D
 
         Args:
-            vertices (list): the mesh x-coordinates
+            vertices (list): the mesh x-coordinates (m)
         """
 
         self.vertices = vertices
-
-        self.start = min(vertices)
-        self.size = max(vertices)
-        self.V = None
 
         mesh = self.generate_mesh()
         super().__init__(mesh=mesh, **kwargs)
@@ -43,16 +38,21 @@ class Mesh1D(Mesh):
         return mesh.create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
 
     def create_meshtags(self, function_space):
-        """Creates the surface markers
+        """Creates the meshtags for a given function space
+        Args:
+            function_space (dolfinx.fem.function.FunctionSpace): the function
+                space of the model
+
         Returns:
-            dolfinx.MeshTags: the tags containing the surface
-                markers
+            dolfinx.mesh.MeshTagsMetaClass: the tags containing the facet
+                and volume tags
         """
+
         dofs_L = fem.locate_dofs_geometrical(
-            function_space, lambda x: np.isclose(x[0], self.start)
+            function_space, lambda x: np.isclose(x[0], min(self.vertices))
         )
         dofs_R = fem.locate_dofs_geometrical(
-            function_space, lambda x: np.isclose(x[0], self.size)
+            function_space, lambda x: np.isclose(x[0], max(self.vertices))
         )
 
         dofs_facets = np.array([dofs_L[0], dofs_R[0]], dtype=np.int32)
