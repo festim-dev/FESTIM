@@ -544,7 +544,7 @@ def test_string_for_field_in_dirichletbc():
 
 
 @pytest.mark.parametrize(
-    "boundary",
+    "bc",
     [
         (festim.DissociationFlux(surfaces=[1], Kd_0=1, E_Kd=0, P=1e4)),
         (festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)),
