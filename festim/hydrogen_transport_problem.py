@@ -1,6 +1,7 @@
 from dolfinx import fem
+from dolfinx.nls.petsc import NewtonSolver
 import ufl
-
+from mpi4py import MPI
 from dolfinx.fem import Function
 from ufl import (
     TestFunction,
@@ -104,6 +105,7 @@ class HydrogenTransportProblem:
         ) = self.mesh.create_measures_and_tags(self.function_space)
         self.assign_functions_to_species()
         self.create_formulation()
+        self.create_solver()
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
@@ -112,6 +114,8 @@ class HydrogenTransportProblem:
     def assign_functions_to_species(self):
         """Creates for each species the solution, prev solution and test function
         """
+        if len(self.species) > 1:
+            raise NotImplementedError("Multiple species not implemented yet")
         for spe in self.species:
             spe.solution = Function(self.function_space)
             spe.prev_solution = Function(self.function_space)
@@ -146,3 +150,9 @@ class HydrogenTransportProblem:
         formulation += ((u - u_n) / dt) * v * self.dx
 
         self.formulation = formulation
+    
+    def create_solver(self):
+        """Creates the solver of the model"""
+        problem = fem.petsc.NonlinearProblem(self.formulation, self.species[0].solution, bcs=self.boundary_conditions)
+        solver = NewtonSolver(MPI.COMM_WORLD, problem)
+        self.solver = solver
