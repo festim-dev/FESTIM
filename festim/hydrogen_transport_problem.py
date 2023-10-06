@@ -123,7 +123,6 @@ class HydrogenTransportProblem:
 
     def create_formulation(self):
         """Creates the formulation of the model"""
-        # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
         if len(self.sources) > 1:
             raise NotImplementedError("Sources not implemented yet")
         if len(self.subdomains) > 1:
@@ -135,19 +134,33 @@ class HydrogenTransportProblem:
         D_0 = fem.Constant(self.mesh.mesh, 1.9e-7)
         E_D = fem.Constant(self.mesh.mesh, 0.2)
 
-
         D = D_0 * exp(-E_D / F.k_B / self.temperature)
 
+        # TODO expose dt as parameter of the model
         dt = fem.Constant(self.mesh.mesh, 1 / 20)
 
         self.D = D # TODO remove this
         self.dt = dt # TODO remove this
 
-        u = self.species[0].solution
-        u_n = self.species[0].prev_solution
-        v = self.species[0].test_function
-        formulation = dot(D * grad(u), grad(v)) * self.dx
-        formulation += ((u - u_n) / dt) * v * self.dx
+        for spe in self.species:
+            u = spe.solution
+            u_n = spe.prev_solution
+            v = spe.test_function
+
+            formulation = dot(D * grad(u), grad(v)) * self.dx
+            formulation += ((u - u_n) / dt) * v * self.dx
+
+            # add sources
+            for source in self.sources:
+                # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
+                if source.species == spe:
+                    formulation += source * v * self.dx
+            # add fluxes
+            # TODO implement this
+            # for bc in self.boundary_conditions:
+            #     pass
+            #     if bc.species == spe and bc.type != "dirichlet":
+            #         formulation += bc * v * self.ds
 
         self.formulation = formulation
     
