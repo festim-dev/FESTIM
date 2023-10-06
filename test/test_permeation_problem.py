@@ -38,12 +38,15 @@ def test_permeation_problem():
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = my_mesh
 
+    mobile_H = F.Species("H")
+    my_model.species = [mobile_H]
+
     my_model.initialise()
 
     V = my_model.function_space
-    u = Function(V)
-    u_n = Function(V)
-    v = TestFunction(V)
+    u = mobile_H.solution
+    u_n = mobile_H.prev_solution
+    v = mobile_H.test_function
 
 
     temperature = 500
@@ -85,8 +88,7 @@ def test_permeation_problem():
     problem = NonlinearProblem(variational_form, u, bcs=bcs)
     solver = NewtonSolver(MPI.COMM_WORLD, problem)
 
-    my_model.settings.solver.convergence_criterion = "incremental"
-    # solver.convergence_criterion = "incremental"
+    solver.convergence_criterion = "incremental"
     solver.rtol = 1e-10
     solver.atol = 1e10
 

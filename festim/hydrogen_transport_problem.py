@@ -1,6 +1,8 @@
-import numpy as np
 from dolfinx import fem
 import ufl
+
+from dolfinx.fem import Function
+from ufl import TestFunction
 
 
 class HydrogenTransportProblem:
@@ -52,7 +54,16 @@ class HydrogenTransportProblem:
             self.dx,
             self.ds,
         ) = self.mesh.create_measures_and_tags(self.function_space)
+        self.create_functions_for_species()
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
+
+    def create_functions_for_species(self):
+        """Creates for each species the solution, prev solution and test function
+        """
+        for spe in self.species:
+            spe.solution = Function(self.function_space)
+            spe.prev_solution = Function(self.function_space)
+            spe.test_function = TestFunction(self.function_space)
