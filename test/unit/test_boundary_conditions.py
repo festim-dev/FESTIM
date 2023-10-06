@@ -551,6 +551,23 @@ def test_string_for_field_in_dirichletbc():
         (festim.FluxBC(surfaces=1, value=1, field=0)),
         (festim.MassFlux(h_coeff=1, c_ext=1, surfaces=1)),
         (festim.RecombinationFlux(Kr_0=1e-20, E_Kr=0, order=2, surfaces=1)),
+        (
+            festim.ImplantationDirichlet(
+                surfaces=1,
+                phi=1e18,
+                R_p=1e-9,
+                D_0=1,
+                E_D=0,
+                Kr_0=None,
+                E_Kr=None,
+                Kd_0=None,
+                E_Kd=None,
+                P=None,
+            )
+        ),
+        (festim.DirichletBC(surfaces=1, value=1, field=0)),
+        (festim.HenrysBC(surfaces=1, H_0=1, E_H=0, pressure=1e3)),
+        (festim.SievertsBC(surfaces=1, S_0=1, E_S=0, pressure=1e3)),
     ],
 )
 def test_flux_BC_initialise(bc):
