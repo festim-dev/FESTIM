@@ -20,7 +20,4 @@ class Geometry:
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
-        self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
-
-    def define_subdomains(self):
-        self.mesh.define_measures(self.function_space)
+        return fem.FunctionSpace(self.mesh.mesh, elements)

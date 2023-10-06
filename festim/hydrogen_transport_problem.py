@@ -42,4 +42,6 @@ class HydrogenTransportProblem:
         """
 
         self.function_spaces.append(self.geometry.define_function_space())
-        self.geometry.define_subdomains(self.function_spaces[0])
+        self.geometry.subdomains = self.geometry.mesh.define_measures(
+            self.function_spaces[0]
+        )
