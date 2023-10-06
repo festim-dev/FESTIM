@@ -39,6 +39,10 @@ def test_permeation_problem():
     mobile_H = F.Species("H")
     my_model.species = [mobile_H]
 
+
+    temperature = Constant(my_mesh.mesh, 500.)
+    my_model.temperature = temperature
+
     my_model.initialise()
 
     V = my_model.function_space
@@ -47,7 +51,7 @@ def test_permeation_problem():
     v = mobile_H.test_function
 
 
-    temperature = Constant(my_mesh.mesh, 500.)
+    
     k_B = F.k_B
 
     # TODO this should be a property of Mesh
@@ -71,19 +75,9 @@ def test_permeation_problem():
     bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
     bcs = [bc_sieverts, bc_outgas]
 
-    D_0 = Constant(my_mesh.mesh, 1.9e-7)
-    E_D = Constant(my_mesh.mesh, 0.2)
-
-    D = D_0 * exp(-E_D / k_B / temperature)
-
-    dt = Constant(my_mesh.mesh, 1 / 20)
     final_time = 50
 
-    # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
-    variational_form = dot(D * grad(u), grad(v)) * dx
-    variational_form += ((u - u_n) / dt) * v * dx
-
-    problem = NonlinearProblem(variational_form, u, bcs=bcs)
+    problem = NonlinearProblem(my_model.formulation, u, bcs=bcs)
     solver = NewtonSolver(MPI.COMM_WORLD, problem)
 
     solver.convergence_criterion = "incremental"
@@ -109,13 +103,13 @@ def test_permeation_problem():
     t = 0
     progress = tqdm.autonotebook.tqdm(desc="Solving H transport problem", total=final_time)
     while t < final_time:
-        progress.update(float(dt))
-        t += float(dt)
+        progress.update(float(my_model.dt))
+        t += float(my_model.dt)
 
         solver.solve(u)
 
         # post process
-        surface_flux = form(D * dot(grad(u), n) * ds(2))
+        surface_flux = form(my_model.D * dot(grad(u), n) * ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
