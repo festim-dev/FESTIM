@@ -4,7 +4,6 @@ from dolfinx.io import XDMFFile
 from dolfinx.fem import (
     Constant,
     dirichletbc,
-    Function,
     locate_dofs_topological,
     form,
     assemble_scalar,
@@ -16,7 +15,6 @@ from dolfinx.nls.petsc import NewtonSolver
 from ufl import (
     dot,
     grad,
-    TestFunction,
     exp,
     FacetNormal,
     dx,
