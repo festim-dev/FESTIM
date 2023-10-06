@@ -553,7 +553,7 @@ def test_string_for_field_in_dirichletbc():
         (festim.RecombinationFlux(Kr_0=1e-20, E_Kr=0, order=2, surfaces=1)),
     ],
 )
-def test_flux_BC_initialise(boundary):
+def test_flux_BC_initialise(bc):
     """Test to catch bug Flux BCs see #581"""
     sim = festim.Simulation()
     sim.mesh = festim.MeshFromVertices([0, 1, 2, 3])
