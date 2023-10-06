@@ -544,8 +544,7 @@ def test_string_for_field_in_dirichletbc():
 
 
 def test_dissociation_flux_solve():
-    """Test to catch bug DissociationFlux see #581
-    """
+    """Test to catch bug DissociationFlux see #581"""
     sim = festim.Simulation()
     sim.mesh = festim.MeshFromVertices([0, 1, 2, 3])
     sim.materials = festim.Material(id=1, D_0=1, E_D=0)
