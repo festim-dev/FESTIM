@@ -7,9 +7,9 @@ class Species:
 
     Attributes:
         name (str): a name given to the species.
-        solution (dolfinx.Function or ...): the solution for the current timestep
-        prev_solution (dolfinx.Function or ...): the solution for the previous timestep
-        test_function (ufl.TestFunction or ...): the testfunction associated with this species
+        solution (dolfinx.fem.Function or ...): the solution for the current timestep
+        prev_solution (dolfinx.fem.Function or ...): the solution for the previous timestep
+        test_function (ufl.Argument or ...): the testfunction associated with this species
     
     Usage:
         >>> from festim import Species, HTransportProblem
