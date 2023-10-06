@@ -32,11 +32,14 @@ class HydrogenTransportProblem:
         self.solver_parameters = solver_parameters
         self.exports = exports
 
+        self.dx = None
+        self.ds = None
+        self.function_spaces = []
+
     def initialise(self):
         """Initialise the model. Creates suitable function
         spaces, the subdomains...
         """
 
-        # geometry
-        self.geometry.define_function_space()
-        self.geometry.define_subdomains()
+        self.function_spaces.append(self.geometry.define_function_space())
+        self.geometry.define_subdomains(self.function_spaces[0])
