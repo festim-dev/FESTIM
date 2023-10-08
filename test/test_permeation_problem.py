@@ -8,16 +8,11 @@ from dolfinx.fem import (
     form,
     assemble_scalar,
 )
-from dolfinx.fem.petsc import (
-    NonlinearProblem,
-)
-from dolfinx.nls.petsc import NewtonSolver
 from ufl import (
     dot,
     grad,
     exp,
     FacetNormal,
-    dx,
     ds,
 )
 from dolfinx import log
