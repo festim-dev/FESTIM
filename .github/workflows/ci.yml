@@ -29,4 +29,11 @@ jobs:
     - name: Run tests
       shell: bash -l {0}
       run: |
-        pytest test/
+        pytest test/ --cov festim --cov-report xml --cov-report term
+    
+    - name: Upload to codecov
+      shell: bash -l {0}
+      run: |
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        ./codecov -t ${CODECOV_TOKEN}
