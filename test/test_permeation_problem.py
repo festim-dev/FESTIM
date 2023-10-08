@@ -35,8 +35,7 @@ def test_permeation_problem():
     mobile_H = F.Species("H")
     my_model.species = [mobile_H]
 
-
-    temperature = Constant(my_mesh.mesh, 500.)
+    temperature = Constant(my_mesh.mesh, 500.0)
     my_model.temperature = temperature
 
     my_model.initialise()
@@ -45,7 +44,6 @@ def test_permeation_problem():
     my_model.solver.convergence_criterion = "incremental"
     my_model.solver.rtol = 1e-10
     my_model.solver.atol = 1e10
-
 
     my_model.solver.report = True
     ksp = my_model.solver.krylov_solver
@@ -58,7 +56,6 @@ def test_permeation_problem():
 
     V = my_model.function_space
     u = mobile_H.solution
-    u_n = mobile_H.prev_solution
 
     # TODO this should be a property of Mesh
     n = FacetNormal(my_mesh.mesh)
@@ -112,7 +109,7 @@ def test_permeation_problem():
         mobile_xdmf.write_function(u, t)
 
         # update previous solution
-        u_n.x.array[:] = u.x.array[:]
+        mobile_H.prev_solution.x.array[:] = u.x.array[:]
 
     mobile_xdmf.close()
 

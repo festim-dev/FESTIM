@@ -17,7 +17,7 @@ def test_assign_functions_to_species():
         species=[
             F.Species(name="H"),
             # F.Species(name="Trap"),
-            ],
+        ],
     )
     model.define_function_space()
     model.assign_functions_to_species()
