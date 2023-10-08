@@ -38,11 +38,13 @@ class TestAdapt:
         new_value = float(my_stepsize.value)
         assert new_value == my_stepsize.adaptive_stepsize["stepsize_stop_max"]
 
+
 def test_milestones_are_hit():
-    """Test that the milestones are hit at the correct times
-    """
+    """Test that the milestones are hit at the correct times"""
     # create a StepSize object
-    step_size = festim.Stepsize(1.0, stepsize_change_ratio=2, milestones=[1.5, 2.0, 10.3])
+    step_size = festim.Stepsize(
+        1.0, stepsize_change_ratio=2, milestones=[1.5, 2.0, 10.3]
+    )
 
     # set the initial time
     t = 0.0
@@ -68,8 +70,7 @@ def test_milestones_are_hit():
 
 
 def test_next_milestone():
-    """Test that the next milestone is correct for a given t value
-    """
+    """Test that the next milestone is correct for a given t value"""
     # Create a StepSize object
     step_size = festim.Stepsize(milestones=[10.0, 20.0, 30.0])
 
@@ -80,4 +81,8 @@ def test_next_milestone():
     # Check that the next milestone is correct for each t value
     for t, expected_milestone in zip(t_values, expected_milestones):
         next_milestone = step_size.next_milestone(t)
-        assert np.isclose(next_milestone, expected_milestone) if expected_milestone is not None else next_milestone is None
+        assert (
+            np.isclose(next_milestone, expected_milestone)
+            if expected_milestone is not None
+            else next_milestone is None
+        )
