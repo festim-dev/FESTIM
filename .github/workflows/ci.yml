@@ -1,0 +1,41 @@
+name: CI
+on: [pull_request, push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: myenv
+        mamba-version: "*"
+        channels: conda-forge, defaults
+
+    - name: Create Conda environment
+      shell: bash -l {0}
+      run: |
+        # conda upgrade --strict-channel-priority -c conda-forge --all
+        conda install -c conda-forge 'conda-libmamba-solver<23.9'
+        mamba install -c conda-forge fenics
+
+    - name: Install dependencies
+      shell: bash -l {0}
+      run: |
+        pip install pytest pytest-cov
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        pytest test/ --cov festim --cov-report xml --cov-report term
+    
+    - name: Upload to codecov
+      shell: bash -l {0}
+      run: |
+        curl -Os https://uploader.codecov.io/latest/linux/codecov
+        chmod +x codecov
+        ./codecov -t ${CODECOV_TOKEN}
