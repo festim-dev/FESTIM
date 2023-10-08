@@ -23,7 +23,7 @@ class DissociationFlux(FluxBC):
         self.P = P
         super().__init__(surfaces=surfaces, field=0)
 
-    def create_form(self, T):
+    def create_form(self, T, solute):
         Kd_0_expr = f.Expression(sp.printing.ccode(self.Kd_0), t=0, degree=1)
         E_Kd_expr = f.Expression(sp.printing.ccode(self.E_Kd), t=0, degree=1)
         P_expr = f.Expression(sp.printing.ccode(self.P), t=0, degree=1)

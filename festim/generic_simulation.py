@@ -241,6 +241,9 @@ class Simulation:
         else:
             self.mesh.define_measures()
 
+        # needed to avoid hanging behaviour in parrallel see #498
+        self.mesh.mesh.bounding_box_tree()
+
         self.V_DG1 = FunctionSpace(self.mesh.mesh, "DG", 1)
         self.exports.V_DG1 = self.V_DG1
 
@@ -348,10 +351,9 @@ class Simulation:
     def display_time(self):
         """Displays the current time"""
         simulation_percentage = round(self.t / self.settings.final_time * 100, 2)
-        simulation_time = round(self.t, 1)
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = "{:.1f} %        ".format(simulation_percentage)
-        msg += "{:.1e} s".format(simulation_time)
+        msg += "{:.1e} s".format(self.t)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
         if not np.isclose(self.t, self.settings.final_time) and self.log_level == 40:
             print(msg, end="\r")

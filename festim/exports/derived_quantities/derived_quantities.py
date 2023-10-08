@@ -123,7 +123,7 @@ class DerivedQuantities:
             nb_its_between_exports = self.nb_iterations_between_exports
             if nb_its_between_exports is None:
                 # export at the end
-                return t >= final_time
+                return np.isclose(t, final_time)
             else:
                 # export every N iterations
                 return nb_iterations % nb_its_between_exports == 0
