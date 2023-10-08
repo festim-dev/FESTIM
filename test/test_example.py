@@ -1,5 +1,5 @@
 import dolfinx
 
 
-def dummy_test():
+def test_example():
     pass
