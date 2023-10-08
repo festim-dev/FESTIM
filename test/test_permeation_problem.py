@@ -27,6 +27,7 @@ import tqdm.autonotebook
 
 import festim as F
 
+
 def test_permeation_problem():
     # mesh nodes
     vertices = np.linspace(0, 3e-4, num=1001)
@@ -46,13 +47,11 @@ def test_permeation_problem():
     u_n = mobile_H.prev_solution
     v = mobile_H.test_function
 
-
-    temperature = Constant(my_mesh.mesh, 500.)
+    temperature = Constant(my_mesh.mesh, 500.0)
     k_B = F.k_B
 
     # TODO this should be a property of Mesh
     n = FacetNormal(my_mesh.mesh)
-
 
     def siverts_law(T, S_0, E_S, pressure):
         S = S_0 * exp(-E_S / k_B / T)
@@ -90,7 +89,6 @@ def test_permeation_problem():
     solver.rtol = 1e-10
     solver.atol = 1e10
 
-
     solver.report = True
     ksp = solver.krylov_solver
     opts = PETSc.Options()
@@ -107,7 +105,9 @@ def test_permeation_problem():
     flux_values = []
     times = []
     t = 0
-    progress = tqdm.autonotebook.tqdm(desc="Solving H transport problem", total=final_time)
+    progress = tqdm.autonotebook.tqdm(
+        desc="Solving H transport problem", total=final_time
+    )
     while t < final_time:
         progress.update(float(dt))
         t += float(dt)
@@ -131,5 +131,6 @@ def test_permeation_problem():
 
     mobile_xdmf.close()
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     test_permeation_problem()
