@@ -19,6 +19,8 @@ jobs:
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
+        conda upgrade --strict-channel-priority -c conda-forge --all
+        conda install -c conda-forge 'conda-libmamba-solver<23.9' mamba
         mamba install -c conda-forge fenics
 
     - name: Install dependencies
