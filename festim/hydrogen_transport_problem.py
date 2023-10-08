@@ -12,6 +12,7 @@ from ufl import (
 
 import festim as F
 
+
 class HydrogenTransportProblem:
     """
     Hydrogen Transport Problem.
@@ -40,7 +41,7 @@ class HydrogenTransportProblem:
         facet_tags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
         volume_tags (dolfinx.cpp.mesh.MeshTags): the volume tags of the model
         formulation (ufl.form.Form): the formulation of the model
-
+        solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
 
     Usage:
         >>> import festim as F
@@ -138,8 +139,8 @@ class HydrogenTransportProblem:
         # TODO expose dt as parameter of the model
         dt = fem.Constant(self.mesh.mesh, 1 / 20)
 
-        self.D = D # TODO remove this
-        self.dt = dt # TODO remove this
+        self.D = D  # TODO remove this
+        self.dt = dt  # TODO remove this
 
         for spe in self.species:
             u = spe.solution
@@ -162,9 +163,11 @@ class HydrogenTransportProblem:
             #         formulation += bc * v * self.ds
 
         self.formulation = formulation
-    
+
     def create_solver(self):
         """Creates the solver of the model"""
-        problem = fem.petsc.NonlinearProblem(self.formulation, self.species[0].solution, bcs=self.boundary_conditions)
+        problem = fem.petsc.NonlinearProblem(
+            self.formulation, self.species[0].solution, bcs=self.boundary_conditions
+        )
         solver = NewtonSolver(MPI.COMM_WORLD, problem)
         self.solver = solver
