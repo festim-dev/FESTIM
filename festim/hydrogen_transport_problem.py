@@ -61,7 +61,7 @@ class HydrogenTransportProblem:
         ...     species=[F.Species(name="H"), F.Species(name="Trap")],
         ... )
         >>> my_model.initialise()
-        
+
     """
 
     def __init__(
@@ -112,8 +112,7 @@ class HydrogenTransportProblem:
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
 
     def assign_functions_to_species(self):
-        """Creates for each species the solution, prev solution and test function
-        """
+        """Creates for each species the solution, prev solution and test function"""
         if len(self.species) > 1:
             raise NotImplementedError("Multiple species not implemented yet")
         for spe in self.species:
