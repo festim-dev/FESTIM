@@ -99,7 +99,16 @@ class Stepsize:
             ):
                 self.value.assign((next_milestone - t))
 
-    def next_milestone(self, current_time):
+    def next_milestone(self, current_time: float):
+        """Returns the next milestone that the simulation must pass.
+        Returns None if there are no more milestones.
+
+        Args:
+            current_time (float): current time.
+
+        Returns:
+            float: next milestone.
+        """
         if self.milestones is None:
             return None
         for milestone in self.milestones:
