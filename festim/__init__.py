@@ -13,12 +13,12 @@ except Exception:
     __version__ = "unknown"
 
 
-import sympy as sp
-
 R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
+
+from .species import Species, Trap
 
 from .hydrogen_transport_problem import HydrogenTransportProblem
