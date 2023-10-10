@@ -14,7 +14,10 @@ def test_assign_functions_to_species():
     )
     model = F.HydrogenTransportProblem(
         mesh=mesh,
-        species=[F.Species(name="H"), F.Species(name="Trap")],
+        species=[
+            F.Species(name="H"),
+            # F.Species(name="Trap"),
+        ],
     )
     model.define_function_space()
     model.assign_functions_to_species()

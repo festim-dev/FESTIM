@@ -8,16 +8,11 @@ from dolfinx.fem import (
     form,
     assemble_scalar,
 )
-from dolfinx.fem.petsc import (
-    NonlinearProblem,
-)
-from dolfinx.nls.petsc import NewtonSolver
 from ufl import (
     dot,
     grad,
     exp,
     FacetNormal,
-    dx,
     ds,
 )
 from dolfinx import log
@@ -40,21 +35,33 @@ def test_permeation_problem():
     mobile_H = F.Species("H")
     my_model.species = [mobile_H]
 
+    temperature = Constant(my_mesh.mesh, 500.0)
+    my_model.temperature = temperature
+
     my_model.initialise()
+
+    # modify solver parameters
+    my_model.solver.convergence_criterion = "incremental"
+    my_model.solver.rtol = 1e-10
+    my_model.solver.atol = 1e10
+
+    my_model.solver.report = True
+    ksp = my_model.solver.krylov_solver
+    opts = PETSc.Options()
+    option_prefix = ksp.getOptionsPrefix()
+    opts[f"{option_prefix}ksp_type"] = "cg"
+    opts[f"{option_prefix}pc_type"] = "gamg"
+    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
+    ksp.setFromOptions()
 
     V = my_model.function_space
     u = mobile_H.solution
-    u_n = mobile_H.prev_solution
-    v = mobile_H.test_function
-
-    temperature = Constant(my_mesh.mesh, 500.0)
-    k_B = F.k_B
 
     # TODO this should be a property of Mesh
     n = FacetNormal(my_mesh.mesh)
 
     def siverts_law(T, S_0, E_S, pressure):
-        S = S_0 * exp(-E_S / k_B / T)
+        S = S_0 * exp(-E_S / F.k_B / T)
         return S * pressure**0.5
 
     fdim = my_mesh.mesh.topology.dim - 1
@@ -68,35 +75,10 @@ def test_permeation_problem():
         Constant(my_mesh.mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
     )
     bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
-    bcs = [bc_sieverts, bc_outgas]
+    my_model.boundary_conditions = [bc_sieverts, bc_outgas]
 
-    D_0 = Constant(my_mesh.mesh, 1.9e-7)
-    E_D = Constant(my_mesh.mesh, 0.2)
-
-    D = D_0 * exp(-E_D / k_B / temperature)
-
-    dt = Constant(my_mesh.mesh, 1 / 20)
     final_time = 50
 
-    # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
-    variational_form = dot(D * grad(u), grad(v)) * dx
-    variational_form += ((u - u_n) / dt) * v * dx
-
-    problem = NonlinearProblem(variational_form, u, bcs=bcs)
-    solver = NewtonSolver(MPI.COMM_WORLD, problem)
-
-    solver.convergence_criterion = "incremental"
-    solver.rtol = 1e-10
-    solver.atol = 1e10
-
-    solver.report = True
-    ksp = solver.krylov_solver
-    opts = PETSc.Options()
-    option_prefix = ksp.getOptionsPrefix()
-    opts[f"{option_prefix}ksp_type"] = "cg"
-    opts[f"{option_prefix}pc_type"] = "gamg"
-    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-    ksp.setFromOptions()
     # log.set_log_level(log.LogLevel.INFO)
 
     mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
@@ -109,13 +91,13 @@ def test_permeation_problem():
         desc="Solving H transport problem", total=final_time
     )
     while t < final_time:
-        progress.update(float(dt))
-        t += float(dt)
+        progress.update(float(my_model.dt))
+        t += float(my_model.dt)
 
-        solver.solve(u)
+        my_model.solver.solve(u)
 
         # post process
-        surface_flux = form(D * dot(grad(u), n) * ds(2))
+        surface_flux = form(my_model.D * dot(grad(u), n) * ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
@@ -127,7 +109,7 @@ def test_permeation_problem():
         mobile_xdmf.write_function(u, t)
 
         # update previous solution
-        u_n.x.array[:] = u.x.array[:]
+        mobile_H.prev_solution.x.array[:] = u.x.array[:]
 
     mobile_xdmf.close()
 
