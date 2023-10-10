@@ -34,19 +34,6 @@ def test_permeation_problem():
 
     my_model.initialise()
 
-    my_model.solver.convergence_criterion = "incremental"
-    my_model.solver.rtol = 1e-10
-    my_model.solver.atol = 1e10
-
-    my_model.solver.report = True
-    ksp = my_model.solver.krylov_solver
-    opts = PETSc.Options()
-    option_prefix = ksp.getOptionsPrefix()
-    opts[f"{option_prefix}ksp_type"] = "cg"
-    opts[f"{option_prefix}pc_type"] = "gamg"
-    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-    ksp.setFromOptions()
-
     V = my_model.function_space
     u = mobile_H.solution
 
@@ -73,6 +60,19 @@ def test_permeation_problem():
     bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
     my_model.boundary_conditions = [bc_sieverts, bc_outgas]
     my_model.create_solver()
+
+    my_model.solver.convergence_criterion = "incremental"
+    my_model.solver.rtol = 1e-10
+    my_model.solver.atol = 1e10
+
+    my_model.solver.report = True
+    ksp = my_model.solver.krylov_solver
+    opts = PETSc.Options()
+    option_prefix = ksp.getOptionsPrefix()
+    opts[f"{option_prefix}ksp_type"] = "cg"
+    opts[f"{option_prefix}pc_type"] = "gamg"
+    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
+    ksp.setFromOptions()
 
     mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
     mobile_xdmf.write_mesh(my_model.mesh.mesh)
