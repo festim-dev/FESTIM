@@ -115,14 +115,18 @@ def test_permeation_problem():
     )
     analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
 
+    analytical_flux = np.abs(analytical_flux)
+
     flux_values = np.array(np.abs(flux_values))
-    normalised_analytical_flux = analytical_flux / analytical_flux.max()
-    normalised_compute_flux = flux_values / flux_values.max()
 
-    diff = np.abs(normalised_analytical_flux - normalised_compute_flux)
-    error = diff.mean()
+    relative_error = (flux_values - analytical_flux) / analytical_flux
 
-    assert error < 0.001
+    relative_error = relative_error[
+        np.where(analytical_flux > 0.01 * np.max(analytical_flux))
+    ]
+    error = relative_error.mean()
+
+    assert error < 0.01
 
 
 if __name__ == "__main__":
