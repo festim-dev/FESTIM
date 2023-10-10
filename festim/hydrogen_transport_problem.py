@@ -85,8 +85,8 @@ class HydrogenTransportProblem:
         self.dx = None
         self.ds = None
         self.function_space = None
-        self.facet_tags = None
-        self.volume_tags = None
+        self.facet_meshtags = None
+        self.volume_meshtags = None
         self.formulation = None
 
     def initialise(self):
@@ -121,7 +121,7 @@ class HydrogenTransportProblem:
                 dof = sub_dom.locate_dof(self.function_space)
                 dofs_facets.append(dof)
                 tags_facets.append(sub_dom.id)
-            if isinstance(sub_dom, F.VolumeSubdomain):
+            if isinstance(sub_dom, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
                 entities = sub_dom.locate_subdomain_entities(self.mesh.mesh, vdim)
                 tags_volumes[entities] = sub_dom.id
@@ -131,17 +131,17 @@ class HydrogenTransportProblem:
         tags_facets = np.array(tags_facets, dtype=np.int32)
 
         # define mesh tags
-        self.mesh_tags_facets = meshtags(self.mesh.mesh, fdim, dofs_facets, tags_facets)
-        self.mesh_tags_volumes = meshtags(
+        self.facet_meshtags = meshtags(self.mesh.mesh, fdim, dofs_facets, tags_facets)
+        self.volume_meshtags = meshtags(
             self.mesh.mesh, vdim, mesh_cell_indicies, tags_volumes
         )
 
         # define measures
         self.ds = Measure(
-            "ds", domain=self.mesh.mesh, subdomain_data=self.mesh_tags_facets
+            "ds", domain=self.mesh.mesh, subdomain_data=self.facet_meshtags
         )
         self.dx = Measure(
-            "dx", domain=self.mesh.mesh, subdomain_data=self.mesh_tags_volumes
+            "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
         )
 
     def assign_functions_to_species(self):
@@ -157,8 +157,6 @@ class HydrogenTransportProblem:
         """Creates the formulation of the model"""
         if len(self.sources) > 1:
             raise NotImplementedError("Sources not implemented yet")
-        if len(self.subdomains) > 1:
-            raise NotImplementedError("Multiple subdomains not implemented yet")
         if len(self.species) > 1:
             raise NotImplementedError("Multiple species not implemented yet")
 
