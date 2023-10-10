@@ -107,14 +107,14 @@ class HydrogenTransportProblem:
         dofs_facets = []
         tags_facets = []
 
+        # TODO this should be a property of mesh
+        fdim = self.mesh.mesh.topology.dim - 1
+        vdim = self.mesh.mesh.topology.dim
+
         # find all cells in domain and mark them as 1
         num_cells = self.mesh.mesh.topology.index_map(vdim).size_local
         mesh_cell_indicies = np.arange(num_cells, dtype=np.int32)
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
-
-        # TODO this should be a property of mesh
-        fdim = self.mesh.mesh.topology.dim - 1
-        vdim = self.mesh.mesh.topology.dim
 
         for sub_dom in self.subdomains:
             if isinstance(sub_dom, F.SurfaceSubdomain1D):
