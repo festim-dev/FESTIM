@@ -26,6 +26,11 @@ def test_permeation_problem():
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = my_mesh
 
+    my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L])
+    left_surface = F.SurfaceSubdomain1D(id=1, x=0)
+    right_surface = F.SurfaceSubdomain1D(id=1, x=L)
+    my_model.subdomains = [my_subdomain, left_surface, right_surface]
+
     mobile_H = F.Species("H")
     my_model.species = [mobile_H]
 
@@ -45,9 +50,9 @@ def test_permeation_problem():
         return S * pressure**0.5
 
     fdim = my_mesh.mesh.topology.dim - 1
-    left_facets = my_model.facet_tags.find(1)
+    left_facets = my_model.facet_meshtags.find(1)
     left_dofs = locate_dofs_topological(V, fdim, left_facets)
-    right_facets = my_model.facet_tags.find(2)
+    right_facets = my_model.facet_meshtags.find(2)
     right_dofs = locate_dofs_topological(V, fdim, right_facets)
 
     S_0 = 4.02e21
