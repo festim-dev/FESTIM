@@ -18,8 +18,8 @@ import festim as F
 
 
 def test_permeation_problem():
-    # mesh nodes
-    vertices = np.linspace(0, 3e-4, num=1001)
+    L = 3e-04
+    vertices = np.linspace(0, L, num=1001)
 
     my_mesh = F.Mesh1D(vertices)
 
@@ -34,7 +34,6 @@ def test_permeation_problem():
 
     my_model.initialise()
 
-    # modify solver parameters
     my_model.solver.convergence_criterion = "incremental"
     my_model.solver.rtol = 1e-10
     my_model.solver.atol = 1e10
@@ -64,7 +63,10 @@ def test_permeation_problem():
     right_facets = my_model.facet_tags.find(2)
     right_dofs = locate_dofs_topological(V, fdim, right_facets)
 
-    surface_conc = siverts_law(T=temperature, S_0=4.02e21, E_S=1.04, pressure=100)
+    S_0 = 4.02e21
+    E_S = 1.04
+    P_up = 100
+    surface_conc = siverts_law(T=temperature, S_0=S_0, E_S=E_S, pressure=P_up)
     bc_sieverts = dirichletbc(
         Constant(my_mesh.mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
     )
@@ -91,22 +93,18 @@ def test_permeation_problem():
 
         mobile_xdmf.write_function(u, t)
 
-        # post process
         surface_flux = form(my_model.D * dot(grad(u), n) * my_model.ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
 
-        # update previous solution
         mobile_H.prev_solution.x.array[:] = u.x.array[:]
 
     mobile_xdmf.close()
 
     # analytical solution
-    S = 4.02e21 * exp(-1.04 / F.k_B / float(temperature))
+    S = S_0 * exp(-E_S / F.k_B / float(temperature))
     permeability = float(my_model.D) * S
-    L = 3e-04
-    P_up = 100
     times = np.array(times)
 
     n_array = np.arange(1, 10000)[:, np.newaxis]
