@@ -7,15 +7,16 @@ class VolumeSubdomain1D:
     Volume subdomain class for 1D cases
     """
 
-    def __init__(self, borders=None, material=None) -> None:
+    def __init__(self, id=None, borders=None, material=None) -> None:
         """Inits Mesh
         Args:
+            id (int): the id of the volume subdomain
             borders (list of float): the borders of the volume subdomain
             material (festim.Material): the material of the volume subdomain
         """
         self.borders = borders
         material = material
-        self.id = None
+        self.id = id
 
     def locate_subdomain_entities(self, mesh, vdim):
         """Locates all cells in subdomain within domain"""
