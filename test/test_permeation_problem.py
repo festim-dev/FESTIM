@@ -28,7 +28,7 @@ def test_permeation_problem():
 
     my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L])
     left_surface = F.SurfaceSubdomain1D(id=1, x=0)
-    right_surface = F.SurfaceSubdomain1D(id=1, x=L)
+    right_surface = F.SurfaceSubdomain1D(id=2, x=L)
     my_model.subdomains = [my_subdomain, left_surface, right_surface]
 
     mobile_H = F.Species("H")
@@ -121,10 +121,9 @@ def test_permeation_problem():
     analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
 
     analytical_flux = np.abs(analytical_flux)
-
     flux_values = np.array(np.abs(flux_values))
 
-    relative_error = (flux_values - analytical_flux) / analytical_flux
+    relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
 
     relative_error = relative_error[
         np.where(analytical_flux > 0.01 * np.max(analytical_flux))
