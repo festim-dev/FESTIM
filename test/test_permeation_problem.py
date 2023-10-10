@@ -8,13 +8,7 @@ from dolfinx.fem import (
     form,
     assemble_scalar,
 )
-from ufl import (
-    dot,
-    grad,
-    exp,
-    FacetNormal,
-    ds,
-)
+from ufl import dot, grad, exp, FacetNormal, ds, Measure
 from dolfinx import log
 import numpy as np
 import tqdm.autonotebook
@@ -76,13 +70,12 @@ def test_permeation_problem():
     )
     bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
     my_model.boundary_conditions = [bc_sieverts, bc_outgas]
-
-    final_time = 50
-
-    # log.set_log_level(log.LogLevel.INFO)
+    my_model.create_solver()
 
     mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
-    mobile_xdmf.write_mesh(my_mesh.mesh)
+    mobile_xdmf.write_mesh(my_model.mesh.mesh)
+
+    final_time = 50
 
     flux_values = []
     times = []
@@ -96,22 +89,42 @@ def test_permeation_problem():
 
         my_model.solver.solve(u)
 
+        mobile_xdmf.write_function(u, t)
+
         # post process
-        surface_flux = form(my_model.D * dot(grad(u), n) * ds(2))
+        surface_flux = form(my_model.D * dot(grad(u), n) * my_model.ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
-
-        # export
-        np.savetxt("outgassing_flux.txt", np.array(flux_values))
-        np.savetxt("times.txt", np.array(times))
-
-        mobile_xdmf.write_function(u, t)
 
         # update previous solution
         mobile_H.prev_solution.x.array[:] = u.x.array[:]
 
     mobile_xdmf.close()
+
+    # analytical solution
+    S = 4.02e21 * exp(-1.04 / F.k_B / float(temperature))
+    permeability = float(my_model.D) * S
+    L = 3e-04
+    P_up = 100
+    times = np.array(times)
+
+    n_array = np.arange(1, 10000)[:, np.newaxis]
+    summation = np.sum(
+        (-1) ** n_array
+        * np.exp(-((np.pi * n_array) ** 2) * float(my_model.D) / L**2 * times),
+        axis=0,
+    )
+    analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
+
+    flux_values = np.array(np.abs(flux_values))
+    normalised_analytical_flux = analytical_flux / analytical_flux.max()
+    normalised_compute_flux = flux_values / flux_values.max()
+
+    diff = np.abs(normalised_analytical_flux - normalised_compute_flux)
+    error = diff.mean()
+
+    assert error < 0.001
 
 
 if __name__ == "__main__":
