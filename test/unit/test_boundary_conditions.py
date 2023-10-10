@@ -543,15 +543,47 @@ def test_string_for_field_in_dirichletbc():
     bc.create_dirichletbc(V, fenics.Constant(1), surface_marker)
 
 
-def test_dissociation_flux_solve():
-    """Test to catch bug DissociationFlux see #581"""
+def custom_fun(T, solute, param1):
+    return 2 * T + solute - param1
+
+
+@pytest.mark.parametrize(
+    "bc",
+    [
+        (festim.DissociationFlux(surfaces=[1], Kd_0=1, E_Kd=0, P=1e4)),
+        (festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)),
+        (festim.FluxBC(surfaces=1, value=1, field=0)),
+        (festim.MassFlux(h_coeff=1, c_ext=1, surfaces=1)),
+        (festim.RecombinationFlux(Kr_0=1e-20, E_Kr=0, order=2, surfaces=1)),
+        (
+            festim.CustomDirichlet(
+                surfaces=[1, 2],
+                function=custom_fun,
+                param1=2 * festim.x + festim.t,
+                field=0,
+            )
+        ),
+        (
+            festim.CustomFlux(
+                surfaces=[1, 2],
+                function=custom_fun,
+                param1=2 * festim.x + festim.t,
+                field=0,
+            )
+        ),
+        (festim.ImplantationDirichlet(surfaces=1, phi=1e18, R_p=1e-9, D_0=1, E_D=0)),
+        (festim.DirichletBC(surfaces=1, value=1, field=0)),
+        (festim.HenrysBC(surfaces=1, H_0=1, E_H=0, pressure=1e3)),
+        (festim.SievertsBC(surfaces=1, S_0=1, E_S=0, pressure=1e3)),
+    ],
+)
+def test_flux_BC_initialise(bc):
+    """Test to catch bug Flux BCs see #581"""
     sim = festim.Simulation()
     sim.mesh = festim.MeshFromVertices([0, 1, 2, 3])
     sim.materials = festim.Material(id=1, D_0=1, E_D=0)
     sim.T = festim.Temperature(value=500)
-    sim.boundary_conditions = [
-        festim.DissociationFlux(surfaces=[1], Kd_0=1, E_Kd=0, P=1e4)
-    ]
+    sim.boundary_conditions = [bc]
     sim.settings = festim.Settings(
         transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
     )
