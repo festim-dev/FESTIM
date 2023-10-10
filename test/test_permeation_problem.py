@@ -8,13 +8,7 @@ from dolfinx.fem import (
     form,
     assemble_scalar,
 )
-from ufl import (
-    dot,
-    grad,
-    exp,
-    FacetNormal,
-    ds,
-)
+from ufl import dot, grad, exp, FacetNormal, ds, Measure
 from dolfinx import log
 import numpy as np
 import tqdm.autonotebook
@@ -24,8 +18,8 @@ import festim as F
 
 
 def test_permeation_problem():
-    # mesh nodes
-    vertices = np.linspace(0, 3e-4, num=1001)
+    L = 3e-04
+    vertices = np.linspace(0, L, num=1001)
 
     my_mesh = F.Mesh1D(vertices)
 
@@ -39,20 +33,6 @@ def test_permeation_problem():
     my_model.temperature = temperature
 
     my_model.initialise()
-
-    # modify solver parameters
-    my_model.solver.convergence_criterion = "incremental"
-    my_model.solver.rtol = 1e-10
-    my_model.solver.atol = 1e10
-
-    my_model.solver.report = True
-    ksp = my_model.solver.krylov_solver
-    opts = PETSc.Options()
-    option_prefix = ksp.getOptionsPrefix()
-    opts[f"{option_prefix}ksp_type"] = "cg"
-    opts[f"{option_prefix}pc_type"] = "gamg"
-    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-    ksp.setFromOptions()
 
     V = my_model.function_space
     u = mobile_H.solution
@@ -70,19 +50,34 @@ def test_permeation_problem():
     right_facets = my_model.facet_tags.find(2)
     right_dofs = locate_dofs_topological(V, fdim, right_facets)
 
-    surface_conc = siverts_law(T=temperature, S_0=4.02e21, E_S=1.04, pressure=100)
+    S_0 = 4.02e21
+    E_S = 1.04
+    P_up = 100
+    surface_conc = siverts_law(T=temperature, S_0=S_0, E_S=E_S, pressure=P_up)
     bc_sieverts = dirichletbc(
         Constant(my_mesh.mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
     )
     bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
     my_model.boundary_conditions = [bc_sieverts, bc_outgas]
+    my_model.create_solver()
 
-    final_time = 50
+    my_model.solver.convergence_criterion = "incremental"
+    my_model.solver.rtol = 1e-10
+    my_model.solver.atol = 1e10
 
-    # log.set_log_level(log.LogLevel.INFO)
+    my_model.solver.report = True
+    ksp = my_model.solver.krylov_solver
+    opts = PETSc.Options()
+    option_prefix = ksp.getOptionsPrefix()
+    opts[f"{option_prefix}ksp_type"] = "cg"
+    opts[f"{option_prefix}pc_type"] = "gamg"
+    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
+    ksp.setFromOptions()
 
     mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
-    mobile_xdmf.write_mesh(my_mesh.mesh)
+    mobile_xdmf.write_mesh(my_model.mesh.mesh)
+
+    final_time = 50
 
     flux_values = []
     times = []
@@ -96,22 +91,42 @@ def test_permeation_problem():
 
         my_model.solver.solve(u)
 
-        # post process
-        surface_flux = form(my_model.D * dot(grad(u), n) * ds(2))
+        mobile_xdmf.write_function(u, t)
+
+        surface_flux = form(my_model.D * dot(grad(u), n) * my_model.ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
 
-        # export
-        np.savetxt("outgassing_flux.txt", np.array(flux_values))
-        np.savetxt("times.txt", np.array(times))
-
-        mobile_xdmf.write_function(u, t)
-
-        # update previous solution
         mobile_H.prev_solution.x.array[:] = u.x.array[:]
 
     mobile_xdmf.close()
+
+    # analytical solution
+    S = S_0 * exp(-E_S / F.k_B / float(temperature))
+    permeability = float(my_model.D) * S
+    times = np.array(times)
+
+    n_array = np.arange(1, 10000)[:, np.newaxis]
+    summation = np.sum(
+        (-1) ** n_array
+        * np.exp(-((np.pi * n_array) ** 2) * float(my_model.D) / L**2 * times),
+        axis=0,
+    )
+    analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
+
+    analytical_flux = np.abs(analytical_flux)
+
+    flux_values = np.array(np.abs(flux_values))
+
+    relative_error = (flux_values - analytical_flux) / analytical_flux
+
+    relative_error = relative_error[
+        np.where(analytical_flux > 0.01 * np.max(analytical_flux))
+    ]
+    error = relative_error.mean()
+
+    assert error < 0.01
 
 
 if __name__ == "__main__":
