@@ -104,8 +104,7 @@ class HydrogenTransportProblem:
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
 
     def define_markers_and_measures(self):
-        dofs_facets = []
-        tags_facets = []
+        dofs_facets, tags_facets = [], []
 
         # TODO this should be a property of mesh
         fdim = self.mesh.mesh.topology.dim - 1

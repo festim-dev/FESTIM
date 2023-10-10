@@ -49,4 +49,5 @@ def test_different_volume_ids():
 
 
 if __name__ == "__main__":
+    test_different_surface_ids()
     test_different_volume_ids()
