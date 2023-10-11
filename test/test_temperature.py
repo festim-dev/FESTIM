@@ -1,8 +1,8 @@
 import festim as F
 from dolfinx import fem
 import numpy as np
-import sympy as sp
 from pytest import raises
+import ufl
 
 
 def test_temperature_value():
@@ -43,5 +43,5 @@ def test_temperature_type():
         assert isinstance(my_model.temperature, fem.Constant)
 
     with raises(TypeError):
-        x = sp.Symbol("x")
-        model(sp.sin(sp.pi * x))
+        x = ufl.SpatialCoordinate(my_mesh.mesh)
+        model(2 * x[0])
