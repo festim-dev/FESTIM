@@ -1,4 +1,4 @@
-name: CI
+name: conda CI
 on: [pull_request, push]
 
 jobs:
