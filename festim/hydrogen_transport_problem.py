@@ -18,7 +18,7 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float or dolfinx.Function): the temperature of the model
+        temperature (float or fem.Constant): the temperature of the model
         sources (list of festim.Source): the hydrogen sources of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary conditions of the model
         solver_parameters (dict): the solver parameters of the model
@@ -28,7 +28,7 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float or dolfinx.Function): the temperature of the model
+        temperature (float or fem.Constant): the temperature of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
@@ -97,6 +97,17 @@ class HydrogenTransportProblem:
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
+
+        if isinstance(self.temperature, float):
+            self.temperature = fem.Constant(self.mesh.mesh, self.temperature)
+        elif isinstance(self.temperature, fem.Constant):
+            pass
+        elif self.temperature is None:
+            raise ValueError("Temperature not defined")
+        else:
+            raise TypeError(
+                f"Temperature must be float or dolfinx.Constant, not {type(self.temperature)}"
+            )
 
         self.volume_subdomains = []
         for sub_dom in self.subdomains:
