@@ -97,6 +97,17 @@ class HydrogenTransportProblem:
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
+
+        self.volume_subdomains = []
+        for sub_dom in self.subdomains:
+            if isinstance(sub_dom, F.VolumeSubdomain1D):
+                self.volume_subdomains.append(sub_dom)
+                self.D = sub_dom.material.define_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature
+                )
+        if len(self.volume_subdomains) > 1:
+            raise NotImplementedError("Multiple volume subdomains not implemented yet")
+
         self.create_formulation()
 
     def define_function_space(self):
@@ -159,16 +170,9 @@ class HydrogenTransportProblem:
         if len(self.species) > 1:
             raise NotImplementedError("Multiple species not implemented yet")
 
-        # TODO expose D_0 and E_D as parameters of a Material class
-        D_0 = fem.Constant(self.mesh.mesh, 1.9e-7)
-        E_D = fem.Constant(self.mesh.mesh, 0.2)
-
-        D = D_0 * exp(-E_D / F.k_B / self.temperature)
-
         # TODO expose dt as parameter of the model
         dt = fem.Constant(self.mesh.mesh, 1 / 20)
 
-        self.D = D  # TODO remove this
         self.dt = dt  # TODO remove this
 
         for spe in self.species:
@@ -176,7 +180,7 @@ class HydrogenTransportProblem:
             u_n = spe.prev_solution
             v = spe.test_function
 
-            formulation = dot(D * grad(u), grad(v)) * self.dx
+            formulation = dot(self.D * grad(u), grad(v)) * self.dx
             formulation += ((u - u_n) / dt) * v * self.dx
 
             # add sources
