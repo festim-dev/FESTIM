@@ -27,9 +27,17 @@ class Material:
             float: the diffusion coefficient
         """
 
-        if isinstance(self.D_0, float):
-            self.D_0 = fem.Constant(mesh, self.D_0)
-        if isinstance(self.E_D, float):
-            self.E_D = fem.Constant(mesh, self.E_D)
+        if isinstance(self.D_0, (float, int)):
+            self.D_0 = fem.Constant(mesh, float(self.D_0))
+        else:
+            raise TypeError(
+                f"D_0 must be float, int or dolfinx.fem.Constant, not {type(self.D_0)}"
+            )
+        if isinstance(self.E_D, (float, int)):
+            self.E_D = fem.Constant(mesh, float(self.E_D))
+        else:
+            raise TypeError(
+                f"E_D must be float, int or dolfinx.fem.Constant, not {type(self.E_D)}"
+            )
 
         return self.D_0 * ufl.exp(-self.E_D / F.k_B / temperature)
