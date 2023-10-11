@@ -32,13 +32,13 @@ def test_different_volume_ids():
 
     vol_subdomains_ids = [2, 16, 7]
     vol_subdomain_1 = F.VolumeSubdomain1D(
-        id=vol_subdomains_ids[0], borders=[sub_dom_1[0], sub_dom_1[-1]]
+        id=vol_subdomains_ids[0], borders=[sub_dom_1[0], sub_dom_1[-1]], material=None
     )
     vol_subdomain_2 = F.VolumeSubdomain1D(
-        id=vol_subdomains_ids[1], borders=[sub_dom_2[0], sub_dom_2[-1]]
+        id=vol_subdomains_ids[1], borders=[sub_dom_2[0], sub_dom_2[-1]], material=None
     )
     vol_subdomain_3 = F.VolumeSubdomain1D(
-        id=vol_subdomains_ids[2], borders=[sub_dom_3[0], sub_dom_3[-1]]
+        id=vol_subdomains_ids[2], borders=[sub_dom_3[0], sub_dom_3[-1]], material=None
     )
     my_model.subdomains = [vol_subdomain_1, vol_subdomain_2, vol_subdomain_3]
 

@@ -26,7 +26,7 @@ def test_permeation_problem():
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = my_mesh
 
-    my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L])
+    my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L], material=None)
     left_surface = F.SurfaceSubdomain1D(id=1, x=0)
     right_surface = F.SurfaceSubdomain1D(id=2, x=L)
     my_model.subdomains = [my_subdomain, left_surface, right_surface]
