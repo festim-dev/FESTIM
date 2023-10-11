@@ -14,6 +14,7 @@ jobs:
       run: |
         docker pull dolfinx/dolfinx:stable
         docker run -d --name fenicsx dolfinx/dolfinx:stable
+        docker attach fenicsx
 
     - name: Install local package and dependencies
       run: |
