@@ -2,7 +2,7 @@ name: conda CI
 on: [pull_request, push]
 
 jobs:
-  run-tests:
+  run-on-conda:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,7 +29,7 @@ jobs:
     - name: Run tests
       shell: bash -l {0}
       run: |
-        pytest test/test_permeation_problem.py --cov festim --cov-report xml --cov-report term
+        pytest test/ --cov festim --cov-report xml --cov-report term
     
     - name: Upload to codecov
       shell: bash -l {0}
@@ -37,3 +37,24 @@ jobs:
         curl -Os https://uploader.codecov.io/latest/linux/codecov
         chmod +x codecov
         ./codecov -t ${CODECOV_TOKEN}
+
+  run-on-docker:
+    runs-on: ubuntu-latest
+    container: dolfinx/dolfinx:stable
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+    
+      - name: Install local package and dependencies
+        run: |
+          pip install .[test]
+
+      - name: Run tests
+        run: |
+          python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
