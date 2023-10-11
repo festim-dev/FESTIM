@@ -18,7 +18,7 @@ class VolumeSubdomain1D:
 
     Usage:
         >>> vol_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1],
-                material=F.Material(...))
+        ...     material=F.Material(...))
     """
 
     def __init__(self, id, borders, material) -> None:
