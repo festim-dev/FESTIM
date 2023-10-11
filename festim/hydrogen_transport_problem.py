@@ -112,7 +112,7 @@ class HydrogenTransportProblem:
 
         # find all cells in domain and mark them as 0
         num_cells = self.mesh.mesh.topology.index_map(vdim).size_local
-        mesh_cell_indicies = np.arange(num_cells, dtype=np.int32)
+        mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
         for sub_dom in self.subdomains:
@@ -132,7 +132,7 @@ class HydrogenTransportProblem:
         # define mesh tags
         self.facet_meshtags = meshtags(self.mesh.mesh, fdim, dofs_facets, tags_facets)
         self.volume_meshtags = meshtags(
-            self.mesh.mesh, vdim, mesh_cell_indicies, tags_volumes
+            self.mesh.mesh, vdim, mesh_cell_indices, tags_volumes
         )
 
         # define measures
