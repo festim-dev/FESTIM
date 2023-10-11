@@ -26,6 +26,11 @@ def test_permeation_problem():
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = my_mesh
 
+    my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L], material=None)
+    left_surface = F.SurfaceSubdomain1D(id=1, x=0)
+    right_surface = F.SurfaceSubdomain1D(id=2, x=L)
+    my_model.subdomains = [my_subdomain, left_surface, right_surface]
+
     mobile_H = F.Species("H")
     my_model.species = [mobile_H]
 
@@ -45,9 +50,9 @@ def test_permeation_problem():
         return S * pressure**0.5
 
     fdim = my_mesh.mesh.topology.dim - 1
-    left_facets = my_model.facet_tags.find(1)
+    left_facets = my_model.facet_meshtags.find(1)
     left_dofs = locate_dofs_topological(V, fdim, left_facets)
-    right_facets = my_model.facet_tags.find(2)
+    right_facets = my_model.facet_meshtags.find(2)
     right_dofs = locate_dofs_topological(V, fdim, right_facets)
 
     S_0 = 4.02e21
@@ -116,10 +121,9 @@ def test_permeation_problem():
     analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
 
     analytical_flux = np.abs(analytical_flux)
-
     flux_values = np.array(np.abs(flux_values))
 
-    relative_error = (flux_values - analytical_flux) / analytical_flux
+    relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
 
     relative_error = relative_error[
         np.where(analytical_flux > 0.01 * np.max(analytical_flux))

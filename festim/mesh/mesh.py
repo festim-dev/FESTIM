@@ -26,17 +26,3 @@ class Mesh:
             self.mesh.topology.create_connectivity(
                 self.mesh.topology.dim - 1, self.mesh.topology.dim
             )
-
-    def create_measures_and_tags(self, function_space):
-        """Creates the ufl.measure.Measure objects for self.ds and
-        self.dx, also passes the facet and volume tags
-        """
-        facet_tags, volume_tags = self.create_meshtags(function_space)
-        dx = ufl.Measure("dx", domain=self.mesh, subdomain_data=volume_tags)
-        ds = ufl.Measure("ds", domain=self.mesh, subdomain_data=facet_tags)
-        return (
-            facet_tags,
-            volume_tags,
-            dx,
-            ds,
-        )

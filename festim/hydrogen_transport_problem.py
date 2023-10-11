@@ -3,12 +3,9 @@ from dolfinx.nls.petsc import NewtonSolver
 import ufl
 from mpi4py import MPI
 from dolfinx.fem import Function
-from ufl import (
-    TestFunction,
-    dot,
-    grad,
-    exp,
-)
+from dolfinx.mesh import meshtags, locate_entities
+from ufl import TestFunction, dot, grad, exp, Measure
+import numpy as np
 
 import festim as F
 
@@ -38,8 +35,8 @@ class HydrogenTransportProblem:
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpace): the function space of the model
-        facet_tags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
-        volume_tags (dolfinx.cpp.mesh.MeshTags): the volume tags of the model
+        facet_meshtags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
+        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
 
@@ -88,8 +85,8 @@ class HydrogenTransportProblem:
         self.dx = None
         self.ds = None
         self.function_space = None
-        self.facet_tags = None
-        self.volume_tags = None
+        self.facet_meshtags = None
+        self.volume_meshtags = None
         self.formulation = None
 
     def initialise(self):
@@ -98,18 +95,53 @@ class HydrogenTransportProblem:
         """
 
         self.define_function_space()
-        (
-            self.facet_tags,
-            self.volume_tags,
-            self.dx,
-            self.ds,
-        ) = self.mesh.create_measures_and_tags(self.function_space)
+        self.define_markers_and_measures()
         self.assign_functions_to_species()
         self.create_formulation()
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
+
+    def define_markers_and_measures(self):
+        dofs_facets, tags_facets = [], []
+
+        # TODO this should be a property of mesh
+        fdim = self.mesh.mesh.topology.dim - 1
+        vdim = self.mesh.mesh.topology.dim
+
+        # find all cells in domain and mark them as 0
+        num_cells = self.mesh.mesh.topology.index_map(vdim).size_local
+        mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+        tags_volumes = np.full(num_cells, 0, dtype=np.int32)
+
+        for sub_dom in self.subdomains:
+            if isinstance(sub_dom, F.SurfaceSubdomain1D):
+                dof = sub_dom.locate_dof(self.function_space)
+                dofs_facets.append(dof)
+                tags_facets.append(sub_dom.id)
+            if isinstance(sub_dom, F.VolumeSubdomain1D):
+                # find all cells in subdomain and mark them as sub_dom.id
+                entities = sub_dom.locate_subdomain_entities(self.mesh.mesh, vdim)
+                tags_volumes[entities] = sub_dom.id
+
+        # dofs and tags need to be in np.in32 format for meshtags
+        dofs_facets = np.array(dofs_facets, dtype=np.int32)
+        tags_facets = np.array(tags_facets, dtype=np.int32)
+
+        # define mesh tags
+        self.facet_meshtags = meshtags(self.mesh.mesh, fdim, dofs_facets, tags_facets)
+        self.volume_meshtags = meshtags(
+            self.mesh.mesh, vdim, mesh_cell_indices, tags_volumes
+        )
+
+        # define measures
+        self.ds = Measure(
+            "ds", domain=self.mesh.mesh, subdomain_data=self.facet_meshtags
+        )
+        self.dx = Measure(
+            "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
+        )
 
     def assign_functions_to_species(self):
         """Creates for each species the solution, prev solution and test function"""
@@ -124,8 +156,6 @@ class HydrogenTransportProblem:
         """Creates the formulation of the model"""
         if len(self.sources) > 1:
             raise NotImplementedError("Sources not implemented yet")
-        if len(self.subdomains) > 1:
-            raise NotImplementedError("Multiple subdomains not implemented yet")
         if len(self.species) > 1:
             raise NotImplementedError("Multiple species not implemented yet")
 
