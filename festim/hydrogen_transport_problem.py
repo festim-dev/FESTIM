@@ -110,7 +110,7 @@ class HydrogenTransportProblem:
         fdim = self.mesh.mesh.topology.dim - 1
         vdim = self.mesh.mesh.topology.dim
 
-        # find all cells in domain and mark them as 1
+        # find all cells in domain and mark them as 0
         num_cells = self.mesh.mesh.topology.index_map(vdim).size_local
         mesh_cell_indicies = np.arange(num_cells, dtype=np.int32)
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
