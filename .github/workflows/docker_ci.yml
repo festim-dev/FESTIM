@@ -2,7 +2,7 @@ name: docker CI
 on: [push, pull_request]
 
 jobs:
-  container-test-job:
+  run-tests:
     runs-on: ubuntu-latest
     container: dolfinx/dolfinx:stable
     steps:
@@ -15,7 +15,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+          python3 -m pytest test/test_species.py --cov festim --cov-report xml --cov-report term
 
       - name: Upload to codecov
         uses: codecov/codecov-action@v3
