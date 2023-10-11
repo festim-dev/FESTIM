@@ -18,6 +18,7 @@ jobs:
           python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
 
       - name: Upload to codecov
+        shell: pwsh
         run: |
           curl -Os https://uploader.codecov.io/latest/linux/codecov
           chmod +x codecov
