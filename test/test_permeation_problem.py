@@ -8,8 +8,7 @@ from dolfinx.fem import (
     form,
     assemble_scalar,
 )
-from ufl import dot, grad, exp, FacetNormal, ds, Measure
-from dolfinx import log
+from ufl import dot, grad, exp, FacetNormal
 import numpy as np
 import tqdm.autonotebook
 
@@ -26,7 +25,8 @@ def test_permeation_problem():
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = my_mesh
 
-    my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L], material=None)
+    my_mat = F.Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
+    my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L], material=my_mat)
     left_surface = F.SurfaceSubdomain1D(id=1, x=0)
     right_surface = F.SurfaceSubdomain1D(id=2, x=L)
     my_model.subdomains = [my_subdomain, left_surface, right_surface]
