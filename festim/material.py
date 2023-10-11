@@ -29,12 +29,16 @@ class Material:
 
         if isinstance(self.D_0, (float, int)):
             self.D_0 = fem.Constant(mesh, float(self.D_0))
+        elif isinstance(self.D_0, fem.Constant):
+            pass
         else:
             raise TypeError(
                 f"D_0 must be float, int or dolfinx.fem.Constant, not {type(self.D_0)}"
             )
         if isinstance(self.E_D, (float, int)):
             self.E_D = fem.Constant(mesh, float(self.E_D))
+        elif isinstance(self.E_D, fem.Constant):
+            pass
         else:
             raise TypeError(
                 f"E_D must be float, int or dolfinx.fem.Constant, not {type(self.E_D)}"
