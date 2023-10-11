@@ -1,32 +1,21 @@
-name: Docker CI
-
-on: [push, pull_request]
+name: CI
+on: [push, pull_reqeuest]
 
 jobs:
-  build:
+  container-test-job:
     runs-on: ubuntu-latest
-
+    container: dolfinx/dolfinx:stable
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Install local package and dependencies
+        run: |
+          pip install .[test]
 
-    - name: Pull and build Docker image
-      run: |
-        docker pull dolfinx/dolfinx:stable
-        docker run -d --name fenicsx dolfinx/dolfinx:stable
-        docker start fenicsx
-        docker attach fenicsx
+      - name: Run tests
+        run: |
+          python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
 
-    - name: Install local package and dependencies
-      run: |
-        pip install .[test]
-
-    - name: Run tests
-      run: |
-        python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
-
-    - name: Upload to codecov
-      run: |
-        curl -Os https://uploader.codecov.io/latest/linux/codecov
-        chmod +x codecov
-        ./codecov -t ${CODECOV_TOKEN}
+      - name: Upload to codecov
+        run: |
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -t ${CODECOV_TOKEN}
