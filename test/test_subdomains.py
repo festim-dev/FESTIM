@@ -46,8 +46,3 @@ def test_different_volume_ids():
 
     for vol_id in vol_subdomains_ids:
         assert vol_id in np.array(my_model.volume_meshtags.values)
-
-
-if __name__ == "__main__":
-    test_different_surface_ids()
-    test_different_volume_ids()
