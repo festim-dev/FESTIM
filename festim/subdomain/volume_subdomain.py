@@ -5,17 +5,25 @@ import numpy as np
 class VolumeSubdomain1D:
     """
     Volume subdomain class for 1D cases
+
+    Args:
+        id (int): the id of the volume subdomain
+        borders (list of float): the borders of the volume subdomain
+        material (festim.Material): the material of the volume subdomain
+
+    Attributes:
+        id (int): the id of the volume subdomain
+        borders (list of float): the borders of the volume subdomain
+        material (festim.Material): the material of the volume subdomain
+
+    Usage:
+        >>> import festim as F
+        >>> vol_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=F.Material(...))
     """
 
-    def __init__(self, id=None, borders=None, material=None) -> None:
-        """Inits Mesh
-        Args:
-            id (int): the id of the volume subdomain
-            borders (list of float): the borders of the volume subdomain
-            material (festim.Material): the material of the volume subdomain
-        """
+    def __init__(self, id, borders, material) -> None:
         self.borders = borders
-        material = material
+        self.material = material
         self.id = id
 
     def locate_subdomain_entities(self, mesh, vdim):
