@@ -1,5 +1,5 @@
 name: docker CI
-on: [push, pull_reqeuest]
+on: [push, pull_request]
 
 jobs:
   container-test-job:
