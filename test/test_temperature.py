@@ -1,6 +1,8 @@
 import festim as F
 from dolfinx import fem
 import numpy as np
+import sympy as sp
+from pytest import raises
 
 
 def test_temperature_value():
@@ -24,15 +26,22 @@ def test_temperature_type():
     my_mesh.generate_mesh()
     values = [int(1), fem.Constant(my_mesh.mesh, 1.0), float(1.0)]
 
-    for value in values:
+    def model(value):
         my_model = F.HydrogenTransportProblem()
         my_model.mesh = my_mesh
         my_model.species = [F.Species("H")]
         my_mat = F.Material(1, 1, "1")
         my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=my_mat)
         my_model.subdomains = [my_subdomain]
-
         my_model.temperature = value
         my_model.initialise()
 
+        return my_model
+
+    for value in values:
+        my_model = model(value)
         assert isinstance(my_model.temperature, fem.Constant)
+
+    with raises(TypeError):
+        x = sp.Symbol("x")
+        model(sp.sin(sp.pi * x))
