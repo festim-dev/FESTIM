@@ -8,7 +8,7 @@ def test_define_diffusion_coefficient():
     D_0 = 1.2
     E_D = 0.5
 
-    my_mesh = F.Mesh1D(vertices=np.array([0, 1, 2]))
+    my_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0]))
     my_mat = F.Material(D_0=D_0, E_D=E_D)
     D = my_mat.define_diffusion_coefficient(my_mesh.mesh, T)
 
