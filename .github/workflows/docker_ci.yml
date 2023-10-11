@@ -18,8 +18,7 @@ jobs:
           python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
 
       - name: Upload to codecov
-        shell: bash
-        run: |
-          curl -Os https://uploader.codecov.io/latest/linux/codecov
-          chmod +x codecov
-          ./codecov -t ${CODECOV_TOKEN}
+      - uses: codecov/codecov-action@v3
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: ./coverage.xml
