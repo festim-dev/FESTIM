@@ -35,8 +35,8 @@ class HydrogenTransportProblem:
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpace): the function space of the model
-        facet_tags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
-        volume_tags (dolfinx.cpp.mesh.MeshTags): the volume tags of the model
+        facet_meshtags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
+        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
 
