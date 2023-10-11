@@ -8,7 +8,7 @@ class Material:
     Material class
     """
 
-    def __init__(self, D_0=None, E_D=None, name=None) -> None:
+    def __init__(self, D_0, E_D, name=None) -> None:
         """Inits Material
         Args:
             D_0 (float or fem.Constant): the diffusion coefficient at 0 K
