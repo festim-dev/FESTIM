@@ -98,8 +98,8 @@ class HydrogenTransportProblem:
         self.define_markers_and_measures()
         self.assign_functions_to_species()
 
-        if isinstance(self.temperature, float):
-            self.temperature = fem.Constant(self.mesh.mesh, self.temperature)
+        if isinstance(self.temperature, (float, int)):
+            self.temperature = fem.Constant(self.mesh.mesh, float(self.temperature))
         elif isinstance(self.temperature, fem.Constant):
             pass
         elif self.temperature is None:
