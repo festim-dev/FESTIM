@@ -13,7 +13,6 @@ class SurfaceSubdomain1D:
     Attributes:
         id (int): the id of the surface subdomain
         x (float): the x coordinate of the surface subdomain
-        dofs (np.array): the dofs of the surface subdomain
 
     Usage:
         >>> surf_subdomain = F.SurfaceSubdomain1D(id=1, x=1)
@@ -22,8 +21,6 @@ class SurfaceSubdomain1D:
     def __init__(self, id, x) -> None:
         self.id = id
         self.x = x
-
-        self.dofs = None
 
     def locate_dof(self, function_space):
         """Locates the dof of the surface subdomain within the function space
