@@ -1,4 +1,4 @@
-name: CI
+name: docker CI
 on: [push, pull_reqeuest]
 
 jobs:
@@ -6,6 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     container: dolfinx/dolfinx:stable
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+    
       - name: Install local package and dependencies
         run: |
           pip install .[test]
