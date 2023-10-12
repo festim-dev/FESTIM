@@ -39,6 +39,8 @@ def test_permeation_problem():
 
     my_model.initialise()
 
+    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
+
     V = my_model.function_space
     u = mobile_H.solution
 
@@ -98,7 +100,7 @@ def test_permeation_problem():
 
         mobile_xdmf.write_function(u, t)
 
-        surface_flux = form(my_model.D * dot(grad(u), n) * my_model.ds(2))
+        surface_flux = form(D * dot(grad(u), n) * my_model.ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
@@ -109,13 +111,12 @@ def test_permeation_problem():
 
     # analytical solution
     S = S_0 * exp(-E_S / F.k_B / float(temperature))
-    permeability = float(my_model.D) * S
+    permeability = float(D) * S
     times = np.array(times)
 
     n_array = np.arange(1, 10000)[:, np.newaxis]
     summation = np.sum(
-        (-1) ** n_array
-        * np.exp(-((np.pi * n_array) ** 2) * float(my_model.D) / L**2 * times),
+        (-1) ** n_array * np.exp(-((np.pi * n_array) ** 2) * float(D) / L**2 * times),
         axis=0,
     )
     analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
