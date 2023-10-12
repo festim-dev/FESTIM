@@ -30,27 +30,16 @@ class VolumeSubdomain1D:
         """Locates all cells in subdomain borders within domain
 
         Args:
-            mesh (dolfinx.cpp.mesh.Mesh): the mesh of the model
+            mesh (festim.Mesh): the mesh of the model
             vdim (int): the dimension of the volumes of the mesh,
                 for 1D this is always 1
 
         Returns:
             entities (np.array): the entities of the subdomain
         """
-        self.check_borders_within_domain(mesh)
-
         entities = locate_entities(
             mesh.mesh,
             vdim,
             lambda x: np.logical_and(x[0] >= self.borders[0], x[0] <= self.borders[1]),
         )
         return entities
-
-    def check_borders_within_domain(self, mesh):
-        """Checks that the borders of the subdomain are within the domain
-
-        Raises:
-            Value error: if borders outside the domain
-        """
-        if self.borders[0] < mesh.vertices[0] or self.borders[1] > mesh.vertices[-1]:
-            raise ValueError("borders of subdomain are outside of domain")

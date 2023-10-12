@@ -116,8 +116,7 @@ class HydrogenTransportProblem:
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
 
     def define_markers_and_measures(self):
-        """Defines the markers and measures of the model, and check borders of
-        VolumeSubdomains match to each other"""
+        """Defines the markers and measures of the model"""
 
         dofs_facets, tags_facets = [], []
 
@@ -140,17 +139,6 @@ class HydrogenTransportProblem:
                 self.volume_subdomains.append(sub_dom)
                 entities = sub_dom.locate_subdomain_entities(self.mesh, vdim)
                 tags_volumes[entities] = sub_dom.id
-
-        # check that subdomains are connected
-        if len(self.volume_subdomains) > 1:
-            all_borders = []
-            for vol in self.volume_subdomains:
-                for border in vol.borders:
-                    all_borders.append(border)
-            sorted_borders = np.sort(all_borders).reshape(int(len(all_borders) / 2), 2)
-            for i in range(0, len(sorted_borders) - 1):
-                if sorted_borders[i][1] != sorted_borders[i + 1][0]:
-                    raise ValueError("Subdomain borders don't match to each other")
 
         # dofs and tags need to be in np.in32 format for meshtags
         dofs_facets = np.array(dofs_facets, dtype=np.int32)
