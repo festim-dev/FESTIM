@@ -1,9 +1,7 @@
 import festim as F
 import numpy as np
-import ufl
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
-x = ufl.SpatialCoordinate(test_mesh.mesh)
 
 
 def test_define_diffusion_coefficient():
@@ -15,4 +13,4 @@ def test_define_diffusion_coefficient():
 
     D_analytical = D_0 * np.exp(-E_D / F.k_B / T)
 
-    assert float(D) == D_analytical
+    assert np.isclose(float(D), D_analytical)
