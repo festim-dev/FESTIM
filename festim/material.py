@@ -7,13 +7,17 @@ class Material:
     Material class
 
     Args:
-        D_0 (float or fem.Constant): the diffusion coefficient at 0 K
-        E_D (float or fem.Constant): the activation energy for diffusion
+        D_0 (float or fem.Constant): the pre-exponential factor of the
+            diffusion coefficient (m2/s)
+        E_D (float or fem.Constant): the activation energy of the diffusion
+            coeficient (eV)
         name (str): the name of the material
 
     Attributes:
-        D_0 (float or fem.Constant): the diffusion coefficient at 0 K
-        E_D (float or fem.Constant): the activation energy for diffusion
+        D_0 (float or fem.Constant): the pre-exponential factor of the
+            diffusion coefficient (m2/s)
+        E_D (float or fem.Constant): the activation energy of the diffusion
+            coeficient (eV)
         name (str): the name of the material
     """
 
