@@ -262,8 +262,3 @@ def test_permeation_problem_multi_volume():
     error = relative_error.mean()
 
     assert error < 0.01
-
-
-if __name__ == "__main__":
-    # test_permeation_problem()
-    test_permeation_problem_multi_volume()
