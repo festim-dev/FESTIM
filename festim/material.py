@@ -1,5 +1,4 @@
 import ufl
-from dolfinx import fem
 import festim as F
 
 
@@ -19,7 +18,7 @@ class Material:
         self.E_D = E_D
         self.name = name
 
-    def define_diffusion_coefficient(self, mesh, temperature):
+    def get_diffusion_coefficient(self, mesh, temperature):
         """Defines the diffusion coefficient
         Args:
             mesh (dolfinx.mesh.Mesh): the domain mesh
@@ -28,22 +27,8 @@ class Material:
             ufl.algebra.Product: the diffusion coefficient
         """
 
-        # check type of values and convert to fem.Constant if needed
-        if isinstance(self.D_0, (float, int)):
-            self.D_0 = fem.Constant(mesh, float(self.D_0))
-        elif isinstance(self.D_0, fem.Constant):
-            pass
-        else:
-            raise TypeError(
-                f"D_0 must be float, int or dolfinx.fem.Constant, not {type(self.D_0)}"
-            )
-        if isinstance(self.E_D, (float, int)):
-            self.E_D = fem.Constant(mesh, float(self.E_D))
-        elif isinstance(self.E_D, fem.Constant):
-            pass
-        else:
-            raise TypeError(
-                f"E_D must be float, int or dolfinx.fem.Constant, not {type(self.E_D)}"
-            )
+        # check type of values
+        D_0 = F.as_fenics_constant(self.D_0, mesh)
+        E_D = F.as_fenics_constant(self.E_D, mesh)
 
-        return self.D_0 * ufl.exp(-self.E_D / F.k_B / temperature)
+        return D_0 * ufl.exp(-E_D / F.k_B / temperature)
