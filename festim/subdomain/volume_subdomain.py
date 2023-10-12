@@ -37,9 +37,20 @@ class VolumeSubdomain1D:
         Returns:
             entities (np.array): the entities of the subdomain
         """
+        self.check_borders_within_domain(mesh)
+
         entities = locate_entities(
-            mesh,
+            mesh.mesh,
             vdim,
             lambda x: np.logical_and(x[0] >= self.borders[0], x[0] <= self.borders[1]),
         )
         return entities
+
+    def check_borders_within_domain(self, mesh):
+        """Checks that the borders of the subdomain are within the domain
+
+        Returns:
+            bool: True if borders are within domain, False otherwise
+        """
+        if self.borders[0] < mesh.vertices[0] or self.borders[1] > mesh.vertices[-1]:
+            raise ValueError("borders of subdomain are outside of domain")
