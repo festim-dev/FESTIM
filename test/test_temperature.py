@@ -1,47 +1,30 @@
 import festim as F
 from dolfinx import fem
 import numpy as np
-from pytest import raises
-import ufl
+import pytest
+
+test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 
 
-def test_temperature_value():
-    """Test that the temperature value is correctly set"""
-    my_model = F.HydrogenTransportProblem()
-    my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
-    my_model.species = [F.Species("H")]
-    my_mat = F.Material(1, 1, "1")
-    my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=my_mat)
-    my_model.subdomains = [my_subdomain]
-
-    my_model.temperature = fem.Constant(my_model.mesh.mesh, 23.0)
-    my_model.initialise()
-
-    assert float(my_model.temperature) == 23.0
-
-
-def test_temperature_type():
+@pytest.mark.parametrize(
+    "test_type", [1, fem.Constant(test_mesh.mesh, 1.0), 1.0, "coucou"]
+)
+def test_temperature_type(test_type):
     """Test that the temperature type is correctly set"""
-    my_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
-    my_mesh.generate_mesh()
-    values = [int(1), fem.Constant(my_mesh.mesh, 1.0), float(1.0)]
+    my_model = F.HydrogenTransportProblem()
+    if not isinstance(test_type, (fem.Constant, int, float)):
+        with pytest.raises(TypeError):
+            my_model.temperature = test_type
 
-    def model(value):
-        my_model = F.HydrogenTransportProblem()
-        my_model.mesh = my_mesh
-        my_model.species = [F.Species("H")]
-        my_mat = F.Material(1, 1, "1")
-        my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=my_mat)
-        my_model.subdomains = [my_subdomain]
-        my_model.temperature = value
-        my_model.initialise()
 
-        return my_model
+@pytest.mark.parametrize(
+    "test_value",
+    [1, fem.Constant(test_mesh.mesh, 1.0), 1.0],
+)
+def test_temperature_value_processing(test_value):
+    """Test that the temperature type is correctly processed"""
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = test_mesh
+    my_model.temperature = test_value
 
-    for value in values:
-        my_model = model(value)
-        assert isinstance(my_model.temperature, fem.Constant)
-
-    with raises(TypeError):
-        x = ufl.SpatialCoordinate(my_mesh.mesh)
-        model(2 * x[0])
+    assert isinstance(my_model.temperature, fem.Constant)

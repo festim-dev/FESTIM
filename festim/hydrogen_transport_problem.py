@@ -89,6 +89,23 @@ class HydrogenTransportProblem:
         self.volume_meshtags = None
         self.formulation = None
 
+    @property
+    def temperature(self):
+        return self._temperature
+
+    @temperature.setter
+    def temperature(self, value):
+        if value is None:
+            self._temperature = value
+        elif isinstance(value, (float, int)):
+            self._temperature = fem.Constant(self.mesh.mesh, float(value))
+        elif isinstance(value, fem.Constant):
+            self._temperature = value
+        else:
+            raise TypeError(
+                f"Temperature must be float or dolfinx.Constant, not {type(value)}"
+            )
+
     def initialise(self):
         """Initialise the model. Creates suitable function
         spaces, facet and volume tags...
@@ -97,17 +114,6 @@ class HydrogenTransportProblem:
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
-
-        if isinstance(self.temperature, (float, int)):
-            self.temperature = fem.Constant(self.mesh.mesh, float(self.temperature))
-        elif isinstance(self.temperature, fem.Constant):
-            pass
-        elif self.temperature is None:
-            raise ValueError("Temperature not defined")
-        else:
-            raise TypeError(
-                f"Temperature must be float or dolfinx.Constant, not {type(self.temperature)}"
-            )
 
         self.volume_subdomains = []
         for sub_dom in self.subdomains:
