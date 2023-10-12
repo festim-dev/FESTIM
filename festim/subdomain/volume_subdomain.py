@@ -49,8 +49,8 @@ class VolumeSubdomain1D:
     def check_borders_within_domain(self, mesh):
         """Checks that the borders of the subdomain are within the domain
 
-        Returns:
-            bool: True if borders are within domain, False otherwise
+        Raises:
+            Value error: if borders outside the domain
         """
         if self.borders[0] < mesh.vertices[0] or self.borders[1] > mesh.vertices[-1]:
             raise ValueError("borders of subdomain are outside of domain")
