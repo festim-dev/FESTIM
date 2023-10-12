@@ -28,7 +28,7 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float or fem.Constant): the temperature of the model
+        temperature (fem.Constant): the temperature of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
@@ -97,10 +97,8 @@ class HydrogenTransportProblem:
     def temperature(self, value):
         if value is None:
             self._temperature = value
-        elif isinstance(value, (float, int)):
-            self._temperature = fem.Constant(self.mesh.mesh, float(value))
-        elif isinstance(value, fem.Constant):
-            self._temperature = value
+        elif isinstance(value, (float, int, fem.Constant)):
+            self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
         else:
             raise TypeError(
                 f"Temperature must be float or dolfinx.Constant, not {type(value)}"
@@ -119,11 +117,6 @@ class HydrogenTransportProblem:
         for sub_dom in self.subdomains:
             if isinstance(sub_dom, F.VolumeSubdomain1D):
                 self.volume_subdomains.append(sub_dom)
-                self.D = sub_dom.material.define_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature
-                )
-        if len(self.volume_subdomains) > 1:
-            raise NotImplementedError("Multiple volume subdomains not implemented yet")
 
         self.create_formulation()
 
@@ -193,24 +186,30 @@ class HydrogenTransportProblem:
         self.dt = dt  # TODO remove this
 
         for spe in self.species:
-            u = spe.solution
-            u_n = spe.prev_solution
-            v = spe.test_function
+            for vol in self.volume_subdomains:
+                u = spe.solution
+                u_n = spe.prev_solution
+                v = spe.test_function
 
-            formulation = dot(self.D * grad(u), grad(v)) * self.dx
-            formulation += ((u - u_n) / dt) * v * self.dx
+                D = vol.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature
+                )
 
-            # add sources
-            for source in self.sources:
-                # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
-                if source.species == spe:
-                    formulation += source * v * self.dx
-            # add fluxes
-            # TODO implement this
-            # for bc in self.boundary_conditions:
-            #     pass
-            #     if bc.species == spe and bc.type != "dirichlet":
-            #         formulation += bc * v * self.ds
+                formulation = dot(D * grad(u), grad(v)) * self.dx
+                formulation += ((u - u_n) / dt) * v * self.dx
+
+                # add sources
+                # TODO implement this
+                # for source in self.sources:
+                #     # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
+                #     if source.species == spe:
+                #         formulation += source * v * self.dx
+                # add fluxes
+                # TODO implement this
+                # for bc in self.boundary_conditions:
+                #     pass
+                #     if bc.species == spe and bc.type != "dirichlet":
+                #         formulation += bc * v * self.ds
 
         self.formulation = formulation
 
