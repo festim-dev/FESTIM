@@ -5,15 +5,19 @@ import festim as F
 class Material:
     """
     Material class
+
+    Args:
+        D_0 (float or fem.Constant): the diffusion coefficient at 0 K
+        E_D (float or fem.Constant): the activation energy for diffusion
+        name (str): the name of the material
+
+    Attributes:
+        D_0 (float or fem.Constant): the diffusion coefficient at 0 K
+        E_D (float or fem.Constant): the activation energy for diffusion
+        name (str): the name of the material
     """
 
     def __init__(self, D_0, E_D, name=None) -> None:
-        """Inits Material
-        Args:
-            D_0 (float or fem.Constant): the diffusion coefficient at 0 K
-            E_D (float or fem.Constant): the activation energy for diffusion
-            name (str): the name of the material
-        """
         self.D_0 = D_0
         self.E_D = E_D
         self.name = name
