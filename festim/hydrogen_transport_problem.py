@@ -98,12 +98,8 @@ class HydrogenTransportProblem:
     def temperature(self, value):
         if value is None:
             self._temperature = value
-        elif isinstance(value, (float, int, fem.Constant)):
-            self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
         else:
-            raise TypeError(
-                f"Temperature must be float or dolfinx.Constant, not {type(value)}"
-            )
+            self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
 
     def initialise(self):
         """Initialise the model. Creates suitable function
@@ -139,7 +135,7 @@ class HydrogenTransportProblem:
             if isinstance(sub_dom, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
                 self.volume_subdomains.append(sub_dom)
-                entities = sub_dom.locate_subdomain_entities(self.mesh.mesh, vdim)
+                entities = sub_dom.locate_subdomain_entities(self.mesh, vdim)
                 tags_volumes[entities] = sub_dom.id
 
         # dofs and tags need to be in np.in32 format for meshtags
@@ -184,11 +180,11 @@ class HydrogenTransportProblem:
         self.formulation = 0
 
         for spe in self.species:
-            for vol in self.volume_subdomains:
-                u = spe.solution
-                u_n = spe.prev_solution
-                v = spe.test_function
+            u = spe.solution
+            u_n = spe.prev_solution
+            v = spe.test_function
 
+            for vol in self.volume_subdomains:
                 D = vol.material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature
                 )
