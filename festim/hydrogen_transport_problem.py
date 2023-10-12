@@ -88,6 +88,7 @@ class HydrogenTransportProblem:
         self.facet_meshtags = None
         self.volume_meshtags = None
         self.formulation = None
+        self.volume_subdomains = []
 
     @property
     def temperature(self):
@@ -112,12 +113,6 @@ class HydrogenTransportProblem:
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
-
-        self.volume_subdomains = []
-        for sub_dom in self.subdomains:
-            if isinstance(sub_dom, F.VolumeSubdomain1D):
-                self.volume_subdomains.append(sub_dom)
-
         self.create_formulation()
 
     def define_function_space(self):
@@ -143,6 +138,7 @@ class HydrogenTransportProblem:
                 tags_facets.append(sub_dom.id)
             if isinstance(sub_dom, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
+                self.volume_subdomains.append(sub_dom)
                 entities = sub_dom.locate_subdomain_entities(self.mesh.mesh, vdim)
                 tags_volumes[entities] = sub_dom.id
 
@@ -185,6 +181,8 @@ class HydrogenTransportProblem:
 
         self.dt = dt  # TODO remove this
 
+        self.formulation = 0
+
         for spe in self.species:
             for vol in self.volume_subdomains:
                 u = spe.solution
@@ -195,8 +193,8 @@ class HydrogenTransportProblem:
                     self.mesh.mesh, self.temperature
                 )
 
-                formulation = dot(D * grad(u), grad(v)) * self.dx
-                formulation += ((u - u_n) / dt) * v * self.dx
+                self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
+                self.formulation += ((u - u_n) / dt) * v * self.dx(vol.id)
 
                 # add sources
                 # TODO implement this
@@ -210,8 +208,6 @@ class HydrogenTransportProblem:
                 #     pass
                 #     if bc.species == spe and bc.type != "dirichlet":
                 #         formulation += bc * v * self.ds
-
-        self.formulation = formulation
 
     def create_solver(self):
         """Creates the solver of the model"""
