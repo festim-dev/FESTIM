@@ -22,11 +22,6 @@ class Species:
     """
 
     def __init__(self, name: str = None) -> None:
-        """_summary_
-
-        Args:
-            name (str, optional): a name given to the species. Defaults to None.
-        """
         self.name = name
 
         self.solution = None

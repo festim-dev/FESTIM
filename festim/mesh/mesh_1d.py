@@ -9,17 +9,14 @@ class Mesh1D(Mesh):
     """
     1D Mesh
 
+    Args:
+            vertices (list): the mesh x-coordinates (m)
+
     Attributes:
         vertices (list): the mesh x-coordinates (m)
     """
 
     def __init__(self, vertices, **kwargs) -> None:
-        """Inits Mesh1D
-
-        Args:
-            vertices (list): the mesh x-coordinates (m)
-        """
-
         self.vertices = vertices
 
         mesh = self.generate_mesh()

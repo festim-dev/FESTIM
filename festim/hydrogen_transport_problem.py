@@ -20,7 +20,8 @@ class HydrogenTransportProblem:
         species (list of festim.Species): the species of the model
         temperature (float or fem.Constant): the temperature of the model
         sources (list of festim.Source): the hydrogen sources of the model
-        boundary_conditions (list of festim.BoundaryCondition): the boundary conditions of the model
+        boundary_conditions (list of festim.BoundaryCondition): the boundary
+            conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
 
@@ -29,14 +30,17 @@ class HydrogenTransportProblem:
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
         temperature (fem.Constant): the temperature of the model
-        boundary_conditions (list of festim.BoundaryCondition): the boundary conditions of the model
+        boundary_conditions (list of festim.BoundaryCondition): the boundary
+            conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
-        function_space (dolfinx.fem.FunctionSpace): the function space of the model
+        function_space (dolfinx.fem.FunctionSpace): the function space of the
+            model
         facet_meshtags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
-        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the model
+        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the
+            model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
 
@@ -102,10 +106,6 @@ class HydrogenTransportProblem:
             self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
 
     def initialise(self):
-        """Initialise the model. Creates suitable function
-        spaces, facet and volume tags...
-        """
-
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
@@ -116,6 +116,9 @@ class HydrogenTransportProblem:
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
 
     def define_markers_and_measures(self):
+        """Defines the markers and measures of the model, and check borders of
+        VolumeSubdomains match to each other"""
+
         dofs_facets, tags_facets = [], []
 
         # TODO this should be a property of mesh
@@ -147,7 +150,7 @@ class HydrogenTransportProblem:
             sorted_borders = np.sort(all_borders).reshape(int(len(all_borders) / 2), 2)
             for i in range(0, len(sorted_borders) - 1):
                 if sorted_borders[i][1] != sorted_borders[i + 1][0]:
-                    raise ValueError("Subdomain borders don't match to each other ")
+                    raise ValueError("Subdomain borders don't match to each other")
 
         # dofs and tags need to be in np.in32 format for meshtags
         dofs_facets = np.array(dofs_facets, dtype=np.int32)
