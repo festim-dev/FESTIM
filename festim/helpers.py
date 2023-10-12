@@ -1,4 +1,3 @@
-import festim as F
 from dolfinx import fem
 
 
