@@ -22,11 +22,13 @@ class Material:
     def define_diffusion_coefficient(self, mesh, temperature):
         """Defines the diffusion coefficient
         Args:
+            mesh (dolfinx.mesh.Mesh): the domain mesh
             temperature (dolfinx.fem.Constant): the temperature
         Returns:
-            float: the diffusion coefficient
+            ufl.algebra.Product: the diffusion coefficient
         """
 
+        # check type of values and convert to fem.Constant if needed
         if isinstance(self.D_0, (float, int)):
             self.D_0 = fem.Constant(mesh, float(self.D_0))
         elif isinstance(self.D_0, fem.Constant):
