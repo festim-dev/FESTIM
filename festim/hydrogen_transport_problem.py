@@ -174,8 +174,6 @@ class HydrogenTransportProblem:
         for vol in self.volume_subdomains:
             for border in vol.borders:
                 all_borders.append(border)
-        if len(all_borders) == 0:
-            raise ValueError("No volume subdomains defined")
         sorted_borders = np.sort(all_borders).reshape(int(len(all_borders) / 2), 2)
         for i in range(0, len(sorted_borders) - 1):
             if sorted_borders[i][1] != sorted_borders[i + 1][0]:

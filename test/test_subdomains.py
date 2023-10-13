@@ -95,3 +95,13 @@ def test_borders_inside_domain():
     my_test_model.define_function_space()
     with pytest.raises(ValueError):
         my_test_model.define_markers_and_measures()
+
+
+def test_raise_error_with_no_volume_subdomain():
+    """Checks that error is rasied when no volume subdomain is defined"""
+    my_test_model = F.HydrogenTransportProblem()
+    my_test_model.mesh = F.Mesh1D(vertices=np.linspace(0, 20))
+    my_test_model.define_function_space()
+
+    with pytest.raises(ValueError):
+        my_test_model.define_markers_and_measures()
