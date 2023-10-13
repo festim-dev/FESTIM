@@ -138,6 +138,10 @@ class HydrogenTransportProblem:
                 )
                 tags_volumes[entities] = sub_dom.id
 
+        # check if all borders are defined
+        if isinstance(self.mesh, F.Mesh1D):
+            self.mesh.check_borders(self.volume_subdomains)
+
         # dofs and tags need to be in np.in32 format for meshtags
         dofs_facets = np.array(dofs_facets, dtype=np.int32)
         tags_facets = np.array(tags_facets, dtype=np.int32)
