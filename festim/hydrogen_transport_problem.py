@@ -120,12 +120,8 @@ class HydrogenTransportProblem:
 
         dofs_facets, tags_facets = [], []
 
-        # TODO this should be a property of mesh
-        fdim = self.mesh.mesh.topology.dim - 1
-        vdim = self.mesh.mesh.topology.dim
-
         # find all cells in domain and mark them as 0
-        num_cells = self.mesh.mesh.topology.index_map(vdim).size_local
+        num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
         mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
@@ -137,7 +133,9 @@ class HydrogenTransportProblem:
             if isinstance(sub_dom, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
                 self.volume_subdomains.append(sub_dom)
-                entities = sub_dom.locate_subdomain_entities(self.mesh.mesh, vdim)
+                entities = sub_dom.locate_subdomain_entities(
+                    self.mesh.mesh, self.mesh.vdim
+                )
                 tags_volumes[entities] = sub_dom.id
 
         # dofs and tags need to be in np.in32 format for meshtags
@@ -145,9 +143,11 @@ class HydrogenTransportProblem:
         tags_facets = np.array(tags_facets, dtype=np.int32)
 
         # define mesh tags
-        self.facet_meshtags = meshtags(self.mesh.mesh, fdim, dofs_facets, tags_facets)
+        self.facet_meshtags = meshtags(
+            self.mesh.mesh, self.mesh.fdim, dofs_facets, tags_facets
+        )
         self.volume_meshtags = meshtags(
-            self.mesh.mesh, vdim, mesh_cell_indices, tags_volumes
+            self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
         )
 
         # define measures
