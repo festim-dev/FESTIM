@@ -55,7 +55,7 @@ def test_non_matching_volume_borders():
     vol_subdomain_2 = F.VolumeSubdomain1D(id=1, borders=[3, 5], material=None)
     subdomains = [vol_subdomain_1, vol_subdomain_2]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Subdomain borders don't match to each other"):
         mesh.check_borders(subdomains)
 
 
@@ -74,7 +74,7 @@ def test_borders_out_of_domain():
     """Checks that borders outside of the domain raise an error"""
     mesh = F.Mesh1D(vertices=np.linspace(0, 2))
     subdomains = [F.VolumeSubdomain1D(id=1, borders=[1, 15], material=None)]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="borders dont match domain borders"):
         mesh.check_borders(subdomains)
 
 
@@ -82,7 +82,7 @@ def test_borders_inside_domain():
     """Checks that borders inside of the domain raise an error"""
     mesh = F.Mesh1D(vertices=np.linspace(0, 20))
     subdomains = [F.VolumeSubdomain1D(id=1, borders=[1, 6], material=None)]
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="borders dont match domain borders"):
         mesh.check_borders(subdomains)
 
 
@@ -90,5 +90,5 @@ def test_raise_error_with_no_volume_subdomain():
     """Checks that error is rasied when no volume subdomain is defined"""
     mesh = F.Mesh1D(vertices=np.linspace(0, 20))
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="No volume subdomains defined"):
         mesh.check_borders([])
