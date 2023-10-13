@@ -5,15 +5,14 @@ class Mesh:
     """
     Mesh class
 
+    Args:
+            mesh (dolfinx.mesh.Mesh, optional): the mesh. Defaults to None.
+
     Attributes:
         mesh (dolfinx.mesh.Mesh): the mesh
     """
 
     def __init__(self, mesh=None):
-        """Inits Mesh
-        Args:
-            mesh (dolfinx.mesh.Mesh, optional): the mesh. Defaults to None.
-        """
         self.mesh = mesh
 
         if self.mesh is not None:

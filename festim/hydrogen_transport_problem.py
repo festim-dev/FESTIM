@@ -3,8 +3,8 @@ from dolfinx.nls.petsc import NewtonSolver
 import ufl
 from mpi4py import MPI
 from dolfinx.fem import Function
-from dolfinx.mesh import meshtags, locate_entities
-from ufl import TestFunction, dot, grad, exp, Measure
+from dolfinx.mesh import meshtags
+from ufl import TestFunction, dot, grad, Measure
 import numpy as np
 
 import festim as F
@@ -18,9 +18,10 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float or dolfinx.Function): the temperature of the model
+        temperature (float or fem.Constant): the temperature of the model
         sources (list of festim.Source): the hydrogen sources of the model
-        boundary_conditions (list of festim.BoundaryCondition): the boundary conditions of the model
+        boundary_conditions (list of festim.BoundaryCondition): the boundary
+            conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
 
@@ -28,15 +29,18 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float or dolfinx.Function): the temperature of the model
-        boundary_conditions (list of festim.BoundaryCondition): the boundary conditions of the model
+        temperature (fem.Constant): the temperature of the model
+        boundary_conditions (list of festim.BoundaryCondition): the boundary
+            conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
-        function_space (dolfinx.fem.FunctionSpace): the function space of the model
+        function_space (dolfinx.fem.FunctionSpace): the function space of the
+            model
         facet_meshtags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
-        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the model
+        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the
+            model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
 
@@ -88,12 +92,20 @@ class HydrogenTransportProblem:
         self.facet_meshtags = None
         self.volume_meshtags = None
         self.formulation = None
+        self.volume_subdomains = []
+
+    @property
+    def temperature(self):
+        return self._temperature
+
+    @temperature.setter
+    def temperature(self, value):
+        if value is None:
+            self._temperature = value
+        else:
+            self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
 
     def initialise(self):
-        """Initialise the model. Creates suitable function
-        spaces, facet and volume tags...
-        """
-
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
@@ -104,6 +116,8 @@ class HydrogenTransportProblem:
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
 
     def define_markers_and_measures(self):
+        """Defines the markers and measures of the model"""
+
         dofs_facets, tags_facets = [], []
 
         # TODO this should be a property of mesh
@@ -122,6 +136,7 @@ class HydrogenTransportProblem:
                 tags_facets.append(sub_dom.id)
             if isinstance(sub_dom, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
+                self.volume_subdomains.append(sub_dom)
                 entities = sub_dom.locate_subdomain_entities(self.mesh.mesh, vdim)
                 tags_volumes[entities] = sub_dom.id
 
@@ -159,39 +174,38 @@ class HydrogenTransportProblem:
         if len(self.species) > 1:
             raise NotImplementedError("Multiple species not implemented yet")
 
-        # TODO expose D_0 and E_D as parameters of a Material class
-        D_0 = fem.Constant(self.mesh.mesh, 1.9e-7)
-        E_D = fem.Constant(self.mesh.mesh, 0.2)
-
-        D = D_0 * exp(-E_D / F.k_B / self.temperature)
-
         # TODO expose dt as parameter of the model
         dt = fem.Constant(self.mesh.mesh, 1 / 20)
 
-        self.D = D  # TODO remove this
         self.dt = dt  # TODO remove this
+
+        self.formulation = 0
 
         for spe in self.species:
             u = spe.solution
             u_n = spe.prev_solution
             v = spe.test_function
 
-            formulation = dot(D * grad(u), grad(v)) * self.dx
-            formulation += ((u - u_n) / dt) * v * self.dx
+            for vol in self.volume_subdomains:
+                D = vol.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature
+                )
 
-            # add sources
-            for source in self.sources:
-                # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
-                if source.species == spe:
-                    formulation += source * v * self.dx
-            # add fluxes
-            # TODO implement this
-            # for bc in self.boundary_conditions:
-            #     pass
-            #     if bc.species == spe and bc.type != "dirichlet":
-            #         formulation += bc * v * self.ds
+                self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
+                self.formulation += ((u - u_n) / dt) * v * self.dx(vol.id)
 
-        self.formulation = formulation
+                # add sources
+                # TODO implement this
+                # for source in self.sources:
+                #     # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
+                #     if source.species == spe:
+                #         formulation += source * v * self.dx
+                # add fluxes
+                # TODO implement this
+                # for bc in self.boundary_conditions:
+                #     pass
+                #     if bc.species == spe and bc.type != "dirichlet":
+                #         formulation += bc * v * self.ds
 
     def create_solver(self):
         """Creates the solver of the model"""

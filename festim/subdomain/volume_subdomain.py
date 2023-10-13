@@ -30,7 +30,7 @@ class VolumeSubdomain1D:
         """Locates all cells in subdomain borders within domain
 
         Args:
-            mesh (dolfinx.cpp.mesh.Mesh): the mesh of the model
+            mesh (dolfinx.mesh.Mesh): the mesh of the model
             vdim (int): the dimension of the volumes of the mesh,
                 for 1D this is always 1
 
