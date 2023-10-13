@@ -1,4 +1,4 @@
-from dolfinx import mesh as dolfin_mesh
+import dolfinx.mesh
 from mpi4py import MPI
 import ufl
 import numpy as np
@@ -32,7 +32,7 @@ class Mesh1D(Mesh):
         indexes = np.arange(self.vertices.shape[0])
         cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
 
-        return dolfin_mesh.create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
+        return dolfinx.mesh.create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
 
     def check_borders(self, volume_subdomains):
         """Checks that the borders of the subdomain are within the domain
