@@ -30,7 +30,7 @@ class VolumeSubdomain1D:
         """Locates all cells in subdomain borders within domain
 
         Args:
-            mesh (festim.Mesh): the mesh of the model
+            mesh (dolfinx.mesh.Mesh): the mesh of the model
             vdim (int): the dimension of the volumes of the mesh,
                 for 1D this is always 1
 
@@ -38,7 +38,7 @@ class VolumeSubdomain1D:
             entities (np.array): the entities of the subdomain
         """
         entities = locate_entities(
-            mesh.mesh,
+            mesh,
             vdim,
             lambda x: np.logical_and(x[0] >= self.borders[0], x[0] <= self.borders[1]),
         )

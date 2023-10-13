@@ -137,7 +137,7 @@ class HydrogenTransportProblem:
             if isinstance(sub_dom, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
                 self.volume_subdomains.append(sub_dom)
-                entities = sub_dom.locate_subdomain_entities(self.mesh, vdim)
+                entities = sub_dom.locate_subdomain_entities(self.mesh.mesh, vdim)
                 tags_volumes[entities] = sub_dom.id
 
         # dofs and tags need to be in np.in32 format for meshtags
