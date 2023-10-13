@@ -1,4 +1,4 @@
-from dolfinx import fem, mesh
+from dolfinx import mesh
 from mpi4py import MPI
 import ufl
 import numpy as np
@@ -10,7 +10,7 @@ class Mesh1D(Mesh):
     1D Mesh
 
     Args:
-            vertices (list): the mesh x-coordinates (m)
+        vertices (list): the mesh x-coordinates (m)
 
     Attributes:
         vertices (list): the mesh x-coordinates (m)

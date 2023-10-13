@@ -1,15 +1,14 @@
-import ufl
-
-
 class Mesh:
     """
     Mesh class
 
     Args:
-            mesh (dolfinx.mesh.Mesh, optional): the mesh. Defaults to None.
+        mesh (dolfinx.mesh.Mesh, optional): the mesh. Defaults to None.
 
     Attributes:
         mesh (dolfinx.mesh.Mesh): the mesh
+        vdim (int): the dimension of the mesh cells
+        fdim (int): the dimension of the mesh facets
     """
 
     def __init__(self, mesh=None):
@@ -25,3 +24,11 @@ class Mesh:
             self.mesh.topology.create_connectivity(
                 self.mesh.topology.dim - 1, self.mesh.topology.dim
             )
+
+    @property
+    def vdim(self):
+        return self.mesh.topology.dim
+
+    @property
+    def fdim(self):
+        return self.mesh.topology.dim - 1
