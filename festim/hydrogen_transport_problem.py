@@ -138,6 +138,8 @@ class HydrogenTransportProblem:
                 )
                 tags_volumes[entities] = sub_dom.id
 
+        self.check_borders(self.mesh)
+
         # dofs and tags need to be in np.in32 format for meshtags
         dofs_facets = np.array(dofs_facets, dtype=np.int32)
         tags_facets = np.array(tags_facets, dtype=np.int32)
@@ -157,6 +159,39 @@ class HydrogenTransportProblem:
         self.dx = Measure(
             "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
         )
+
+    def check_borders(self, mesh):
+        """Checks that the borders of the subdomain are within the domain
+
+        Args:
+            mesh (festim.Mesh): the mesh of the model
+
+        Raises:
+            Value error: if borders outside the domain
+        """
+        # check that subdomains are connected
+        all_borders = []
+        for vol in self.volume_subdomains:
+            for border in vol.borders:
+                all_borders.append(border)
+        if len(all_borders) == 0:
+            raise ValueError("No volume subdomains defined")
+        sorted_borders = np.sort(all_borders).reshape(int(len(all_borders) / 2), 2)
+        for i in range(0, len(sorted_borders) - 1):
+            if sorted_borders[i][1] != sorted_borders[i + 1][0]:
+                raise ValueError("Subdomain borders don't match to each other")
+
+        # check volume subdomain is defined
+        # TODO this possible by default
+        if len(all_borders) == 0:
+            raise ValueError("No volume subdomains defined")
+
+        # check that subdomains are within the domain
+        if (
+            sorted_borders[0][0] != mesh.vertices[0]
+            or sorted_borders[-1][-1] != mesh.vertices[-1]
+        ):
+            raise ValueError("borders dont match domain borders")
 
     def assign_functions_to_species(self):
         """Creates for each species the solution, prev solution and test function"""
