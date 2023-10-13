@@ -38,7 +38,7 @@ class Mesh1D(Mesh):
         """Checks that the borders of the subdomain are within the domain
 
         Args:
-            mesh (festim.Mesh): the mesh of the model
+            volume_subdomains (list of festim.VolumeSubdomain1D): the volume subdomains
 
         Raises:
             Value error: if borders outside the domain
