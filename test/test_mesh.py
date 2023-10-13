@@ -1,16 +1,38 @@
-import numpy as np
 import festim as F
+from dolfinx import mesh
+from mpi4py import MPI
+import pytest
 
-test_1D_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=10))
+mesh_1D = mesh.create_unit_interval(MPI.COMM_WORLD, 10)
+mesh_2D = mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
+mesh_3D = mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 
 
-def test_get_fdim_of_mesh_1D():
-    fdim = test_1D_mesh.fdim
+@pytest.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
+def test_get_fdim(mesh):
+    my_mesh = F.Mesh(mesh)
 
-    assert np.isclose(fdim, 0)
+    assert my_mesh.fdim == mesh.topology.dim - 1
 
 
-def test_get_vdim_of_mesh_1D():
-    vdim = test_1D_mesh.vdim
+def test_fdim_changes_when_mesh_changes():
+    my_mesh = F.Mesh()
 
-    assert np.isclose(vdim, 1)
+    for mesh in [mesh_1D, mesh_2D, mesh_3D]:
+        my_mesh.mesh = mesh
+        assert my_mesh.fdim == mesh.topology.dim - 1
+
+
+@pytest.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
+def test_get_vdim():
+    my_mesh = F.Mesh(mesh)
+
+    assert my_mesh.vdim == mesh.topology.dim
+
+
+def test_vdim_changes_when_mesh_changes():
+    my_mesh = F.Mesh()
+
+    for mesh in [mesh_1D, mesh_2D, mesh_3D]:
+        my_mesh.mesh = mesh
+        assert my_mesh.vdim == mesh.topology.dim
