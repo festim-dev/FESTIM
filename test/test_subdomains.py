@@ -50,58 +50,45 @@ def test_different_volume_ids():
 
 def test_non_matching_volume_borders():
     """Checks that non-matching borders raise an error"""
-    my_test_model = F.HydrogenTransportProblem()
-    my_test_model.mesh = F.Mesh1D(vertices=np.linspace(0, 5, 6))
+    mesh = F.Mesh1D(vertices=np.linspace(0, 5, 6))
     vol_subdomain_1 = F.VolumeSubdomain1D(id=1, borders=[0, 2], material=None)
     vol_subdomain_2 = F.VolumeSubdomain1D(id=1, borders=[3, 5], material=None)
-    my_test_model.subdomains = [vol_subdomain_1, vol_subdomain_2]
+    subdomains = [vol_subdomain_1, vol_subdomain_2]
 
     with pytest.raises(ValueError):
-        my_test_model.define_markers_and_measures()
+        mesh.check_borders(subdomains)
 
 
 def test_matching_volume_borders_non_ascending_order():
     """Checks that subdomain placed in non ascending order still passes"""
-    my_test_model = F.HydrogenTransportProblem()
-    my_test_model.mesh = F.Mesh1D(vertices=np.linspace(0, 8, 9))
+    mesh = F.Mesh1D(vertices=np.linspace(0, 8, 9))
     vol_subdomain_1 = F.VolumeSubdomain1D(id=1, borders=[0, 2], material=None)
     vol_subdomain_2 = F.VolumeSubdomain1D(id=2, borders=[4, 8], material=None)
     vol_subdomain_3 = F.VolumeSubdomain1D(id=3, borders=[2, 4], material=None)
-    my_test_model.subdomains = [vol_subdomain_1, vol_subdomain_2, vol_subdomain_3]
+    subdomains = [vol_subdomain_1, vol_subdomain_2, vol_subdomain_3]
 
-    my_test_model.define_function_space()
-    my_test_model.define_markers_and_measures()
+    mesh.check_borders(subdomains)
 
 
 def test_borders_out_of_domain():
     """Checks that borders outside of the domain raise an error"""
-    my_test_model = F.HydrogenTransportProblem()
-    my_test_model.mesh = F.Mesh1D(vertices=np.linspace(0, 2))
-    my_test_model.subdomains = [
-        F.VolumeSubdomain1D(id=1, borders=[1, 15], material=None)
-    ]
-    my_test_model.define_function_space()
+    mesh = F.Mesh1D(vertices=np.linspace(0, 2))
+    subdomains = [F.VolumeSubdomain1D(id=1, borders=[1, 15], material=None)]
     with pytest.raises(ValueError):
-        my_test_model.define_markers_and_measures()
+        mesh.check_borders(subdomains)
 
 
 def test_borders_inside_domain():
     """Checks that borders inside of the domain raise an error"""
-    my_test_model = F.HydrogenTransportProblem()
-    my_test_model.mesh = F.Mesh1D(vertices=np.linspace(0, 20))
-    my_test_model.subdomains = [
-        F.VolumeSubdomain1D(id=1, borders=[1, 6], material=None)
-    ]
-    my_test_model.define_function_space()
+    mesh = F.Mesh1D(vertices=np.linspace(0, 20))
+    subdomains = [F.VolumeSubdomain1D(id=1, borders=[1, 6], material=None)]
     with pytest.raises(ValueError):
-        my_test_model.define_markers_and_measures()
+        mesh.check_borders(subdomains)
 
 
 def test_raise_error_with_no_volume_subdomain():
     """Checks that error is rasied when no volume subdomain is defined"""
-    my_test_model = F.HydrogenTransportProblem()
-    my_test_model.mesh = F.Mesh1D(vertices=np.linspace(0, 20))
-    my_test_model.define_function_space()
+    mesh = F.Mesh1D(vertices=np.linspace(0, 20))
 
     with pytest.raises(ValueError):
-        my_test_model.define_markers_and_measures()
+        mesh.check_borders([])
