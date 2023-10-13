@@ -248,7 +248,7 @@ class HTransportProblem:
         while converged is False:
             self.u.assign(u_)
             nb_it, converged = self.solve_once()
-            if dt.adaptive_stepsize is not None:
+            if dt.adaptive_stepsize is not None or dt.milestones is not None:
                 dt.adapt(t, nb_it, converged)
 
         # Update previous solutions

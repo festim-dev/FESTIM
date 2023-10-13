@@ -10,12 +10,11 @@ class Exports:
         self.final_time = None
         self.nb_iterations = 0
 
-    def write(self, label_to_function, dt, dx):
+    def write(self, label_to_function, dx):
         """writes to file
 
         Args:
             label_to_function (dict): dictionary of labels mapped to solutions
-            dt (festim.Stepsize): the model's stepsize
             dx (fenics.Measure): the measure for dx
         """
         for export in self.exports:
@@ -61,7 +60,8 @@ class Exports:
                         label_to_function[export.field], self.V_DG1
                     )
                 export.function = label_to_function[export.field]
-                export.write(self.t, dt)
+                steady = self.final_time == None
+                export.write(self.t, steady)
         self.nb_iterations += 1
 
     def initialise_derived_quantities(self, dx, ds, materials):
