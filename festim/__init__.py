@@ -18,6 +18,9 @@ k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 from .helpers import as_fenics_constant
 
+from .boundary_conditions.dirichlet_bc import DirichletBC
+from .boundary_conditions.sieverts_bc import SievertsBC
+
 from .material import Material
 
 from .mesh.mesh import Mesh
