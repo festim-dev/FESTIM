@@ -29,7 +29,7 @@ class DirichletBC:
         condition
 
         Args:
-            mesh (dolfinx.mesh.Mesh): the domain mesh
+            mesh (festim.Mesh): the domain mesh
         """
         bc_facets = facet_meshtags.find(self.subdomain.id)
         bc_dofs = fem.locate_dofs_topological(function_space, mesh.fdim, bc_facets)
