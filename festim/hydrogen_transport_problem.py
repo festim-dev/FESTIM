@@ -93,6 +93,7 @@ class HydrogenTransportProblem:
         self.volume_meshtags = None
         self.formulation = None
         self.volume_subdomains = []
+        self.formed_boundary_conditions = []
 
     @property
     def temperature(self):
@@ -109,6 +110,7 @@ class HydrogenTransportProblem:
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
+        self.define_boundary_conditions()
         self.create_formulation()
 
     def define_function_space(self):
@@ -162,6 +164,21 @@ class HydrogenTransportProblem:
             "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
         )
 
+    def define_boundary_conditions(self):
+        for bc in self.boundary_conditions:
+            bc_facets = self.facet_meshtags.find(bc.subdomain.id)
+            bc_dofs = fem.locate_dofs_topological(
+                self.function_space, self.mesh.fdim, bc_facets
+            )
+            if isinstance(bc, F.DirichletBC):
+                form = bc.create_formulation(
+                    mesh=self.mesh.mesh,
+                    temperature=self.temperature,
+                    dofs=bc_dofs,
+                    function_space=self.function_space,
+                )
+                self.formed_boundary_conditions.append(form)
+
     def assign_functions_to_species(self):
         """Creates for each species the solution, prev solution and test function"""
         if len(self.species) > 1:
@@ -214,7 +231,9 @@ class HydrogenTransportProblem:
     def create_solver(self):
         """Creates the solver of the model"""
         problem = fem.petsc.NonlinearProblem(
-            self.formulation, self.species[0].solution, bcs=self.boundary_conditions
+            self.formulation,
+            self.species[0].solution,
+            bcs=self.formed_boundary_conditions,
         )
         solver = NewtonSolver(MPI.COMM_WORLD, problem)
         self.solver = solver
