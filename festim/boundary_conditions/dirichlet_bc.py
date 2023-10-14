@@ -24,9 +24,18 @@ class DirichletBC:
         self.value = value
         self.species = species
 
-        self.form = None
+    def define_surface_subdominan_dofs(self, facet_meshtags, mesh, function_space):
+        """Defines the facets and the degrees of freedom of the boundary
+        condition
 
-    def create_formulation(self, mesh, value, dofs, function_space):
+        Args:
+            mesh (dolfinx.mesh.Mesh): the domain mesh
+        """
+        bc_facets = facet_meshtags.find(self.subdomain.id)
+        bc_dofs = fem.locate_dofs_topological(function_space, mesh.fdim, bc_facets)
+        return bc_dofs
+
+    def create_formulation(self, mesh, dofs, function_space, temperature):
         """Applies the boundary condition
         Args:
             mesh (dolfinx.mesh.Mesh): the domain mesh
@@ -34,11 +43,7 @@ class DirichletBC:
             dofs (numpy.ndarray): the degrees of freedom of surface facets
             function_space (dolfinx.fem.FunctionSpace): the function space
         """
-        if not isinstance(value, (float, int)):
-            raise TypeError(
-                f"Boundary condition value must be float or int, not {type(value)}"
-            )
-
-        self.form = fem.dirichletbc(
-            F.as_fenics_constant(mesh, value), dofs, function_space
+        form = fem.dirichletbc(
+            F.as_fenics_constant(mesh=mesh, value=self.value), dofs, function_space
         )
+        return form
