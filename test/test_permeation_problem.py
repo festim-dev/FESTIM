@@ -34,12 +34,18 @@ def test_permeation_problem():
     mobile_H = F.Species("H")
     my_model.species = [mobile_H]
 
-    temperature = Constant(my_mesh.mesh, 500.0)
-    my_model.temperature = temperature
+    my_model.temperature = 500
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(subdomain=right_surface, value=0, species="H"),
+        F.SievertsBC(
+            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+        ),
+    ]
 
     my_model.initialise()
 
-    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
+    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, my_model.temperature)
 
     V = my_model.function_space
     u = mobile_H.solution
@@ -47,25 +53,10 @@ def test_permeation_problem():
     # TODO this should be a property of Mesh
     n = FacetNormal(my_mesh.mesh)
 
-    def siverts_law(T, S_0, E_S, pressure):
-        S = S_0 * exp(-E_S / F.k_B / T)
-        return S * pressure**0.5
-
-    fdim = my_mesh.mesh.topology.dim - 1
-    left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, fdim, left_facets)
-    right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, fdim, right_facets)
-
     S_0 = 4.02e21
     E_S = 1.04
     P_up = 100
-    surface_conc = siverts_law(T=temperature, S_0=S_0, E_S=E_S, pressure=P_up)
-    bc_sieverts = dirichletbc(
-        Constant(my_mesh.mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
-    )
-    bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
-    my_model.boundary_conditions = [bc_sieverts, bc_outgas]
+
     my_model.create_solver()
 
     my_model.solver.convergence_criterion = "incremental"
@@ -110,7 +101,7 @@ def test_permeation_problem():
     mobile_xdmf.close()
 
     # analytical solution
-    S = S_0 * exp(-E_S / F.k_B / float(temperature))
+    S = S_0 * exp(-E_S / F.k_B / float(my_model.temperature))
     permeability = float(D) * S
     times = np.array(times)
 
@@ -167,6 +158,13 @@ def test_permeation_problem_multi_volume():
     temperature = Constant(my_mesh.mesh, 500.0)
     my_model.temperature = temperature
 
+    my_model.boundary_conditions = [
+        F.DirichletBC(subdomain=right_surface, value=0, species="H"),
+        F.SievertsBC(
+            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+        ),
+    ]
+
     my_model.initialise()
 
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
@@ -181,21 +179,10 @@ def test_permeation_problem_multi_volume():
         S = S_0 * exp(-E_S / F.k_B / T)
         return S * pressure**0.5
 
-    fdim = my_mesh.mesh.topology.dim - 1
-    left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, fdim, left_facets)
-    right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, fdim, right_facets)
-
     S_0 = 4.02e21
     E_S = 1.04
     P_up = 100
-    surface_conc = siverts_law(T=temperature, S_0=S_0, E_S=E_S, pressure=P_up)
-    bc_sieverts = dirichletbc(
-        Constant(my_mesh.mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
-    )
-    bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
-    my_model.boundary_conditions = [bc_sieverts, bc_outgas]
+
     my_model.create_solver()
 
     my_model.solver.convergence_criterion = "incremental"
