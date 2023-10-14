@@ -27,14 +27,12 @@ class SievertsBC(F.DirichletBC):
     """
 
     def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
-        super().__init__(value=None)
+        super().__init__(value=None, species=species, subdomain=subdomain)
         self.subdomain = subdomain
         self.S_0 = S_0
         self.E_S = E_S
         self.pressure = pressure
         self.species = species
-
-        self.form = None
 
     def create_formulation(self, mesh, temperature, dofs, function_space):
         """Evaluates the concentration at the boundary using the sieverts law,
@@ -46,13 +44,15 @@ class SievertsBC(F.DirichletBC):
             dofs (numpy.ndarray): the degrees of freedom of surface facets
             function_space (dolfinx.fem.FunctionSpace): the function space
         """
-        value = self.siverts_law(
+        value = siverts_law(
             T=temperature,
-            S_0=self.S_0,
-            E_S=self.E_S,
-            pressure=self.pressure,
+            S_0=F.as_fenics_constant(mesh=mesh, value=self.S_0),
+            E_S=F.as_fenics_constant(mesh=mesh, value=self.E_S),
+            pressure=F.as_fenics_constant(mesh=mesh, value=self.pressure),
         )
 
-        self.form = fem.dirichletbc(
-            F.as_fenics_constant(mesh, value), dofs, function_space
+        form = fem.dirichletbc(
+            F.as_fenics_constant(mesh=mesh, value=float(value)), dofs, function_space
         )
+
+        return form
