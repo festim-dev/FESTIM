@@ -166,11 +166,10 @@ class HydrogenTransportProblem:
 
     def define_boundary_conditions(self):
         for bc in self.boundary_conditions:
-            bc_facets = self.facet_meshtags.find(bc.subdomain.id)
-            bc_dofs = fem.locate_dofs_topological(
-                self.function_space, self.mesh.fdim, bc_facets
-            )
             if isinstance(bc, F.DirichletBC):
+                bc_dofs = bc.define_surface_subdominan_dofs(
+                    self.facet_meshtags, self.mesh, self.function_space
+                )
                 form = bc.create_formulation(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature,
