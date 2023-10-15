@@ -1,6 +1,8 @@
 from dolfinx.io import VTXWriter
 import mpi4py
 
+import festim as F
+
 
 class VTXExport:
     """Export functions to VTX file
@@ -25,9 +27,34 @@ class VTXExport:
 
     def __init__(self, filename: str, field) -> None:
         self.filename = filename
-        if not isinstance(field, list):
-            field = [field]
         self.field = field
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if not isinstance(value, str):
+            raise TypeError("filename must be of type str")
+        if not value.endswith(".bp"):
+            raise ValueError("filename must end with .bp")
+        self._filename = value
+
+    @property
+    def field(self):
+        return self._field
+
+    @field.setter
+    def field(self, value):
+        if not isinstance(value, F.Species) and not isinstance(value, list):
+            raise TypeError(
+                "field must be of type festim.Species or list of festim.Species"
+            )
+
+        if not isinstance(value, list):
+            value = [value]
+        self._field = value
 
     def define_writer(self, comm: mpi4py.MPI.Intracomm, functions: list) -> None:
         """Define the writer

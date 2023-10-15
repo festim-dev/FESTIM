@@ -3,6 +3,8 @@ import dolfinx
 from mpi4py import MPI
 import numpy as np
 
+import pytest
+
 mesh = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 V = dolfinx.fem.FunctionSpace(mesh, ("Lagrange", 1))
 
@@ -11,8 +13,8 @@ def test_vtx_export_one_function(tmpdir):
     """Test can add one function to a vtx export"""
     u = dolfinx.fem.Function(V)
 
-    filename = tmpdir.join("my_export.bp")
-    my_export = F.VTXExport(filename, field=None)
+    filename = str(tmpdir.join("my_export.bp"))
+    my_export = F.VTXExport(filename, field=F.Species("H"))
     my_export.define_writer(mesh.comm, [u])
 
     for t in range(10):
@@ -26,8 +28,8 @@ def test_vtx_export_two_functions(tmpdir):
     u = dolfinx.fem.Function(V)
     v = dolfinx.fem.Function(V)
 
-    filename = tmpdir.join("my_export.bp")
-    my_export = F.VTXExport(filename, field=None)
+    filename = str(tmpdir.join("my_export.bp"))
+    my_export = F.VTXExport(filename, field=[F.Species("1"), F.Species("2")])
 
     my_export.define_writer(mesh.comm, [u, v])
 
@@ -50,7 +52,7 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
     my_model.species = [F.Species("H")]
     my_model.temperature = 500
 
-    filename = tmpdir.join("my_export.bp")
+    filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXExport(filename, field=my_model.species[0])
     my_model.exports = [my_export]
 
@@ -58,3 +60,18 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
 
     for t in range(10):
         my_export.write(t)
+
+
+def test_field_attribute_is_always_list():
+    """Test that the field attribute is always a list"""
+    my_export = F.VTXExport("my_export.bp", field=F.Species("H"))
+    assert isinstance(my_export.field, list)
+
+    my_export = F.VTXExport("my_export.bp", field=[F.Species("H")])
+    assert isinstance(my_export.field, list)
+
+
+def test_filename_raises_error_with_wrong_extension():
+    """Test that the filename attribute raises an error if the extension is not .bp"""
+    with pytest.raises(ValueError):
+        F.VTXExport("my_export.txt", field=[F.Species("H")])
