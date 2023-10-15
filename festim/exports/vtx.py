@@ -47,13 +47,22 @@ class VTXExport:
 
     @field.setter
     def field(self, value):
+        # check that field is festim.Species or list of festim.Species
         if not isinstance(value, F.Species) and not isinstance(value, list):
             raise TypeError(
                 "field must be of type festim.Species or list of festim.Species"
             )
-
+        # check that all elements of list are festim.Species
+        if isinstance(value, list):
+            for element in value:
+                if not isinstance(element, F.Species):
+                    raise TypeError(
+                        "field must be of type festim.Species or list of festim.Species"
+                    )
+        # if field is festim.Species, convert to list
         if not isinstance(value, list):
             value = [value]
+
         self._field = value
 
     def define_writer(self, comm: mpi4py.MPI.Intracomm, functions: list) -> None:
