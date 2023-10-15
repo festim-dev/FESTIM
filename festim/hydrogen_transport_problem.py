@@ -115,6 +115,9 @@ class HydrogenTransportProblem:
     def defing_export_writers(self):
         """Defines the export writers of the model"""
         for export in self.exports:
+            # TODO implement when export.field is an int or str
+            # then find solution from index of species
+
             if isinstance(export, F.VTXExport):
                 export.define_writer(
                     MPI.COMM_WORLD, [field.solution for field in export.field]
