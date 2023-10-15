@@ -23,7 +23,7 @@ class VTXExport:
         ...    my_export.write(t)
     """
 
-    def __init__(self, filename: str, field=0) -> None:
+    def __init__(self, filename: str, field) -> None:
         self.filename = filename
         if not isinstance(field, list):
             field = [field]
