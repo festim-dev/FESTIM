@@ -71,7 +71,6 @@ def test_field_attribute_is_always_list():
     assert isinstance(my_export.field, list)
 
 
-# make test parametric to test for strings and integers
 @pytest.mark.parametrize("field", ["H", 1, [F.Species("H"), 1]])
 def test_field_attribute_raises_error_when_invalid_type(field):
     """Test that the field attribute raises an error if the type is not festim.Species or list"""
