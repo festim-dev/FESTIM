@@ -1,16 +1,11 @@
-from mpi4py import MPI
 from petsc4py import PETSc
-from dolfinx.io import XDMFFile
 from dolfinx.fem import (
     Constant,
     dirichletbc,
     locate_dofs_topological,
-    form,
-    assemble_scalar,
 )
-from ufl import dot, grad, exp, FacetNormal
+from ufl import exp, FacetNormal
 import numpy as np
-import tqdm.autonotebook
 
 
 import festim as F
@@ -42,10 +37,6 @@ def test_permeation_problem():
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
 
     V = my_model.function_space
-    u = mobile_H.solution
-
-    # TODO this should be a property of Mesh
-    n = FacetNormal(my_mesh.mesh)
 
     def siverts_law(T, S_0, E_S, pressure):
         S = S_0 * exp(-E_S / F.k_B / T)
