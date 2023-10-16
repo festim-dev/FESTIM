@@ -27,10 +27,10 @@ jobs:
         pip install .[test]
 
     - name: Download previous benchmark data
-        uses: actions/cache@v1
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
+      uses: actions/cache@v1
+      with:
+        path: ./cache
+        key: ${{ runner.os }}-benchmark
 
     - name: Run benchmark
       shell: bash -l {0}
