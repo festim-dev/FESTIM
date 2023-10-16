@@ -8,7 +8,7 @@ from dolfinx.fem import (
     form,
     assemble_scalar,
 )
-from ufl import dot, grad, exp, FacetNormal
+from ufl import dot, grad, exp
 import numpy as np
 import tqdm.autonotebook
 
@@ -43,9 +43,6 @@ def test_permeation_problem():
 
     V = my_model.function_space
     u = mobile_H.solution
-
-    # TODO this should be a property of Mesh
-    n = FacetNormal(my_mesh.mesh)
 
     def siverts_law(T, S_0, E_S, pressure):
         S = S_0 * exp(-E_S / F.k_B / T)
@@ -100,7 +97,7 @@ def test_permeation_problem():
 
         mobile_xdmf.write_function(u, t)
 
-        surface_flux = form(D * dot(grad(u), n) * my_model.ds(2))
+        surface_flux = form(D * dot(grad(u), my_mesh.n) * my_model.ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
@@ -174,9 +171,6 @@ def test_permeation_problem_multi_volume():
     V = my_model.function_space
     u = mobile_H.solution
 
-    # TODO this should be a property of Mesh
-    n = FacetNormal(my_mesh.mesh)
-
     def siverts_law(T, S_0, E_S, pressure):
         S = S_0 * exp(-E_S / F.k_B / T)
         return S * pressure**0.5
@@ -230,7 +224,7 @@ def test_permeation_problem_multi_volume():
 
         mobile_xdmf.write_function(u, t)
 
-        surface_flux = form(D * dot(grad(u), n) * my_model.ds(2))
+        surface_flux = form(D * dot(grad(u), my_mesh.n) * my_model.ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
