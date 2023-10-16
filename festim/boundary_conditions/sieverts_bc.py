@@ -3,7 +3,7 @@ import ufl
 from dolfinx.fem import Expression, Function, Constant
 
 
-def siverts_law(T, S_0, E_S, pressure):
+def sieverts_law(T, S_0, E_S, pressure):
     """Applies the Sieverts law to compute the concentration at the boundary"""
     S = S_0 * ufl.exp(-E_S / F.k_B / T)
     return S * pressure**0.5
@@ -67,7 +67,7 @@ class SievertsBC(F.DirichletBC):
 
         self.value_fenics = Function(function_space)
         self.bc_expr = Expression(
-            siverts_law(
+            sieverts_law(
                 T=temperature,
                 S_0=self.S_0,
                 E_S=self.E_S,
