@@ -1,4 +1,6 @@
 from dolfinx import fem
+import numpy as np
+from petsc4py.PETSc import ScalarType
 
 
 def as_fenics_constant(value, mesh):
@@ -22,3 +24,16 @@ def as_fenics_constant(value, mesh):
         raise TypeError(
             f"Value must be a float, an int or a dolfinx.Constant, not {type(value)}"
         )
+
+
+class SpaceTimeDependentExpression:
+    def __init__(self, function, t=0):
+        self.t = t
+        self.function = function
+        self.values = None
+
+    def __call__(self, x):
+        if self.values is None:
+            self.values = np.zeros(x.shape[1], dtype=ScalarType)
+        self.values = np.full(x.shape[1], self.function(x=x, t=self.t))
+        return self.values

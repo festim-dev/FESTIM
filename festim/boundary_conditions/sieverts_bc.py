@@ -1,6 +1,7 @@
 import festim as F
-from dolfinx import fem
 import ufl
+from dolfinx.fem import Expression, Function
+import numpy as np
 
 
 def siverts_law(T, S_0, E_S, pressure):
@@ -32,21 +33,24 @@ class SievertsBC(F.DirichletBC):
         self.E_S = E_S
         self.pressure = pressure
 
-    def create_formulation(self, mesh, dofs, function_space, temperature):
-        """Evaluates the concentration at the boundary using the sieverts law,
-        then creating the forulation
+    def create_value(self, mesh, function_space, temperature):
+        # case 1 pressure isn't space dependent or only time dependent:
+        pressure = F.as_fenics_constant(mesh=mesh, value=self.pressure)
+        # case 2 pressure is space dependent
 
-        Args:
-            mesh (dolfinx.mesh.Mesh): the domain mesh
-            temperature (fem.Constant): the temperature of the surface
-            dofs (numpy.ndarray): the degrees of freedom of surface facets
-            function_space (dolfinx.fem.FunctionSpace): the function space
-        """
-        self.value = siverts_law(
-            T=temperature,
-            S_0=F.as_fenics_constant(mesh=mesh, value=self.S_0),
-            E_S=F.as_fenics_constant(mesh=mesh, value=self.E_S),
-            pressure=F.as_fenics_constant(mesh=mesh, value=self.pressure),
+        val = Function(function_space)
+        val.interpolate(
+            lambda x: np.full(
+                x.shape[1],
+                siverts_law(
+                    T=temperature,
+                    S_0=F.as_fenics_constant(mesh=mesh, value=self.S_0),
+                    E_S=F.as_fenics_constant(mesh=mesh, value=self.E_S),
+                    pressure=pressure,
+                ),
+            )
         )
+        print(type(val))
 
-        return super().create_formulation(mesh, dofs, function_space, temperature)
+        self.value_fenics = val
+        self.time_dependent_expressions.append(pressure)

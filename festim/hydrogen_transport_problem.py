@@ -171,11 +171,9 @@ class HydrogenTransportProblem:
                 bc_dofs = bc.define_subdominan_dofs(
                     self.facet_meshtags, self.mesh, self.function_space
                 )
+                bc.create_value(self.mesh.mesh, self.function_space, self.temperature)
                 form = bc.create_formulation(
-                    mesh=self.mesh.mesh,
-                    temperature=self.temperature,
-                    dofs=bc_dofs,
-                    function_space=self.function_space,
+                    dofs=bc_dofs, function_space=self.function_space
                 )
                 self.bc_forms.append(form)
 
