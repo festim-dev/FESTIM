@@ -31,4 +31,5 @@ jobs:
         output-file-path: output.json
         external-data-json-path: ./cache/benchmark-data.json
         fail-on-alert: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         comment-on-alert: true
