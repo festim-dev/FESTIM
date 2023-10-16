@@ -91,4 +91,6 @@ class SievertsBC(F.DirichletBC):
                 elif isinstance(pressure, Constant):
                     pressure.value = self.pressure(t=t)
 
+                # FIXME: currently this is run only if the pressure is time dependent
+                # but should be called also if only the temperature is time dependent
                 self.value_fenics.interpolate(self.bc_expr)
