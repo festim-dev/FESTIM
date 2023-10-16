@@ -28,6 +28,7 @@ class DirichletBC:
         self.species = species
 
         self.value_fenics = None
+        self.bc_expr = None
         self.time_dependent_expressions = []
 
     # write setter getter for value_fenics
@@ -60,7 +61,6 @@ class DirichletBC:
     def create_value(self, mesh, function_space, temperature):
         if isinstance(self.value, (int, float)):
             # case 1 constant value
-            print("coucoucoucou")
             self.value_fenics = F.as_fenics_constant(mesh=mesh, value=float(self.value))
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
