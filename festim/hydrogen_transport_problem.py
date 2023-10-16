@@ -168,7 +168,7 @@ class HydrogenTransportProblem:
         """Defines the dirichlet boundary conditions of the model"""
         for bc in self.boundary_conditions:
             if isinstance(bc, F.DirichletBC):
-                bc_dofs = bc.define_subdominan_dofs(
+                bc_dofs = bc.define_surface_subdomain_dofs(
                     self.facet_meshtags, self.mesh, self.function_space
                 )
                 bc.create_value(self.mesh.mesh, self.function_space, self.temperature)
