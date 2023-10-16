@@ -1,8 +1,8 @@
-name: CT
+name: benchmark
 on: [pull_request, push]
 
 jobs:
-  run-on-conda:
+  benchmark:
     runs-on: ubuntu-latest
 
     steps:
