@@ -11,7 +11,7 @@ def siverts_law(T, S_0, E_S, pressure):
 
 class SievertsBC(F.DirichletBC):
     """
-    Dirichlet boundary condition class
+    Sieverts boundary condition class
 
     Args:
         subdomain (festim.Subdomain): the subdomain where the boundary
@@ -19,22 +19,20 @@ class SievertsBC(F.DirichletBC):
         value (float or fem.Constant): the value of the boundary condition
         species (str): the name of the species
 
-    attributes:
+    Attributes:
         subdomain (festim.Subdomain): the subdomain where the boundary
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
-        species (str): the name of the species
+        species (festim.Species or str): the name of the species
     """
 
     def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
         super().__init__(value=None, species=species, subdomain=subdomain)
-        self.subdomain = subdomain
         self.S_0 = S_0
         self.E_S = E_S
         self.pressure = pressure
-        self.species = species
 
-    def create_formulation(self, mesh, temperature, dofs, function_space):
+    def create_formulation(self, mesh, dofs, function_space, temperature):
         """Evaluates the concentration at the boundary using the sieverts law,
         then creating the forulation
 
@@ -44,15 +42,11 @@ class SievertsBC(F.DirichletBC):
             dofs (numpy.ndarray): the degrees of freedom of surface facets
             function_space (dolfinx.fem.FunctionSpace): the function space
         """
-        value = siverts_law(
+        self.value = siverts_law(
             T=temperature,
             S_0=F.as_fenics_constant(mesh=mesh, value=self.S_0),
             E_S=F.as_fenics_constant(mesh=mesh, value=self.E_S),
             pressure=F.as_fenics_constant(mesh=mesh, value=self.pressure),
         )
 
-        form = fem.dirichletbc(
-            F.as_fenics_constant(mesh=mesh, value=float(value)), dofs, function_space
-        )
-
-        return form
+        return super().create_formulation(mesh, dofs, function_space, temperature)
