@@ -12,7 +12,7 @@ class DirichletBC:
         value (float or fem.Constant): the value of the boundary condition
         species (str): the name of the species
 
-    attributes:
+    Attributes:
         subdomain (festim.Subdomain): the surface subdomain where the boundary
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
@@ -24,7 +24,7 @@ class DirichletBC:
         self.value = value
         self.species = species
 
-    def define_surface_subdominan_dofs(self, facet_meshtags, mesh, function_space):
+    def define_subdominan_dofs(self, facet_meshtags, mesh, function_space):
         """Defines the facets and the degrees of freedom of the boundary
         condition
 
@@ -44,6 +44,8 @@ class DirichletBC:
             function_space (dolfinx.fem.FunctionSpace): the function space
         """
         form = fem.dirichletbc(
-            F.as_fenics_constant(mesh=mesh, value=self.value), dofs, function_space
+            F.as_fenics_constant(mesh=mesh, value=float(self.value)),
+            dofs,
+            function_space,
         )
         return form
