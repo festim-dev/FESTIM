@@ -37,3 +37,37 @@ class SpaceTimeDependentExpression:
             self.values = np.zeros(x.shape[1], dtype=ScalarType)
         self.values = np.full(x.shape[1], self.function(x=x, t=self.t))
         return self.values
+
+
+def convert_to_appropriate_obj(object, function_space, mesh):
+    """Converts a value to a dolfinx.Constant or a dolfinx.Function
+    depending on the type of the value
+
+    Args:
+        object (callable or float): the value to convert
+        function_space (dolfinx.fem.FunctionSpace): the function space of the domain
+        mesh (dolfinx.mesh.mesh): the mesh of the domain
+
+    Returns:
+        dolfinx.Constant or dolfinx.Function: the converted value
+        festim.SpaceTimeDependentExpression or None: the expression if the value is
+            space and time dependent, None otherwise
+    """
+    if isinstance(object, (int, float)):
+        # case 1 pressure isn't space dependent or only time dependent:
+        return as_fenics_constant(mesh=mesh, value=object), None
+    # case 2 pressure is space dependent
+    elif callable(object):
+        arguments = object.__code__.co_varnames
+        if "t" in arguments and "x" in arguments:
+            expr = SpaceTimeDependentExpression(function=object, t=0)
+            fenics_obj = fem.Function(function_space)
+            fenics_obj.interpolate(expr.__call__)
+            return fenics_obj, expr
+        elif "x" in arguments:
+            fenics_obj = fem.Function(function_space)
+            fenics_obj.interpolate(object)
+            return fenics_obj, None
+
+        elif "t" in arguments:
+            return as_fenics_constant(mesh=mesh, value=object(t=0)), None

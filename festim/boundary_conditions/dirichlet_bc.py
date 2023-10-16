@@ -31,7 +31,6 @@ class DirichletBC:
         self.bc_expr = None
         self.time_dependent_expressions = []
 
-    # write setter getter for value_fenics
     @property
     def value_fenics(self):
         return self._value_fenics
@@ -59,35 +58,16 @@ class DirichletBC:
         return bc_dofs
 
     def create_value(self, mesh, function_space, temperature):
-        if isinstance(self.value, (int, float)):
-            # case 1 constant value
-            self.value_fenics = F.as_fenics_constant(mesh=mesh, value=float(self.value))
-        elif callable(self.value):
+        self.value_fenics, expr = F.convert_to_appropriate_obj(
+            object=self.value, function_space=function_space, mesh=mesh
+        )
+        if callable(self.value):
             arguments = self.value.__code__.co_varnames
-            if "T" in arguments:
-                # TODO implement case where it's T dependent
-
-                raise NotImplementedError(
-                    "Case where the value is temperature dependent is not implemented yet"
-                )
-            if "t" in arguments and "x" in arguments:
-                # case 2: space and time dependent bc
-                self.value_fenics = fem.Function(function_space)
-                self.bc_expr = F.SpaceTimeDependentExpression(function=self.value, t=0)
-                self.value_fenics.interpolate(self.bc_expr.__call__)
-
-                self.time_dependent_expressions.append(self.bc_expr)
-
-            elif "x" in arguments:
-                # case 3: space dependent bc
-                self.value_fenics = fem.Function(function_space)
-                self.value_fenics.interpolate(self.value)
-
-            elif "t" in arguments:
-                # case 4: time dependent bc
-                self.value_fenics = F.as_fenics_constant(
-                    mesh=mesh, value=float(self.value(t=0))
-                )
+            if "t" in arguments:
+                if "x" in arguments:
+                    self.time_dependent_expressions.append(expr)
+                else:
+                    self.time_dependent_expressions.append(self.value_fenics)
 
     def create_formulation(self, dofs, function_space):
         """Applies the boundary condition
@@ -117,5 +97,4 @@ class DirichletBC:
             if "t" in arguments and "x" in arguments:
                 self.value_fenics.interpolate(self.bc_expr.__call__)
             elif "t" in arguments:
-                function = self.value
-                self.value_fenics.value = function(t=t)
+                self.value_fenics.value = self.value(t=t)

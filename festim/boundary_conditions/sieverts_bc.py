@@ -33,28 +33,17 @@ class SievertsBC(F.DirichletBC):
         self.pressure = pressure
 
     def make_fenics_obj_for_pressure(self, mesh, function_space):
-        if isinstance(self.pressure, (int, float)):
-            # case 1 pressure isn't space dependent or only time dependent:
-            pressure = F.as_fenics_constant(mesh=mesh, value=self.pressure)
-        # case 2 pressure is space dependent
-        elif callable(self.pressure):
+        pressure, expr = F.convert_to_appropriate_obj(
+            object=self.pressure, function_space=function_space, mesh=mesh
+        )
+        if callable(self.pressure):
             arguments = self.pressure.__code__.co_varnames
-            if "t" in arguments and "x" in arguments:
-                pressure_expr = F.SpaceTimeDependentExpression(
-                    function=self.pressure, t=0
-                )
-                pressure = Function(function_space)
-                pressure.interpolate(pressure_expr.__call__)
+            if "t" in arguments:
+                if "x" in arguments:
+                    self.time_dependent_expressions.append(expr)
+                else:
+                    self.time_dependent_expressions.append(pressure)
 
-                self.time_dependent_expressions.append(pressure_expr)
-
-            elif "x" in arguments:
-                pressure = Function(function_space)
-                pressure.interpolate(self.pressure)
-
-            elif "t" in arguments:
-                pressure = F.as_fenics_constant(mesh=mesh, value=self.pressure(t=0))
-                self.time_dependent_expressions.append(pressure)
         return pressure
 
     def create_value(self, mesh, function_space, temperature):
@@ -79,6 +68,6 @@ class SievertsBC(F.DirichletBC):
                 if hasattr(pressure, "t"):
                     pressure.t = t
                 elif isinstance(pressure, Constant):
-                    pressure.assign(self.pressure(t=t))
+                    pressure.value = self.pressure(t=t)
 
                 self.value_fenics.interpolate(self.bc_expr)
