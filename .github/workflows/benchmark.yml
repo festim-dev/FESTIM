@@ -22,7 +22,7 @@ jobs:
 
     - name: Run benchmark
       run: |
-        pytest benchmark.py --benchmark-json output.json
+        python3 -m pytest benchmark.py
 
     - name: Store benchmark result
       uses: benchmark-action/github-action-benchmark@v1
