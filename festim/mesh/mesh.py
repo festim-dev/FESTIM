@@ -1,3 +1,6 @@
+import ufl
+
+
 class Mesh:
     """
     Mesh class
@@ -32,3 +35,7 @@ class Mesh:
     @property
     def fdim(self):
         return self.mesh.topology.dim - 1
+
+    @property
+    def n(self):
+        return ufl.FacetNormal(self.mesh)
