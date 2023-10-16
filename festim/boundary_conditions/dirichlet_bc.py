@@ -89,6 +89,11 @@ class DirichletBC:
         return form
 
     def update(self, t):
+        """Updates the boundary condition value
+
+        Args:
+            t (float): the time
+        """
         for expr in self.time_dependent_expressions:
             expr.t = t
 

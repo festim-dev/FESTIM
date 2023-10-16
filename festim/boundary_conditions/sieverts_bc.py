@@ -33,6 +33,15 @@ class SievertsBC(F.DirichletBC):
         self.pressure = pressure
 
     def make_fenics_obj_for_pressure(self, mesh, function_space):
+        """Creates the pressure as a dolfinx.Function
+
+        Args:
+            mesh (dolfinx.mesh.mesh) the mesh of the domain
+            function_space (dolfinx.fem.FunctionSpace): the function space of the domain
+
+        Returns:
+            dolfinx.fem.Function or dolfinx.fem.Constant: the pressure as a dolfinx object
+        """
         pressure, expr = F.convert_to_appropriate_obj(
             object=self.pressure, function_space=function_space, mesh=mesh
         )
@@ -47,6 +56,13 @@ class SievertsBC(F.DirichletBC):
         return pressure
 
     def create_value(self, mesh, function_space, temperature):
+        """Creates the value of the boundary condition as a dolfinx.Function
+
+        Args:
+            mesh (dolfinx.mesh.mesh) the mesh of the domain
+            function_space (dolfinx.fem.FunctionSpace): the function space of the domain
+            temperature (float or fem.Constant): the temperature of the domain
+        """
         pressure_as_fenics = self.make_fenics_obj_for_pressure(mesh, function_space)
 
         self.value_fenics = Function(function_space)
@@ -62,6 +78,11 @@ class SievertsBC(F.DirichletBC):
         self.value_fenics.interpolate(self.bc_expr)
 
     def update(self, t):
+        """Updates the boundary condition value
+
+        Args:
+            t (float): the time
+        """
         if callable(self.pressure):
             if "t" in self.pressure.__code__.co_varnames:
                 pressure = self.time_dependent_expressions[0]
