@@ -24,7 +24,7 @@ class DirichletBC:
         self.value = value
         self.species = species
 
-    def define_subdominan_dofs(self, facet_meshtags, mesh, function_space):
+    def define_surface_subdomain_dofs(self, facet_meshtags, mesh, function_space):
         """Defines the facets and the degrees of freedom of the boundary
         condition
 
