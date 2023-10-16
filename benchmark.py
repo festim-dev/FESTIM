@@ -41,7 +41,7 @@ import pytest
 
 def pure_fenics():
     # mesh nodes
-    indices = np.linspace(0, 3e-4, num=5001)
+    indices = np.linspace(0, 3e-4, num=6001)
 
     gdim, shape, degree = 1, "interval", 1
     cell = Cell(shape, geometric_dimension=gdim)
