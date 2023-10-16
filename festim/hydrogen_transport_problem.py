@@ -266,6 +266,10 @@ class HydrogenTransportProblem:
             progress.update(float(self.dt))
             t += float(self.dt)
 
+            # update boundary conditions
+            for bc in self.boundary_conditions:
+                bc.update(t)
+
             self.solver.solve(self.u)
 
             mobile_xdmf.write_function(self.u, t)
