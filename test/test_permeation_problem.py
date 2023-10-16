@@ -1,16 +1,11 @@
-from mpi4py import MPI
 from petsc4py import PETSc
-from dolfinx.io import XDMFFile
 from dolfinx.fem import (
     Constant,
     dirichletbc,
     locate_dofs_topological,
-    form,
-    assemble_scalar,
 )
-from ufl import dot, grad, exp, FacetNormal
+from ufl import exp, FacetNormal
 import numpy as np
-import tqdm.autonotebook
 
 
 import festim as F
@@ -42,10 +37,6 @@ def test_permeation_problem():
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
 
     V = my_model.function_space
-    u = mobile_H.solution
-
-    # TODO this should be a property of Mesh
-    n = FacetNormal(my_mesh.mesh)
 
     def siverts_law(T, S_0, E_S, pressure):
         S = S_0 * exp(-E_S / F.k_B / T)
@@ -81,33 +72,9 @@ def test_permeation_problem():
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
-    mobile_xdmf.write_mesh(my_model.mesh.mesh)
-
     final_time = 50
 
-    flux_values = []
-    times = []
-    t = 0
-    progress = tqdm.autonotebook.tqdm(
-        desc="Solving H transport problem", total=final_time
-    )
-    while t < final_time:
-        progress.update(float(my_model.dt))
-        t += float(my_model.dt)
-
-        my_model.solver.solve(u)
-
-        mobile_xdmf.write_function(u, t)
-
-        surface_flux = form(D * dot(grad(u), n) * my_model.ds(2))
-        flux = assemble_scalar(surface_flux)
-        flux_values.append(flux)
-        times.append(t)
-
-        mobile_H.prev_solution.x.array[:] = u.x.array[:]
-
-    mobile_xdmf.close()
+    times, flux_values = my_model.run(final_time=final_time)
 
     # analytical solution
     S = S_0 * exp(-E_S / F.k_B / float(temperature))
@@ -211,33 +178,9 @@ def test_permeation_problem_multi_volume():
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
-    mobile_xdmf.write_mesh(my_model.mesh.mesh)
-
     final_time = 50
 
-    flux_values = []
-    times = []
-    t = 0
-    progress = tqdm.autonotebook.tqdm(
-        desc="Solving H transport problem", total=final_time
-    )
-    while t < final_time:
-        progress.update(float(my_model.dt))
-        t += float(my_model.dt)
-
-        my_model.solver.solve(u)
-
-        mobile_xdmf.write_function(u, t)
-
-        surface_flux = form(D * dot(grad(u), n) * my_model.ds(2))
-        flux = assemble_scalar(surface_flux)
-        flux_values.append(flux)
-        times.append(t)
-
-        mobile_H.prev_solution.x.array[:] = u.x.array[:]
-
-    mobile_xdmf.close()
+    times, flux_values = my_model.run(final_time=final_time)
 
     # analytical solution
     S = S_0 * exp(-E_S / F.k_B / float(temperature))
