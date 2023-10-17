@@ -16,4 +16,4 @@ jobs:
 
     - name: Run benchmark
       run: |
-        python3 benchmark.py
+        python3 test/benchmark.py

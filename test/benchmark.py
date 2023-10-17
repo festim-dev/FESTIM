@@ -33,7 +33,7 @@ from dolfinx.mesh import create_mesh, meshtags, locate_entities
 import numpy as np
 import tqdm.autonotebook
 import time
-from test.test_permeation_problem import test_permeation_problem
+from test_permeation_problem import test_permeation_problem
 
 
 def fenics_test_permeation_problem():
