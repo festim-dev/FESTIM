@@ -118,6 +118,7 @@ class HydrogenTransportProblem:
 
         self.define_boundary_conditions()
         self.create_formulation()
+        self.create_solver()
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)

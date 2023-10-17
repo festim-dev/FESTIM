@@ -282,7 +282,7 @@ def test_integration_with_HTransportProblem(value):
 
     my_model = F.HydrogenTransportProblem(
         mesh=F.Mesh(mesh),
-        subdomains=[subdomain, vol_subdomain],
+        subdomains=[vol_subdomain, subdomain],
     )
     my_model.species = [F.Species("H")]
     my_model.boundary_conditions = [
