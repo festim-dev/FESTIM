@@ -271,6 +271,7 @@ def test_create_formulation(value):
     "value",
     [
         1.0,
+        lambda t: 1.0 + t,
         lambda x: 1.0 + x[0],
         lambda x, t: 1.0 + x[0] + t,
         lambda x, t, T: 1.0 + x[0] + t + T,
@@ -285,12 +286,40 @@ def test_integration_with_HTransportProblem(value):
         subdomains=[vol_subdomain, subdomain],
     )
     my_model.species = [F.Species("H")]
-    my_model.boundary_conditions = [
-        F.DirichletBC(subdomain, value, my_model.species[0])
-    ]
+    my_bc = F.DirichletBC(subdomain, value, my_model.species[0])
+    my_model.boundary_conditions = [my_bc]
 
     my_model.temperature = fem.Constant(my_model.mesh.mesh, 550.0)
+
+    # RUN
+
     my_model.initialise()
+
+    assert my_bc.value_fenics is not None
+
     my_model.run(final_time=2)
 
-    # TODO test something
+    # TEST
+
+    if isinstance(value, float):
+        expected_value = value
+        computed_value = float(my_bc.value_fenics)
+    elif callable(value):
+        arguments = value.__code__.co_varnames
+        if "x" in arguments and "t" in arguments and "T" in arguments:
+            expected_value = value(x=np.array([subdomain.x]), t=2.0, T=550.0)
+            computed_value = my_bc.value_fenics.vector.array[-1]
+        elif "x" in arguments and "t" in arguments:
+            expected_value = value(x=np.array([subdomain.x]), t=2.0)
+            computed_value = my_bc.value_fenics.vector.array[-1]
+        elif "x" in arguments:
+            expected_value = value(x=np.array([subdomain.x]))
+            computed_value = my_bc.value_fenics.vector.array[-1]
+        elif "t" in arguments:
+            expected_value = value(t=2.0)
+            computed_value = float(my_bc.value_fenics)
+        else:
+            # test fails if lambda function is not recognised
+            raise ValueError("value function not recognised")
+
+    assert np.isclose(computed_value, expected_value)

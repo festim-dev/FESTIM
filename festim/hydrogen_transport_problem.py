@@ -273,7 +273,7 @@ class HydrogenTransportProblem:
 
             # update boundary conditions
             for bc in self.boundary_conditions:
-                bc.update(self.t)
+                bc.update(float(self.t))
 
             self.solver.solve(self.u)
 
