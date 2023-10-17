@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 import ufl
+from ufl.conditional import Conditional
+
 from dolfinx import fem
 import dolfinx.mesh
 from mpi4py import MPI
@@ -275,6 +277,7 @@ def test_create_formulation(value):
         lambda x: 1.0 + x[0],
         lambda x, t: 1.0 + x[0] + t,
         lambda x, t, T: 1.0 + x[0] + t + T,
+        lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
     ],
 )
 def test_integration_with_HTransportProblem(value):
@@ -322,4 +325,6 @@ def test_integration_with_HTransportProblem(value):
             # test fails if lambda function is not recognised
             raise ValueError("value function not recognised")
 
+    if isinstance(expected_value, Conditional):
+        expected_value = float(expected_value)
     assert np.isclose(computed_value, expected_value)
