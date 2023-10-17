@@ -267,11 +267,10 @@ class HydrogenTransportProblem:
 
             cm = self.species[0].solution
             # TODO this should be a property of Mesh
-            n = FacetNormal(self.mesh.mesh)
             D = self.subdomains[0].material.get_diffusion_coefficient(
                 self.mesh.mesh, self.temperature
             )
-            surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
+            surface_flux = form(D * dot(grad(cm), self.mesh.n) * self.ds(2))
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
             times.append(t)
