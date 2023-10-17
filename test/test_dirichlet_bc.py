@@ -225,3 +225,43 @@ def test_callable_x_only():
         expected_value = float(value(x=np.array([subdomain.x])))
         computed_value = bc.value_fenics.vector.array[-1]
         assert np.isclose(computed_value, expected_value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        1.0,
+        lambda x: 1.0 + x[0],
+        lambda x, t: 1.0 + x[0] + t,
+        lambda x, t, T: 1.0 + x[0] + t + T,
+    ],
+)
+def test_create_formulation(value):
+    """A test that checks that the method create_formulation can be called when value is either a callable or a float"""
+    # BUILD
+    subdomain = F.SurfaceSubdomain1D(1, x=1)
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+    species = "test"
+
+    bc = F.DirichletBC(subdomain, value, species)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+    )
+
+    my_model.define_function_space()
+    my_model.define_markers_and_measures()
+
+    T = fem.Constant(my_model.mesh.mesh, 550.0)
+    t = fem.Constant(my_model.mesh.mesh, 0.0)
+
+    dofs = bc.define_surface_subdomain_dofs(
+        my_model.facet_meshtags, my_model.mesh, my_model.function_space
+    )
+    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+
+    # TEST
+    formulation = bc.create_formulation(dofs, my_model.function_space)
+
+    assert isinstance(formulation, fem.DirichletBC)
