@@ -12,6 +12,7 @@ class Mesh:
         mesh (dolfinx.mesh.Mesh): the mesh
         vdim (int): the dimension of the mesh cells
         fdim (int): the dimension of the mesh facets
+        n (ufl.FacetNormal): the normal vector to the facets
     """
 
     def __init__(self, mesh=None):
