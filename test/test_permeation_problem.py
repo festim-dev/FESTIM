@@ -48,8 +48,6 @@ def test_permeation_problem():
     E_S = 1.04
     P_up = 100
 
-    my_model.create_solver()
-
     my_model.solver.convergence_criterion = "incremental"
     my_model.solver.rtol = 1e-10
     my_model.solver.atol = 1e10
@@ -149,8 +147,6 @@ def test_permeation_problem_multi_volume():
     S_0 = 4.02e21
     E_S = 1.04
     P_up = 100
-
-    my_model.create_solver()
 
     my_model.solver.convergence_criterion = "incremental"
     my_model.solver.rtol = 1e-10
