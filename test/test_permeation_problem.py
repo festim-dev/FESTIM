@@ -38,6 +38,8 @@ def test_permeation_problem():
         ),
     ]
 
+    my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
+
     my_model.initialise()
 
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, my_model.temperature)
@@ -129,6 +131,7 @@ def test_permeation_problem_multi_volume():
             subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
         ),
     ]
+    my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
 
     my_model.initialise()
 
