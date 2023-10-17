@@ -30,7 +30,6 @@ class DirichletBC:
 
         self.value_fenics = None
         self.bc_expr = None
-        self.time_dependent_expressions = []
 
     @property
     def value_fenics(self):
@@ -66,7 +65,7 @@ class DirichletBC:
             arguments = self.value.__code__.co_varnames
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 self.value_fenics = F.as_fenics_constant(
-                    mesh=mesh, value=self.value(t=t)
+                    mesh=mesh, value=self.value(t=float(t))
                 )
             else:
                 self.value_fenics = fem.Function(function_space)
@@ -110,7 +109,7 @@ class DirichletBC:
         """
         if callable(self.value):
             arguments = self.value.__code__.co_varnames
-            if isinstance(self.value, fem.Constant) and "t" in arguments:
+            if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
                 self.value_fenics.value = self.value(t=t)
             else:
                 self.value_fenics.interpolate(self.bc_expr)
