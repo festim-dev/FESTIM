@@ -12,6 +12,9 @@ class SievertsBC(F.DirichletBC):
     """
     Sieverts boundary condition class
 
+    c = S * sqrt(pressure)
+    S = S_0 * exp(-E_S / k_B / T)
+
     Args:
         subdomain (festim.Subdomain): the subdomain where the boundary
             condition is applied

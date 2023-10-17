@@ -7,6 +7,7 @@ import numpy as np
 class DirichletBC:
     """
     Dirichlet boundary condition class
+    c = value
 
     Args:
         subdomain (festim.Subdomain): the surface subdomain where the boundary
