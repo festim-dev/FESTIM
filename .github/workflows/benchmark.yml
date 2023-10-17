@@ -4,6 +4,7 @@ on: [pull_request, push]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
+    permissions: write-all
     container: dolfinx/dolfinx:stable
 
     steps:
