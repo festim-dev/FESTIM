@@ -22,6 +22,14 @@ class DirichletBC:
         species (str): the name of the species
         value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
             fenics format
+
+    Usage:
+        >>> from festim import DirichletBC
+        >>> DirichletBC(subdomain=my_subdomain, value=1, species="H")
+        >>> DirichletBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
+        >>> DirichletBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
+        >>> DirichletBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
+        >>> DirichletBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
     """
 
     def __init__(self, subdomain, value, species) -> None:

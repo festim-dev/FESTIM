@@ -31,6 +31,14 @@ class SievertsBC(F.DirichletBC):
         S_0 (float or fem.Constant): the Sieverts constant pre-exponential factor (H/m3/Pa0.5)
         E_S (float or fem.Constant): the Sieverts constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
+
+    Usage:
+        >>> from festim import SievertsBC
+        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=1e5, species="H")
+        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x: 1e5 + x[0], species="H")
+        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda t: 1e5 + t, species="H")
+        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda T: 1e5 + T, species="H")
+        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
     """
 
     def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
