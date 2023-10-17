@@ -265,3 +265,32 @@ def test_create_formulation(value):
     formulation = bc.create_formulation(dofs, my_model.function_space)
 
     assert isinstance(formulation, fem.DirichletBC)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        1.0,
+        lambda x: 1.0 + x[0],
+        lambda x, t: 1.0 + x[0] + t,
+        lambda x, t, T: 1.0 + x[0] + t + T,
+    ],
+)
+def test_integration_with_HTransportProblem(value):
+    subdomain = F.SurfaceSubdomain1D(1, x=1)
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+    )
+    my_model.species = [F.Species("H")]
+    my_model.boundary_conditions = [
+        F.DirichletBC(subdomain, value, my_model.species[0])
+    ]
+
+    my_model.temperature = fem.Constant(my_model.mesh.mesh, 550.0)
+    my_model.initialise()
+    my_model.run(final_time=2)
+
+    # TODO test something

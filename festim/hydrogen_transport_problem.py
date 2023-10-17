@@ -113,6 +113,9 @@ class HydrogenTransportProblem:
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
+
+        self.t = fem.Constant(self.mesh.mesh, 0.0)
+
         self.define_boundary_conditions()
         self.create_formulation()
 
@@ -174,7 +177,9 @@ class HydrogenTransportProblem:
                 bc_dofs = bc.define_surface_subdomain_dofs(
                     self.facet_meshtags, self.mesh, self.function_space
                 )
-                bc.create_value(self.mesh.mesh, self.function_space, self.temperature)
+                bc.create_value(
+                    self.mesh.mesh, self.function_space, self.temperature, self.t
+                )
                 form = bc.create_formulation(
                     dofs=bc_dofs, function_space=self.function_space
                 )
@@ -253,7 +258,6 @@ class HydrogenTransportProblem:
             list of float: the times of the simulation
             list of float: the fluxes of the simulation
         """
-        t = 0
         times, flux_values = [], []
 
         mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
@@ -262,17 +266,17 @@ class HydrogenTransportProblem:
         progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem", total=final_time
         )
-        while t < final_time:
+        while float(self.t) < final_time:
             progress.update(float(self.dt))
-            t += float(self.dt)
+            self.t.value += float(self.dt)
 
             # update boundary conditions
             for bc in self.boundary_conditions:
-                bc.update(t)
+                bc.update(self.t)
 
             self.solver.solve(self.u)
 
-            mobile_xdmf.write_function(self.u, t)
+            mobile_xdmf.write_function(self.u, float(self.t))
 
             cm = self.species[0].solution
             # TODO this should be a property of Mesh
@@ -283,7 +287,7 @@ class HydrogenTransportProblem:
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
-            times.append(t)
+            times.append(float(self.t))
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
