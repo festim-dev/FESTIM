@@ -1,4 +1,5 @@
 import festim as F
+import ufl
 from dolfinx import fem
 import numpy as np
 
@@ -57,17 +58,30 @@ class DirichletBC:
         bc_dofs = fem.locate_dofs_topological(function_space, mesh.fdim, bc_facets)
         return bc_dofs
 
-    def create_value(self, mesh, function_space, temperature):
-        self.value_fenics, expr = F.convert_to_appropriate_obj(
-            object=self.value, function_space=function_space, mesh=mesh
-        )
-        if callable(self.value):
+    def create_value(self, mesh, function_space, temperature, t):
+        x = ufl.SpatialCoordinate(mesh)
+        if isinstance(self.value, (int, float)):
+            self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
+        elif callable(self.value):
             arguments = self.value.__code__.co_varnames
-            if "t" in arguments:
+            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                self.value_fenics = F.as_fenics_constant(
+                    mesh=mesh, value=self.value(t=t)
+                )
+            else:
+                self.value_fenics = fem.Function(function_space)
+                kwargs = {}
+                if "t" in arguments:
+                    kwargs["t"] = t
                 if "x" in arguments:
-                    self.time_dependent_expressions.append(expr)
-                else:
-                    self.time_dependent_expressions.append(self.value_fenics)
+                    kwargs["x"] = x
+                if "T" in arguments:
+                    kwargs["T"] = temperature
+                self.bc_expr = fem.Expression(
+                    self.value(**kwargs),
+                    function_space.element.interpolation_points(),
+                )
+                self.value_fenics.interpolate(self.bc_expr)
 
     def create_formulation(self, dofs, function_space):
         """Applies the boundary condition
@@ -94,12 +108,9 @@ class DirichletBC:
         Args:
             t (float): the time
         """
-        for expr in self.time_dependent_expressions:
-            expr.t = t
-
         if callable(self.value):
             arguments = self.value.__code__.co_varnames
-            if "t" in arguments and "x" in arguments:
-                self.value_fenics.interpolate(self.bc_expr.__call__)
-            elif "t" in arguments:
+            if isinstance(self.value, fem.Constant) and "t" in arguments:
                 self.value_fenics.value = self.value(t=t)
+            else:
+                self.value_fenics.interpolate(self.bc_expr)
