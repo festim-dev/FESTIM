@@ -48,11 +48,10 @@ def test_permeation_problem():
         S = S_0 * exp(-E_S / F.k_B / T)
         return S * pressure**0.5
 
-    fdim = my_mesh.mesh.topology.dim - 1
     left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, fdim, left_facets)
+    left_dofs = locate_dofs_topological(V, my_mesh.fdim, left_facets)
     right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, fdim, right_facets)
+    right_dofs = locate_dofs_topological(V, my_mesh.fdim, right_facets)
 
     S_0 = 4.02e21
     E_S = 1.04
@@ -175,11 +174,10 @@ def test_permeation_problem_multi_volume():
         S = S_0 * exp(-E_S / F.k_B / T)
         return S * pressure**0.5
 
-    fdim = my_mesh.mesh.topology.dim - 1
     left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, fdim, left_facets)
+    left_dofs = locate_dofs_topological(V, my_mesh.fdim, left_facets)
     right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, fdim, right_facets)
+    right_dofs = locate_dofs_topological(V, my_mesh.fdim, right_facets)
 
     S_0 = 4.02e21
     E_S = 1.04
