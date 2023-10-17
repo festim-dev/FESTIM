@@ -4,7 +4,6 @@ on: [pull_request, push]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    permissions: write-all
     container: dolfinx/dolfinx:stable
 
     steps:
@@ -15,23 +14,6 @@ jobs:
       run: |
         pip install .[test]
 
-    - name: Download previous benchmark data
-      uses: actions/cache@v1
-      with:
-        path: ./cache
-        key: ${{ runner.os }}-benchmark
-
     - name: Run benchmark
       run: |
-        pytest benchmark.py --benchmark-json output.json --benchmark-compare --benchmark-autosave
-
-    - name: Store benchmark result
-      uses: benchmark-action/github-action-benchmark@v1
-      with:
-        tool: 'pytest'
-        output-file-path: output.json
-        external-data-json-path: ./cache/benchmark-data.json
-        fail-on-alert: true
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        comment-on-alert: true
-        alert-threshold: "120%"
+        python3 benchmark.py
