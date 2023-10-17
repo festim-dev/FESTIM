@@ -1,6 +1,5 @@
 import festim as F
 import ufl
-from dolfinx.fem import Expression, Function, Constant
 
 
 def sieverts_law(T, S_0, E_S, pressure):
@@ -16,33 +15,76 @@ class SievertsBC(F.DirichletBC):
     Args:
         subdomain (festim.Subdomain): the subdomain where the boundary
             condition is applied
-        value (float or fem.Constant): the value of the boundary condition
         species (str): the name of the species
+        S_0 (float or fem.Constant): the Sieverts constant pre-exponential factor (H/m3/Pa0.5)
+        E_S (float or fem.Constant): the Sieverts constant activation energy (eV)
+        pressure (float or callable): the pressure at the boundary (Pa)
 
     Attributes:
         subdomain (festim.Subdomain): the subdomain where the boundary
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
         species (festim.Species or str): the name of the species
+        S_0 (float or fem.Constant): the Sieverts constant pre-exponential factor (H/m3/Pa0.5)
+        E_S (float or fem.Constant): the Sieverts constant activation energy (eV)
+        pressure (float or callable): the pressure at the boundary (Pa)
     """
 
     def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
+        # TODO find a way to have S_0 and E_S as fem.Constant
+        # maybe in create_value()
         self.S_0 = S_0
         self.E_S = E_S
         self.pressure = pressure
 
-        # construct value callable based on args of pressure
-        args_value_fun = ["T"]
+        value = self.create_new_value_function()
+
+        super().__init__(value=value, species=species, subdomain=subdomain)
+
+    def create_new_value_function(self):
+        """Creates a new value function based on the pressure attribute
+
+        Raises:
+            ValueError: if the pressure function is not supported
+
+        Returns:
+            callable: the value function
+        """
         if callable(self.pressure):
-            if "t" in self.pressure.__code__.co_varnames:
-                args_value_fun.append("t")
-            if "x" in self.pressure.__code__.co_varnames:
-                args_value_fun.append("x")
+            arg_combinations = {
+                ("x",): lambda T, x=None: sieverts_law(
+                    T, self.S_0, self.E_S, self.pressure(x=x)
+                ),
+                ("t",): lambda T, t=None: sieverts_law(
+                    T, self.S_0, self.E_S, self.pressure(t=t)
+                ),
+                ("T",): lambda T: sieverts_law(
+                    T, self.S_0, self.E_S, self.pressure(T=T)
+                ),
+                ("t", "x"): lambda T, x=None, t=None: sieverts_law(
+                    T, self.S_0, self.E_S, self.pressure(x=x, t=t)
+                ),
+                ("T", "x"): lambda T, x=None: sieverts_law(
+                    T, self.S_0, self.E_S, self.pressure(x=x, T=T)
+                ),
+                ("T", "t"): lambda T, t=None: sieverts_law(
+                    T, self.S_0, self.E_S, self.pressure(t=t, T=T)
+                ),
+                ("T", "t", "x"): lambda T, x=None, t=None: sieverts_law(
+                    T, self.S_0, self.E_S, self.pressure(x=x, t=t, T=T)
+                ),
+            }
 
-        # FIXME
-        def value_fun(*args):
-            return sieverts_law(
-                T=args[0], S_0=self.S_0, E_S=self.E_S, pressure=pressure(*args)
-            )
+            # get the arguments of the pressure function
+            args = self.pressure.__code__.co_varnames
+            key = tuple(sorted(args))
 
-        super().__init__(value=value_fun, species=species, subdomain=subdomain)
+            # get the lambda function based on the argument combination
+            if key not in arg_combinations:
+                raise ValueError("pressure function not supported")
+
+            func = arg_combinations[key]
+
+            return func
+        else:
+            return lambda T: sieverts_law(T, self.S_0, self.E_S, self.pressure)
