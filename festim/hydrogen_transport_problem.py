@@ -266,7 +266,6 @@ class HydrogenTransportProblem:
             mobile_xdmf.write_function(self.u, t)
 
             cm = self.species[0].solution
-            # TODO this should be a property of Mesh
             D = self.subdomains[0].material.get_diffusion_coefficient(
                 self.mesh.mesh, self.temperature
             )
