@@ -1,11 +1,14 @@
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
+from dolfinx.io import XDMFFile
 import ufl
 from mpi4py import MPI
-from dolfinx.fem import Function
+from dolfinx.fem import Function, form, assemble_scalar
 from dolfinx.mesh import meshtags
-from ufl import TestFunction, dot, grad, Measure
+from ufl import TestFunction, dot, grad, Measure, FacetNormal
 import numpy as np
+import tqdm.autonotebook
+
 
 import festim as F
 
@@ -110,6 +113,18 @@ class HydrogenTransportProblem:
         self.define_markers_and_measures()
         self.assign_functions_to_species()
         self.create_formulation()
+        self.defing_export_writers()
+
+    def defing_export_writers(self):
+        """Defines the export writers of the model"""
+        for export in self.exports:
+            # TODO implement when export.field is an int or str
+            # then find solution from index of species
+
+            if isinstance(export, F.VTXExport):
+                export.define_writer(
+                    MPI.COMM_WORLD, [field.solution for field in export.field]
+                )
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
@@ -171,6 +186,10 @@ class HydrogenTransportProblem:
             spe.prev_solution = Function(self.function_space)
             spe.test_function = TestFunction(self.function_space)
 
+        # TODO remove this
+        self.u = self.species[0].solution
+        self.u_n = self.species[0].prev_solution
+
     def create_formulation(self):
         """Creates the formulation of the model"""
         if len(self.sources) > 1:
@@ -218,3 +237,47 @@ class HydrogenTransportProblem:
         )
         solver = NewtonSolver(MPI.COMM_WORLD, problem)
         self.solver = solver
+
+    def run(self, final_time: float):
+        """Runs the model for a given time
+
+        Args:
+            final_time (float): the final time of the simulation
+
+        Returns:
+            list of float: the times of the simulation
+            list of float: the fluxes of the simulation
+        """
+        t = 0
+        times, flux_values = [], []
+
+        mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
+        mobile_xdmf.write_mesh(self.mesh.mesh)
+
+        progress = tqdm.autonotebook.tqdm(
+            desc="Solving H transport problem", total=final_time
+        )
+        while t < final_time:
+            progress.update(float(self.dt))
+            t += float(self.dt)
+
+            self.solver.solve(self.u)
+
+            mobile_xdmf.write_function(self.u, t)
+
+            cm = self.species[0].solution
+            # TODO this should be a property of Mesh
+            n = FacetNormal(self.mesh.mesh)
+            D = self.subdomains[0].material.get_diffusion_coefficient(
+                self.mesh.mesh, self.temperature
+            )
+            surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
+            flux = assemble_scalar(surface_flux)
+            flux_values.append(flux)
+            times.append(t)
+
+            # update previous solution
+            self.u_n.x.array[:] = self.u.x.array[:]
+
+        mobile_xdmf.close()
+        return times, flux_values
