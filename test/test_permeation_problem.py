@@ -32,6 +32,8 @@ def test_permeation_problem():
     temperature = Constant(my_mesh.mesh, 500.0)
     my_model.temperature = temperature
 
+    my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
+
     my_model.initialise()
 
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
@@ -133,6 +135,8 @@ def test_permeation_problem_multi_volume():
 
     temperature = Constant(my_mesh.mesh, 500.0)
     my_model.temperature = temperature
+
+    my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
 
     my_model.initialise()
 

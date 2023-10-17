@@ -113,6 +113,18 @@ class HydrogenTransportProblem:
         self.define_markers_and_measures()
         self.assign_functions_to_species()
         self.create_formulation()
+        self.defing_export_writers()
+
+    def defing_export_writers(self):
+        """Defines the export writers of the model"""
+        for export in self.exports:
+            # TODO implement when export.field is an int or str
+            # then find solution from index of species
+
+            if isinstance(export, F.VTXExport):
+                export.define_writer(
+                    MPI.COMM_WORLD, [field.solution for field in export.field]
+                )
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
