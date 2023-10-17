@@ -27,70 +27,22 @@ class SievertsBC(F.DirichletBC):
     """
 
     def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
-        super().__init__(value=None, species=species, subdomain=subdomain)
         self.S_0 = S_0
         self.E_S = E_S
         self.pressure = pressure
 
-    def make_fenics_obj_for_pressure(self, mesh, function_space):
-        """Creates the pressure as a dolfinx.Function
-
-        Args:
-            mesh (dolfinx.mesh.mesh) the mesh of the domain
-            function_space (dolfinx.fem.FunctionSpace): the function space of the domain
-
-        Returns:
-            dolfinx.fem.Function or dolfinx.fem.Constant: the pressure as a dolfinx object
-        """
-        pressure, expr = F.convert_to_appropriate_obj(
-            object=self.pressure, function_space=function_space, mesh=mesh
-        )
-        if callable(self.pressure):
-            arguments = self.pressure.__code__.co_varnames
-            if "t" in arguments:
-                if "x" in arguments:
-                    self.time_dependent_expressions.append(expr)
-                else:
-                    self.time_dependent_expressions.append(pressure)
-
-        return pressure
-
-    def create_value(self, mesh, function_space, temperature):
-        """Creates the value of the boundary condition as a dolfinx.Function
-
-        Args:
-            mesh (dolfinx.mesh.mesh) the mesh of the domain
-            function_space (dolfinx.fem.FunctionSpace): the function space of the domain
-            temperature (float or fem.Constant): the temperature of the domain
-        """
-        pressure_as_fenics = self.make_fenics_obj_for_pressure(mesh, function_space)
-
-        self.value_fenics = Function(function_space)
-        self.bc_expr = Expression(
-            sieverts_law(
-                T=temperature,
-                S_0=self.S_0,
-                E_S=self.E_S,
-                pressure=pressure_as_fenics,
-            ),
-            function_space.element.interpolation_points(),
-        )
-        self.value_fenics.interpolate(self.bc_expr)
-
-    def update(self, t):
-        """Updates the boundary condition value
-
-        Args:
-            t (float): the time
-        """
+        # construct value callable based on args of pressure
+        args_value_fun = ["T"]
         if callable(self.pressure):
             if "t" in self.pressure.__code__.co_varnames:
-                pressure = self.time_dependent_expressions[0]
-                if hasattr(pressure, "t"):
-                    pressure.t = t
-                elif isinstance(pressure, Constant):
-                    pressure.value = self.pressure(t=t)
+                args_value_fun.append("t")
+            if "x" in self.pressure.__code__.co_varnames:
+                args_value_fun.append("x")
 
-                # FIXME: currently this is run only if the pressure is time dependent
-                # but should be called also if only the temperature is time dependent
-                self.value_fenics.interpolate(self.bc_expr)
+        # FIXME
+        def value_fun(*args):
+            return sieverts_law(
+                T=args[0], S_0=self.S_0, E_S=self.E_S, pressure=pressure(*args)
+            )
+
+        super().__init__(value=value_fun, species=species, subdomain=subdomain)
