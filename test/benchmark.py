@@ -178,6 +178,8 @@ def fenics_test_permeation_problem():
 
 
 def test_festim_vs_fenics_permeation_benchmark():
+    """Runs a problem with pure fenicsx and the same problem with FESTIM and
+    raise ValueError if difference is too high"""
     repetitions = 10
 
     fenics_times = []
@@ -196,7 +198,11 @@ def test_festim_vs_fenics_permeation_benchmark():
 
     diff = (np.abs(fenics_time - festim_time) / ((fenics_time + festim_time) / 2)) * 100
     if diff > 20:
-        raise ValueError(f"festim is {diff:.1f}% slower than fenics")
+        raise ValueError(
+            f"festim is {diff:.1f}% slower than fenics, current acceptble threshold of 20%"
+        )
+    else:
+        print(f"festim is {diff:.1f}% slower than fenics")
 
 
 if __name__ == "__main__":
