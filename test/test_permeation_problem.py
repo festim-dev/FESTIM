@@ -18,7 +18,7 @@ import festim as F
 
 def test_permeation_problem():
     L = 3e-04
-    vertices = np.linspace(0, L, num=3001)
+    vertices = np.linspace(0, L, num=1001)
 
     my_mesh = F.Mesh1D(vertices)
 
