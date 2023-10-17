@@ -1,3 +1,6 @@
+import ufl
+
+
 class Mesh:
     """
     Mesh class
@@ -9,6 +12,7 @@ class Mesh:
         mesh (dolfinx.mesh.Mesh): the mesh
         vdim (int): the dimension of the mesh cells
         fdim (int): the dimension of the mesh facets
+        n (ufl.FacetNormal): the normal vector to the facets
     """
 
     def __init__(self, mesh=None):
@@ -32,3 +36,7 @@ class Mesh:
     @property
     def fdim(self):
         return self.mesh.topology.dim - 1
+
+    @property
+    def n(self):
+        return ufl.FacetNormal(self.mesh)
