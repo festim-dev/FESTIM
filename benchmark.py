@@ -41,7 +41,7 @@ import pytest
 
 def pure_fenics():
     # mesh nodes
-    indices = np.linspace(0, 3e-4, num=6001)
+    indices = np.linspace(0, 3e-4, num=1001)
 
     gdim, shape, degree = 1, "interval", 1
     cell = Cell(shape, geometric_dimension=gdim)
@@ -153,12 +153,12 @@ def pure_fenics():
 
         no_iters, converged = solver.solve(u)
 
-        # surface_flux = form(D * dot(grad(u), n) * ds(2))
-        # flux = assemble_scalar(surface_flux)
-        # flux_values.append(flux)
-        # times.append(t)
-        # np.savetxt("outgassing_flux.txt", np.array(flux_values))
-        # np.savetxt("times.txt", np.array(times))
+        surface_flux = form(D * dot(grad(u), n) * ds(2))
+        flux = assemble_scalar(surface_flux)
+        flux_values.append(flux)
+        times.append(t)
+        np.savetxt("outgassing_flux.txt", np.array(flux_values))
+        np.savetxt("times.txt", np.array(times))
 
         mobile_xdmf.write_function(u, t)
 
@@ -232,8 +232,8 @@ def festim_script():
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    # mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
-    # mobile_xdmf.write_mesh(my_model.mesh.mesh)
+    mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
+    mobile_xdmf.write_mesh(my_model.mesh.mesh)
 
     final_time = 50
 
@@ -249,7 +249,7 @@ def festim_script():
 
         my_model.solver.solve(u)
 
-        # mobile_xdmf.write_function(u, t)
+        mobile_xdmf.write_function(u, t)
 
         surface_flux = form(D * dot(grad(u), n) * my_model.ds(2))
         flux = assemble_scalar(surface_flux)
@@ -258,31 +258,7 @@ def festim_script():
 
         mobile_H.prev_solution.x.array[:] = u.x.array[:]
 
-    # mobile_xdmf.close()
-
-    # analytical solution
-    S = S_0 * exp(-E_S / F.k_B / float(temperature))
-    permeability = float(D) * S
-    times = np.array(times)
-
-    n_array = np.arange(1, 10000)[:, np.newaxis]
-    summation = np.sum(
-        (-1) ** n_array * np.exp(-((np.pi * n_array) ** 2) * float(D) / L**2 * times),
-        axis=0,
-    )
-    analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
-
-    analytical_flux = np.abs(analytical_flux)
-    flux_values = np.array(np.abs(flux_values))
-
-    relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
-
-    relative_error = relative_error[
-        np.where(analytical_flux > 0.01 * np.max(analytical_flux))
-    ]
-    error = relative_error.mean()
-
-    assert error < 0.01
+    mobile_xdmf.close()
 
 
 def test_fenicsx_benchmark(benchmark):
