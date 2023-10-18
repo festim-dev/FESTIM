@@ -2,7 +2,7 @@ name: Docker CI
 on: [pull_request, push]
 
 jobs:
-  run-on-docker:
+  run-tests:
       runs-on: ubuntu-latest
       container: dolfinx/dolfinx:stable
       steps:
