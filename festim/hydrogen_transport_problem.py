@@ -41,8 +41,8 @@ class HydrogenTransportProblem:
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpace): the function space of the
             model
-        facet_meshtags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
-        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the
+        facet_meshtags (dolfinx.mesh.MeshTags): the facet tags of the model
+        volume_meshtags (dolfinx.mesh.MeshTags): the volume tags of the
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
@@ -283,23 +283,23 @@ class HydrogenTransportProblem:
         progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem", total=final_time
         )
-        while float(self.t) < final_time:
-            progress.update(float(self.dt))
-            self.t.value += float(self.dt)
+        while self.t.value < final_time:
+            progress.update(self.dt.value)
+            self.t.value += self.dt.value
 
             # update boundary conditions
             for bc in self.boundary_conditions:
-                bc.update(float(self.t))
+                bc.update(self.t.value)
 
             self.solver.solve(self.u)
 
-            mobile_xdmf.write_function(self.u, float(self.t))
+            mobile_xdmf.write_function(self.u, self.t.value)
 
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
 
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
-            times.append(float(self.t))
+            times.append(self.t.value)
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]

@@ -14,6 +14,7 @@ mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 
 
 def test_init():
+    """Test that the attributes are set correctly"""
     # create a DirichletBC object
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     value = 1.0
@@ -29,6 +30,9 @@ def test_init():
 
 
 def test_value_fenics():
+    """Test that the value_fenics attribute can be set to a valid value
+    and that an invalid type throws an error
+    """
     # create a DirichletBC object
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     value = 1.0
@@ -45,23 +49,6 @@ def test_value_fenics():
     # set the value_fenics attribute to an invalid value
     with pytest.raises(TypeError):
         bc.value_fenics = "invalid"
-
-
-# def test_define_surface_subdomain_dofs():
-#     # create a DirichletBC object
-#     subdomain = F.SurfaceSubdomain1D(1, x=0)
-#     value = 1.0
-#     species = "test"
-#     bc = F.DirichletBC(subdomain, value, species)
-
-#     # create facet meshtags, mesh, and function space objects
-#     facet_meshtags = .....
-#     function_space = fem.FunctionSpace(mesh, ("Lagrange", 1))
-
-#     # call the method being tested
-#     bc_dofs = bc.define_surface_subdomain_dofs(facet_meshtags, mesh, function_space)
-
-#     assert bc_dofs ...
 
 
 def test_callable_for_value():
