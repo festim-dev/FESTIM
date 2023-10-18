@@ -289,17 +289,17 @@ class HydrogenTransportProblem:
 
             # update boundary conditions
             for bc in self.boundary_conditions:
-                bc.update(self.t.value)
+                bc.update(float(self.t))
 
             self.solver.solve(self.u)
 
-            mobile_xdmf.write_function(self.u, self.t.value)
+            mobile_xdmf.write_function(self.u, float(self.t))
 
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
 
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
-            times.append(self.t.value)
+            times.append(float(self.t))
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
