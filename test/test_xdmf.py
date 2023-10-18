@@ -14,10 +14,11 @@ def test_init():
     assert my_export.field == [species]
 
 
-def test_write():
+def test_write(tmp_path):
     """Tests the write method of XDMFExport creates a file"""
     species = F.Species("H")
-    my_export = F.XDMFExport(filename="my_export.xdmf", field=species)
+    filename = os.path.join(tmp_path, "test.xdmf")
+    my_export = F.XDMFExport(filename=filename, field=species)
 
     my_export.define_writer(MPI.COMM_WORLD)
 
@@ -30,10 +31,10 @@ def test_write():
     for t in [0, 1, 2, 3]:
         my_export.write(t=t)
 
-    assert os.path.exists("my_export.xdmf")
+    assert os.path.exists(filename)
 
 
-def test_integration_with_HTransportProblem():
+def test_integration_with_HTransportProblem(tmp_path):
     """Tests that XDMFExport can be used in conjunction with HTransportProblem"""
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1))
@@ -42,7 +43,7 @@ def test_integration_with_HTransportProblem():
     my_model.subdomains = [my_subdomain]
     my_model.temperature = 500.0
     my_model.species = [F.Species("H")]
-    filename = "my_export.xdmf"
+    filename = os.path.join(tmp_path, "test.xdmf")
     my_model.exports = [F.XDMFExport(filename=filename, field=my_model.species)]
 
     my_model.initialise()
