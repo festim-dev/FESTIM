@@ -1,0 +1,39 @@
+name: Conda CI
+on: [pull_request, push]
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: myenv
+        miniforge-version: latest
+        use-mamba: true
+        channels: conda-forge
+
+    - name: Create Conda environment
+      shell: bash -l {0}
+      run: |
+        mamba install -c conda-forge fenics-dolfinx
+
+    - name: Install local package and dependencies
+      shell: bash -l {0}
+      run: |
+        pip install .[test]
+
+    - name: Run tests
+      shell: bash -l {0}
+      run: |
+        pytest test/ --cov festim --cov-report xml --cov-report term
+    
+    - name: Upload to codecov
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.xml
