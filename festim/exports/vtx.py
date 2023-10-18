@@ -65,14 +65,15 @@ class VTXExport:
 
         self._field = value
 
-    def define_writer(self, comm: mpi4py.MPI.Intracomm, functions: list) -> None:
+    def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
         """Define the writer
 
         Args:
             comm (mpi4py.MPI.Intracomm): the MPI communicator
-            functions (list): the list of functions to export
         """
-        self.writer = VTXWriter(comm, self.filename, functions, "BP4")
+        self.writer = VTXWriter(
+            comm, self.filename, [field.solution for field in self.field], "BP4"
+        )
 
     def write(self, t: float):
         """Write functions to VTX file

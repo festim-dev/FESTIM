@@ -128,9 +128,7 @@ class HydrogenTransportProblem:
             # then find solution from index of species
 
             if isinstance(export, F.VTXExport):
-                export.define_writer(
-                    MPI.COMM_WORLD, [field.solution for field in export.field]
-                )
+                export.define_writer(MPI.COMM_WORLD)
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
