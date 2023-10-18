@@ -129,6 +129,8 @@ class HydrogenTransportProblem:
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
+                if isinstance(export, F.XDMFExport):
+                    export.writer.write_mesh(self.mesh.mesh)
 
     def define_function_space(self):
         elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
@@ -271,8 +273,6 @@ class HydrogenTransportProblem:
         """
         times, flux_values = [], []
 
-        mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
-        mobile_xdmf.write_mesh(self.mesh.mesh)
         n = self.mesh.n
         D = self.subdomains[0].material.get_diffusion_coefficient(
             self.mesh.mesh, self.temperature
@@ -293,8 +293,6 @@ class HydrogenTransportProblem:
 
             # post processing
 
-            mobile_xdmf.write_function(self.u, float(self.t))
-
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
 
             flux = assemble_scalar(surface_flux)
@@ -308,5 +306,4 @@ class HydrogenTransportProblem:
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
 
-        mobile_xdmf.close()
         return times, flux_values
