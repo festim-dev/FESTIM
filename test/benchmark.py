@@ -36,9 +36,9 @@ import time
 from test_permeation_problem import test_permeation_problem
 
 
-def fenics_test_permeation_problem():
+def fenics_test_permeation_problem(mesh_size=1001):
     L = 3e-04
-    indices = np.linspace(0, L, num=1001)
+    indices = np.linspace(0, L, num=mesh_size)
     gdim, shape, degree = 1, "interval", 1
     cell = Cell(shape, geometric_dimension=gdim)
     domain = Mesh(VectorElement("Lagrange", cell, degree))
@@ -133,20 +133,20 @@ def fenics_test_permeation_problem():
     times = []
     t = 0
     progress = tqdm.autonotebook.tqdm(
-        desc="Solving H transport problem", total=num_steps
+        desc="Solving H transport problem", total=final_time
     )
-    for i in range(num_steps):
-        progress.update(1)
-        t += dt
+    while t < final_time:
+        progress.update(float(dt))
+        t += float(dt)
 
         solver.solve(u)
+
+        mobile_xdmf.write_function(u, t)
 
         surface_flux = form(D * dot(grad(u), n) * ds(2))
         flux = assemble_scalar(surface_flux)
         flux_values.append(flux)
         times.append(t)
-
-        mobile_xdmf.write_function(u, t)
 
         u_n.x.array[:] = u.x.array[:]
 
@@ -180,29 +180,22 @@ def fenics_test_permeation_problem():
 def test_festim_vs_fenics_permeation_benchmark():
     """Runs a problem with pure fenicsx and the same problem with FESTIM and
     raise ValueError if difference is too high"""
-    repetitions = 10
 
-    fenics_times = []
-    for i in range(repetitions):
-        start = time.time()
-        fenics_test_permeation_problem()
-        fenics_times.append(time.time() - start)
-    fenics_time = np.mean(fenics_times)
+    start = time.time()
+    fenics_test_permeation_problem(mesh_size=20001)
+    fenics_time = time.time() - start
 
-    festim_times = []
-    for i in range(repetitions):
-        start = time.time()
-        test_permeation_problem()
-        festim_times.append(time.time() - start)
-    festim_time = np.mean(festim_times)
+    start = time.time()
+    test_permeation_problem(mesh_size=20001)
+    festim_time = time.time() - start
 
-    diff = (np.abs(fenics_time - festim_time) / ((fenics_time + festim_time) / 2)) * 100
-    if diff > 20:
+    diff = (fenics_time - festim_time) / fenics_time
+    if diff < -0.1:
         raise ValueError(
-            f"festim is {diff:.1f}% slower than fenics, current acceptble threshold of 20%"
+            f"festim is {np.abs(diff):.1%} slower than fenics, current acceptable threshold of 10%"
         )
     else:
-        print(f"festim is {diff:.1f}% slower than fenics")
+        print(f"avg relative diff between festim and fenics {diff:.1%}")
 
 
 if __name__ == "__main__":
