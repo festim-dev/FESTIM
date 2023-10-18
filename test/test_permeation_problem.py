@@ -11,9 +11,9 @@ import numpy as np
 import festim as F
 
 
-def test_permeation_problem():
+def test_permeation_problem(mesh_size=1001):
     L = 3e-04
-    vertices = np.linspace(0, L, num=1001)
+    vertices = np.linspace(0, L, num=mesh_size)
 
     my_mesh = F.Mesh1D(vertices)
 
@@ -31,8 +31,6 @@ def test_permeation_problem():
 
     temperature = Constant(my_mesh.mesh, 500.0)
     my_model.temperature = temperature
-
-    my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
 
     my_model.initialise()
 
