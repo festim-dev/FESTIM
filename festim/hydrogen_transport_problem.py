@@ -275,7 +275,11 @@ class HydrogenTransportProblem:
 
         mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
         mobile_xdmf.write_mesh(self.mesh.mesh)
-
+        n = self.mesh.n
+        D = self.subdomains[0].material.get_diffusion_coefficient(
+            self.mesh.mesh, self.temperature
+        )
+        cm = self.species[0].solution
         progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem", total=final_time
         )
@@ -291,11 +295,8 @@ class HydrogenTransportProblem:
 
             mobile_xdmf.write_function(self.u, float(self.t))
 
-            cm = self.species[0].solution
-            D = self.subdomains[0].material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature
-            )
-            surface_flux = form(D * dot(grad(cm), self.mesh.n) * self.ds(2))
+            surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
+
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
             times.append(float(self.t))
