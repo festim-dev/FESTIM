@@ -34,3 +34,4 @@ from .subdomain.surface_subdomain import SurfaceSubdomain1D
 from .subdomain.volume_subdomain import VolumeSubdomain1D
 
 from .exports.vtx import VTXExport
+from .exports.xdmf import XDMFExport

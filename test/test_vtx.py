@@ -12,10 +12,11 @@ V = dolfinx.fem.FunctionSpace(mesh, ("Lagrange", 1))
 def test_vtx_export_one_function(tmpdir):
     """Test can add one function to a vtx export"""
     u = dolfinx.fem.Function(V)
-
+    sp = F.Species("H")
+    sp.solution = u
     filename = str(tmpdir.join("my_export.bp"))
-    my_export = F.VTXExport(filename, field=F.Species("H"))
-    my_export.define_writer(mesh.comm, [u])
+    my_export = F.VTXExport(filename, field=sp)
+    my_export.define_writer(mesh.comm)
 
     for t in range(10):
         u.interpolate(lambda x: t * (x[0] ** 2 + x[1] ** 2 + x[2] ** 2))
@@ -28,10 +29,14 @@ def test_vtx_export_two_functions(tmpdir):
     u = dolfinx.fem.Function(V)
     v = dolfinx.fem.Function(V)
 
+    sp1 = F.Species("1")
+    sp2 = F.Species("2")
+    sp1.solution = u
+    sp2.solution = v
     filename = str(tmpdir.join("my_export.bp"))
-    my_export = F.VTXExport(filename, field=[F.Species("1"), F.Species("2")])
+    my_export = F.VTXExport(filename, field=[sp1, sp2])
 
-    my_export.define_writer(mesh.comm, [u, v])
+    my_export.define_writer(mesh.comm)
 
     for t in range(10):
         u.interpolate(lambda x: t * (x[0] ** 2 + x[1] ** 2 + x[2] ** 2))

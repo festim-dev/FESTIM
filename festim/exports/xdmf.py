@@ -1,28 +1,19 @@
-from dolfinx.io import VTXWriter
 import mpi4py
-
+from dolfinx.io import XDMFFile
 import festim as F
 
 
-class VTXExport:
-    """Export functions to VTX file
+class XDMFExport:
+    """Export functions to XDMFfile
 
     Args:
         filename (str): the name of the output file
-        field (int): the field index to export
+        field (int or festim.Species): the field index to export
 
     Attributes:
         filename (str): the name of the output file
-        writer (dolfinx.io.VTXWriter): the VTX writer
+        writer (dolfinx.io.XDMFFile): the XDMF writer
         field (festim.Species, list of festim.Species): the field index to export
-
-    Usage:
-        >>> u = dolfinx.fem.Function(V)
-        >>> my_export = festim.VTXExport("my_export.bp")
-        >>> my_export.define_writer(mesh.comm, [u])
-        >>> for t in range(10):
-        ...    u.interpolate(lambda x: t * (x[0] ** 2 + x[1] ** 2 + x[2] ** 2))
-        ...    my_export.write(t)
     """
 
     def __init__(self, filename: str, field) -> None:
@@ -37,8 +28,8 @@ class VTXExport:
     def filename(self, value):
         if not isinstance(value, str):
             raise TypeError("filename must be of type str")
-        if not value.endswith(".bp"):
-            raise ValueError("filename must end with .bp")
+        if not value.endswith(".xdmf"):
+            raise ValueError("filename must end with .xdmf")
         self._filename = value
 
     @property
@@ -71,9 +62,7 @@ class VTXExport:
         Args:
             comm (mpi4py.MPI.Intracomm): the MPI communicator
         """
-        self.writer = VTXWriter(
-            comm, self.filename, [field.solution for field in self.field], "BP4"
-        )
+        self.writer = XDMFFile(comm, self.filename, "w")
 
     def write(self, t: float):
         """Write functions to VTX file
@@ -81,4 +70,5 @@ class VTXExport:
         Args:
             t (float): the time of export
         """
-        self.writer.write(t)
+        for field in self.field:
+            self.writer.write_function(field.solution, t)
