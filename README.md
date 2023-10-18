@@ -1,6 +1,6 @@
 # FESTIM
-[![conda CI](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/conda_ci.yml/badge.svg?branch=fenicsx)](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/conda_ci.yml)
-[![docker CI](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/docker_ci.yml/badge.svg?branch=fenicsx)](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/docker_ci.yml)
+[![Conda CI](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/ci_conda.yml/badge.svg?branch=fenicsx)](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/ci_conda.yml)
+[![Docker CI](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/ci_docker.yml/badge.svg?branch=fenicsx)](https://github.com/RemDelaporteMathurin/FESTIM/actions/workflows/ci_docker.yml)
 [![codecov](https://codecov.io/gh/RemDelaporteMathurin/FESTIM/branch/master/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/RemDelaporteMathurin/FESTIM)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
 ![GitHub stars](https://img.shields.io/github/stars/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Stars&logoColor=white)
