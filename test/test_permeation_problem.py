@@ -4,7 +4,7 @@ from dolfinx.fem import (
     dirichletbc,
     locate_dofs_topological,
 )
-from ufl import exp, FacetNormal
+from ufl import exp
 import numpy as np
 
 
@@ -42,11 +42,10 @@ def test_permeation_problem(mesh_size=1001):
         S = S_0 * exp(-E_S / F.k_B / T)
         return S * pressure**0.5
 
-    fdim = my_mesh.mesh.topology.dim - 1
     left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, fdim, left_facets)
+    left_dofs = locate_dofs_topological(V, my_mesh.fdim, left_facets)
     right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, fdim, right_facets)
+    right_dofs = locate_dofs_topological(V, my_mesh.fdim, right_facets)
 
     S_0 = 4.02e21
     E_S = 1.04
@@ -141,20 +140,15 @@ def test_permeation_problem_multi_volume():
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
 
     V = my_model.function_space
-    u = mobile_H.solution
-
-    # TODO this should be a property of Mesh
-    n = FacetNormal(my_mesh.mesh)
 
     def siverts_law(T, S_0, E_S, pressure):
         S = S_0 * exp(-E_S / F.k_B / T)
         return S * pressure**0.5
 
-    fdim = my_mesh.mesh.topology.dim - 1
     left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, fdim, left_facets)
+    left_dofs = locate_dofs_topological(V, my_mesh.fdim, left_facets)
     right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, fdim, right_facets)
+    right_dofs = locate_dofs_topological(V, my_mesh.fdim, right_facets)
 
     S_0 = 4.02e21
     E_S = 1.04
