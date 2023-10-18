@@ -253,7 +253,7 @@ class HydrogenTransportProblem:
 
         mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
         mobile_xdmf.write_mesh(self.mesh.mesh)
-        n = FacetNormal(self.mesh.mesh)
+        n = self.mesh.n
         D = self.subdomains[0].material.get_diffusion_coefficient(
             self.mesh.mesh, self.temperature
         )
