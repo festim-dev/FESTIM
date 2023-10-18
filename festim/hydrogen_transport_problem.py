@@ -302,7 +302,7 @@ class HydrogenTransportProblem:
             times.append(float(self.t))
 
             for export in self.exports:
-                if isinstance(export, F.VTXExport):
+                if isinstance(export, (F.VTXExport, F.XDMFExport)):
                     export.write(float(self.t))
 
             # update previous solution
