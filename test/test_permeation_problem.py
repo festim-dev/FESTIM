@@ -1,9 +1,5 @@
 from petsc4py import PETSc
-from dolfinx.fem import (
-    Constant,
-    dirichletbc,
-    locate_dofs_topological,
-)
+from dolfinx.fem import Constant
 from ufl import exp
 import numpy as np
 
@@ -29,34 +25,16 @@ def test_permeation_problem(mesh_size=1001):
     mobile_H = F.Species("H")
     my_model.species = [mobile_H]
 
-    temperature = Constant(my_mesh.mesh, 500.0)
-    my_model.temperature = temperature
+    my_model.temperature = 500
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(subdomain=right_surface, value=0, species="H"),
+        F.SievertsBC(
+            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+        ),
+    ]
 
     my_model.initialise()
-
-    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
-
-    V = my_model.function_space
-
-    def siverts_law(T, S_0, E_S, pressure):
-        S = S_0 * exp(-E_S / F.k_B / T)
-        return S * pressure**0.5
-
-    left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, my_mesh.fdim, left_facets)
-    right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, my_mesh.fdim, right_facets)
-
-    S_0 = 4.02e21
-    E_S = 1.04
-    P_up = 100
-    surface_conc = siverts_law(T=temperature, S_0=S_0, E_S=E_S, pressure=P_up)
-    bc_sieverts = dirichletbc(
-        Constant(my_mesh.mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
-    )
-    bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
-    my_model.boundary_conditions = [bc_sieverts, bc_outgas]
-    my_model.create_solver()
 
     my_model.solver.convergence_criterion = "incremental"
     my_model.solver.rtol = 1e-10
@@ -75,8 +53,14 @@ def test_permeation_problem(mesh_size=1001):
 
     times, flux_values = my_model.run(final_time=final_time)
 
-    # analytical solution
-    S = S_0 * exp(-E_S / F.k_B / float(temperature))
+    # -------------------------- analytical solution -------------------------------------
+
+    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, my_model.temperature)
+
+    S_0 = float(my_model.boundary_conditions[-1].S_0)
+    E_S = float(my_model.boundary_conditions[-1].E_S)
+    P_up = float(my_model.boundary_conditions[-1].pressure)
+    S = S_0 * exp(-E_S / F.k_B / float(my_model.temperature))
     permeability = float(D) * S
     times = np.array(times)
 
@@ -133,33 +117,15 @@ def test_permeation_problem_multi_volume():
     temperature = Constant(my_mesh.mesh, 500.0)
     my_model.temperature = temperature
 
+    my_model.boundary_conditions = [
+        F.DirichletBC(subdomain=right_surface, value=0, species="H"),
+        F.SievertsBC(
+            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+        ),
+    ]
     my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
 
     my_model.initialise()
-
-    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
-
-    V = my_model.function_space
-
-    def siverts_law(T, S_0, E_S, pressure):
-        S = S_0 * exp(-E_S / F.k_B / T)
-        return S * pressure**0.5
-
-    left_facets = my_model.facet_meshtags.find(1)
-    left_dofs = locate_dofs_topological(V, my_mesh.fdim, left_facets)
-    right_facets = my_model.facet_meshtags.find(2)
-    right_dofs = locate_dofs_topological(V, my_mesh.fdim, right_facets)
-
-    S_0 = 4.02e21
-    E_S = 1.04
-    P_up = 100
-    surface_conc = siverts_law(T=temperature, S_0=S_0, E_S=E_S, pressure=P_up)
-    bc_sieverts = dirichletbc(
-        Constant(my_mesh.mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
-    )
-    bc_outgas = dirichletbc(Constant(my_mesh.mesh, PETSc.ScalarType(0)), right_dofs, V)
-    my_model.boundary_conditions = [bc_sieverts, bc_outgas]
-    my_model.create_solver()
 
     my_model.solver.convergence_criterion = "incremental"
     my_model.solver.rtol = 1e-10
@@ -178,7 +144,12 @@ def test_permeation_problem_multi_volume():
 
     times, flux_values = my_model.run(final_time=final_time)
 
-    # analytical solution
+    # -------------------------- analytical solution -------------------------------------
+    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
+
+    S_0 = float(my_model.boundary_conditions[-1].S_0)
+    E_S = float(my_model.boundary_conditions[-1].E_S)
+    P_up = float(my_model.boundary_conditions[-1].pressure)
     S = S_0 * exp(-E_S / F.k_B / float(temperature))
     permeability = float(D) * S
     times = np.array(times)

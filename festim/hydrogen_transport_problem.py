@@ -41,8 +41,8 @@ class HydrogenTransportProblem:
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpace): the function space of the
             model
-        facet_meshtags (dolfinx.cpp.mesh.MeshTags): the facet tags of the model
-        volume_meshtags (dolfinx.cpp.mesh.MeshTags): the volume tags of the
+        facet_meshtags (dolfinx.mesh.MeshTags): the facet tags of the model
+        volume_meshtags (dolfinx.mesh.MeshTags): the volume tags of the
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
@@ -96,6 +96,7 @@ class HydrogenTransportProblem:
         self.volume_meshtags = None
         self.formulation = None
         self.volume_subdomains = []
+        self.bc_forms = []
 
     @property
     def temperature(self):
@@ -112,7 +113,12 @@ class HydrogenTransportProblem:
         self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
+
+        self.t = fem.Constant(self.mesh.mesh, 0.0)
+
+        self.define_boundary_conditions()
         self.create_formulation()
+        self.create_solver()
         self.defing_export_writers()
 
     def defing_export_writers(self):
@@ -177,6 +183,21 @@ class HydrogenTransportProblem:
             "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
         )
 
+    def define_boundary_conditions(self):
+        """Defines the dirichlet boundary conditions of the model"""
+        for bc in self.boundary_conditions:
+            if isinstance(bc, F.DirichletBC):
+                bc_dofs = bc.define_surface_subdomain_dofs(
+                    self.facet_meshtags, self.mesh, self.function_space
+                )
+                bc.create_value(
+                    self.mesh.mesh, self.function_space, self.temperature, self.t
+                )
+                form = bc.create_formulation(
+                    dofs=bc_dofs, function_space=self.function_space
+                )
+                self.bc_forms.append(form)
+
     def assign_functions_to_species(self):
         """Creates for each species the solution, prev solution and test function"""
         if len(self.species) > 1:
@@ -233,7 +254,9 @@ class HydrogenTransportProblem:
     def create_solver(self):
         """Creates the solver of the model"""
         problem = fem.petsc.NonlinearProblem(
-            self.formulation, self.species[0].solution, bcs=self.boundary_conditions
+            self.formulation,
+            self.species[0].solution,
+            bcs=self.bc_forms,
         )
         solver = NewtonSolver(MPI.COMM_WORLD, problem)
         self.solver = solver
@@ -248,7 +271,6 @@ class HydrogenTransportProblem:
             list of float: the times of the simulation
             list of float: the fluxes of the simulation
         """
-        t = 0
         times, flux_values = [], []
 
         mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
@@ -261,19 +283,23 @@ class HydrogenTransportProblem:
         progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem", total=final_time
         )
-        while t < final_time:
-            progress.update(float(self.dt))
-            t += float(self.dt)
+        while self.t.value < final_time:
+            progress.update(self.dt.value)
+            self.t.value += self.dt.value
+
+            # update boundary conditions
+            for bc in self.boundary_conditions:
+                bc.update(float(self.t))
 
             self.solver.solve(self.u)
 
-            mobile_xdmf.write_function(self.u, t)
+            mobile_xdmf.write_function(self.u, float(self.t))
 
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
 
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
-            times.append(t)
+            times.append(float(self.t))
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
