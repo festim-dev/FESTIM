@@ -305,7 +305,7 @@ class HydrogenTransportProblem:
 
             for export in self.exports:
                 if isinstance(export, F.VTXExport):
-                    export.writer.write(float(self.t))
+                    export.write(float(self.t))
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
