@@ -4,7 +4,7 @@ import festim as F
 
 
 class XDMFExport:
-    """Export functions to VTX file
+    """Export functions to XDMFfile
 
     Args:
         filename (str): the name of the output file
