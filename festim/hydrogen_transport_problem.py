@@ -293,6 +293,8 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
+            # post processing
+
             mobile_xdmf.write_function(self.u, float(self.t))
 
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
@@ -300,6 +302,10 @@ class HydrogenTransportProblem:
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
             times.append(float(self.t))
+
+            for export in self.exports:
+                if isinstance(export, F.VTXExport):
+                    export.writer.write(float(self.t))
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
