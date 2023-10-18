@@ -270,6 +270,7 @@ class HydrogenTransportProblem:
             mobile_xdmf.write_function(self.u, t)
 
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
+
             flux = assemble_scalar(surface_flux)
             flux_values.append(flux)
             times.append(t)
