@@ -11,7 +11,7 @@ import numpy as np
 import festim as F
 
 
-def test_permeation_problem(final_time=50, mesh_size=1001):
+def test_permeation_problem(mesh_size=1001):
     L = 3e-04
     vertices = np.linspace(0, L, num=mesh_size)
 
@@ -71,6 +71,8 @@ def test_permeation_problem(final_time=50, mesh_size=1001):
     opts[f"{option_prefix}pc_type"] = "gamg"
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
+
+    final_time = 50
 
     times, flux_values = my_model.run(final_time=final_time)
 
