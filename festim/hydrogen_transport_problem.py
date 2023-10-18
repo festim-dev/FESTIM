@@ -127,7 +127,7 @@ class HydrogenTransportProblem:
             # TODO implement when export.field is an int or str
             # then find solution from index of species
 
-            if isinstance(export, F.VTXExport):
+            if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
 
     def define_function_space(self):
