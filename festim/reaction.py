@@ -69,9 +69,16 @@ class Reaction:
         return f"{self.reactant1} + {self.reactant2} <--> {self.product}"
 
     def reaction_term(self, temperature):
+        """Compute the reaction term at a given temperature.
+
+        Arguments:
+            temperature (): The temperature at which the reaction term is computed.
+        """
         k = self.k_0 * exp(-self.E_k / (F.k_B * temperature))
         p = self.p_0 * exp(-self.E_p / (F.k_B * temperature))
-        A = self.reactant1.solution
-        B = self.reactant2.solution
-        C = self.product.solution
-        return k * A * B - p * C
+
+        c_A = self.reactant1.concentration
+        c_B = self.reactant2.concentration
+
+        c_C = self.product.solution
+        return k * c_A * c_B - p * c_C
