@@ -36,8 +36,8 @@ def test_permeation_problem(mesh_size=1001):
     my_model.exports = [F.XDMFExport("mobile_concentration.xdmf", field=mobile_H)]
 
     my_model.settings = F.Settings(
-        absolute_tolerance=1e10,
-        relative_tolerance=1e-10,
+        atol=1e10,
+        rtol=1e-10,
         max_iterations=30,
         final_time=50,
     )
@@ -130,8 +130,8 @@ def test_permeation_problem_multi_volume():
     my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
 
     my_model.settings = F.Settings(
-        absolute_tolerance=1e10,
-        relative_tolerance=1e-10,
+        atol=1e10,
+        rtol=1e-10,
         max_iterations=30,
         final_time=50,
     )

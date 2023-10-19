@@ -47,9 +47,7 @@ def test_integration_with_HTransportProblem(tmp_path):
     filename = os.path.join(tmp_path, "test.xdmf")
     my_model.exports = [F.XDMFExport(filename=filename, field=my_model.species)]
 
-    my_model.settings = F.Settings(
-        absolute_tolerance=1, relative_tolerance=0.1, final_time=1
-    )
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=1)
     my_model.settings.stepsize = F.Stepsize(initial_value=0.5)
     my_model.initialise()
     my_model.run()

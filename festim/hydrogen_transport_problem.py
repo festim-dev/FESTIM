@@ -258,8 +258,8 @@ class HydrogenTransportProblem:
             bcs=self.bc_forms,
         )
         self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
-        self.solver.atol = self.settings.absolute_tolerance
-        self.solver.rtol = self.settings.relative_tolerance
+        self.solver.atol = self.settings.atol
+        self.solver.rtol = self.settings.rtol
         self.solver.max_it = self.settings.max_iterations
 
     def run(self):

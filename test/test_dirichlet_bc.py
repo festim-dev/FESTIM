@@ -281,9 +281,7 @@ def test_integration_with_HTransportProblem(value):
 
     my_model.temperature = fem.Constant(my_model.mesh.mesh, 550.0)
 
-    my_model.settings = F.Settings(
-        absolute_tolerance=1, relative_tolerance=0.1, final_time=2
-    )
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     # RUN
