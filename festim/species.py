@@ -27,35 +27,10 @@ class Species:
         self.solution = None
         self.prev_solution = None
         self.test_function = None
-        self.sub_function_space = None
 
 
 class Trap(Species):
     """Trap species class for H transport simulation.
-
-    Args:
-        name (str, optional): a name given to the trap. Defaults to None.
-
-    Attributes:
-        name (str): a name given to the trap.
-        attributes of Species class
-
-    Usage:
-        >>> from festim import Trap, HTransportProblem
-        >>> trap = Trap(name="Trap")
-        >>> trap.name
-        'Trap'
-        >>> my_model = HTransportProblem()
-        >>> my_model.species.append(trap)
-
-    """
-
-    def __init__(self, name: str = None) -> None:
-        super().__init__(name)
-
-
-class MobileSpecies(Species):
-    """Mobile species class for H transport simulation.
 
     Args:
         name (str, optional): a name given to the trap. Defaults to None.
