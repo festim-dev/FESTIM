@@ -75,11 +75,12 @@ def test_permeation_problem(mesh_size=1001):
     analytical_flux = np.abs(analytical_flux)
     flux_values = np.array(np.abs(flux_values))
 
+    indices = np.where(analytical_flux > 0.01 * np.max(analytical_flux))
+    analytical_flux = analytical_flux[indices]
+    flux_values = flux_values[indices]
+
     relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
 
-    relative_error = relative_error[
-        np.where(analytical_flux > 0.01 * np.max(analytical_flux))
-    ]
     error = relative_error.mean()
 
     assert error < 0.01
@@ -165,11 +166,12 @@ def test_permeation_problem_multi_volume():
     analytical_flux = np.abs(analytical_flux)
     flux_values = np.array(np.abs(flux_values))
 
+    indices = np.where(analytical_flux > 0.01 * np.max(analytical_flux))
+    analytical_flux = analytical_flux[indices]
+    flux_values = flux_values[indices]
+
     relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
 
-    relative_error = relative_error[
-        np.where(analytical_flux > 0.01 * np.max(analytical_flux))
-    ]
     error = relative_error.mean()
 
     assert error < 0.01
