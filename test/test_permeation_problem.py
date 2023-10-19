@@ -28,9 +28,13 @@ def test_permeation_problem(mesh_size=1001):
     my_model.temperature = 500
 
     my_model.boundary_conditions = [
-        F.DirichletBC(subdomain=right_surface, value=0, species="H"),
+        F.DirichletBC(subdomain=right_surface, value=0, species=mobile_H),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+            subdomain=left_surface,
+            S_0=4.02e21,
+            E_S=1.04,
+            pressure=100,
+            species=mobile_H,
         ),
     ]
 
@@ -120,7 +124,11 @@ def test_permeation_problem_multi_volume():
     my_model.boundary_conditions = [
         F.DirichletBC(subdomain=right_surface, value=0, species="H"),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+            subdomain=left_surface,
+            S_0=4.02e21,
+            E_S=1.04,
+            pressure=100,
+            species=mobile_H,
         ),
     ]
     my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]

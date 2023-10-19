@@ -28,7 +28,9 @@ from .mesh.mesh_1d import Mesh1D
 
 from .hydrogen_transport_problem import HydrogenTransportProblem
 
-from .species import Species, Trap
+from .settings import Settings
+
+from .species import Species, Trap, MobileSpecies
 
 from .subdomain.surface_subdomain import SurfaceSubdomain1D
 from .subdomain.volume_subdomain import VolumeSubdomain1D
