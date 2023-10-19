@@ -1,9 +1,9 @@
 import pytest
 import festim as F
-import numpy as np
 from dolfinx.fem import FunctionSpace, Function
 from dolfinx.mesh import create_unit_cube
 from mpi4py import MPI
+from ufl import exp
 
 
 def test_reaction_init():
@@ -88,16 +88,12 @@ def test_reaction_reaction_term(temperature):
 
     # test the reaction term at a given temperature
     def arrhenius(pre, act, T):
-        return pre * np.exp(-act / (F.k_B * T))
+        return pre * exp(-act / (F.k_B * T))
 
     k = arrhenius(reaction.k_0, reaction.E_k, temperature)
     p = arrhenius(reaction.p_0, reaction.E_p, temperature)
     expected_reaction_term = (
         k * species1.solution * species2.solution - p * product.solution
     )
-    print(expected_reaction_term)
-    print(reaction.reaction_term(temperature))
-    from dolfinx import __version__
 
-    print(__version__)
     assert reaction.reaction_term(temperature) == expected_reaction_term
