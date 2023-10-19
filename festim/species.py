@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Callable
 
 
 class Species:
@@ -31,6 +31,12 @@ class Species:
         self.solution = None
         self.prev_solution = None
         self.test_function = None
+
+    def __repr__(self) -> str:
+        return f"Species({self.name})"
+
+    def __str__(self) -> str:
+        return f"{self.name}"
 
     @property
     def concentration(self):
@@ -66,7 +72,7 @@ class ImplicitSpecies:
     c = n - others
 
     Args:
-        n (float, function): the total concentration of the species
+        n (float, Callable): the total concentration of the species
         others (List[Species]): the list of species from which the implicit
             species concentration is computed (c = n - others)
         name (str, optional): a name given to the species. Defaults to None.
@@ -82,13 +88,19 @@ class ImplicitSpecies:
 
     def __init__(
         self,
-        n: Union[float, function],
+        n: Union[float, Callable],
         others: List[Species] = None,
         name: str = None,
     ) -> None:
         self.name = name
         self.n = n
         self.others = others
+
+    def __repr__(self) -> str:
+        return f"ImplicitSpecies({self.name}, {self.n}, {self.others})"
+
+    def __str__(self) -> str:
+        return f"{self.name}"
 
     @property
     def concentration(self):
