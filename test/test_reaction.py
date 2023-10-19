@@ -95,4 +95,9 @@ def test_reaction_reaction_term(temperature):
     expected_reaction_term = (
         k * species1.solution * species2.solution - p * product.solution
     )
+    print(expected_reaction_term)
+    print(reaction.reaction_term(temperature))
+    from dolfinx import __version__
+
+    print(__version__)
     assert reaction.reaction_term(temperature) == expected_reaction_term
