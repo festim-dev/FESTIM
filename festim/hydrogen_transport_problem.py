@@ -277,7 +277,9 @@ class HydrogenTransportProblem:
         )
         cm = self.species[0].solution
         progress = tqdm.autonotebook.tqdm(
-            desc="Solving H transport problem", total=self.settings.final_time
+            desc="Solving H transport problem",
+            total=self.settings.final_time,
+            unit_scale=True,
         )
         while self.t.value < self.settings.final_time:
             progress.update(self.dt.value)
