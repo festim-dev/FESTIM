@@ -1,6 +1,9 @@
 import pytest
 import festim as F
 import numpy as np
+from dolfinx.fem import FunctionSpace, Function
+from dolfinx.mesh import create_unit_cube
+from mpi4py import MPI
 
 
 def test_reaction_init():
@@ -77,9 +80,11 @@ def test_reaction_reaction_term(temperature):
     )
 
     # set the concentrations of the species
-    species1.solution = 1.0
-    species2.solution = 2.0
-    product.solution = 3.0
+    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+    V = FunctionSpace(mesh, ("Lagrange", 1))
+    species1.solution = Function(V)
+    species2.solution = Function(V)
+    product.solution = Function(V)
 
     # test the reaction term at a given temperature
     def arrhenius(pre, act, T):
@@ -90,7 +95,4 @@ def test_reaction_reaction_term(temperature):
     expected_reaction_term = (
         k * species1.solution * species2.solution - p * product.solution
     )
-    assert (
-        pytest.approx(reaction.reaction_term(temperature), rel=1e-9)
-        == expected_reaction_term
-    )
+    assert reaction.reaction_term(temperature) == expected_reaction_term
