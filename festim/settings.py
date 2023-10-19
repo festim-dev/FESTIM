@@ -4,10 +4,12 @@ class Settings:
     Args:
         atol (float): Absolute tolerance for the solver.
         rtol (float): Relative tolerance for the solver.
-        max_iterations (int, optional): Maximum number of iterations for the solver.
+        max_iterations (int, optional): Maximum number of iterations for the
+            solver. Defaults to 30.
         final_time (float, optional): Final time for a transient simulation.
+            Defaults to None
         stepsize (festim.Stepsize, optional): stepsize for a transient
-            simulation.
+            simulation. Defaults to None
 
     Attributes:
         atol (float): Absolute tolerance for the solver.
