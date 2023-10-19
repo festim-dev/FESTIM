@@ -1,6 +1,6 @@
 class Stepsize:
     """
-    A class for evaulating the stepsize of transient simulations.
+    A class for evaluating the stepsize of transient simulations.
 
     Args:
         initial_value (float, int): initial stepsize.
