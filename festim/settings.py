@@ -26,7 +26,7 @@ class Settings:
         final_time=None,
         stepsize=None,
     ) -> None:
-        self.aboslute_tolerance = absolute_tolerance
+        self.absolute_tolerance = absolute_tolerance
         self.relative_tolerance = relative_tolerance
         self.max_iterations = max_iterations
         self.final_time = final_time
