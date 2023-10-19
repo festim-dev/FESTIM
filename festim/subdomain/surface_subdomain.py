@@ -1,4 +1,4 @@
-from dolfinx import fem
+import dolfinx.mesh
 import numpy as np
 
 
@@ -22,18 +22,18 @@ class SurfaceSubdomain1D:
         self.id = id
         self.x = x
 
-    def locate_dof(self, function_space):
+    def locate_dof(self, mesh, fdim):
         """Locates the dof of the surface subdomain within the function space
 
         Args:
-            function_space (dolfinx.fem.FunctionSpace): the function space of
-                the model
+            mesh (dolfinx.mesh.Mesh): the mesh of the problem
+            fdim (int): the facet dimension of the problem
 
         Returns:
             dof (np.array): the first value in the list of dofs of the surface
                 subdomain
         """
-        dofs = fem.locate_dofs_geometrical(
-            function_space, lambda x: np.isclose(x[0], self.x)
+        dofs = dolfinx.mesh.locate_entities_boundary(
+            mesh, fdim, lambda x: np.isclose(x[0], self.x)
         )
         return dofs[0]
