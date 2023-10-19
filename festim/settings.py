@@ -10,7 +10,7 @@ class Settings:
             simulation.
 
     Attributes:
-        aboslute_tolerance (float): Absolute tolerance for the solver.
+        absolute_tolerance (float): Absolute tolerance for the solver.
         relative_tolerance (float): Relative tolerance for the solver.
         max_iterations (int, optional): Maximum number of iterations for the solver.
         final_time (float, optional): Final time for a transient simulation.
