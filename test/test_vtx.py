@@ -60,6 +60,8 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXExport(filename, field=my_model.species[0])
     my_model.exports = [my_export]
+    my_model.settings = F.Settings(absolute_tolerance=1, relative_tolerance=0.1)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
 
