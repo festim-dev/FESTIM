@@ -1,4 +1,4 @@
-from typing import List, Union, Callable
+from typing import List
 
 
 class Species:
@@ -72,7 +72,7 @@ class ImplicitSpecies:
     c = n - others
 
     Args:
-        n (float, Callable): the total concentration of the species
+        n (float): the total concentration of the species
         others (List[Species]): the list of species from which the implicit
             species concentration is computed (c = n - others)
         name (str, optional): a name given to the species. Defaults to None.
@@ -88,7 +88,7 @@ class ImplicitSpecies:
 
     def __init__(
         self,
-        n: Union[float, Callable],
+        n: float,
         others: List[Species] = None,
         name: str = None,
     ) -> None:
