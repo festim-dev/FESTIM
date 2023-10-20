@@ -33,6 +33,7 @@ class Species:
         self.prev_solution = None
         self.test_function = None
         self.sub_function_space = None
+        self.post_processing_solution = None
 
     def __repr__(self) -> str:
         return f"Species({self.name})"
