@@ -175,7 +175,7 @@ def test_permeation_problem_multi_volume():
     flux_values = np.array(np.abs(flux_values))
 
     indices = np.where(analytical_flux > 0.01 * np.max(analytical_flux))
-    analytical_flux = analytical_flux[indices]m
+    analytical_flux = analytical_flux[indices]
     flux_values = flux_values[indices]
 
     relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
