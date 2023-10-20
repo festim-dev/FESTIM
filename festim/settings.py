@@ -17,9 +17,9 @@ class Settings:
     Attributes:
         atol (float): Absolute tolerance for the solver.
         rtol (float): Relative tolerance for the solver.
-        max_iterations (int, optional): Maximum number of iterations for the solver.
-        final_time (float, optional): Final time for a transient simulation.
-        stepsize (festim.Stepsize, optional): stepsize for a transient
+        max_iterations (int): Maximum number of iterations for the solver.
+        final_time (float): Final time for a transient simulation.
+        stepsize (festim.Stepsize): stepsize for a transient
             simulation.
     """
 
