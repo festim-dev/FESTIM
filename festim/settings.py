@@ -1,3 +1,6 @@
+import festim as F
+
+
 class Settings:
     """Settings for a festim simulation.
 
@@ -33,3 +36,18 @@ class Settings:
         self.max_iterations = max_iterations
         self.final_time = final_time
         self.stepsize = stepsize
+
+    @property
+    def stepsize(self):
+        return self._stepsize
+
+    @stepsize.setter
+    def stepsize(self, value):
+        if value is None:
+            self._stepsize = None
+        elif isinstance(value, (float, int)):
+            self._stepsize = F.Stepsize(initial_value=value)
+        elif isinstance(value, F.Stepsize):
+            self._stepsize = value
+        else:
+            raise TypeError("stepsize must be an of type int, float or festim.Stepsize")
