@@ -57,13 +57,12 @@ def test_callable_for_value():
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     value = lambda x, t: 1.0 + x[0] + t
-    species = "test"
+    species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh),
-        subdomains=[subdomain, vol_subdomain],
+        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
     )
 
     my_model.define_function_space()
@@ -96,13 +95,12 @@ def test_value_callable_x_t_T():
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     value = lambda x, t, T: 1.0 + x[0] + t + T
-    species = "test"
+    species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh),
-        subdomains=[subdomain, vol_subdomain],
+        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
     )
 
     my_model.define_function_space()
@@ -138,13 +136,14 @@ def test_callable_t_only():
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     value = lambda t: 1.0 + t
-    species = "test"
+    species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
         mesh=F.Mesh(mesh),
         subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_space()
@@ -180,13 +179,14 @@ def test_callable_x_only():
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     value = lambda x: 1.0 + x[0]
-    species = "test"
+    species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
         mesh=F.Mesh(mesh),
         subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_space()
@@ -230,13 +230,14 @@ def test_create_formulation(value):
     # BUILD
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    species = "test"
+    species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
         mesh=F.Mesh(mesh),
         subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_space()
@@ -276,7 +277,7 @@ def test_integration_with_HTransportProblem(value):
         subdomains=[vol_subdomain, subdomain],
     )
     my_model.species = [F.Species("H")]
-    my_bc = F.DirichletBC(subdomain, value, my_model.species[0])
+    my_bc = F.DirichletBC(subdomain, value, "H")
     my_model.boundary_conditions = [my_bc]
 
     my_model.temperature = fem.Constant(my_model.mesh.mesh, 550.0)

@@ -9,7 +9,7 @@ def test_define_diffusion_coefficient():
     T, D_0, E_D = 10, 1.2, 0.5
 
     my_mat = F.Material(D_0=D_0, E_D=E_D)
-    D = my_mat.get_diffusion_coefficient(test_mesh.mesh, T)
+    D = my_mat.get_diffusion_coefficient(test_mesh.mesh, T, species="dummy")
 
     D_analytical = D_0 * np.exp(-E_D / F.k_B / T)
 
