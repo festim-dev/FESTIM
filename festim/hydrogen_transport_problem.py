@@ -135,13 +135,45 @@ class HydrogenTransportProblem:
                     export.writer.write_mesh(self.mesh.mesh)
 
     def define_function_space(self):
-        elements = basix.ufl.element(
+        element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
             1,
             basix.LagrangeVariant.equispaced,
         )
-        self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
+        elements = []
+        if len(self.species) <= 1:
+            mixed_element = element_CG
+        else:
+            for spe in self.species:
+                if isinstance(spe, F.Species):
+                    # TODO check if mobile or immobile for traps
+                    elements.append(element_CG)
+            mixed_element = ufl.MixedElement(elements)
+
+        self.function_space = fem.FunctionSpace(self.mesh.mesh, mixed_element)
+
+        self.u = Function(self.function_space)
+        self.u_n = Function(self.function_space)
+
+    def assign_functions_to_species(self):
+        """Creates for each species the solution, prev solution and test
+        function"""
+        sub_solutions = list(ufl.split(self.u))
+        sub_prev_solution = list(ufl.split(self.u_n))
+
+        if len(self.species) == 1:
+            sub_test_functions = [ufl.TestFunction(self.function_space)]
+            self.species[0].sub_function_space = self.function_space
+        else:
+            sub_test_functions = list(ufl.TestFunctions(self.function_space))
+            for idx, spe in enumerate(self.species):
+                spe.sub_function_space = self.function_space.sub(idx)
+
+        for idx, spe in enumerate(self.species):
+            spe.solution = sub_solutions[idx]
+            spe.prev_solution = sub_prev_solution[idx]
+            spe.test_function = sub_test_functions[idx]
 
     def define_markers_and_measures(self):
         """Defines the markers and measures of the model"""
@@ -155,7 +187,7 @@ class HydrogenTransportProblem:
 
         for sub_dom in self.subdomains:
             if isinstance(sub_dom, F.SurfaceSubdomain1D):
-                dof = sub_dom.locate_dof(self.function_space)
+                dof = sub_dom.locate_dof(self.mesh.mesh, self.mesh.fdim)
                 dofs_facets.append(dof)
                 tags_facets.append(sub_dom.id)
             if isinstance(sub_dom, F.VolumeSubdomain1D):
@@ -193,37 +225,37 @@ class HydrogenTransportProblem:
     def define_boundary_conditions(self):
         """Defines the dirichlet boundary conditions of the model"""
         for bc in self.boundary_conditions:
+            # if isinstance(bc.species, str):
+            #     for spe in self.species:
+            #         if spe.name == bc.species:
+            #             bc.species.assign(spe)
+            #         else:
+            #             raise ValueError(
+            #                 f"Species {bc.species} not found in model species"
+            #             )
+            if isinstance(bc.species, str):
+                # if name of species is given then replace with species object
+                name = bc.species
+                bc.species = F.find_species_from_name(name, self.species)
             if isinstance(bc, F.DirichletBC):
                 bc_dofs = bc.define_surface_subdomain_dofs(
-                    self.facet_meshtags, self.mesh, self.function_space
+                    self.facet_meshtags, self.mesh, bc.species.sub_function_space
                 )
                 bc.create_value(
-                    self.mesh.mesh, self.function_space, self.temperature, self.t
+                    self.mesh.mesh,
+                    bc.species.sub_function_space,
+                    self.temperature,
+                    self.t,
                 )
                 form = bc.create_formulation(
-                    dofs=bc_dofs, function_space=self.function_space
+                    dofs=bc_dofs, function_space=bc.species.sub_function_space
                 )
                 self.bc_forms.append(form)
-
-    def assign_functions_to_species(self):
-        """Creates for each species the solution, prev solution and test function"""
-        if len(self.species) > 1:
-            raise NotImplementedError("Multiple species not implemented yet")
-        for spe in self.species:
-            spe.solution = Function(self.function_space)
-            spe.prev_solution = Function(self.function_space)
-            spe.test_function = TestFunction(self.function_space)
-
-        # TODO remove this
-        self.u = self.species[0].solution
-        self.u_n = self.species[0].prev_solution
 
     def create_formulation(self):
         """Creates the formulation of the model"""
         if len(self.sources) > 1:
             raise NotImplementedError("Sources not implemented yet")
-        if len(self.species) > 1:
-            raise NotImplementedError("Multiple species not implemented yet")
 
         self.formulation = 0
 
@@ -234,7 +266,7 @@ class HydrogenTransportProblem:
 
             for vol in self.volume_subdomains:
                 D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature
+                    self.mesh.mesh, self.temperature, spe
                 )
 
                 self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
@@ -257,7 +289,7 @@ class HydrogenTransportProblem:
         """Creates the solver of the model"""
         problem = fem.petsc.NonlinearProblem(
             self.formulation,
-            self.species[0].solution,
+            self.u,
             bcs=self.bc_forms,
         )
         self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
@@ -276,7 +308,7 @@ class HydrogenTransportProblem:
 
         n = self.mesh.n
         D = self.subdomains[0].material.get_diffusion_coefficient(
-            self.mesh.mesh, self.temperature
+            self.mesh.mesh, self.temperature, self.species[0]
         )
         cm = self.species[0].solution
         progress = tqdm.autonotebook.tqdm(
@@ -294,8 +326,14 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
-            # post processing
+            if len(self.species) == 1:
+                cm = self.u
+            else:
+                res = list(self.u.split())
+                for idx, spe in enumerate(self.species):
+                    spe.solution = res[idx]
 
+            # post processing
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
 
             flux = assemble_scalar(surface_flux)
