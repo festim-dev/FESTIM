@@ -53,7 +53,7 @@ class Material:
             # check lengths of dicts are the same
             if len(self.D_0) != len(self.E_D):
                 raise ValueError(
-                    "The number of pre-exponential factors and activation energies "
+                    "The number of pre-exponential factors and activation energies"
                     "must be the same"
                 )
             # check D_0 keys for species or species.name
