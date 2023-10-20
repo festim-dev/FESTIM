@@ -1,6 +1,7 @@
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
 from dolfinx.io import XDMFFile
+import basix
 import ufl
 from mpi4py import MPI
 from dolfinx.fem import Function, form, assemble_scalar
@@ -133,7 +134,12 @@ class HydrogenTransportProblem:
                     export.writer.write_mesh(self.mesh.mesh)
 
     def define_function_space(self):
-        elements = ufl.FiniteElement("CG", self.mesh.mesh.ufl_cell(), 1)
+        elements = basix.ufl.element(
+            basix.ElementFamily.P,
+            self.mesh.mesh.basix_cell(),
+            1,
+            basix.LagrangeVariant.equispaced,
+        )
         self.function_space = fem.FunctionSpace(self.mesh.mesh, elements)
 
     def define_markers_and_measures(self):
