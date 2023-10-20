@@ -78,7 +78,7 @@ class HydrogenTransportProblem:
         temperature=None,
         sources=[],
         boundary_conditions=[],
-        solver_parameters=None,
+        settings=None,
         exports=[],
     ) -> None:
         self.mesh = mesh
@@ -87,7 +87,7 @@ class HydrogenTransportProblem:
         self.temperature = temperature
         self.sources = sources
         self.boundary_conditions = boundary_conditions
-        self.solver_parameters = solver_parameters
+        self.settings = settings
         self.exports = exports
 
         self.dx = None
@@ -116,6 +116,7 @@ class HydrogenTransportProblem:
         self.assign_functions_to_species()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
+        self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
 
         self.define_boundary_conditions()
         self.create_formulation()
@@ -224,11 +225,6 @@ class HydrogenTransportProblem:
         if len(self.species) > 1:
             raise NotImplementedError("Multiple species not implemented yet")
 
-        # TODO expose dt as parameter of the model
-        dt = fem.Constant(self.mesh.mesh, 1 / 20)
-
-        self.dt = dt  # TODO remove this
-
         self.formulation = 0
 
         for spe in self.species:
@@ -242,7 +238,7 @@ class HydrogenTransportProblem:
                 )
 
                 self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
-                self.formulation += ((u - u_n) / dt) * v * self.dx(vol.id)
+                self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
                 # add sources
                 # TODO implement this
@@ -264,14 +260,13 @@ class HydrogenTransportProblem:
             self.species[0].solution,
             bcs=self.bc_forms,
         )
-        solver = NewtonSolver(MPI.COMM_WORLD, problem)
-        self.solver = solver
+        self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
+        self.solver.atol = self.settings.atol
+        self.solver.rtol = self.settings.rtol
+        self.solver.max_it = self.settings.max_iterations
 
-    def run(self, final_time: float):
+    def run(self):
         """Runs the model for a given time
-
-        Args:
-            final_time (float): the final time of the simulation
 
         Returns:
             list of float: the times of the simulation
@@ -285,9 +280,11 @@ class HydrogenTransportProblem:
         )
         cm = self.species[0].solution
         progress = tqdm.autonotebook.tqdm(
-            desc="Solving H transport problem", total=final_time
+            desc="Solving H transport problem",
+            total=self.settings.final_time,
+            unit_scale=True,
         )
-        while self.t.value < final_time:
+        while self.t.value < self.settings.final_time:
             progress.update(self.dt.value)
             self.t.value += self.dt.value
 
