@@ -281,13 +281,16 @@ def test_integration_with_HTransportProblem(value):
 
     my_model.temperature = fem.Constant(my_model.mesh.mesh, 550.0)
 
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
+
     # RUN
 
     my_model.initialise()
 
     assert my_bc.value_fenics is not None
 
-    my_model.run(final_time=2)
+    my_model.run()
 
     # TEST
 
