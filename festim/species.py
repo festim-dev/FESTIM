@@ -13,6 +13,7 @@ class Species:
         solution (dolfinx.fem.Function or ...): the solution for the current timestep
         prev_solution (dolfinx.fem.Function or ...): the solution for the previous timestep
         test_function (ufl.Argument or ...): the testfunction associated with this species
+        sub_function_space (dolfinx.fem.FunctionSpace): the subspace of the function space
         concentration (dolfinx.fem.Function): the concentration of the species
 
     Usage:
@@ -31,6 +32,7 @@ class Species:
         self.solution = None
         self.prev_solution = None
         self.test_function = None
+        self.sub_function_space = None
 
     def __repr__(self) -> str:
         return f"Species({self.name})"
