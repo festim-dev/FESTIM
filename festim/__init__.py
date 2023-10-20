@@ -28,10 +28,12 @@ from .mesh.mesh_1d import Mesh1D
 
 from .hydrogen_transport_problem import HydrogenTransportProblem
 
-from .species import Species, Trap
+from .species import Species, Trap, ImplicitSpecies
 
 from .subdomain.surface_subdomain import SurfaceSubdomain1D
 from .subdomain.volume_subdomain import VolumeSubdomain1D
 
 from .exports.vtx import VTXExport
 from .exports.xdmf import XDMFExport
+
+from .reaction import Reaction
