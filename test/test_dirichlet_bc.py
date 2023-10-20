@@ -319,3 +319,24 @@ def test_integration_with_HTransportProblem(value):
     if isinstance(expected_value, Conditional):
         expected_value = float(expected_value)
     assert np.isclose(computed_value, expected_value)
+
+
+def test_species_predefined():
+    """Test a ValueError is rasied when the species defined in the boundary
+    condition is not predefined in the model"""
+
+    subdomain = F.SurfaceSubdomain1D(1, x=1)
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh),
+        subdomains=[vol_subdomain, subdomain],
+    )
+    my_model.species = [F.Species("H")]
+    my_bc = F.DirichletBC(subdomain, 1.0, "J")
+    my_model.boundary_conditions = [my_bc]
+    my_model.settings = F.Settings(atol=1, rtol=0.1)
+    my_model.settings.stepsize = 1
+
+    with pytest.raises(ValueError):
+        my_model.initialise()
