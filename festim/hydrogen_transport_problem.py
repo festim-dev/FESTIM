@@ -225,14 +225,6 @@ class HydrogenTransportProblem:
     def define_boundary_conditions(self):
         """Defines the dirichlet boundary conditions of the model"""
         for bc in self.boundary_conditions:
-            # if isinstance(bc.species, str):
-            #     for spe in self.species:
-            #         if spe.name == bc.species:
-            #             bc.species.assign(spe)
-            #         else:
-            #             raise ValueError(
-            #                 f"Species {bc.species} not found in model species"
-            #             )
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 name = bc.species
@@ -331,7 +323,7 @@ class HydrogenTransportProblem:
             else:
                 res = list(self.u.split())
                 for idx, spe in enumerate(self.species):
-                    spe.solution = res[idx]
+                    spe.post_processing_solution = res[idx]
 
             # post processing
             surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
