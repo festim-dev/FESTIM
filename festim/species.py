@@ -113,3 +113,24 @@ class ImplicitSpecies:
                         f"Cannot compute concentration of {self.name} because {other.name} has no solution"
                     )
         return self.n - sum([other.solution for other in self.others])
+
+
+def find_species_from_name(name: str, species: list):
+    """Returns the correct species object from a list of species
+    based on a string
+
+    Args:
+        name (str): the name of the species
+        species (list): the list of species
+
+    Returns:
+        species (festim.Species): the species object with the correct name
+
+    Raises:
+        ValueError: if the species name is not found in the list of species
+
+    """
+    for spe in species:
+        if spe.name == name:
+            return spe
+    raise ValueError(f"Species {name} not found in list of species")
