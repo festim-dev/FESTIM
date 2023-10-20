@@ -17,18 +17,16 @@ from dolfinx.fem.petsc import (
 from dolfinx.nls.petsc import NewtonSolver
 from ufl import (
     dot,
-    FiniteElement,
     grad,
     TestFunction,
     exp,
     FacetNormal,
-    dx,
-    ds,
     Cell,
     Mesh,
     VectorElement,
     Measure,
 )
+import basix
 from dolfinx.mesh import create_mesh, meshtags, locate_entities
 import numpy as np
 import tqdm.autonotebook
@@ -50,7 +48,12 @@ def fenics_test_permeation_problem(mesh_size=1001):
     vdim = my_mesh.topology.dim
     n = FacetNormal(my_mesh)
 
-    elements = FiniteElement("CG", my_mesh.ufl_cell(), 1)
+    elements = basix.ufl.element(
+        basix.ElementFamily.P,
+        my_mesh.basix_cell(),
+        1,
+        basix.LagrangeVariant.equispaced,
+    )
     V = FunctionSpace(my_mesh, elements)
     u = Function(V)
     u_n = Function(V)

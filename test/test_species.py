@@ -2,6 +2,10 @@ import festim as F
 import dolfinx
 import ufl
 import numpy as np
+import pytest
+from dolfinx.fem import FunctionSpace, Function
+from dolfinx.mesh import create_unit_cube
+from mpi4py import MPI
 
 
 def test_assign_functions_to_species():
@@ -29,3 +33,85 @@ def test_assign_functions_to_species():
         assert isinstance(spe.solution, dolfinx.fem.Function)
         assert isinstance(spe.prev_solution, dolfinx.fem.Function)
         assert isinstance(spe.test_function, ufl.Argument)
+
+
+def test_species_repr_and_str():
+    """Test that the __repr__ and __str__ methods of the Species class returns the
+    expected string.
+    """
+    # create a species
+    species = F.Species("A")
+
+    # check that the __repr__ method returns the expected string
+    expected_repr = "Species(A)"
+    assert repr(species) == expected_repr
+
+    # check that the __str__ method returns the expected string
+    expected_str = "A"
+    assert str(species) == expected_str
+
+
+def test_implicit_species_repr_and_str():
+    """Test that the __repr__ and __str__ methods of the ImplicitSpecies class
+    returns the expected string.
+    """
+    # create two species
+    species1 = F.Species("A")
+    species2 = F.Species("B")
+
+    # create an implicit species that depends on the two species
+    implicit_species = F.ImplicitSpecies(3.0, [species1, species2], name="C")
+
+    # check that the __repr__ method returns the expected string
+    expected_repr = f"ImplicitSpecies(C, 3.0, {[species1, species2]})"
+    assert repr(implicit_species) == expected_repr
+
+    # check that the __str__ method returns the expected string
+    expected_str = "C"
+    assert str(implicit_species) == expected_str
+
+
+def test_implicit_species_concentration():
+    """Test that the concentration of an implicit species is computed
+    correctly.
+    """
+    # create two species
+    species1 = F.Species("A")
+    species2 = F.Species("B")
+
+    # create an implicit species that depends on the two species
+    implicit_species = F.ImplicitSpecies(3.0, [species1, species2], name="C")
+
+    # set the solutions of the two species
+    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+    V = FunctionSpace(mesh, ("Lagrange", 1))
+    species1.solution = Function(V)
+    species2.solution = Function(V)
+
+    # test the concentration of the implicit species
+    expected_concentration = implicit_species.n - (
+        species1.solution + species2.solution
+    )
+    assert implicit_species.concentration == expected_concentration
+
+
+def test_implicit_species_concentration_with_no_solution():
+    """Test that a ValueError is raised when on of the 'others' species
+    has no solution and the concentration of the implicit species is
+    requested.
+    """
+    # create two species
+    species1 = F.Species("A")
+    species2 = F.Species("B")
+
+    # create an implicit species that depends on the two species
+    implicit_species = F.ImplicitSpecies(3.0, [species1, species2], name="C")
+
+    # set the solution of the first species
+    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+    V = FunctionSpace(mesh, ("Lagrange", 1))
+    species1.solution = Function(V)
+
+    # test that a ValueError is raised when the second species has no solution
+    with pytest.raises(ValueError):
+        implicit_species.concentration
