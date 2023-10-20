@@ -136,7 +136,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     times = []
     t = 0
     progress = tqdm.autonotebook.tqdm(
-        desc="Solving H transport problem", total=final_time
+        desc="Solving H transport problem", total=final_time, unit_scale=True
     )
     while t < final_time:
         progress.update(float(dt))

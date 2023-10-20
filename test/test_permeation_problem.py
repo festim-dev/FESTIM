@@ -35,13 +35,18 @@ def test_permeation_problem(mesh_size=1001):
     ]
     my_model.exports = [F.XDMFExport("mobile_concentration.xdmf", field=mobile_H)]
 
+    my_model.settings = F.Settings(
+        atol=1e10,
+        rtol=1e-10,
+        max_iterations=30,
+        final_time=50,
+    )
+
+    my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
+
     my_model.initialise()
 
     my_model.solver.convergence_criterion = "incremental"
-    my_model.solver.rtol = 1e-10
-    my_model.solver.atol = 1e10
-
-    my_model.solver.report = True
     ksp = my_model.solver.krylov_solver
     opts = PETSc.Options()
     option_prefix = ksp.getOptionsPrefix()
@@ -50,9 +55,7 @@ def test_permeation_problem(mesh_size=1001):
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    final_time = 50
-
-    times, flux_values = my_model.run(final_time=final_time)
+    times, flux_values = my_model.run()
 
     # -------------------------- analytical solution -------------------------------------
 
@@ -127,13 +130,18 @@ def test_permeation_problem_multi_volume():
     ]
     my_model.exports = [F.VTXExport("test.bp", field=mobile_H)]
 
+    my_model.settings = F.Settings(
+        atol=1e10,
+        rtol=1e-10,
+        max_iterations=30,
+        final_time=50,
+    )
+
+    my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
+
     my_model.initialise()
 
     my_model.solver.convergence_criterion = "incremental"
-    my_model.solver.rtol = 1e-10
-    my_model.solver.atol = 1e10
-
-    my_model.solver.report = True
     ksp = my_model.solver.krylov_solver
     opts = PETSc.Options()
     option_prefix = ksp.getOptionsPrefix()
@@ -142,9 +150,7 @@ def test_permeation_problem_multi_volume():
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    final_time = 50
-
-    times, flux_values = my_model.run(final_time=final_time)
+    times, flux_values = my_model.run()
 
     # -------------------------- analytical solution -------------------------------------
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
