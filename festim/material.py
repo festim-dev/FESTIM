@@ -43,7 +43,7 @@ class Material:
         Returns:
             ufl.algebra.Product: the diffusion coefficient
         """
-        if isinstance(self.D_0, float) and isinstance(self.E_D, float):
+        if isinstance(self.D_0, (float, int)) and isinstance(self.E_D, (float, int)):
             D_0 = F.as_fenics_constant(self.D_0, mesh)
             E_D = F.as_fenics_constant(self.E_D, mesh)
 
@@ -56,10 +56,20 @@ class Material:
                     "The number of pre-exponential factors and activation energies "
                     "must be the same"
                 )
-            # check E_D keys for species or species.name
+            # check D_0 keys for species or species.name
             if species in self.D_0.keys():
                 D_0 = F.as_fenics_constant(self.D_0[species], mesh)
             elif species.name in self.D_0.keys():
                 D_0 = F.as_fenics_constant(self.D_0[species.name], mesh)
             else:
                 raise ValueError("Species not defined")
+
+            # check E_D keys for species or species.name
+            if species in self.E_D.keys():
+                E_D = F.as_fenics_constant(self.E_D[species], mesh)
+            elif species.name in self.E_D.keys():
+                E_D = F.as_fenics_constant(self.E_D[species.name], mesh)
+            else:
+                raise ValueError("Species not definedy")
+
+        return D_0 * ufl.exp(-E_D / F.k_B / temperature)
