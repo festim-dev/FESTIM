@@ -115,6 +115,7 @@ class HydrogenTransportProblem:
         self.assign_functions_to_species()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
+        self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
 
         self.define_boundary_conditions()
         self.create_formulation()
@@ -217,10 +218,6 @@ class HydrogenTransportProblem:
             raise NotImplementedError("Sources not implemented yet")
         if len(self.species) > 1:
             raise NotImplementedError("Multiple species not implemented yet")
-
-        self.dt = F.as_fenics_constant(
-            self.settings.stepsize.initial_value, self.mesh.mesh
-        )
 
         self.formulation = 0
 
