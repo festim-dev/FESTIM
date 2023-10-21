@@ -140,3 +140,30 @@ def test_multispecies_dict_contains_species_not_in_species_list():
         my_mat.get_diffusion_coefficient(
             test_mesh.mesh, 500, species=J, model_species=spe_list
         )
+
+
+def test_contains_species_not_in_species_list():
+    """Test that a value error is rasied in the get_diffusion_coefficient
+    function with one species"""
+    J = F.Species("J")
+    A = F.Species("A")
+    spe_list = [J]
+    my_mat = F.Material(D_0=1, E_D=0)
+
+    with pytest.raises(ValueError, match="Species A not found in model species"):
+        my_mat.get_diffusion_coefficient(
+            test_mesh.mesh, 500, species=A, model_species=spe_list
+        )
+
+
+def test_D_0_type_rasies_error():
+    """Test that a value error is rasied in the get_diffusion_coefficient
+    function"""
+    A = F.Species("A")
+    spe_list = [A]
+    my_mat = F.Material(D_0=[1, 1], E_D=0.1)
+
+    with pytest.raises(ValueError, match="D_0 and E_D must be either floats or dicts"):
+        my_mat.get_diffusion_coefficient(
+            test_mesh.mesh, 500, species=A, model_species=spe_list
+        )
