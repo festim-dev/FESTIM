@@ -35,14 +35,20 @@ class Material:
         self.E_D = E_D
         self.name = name
 
-    def get_diffusion_coefficient(self, mesh, temperature, species):
+    def get_diffusion_coefficient(self, mesh, temperature, species, model_species):
         """Defines the diffusion coefficient
         Args:
+
             mesh (dolfinx.mesh.Mesh): the domain mesh
             temperature (dolfinx.fem.Constant): the temperature
+            species (festim.Species): the species
+            model_species (list): the list of species in the model
         Returns:
             ufl.algebra.Product: the diffusion coefficient
         """
+        if species not in model_species:
+            raise ValueError(f"Species {species} not found in model species")
+
         if isinstance(self.D_0, (float, int)) and isinstance(self.E_D, (float, int)):
             D_0 = F.as_fenics_constant(self.D_0, mesh)
             E_D = F.as_fenics_constant(self.E_D, mesh)
@@ -50,26 +56,27 @@ class Material:
             return D_0 * ufl.exp(-E_D / F.k_B / temperature)
 
         elif isinstance(self.D_0, dict) and isinstance(self.E_D, dict):
-            # check lengths of dicts are the same
-            if len(self.D_0) != len(self.E_D):
-                raise ValueError(
-                    "The number of pre-exponential factors and activation energies"
-                    "must be the same"
-                )
-            # check D_0 keys for species or species.name
-            if species in self.D_0.keys():
-                D_0 = F.as_fenics_constant(self.D_0[species], mesh)
-            elif species.name in self.D_0.keys():
+            # check D_0 and E_D have the same keys
+            if list(self.D_0.keys()) != list(self.E_D.keys()):
+                raise ValueError("D_0 and E_D have different keys")
+
+            for key in self.D_0.keys():
+                if isinstance(key, str):
+                    F.find_species_from_name(key, model_species)
+                elif key not in model_species:
+                    raise ValueError(f"Species {key} not found in model species")
+
+            try:
                 D_0 = F.as_fenics_constant(self.D_0[species.name], mesh)
-            else:
-                raise ValueError("Species not defined")
+            except KeyError:
+                D_0 = F.as_fenics_constant(self.D_0[species], mesh)
 
-            # check E_D keys for species or species.name
-            if species in self.E_D.keys():
-                E_D = F.as_fenics_constant(self.E_D[species], mesh)
-            elif species.name in self.E_D.keys():
+            try:
                 E_D = F.as_fenics_constant(self.E_D[species.name], mesh)
-            else:
-                raise ValueError("Species not definedy")
+            except KeyError:
+                E_D = F.as_fenics_constant(self.E_D[species], mesh)
 
-        return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+            return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+
+        else:
+            raise ValueError("D_0 and E_D must be either floats or dicts")
