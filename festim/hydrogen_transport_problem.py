@@ -342,8 +342,6 @@ class HydrogenTransportProblem:
                 for idx, spe in enumerate(self.species):
                     spe.solution = res[idx]
 
-                times = flux_values = 0
-
             for export in self.exports:
                 if isinstance(export, (F.VTXExport, F.XDMFExport)):
                     export.write(float(self.t))
