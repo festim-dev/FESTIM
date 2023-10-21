@@ -337,10 +337,11 @@ class HydrogenTransportProblem:
                 flux_values.append(flux)
                 times.append(float(self.t))
 
-            else:
-                res = list(self.u.split())
-                for idx, spe in enumerate(self.species):
-                    spe.solution = res[idx]
+            # TODO in multi-species export all functions
+            # else:
+            #     res = list(self.u.split())
+            #     for idx, spe in enumerate(self.species):
+            #         spe.solution = res[idx]
 
             for export in self.exports:
                 if isinstance(export, (F.VTXExport, F.XDMFExport)):
