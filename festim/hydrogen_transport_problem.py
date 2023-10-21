@@ -159,19 +159,29 @@ class HydrogenTransportProblem:
     def assign_functions_to_species(self):
         """Creates for each species the solution, prev solution and test
         function"""
-        sub_solutions = list(ufl.split(self.u))
-        sub_prev_solution = list(ufl.split(self.u_n))
 
         if len(self.species) == 1:
+            sub_solutions = [self.u]
+            sub_prev_solution = [self.u_n]
             sub_test_functions = [ufl.TestFunction(self.function_space)]
             self.species[0].sub_function_space = self.function_space
+            self.species[0].post_processing_solution = fem.Function(
+                self.species[0].sub_function_space
+            )
         else:
+            sub_solutions = list(ufl.split(self.u))
+            sub_prev_solution = list(ufl.split(self.u_n))
             sub_test_functions = list(ufl.TestFunctions(self.function_space))
             for idx, spe in enumerate(self.species):
                 spe.sub_function_space = self.function_space.sub(idx)
+                post_processing_function_space, _ = spe.sub_function_space.collapse()
+                spe.post_processing_solution = fem.Function(
+                    post_processing_function_space
+                )
 
         for idx, spe in enumerate(self.species):
             spe.solution = sub_solutions[idx]
+            spe.post_processing_solution = sub_solutions[idx]
             spe.prev_solution = sub_prev_solution[idx]
             spe.test_function = sub_test_functions[idx]
 
@@ -258,7 +268,7 @@ class HydrogenTransportProblem:
 
             for vol in self.volume_subdomains:
                 D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, spe
+                    self.mesh.mesh, self.temperature, spe, self.species
                 )
 
                 self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
@@ -300,7 +310,7 @@ class HydrogenTransportProblem:
 
         n = self.mesh.n
         D = self.subdomains[0].material.get_diffusion_coefficient(
-            self.mesh.mesh, self.temperature, self.species[0]
+            self.mesh.mesh, self.temperature, self.species[0], self.species
         )
         cm = self.species[0].solution
         progress = tqdm.autonotebook.tqdm(
@@ -320,17 +330,19 @@ class HydrogenTransportProblem:
 
             if len(self.species) == 1:
                 cm = self.u
+                self.species[0].post_processing_solution = self.u
+                # post processing
+                surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
+                flux = assemble_scalar(surface_flux)
+                flux_values.append(flux)
+                times.append(float(self.t))
+
             else:
                 res = list(self.u.split())
                 for idx, spe in enumerate(self.species):
-                    spe.post_processing_solution = res[idx]
+                    spe.solution = res[idx]
 
-            # post processing
-            surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
-
-            flux = assemble_scalar(surface_flux)
-            flux_values.append(flux)
-            times.append(float(self.t))
+                times = flux_values = 0
 
             for export in self.exports:
                 if isinstance(export, (F.VTXExport, F.XDMFExport)):
