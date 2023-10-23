@@ -14,6 +14,7 @@ class Species:
         prev_solution (dolfinx.fem.Function or ...): the solution for the previous timestep
         test_function (ufl.Argument or ...): the testfunction associated with this species
         sub_function_space (dolfinx.fem.FunctionSpace): the subspace of the function space
+        post_processing_solution (dolfinx.fem.Function): the solution for post processing
         concentration (dolfinx.fem.Function): the concentration of the species
 
     Usage:
