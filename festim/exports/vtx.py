@@ -72,7 +72,10 @@ class VTXExport:
             comm (mpi4py.MPI.Intracomm): the MPI communicator
         """
         self.writer = VTXWriter(
-            comm, self.filename, [field.solution for field in self.field], "BP4"
+            comm,
+            self.filename,
+            [field.post_processing_solution for field in self.field],
+            "BP4",
         )
 
     def write(self, t: float):

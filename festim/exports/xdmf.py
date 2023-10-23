@@ -71,4 +71,4 @@ class XDMFExport:
             t (float): the time of export
         """
         for field in self.field:
-            self.writer.write_function(field.solution, t)
+            self.writer.write_function(field.post_processing_solution, t)
