@@ -126,8 +126,7 @@ class HydrogenTransportProblem:
     def defing_export_writers(self):
         """Defines the export writers of the model"""
         for export in self.exports:
-            # TODO implement when export.field is an int or str
-            # then find solution from index of species
+            # if name of species is given then replace with species object
             for idx, field in enumerate(export.field):
                 if isinstance(field, str):
                     export.field[idx] = F.find_species_from_name(field, self.species)
