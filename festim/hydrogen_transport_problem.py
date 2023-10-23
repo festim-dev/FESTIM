@@ -143,8 +143,8 @@ class HydrogenTransportProblem:
             1,
             basix.LagrangeVariant.equispaced,
         )
-        elements = []
         if len(self.species) > 1:
+            elements = []
             for spe in self.species:
                 if isinstance(spe, F.Species):
                     # TODO check if mobile or immobile for traps
