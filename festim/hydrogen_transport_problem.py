@@ -326,17 +326,10 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
-            if len(self.species) > 1:
-                # res = list(self.u.split())
-                for idx, spe in enumerate(self.species):
-                    pass
-                    # print(self.u.sub(idx).collapse())
-                    # quit()
-                    # spe.post_processing_solution = self.u.sub(idx).collapse()
-            else:
+            if len(self.species) == 1:
                 cm = self.u
                 self.species[0].post_processing_solution = self.u
-                # post processing
+
                 surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
                 flux = assemble_scalar(surface_flux)
                 flux_values.append(flux)
