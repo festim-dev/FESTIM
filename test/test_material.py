@@ -75,8 +75,8 @@ def test_multispecies_dict_objects():
 
 
 def test_multispecies_dict_objects_and_strings():
-    """Test that the diffusion coefficient is correctly defined when keys are
-    festim.Species objects"""
+    """Test that the diffusion coefficient is correctly defined when keys
+    are a mix of festim.Species objects and strings"""
     T = 500
     D_0_A, D_0_B = 1, 2
     E_D_A, E_D_B = 0.1, 0.2
