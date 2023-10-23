@@ -99,7 +99,6 @@ def test_D_0_type_rasies_error():
     """Test that a value error is rasied in the get_diffusion_coefficient
     function"""
     A = F.Species("A")
-    spe_list = [A]
     my_mat = F.Material(D_0=[1, 1], E_D=0.1)
 
     with pytest.raises(ValueError, match="D_0 and E_D must be either floats or dicts"):
