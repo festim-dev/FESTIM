@@ -322,7 +322,7 @@ def test_integration_with_HTransportProblem(value):
 
 
 def test_species_predefined():
-    """Test a ValueError is rasied when the species defined in the boundary
+    """Test a ValueError is raised when the species defined in the boundary
     condition is not predefined in the model"""
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
