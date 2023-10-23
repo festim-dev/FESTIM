@@ -128,7 +128,6 @@ class HydrogenTransportProblem:
         for export in self.exports:
             # TODO implement when export.field is an int or str
             # then find solution from index of species
-
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
                 if isinstance(export, F.XDMFExport):
@@ -142,16 +141,16 @@ class HydrogenTransportProblem:
             basix.LagrangeVariant.equispaced,
         )
         elements = []
-        if len(self.species) <= 1:
-            mixed_element = element_CG
-        else:
+        if len(self.species) > 1:
             for spe in self.species:
                 if isinstance(spe, F.Species):
                     # TODO check if mobile or immobile for traps
                     elements.append(element_CG)
-            mixed_element = ufl.MixedElement(elements)
+            element_data = ufl.MixedElement(elements)
+        else:
+            element_data = element_CG
 
-        self.function_space = fem.FunctionSpace(self.mesh.mesh, mixed_element)
+        self.function_space = fem.FunctionSpace(self.mesh.mesh, element_data)
 
         self.u = Function(self.function_space)
         self.u_n = Function(self.function_space)
@@ -160,28 +159,24 @@ class HydrogenTransportProblem:
         """Creates for each species the solution, prev solution and test
         function"""
 
-        if len(self.species) == 1:
+        if len(self.species) > 1:
+            sub_solutions = list(ufl.split(self.u))
+            sub_prev_solution = list(ufl.split(self.u_n))
+            sub_test_functions = list(ufl.TestFunctions(self.function_space))
+
+            for idx, spe in enumerate(self.species):
+                spe.sub_function_space = self.function_space.sub(idx)
+                spe.post_processing_solution = self.u.sub(idx).collapse()
+
+        else:
             sub_solutions = [self.u]
             sub_prev_solution = [self.u_n]
             sub_test_functions = [ufl.TestFunction(self.function_space)]
             self.species[0].sub_function_space = self.function_space
-            self.species[0].post_processing_solution = fem.Function(
-                self.species[0].sub_function_space
-            )
-        else:
-            sub_solutions = list(ufl.split(self.u))
-            sub_prev_solution = list(ufl.split(self.u_n))
-            sub_test_functions = list(ufl.TestFunctions(self.function_space))
-            for idx, spe in enumerate(self.species):
-                spe.sub_function_space = self.function_space.sub(idx)
-                post_processing_function_space, _ = spe.sub_function_space.collapse()
-                spe.post_processing_solution = fem.Function(
-                    post_processing_function_space
-                )
+            self.species[0].post_processing_solution = fem.Function(self.function_space)
 
         for idx, spe in enumerate(self.species):
             spe.solution = sub_solutions[idx]
-            spe.post_processing_solution = sub_solutions[idx]
             spe.prev_solution = sub_prev_solution[idx]
             spe.test_function = sub_test_functions[idx]
 
@@ -328,7 +323,14 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
-            if len(self.species) == 1:
+            if len(self.species) > 1:
+                # res = list(self.u.split())
+                for idx, spe in enumerate(self.species):
+                    pass
+                    # print(self.u.sub(idx).collapse())
+                    # quit()
+                    # spe.post_processing_solution = self.u.sub(idx).collapse()
+            else:
                 cm = self.u
                 self.species[0].post_processing_solution = self.u
                 # post processing
@@ -336,12 +338,6 @@ class HydrogenTransportProblem:
                 flux = assemble_scalar(surface_flux)
                 flux_values.append(flux)
                 times.append(float(self.t))
-
-            # TODO in multi-species export all functions
-            # else:
-            #     res = list(self.u.split())
-            #     for idx, spe in enumerate(self.species):
-            #         spe.solution = res[idx]
 
             for export in self.exports:
                 if isinstance(export, (F.VTXExport, F.XDMFExport)):
