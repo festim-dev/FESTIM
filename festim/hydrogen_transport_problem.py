@@ -149,11 +149,11 @@ class HydrogenTransportProblem:
                 if isinstance(spe, F.Species):
                     # TODO check if mobile or immobile for traps
                     elements.append(element_CG)
-            element_data = ufl.MixedElement(elements)
+            element = ufl.MixedElement(elements)
         else:
-            element_data = element_CG
+            element = element_CG
 
-        self.function_space = fem.FunctionSpace(self.mesh.mesh, element_data)
+        self.function_space = fem.FunctionSpace(self.mesh.mesh, element)
 
         self.u = Function(self.function_space)
         self.u_n = Function(self.function_space)
