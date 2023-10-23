@@ -128,14 +128,9 @@ class HydrogenTransportProblem:
         for export in self.exports:
             # TODO implement when export.field is an int or str
             # then find solution from index of species
-            if isinstance(export.field, str):
-                export.field = F.find_species_from_name(field, self.species)
-            elif isinstance(export.field, list):
-                for idx, field in enumerate(export.field):
-                    if isinstance(field, str):
-                        export.field[idx] = F.find_species_from_name(
-                            field, self.species
-                        )
+            for idx, field in enumerate(export.field):
+                if isinstance(field, str):
+                    export.field[idx] = F.find_species_from_name(field, self.species)
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
@@ -241,8 +236,7 @@ class HydrogenTransportProblem:
         for bc in self.boundary_conditions:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
-                name = bc.species
-                bc.species = F.find_species_from_name(name, self.species)
+                bc.species = F.find_species_from_name(bc.species, self.species)
             if isinstance(bc, F.DirichletBC):
                 bc_dofs = bc.define_surface_subdomain_dofs(
                     self.facet_meshtags, self.mesh, bc.species.sub_function_space
