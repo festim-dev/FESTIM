@@ -265,7 +265,7 @@ class HydrogenTransportProblem:
 
             for vol in self.volume_subdomains:
                 D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, spe, self.species
+                    self.mesh.mesh, self.temperature, spe
                 )
 
                 self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
@@ -307,7 +307,7 @@ class HydrogenTransportProblem:
 
         n = self.mesh.n
         D = self.subdomains[0].material.get_diffusion_coefficient(
-            self.mesh.mesh, self.temperature, self.species[0], self.species
+            self.mesh.mesh, self.temperature, self.species[0]
         )
         cm = self.species[0].solution
         progress = tqdm.autonotebook.tqdm(
