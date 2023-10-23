@@ -98,6 +98,7 @@ def test_filename_raises_error_when_wrong_type():
 
 
 def test_vtx_field_as_string_found_in_species(tmpdir):
+    """Test that the field attribute can be a string and is found in the species list"""
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     my_mat = F.Material(D_0=1, E_D=0, name="mat")
