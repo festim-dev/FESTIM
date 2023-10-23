@@ -124,7 +124,8 @@ class HydrogenTransportProblem:
         self.defing_export_writers()
 
     def defing_export_writers(self):
-        """Defines the export writers of the model"""
+        """Defines the export writers of the model, if field is given as
+        a string, find species object in self.species"""
         for export in self.exports:
             # if name of species is given then replace with species object
             for idx, field in enumerate(export.field):
@@ -137,6 +138,8 @@ class HydrogenTransportProblem:
                     export.writer.write_mesh(self.mesh.mesh)
 
     def define_function_space(self):
+        """Creates the function space of the model, creates a mixed element if
+        model is multispecies"""
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
@@ -159,8 +162,8 @@ class HydrogenTransportProblem:
         self.u_n = Function(self.function_space)
 
     def assign_functions_to_species(self):
-        """Creates for each species the solution, prev solution and test
-        function"""
+        """Creates the solution, prev solution, test function and
+        post-processing solution for each species"""
 
         if len(self.species) > 1:
             sub_solutions = list(ufl.split(self.u))
