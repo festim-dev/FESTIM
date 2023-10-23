@@ -2,7 +2,7 @@ import numpy as np
 import festim as F
 
 
-def test_multispecies_problem_initialisation():
+def test_multispecies_problem_initialisation(tmpdir):
     """Test that the multispecies problem is correctly initialised"""
     my_model = F.HydrogenTransportProblem()
     L = 1e-04
@@ -25,15 +25,11 @@ def test_multispecies_problem_initialisation():
     my_model.settings = F.Settings(atol=1e10, rtol=1e-10, final_time=50)
     my_model.settings.stepsize = 0.1
     my_model.exports = [
-        F.XDMFExport("results/multispecies/test_H.xdmf", field=mobile_H),
-        F.XDMFExport("results/multispecies/test_D.xdmf", field=mobile_D),
-        F.VTXExport("results/multispecies/test_H_vts.bp", field=mobile_H),
-        F.VTXExport("results/multispecies/test_D_vtx.bp", field=mobile_D),
+        F.XDMFExport(str(tmpdir.join("my_export_1.xdmf")), field=mobile_H),
+        F.XDMFExport(str(tmpdir.join("my_export_2.xdmf")), field="D"),
+        F.VTXExport(str(tmpdir.join("my_export_3.bp")), field="H"),
+        F.VTXExport(str(tmpdir.join("my_export_4.bp")), field=mobile_D),
     ]
 
     my_model.initialise()
     my_model.run()
-
-
-if __name__ == "__main__":
-    test_multispecies_problem_initialisation()
