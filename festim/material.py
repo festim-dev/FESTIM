@@ -24,8 +24,8 @@ class Material:
         >>> my_mat = Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
     Usage (multispecies):
         >>> my_mat = Material(
-                D_0={"Species_1": 1.9e-7, "D": 2.0e-7},
-                E_D={"H": 0.2, "D": 0.3},
+                D_0={"Species_1": 1.9e-7, "Species_2": 2.0e-7},
+                E_D={"Species_1": 0.2, "Species_2": 0.3},
                 name="my_mat"
             )
     """
