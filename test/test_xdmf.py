@@ -27,7 +27,7 @@ def test_write(tmp_path):
     V = fem.FunctionSpace(domain, ("Lagrange", 1))
     u = fem.Function(V)
 
-    species.solution = u
+    species.post_processing_solution = u
 
     for t in [0, 1, 2, 3]:
         my_export.write(t=t)

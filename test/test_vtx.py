@@ -13,7 +13,7 @@ def test_vtx_export_one_function(tmpdir):
     """Test can add one function to a vtx export"""
     u = dolfinx.fem.Function(V)
     sp = F.Species("H")
-    sp.solution = u
+    sp.post_processing_solution = u
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXExport(filename, field=sp)
     my_export.define_writer(mesh.comm)
@@ -31,8 +31,8 @@ def test_vtx_export_two_functions(tmpdir):
 
     sp1 = F.Species("1")
     sp2 = F.Species("2")
-    sp1.solution = u
-    sp2.solution = v
+    sp1.post_processing_solution = u
+    sp2.post_processing_solution = v
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXExport(filename, field=[sp1, sp2])
 

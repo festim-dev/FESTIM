@@ -22,7 +22,18 @@ def test_multispecies_problem_initialisation():
         F.DirichletBC(subdomain=left_surface, value=1e18, species="H"),
         F.DirichletBC(subdomain=right_surface, value=1e18, species="D"),
     ]
-    my_model.settings = F.Settings(atol=1e10, rtol=1e-10)
+    my_model.settings = F.Settings(atol=1e10, rtol=1e-10, final_time=50)
     my_model.settings.stepsize = 0.1
+    my_model.exports = [
+        F.XDMFExport("results/multispecies/test_H.xdmf", field=mobile_H),
+        F.XDMFExport("results/multispecies/test_D.xdmf", field=mobile_D),
+        F.VTXExport("results/multispecies/test_H_vts.bp", field=mobile_H),
+        F.VTXExport("results/multispecies/test_D_vtx.bp", field=mobile_D),
+    ]
 
     my_model.initialise()
+    my_model.run()
+
+
+if __name__ == "__main__":
+    test_multispecies_problem_initialisation()
