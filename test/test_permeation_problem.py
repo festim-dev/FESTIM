@@ -60,7 +60,7 @@ def test_permeation_problem(mesh_size=1001):
     # -------------------------- analytical solution -------------------------------------
 
     D = my_mat.get_diffusion_coefficient(
-        my_mesh.mesh, my_model.temperature, my_model.species[0], my_model.species
+        my_mesh.mesh, my_model.temperature, my_model.species[0]
     )
 
     S_0 = float(my_model.boundary_conditions[-1].S_0)
@@ -155,9 +155,7 @@ def test_permeation_problem_multi_volume():
     times, flux_values = my_model.run()
 
     # ---------------------- analytical solution -----------------------------
-    D = my_mat.get_diffusion_coefficient(
-        my_mesh.mesh, temperature, my_model.species[0], model_species=my_model.species
-    )
+    D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature, my_model.species[0])
 
     S_0 = float(my_model.boundary_conditions[-1].S_0)
     E_S = float(my_model.boundary_conditions[-1].E_S)
