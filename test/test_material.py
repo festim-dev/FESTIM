@@ -103,3 +103,28 @@ def test_D_0_type_rasies_error():
 
     with pytest.raises(ValueError, match="D_0 and E_D must be either floats or dicts"):
         my_mat.get_diffusion_coefficient(test_mesh.mesh, 500, species=A)
+
+
+def test_error_rasied_when_species_not_given_with_dict():
+    """Test that a value error is rasied when a species has not been given in
+    the get_diffusion_coefficient function when using a dict for properties"""
+    A = F.Species("A")
+    B = F.Species("B")
+    my_mat = F.Material(D_0={A: 1, B: 1}, E_D={A: 0.1, B: 0.1})
+
+    with pytest.raises(
+        ValueError, match="species must be provided if D_0 and E_D are dicts"
+    ):
+        my_mat.get_diffusion_coefficient(test_mesh.mesh, 500)
+
+
+def test_error_rasied_when_species_not_not_in_D_0_dict():
+    """Test that a value error is rasied when a species has not been given but
+    has no value in the dict"""
+    A = F.Species("A")
+    B = F.Species("B")
+    J = F.Species("J")
+    my_mat = F.Material(D_0={A: 1, B: 1}, E_D={A: 0.1, B: 0.1})
+
+    with pytest.raises(ValueError, match="J is not in D_0 keys"):
+        my_mat.get_diffusion_coefficient(test_mesh.mesh, 500, species=J)

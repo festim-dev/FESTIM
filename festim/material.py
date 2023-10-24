@@ -73,8 +73,6 @@ class Material:
                 E_D = F.as_fenics_constant(self.E_D[species], mesh)
             elif species.name in self.E_D:
                 E_D = F.as_fenics_constant(self.E_D[species.name], mesh)
-            else:
-                raise ValueError(f"{species} is not in E_D keys")
 
             return D_0 * ufl.exp(-E_D / F.k_B / temperature)
 
