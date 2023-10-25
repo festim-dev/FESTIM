@@ -6,7 +6,7 @@ import festim as F
 import os
 
 
-def test_permeation_problem(tmp_path, mesh_size=1001):
+def test_permeation_problem(mesh_size=1001):
     L = 3e-04
     vertices = np.linspace(0, L, num=mesh_size)
 
@@ -32,11 +32,7 @@ def test_permeation_problem(tmp_path, mesh_size=1001):
             subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
         ),
     ]
-    my_model.exports = [
-        F.XDMFExport(
-            os.path.join(tmp_path, "mobile_concentration_H.xdmf"), field=mobile_H
-        )
-    ]
+    my_model.exports = [F.XDMFExport("mobile_concentration.xdmf", field=mobile_H)]
 
     my_model.settings = F.Settings(
         atol=1e10,
