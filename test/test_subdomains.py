@@ -6,6 +6,7 @@ import pytest
 def test_different_surface_ids():
     """Checks that different surface ids are correctly set"""
     my_test_model = F.HydrogenTransportProblem()
+    my_test_model.species = [F.Species("H")]
     L = 1e-04
     my_test_model.mesh = F.Mesh1D(np.linspace(0, L, num=3))
 
