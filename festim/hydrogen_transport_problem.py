@@ -275,7 +275,7 @@ class HydrogenTransportProblem:
         )
 
         # get dofs
-        if len(self.species) > 1 and callable(bc.value):
+        if len(self.species) > 1 and isinstance(bc.value_fenics, (fem.Function)):
             function_space_dofs = (
                 bc.species.sub_function_space,
                 bc.species.collapsed_function_space,
