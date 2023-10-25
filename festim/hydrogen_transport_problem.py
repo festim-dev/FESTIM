@@ -250,21 +250,15 @@ class HydrogenTransportProblem:
                 self.bc_forms.append(form)
 
     def create_dirichletbc_form(self, bc):
-        if len(self.species) > 1 and callable(bc.value):
-            function_space_dofs = (
-                bc.species.sub_function_space,
-                bc.species.collapsed_function_space,
-            )
-            function_space_value = bc.species.collapsed_function_space
+        # create value_fenics
+        if callable(bc.value):
+            if len(self.species) == 1:
+                function_space_value = bc.species.sub_function_space
+            else:
+                function_space_value = bc.species.collapsed_function_space
         else:
-            function_space_dofs = bc.species.sub_function_space
-            function_space_value = bc.species.sub_function_space
+            function_space_value = None
 
-        bc_dofs = bc.define_surface_subdomain_dofs(
-            facet_meshtags=self.facet_meshtags,
-            mesh=self.mesh,
-            function_space=function_space_dofs,
-        )
         bc.create_value(
             mesh=self.mesh.mesh,
             temperature=self.temperature,
@@ -272,6 +266,22 @@ class HydrogenTransportProblem:
             t=self.t,
         )
 
+        # get dofs
+        if len(self.species) > 1 and callable(bc.value):
+            function_space_dofs = (
+                bc.species.sub_function_space,
+                bc.species.collapsed_function_space,
+            )
+        else:
+            function_space_dofs = bc.species.sub_function_space
+
+        bc_dofs = bc.define_surface_subdomain_dofs(
+            facet_meshtags=self.facet_meshtags,
+            mesh=self.mesh,
+            function_space=function_space_dofs,
+        )
+
+        # create form
         if (len(self.species) == 1) and (isinstance(bc.value_fenics, (fem.Function))):
             return bc.create_formulation(dofs=bc_dofs, function_space=None)
         else:
