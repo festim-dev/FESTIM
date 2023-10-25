@@ -119,19 +119,6 @@ class DirichletBC:
                 )
                 self.value_fenics.interpolate(self.bc_expr)
 
-    def create_formulation(self, dofs, function_space):
-        """Applies the boundary condition
-        Args:
-            dofs (numpy.ndarray): the degrees of freedom of surface facets
-            function_space (dolfinx.fem.FunctionSpace): the function space
-        """
-        form = fem.dirichletbc(
-            value=self.value_fenics,
-            dofs=dofs,
-            V=function_space,
-        )
-        return form
-
     def update(self, t):
         """Updates the boundary condition value
 

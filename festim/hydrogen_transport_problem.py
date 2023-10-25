@@ -250,6 +250,14 @@ class HydrogenTransportProblem:
                 self.bc_forms.append(form)
 
     def create_dirichletbc_form(self, bc):
+        """Creates a dirichlet boundary condition form
+
+        Args:
+            bc (festim.DirichletBC): _description_
+
+        Returns:
+            dolfinx.fem.bcs.DirichletBC: _description_
+        """
         # create value_fenics
         if callable(bc.value):
             if len(self.species) == 1:
@@ -283,11 +291,17 @@ class HydrogenTransportProblem:
 
         # create form
         if (len(self.species) == 1) and (isinstance(bc.value_fenics, (fem.Function))):
-            return bc.create_formulation(dofs=bc_dofs, function_space=None)
-        else:
-            return bc.create_formulation(
-                dofs=bc_dofs, function_space=bc.species.sub_function_space
+            form = fem.dirichletbc(
+                value=bc.value_fenics,
+                dofs=bc_dofs,
             )
+        else:
+            form = fem.dirichletbc(
+                value=bc.value_fenics,
+                dofs=bc_dofs,
+                V=bc.species.sub_function_space,
+            )
+        return form
 
     def create_formulation(self):
         """Creates the formulation of the model"""
