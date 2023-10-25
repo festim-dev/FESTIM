@@ -221,6 +221,7 @@ def test_callable_x_only():
     "value",
     [
         1.0,
+        lambda t: t,
         lambda t: 1.0 + t,
         lambda x: 1.0 + x[0],
         lambda x, t: 1.0 + x[0] + t,
@@ -300,3 +301,74 @@ def test_species_predefined():
 
     with pytest.raises(ValueError):
         my_model.initialise()
+
+
+@pytest.mark.parametrize(
+    "value_A, value_B",
+    [
+        (1.0, 1.0),
+        (1.0, lambda t: t),
+        (1.0, lambda t: 1.0 + t),
+        (1.0, lambda x: 1.0 + x[0]),
+        (1.0, lambda x, t: 1.0 + x[0] + t),
+        (1.0, lambda x, t, T: 1.0 + x[0] + t + T),
+        (1.0, lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0)),
+    ],
+)
+def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
+    subdomain_A = F.SurfaceSubdomain1D(1, x=0)
+    subdomain_B = F.SurfaceSubdomain1D(2, x=1)
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh(mesh),
+        subdomains=[vol_subdomain, subdomain_A, subdomain_B],
+    )
+    my_model.species = [F.Species("A"), F.Species("B")]
+    my_bc_A = F.DirichletBC(subdomain_A, value_A, "A")
+    my_bc_B = F.DirichletBC(subdomain_B, value_B, "B")
+    my_model.boundary_conditions = [my_bc_A, my_bc_B]
+
+    my_model.temperature = fem.Constant(my_model.mesh.mesh, 550.0)
+
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
+
+    # RUN
+
+    my_model.initialise()
+
+    for bc in [my_bc_A, my_bc_B]:
+        assert bc.value_fenics is not None
+
+    my_model.run()
+
+    # TEST
+
+    expected_value = value_A
+    computed_value = float(my_bc_A.value_fenics)
+
+    if isinstance(value_B, float):
+        expected_value = value_B
+        computed_value = float(my_bc_B.value_fenics)
+    elif callable(value_B):
+        arguments = value_B.__code__.co_varnames
+        if "x" in arguments and "t" in arguments and "T" in arguments:
+            expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0, T=550.0)
+            computed_value = my_bc_B.value_fenics.vector.array[-1]
+        elif "x" in arguments and "t" in arguments:
+            expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0)
+            computed_value = my_bc_B.value_fenics.vector.array[-1]
+        elif "x" in arguments:
+            expected_value = value_B(x=np.array([subdomain_B.x]))
+            computed_value = my_bc_B.value_fenics.vector.array[-1]
+        elif "t" in arguments:
+            expected_value = value_B(t=2.0)
+            computed_value = float(my_bc_B.value_fenics)
+        else:
+            # test fails if lambda function is not recognised
+            raise ValueError("value function not recognised")
+
+    if isinstance(expected_value, Conditional):
+        expected_value = float(expected_value)
+    assert np.isclose(computed_value, expected_value)
