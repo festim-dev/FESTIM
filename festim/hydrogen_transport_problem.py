@@ -253,32 +253,27 @@ class HydrogenTransportProblem:
         if (len(self.species) > 1) and (
             not isinstance(bc.value, (int, float, fem.Constant))
         ):
-            bc_dofs = bc.define_surface_subdomain_dofs(
-                facet_meshtags=self.facet_meshtags,
-                mesh=self.mesh,
-                function_space=(
-                    bc.species.sub_function_space,
-                    bc.species.collapsed_function_space,
-                ),
+            function_space_dofs = (
+                bc.species.sub_function_space,
+                bc.species.collapsed_function_space,
             )
-            bc.create_value(
-                mesh=self.mesh.mesh,
-                temperature=self.temperature,
-                function_space=bc.species.collapsed_function_space,
-                t=self.t,
-            )
+            function_space_value = bc.species.collapsed_function_space
         else:
-            bc_dofs = bc.define_surface_subdomain_dofs(
-                facet_meshtags=self.facet_meshtags,
-                mesh=self.mesh,
-                function_space=bc.species.sub_function_space,
-            )
-            bc.create_value(
-                mesh=self.mesh.mesh,
-                temperature=self.temperature,
-                function_space=bc.species.sub_function_space,
-                t=self.t,
-            )
+            function_space_dofs = bc.species.sub_function_space
+            function_space_value = bc.species.sub_function_space
+
+        bc_dofs = bc.define_surface_subdomain_dofs(
+            facet_meshtags=self.facet_meshtags,
+            mesh=self.mesh,
+            function_space=function_space_dofs,
+        )
+        bc.create_value(
+            mesh=self.mesh.mesh,
+            temperature=self.temperature,
+            function_space=function_space_value,
+            t=self.t,
+        )
+
         if (len(self.species) == 1) and (isinstance(bc.value_fenics, (fem.Function))):
             return bc.create_formulation(dofs=bc_dofs, function_space=None)
         else:
