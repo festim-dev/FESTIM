@@ -136,7 +136,6 @@ def test_callable_t_only(value):
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    # value = lambda t: 1.0 + t
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
