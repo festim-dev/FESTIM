@@ -230,6 +230,8 @@ def test_callable_x_only():
     ],
 )
 def test_integration_with_HTransportProblem(value):
+    """test that different callable functions can be applied to a dirichlet
+    boundary condition, asserting in each case they match an expected value"""
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
 
@@ -316,6 +318,9 @@ def test_species_predefined():
     ],
 )
 def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
+    """test that a mixture of callable functions can be applied to dirichlet
+    boundary conditions in a multispecies case, asserting in each case they
+    match an expected value"""
     subdomain_A = F.SurfaceSubdomain1D(1, x=0)
     subdomain_B = F.SurfaceSubdomain1D(2, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
