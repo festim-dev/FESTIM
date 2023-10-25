@@ -19,7 +19,7 @@ class Species:
             function space
         collapsed_function_space (dolfinx.fem.FunctionSpace): the collapsed
             function space for a species in the function space
-        post_processing_solution (dolfinx.fem.Function): the solution for post #
+        post_processing_solution (dolfinx.fem.Function): the solution for post
             processing
         concentration (dolfinx.fem.Function): the concentration of the species
 
