@@ -69,6 +69,7 @@ class DirichletBC:
         """
         bc_facets = facet_meshtags.find(self.subdomain.id)
         bc_dofs = fem.locate_dofs_topological(function_space, mesh.fdim, bc_facets)
+
         return bc_dofs
 
     def create_value(
@@ -124,17 +125,11 @@ class DirichletBC:
             dofs (numpy.ndarray): the degrees of freedom of surface facets
             function_space (dolfinx.fem.FunctionSpace): the function space
         """
-        if isinstance(self.value_fenics, fem.Function):
-            form = fem.dirichletbc(
-                value=self.value_fenics,
-                dofs=dofs,
-            )
-        else:
-            form = fem.dirichletbc(
-                value=self.value_fenics,
-                dofs=dofs,
-                V=function_space,
-            )
+        form = fem.dirichletbc(
+            value=self.value_fenics,
+            dofs=dofs,
+            V=function_space,
+        )
         return form
 
     def update(self, t):
