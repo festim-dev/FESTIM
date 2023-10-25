@@ -2,8 +2,6 @@ from petsc4py import PETSc
 from dolfinx.fem import Constant
 from ufl import exp
 import numpy as np
-
-
 import festim as F
 
 

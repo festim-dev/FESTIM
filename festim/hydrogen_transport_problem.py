@@ -173,6 +173,9 @@ class HydrogenTransportProblem:
             for idx, spe in enumerate(self.species):
                 spe.sub_function_space = self.function_space.sub(idx)
                 spe.post_processing_solution = self.u.sub(idx).collapse()
+                spe.collapsed_function_space, _ = self.function_space.sub(
+                    idx
+                ).collapse()
 
         else:
             sub_solutions = [self.u]
@@ -240,18 +243,43 @@ class HydrogenTransportProblem:
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
             if isinstance(bc, F.DirichletBC):
-                bc_dofs = bc.define_surface_subdomain_dofs(
-                    self.facet_meshtags, self.mesh, bc.species.sub_function_space
-                )
-                bc.create_value(
-                    self.mesh.mesh,
-                    bc.species.sub_function_space,
-                    self.temperature,
-                    self.t,
-                )
-                form = bc.create_formulation(
-                    dofs=bc_dofs, function_space=bc.species.sub_function_space
-                )
+                if (len(self.species) > 1) and (
+                    not isinstance(bc.value, (int, float, fem.Constant))
+                ):
+                    bc_dofs = bc.define_surface_subdomain_dofs(
+                        facet_meshtags=self.facet_meshtags,
+                        mesh=self.mesh,
+                        function_space=(
+                            bc.species.sub_function_space,
+                            bc.species.collapsed_function_space,
+                        ),
+                    )
+                    bc.create_value(
+                        mesh=self.mesh.mesh,
+                        temperature=self.temperature,
+                        function_space=bc.species.collapsed_function_space,
+                        t=self.t,
+                    )
+                else:
+                    bc_dofs = bc.define_surface_subdomain_dofs(
+                        facet_meshtags=self.facet_meshtags,
+                        mesh=self.mesh,
+                        function_space=bc.species.sub_function_space,
+                    )
+                    bc.create_value(
+                        mesh=self.mesh.mesh,
+                        temperature=self.temperature,
+                        function_space=bc.species.sub_function_space,
+                        t=self.t,
+                    )
+                if (len(self.species) == 1) and (
+                    isinstance(bc.value_fenics, (fem.Function))
+                ):
+                    form = bc.create_formulation(dofs=bc_dofs, function_space=None)
+                else:
+                    form = bc.create_formulation(
+                        dofs=bc_dofs, function_space=bc.species.sub_function_space
+                    )
                 self.bc_forms.append(form)
 
     def create_formulation(self):
@@ -307,12 +335,8 @@ class HydrogenTransportProblem:
             list of float: the fluxes of the simulation
         """
         times, flux_values = [], []
+        flux_values_1, flux_values_2 = [], []
 
-        n = self.mesh.n
-        D = self.subdomains[0].material.get_diffusion_coefficient(
-            self.mesh.mesh, self.temperature, self.species[0]
-        )
-        cm = self.species[0].solution
         progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem",
             total=self.settings.final_time,
@@ -328,13 +352,35 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
-            if len(self.species) == 1:
+            if len(self.species) <= 1:
+                D_D = self.subdomains[0].material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature, self.species[0]
+                )
                 cm = self.u
                 self.species[0].post_processing_solution = self.u
 
-                surface_flux = form(D * dot(grad(cm), n) * self.ds(2))
+                surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
                 flux = assemble_scalar(surface_flux)
                 flux_values.append(flux)
+                times.append(float(self.t))
+            else:
+                # res = list(self.u.split())
+                for idx, spe in enumerate(self.species):
+                    spe.post_processing_solution = self.u.sub(idx)
+
+                cm_1, cm_2 = self.u.split()
+                D_1 = self.subdomains[0].material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature, self.species[0]
+                )
+                D_2 = self.subdomains[0].material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature, self.species[1]
+                )
+                surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
+                surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
+                flux_1 = assemble_scalar(surface_flux_1)
+                flux_2 = assemble_scalar(surface_flux_2)
+                flux_values_1.append(flux_1)
+                flux_values_2.append(flux_2)
                 times.append(float(self.t))
 
             for export in self.exports:
@@ -343,5 +389,8 @@ class HydrogenTransportProblem:
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
+
+        if len(self.species) == 2:
+            flux_values = [flux_values_1, flux_values_2]
 
         return times, flux_values
