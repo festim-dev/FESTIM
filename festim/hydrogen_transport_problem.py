@@ -268,7 +268,6 @@ class HydrogenTransportProblem:
 
         if callable(bc.value):
             # if bc.value is a callable then need to provide a functionspace
-
             if not self.multispecies:
                 function_space_value = bc.species.sub_function_space
             else:
@@ -298,17 +297,16 @@ class HydrogenTransportProblem:
 
         # create form
         if not self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
-            form = fem.dirichletbc(
-                value=bc.value_fenics,
-                dofs=bc_dofs,
-                # no need to pass the functionspace since value_fenics is already a Function
-            )
+            # no need to pass the functionspace since value_fenics is already a Function
+            function_space_form = None
         else:
-            form = fem.dirichletbc(
-                value=bc.value_fenics,
-                dofs=bc_dofs,
-                V=bc.species.sub_function_space,
-            )
+            function_space_form = bc.species.sub_function_space
+        form = fem.dirichletbc(
+            value=bc.value_fenics,
+            dofs=bc_dofs,
+            V=function_space_form,
+        )
+
         return form
 
     def create_formulation(self):
