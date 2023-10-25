@@ -301,6 +301,7 @@ class HydrogenTransportProblem:
             function_space_form = None
         else:
             function_space_form = bc.species.sub_function_space
+
         form = fem.dirichletbc(
             value=bc.value_fenics,
             dofs=bc_dofs,
