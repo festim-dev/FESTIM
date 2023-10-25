@@ -15,10 +15,11 @@ class Species:
             timestep
         test_function (ufl.Argument): the testfunction associated with this
             species
-        sub_function_space (dolfinx.fem.FunctionSpace): the subspace of the
-            function space
-        collapsed_function_space (dolfinx.fem.FunctionSpace): the collapsed
-            function space for a species in the function space
+        sub_function_space (dolfinx.fem.function.FunctionSpaceBase): the
+            subspace of the function space
+        collapsed_function_space (dolfinx.fem.function.FunctionSpaceBase): the
+            collapsed function space for a species in the function space. In
+            case single species case, this is None.
         post_processing_solution (dolfinx.fem.Function): the solution for post
             processing
         concentration (dolfinx.fem.Function): the concentration of the species

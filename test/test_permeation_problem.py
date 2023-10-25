@@ -6,10 +6,33 @@ import festim as F
 import os
 
 
+def relative_error_computed_to_analytical(
+    D, permeability, computed_flux, L, times, P_up
+):
+    n_array = np.arange(1, 10000)[:, np.newaxis]
+    summation = np.sum(
+        (-1) ** n_array * np.exp(-((np.pi * n_array) ** 2) * float(D) / L**2 * times),
+        axis=0,
+    )
+    analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
+
+    # post processing
+    analytical_flux = np.abs(analytical_flux)
+    indices = np.where(analytical_flux > 0.1 * np.max(analytical_flux))
+    analytical_flux = analytical_flux[indices]
+    computed_flux = computed_flux[indices]
+
+    # evaulate relative error compared to analytical solution
+    relative_error = np.abs((computed_flux - analytical_flux) / analytical_flux)
+    error = relative_error.mean()
+
+    return error
+
+
 def test_permeation_problem(mesh_size=1001):
-    """Test running a problem with a mobile species permeating through a 1D 0.3mm domain
-    asserting that the resulting concentration field is less than 1% different from a
-    respecitive analytical solution"""
+    """Test running a problem with a mobile species permeating through a 1D
+    domain, checks that the computed permeation flux matches the analytical
+    solution"""
 
     # festim model
     L = 3e-04
@@ -71,25 +94,11 @@ def test_permeation_problem(mesh_size=1001):
     S = S_0 * exp(-E_S / F.k_B / float(my_model.temperature))
     permeability = float(D) * S
     times = np.array(times)
-
-    n_array = np.arange(1, 10000)[:, np.newaxis]
-    summation = np.sum(
-        (-1) ** n_array * np.exp(-((np.pi * n_array) ** 2) * float(D) / L**2 * times),
-        axis=0,
-    )
-    analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
-
-    # post processing
-    analytical_flux = np.abs(analytical_flux)
     flux_values = np.array(np.abs(flux_values))
-    indices = np.where(analytical_flux > 0.01 * np.max(analytical_flux))
 
-    analytical_flux = analytical_flux[indices]
-    flux_values = flux_values[indices]
-
-    # evaulate relative error compared to analytical solution
-    relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
-    error = relative_error.mean()
+    error = relative_error_computed_to_analytical(
+        D, permeability, flux_values, L, times, P_up
+    )
 
     assert error < 0.01
 
@@ -171,23 +180,10 @@ def test_permeation_problem_multi_volume(tmp_path):
     S = S_0 * exp(-E_S / F.k_B / float(temperature))
     permeability = float(D) * S
     times = np.array(times)
-
-    n_array = np.arange(1, 10000)[:, np.newaxis]
-    summation = np.sum(
-        (-1) ** n_array * np.exp(-((np.pi * n_array) ** 2) * float(D) / L**2 * times),
-        axis=0,
-    )
-    analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
-
-    analytical_flux = np.abs(analytical_flux)
     flux_values = np.array(np.abs(flux_values))
 
-    indices = np.where(analytical_flux > 0.01 * np.max(analytical_flux))
-    analytical_flux = analytical_flux[indices]
-    flux_values = flux_values[indices]
-
-    # evaulate relative error compared to analytical solution
-    relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
-    error = relative_error.mean()
+    error = relative_error_computed_to_analytical(
+        D, permeability, flux_values, L, times, P_up
+    )
 
     assert error < 0.01
