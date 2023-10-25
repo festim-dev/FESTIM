@@ -246,44 +246,45 @@ class HydrogenTransportProblem:
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
             if isinstance(bc, F.DirichletBC):
-                if (len(self.species) > 1) and (
-                    not isinstance(bc.value, (int, float, fem.Constant))
-                ):
-                    bc_dofs = bc.define_surface_subdomain_dofs(
-                        facet_meshtags=self.facet_meshtags,
-                        mesh=self.mesh,
-                        function_space=(
-                            bc.species.sub_function_space,
-                            bc.species.collapsed_function_space,
-                        ),
-                    )
-                    bc.create_value(
-                        mesh=self.mesh.mesh,
-                        temperature=self.temperature,
-                        function_space=bc.species.collapsed_function_space,
-                        t=self.t,
-                    )
-                else:
-                    bc_dofs = bc.define_surface_subdomain_dofs(
-                        facet_meshtags=self.facet_meshtags,
-                        mesh=self.mesh,
-                        function_space=bc.species.sub_function_space,
-                    )
-                    bc.create_value(
-                        mesh=self.mesh.mesh,
-                        temperature=self.temperature,
-                        function_space=bc.species.sub_function_space,
-                        t=self.t,
-                    )
-                if (len(self.species) == 1) and (
-                    isinstance(bc.value_fenics, (fem.Function))
-                ):
-                    form = bc.create_formulation(dofs=bc_dofs, function_space=None)
-                else:
-                    form = bc.create_formulation(
-                        dofs=bc_dofs, function_space=bc.species.sub_function_space
-                    )
+                form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
+
+    def create_dirichletbc_form(self, bc):
+        if (len(self.species) > 1) and (
+            not isinstance(bc.value, (int, float, fem.Constant))
+        ):
+            bc_dofs = bc.define_surface_subdomain_dofs(
+                facet_meshtags=self.facet_meshtags,
+                mesh=self.mesh,
+                function_space=(
+                    bc.species.sub_function_space,
+                    bc.species.collapsed_function_space,
+                ),
+            )
+            bc.create_value(
+                mesh=self.mesh.mesh,
+                temperature=self.temperature,
+                function_space=bc.species.collapsed_function_space,
+                t=self.t,
+            )
+        else:
+            bc_dofs = bc.define_surface_subdomain_dofs(
+                facet_meshtags=self.facet_meshtags,
+                mesh=self.mesh,
+                function_space=bc.species.sub_function_space,
+            )
+            bc.create_value(
+                mesh=self.mesh.mesh,
+                temperature=self.temperature,
+                function_space=bc.species.sub_function_space,
+                t=self.t,
+            )
+        if (len(self.species) == 1) and (isinstance(bc.value_fenics, (fem.Function))):
+            return bc.create_formulation(dofs=bc_dofs, function_space=None)
+        else:
+            return bc.create_formulation(
+                dofs=bc_dofs, function_space=bc.species.sub_function_space
+            )
 
     def create_formulation(self):
         """Creates the formulation of the model"""
