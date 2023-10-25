@@ -250,9 +250,7 @@ class HydrogenTransportProblem:
                 self.bc_forms.append(form)
 
     def create_dirichletbc_form(self, bc):
-        if (len(self.species) > 1) and (
-            not isinstance(bc.value, (int, float, fem.Constant))
-        ):
+        if len(self.species) > 1 and callable(bc.value):
             function_space_dofs = (
                 bc.species.sub_function_space,
                 bc.species.collapsed_function_space,
