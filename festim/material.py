@@ -20,9 +20,9 @@ class Material:
             coeficient (eV)
         name (str): the name of the material
 
-    Usage (1 species):
+    Usage:
         >>> my_mat = Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
-    Usage (multispecies):
+    or if several species:
         >>> my_mat = Material(
                 D_0={"Species_1": 1.9e-7, "Species_2": 2.0e-7},
                 E_D={"Species_1": 0.2, "Species_2": 0.3},
