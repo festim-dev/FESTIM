@@ -99,7 +99,7 @@ class DirichletBC:
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 # only t is an argument
                 self.value_fenics = F.as_fenics_constant(
-                    mesh=mesh, value=self.value(t=t.value)
+                    mesh=mesh, value=self.value(t=float(t))
                 )
             else:
                 self.value_fenics = fem.Function(function_space)
