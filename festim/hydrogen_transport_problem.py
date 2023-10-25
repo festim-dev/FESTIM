@@ -163,7 +163,8 @@ class HydrogenTransportProblem:
 
     def assign_functions_to_species(self):
         """Creates the solution, prev solution, test function and
-        post-processing solution for each species"""
+        post-processing solution for each species, if model is multispecies,
+        created a collapsed function space for each species"""
 
         if len(self.species) > 1:
             sub_solutions = list(ufl.split(self.u))
