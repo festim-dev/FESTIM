@@ -139,7 +139,7 @@ class HydrogenTransportProblem:
 
     def define_function_space(self):
         """Creates the function space of the model, creates a mixed element if
-        model is multispecies"""
+        model is multispecies. Creates the main solution and previous solution function u and u_n."""
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
