@@ -253,19 +253,22 @@ class HydrogenTransportProblem:
         """Creates a dirichlet boundary condition form
 
         Args:
-            bc (festim.DirichletBC): _description_
+            bc (festim.DirichletBC): the boundary condition
 
         Returns:
-            dolfinx.fem.bcs.DirichletBC: _description_
+            dolfinx.fem.bcs.DirichletBC: A representation of
+                the boundary condition for modifying linear systems.
         """
         # create value_fenics
+        function_space_value = None
+
         if callable(bc.value):
+            # if bc.value is a callable then need to provide a functionspace
+
             if len(self.species) == 1:
                 function_space_value = bc.species.sub_function_space
             else:
                 function_space_value = bc.species.collapsed_function_space
-        else:
-            function_space_value = None
 
         bc.create_value(
             mesh=self.mesh.mesh,
@@ -290,10 +293,11 @@ class HydrogenTransportProblem:
         )
 
         # create form
-        if (len(self.species) == 1) and (isinstance(bc.value_fenics, (fem.Function))):
+        if len(self.species) == 1 and isinstance(bc.value_fenics, (fem.Function)):
             form = fem.dirichletbc(
                 value=bc.value_fenics,
                 dofs=bc_dofs,
+                # no need to pass the functionspace since value_fenics is already a Function
             )
         else:
             form = fem.dirichletbc(
