@@ -367,7 +367,6 @@ class HydrogenTransportProblem:
                 flux_values.append(flux)
                 times.append(float(self.t))
             else:
-                # res = list(self.u.split())
                 for idx, spe in enumerate(self.species):
                     spe.post_processing_solution = self.u.sub(idx)
 
