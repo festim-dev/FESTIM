@@ -86,7 +86,7 @@ def test_multispecies_dict_objects_and_strings():
 
 
 def test_multispecies_dict_different_keys():
-    """Test that a value error is rasied when the keys of the D_0 and E_D
+    """Test that a value error is raised when the keys of the D_0 and E_D
     are not the same"""
     A = F.Species("A")
     my_mat = F.Material(D_0={"A": 1, "B": 2}, E_D={"A": 0.1, "B": 0.2, "C": 0.3})
@@ -95,8 +95,8 @@ def test_multispecies_dict_different_keys():
         my_mat.get_diffusion_coefficient(test_mesh.mesh, 500, species=A)
 
 
-def test_D_0_type_rasies_error():
-    """Test that a value error is rasied in the get_diffusion_coefficient
+def test_D_0_type_raises_error():
+    """Test that a value error is raised in the get_diffusion_coefficient
     function"""
     A = F.Species("A")
     my_mat = F.Material(D_0=[1, 1], E_D=0.1)
@@ -105,8 +105,8 @@ def test_D_0_type_rasies_error():
         my_mat.get_diffusion_coefficient(test_mesh.mesh, 500, species=A)
 
 
-def test_error_rasied_when_species_not_given_with_dict():
-    """Test that a value error is rasied when a species has not been given in
+def test_error_raised_when_species_not_given_with_dict():
+    """Test that a value error is raised when a species has not been given in
     the get_diffusion_coefficient function when using a dict for properties"""
     A = F.Species("A")
     B = F.Species("B")
@@ -118,8 +118,8 @@ def test_error_rasied_when_species_not_given_with_dict():
         my_mat.get_diffusion_coefficient(test_mesh.mesh, 500)
 
 
-def test_error_rasied_when_species_not_not_in_D_0_dict():
-    """Test that a value error is rasied when a species has not been given but
+def test_error_raised_when_species_not_not_in_D_0_dict():
+    """Test that a value error is raised when a species has not been given but
     has no value in the dict"""
     A = F.Species("A")
     B = F.Species("B")
