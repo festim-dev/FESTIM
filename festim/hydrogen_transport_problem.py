@@ -110,6 +110,10 @@ class HydrogenTransportProblem:
         else:
             self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
 
+    @property
+    def multispecies(self):
+        return len(self.species) > 1
+
     def initialise(self):
         self.define_function_space()
         self.define_markers_and_measures()
@@ -147,7 +151,7 @@ class HydrogenTransportProblem:
             1,
             basix.LagrangeVariant.equispaced,
         )
-        if len(self.species) == 1:
+        if not self.multispecies:
             element = element_CG
         else:
             elements = []
@@ -167,7 +171,7 @@ class HydrogenTransportProblem:
         post-processing solution for each species, if model is multispecies,
         created a collapsed function space for each species"""
 
-        if len(self.species) == 1:
+        if not self.multispecies:
             sub_solutions = [self.u]
             sub_prev_solution = [self.u_n]
             sub_test_functions = [ufl.TestFunction(self.function_space)]
@@ -265,7 +269,7 @@ class HydrogenTransportProblem:
         if callable(bc.value):
             # if bc.value is a callable then need to provide a functionspace
 
-            if len(self.species) == 1:
+            if not self.multispecies:
                 function_space_value = bc.species.sub_function_space
             else:
                 function_space_value = bc.species.collapsed_function_space
@@ -278,7 +282,7 @@ class HydrogenTransportProblem:
         )
 
         # get dofs
-        if len(self.species) > 1 and isinstance(bc.value_fenics, (fem.Function)):
+        if self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
             function_space_dofs = (
                 bc.species.sub_function_space,
                 bc.species.collapsed_function_space,
@@ -293,7 +297,7 @@ class HydrogenTransportProblem:
         )
 
         # create form
-        if len(self.species) == 1 and isinstance(bc.value_fenics, (fem.Function)):
+        if not self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
             form = fem.dirichletbc(
                 value=bc.value_fenics,
                 dofs=bc_dofs,
@@ -377,7 +381,7 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
-            if len(self.species) == 1:
+            if not self.multispecies:
                 D_D = self.subdomains[0].material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature, self.species[0]
                 )
@@ -414,7 +418,7 @@ class HydrogenTransportProblem:
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
 
-        if len(self.species) == 2:
+        if self.multispecies:
             flux_values = [flux_values_1, flux_values_2]
 
         return times, flux_values
