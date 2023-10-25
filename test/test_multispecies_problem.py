@@ -7,9 +7,10 @@ import os
 
 
 def test_multispecies_permeation_problem():
-    """Test running a permeation problem with two species permeating from the
-    same side of a 1D domain with different diffusion coefficients, asserting
-    that both species match their respecitive analytcial solutions"""
+    """Test running a problem with 2 mobile species permeating through a 1D
+    0.3mm domain, with different diffusion coefficients, asserting that the
+    resulting concentration fields are less than 1% different from their
+    respecitive analytical solutions"""
 
     # festim model
     L = 3e-04

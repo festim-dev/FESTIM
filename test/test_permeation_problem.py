@@ -7,6 +7,11 @@ import os
 
 
 def test_permeation_problem(mesh_size=1001):
+    """Test running a problem with a mobile species permeating through a 1D 0.3mm domain
+    asserting that the resulting concentration field is less than 1% different from a
+    respecitive analytical solution"""
+
+    # festim model
     L = 3e-04
     vertices = np.linspace(0, L, num=mesh_size)
 
@@ -76,21 +81,25 @@ def test_permeation_problem(mesh_size=1001):
     )
     analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
 
+    # post processing
     analytical_flux = np.abs(analytical_flux)
     flux_values = np.array(np.abs(flux_values))
-
     indices = np.where(analytical_flux > 0.01 * np.max(analytical_flux))
+
     analytical_flux = analytical_flux[indices]
     flux_values = flux_values[indices]
 
+    # evaulate relative error compared to analytical solution
     relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
-
     error = relative_error.mean()
 
     assert error < 0.01
 
 
 def test_permeation_problem_multi_volume(tmp_path):
+    """Same permeation problem as above but with 4 volume subdomains instead
+    of 1"""
+
     L = 3e-04
     vertices = np.linspace(0, L, num=1001)
 
@@ -179,8 +188,8 @@ def test_permeation_problem_multi_volume(tmp_path):
     analytical_flux = analytical_flux[indices]
     flux_values = flux_values[indices]
 
+    # evaulate relative error compared to analytical solution
     relative_error = np.abs((flux_values - analytical_flux) / analytical_flux)
-
     error = relative_error.mean()
 
     assert error < 0.01
