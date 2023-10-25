@@ -3,9 +3,10 @@ import festim as F
 from petsc4py import PETSc
 from dolfinx.fem import Constant
 from ufl import exp
+import os
 
 
-def test_multispecies_permeation_problem():
+def test_multispecies_permeation_problem(tmp_path):
     L = 3e-04
     my_mesh = F.Mesh1D(np.linspace(0, L, num=1001))
     my_model = F.HydrogenTransportProblem()
@@ -43,8 +44,12 @@ def test_multispecies_permeation_problem():
         ),
     ]
     my_model.exports = [
-        F.XDMFExport("mobile_concentration_D.xdmf", field=mobile_D),
-        F.XDMFExport("mobile_concentration_T.xdmf", field=mobile_T),
+        F.XDMFExport(
+            os.path.join(tmp_path, "mobile_concentration_D.xdmf"), field=mobile_D
+        ),
+        F.XDMFExport(
+            os.path.join(tmp_path, "mobile_concentration_T.xdmf"), field=mobile_T
+        ),
     ]
     my_model.settings = F.Settings(
         atol=1e10,
