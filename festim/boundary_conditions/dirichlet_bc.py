@@ -99,7 +99,7 @@ class DirichletBC:
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 # only t is an argument
                 self.value_fenics = F.as_fenics_constant(
-                    mesh=mesh, value=self.value(t=t.value)
+                    mesh=mesh, value=self.value(t=float(t))
                 )
             else:
                 self.value_fenics = fem.Function(function_space)
@@ -118,19 +118,6 @@ class DirichletBC:
                     function_space.element.interpolation_points(),
                 )
                 self.value_fenics.interpolate(self.bc_expr)
-
-    def create_formulation(self, dofs, function_space):
-        """Applies the boundary condition
-        Args:
-            dofs (numpy.ndarray): the degrees of freedom of surface facets
-            function_space (dolfinx.fem.FunctionSpace): the function space
-        """
-        form = fem.dirichletbc(
-            value=self.value_fenics,
-            dofs=dofs,
-            V=function_space,
-        )
-        return form
 
     def update(self, t):
         """Updates the boundary condition value

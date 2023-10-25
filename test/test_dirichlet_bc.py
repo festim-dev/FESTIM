@@ -130,12 +130,13 @@ def test_value_callable_x_t_T():
         assert np.isclose(computed_value, expected_value)
 
 
-def test_callable_t_only():
+@pytest.mark.parametrize("value", [lambda t: t, lambda t: 1.0 + t])
+def test_callable_t_only(value):
     """Test that the value attribute can be a callable function of t only"""
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda t: 1.0 + t
+    # value = lambda t: 1.0 + t
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)

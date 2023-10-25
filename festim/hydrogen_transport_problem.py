@@ -246,44 +246,66 @@ class HydrogenTransportProblem:
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
             if isinstance(bc, F.DirichletBC):
-                if (len(self.species) > 1) and (
-                    not isinstance(bc.value, (int, float, fem.Constant))
-                ):
-                    bc_dofs = bc.define_surface_subdomain_dofs(
-                        facet_meshtags=self.facet_meshtags,
-                        mesh=self.mesh,
-                        function_space=(
-                            bc.species.sub_function_space,
-                            bc.species.collapsed_function_space,
-                        ),
-                    )
-                    bc.create_value(
-                        mesh=self.mesh.mesh,
-                        temperature=self.temperature,
-                        function_space=bc.species.collapsed_function_space,
-                        t=self.t,
-                    )
-                else:
-                    bc_dofs = bc.define_surface_subdomain_dofs(
-                        facet_meshtags=self.facet_meshtags,
-                        mesh=self.mesh,
-                        function_space=bc.species.sub_function_space,
-                    )
-                    bc.create_value(
-                        mesh=self.mesh.mesh,
-                        temperature=self.temperature,
-                        function_space=bc.species.sub_function_space,
-                        t=self.t,
-                    )
-                if (len(self.species) == 1) and (
-                    isinstance(bc.value_fenics, (fem.Function))
-                ):
-                    form = bc.create_formulation(dofs=bc_dofs, function_space=None)
-                else:
-                    form = bc.create_formulation(
-                        dofs=bc_dofs, function_space=bc.species.sub_function_space
-                    )
+                form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
+
+    def create_dirichletbc_form(self, bc):
+        """Creates a dirichlet boundary condition form
+
+        Args:
+            bc (festim.DirichletBC): the boundary condition
+
+        Returns:
+            dolfinx.fem.bcs.DirichletBC: A representation of
+                the boundary condition for modifying linear systems.
+        """
+        # create value_fenics
+        function_space_value = None
+
+        if callable(bc.value):
+            # if bc.value is a callable then need to provide a functionspace
+
+            if len(self.species) == 1:
+                function_space_value = bc.species.sub_function_space
+            else:
+                function_space_value = bc.species.collapsed_function_space
+
+        bc.create_value(
+            mesh=self.mesh.mesh,
+            temperature=self.temperature,
+            function_space=function_space_value,
+            t=self.t,
+        )
+
+        # get dofs
+        if len(self.species) > 1 and isinstance(bc.value_fenics, (fem.Function)):
+            function_space_dofs = (
+                bc.species.sub_function_space,
+                bc.species.collapsed_function_space,
+            )
+        else:
+            function_space_dofs = bc.species.sub_function_space
+
+        bc_dofs = bc.define_surface_subdomain_dofs(
+            facet_meshtags=self.facet_meshtags,
+            mesh=self.mesh,
+            function_space=function_space_dofs,
+        )
+
+        # create form
+        if len(self.species) == 1 and isinstance(bc.value_fenics, (fem.Function)):
+            form = fem.dirichletbc(
+                value=bc.value_fenics,
+                dofs=bc_dofs,
+                # no need to pass the functionspace since value_fenics is already a Function
+            )
+        else:
+            form = fem.dirichletbc(
+                value=bc.value_fenics,
+                dofs=bc_dofs,
+                V=bc.species.sub_function_space,
+            )
+        return form
 
     def create_formulation(self):
         """Creates the formulation of the model"""
