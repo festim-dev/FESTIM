@@ -147,15 +147,15 @@ class HydrogenTransportProblem:
             1,
             basix.LagrangeVariant.equispaced,
         )
-        if len(self.species) > 1:
+        if len(self.species) == 1:
+            element = element_CG
+        else:
             elements = []
             for spe in self.species:
                 if isinstance(spe, F.Species):
                     # TODO check if mobile or immobile for traps
                     elements.append(element_CG)
             element = ufl.MixedElement(elements)
-        else:
-            element = element_CG
 
         self.function_space = fem.FunctionSpace(self.mesh.mesh, element)
 
@@ -167,7 +167,13 @@ class HydrogenTransportProblem:
         post-processing solution for each species, if model is multispecies,
         created a collapsed function space for each species"""
 
-        if len(self.species) > 1:
+        if len(self.species) == 1:
+            sub_solutions = [self.u]
+            sub_prev_solution = [self.u_n]
+            sub_test_functions = [ufl.TestFunction(self.function_space)]
+            self.species[0].sub_function_space = self.function_space
+            self.species[0].post_processing_solution = fem.Function(self.function_space)
+        else:
             sub_solutions = list(ufl.split(self.u))
             sub_prev_solution = list(ufl.split(self.u_n))
             sub_test_functions = list(ufl.TestFunctions(self.function_space))
@@ -178,13 +184,6 @@ class HydrogenTransportProblem:
                 spe.collapsed_function_space, _ = self.function_space.sub(
                     idx
                 ).collapse()
-
-        else:
-            sub_solutions = [self.u]
-            sub_prev_solution = [self.u_n]
-            sub_test_functions = [ufl.TestFunction(self.function_space)]
-            self.species[0].sub_function_space = self.function_space
-            self.species[0].post_processing_solution = fem.Function(self.function_space)
 
         for idx, spe in enumerate(self.species):
             spe.solution = sub_solutions[idx]
@@ -356,7 +355,7 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
-            if len(self.species) <= 1:
+            if len(self.species) == 1:
                 D_D = self.subdomains[0].material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature, self.species[0]
                 )
