@@ -10,11 +10,17 @@ class Species:
 
     Attributes:
         name (str): a name given to the species.
-        solution (dolfinx.fem.Function or ...): the solution for the current timestep
-        prev_solution (dolfinx.fem.Function or ...): the solution for the previous timestep
-        test_function (ufl.Argument or ...): the testfunction associated with this species
-        sub_function_space (dolfinx.fem.FunctionSpace): the subspace of the function space
-        post_processing_solution (dolfinx.fem.Function): the solution for post processing
+        solution (dolfinx.fem.Function): the solution for the current timestep
+        prev_solution (dolfinx.fem.Function): the solution for the previous
+            timestep
+        test_function (ufl.Argument): the testfunction associated with this
+            species
+        sub_function_space (dolfinx.fem.FunctionSpace): the subspace of the
+            function space
+        collapsed_function_space (dolfinx.fem.FunctionSpace): the collapsed
+            function space for a species in the function space
+        post_processing_solution (dolfinx.fem.Function): the solution for post #
+            processing
         concentration (dolfinx.fem.Function): the concentration of the species
 
     Usage:
@@ -35,6 +41,7 @@ class Species:
         self.test_function = None
         self.sub_function_space = None
         self.post_processing_solution = None
+        self.collapsed_function_space = None
 
     def __repr__(self) -> str:
         return f"Species({self.name})"
