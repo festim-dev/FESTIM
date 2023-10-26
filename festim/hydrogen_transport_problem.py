@@ -99,7 +99,6 @@ class HydrogenTransportProblem:
         self.formulation = None
         self.volume_subdomains = []
         self.bc_forms = []
-        self.t_dependent_objects = []
 
     @property
     def temperature(self):
@@ -255,10 +254,6 @@ class HydrogenTransportProblem:
                 form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
 
-        for bc in self.boundary_conditions:
-            if bc.t_dependence:
-                self.t_dependent_objects.append(bc)
-
     def create_dirichletbc_form(self, bc):
         """Creates a dirichlet boundary condition form
 
@@ -381,8 +376,9 @@ class HydrogenTransportProblem:
             self.t.value += self.dt.value
 
             # update boundary conditions
-            for object in self.t_dependent_objects:
-                object.update(float(self.t))
+            for bc in self.boundary_conditions:
+                if bc.time_dependent:
+                    bc.update(float(self.t))
 
             self.solver.solve(self.u)
 
