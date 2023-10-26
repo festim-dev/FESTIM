@@ -47,6 +47,7 @@ class HydrogenTransportProblem:
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
+        multispecies (bool): True if the model has more than one species
 
     Usage:
         >>> import festim as F
@@ -385,6 +386,8 @@ class HydrogenTransportProblem:
 
             self.solver.solve(self.u)
 
+            # post processing
+            # TODO remove this
             if not self.multispecies:
                 D_D = self.subdomains[0].material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature, self.species[0]

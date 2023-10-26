@@ -3,14 +3,35 @@ import festim as F
 from petsc4py import PETSc
 from dolfinx.fem import Constant
 from ufl import exp
-import os
+
+
+def relative_error_computed_to_analytical(
+    D, permeability, computed_flux, L, times, P_up
+):
+    n_array = np.arange(1, 10000)[:, np.newaxis]
+    summation = np.sum(
+        (-1) ** n_array * np.exp(-((np.pi * n_array) ** 2) * float(D) / L**2 * times),
+        axis=0,
+    )
+    analytical_flux = P_up**0.5 * permeability / L * (2 * summation + 1)
+
+    # post processing
+    analytical_flux = np.abs(analytical_flux)
+    indices = np.where(analytical_flux > 0.1 * np.max(analytical_flux))
+    analytical_flux = analytical_flux[indices]
+    computed_flux = computed_flux[indices]
+
+    # evaulate relative error compared to analytical solution
+    relative_error = np.abs((computed_flux - analytical_flux) / analytical_flux)
+    error = relative_error.mean()
+
+    return error
 
 
 def test_multispecies_permeation_problem():
     """Test running a problem with 2 mobile species permeating through a 1D
-    0.3mm domain, with different diffusion coefficients, asserting that the
-    resulting concentration fields are less than 1% different from their
-    respecitive analytical solutions"""
+    domain, with different diffusion coefficients, checks that the computed
+    permeation flux matches the analytical solution"""
 
     # festim model
     L = 3e-04
@@ -38,15 +59,24 @@ def test_multispecies_permeation_problem():
 
     temperature = Constant(my_mesh.mesh, 500.0)
     my_model.temperature = temperature
+    pressure = 100
 
     my_model.boundary_conditions = [
         F.DirichletBC(subdomain=right_surface, value=0, species="spe_1"),
         F.DirichletBC(subdomain=right_surface, value=0, species="spe_2"),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="spe_1"
+            subdomain=left_surface,
+            S_0=4.02e21,
+            E_S=1.04,
+            pressure=pressure,
+            species="spe_1",
         ),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="spe_2"
+            subdomain=left_surface,
+            S_0=5.0e21,
+            E_S=1.2,
+            pressure=pressure,
+            species="spe_2",
         ),
     ]
     my_model.settings = F.Settings(
@@ -71,69 +101,35 @@ def test_multispecies_permeation_problem():
     times, flux_values = my_model.run()
 
     # ---------------------- analytical solutions -----------------------------
-    D_spe_1 = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature, spe_1)
-    D_spe_2 = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature, spe_2)
-    S_0 = float(my_model.boundary_conditions[-1].S_0)
-    E_S = float(my_model.boundary_conditions[-1].E_S)
-    P_up = float(my_model.boundary_conditions[-1].pressure)
-    S = S_0 * exp(-E_S / F.k_B / float(temperature))
-    permeability_spe_1 = float(D_spe_1) * S
-    permeability_spe_2 = float(D_spe_2) * S
+
+    # common values
     times = np.array(times)
+    P_up = float(my_model.boundary_conditions[-1].pressure)
+    flux_values_spe_1, flux_values_spe_2 = flux_values[0], flux_values[1]
 
     # ##### compute analyical solution for species 1 ##### #
-    n_array = np.arange(1, 10000)[:, np.newaxis]
+    D_spe_1 = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature, spe_1)
+    S_0_spe_1 = float(my_model.boundary_conditions[-2].S_0)
+    E_S_spe_1 = float(my_model.boundary_conditions[-2].E_S)
+    S_spe_1 = S_0_spe_1 * exp(-E_S_spe_1 / F.k_B / float(temperature))
+    permeability_spe_1 = float(D_spe_1) * S_spe_1
+    flux_values_spe_1 = np.array(np.abs(flux_values_spe_1))
 
-    summation_spe_1 = np.sum(
-        (-1) ** n_array
-        * np.exp(-((np.pi * n_array) ** 2) * float(D_spe_1) / L**2 * times),
-        axis=0,
+    error_spe_1 = relative_error_computed_to_analytical(
+        D_spe_1, permeability_spe_1, flux_values_spe_1, L, times, P_up
     )
-    analytical_flux_spe_1 = (
-        P_up**0.5 * permeability_spe_1 / L * (2 * summation_spe_1 + 1)
-    )
-
-    # post processing
-    analytical_flux_spe_1 = np.abs(analytical_flux_spe_1)
-    flux_values_spe_1 = np.array(np.abs(flux_values[0]))
-    indices_spe_1 = np.where(
-        analytical_flux_spe_1 > 0.1 * np.max(analytical_flux_spe_1)
-    )
-
-    analytical_flux_spe_1 = analytical_flux_spe_1[indices_spe_1]
-    flux_values_spe_1 = flux_values_spe_1[indices_spe_1]
-
-    # evaluate relative error compared to analytical solution
-    relative_error_spe_1 = np.abs(
-        (flux_values_spe_1 - analytical_flux_spe_1) / analytical_flux_spe_1
-    )
-    error_spe_1 = relative_error_spe_1.mean()
 
     # ##### compute analyical solution for species 2 ##### #
-    summation_spe_2 = np.sum(
-        (-1) ** n_array
-        * np.exp(-((np.pi * n_array) ** 2) * float(D_spe_2) / L**2 * times),
-        axis=0,
-    )
-    analytical_flux_spe_2 = (
-        P_up**0.5 * permeability_spe_2 / L * (2 * summation_spe_2 + 1)
-    )
+    D_spe_2 = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature, spe_2)
+    S_0_spe_2 = float(my_model.boundary_conditions[-1].S_0)
+    E_S_spe_2 = float(my_model.boundary_conditions[-1].E_S)
+    S_spe_2 = S_0_spe_2 * exp(-E_S_spe_2 / F.k_B / float(temperature))
+    permeability_spe_2 = float(D_spe_2) * S_spe_2
+    flux_values_spe_2 = np.array(np.abs(flux_values_spe_2))
 
-    # post processing
-    analytical_flux_spe_2 = np.abs(analytical_flux_spe_2)
-    flux_values_spe_2 = np.array(np.abs(flux_values[1]))
-    indices_spe_2 = np.where(
-        analytical_flux_spe_2 > 0.1 * np.max(analytical_flux_spe_2)
+    error_spe_2 = relative_error_computed_to_analytical(
+        D_spe_2, permeability_spe_2, flux_values_spe_2, L, times, P_up
     )
-
-    analytical_flux_spe_2 = analytical_flux_spe_2[indices_spe_2]
-    flux_values_spe_2 = flux_values_spe_2[indices_spe_2]
-
-    # evaluate relative error compared to analytical solution
-    relative_error_spe_2 = np.abs(
-        (flux_values_spe_2 - analytical_flux_spe_2) / analytical_flux_spe_2
-    )
-    error_spe_2 = relative_error_spe_2.mean()
 
     for err in [error_spe_1, error_spe_2]:
         assert err < 0.01
