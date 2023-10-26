@@ -39,16 +39,16 @@ class XDMFExport:
     @field.setter
     def field(self, value):
         # check that field is festim.Species or list of festim.Species
-        if not isinstance(value, F.Species) and not isinstance(value, list):
+        if not isinstance(value, (F.Species, str)) and not isinstance(value, list):
             raise TypeError(
-                "field must be of type festim.Species or list of festim.Species"
+                "field must be of type festim.Species or str or a list of festim.Species or str"
             )
         # check that all elements of list are festim.Species
         if isinstance(value, list):
             for element in value:
-                if not isinstance(element, F.Species):
+                if not isinstance(element, (F.Species, str)):
                     raise TypeError(
-                        "field must be of type festim.Species or list of festim.Species"
+                        "field must be of type festim.Species or str or a list of festim.Species or str"
                     )
         # if field is festim.Species, convert to list
         if not isinstance(value, list):
@@ -71,4 +71,4 @@ class XDMFExport:
             t (float): the time of export
         """
         for field in self.field:
-            self.writer.write_function(field.solution, t)
+            self.writer.write_function(field.post_processing_solution, t)

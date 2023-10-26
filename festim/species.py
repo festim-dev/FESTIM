@@ -10,9 +10,18 @@ class Species:
 
     Attributes:
         name (str): a name given to the species.
-        solution (dolfinx.fem.Function or ...): the solution for the current timestep
-        prev_solution (dolfinx.fem.Function or ...): the solution for the previous timestep
-        test_function (ufl.Argument or ...): the testfunction associated with this species
+        solution (dolfinx.fem.Function): the solution for the current timestep
+        prev_solution (dolfinx.fem.Function): the solution for the previous
+            timestep
+        test_function (ufl.Argument): the testfunction associated with this
+            species
+        sub_function_space (dolfinx.fem.function.FunctionSpaceBase): the
+            subspace of the function space
+        collapsed_function_space (dolfinx.fem.function.FunctionSpaceBase): the
+            collapsed function space for a species in the function space. In
+            case single species case, this is None.
+        post_processing_solution (dolfinx.fem.Function): the solution for post
+            processing
         concentration (dolfinx.fem.Function): the concentration of the species
 
     Usage:
@@ -31,6 +40,9 @@ class Species:
         self.solution = None
         self.prev_solution = None
         self.test_function = None
+        self.sub_function_space = None
+        self.post_processing_solution = None
+        self.collapsed_function_space = None
 
     def __repr__(self) -> str:
         return f"Species({self.name})"
@@ -111,3 +123,24 @@ class ImplicitSpecies:
                         f"Cannot compute concentration of {self.name} because {other.name} has no solution"
                     )
         return self.n - sum([other.solution for other in self.others])
+
+
+def find_species_from_name(name: str, species: list):
+    """Returns the correct species object from a list of species
+    based on a string
+
+    Args:
+        name (str): the name of the species
+        species (list): the list of species
+
+    Returns:
+        species (festim.Species): the species object with the correct name
+
+    Raises:
+        ValueError: if the species name is not found in the list of species
+
+    """
+    for spe in species:
+        if spe.name == name:
+            return spe
+    raise ValueError(f"Species {name} not found in list of species")
