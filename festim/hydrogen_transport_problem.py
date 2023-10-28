@@ -99,6 +99,7 @@ class HydrogenTransportProblem:
         self.formulation = None
         self.volume_subdomains = []
         self.bc_forms = []
+        self.derived_quantities = {}
 
     @property
     def temperature(self):
@@ -126,21 +127,28 @@ class HydrogenTransportProblem:
         self.define_boundary_conditions()
         self.create_formulation()
         self.create_solver()
-        self.defing_export_writers()
+        self.initialise_exports()
 
-    def defing_export_writers(self):
+    def initialise_exports(self):
         """Defines the export writers of the model, if field is given as
         a string, find species object in self.species"""
         for export in self.exports:
             # if name of species is given then replace with species object
             for idx, field in enumerate(export.field):
                 if isinstance(field, str):
-                    export.field[idx] = F.find_species_from_name(field, self.species)
+                    # export.field[idx] = F.find_species_from_name(field, self.species)
+                    export.field = F.find_species_from_name(field, self.species)
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
                 if isinstance(export, F.XDMFExport):
                     export.writer.write_mesh(self.mesh.mesh)
+
+            if isinstance(export, F.SurfaceFlux):
+                self.derived_quantities["t(s)"] = []
+                self.derived_quantities[
+                    f"Surface_flux_subdomain_{export.subdomain.id}"
+                ] = []
 
     def define_function_space(self):
         """Creates the function space of the model, creates a mixed element if
@@ -218,6 +226,7 @@ class HydrogenTransportProblem:
                 entities = sub_dom.locate_subdomain_entities(
                     self.mesh.mesh, self.mesh.vdim
                 )
+                print(entities)
                 tags_volumes[entities] = sub_dom.id
 
         # check if all borders are defined
@@ -382,40 +391,7 @@ class HydrogenTransportProblem:
             self.solver.solve(self.u)
 
             # post processing
-            # TODO remove this
-            if not self.multispecies:
-                D_D = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, self.species[0]
-                )
-                cm = self.u
-                self.species[0].post_processing_solution = self.u
-
-                surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
-                flux = assemble_scalar(surface_flux)
-                flux_values.append(flux)
-                times.append(float(self.t))
-            else:
-                for idx, spe in enumerate(self.species):
-                    spe.post_processing_solution = self.u.sub(idx)
-
-                cm_1, cm_2 = self.u.split()
-                D_1 = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, self.species[0]
-                )
-                D_2 = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, self.species[1]
-                )
-                surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
-                surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
-                flux_1 = assemble_scalar(surface_flux_1)
-                flux_2 = assemble_scalar(surface_flux_2)
-                flux_values_1.append(flux_1)
-                flux_values_2.append(flux_2)
-                times.append(float(self.t))
-
-            for export in self.exports:
-                if isinstance(export, (F.VTXExport, F.XDMFExport)):
-                    export.write(float(self.t))
+            self.post_processing(times, flux_values, flux_values_1, flux_values_2)
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
@@ -424,3 +400,63 @@ class HydrogenTransportProblem:
             flux_values = [flux_values_1, flux_values_2]
 
         return times, flux_values
+
+    def post_processing(self, times, flux_values, flux_values_1, flux_values_2):
+        if not self.multispecies:
+            D_D = self.subdomains[0].material.get_diffusion_coefficient(
+                self.mesh.mesh, self.temperature, self.species[0]
+            )
+            cm = self.u
+            self.species[0].post_processing_solution = self.u
+
+            surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
+            flux = assemble_scalar(surface_flux)
+            flux_values.append(flux)
+            times.append(float(self.t))
+        else:
+            for idx, spe in enumerate(self.species):
+                spe.post_processing_solution = self.u.sub(idx)
+
+            cm_1, cm_2 = self.u.split()
+            D_1 = self.subdomains[0].material.get_diffusion_coefficient(
+                self.mesh.mesh, self.temperature, self.species[0]
+            )
+            D_2 = self.subdomains[0].material.get_diffusion_coefficient(
+                self.mesh.mesh, self.temperature, self.species[1]
+            )
+            surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
+            surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
+            flux_1 = assemble_scalar(surface_flux_1)
+            flux_2 = assemble_scalar(surface_flux_2)
+            flux_values_1.append(flux_1)
+            flux_values_2.append(flux_2)
+            times.append(float(self.t))
+
+        # for export in self.exports:
+        #     if isinstance(export, F.SurfaceQuantity):
+        #         export.compute(self.mesh, self.ds)
+        #     if isinstance(export, F.VolumeQuantity):
+        #         export.compute(self.mesh, self.dx)
+
+        for export in self.exports:
+            #     if isinstance(export, F.SurfaceFlux):
+            #         self.derived_quantities["t(s)"].append(float(self.t))
+            #         for vol in self.volume_subdomains:
+            #             if export.subdomain.x == vol.borders[0] or vol.borders[1]:
+            #                 D_export = vol.material.get_diffusion_coefficient(
+            #                     self.mesh.mesh, self.temperature, export.field
+            #                 )
+            #             if not hasattr(export.subdomain, "x"):
+            #                 raise NotImplementedError("only works for 1D")
+            #             export_value = export.compute_quantity(
+            #                 D_export,
+            #                 self.mesh,
+            #                 self.ds,
+            #             )
+            #             self.derived_quantities[
+            #                 f"Surface_flux_subdomain_{export.subdomain.id}"
+            #             ].append(export_value)
+            #             export.write(t=float(self.t))
+
+            if isinstance(export, (F.VTXExport, F.XDMFExport)):
+                export.write(float(self.t))
