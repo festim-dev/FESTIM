@@ -117,12 +117,14 @@ class HydrogenTransportProblem:
     def temperature(self, value):
         if value is None:
             self._temperature = value
-        elif isinstance(value, (float, int, fem.Constant)):
+        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
             self._temperature = value
         elif callable(value):
             self._temperature = value
         else:
-            raise TypeError(f"Value must be a float, int, fem.Constant or callable")
+            raise TypeError(
+                f"Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )
 
     @property
     def temperature_fenics(self):
@@ -133,10 +135,6 @@ class HydrogenTransportProblem:
         if value is None:
             self._temperature_fenics = value
             return
-        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
-            raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
-            )
         self._temperature_fenics = value
 
     @property
