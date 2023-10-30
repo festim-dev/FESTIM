@@ -520,7 +520,7 @@ class HydrogenTransportProblem:
 
     def update_time_dependent_values(self, t):
         """Updates the time dependent values of the model
-        liketemperature, boundary conditions, sources, etc.
+        like temperature, boundary conditions, sources, etc.
         """
         # update temperature if time dependent
         if self.temperature_time_dependent:
