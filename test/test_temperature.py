@@ -15,18 +15,26 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 )
 def test_temperature_type_and_processing(value):
     """Test that the temperature type is correctly set"""
-    my_model = F.HydrogenTransportProblem()
-    my_model.mesh = test_mesh
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(vertices=np.linspace(0.0, 1.0)),
+        subdomains=[
+            F.VolumeSubdomain1D(1, borders=[0, 1], material=F.Material(1, 1, "my_mat"))
+        ],
+        species=[F.Species("H")],
+    )
+    my_model.temperature = value
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     if not isinstance(value, (fem.Constant, int, float)):
         if callable(value):
-            my_model.temperature = value
+            my_model.initialise()
         else:
             with pytest.raises(TypeError):
-                my_model.temperature = value
+                my_model.initialise()
     else:
-        my_model.temperature = value
-        assert isinstance(my_model.temperature, fem.Constant)
+        my_model.initialise()
+        assert isinstance(my_model.temperature_fenics_value, fem.Constant)
 
 
 @pytest.mark.parametrize(
@@ -108,13 +116,13 @@ def test_temperature_value_updates_with_HTransportProblem(value):
         arguments = value.__code__.co_varnames
         if "x" in arguments and "t" in arguments:
             expected_value = value(x=np.array([subdomain.x]), t=3.0)
-            computed_value = my_model.temperature.vector.array[-1]
+            computed_value = my_model.temperature_fenics_value.vector.array[-1]
         elif "x" in arguments:
             expected_value = value(x=np.array([subdomain.x]))
-            computed_value = my_model.temperature.vector.array[-1]
+            computed_value = my_model.temperature_fenics_value.vector.array[-1]
         elif "t" in arguments:
             expected_value = value(t=3.0)
-            computed_value = float(my_model.temperature)
+            computed_value = float(my_model.temperature_fenics_value)
 
     if isinstance(expected_value, Conditional):
         expected_value = float(expected_value)
