@@ -99,26 +99,23 @@ class HydrogenTransportProblem:
         self.formulation = None
         self.volume_subdomains = []
         self.bc_forms = []
+        self.temperature_fenics_value = None
         self.temperature_time_dependent = False
 
     @property
-    def temperature(self):
-        return self._temperature
+    def temperature_fenics_value(self):
+        return self._temperature_fenics_value
 
-    @temperature.setter
-    def temperature(self, value):
+    @temperature_fenics_value.setter
+    def temperature_fenics_value(self, value):
         if value is None:
-            self._temperature = value
-        elif isinstance(value, (float, int)):
-            self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
-        elif isinstance(value, fem.Constant):
-            self._temperature = value
-        elif callable(value):
-            self._temperature = value
-        else:
+            self._temperature_fenics_value = value
+            return
+        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
             raise TypeError(
-                "Temperature must be a float, int, fem.Constant or callable"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
             )
+        self._temperature_fenics_value = value
 
     @property
     def multispecies(self):
@@ -132,11 +129,7 @@ class HydrogenTransportProblem:
         self.t = fem.Constant(self.mesh.mesh, 0.0)
         self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
 
-        if isinstance(self.temperature, fem.Constant):
-            pass
-        else:
-            self.define_temperature()
-
+        self.define_temperature()
         self.define_boundary_conditions()
         self.create_formulation()
         self.create_solver()
@@ -145,33 +138,40 @@ class HydrogenTransportProblem:
     def define_temperature(self):
         """If temperature value is given only dependent on t, create a
         fem.Constant else create an expression to be updated and a function"""
-        self.temperature_value = self.temperature
-        arguments = self.temperature.__code__.co_varnames
-        if "t" in arguments and "x" not in arguments and "T" not in arguments:
-            # only t is an argument
-            self.temperature = F.as_fenics_constant(
-                mesh=self.mesh.mesh, value=self.temperature_value(t=float(self.t))
+        # if temperature is a float or int, create a fem.Constant
+        if isinstance(self.temperature, (float, int)):
+            self._temperature_fenics_value = F.as_fenics_constant(
+                self.temperature, self.mesh.mesh
             )
-            self.temperature_time_dependent = True
-        else:
-            x = ufl.SpatialCoordinate(self.mesh.mesh)
-            arguments = self.temperature.__code__.co_varnames
-            self.temperature_function = fem.Function(self.function_space)
-            kwargs = {}
-            if "t" in arguments:
-                kwargs["t"] = self.t
-                self.temperature_time_dependent = True
-            if "x" in arguments:
-                kwargs["x"] = x
+        elif isinstance(self.temperature, fem.Constant):
+            self._temperature_fenics_value = self.temperature
 
-            # store the expression of the boundary condition
-            # to update the value_fenics later
-            self.temperature_expr = fem.Expression(
-                self.temperature_value(**kwargs),
-                self.function_space.element.interpolation_points(),
-            )
-            self.temperature_function.interpolate(self.temperature_expr)
-            self.temperature = self.temperature_function
+        # if temperature is callable, process accordingly
+        elif callable(self.temperature):
+            arguments = self.temperature.__code__.co_varnames
+            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                # only t is an argument
+                self.temperature_fenics_value = F.as_fenics_constant(
+                    mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
+                )
+                self.temperature_time_dependent = True
+            else:
+                x = ufl.SpatialCoordinate(self.mesh.mesh)
+                self.temperature_fenics_value = fem.Function(self.function_space)
+                kwargs = {}
+                if "t" in arguments:
+                    kwargs["t"] = self.t
+                    self.temperature_time_dependent = True
+                if "x" in arguments:
+                    kwargs["x"] = x
+
+                # store the expression of the boundary condition
+                # to update the value_fenics later
+                self.temperature_expr = fem.Expression(
+                    self.temperature(**kwargs),
+                    self.function_space.element.interpolation_points(),
+                )
+                self.temperature_fenics_value.interpolate(self.temperature_expr)
 
     def defing_export_writers(self):
         """Defines the export writers of the model, if field is given as
@@ -321,7 +321,7 @@ class HydrogenTransportProblem:
 
         bc.create_value(
             mesh=self.mesh.mesh,
-            temperature=self.temperature,
+            temperature=self.temperature_fenics_value,
             function_space=function_space_value,
             t=self.t,
         )
@@ -370,7 +370,7 @@ class HydrogenTransportProblem:
 
             for vol in self.volume_subdomains:
                 D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, spe
+                    self.mesh.mesh, self.temperature_fenics_value, spe
                 )
 
                 self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
@@ -428,7 +428,7 @@ class HydrogenTransportProblem:
             # TODO remove this
             if not self.multispecies:
                 D_D = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, self.species[0]
+                    self.mesh.mesh, self.temperature_fenics_value, self.species[0]
                 )
                 cm = self.u
                 self.species[0].post_processing_solution = self.u
@@ -443,10 +443,10 @@ class HydrogenTransportProblem:
 
                 cm_1, cm_2 = self.u.split()
                 D_1 = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, self.species[0]
+                    self.mesh.mesh, self.temperature_fenics_value, self.species[0]
                 )
                 D_2 = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, self.species[1]
+                    self.mesh.mesh, self.temperature_fenics_value, self.species[1]
                 )
                 surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
                 surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
@@ -473,10 +473,10 @@ class HydrogenTransportProblem:
 
         # update temperature if time dependent
         if self.temperature_time_dependent:
-            if isinstance(self.temperature, fem.Constant):
-                self.temperature.value = self.temperature_value(t=t)
+            if isinstance(self.temperature_fenics_value, fem.Constant):
+                self.temperature_fenics_value.value = self.temperature(t=t)
             else:
-                self.temperature.interpolate(self.temperature_expr)
+                self.temperature_fenics_value.interpolate(self.temperature_expr)
 
         # update boundary conditions
         for bc in self.boundary_conditions:
