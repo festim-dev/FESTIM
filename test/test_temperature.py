@@ -32,6 +32,7 @@ def test_temperature_type(value):
     [
         1.0,
         1,
+        None,
         lambda t: t,
         lambda t: 1.0 + t,
         lambda x: 1.0 + x[0],
