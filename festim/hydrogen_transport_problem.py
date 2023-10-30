@@ -143,6 +143,8 @@ class HydrogenTransportProblem:
     def temperature_time_dependent(self):
         if self.temperature is None:
             return False
+        if isinstance(self.temperature, fem.Constant):
+            return False
         if callable(self.temperature):
             arguments = self.temperature.__code__.co_varnames
             return "t" in arguments
