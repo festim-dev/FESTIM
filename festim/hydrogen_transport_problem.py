@@ -109,21 +109,6 @@ class HydrogenTransportProblem:
     def temperature(self, value):
         if value is None:
             self._temperature = value
-            return
-        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
-            raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
-            )
-        self._temperature = value
-
-    @property
-    def temperature(self):
-        return self._temperature
-
-    @temperature.setter
-    def temperature(self, value):
-        if value is None:
-            self._temperature = value
         elif isinstance(value, (float, int)):
             self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
         elif isinstance(value, fem.Constant):
