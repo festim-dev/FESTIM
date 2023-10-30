@@ -99,6 +99,7 @@ class HydrogenTransportProblem:
         self.formulation = None
         self.volume_subdomains = []
         self.bc_forms = []
+        self.temperature_time_dependent = False
 
     @property
     def temperature(self):
@@ -108,8 +109,31 @@ class HydrogenTransportProblem:
     def temperature(self, value):
         if value is None:
             self._temperature = value
-        else:
+            return
+        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
+            raise TypeError(
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
+            )
+        self._temperature = value
+
+    @property
+    def temperature(self):
+        return self._temperature
+
+    @temperature.setter
+    def temperature(self, value):
+        if value is None:
+            self._temperature = value
+        elif isinstance(value, (float, int)):
             self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
+        elif isinstance(value, fem.Constant):
+            self._temperature = value
+        elif callable(value):
+            self._temperature = value
+        else:
+            raise TypeError(
+                "Temperature must be a float, int, fem.Constant or callable"
+            )
 
     @property
     def multispecies(self):
@@ -123,10 +147,46 @@ class HydrogenTransportProblem:
         self.t = fem.Constant(self.mesh.mesh, 0.0)
         self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
 
+        if isinstance(self.temperature, fem.Constant):
+            pass
+        else:
+            self.define_temperature()
+
         self.define_boundary_conditions()
         self.create_formulation()
         self.create_solver()
         self.defing_export_writers()
+
+    def define_temperature(self):
+        """If temperature value is given only dependent on t, create a
+        fem.Constant else create an expression to be updated and a function"""
+        self.temperature_value = self.temperature
+        arguments = self.temperature.__code__.co_varnames
+        if "t" in arguments and "x" not in arguments and "T" not in arguments:
+            # only t is an argument
+            self.temperature = F.as_fenics_constant(
+                mesh=self.mesh.mesh, value=self.temperature_value(t=float(self.t))
+            )
+            self.temperature_time_dependent = True
+        else:
+            x = ufl.SpatialCoordinate(self.mesh.mesh)
+            arguments = self.temperature.__code__.co_varnames
+            self.temperature_function = fem.Function(self.function_space)
+            kwargs = {}
+            if "t" in arguments:
+                kwargs["t"] = self.t
+                self.temperature_time_dependent = True
+            if "x" in arguments:
+                kwargs["x"] = x
+
+            # store the expression of the boundary condition
+            # to update the value_fenics later
+            self.temperature_expr = fem.Expression(
+                self.temperature_value(**kwargs),
+                self.function_space.element.interpolation_points(),
+            )
+            self.temperature_function.interpolate(self.temperature_expr)
+            self.temperature = self.temperature_function
 
     def defing_export_writers(self):
         """Defines the export writers of the model, if field is given as
@@ -375,9 +435,7 @@ class HydrogenTransportProblem:
             progress.update(self.dt.value)
             self.t.value += self.dt.value
 
-            # update boundary conditions
-            for bc in self.boundary_conditions:
-                bc.update(float(self.t))
+            self.update_time_dependent_values(float(self.t))
 
             self.solver.solve(self.u)
 
@@ -424,3 +482,17 @@ class HydrogenTransportProblem:
             flux_values = [flux_values_1, flux_values_2]
 
         return times, flux_values
+
+    def update_time_dependent_values(self, t):
+        """Updates the time dependent values of the model"""
+
+        # update temperature if time dependent
+        if self.temperature_time_dependent:
+            if isinstance(self.temperature, fem.Constant):
+                self.temperature.value = self.temperature_value(t=t)
+            else:
+                self.temperature.interpolate(self.temperature_expr)
+
+        # update boundary conditions
+        for bc in self.boundary_conditions:
+            bc.update(t)
