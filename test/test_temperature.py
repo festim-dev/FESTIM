@@ -99,3 +99,18 @@ def test_temperature_value_updates_with_HTransportProblem(value):
     if isinstance(expected_value, Conditional):
         expected_value = float(expected_value)
     assert np.isclose(computed_value, expected_value)
+
+
+def test_TypeError_raised_when_temperature_not_defined():
+    """Test that a type error when a model is initialised without
+    defining a temperature"""
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        subdomains=[F.VolumeSubdomain1D(1, borders=[0, 4], material=dummy_mat)],
+        species=[F.Species("H")],
+        settings=F.Settings(atol=1, rtol=0.1, final_time=3),
+    )
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
+
+    with pytest.raises(TypeError, match="Temperature needs to be defined"):
+        my_model.initialise()
