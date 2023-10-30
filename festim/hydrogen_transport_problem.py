@@ -22,8 +22,8 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float, int, fem.Constant or callable): the temperature of
-            the model
+        temperature (float, int, fem.Constant, fem.Function or callable): the
+            temperature of the model
         sources (list of festim.Source): the hydrogen sources of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
@@ -34,8 +34,8 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float, int, fem.Constant or callable): the temperature of
-            the model
+        temperature (float, int, fem.Constant, fem.Function or callable): the
+            temperature of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
@@ -51,7 +51,8 @@ class HydrogenTransportProblem:
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
         multispecies (bool): True if the model has more than one species.
         temperature_fenics (fem.Constant or fem.Function): the
-            temperature of the model. Defaults to None
+            temperature of the model as a fenics object (fem.Constant or
+            fem.Function).
         temperature_expr (fem.Expression): the expression of the temperature
             that is used to update the temperature_fenics
         temperature_time_dependent (bool): True if the temperature is time
