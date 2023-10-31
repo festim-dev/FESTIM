@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import ufl
 from ufl.conditional import Conditional
+import tqdm.autonotebook
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
@@ -60,7 +61,7 @@ def test_time_dependent_temperature_attribute(value):
         lambda t: t,
         lambda t: 1.0 + t,
         lambda x, t: 1.0 + x[0] + t,
-        lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+        lambda x, t: ufl.conditional(ufl.lt(t, 1.5), 100.0 + x[0], 0.0),
     ],
 )
 def test_temperature_value_updates_with_HTransportProblem(value):
@@ -81,24 +82,30 @@ def test_temperature_value_updates_with_HTransportProblem(value):
 
     # RUN
     my_model.initialise()
-    my_model.run()
+    my_model.progress = tqdm.autonotebook.tqdm(
+        desc="Solving H transport problem",
+        total=my_model.settings.final_time,
+        unit_scale=True,
+    )
+    # TODO get rid of these when post processing is implemented
+    my_model.flux_values, my_model.times = [], []
 
     # TEST
-    if callable(value):
+    expected_values = []
+    for i in range(3):
         arguments = value.__code__.co_varnames
         if "x" in arguments and "t" in arguments:
-            expected_value = value(x=np.array([subdomain.x]), t=3.0)
-            computed_value = my_model.temperature_fenics.vector.array[-1]
-        elif "x" in arguments:
-            expected_value = value(x=np.array([subdomain.x]))
-            computed_value = my_model.temperature_fenics.vector.array[-1]
-        elif "t" in arguments:
-            expected_value = value(t=3.0)
-            computed_value = float(my_model.temperature_fenics)
+            expected_values.append(float(value(x=np.array([subdomain.x]), t=i + 1)))
+        else:
+            expected_values.append(float(value(t=i + 1)))
 
-    if isinstance(expected_value, Conditional):
-        expected_value = float(expected_value)
-    assert np.isclose(computed_value, expected_value)
+    for i in range(3):
+        my_model.iterate()
+        if isinstance(my_model.temperature_fenics, fem.Constant):
+            computed_value = float(my_model.temperature_fenics)
+        else:
+            computed_value = my_model.temperature_fenics.vector.array[-1]
+        assert np.isclose(computed_value, expected_values[i])
 
 
 def test_TypeError_raised_when_temperature_not_defined():
