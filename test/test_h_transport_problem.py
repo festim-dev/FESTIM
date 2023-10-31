@@ -31,47 +31,27 @@ def test_temperature_setter_type(value):
 
 
 @pytest.mark.parametrize(
-    "value",
+    "input, expected_value",
     [
-        1.0,
-        1,
-        None,
-        lambda t: t,
-        lambda t: 1.0 + t,
-        lambda x: 1.0 + x[0],
-        lambda x, t: 1.0 + x[0] + t,
-        lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+        (1.0, False),
+        (1, False),
+        (lambda t: t, True),
+        (lambda t: 1.0 + t, True),
+        (lambda x: 1.0 + x[0], False),
+        (lambda x, t: 1.0 + x[0] + t, True),
+        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), True),
     ],
 )
-def test_time_dependent_temperature_attribute(value):
+def test_time_dependent_temperature_attribute(input, expected_value):
     """Test that the temperature_time_dependent attribute is correctly set"""
 
     my_model = F.HydrogenTransportProblem()
-    my_model.temperature = value
+    my_model.temperature = input
 
-    if callable(value):
-        arguments = value.__code__.co_varnames
-        if "t" in arguments:
-            assert my_model.temperature_time_dependent
-    else:
-        assert not my_model.temperature_time_dependent
+    assert my_model.temperature_time_dependent == expected_value
 
 
-@pytest.mark.parametrize(
-    "value",
-    [
-        1.0,
-        1,
-        None,
-        fem.Constant(test_mesh.mesh, 1.0),
-        lambda t: t,
-        lambda t: 1.0 + t,
-        lambda x: 1.0 + x[0],
-        lambda x, t: 1.0 + x[0] + t,
-        lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
-    ],
-)
-def test_define_temperature(value):
+def test_define_temperature_value_error_raised():
     """Test that the define_temperature method correctly sets the
     temperature_fenics attribute to either a fem.Constant or a
     fem.Function and raise a ValueError temperature is None"""
@@ -80,27 +60,44 @@ def test_define_temperature(value):
     my_model = F.HydrogenTransportProblem(mesh=test_mesh)
     my_model.t = fem.Constant(test_mesh.mesh, 0.0)
 
-    my_model.temperature = value
+    my_model.temperature = None
 
     # TEST
-    if value is None:
-        with pytest.raises(
-            ValueError, match="the temperature attribute needs to be defined"
-        ):
-            my_model.define_temperature()
-    else:
-        # RUN
+    with pytest.raises(
+        ValueError, match="the temperature attribute needs to be defined"
+    ):
         my_model.define_temperature()
 
-        # TEST
-        if isinstance(value, (fem.Constant, int, float)):
-            assert isinstance(my_model.temperature_fenics, fem.Constant)
-        elif callable(value):
-            arguments = value.__code__.co_varnames
-            if "x" in arguments:
-                assert isinstance(my_model.temperature_fenics, fem.Function)
-            else:
-                assert isinstance(my_model.temperature_fenics, fem.Constant)
+
+@pytest.mark.parametrize(
+    "input, expected_type",
+    [
+        (1.0, fem.Constant),
+        (1, fem.Constant),
+        (fem.Constant(test_mesh.mesh, 1.0), fem.Constant),
+        (lambda t: t, fem.Constant),
+        (lambda t: 1.0 + t, fem.Constant),
+        (lambda x: 1.0 + x[0], fem.Function),
+        (lambda x, t: 1.0 + x[0] + t, fem.Function),
+        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), fem.Function),
+    ],
+)
+def test_define_temperature(input, expected_type):
+    """Test that the define_temperature method correctly sets the
+    temperature_fenics attribute to either a fem.Constant or a
+    fem.Function"""
+
+    # BUILD
+    my_model = F.HydrogenTransportProblem(mesh=test_mesh)
+    my_model.t = fem.Constant(test_mesh.mesh, 0.0)
+
+    my_model.temperature = input
+
+    # RUN
+    my_model.define_temperature()
+
+    # TEST
+    assert isinstance(my_model.temperature_fenics, expected_type)
 
 
 def test_iterate():
