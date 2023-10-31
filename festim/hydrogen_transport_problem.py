@@ -134,10 +134,14 @@ class HydrogenTransportProblem:
         a string, find species object in self.species"""
         for export in self.exports:
             # if name of species is given then replace with species object
-            for idx, field in enumerate(export.field):
-                if isinstance(field, str):
-                    # export.field[idx] = F.find_species_from_name(field, self.species)
-                    export.field = F.find_species_from_name(field, self.species)
+            if isinstance(export.field, list):
+                for idx, field in enumerate(export.field):
+                    if isinstance(field, str):
+                        export.field[idx] = F.find_species_from_name(
+                            field, self.species
+                        )
+            elif isinstance(export.field, str):
+                export.field = F.find_species_from_name(export.field, self.species)
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
@@ -146,9 +150,7 @@ class HydrogenTransportProblem:
 
             if isinstance(export, F.SurfaceFlux):
                 self.derived_quantities["t(s)"] = []
-                self.derived_quantities[
-                    f"Surface_flux_subdomain_{export.subdomain.id}"
-                ] = []
+                self.derived_quantities[f"{export.title}"] = []
 
     def define_function_space(self):
         """Creates the function space of the model, creates a mixed element if
@@ -226,7 +228,6 @@ class HydrogenTransportProblem:
                 entities = sub_dom.locate_subdomain_entities(
                     self.mesh.mesh, self.mesh.vdim
                 )
-                print(entities)
                 tags_volumes[entities] = sub_dom.id
 
         # check if all borders are defined
@@ -439,24 +440,22 @@ class HydrogenTransportProblem:
         #         export.compute(self.mesh, self.dx)
 
         for export in self.exports:
-            #     if isinstance(export, F.SurfaceFlux):
-            #         self.derived_quantities["t(s)"].append(float(self.t))
-            #         for vol in self.volume_subdomains:
-            #             if export.subdomain.x == vol.borders[0] or vol.borders[1]:
-            #                 D_export = vol.material.get_diffusion_coefficient(
-            #                     self.mesh.mesh, self.temperature, export.field
-            #                 )
-            #             if not hasattr(export.subdomain, "x"):
-            #                 raise NotImplementedError("only works for 1D")
-            #             export_value = export.compute_quantity(
-            #                 D_export,
-            #                 self.mesh,
-            #                 self.ds,
-            #             )
-            #             self.derived_quantities[
-            #                 f"Surface_flux_subdomain_{export.subdomain.id}"
-            #             ].append(export_value)
-            #             export.write(t=float(self.t))
+            if isinstance(export, F.SurfaceFlux):
+                # evaluate value of export
+                D_export = export.volume_subdomain.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature, export.field
+                )
+                export_value = export.compute_quantity(
+                    D_export,
+                    self.mesh,
+                    self.ds,
+                )
+
+                # update derived quantities dict
+                self.derived_quantities["t(s)"].append(float(self.t))
+                self.derived_quantities[f"{export.title}"].append(export_value)
+
+                export.write(t=float(self.t))
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.write(float(self.t))
