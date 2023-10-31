@@ -56,15 +56,18 @@ def test_time_dependent_temperature_attribute(value):
 
 
 @pytest.mark.parametrize(
-    "value",
+    "T_function, expected_values",
     [
-        lambda t: t,
-        lambda t: 1.0 + t,
-        lambda x, t: 1.0 + x[0] + t,
-        lambda x, t: ufl.conditional(ufl.lt(t, 1.5), 100.0 + x[0], 0.0),
+        (lambda t: t, [1.0, 2.0, 3.0]),
+        (lambda t: 1.0 + t, [2.0, 3.0, 4.0]),
+        (lambda x, t: 1.0 + x[0] + t, [6.0, 7.0, 8.0]),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.5), 100.0 + x[0], 0.0),
+            [104.0, 0.0, 0.0],
+        ),
     ],
 )
-def test_temperature_value_updates_with_HTransportProblem(value):
+def test_temperature_value_updates_with_HTransportProblem(T_function, expected_values):
     """Test that different time dependent callable functions can be applied to
     the temperature value, asserting in each case they match an expected value"""
     subdomain = F.SurfaceSubdomain1D(1, x=4)
@@ -78,7 +81,7 @@ def test_temperature_value_updates_with_HTransportProblem(value):
     )
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
-    my_model.temperature = value
+    my_model.temperature = T_function
 
     # RUN
     my_model.initialise()
@@ -91,14 +94,6 @@ def test_temperature_value_updates_with_HTransportProblem(value):
     my_model.flux_values, my_model.times = [], []
 
     # TEST
-    expected_values = []
-    for i in range(3):
-        arguments = value.__code__.co_varnames
-        if "x" in arguments and "t" in arguments:
-            expected_values.append(float(value(x=np.array([subdomain.x]), t=i + 1)))
-        else:
-            expected_values.append(float(value(t=i + 1)))
-
     for i in range(3):
         my_model.iterate()
         if isinstance(my_model.temperature_fenics, fem.Constant):
