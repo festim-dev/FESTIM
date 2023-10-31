@@ -451,30 +451,45 @@ class HydrogenTransportProblem:
         self.solver.max_it = self.settings.max_iterations
 
     def run(self):
-        """Runs the model for a given time
+        """Runs the model
 
         Returns:
             list of float: the times of the simulation
             list of float: the fluxes of the simulation
         """
-        times, flux_values = [], []
-        flux_values_1, flux_values_2 = [], []
+        self.times, self.flux_values = [], []
+        self.flux_values_1, self.flux_values_2 = [], []
 
-        progress = tqdm.autonotebook.tqdm(
+        self.progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem",
             total=self.settings.final_time,
             unit_scale=True,
         )
         while self.t.value < self.settings.final_time:
-            progress.update(self.dt.value)
-            self.t.value += self.dt.value
+            self.iterate()
 
-            self.update_time_dependent_values(float(self.t))
 
-            self.solver.solve(self.u)
+        if self.multispecies:
+            self.flux_values = [self.flux_values_1, self.flux_values_2]
 
-            # post processing
-            # TODO remove this
+        return self.times, self.flux_values
+
+    def iterate(
+        self, skip_post_processing=False
+    ):  # TODO remove skip_post_processing flag, just temporary
+        """Iterates the model for a given time step"""
+        self.progress.update(self.dt.value)
+        self.t.value += self.dt.value
+
+        # update boundary conditions
+        for bc in self.boundary_conditions:
+            bc.update(float(self.t))
+
+        self.solver.solve(self.u)
+
+        # post processing
+        # TODO remove this
+        if not skip_post_processing:
             if not self.multispecies:
                 D_D = self.subdomains[0].material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature_fenics, self.species[0]
@@ -484,8 +499,8 @@ class HydrogenTransportProblem:
 
                 surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
                 flux = assemble_scalar(surface_flux)
-                flux_values.append(flux)
-                times.append(float(self.t))
+                self.flux_values.append(flux)
+                self.times.append(float(self.t))
             else:
                 for idx, spe in enumerate(self.species):
                     spe.post_processing_solution = self.u.sub(idx)
@@ -501,33 +516,14 @@ class HydrogenTransportProblem:
                 surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
                 flux_1 = assemble_scalar(surface_flux_1)
                 flux_2 = assemble_scalar(surface_flux_2)
-                flux_values_1.append(flux_1)
-                flux_values_2.append(flux_2)
-                times.append(float(self.t))
+                self.flux_values_1.append(flux_1)
+                self.flux_values_2.append(flux_2)
+                self.times.append(float(self.t))
 
-            for export in self.exports:
-                if isinstance(export, (F.VTXExport, F.XDMFExport)):
-                    export.write(float(self.t))
+        for export in self.exports:
+            if isinstance(export, (F.VTXExport, F.XDMFExport)):
+                export.write(float(self.t))
 
-            # update previous solution
-            self.u_n.x.array[:] = self.u.x.array[:]
+        # update previous solution
+        self.u_n.x.array[:] = self.u.x.array[:]
 
-        if self.multispecies:
-            flux_values = [flux_values_1, flux_values_2]
-
-        return times, flux_values
-
-    def update_time_dependent_values(self, t):
-        """Updates the time dependent values of the model
-        like temperature, boundary conditions, sources, etc.
-        """
-        # update temperature if time dependent
-        if self.temperature_time_dependent:
-            if isinstance(self.temperature_fenics, fem.Constant):
-                self.temperature_fenics.value = self.temperature(t=t)
-            else:
-                self.temperature_fenics.interpolate(self.temperature_expr)
-
-        # update boundary conditions
-        for bc in self.boundary_conditions:
-            bc.update(t)
