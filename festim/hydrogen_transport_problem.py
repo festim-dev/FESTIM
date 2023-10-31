@@ -379,7 +379,9 @@ class HydrogenTransportProblem:
 
         return self.times, self.flux_values
 
-    def iterate(self):
+    def iterate(
+        self, skip_post_processing=False
+    ):  # TODO remove skip_post_processing flag, just temporary
         """Iterates the model for a given time step"""
         self.progress.update(self.dt.value)
         self.t.value += self.dt.value
@@ -392,35 +394,36 @@ class HydrogenTransportProblem:
 
         # post processing
         # TODO remove this
-        if not self.multispecies:
-            D_D = self.subdomains[0].material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature, self.species[0]
-            )
-            cm = self.u
-            self.species[0].post_processing_solution = self.u
+        if not skip_post_processing:
+            if not self.multispecies:
+                D_D = self.subdomains[0].material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature, self.species[0]
+                )
+                cm = self.u
+                self.species[0].post_processing_solution = self.u
 
-            surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
-            flux = assemble_scalar(surface_flux)
-            self.flux_values.append(flux)
-            self.times.append(float(self.t))
-        else:
-            for idx, spe in enumerate(self.species):
-                spe.post_processing_solution = self.u.sub(idx)
+                surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
+                flux = assemble_scalar(surface_flux)
+                self.flux_values.append(flux)
+                self.times.append(float(self.t))
+            else:
+                for idx, spe in enumerate(self.species):
+                    spe.post_processing_solution = self.u.sub(idx)
 
-            cm_1, cm_2 = self.u.split()
-            D_1 = self.subdomains[0].material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature, self.species[0]
-            )
-            D_2 = self.subdomains[0].material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature, self.species[1]
-            )
-            surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
-            surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
-            flux_1 = assemble_scalar(surface_flux_1)
-            flux_2 = assemble_scalar(surface_flux_2)
-            self.flux_values_1.append(flux_1)
-            self.flux_values_2.append(flux_2)
-            self.times.append(float(self.t))
+                cm_1, cm_2 = self.u.split()
+                D_1 = self.subdomains[0].material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature, self.species[0]
+                )
+                D_2 = self.subdomains[0].material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature, self.species[1]
+                )
+                surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
+                surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
+                flux_1 = assemble_scalar(surface_flux_1)
+                flux_2 = assemble_scalar(surface_flux_2)
+                self.flux_values_1.append(flux_1)
+                self.flux_values_2.append(flux_2)
+                self.times.append(float(self.t))
 
         for export in self.exports:
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
