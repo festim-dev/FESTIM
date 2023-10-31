@@ -218,7 +218,7 @@ class HydrogenTransportProblem:
                 # to update the temperature_fenics later
                 self.temperature_expr = fem.Expression(
                     self.temperature(**kwargs),
-                    self.function_space.element.interpolation_points(),
+                    function_space_temperature.element.interpolation_points(),
                 )
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
