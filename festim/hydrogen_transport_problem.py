@@ -174,7 +174,8 @@ class HydrogenTransportProblem:
         self.temperature. If self.temperature is a function on t only, create
         a fem.Constant. Else, create an dolfinx.fem.Expression (stored in
         self.temperature_expr) to be updated, a dolfinx.fem.Function object
-        is created from the Expression (stored in self.temperature_fenics_value)
+        is created from the Expression (stored in self.temperature_fenics_value).
+        Raise a ValueError if temperature is None.
         """
         # check if temperature is None
         if self.temperature is None:
