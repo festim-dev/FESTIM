@@ -137,6 +137,8 @@ class HydrogenTransportProblem:
         if value is None:
             self._temperature_fenics = value
             return
+        elif not isinstance(value, (fem.Constant, fem.Function)):
+            raise TypeError(f"Value must be a fem.Constant or fem.Function")
         self._temperature_fenics = value
 
     @property
@@ -200,14 +202,15 @@ class HydrogenTransportProblem:
                 )
             else:
                 x = ufl.SpatialCoordinate(self.mesh.mesh)
-                CG_temperature = basix.ufl.element(
+                degree = 1
+                element_temperature = basix.ufl.element(
                     basix.ElementFamily.P,
                     self.mesh.mesh.basix_cell(),
-                    1,
+                    degree,
                     basix.LagrangeVariant.equispaced,
                 )
                 function_space_temperature = fem.FunctionSpace(
-                    self.mesh.mesh, CG_temperature
+                    self.mesh.mesh, element_temperature
                 )
                 self.temperature_fenics = fem.Function(function_space_temperature)
                 kwargs = {}
@@ -242,10 +245,11 @@ class HydrogenTransportProblem:
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n."""
+        degree = 1
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
-            1,
+            degree,
             basix.LagrangeVariant.equispaced,
         )
         if not self.multispecies:
@@ -527,11 +531,12 @@ class HydrogenTransportProblem:
         self.u_n.x.array[:] = self.u.x.array[:]
 
     def update_time_dependent_values(self):
+        t = float(self.t)
         if self.temperature_time_dependent:
             if isinstance(self.temperature_fenics, fem.Constant):
-                self.temperature_fenics.value = self.temperature(t=float(self.t))
+                self.temperature_fenics.value = self.temperature(t=t)
             else:
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
         for bc in self.boundary_conditions:
-            bc.update(float(self.t))
+            bc.update(t)
