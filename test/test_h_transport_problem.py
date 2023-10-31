@@ -52,13 +52,10 @@ def test_time_dependent_temperature_attribute(input, expected_value):
 
 
 def test_define_temperature_value_error_raised():
-    """Test that the define_temperature method correctly sets the
-    temperature_fenics attribute to either a fem.Constant or a
-    fem.Function and raise a ValueError temperature is None"""
+    """Test that a ValueError is rasied when the temperature is None"""
 
     # BUILD
     my_model = F.HydrogenTransportProblem(mesh=test_mesh)
-    my_model.t = fem.Constant(test_mesh.mesh, 0.0)
 
     my_model.temperature = None
 
@@ -85,7 +82,7 @@ def test_define_temperature_value_error_raised():
 def test_define_temperature(input, expected_type):
     """Test that the define_temperature method correctly sets the
     temperature_fenics attribute to either a fem.Constant or a
-    fem.Function"""
+    fem.Function depending on the type of input"""
 
     # BUILD
     my_model = F.HydrogenTransportProblem(mesh=test_mesh)
