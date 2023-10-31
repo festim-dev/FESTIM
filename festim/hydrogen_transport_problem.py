@@ -23,7 +23,7 @@ class HydrogenTransportProblem:
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
-            temperature of the model
+            temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
@@ -35,7 +35,7 @@ class HydrogenTransportProblem:
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
-            temperature of the model
+            temperature of the model (K)
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
@@ -56,6 +56,7 @@ class HydrogenTransportProblem:
         temperature_expr (fem.Expression): the expression of the temperature
             that is used to update the temperature_fenics
         temperature_time_dependent (bool): True if the temperature is time
+            dependent
 
 
     Usage:
@@ -177,7 +178,7 @@ class HydrogenTransportProblem:
         """
         # check if temperature is None
         if self.temperature is None:
-            raise TypeError("Temperature needs to be defined")
+            raise ValueError("the temperature attribute needs to be defined")
 
         # if temperature is a float or int, create a fem.Constant
         elif isinstance(self.temperature, (float, int)):
