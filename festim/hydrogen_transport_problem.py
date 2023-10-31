@@ -468,7 +468,6 @@ class HydrogenTransportProblem:
         while self.t.value < self.settings.final_time:
             self.iterate()
 
-
         if self.multispecies:
             self.flux_values = [self.flux_values_1, self.flux_values_2]
 
@@ -481,9 +480,7 @@ class HydrogenTransportProblem:
         self.progress.update(self.dt.value)
         self.t.value += self.dt.value
 
-        # update boundary conditions
-        for bc in self.boundary_conditions:
-            bc.update(float(self.t))
+        self.update_time_dependent_values(t=float(self.t))
 
         self.solver.solve(self.u)
 
@@ -527,3 +524,12 @@ class HydrogenTransportProblem:
         # update previous solution
         self.u_n.x.array[:] = self.u.x.array[:]
 
+    def update_time_dependent_values(self, t):
+        if self.temperature_time_dependent:
+            if isinstance(self.temperature_fenics, fem.Constant):
+                self.temperature_fenics.value = self.temperature(t=t)
+            else:
+                self.temperature_fenics.interpolate(self.temperature_expr)
+
+        for bc in self.boundary_conditions:
+            bc.update(t)
