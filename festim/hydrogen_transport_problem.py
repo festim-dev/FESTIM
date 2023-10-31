@@ -481,7 +481,7 @@ class HydrogenTransportProblem:
         self.progress.update(self.dt.value)
         self.t.value += self.dt.value
 
-        self.update_time_dependent_values(t=float(self.t))
+        self.update_time_dependent_values()
 
         self.solver.solve(self.u)
 
@@ -525,12 +525,12 @@ class HydrogenTransportProblem:
         # update previous solution
         self.u_n.x.array[:] = self.u.x.array[:]
 
-    def update_time_dependent_values(self, t):
+    def update_time_dependent_values(self):
         if self.temperature_time_dependent:
             if isinstance(self.temperature_fenics, fem.Constant):
-                self.temperature_fenics.value = self.temperature(t=t)
+                self.temperature_fenics.value = self.temperature(t=float(self.t))
             else:
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
         for bc in self.boundary_conditions:
-            bc.update(t)
+            bc.update(float(self.t))
