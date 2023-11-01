@@ -4,7 +4,7 @@ import ufl
 import csv
 
 
-class SurfaceFlux(F.SurfaceQuantity):
+class SurfaceFlux:
     """Exports surface flux at a given subdomain
 
     Args:

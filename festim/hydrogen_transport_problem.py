@@ -152,42 +152,39 @@ class HydrogenTransportProblem:
                     export.writer.write_mesh(self.mesh.mesh)
 
             if isinstance(export, F.SurfaceFlux):
-                self.define_D_global(export)
+                D, D_expr = self.define_D_global(export.field)
                 self.derived_quantities[f"{export.title}"] = []
-
-    def define_D_global(self, export):
-        for spe in self.species:
-            D_0 = fem.Function(self.V_DG_0)
-            E_D = fem.Function(self.V_DG_0)
-            for vol in self.volume_subdomains:
-                entities = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
-                if not self.multispecies:
-                    if isinstance(vol.material.D_0, (float, int, fem.Constant)):
-                        D_0.x.array[entities] = vol.material.D_0
-                        E_D.x.array[entities] = vol.material.E_D
-                    else:
-                        raise NotImplementedError(
-                            "diffusion values as functions not supported"
-                        )
-                else:
-                    D_0.x.array[entities] = vol.material.D_0[f"{spe}"]
-                    E_D.x.array[entities] = vol.material.E_D[f"{spe}"]
-
-            # create global D function
-            D = fem.Function(self.V_DG_1)
-            expr = D_0 * ufl.exp(
-                -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature
-            )
-            D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
-            D.interpolate(D_expr)
-
-            # add the global D to the export
-            if export.field == spe:
+                # add the global D to the export
                 export.D = D
+                self.D_global_expr.append(D_expr)
+                self.D_global.append(D)
 
-            # add to global list for updating later
-            self.D_global_expr.append(D_expr)
-            self.D_global.append(D)
+    def define_D_global(self, spe):
+        assert isinstance(spe, F.Species)
+        D_0 = fem.Function(self.V_DG_0)
+        E_D = fem.Function(self.V_DG_0)
+        for vol in self.volume_subdomains:
+            entities = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+            if not self.multispecies:
+                if isinstance(vol.material.D_0, (float, int, fem.Constant)):
+                    D_0.x.array[entities] = vol.material.D_0
+                    E_D.x.array[entities] = vol.material.E_D
+                else:
+                    raise NotImplementedError(
+                        "diffusion values as functions not supported"
+                    )
+            else:
+                D_0.x.array[entities] = vol.material.D_0[f"{spe}"]
+                E_D.x.array[entities] = vol.material.E_D[f"{spe}"]
+
+        # create global D function
+        D = fem.Function(self.V_DG_1)
+        expr = D_0 * ufl.exp(
+            -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature
+        )
+        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+        D.interpolate(D_expr)
+        return D, D_expr
 
     def define_function_space(self):
         """Creates the function space of the model, creates a mixed element if
