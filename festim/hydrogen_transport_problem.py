@@ -151,9 +151,9 @@ class HydrogenTransportProblem:
                     export.writer.write_mesh(self.mesh.mesh)
 
         # compute diffusivity function for surface fluxes
-        # correspondance dicts
-        spe_to_D_global = {}
-        spe_to_D_global_expr = {}
+
+        spe_to_D_global = {}  # links species to global D function
+        spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
             if isinstance(export, F.SurfaceFlux):
@@ -175,21 +175,23 @@ class HydrogenTransportProblem:
 
     def define_D_global(self, spe):
         assert isinstance(spe, F.Species)
+
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
-            entities = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
             if not self.multispecies:
                 if isinstance(vol.material.D_0, (float, int, fem.Constant)):
-                    D_0.x.array[entities] = vol.material.D_0
-                    E_D.x.array[entities] = vol.material.E_D
+                    # replace values of D_0 and E_D by values from the material
+                    D_0.x.array[cell_indices] = vol.material.D_0
+                    E_D.x.array[cell_indices] = vol.material.E_D
                 else:
                     raise NotImplementedError(
                         "diffusion values as functions not supported"
                     )
             else:
-                D_0.x.array[entities] = vol.material.D_0[f"{spe}"]
-                E_D.x.array[entities] = vol.material.E_D[f"{spe}"]
+                D_0.x.array[cell_indices] = vol.material.D_0[f"{spe}"]
+                E_D.x.array[cell_indices] = vol.material.E_D[f"{spe}"]
 
         # create global D function
         D = fem.Function(self.V_DG_1)
