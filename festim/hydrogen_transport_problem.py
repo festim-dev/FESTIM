@@ -174,7 +174,6 @@ class HydrogenTransportProblem:
             elements = []
             for spe in self.species:
                 if isinstance(spe, F.Species):
-                    # TODO check if mobile or immobile for traps
                     elements.append(element_CG)
             element = ufl.MixedElement(elements)
 
@@ -343,8 +342,7 @@ class HydrogenTransportProblem:
                 D = vol.material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature, spe
                 )
-                # TODO only add diffusion for mobile species
-                if spe.name != "trapped_H":
+                if spe.mobile:
                     self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
 
                 self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)

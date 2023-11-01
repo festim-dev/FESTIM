@@ -7,9 +7,11 @@ class Species:
 
     Args:
         name (str, optional): a name given to the species. Defaults to None.
+        mobile (bool, optional): whether the species is mobile or not.
 
     Attributes:
         name (str): a name given to the species.
+        mobile (bool): whether the species is mobile or not.
         solution (dolfinx.fem.Function): the solution for the current timestep
         prev_solution (dolfinx.fem.Function): the solution for the previous
             timestep
@@ -34,9 +36,9 @@ class Species:
 
     """
 
-    def __init__(self, name: str = None) -> None:
+    def __init__(self, name: str = None, mobile=True) -> None:
         self.name = name
-
+        self.mobile = mobile
         self.solution = None
         self.prev_solution = None
         self.test_function = None
