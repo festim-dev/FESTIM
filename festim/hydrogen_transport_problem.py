@@ -180,18 +180,10 @@ class HydrogenTransportProblem:
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
             cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
-            if not self.multispecies:
-                if isinstance(vol.material.D_0, (float, int, fem.Constant)):
-                    # replace values of D_0 and E_D by values from the material
-                    D_0.x.array[cell_indices] = vol.material.D_0
-                    E_D.x.array[cell_indices] = vol.material.E_D
-                else:
-                    raise NotImplementedError(
-                        "diffusion values as functions not supported"
-                    )
-            else:
-                D_0.x.array[cell_indices] = vol.material.D_0[f"{spe}"]
-                E_D.x.array[cell_indices] = vol.material.E_D[f"{spe}"]
+
+            # replace values of D_0 and E_D by values from the material
+            D_0.x.array[cell_indices] = vol.material.get_D_0(species=spe)
+            E_D.x.array[cell_indices] = vol.material.get_E_D(species=spe)
 
         # create global D function
         D = fem.Function(self.V_DG_1)

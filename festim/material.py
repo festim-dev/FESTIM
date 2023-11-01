@@ -35,6 +35,58 @@ class Material:
         self.E_D = E_D
         self.name = name
 
+    def get_D_0(self, species=None):
+        """Returns the pre-exponential factor of the diffusion coefficient
+        Args:
+            species (festim.Species or str, optional): the species we want the pre-exponential
+                factor of the diffusion coefficient of. Only needed if D_0 is a dict.
+        Returns:
+            float: the pre-exponential factor of the diffusion coefficient
+        """
+
+        if isinstance(self.D_0, (float, int)):
+            return self.D_0
+
+        elif isinstance(self.D_0, dict):
+            if species is None:
+                raise ValueError("species must be provided if D_0 is a dict")
+
+            if species in self.D_0:
+                return self.D_0[species]
+            elif species.name in self.D_0:
+                return self.D_0[species.name]
+            else:
+                raise ValueError(f"{species} is not in D_0 keys")
+
+        else:
+            raise ValueError("D_0 must be either a float or a dict")
+
+    def get_E_D(self, species=None):
+        """Returns the activation energy of the diffusion coefficient
+        Args:
+            species (festim.Species or str, optional): the species we want the activation
+                energy of the diffusion coefficient of. Only needed if E_D is a dict.
+        Returns:
+            float: the activation energy of the diffusion coefficient
+        """
+
+        if isinstance(self.E_D, (float, int)):
+            return self.E_D
+
+        elif isinstance(self.E_D, dict):
+            if species is None:
+                raise ValueError("species must be provided if E_D is a dict")
+
+            if species in self.E_D:
+                return self.E_D[species]
+            elif species.name in self.E_D:
+                return self.E_D[species.name]
+            else:
+                raise ValueError(f"{species} is not in E_D keys")
+
+        else:
+            raise ValueError("E_D must be either a float or a dict")
+
     def get_diffusion_coefficient(self, mesh, temperature, species=None):
         """Defines the diffusion coefficient
         Args:
