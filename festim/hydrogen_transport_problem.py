@@ -444,11 +444,13 @@ class HydrogenTransportProblem:
 
             # update global D if temperature time dependent or internal
             # variables time dependent
-            species_not_updated = self.species.copy()
+            species_not_updated = self.species.copy()  # make a copy of the species
             for export in self.exports:
                 if isinstance(export, F.SurfaceFlux):
+                    # if the D of the species has not been updated yet
                     if export.field in species_not_updated:
                         export.D.interpolate(export.D_expr)
+                        species_not_updated.remove(export.field)
 
             # solve main problem
             self.solver.solve(self.u)
