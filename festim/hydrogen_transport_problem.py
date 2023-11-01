@@ -413,8 +413,6 @@ class HydrogenTransportProblem:
         )
         while self.t.value < self.settings.final_time:
             self.iterate()
-            print(self.species[0].post_processing_solution.x.array)
-            print(self.species[1].post_processing_solution.x.array)
 
         if self.multispecies:
             self.flux_values = [self.flux_values_1, self.flux_values_2]
