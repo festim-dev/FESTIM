@@ -48,7 +48,7 @@ def test_time_dependent_temperature_attribute(input, expected_value):
     my_model = F.HydrogenTransportProblem()
     my_model.temperature = input
 
-    assert my_model.temperature_time_dependent == expected_value
+    assert my_model.temperature_time_dependent is expected_value
 
 
 def test_define_temperature_value_error_raised():
