@@ -7,6 +7,7 @@ from mpi4py import MPI
 from dolfinx.fem import Function, form, assemble_scalar
 from dolfinx.mesh import meshtags
 from ufl import TestFunction, dot, grad, Measure, FacetNormal
+from ufl.conditional import Conditional
 import numpy as np
 import tqdm.autonotebook
 
@@ -139,7 +140,10 @@ class HydrogenTransportProblem:
         if value is None:
             self._temperature_fenics = value
             return
-        elif not isinstance(value, (fem.Constant, fem.Function)):
+        elif not isinstance(
+            value,
+            (fem.Constant, fem.Function, Conditional),
+        ):
             raise TypeError(f"Value must be a fem.Constant or fem.Function")
         self._temperature_fenics = value
 
@@ -213,9 +217,15 @@ class HydrogenTransportProblem:
             arguments = self.temperature.__code__.co_varnames
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 # only t is an argument
-                self.temperature_fenics = F.as_fenics_constant(
-                    mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
-                )
+                if isinstance(self.temperature(t=self.t), Conditional):
+                    self.temperature_fenics = self.temperature(t=self.t)
+                else:
+                    # TODO do we need to have it as a fem.Constant or can we just have
+                    # self.temperature_fenics = self.temperature(t=self.t)
+                    # this way we wouldn't have to update it since self.t is a Constant
+                    self.temperature_fenics = F.as_fenics_constant(
+                        mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
+                    )
             else:
                 x = ufl.SpatialCoordinate(self.mesh.mesh)
                 degree = 1
@@ -464,20 +474,20 @@ class HydrogenTransportProblem:
             # reactant 1
             if isinstance(reaction.reactant1, F.Species):
                 self.formulation += (
-                    reaction.reaction_term(self.temperature)
+                    reaction.reaction_term(self.temperature_fenics)
                     * reaction.reactant1.test_function
                     * self.dx
                 )
             # reactant 2
             if isinstance(reaction.reactant2, F.Species):
                 self.formulation += (
-                    reaction.reaction_term(self.temperature)
+                    reaction.reaction_term(self.temperature_fenics)
                     * reaction.reactant2.test_function
                     * self.dx
                 )
             # product
             self.formulation += (
-                -reaction.reaction_term(self.temperature)
+                -reaction.reaction_term(self.temperature_fenics)
                 * reaction.product.test_function
                 * self.dx
             )
@@ -573,8 +583,9 @@ class HydrogenTransportProblem:
         if self.temperature_time_dependent:
             if isinstance(self.temperature_fenics, fem.Constant):
                 self.temperature_fenics.value = self.temperature(t=t)
-            else:
+            elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
-
+            elif isinstance(self.temperature_fenics, Conditional):
+                pass
         for bc in self.boundary_conditions:
             bc.update(t)
