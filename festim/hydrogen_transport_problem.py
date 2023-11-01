@@ -158,11 +158,17 @@ class HydrogenTransportProblem:
         for export in self.exports:
             if isinstance(export, F.SurfaceFlux):
                 if export.field in spe_to_D_global:
+                    # if already computed then use the same D
                     D = spe_to_D_global[export.field]
                     D_expr = spe_to_D_global_expr[export.field]
                 else:
+                    # if not computed then compute D and add it to the dict
                     D, D_expr = self.define_D_global(export.field)
+                    spe_to_D_global[export.field] = D
+                    spe_to_D_global_expr[export.field] = D_expr
+
                 self.derived_quantities[f"{export.title}"] = []
+
                 # add the global D to the export
                 export.D = D
                 export.D_expr = D_expr
