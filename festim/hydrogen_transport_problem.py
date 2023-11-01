@@ -277,7 +277,7 @@ class HydrogenTransportProblem:
             sub_prev_solution = [self.u_n]
             sub_test_functions = [ufl.TestFunction(self.function_space)]
             self.species[0].sub_function_space = self.function_space
-            self.species[0].post_processing_solution = fem.Function(self.function_space)
+            self.species[0].post_processing_solution = self.u
         else:
             sub_solutions = list(ufl.split(self.u))
             sub_prev_solution = list(ufl.split(self.u_n))
@@ -498,16 +498,11 @@ class HydrogenTransportProblem:
                     self.mesh.mesh, self.temperature_fenics, self.species[0]
                 )
                 cm = self.u
-                self.species[0].post_processing_solution = self.u
-
                 surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
                 flux = assemble_scalar(surface_flux)
                 self.flux_values.append(flux)
                 self.times.append(float(self.t))
             else:
-                for idx, spe in enumerate(self.species):
-                    spe.post_processing_solution = self.u.sub(idx)
-
                 cm_1, cm_2 = self.u.split()
                 D_1 = self.subdomains[0].material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature_fenics, self.species[0]
