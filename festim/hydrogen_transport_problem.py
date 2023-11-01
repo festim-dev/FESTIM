@@ -117,6 +117,20 @@ class HydrogenTransportProblem:
     def multispecies(self):
         return len(self.species) > 1
 
+    @property
+    def species(self):
+        return self._species
+
+    @species.setter
+    def species(self, value):
+        # check that all species are of type festim.Species
+        for spe in value:
+            if not isinstance(spe, F.Species):
+                raise TypeError(
+                    f"elements of species must be of type festim.Species not {type(spe)}"
+                )
+        self._species = value
+
     def initialise(self):
         self.define_function_space()
         self.define_markers_and_measures()
