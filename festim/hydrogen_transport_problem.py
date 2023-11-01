@@ -285,7 +285,7 @@ class HydrogenTransportProblem:
 
             for idx, spe in enumerate(self.species):
                 spe.sub_function_space = self.function_space.sub(idx)
-                spe.post_processing_solution = self.u.sub(idx).collapse()
+                spe.post_processing_solution = self.u.sub(idx)
                 spe.collapsed_function_space, _ = self.function_space.sub(
                     idx
                 ).collapse()
