@@ -159,7 +159,14 @@ def test_permeation_problem_multi_volume(tmp_path):
         ),
     ]
     my_model.exports = [
-        F.VTXExport(os.path.join(tmp_path, "mobile_concentration_h.bp"), field=mobile_H)
+        F.VTXExport(
+            os.path.join(tmp_path, "mobile_concentration_h.bp"), field=mobile_H
+        ),
+        F.SurfaceFlux(
+            filename=os.path.join(tmp_path, "my_surface_flux.csv"),
+            field=mobile_H,
+            surface_subdomain=right_surface,
+        ),
     ]
 
     my_model.settings = F.Settings(
@@ -182,7 +189,10 @@ def test_permeation_problem_multi_volume(tmp_path):
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    times, flux_values = my_model.run()
+    my_model.run()
+
+    times = my_model.derived_quantities["t(s)"]
+    flux_values = my_model.derived_quantities["Flux surface 2: H"]
 
     # ---------------------- analytical solution -----------------------------
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
