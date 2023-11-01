@@ -85,8 +85,20 @@ def test_multispecies_permeation_problem():
         max_iterations=30,
         final_time=10,
     )
-
     my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
+
+    my_model.exports = [
+        F.SurfaceFlux(
+            filename="flux_spe_1.csv",
+            field=spe_1,
+            surface_subdomain=right_surface,
+        ),
+        F.SurfaceFlux(
+            filename="flux_spe_2.csv",
+            field=spe_2,
+            surface_subdomain=right_surface,
+        ),
+    ]
     my_model.initialise()
 
     my_model.solver.convergence_criterion = "incremental"
@@ -98,14 +110,18 @@ def test_multispecies_permeation_problem():
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    times, flux_values = my_model.run()
+    my_model.run()
+
+    times = my_model.derived_quantities["t(s)"]
+    flux_values_spe_1 = my_model.derived_quantities["Flux surface 2: spe_1"]
+    flux_values_spe_2 = my_model.derived_quantities["Flux surface 2: spe_2"]
 
     # ---------------------- analytical solutions -----------------------------
 
     # common values
     times = np.array(times)
     P_up = float(my_model.boundary_conditions[-1].pressure)
-    flux_values_spe_1, flux_values_spe_2 = flux_values[0], flux_values[1]
+    # flux_values_spe_1, flux_values_spe_2 = flux_values[0], flux_values[1]
 
     # ##### compute analyical solution for species 1 ##### #
     D_spe_1 = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature, spe_1)

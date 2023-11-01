@@ -4,6 +4,7 @@ from ufl import exp
 import numpy as np
 import festim as F
 import os
+import ufl
 
 
 def relative_error_computed_to_analytical(
@@ -60,7 +61,14 @@ def test_permeation_problem(mesh_size=1001):
             subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
         ),
     ]
-    my_model.exports = [F.XDMFExport("mobile_concentration.xdmf", field=mobile_H)]
+    my_model.exports = [
+        F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
+        F.SurfaceFlux(
+            filename="my_surface_flux.csv",
+            field=mobile_H,
+            surface_subdomain=right_surface,
+        ),
+    ]
 
     my_model.settings = F.Settings(
         atol=1e10,
@@ -82,7 +90,12 @@ def test_permeation_problem(mesh_size=1001):
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    times, flux_values = my_model.run()
+    my_model.run()
+
+    # print(my_model.derived_quantities.keys())
+
+    times = my_model.derived_quantities["t(s)"]
+    flux_values = my_model.derived_quantities["Flux surface 2: H"]
 
     # -------------------------- analytical solution -------------------------------------
 
@@ -187,3 +200,8 @@ def test_permeation_problem_multi_volume(tmp_path):
     )
 
     assert error < 0.01
+
+
+if __name__ == "__main__":
+    test_permeation_problem()
+    # test_permeation_problem_multi_volume(tmp_path=".")
