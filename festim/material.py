@@ -98,6 +98,14 @@ class Material:
         Returns:
             ufl.algebra.Product: the diffusion coefficient
         """
+        # TODO use get_D_0 and get_E_D to refactore this method, something like:
+        # D_0 = self.get_D_0(species=species)
+        # E_D = self.get_E_D(species=species)
+
+        # D_0 = F.as_fenics_constant(D_0, mesh)
+        # E_D = F.as_fenics_constant(E_D, mesh)
+
+        # return D_0 * ufl.exp(-E_D / F.k_B / temperature)
 
         if isinstance(self.D_0, (float, int)) and isinstance(self.E_D, (float, int)):
             D_0 = F.as_fenics_constant(self.D_0, mesh)
