@@ -119,7 +119,7 @@ class HydrogenTransportProblem:
         return len(self.species) > 1
 
     def initialise(self):
-        self.define_function_spaces()
+        self.define_function_space()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
 
@@ -134,6 +134,7 @@ class HydrogenTransportProblem:
     def initialise_exports(self):
         """Defines the export writers of the model, if field is given as
         a string, find species object in self.species"""
+        self.derived_quantities["t(s)"] = []
         for export in self.exports:
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
@@ -152,7 +153,6 @@ class HydrogenTransportProblem:
 
             if isinstance(export, F.SurfaceFlux):
                 self.define_D_global(export)
-                self.derived_quantities["t(s)"] = []
                 self.derived_quantities[f"{export.title}"] = []
 
     def define_D_global(self, export):
@@ -182,13 +182,14 @@ class HydrogenTransportProblem:
             D.interpolate(D_expr)
 
             # add the global D to the export
-            export.D = D
+            if export.field == spe:
+                export.D = D
 
             # add to global list for updating later
             self.D_global_expr.append(D_expr)
             self.D_global.append(D)
 
-    def define_function_spaces(self):
+    def define_function_space(self):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n."""
