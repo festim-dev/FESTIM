@@ -173,8 +173,17 @@ class HydrogenTransportProblem:
                 export.D = D
                 export.D_expr = D_expr
 
-    def define_D_global(self, spe):
-        assert isinstance(spe, F.Species)
+    def define_D_global(self, species):
+        """Defines the global diffusion coefficient for a given species
+
+        Args:
+            species (F.Species): the species
+
+        Returns:
+            dolfinx.fem.Function, dolfinx.fem.Expression: the global diffusion
+                coefficient and the expression of the global diffusion coefficient
+        """
+        assert isinstance(species, F.Species)
 
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
@@ -182,8 +191,8 @@ class HydrogenTransportProblem:
             cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
 
             # replace values of D_0 and E_D by values from the material
-            D_0.x.array[cell_indices] = vol.material.get_D_0(species=spe)
-            E_D.x.array[cell_indices] = vol.material.get_E_D(species=spe)
+            D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
+            E_D.x.array[cell_indices] = vol.material.get_E_D(species=species)
 
         # create global D function
         D = fem.Function(self.V_DG_1)
