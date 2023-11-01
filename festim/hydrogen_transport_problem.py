@@ -115,10 +115,6 @@ class HydrogenTransportProblem:
     def multispecies(self):
         return len(self.species) > 1
 
-    @property
-    def explicit_species(self):
-        return [spe for spe in self.species if isinstance(spe, F.Species)]
-
     def initialise(self):
         self.define_function_space()
         self.define_markers_and_measures()
