@@ -349,19 +349,12 @@ class HydrogenTransportProblem:
                 #         formulation += bc * v * self.ds
         # TODO what if a reaction happens only in one sudomain
         for reaction in self.reactions:
-            k = reaction.k_0 * ufl.exp(-reaction.E_k / (F.k_B * self.temperature))
-            p = reaction.p_0 * ufl.exp(-reaction.E_p / (F.k_B * self.temperature))
-
-            c_A = reaction.reactant1.concentration
-            c_B = reaction.reactant2.concentration
-            trapping_term = k * c_A * c_B
-            detrapping_term = p * reaction.product.concentration
-
             # reactant 1
             if isinstance(reaction.reactant1, F.Species):
                 self.formulation += (
-                    trapping_term * reaction.reactant1.test_function * self.dx
-                    - detrapping_term * reaction.reactant1.test_function * self.dx
+                    reaction.reaction_term(self.temperature)
+                    * reaction.reactant1.test_function
+                    * self.dx
                 )
             # reactant 2
             if isinstance(reaction.reactant2, F.Species):
@@ -372,8 +365,9 @@ class HydrogenTransportProblem:
                 )
             # product
             self.formulation += (
-                -trapping_term * reaction.product.test_function * self.dx
-                + detrapping_term * reaction.product.test_function * self.dx
+                -reaction.reaction_term(self.temperature)
+                * reaction.product.test_function
+                * self.dx
             )
 
     def create_solver(self):
