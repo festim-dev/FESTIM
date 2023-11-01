@@ -26,16 +26,14 @@ class SurfaceFlux(F.SurfaceQuantity):
 
         self.D = None
 
-        if self.filename is None:
-            self.filename = f"Surface_Flux_subdomain_{surface_subdomain.id}.csv"
-
         self.title = "Flux surface {}: {}".format(
             self.surface_subdomain.id, self.field.name
         )
 
-        with open(self.filename, mode="w", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow(["Time", f"{self.title}"])
+        if self.write_to_file:
+            with open(self.filename, mode="w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(["Time", f"{self.title}"])
 
     @property
     def filename(self):
@@ -43,6 +41,8 @@ class SurfaceFlux(F.SurfaceQuantity):
 
     @filename.setter
     def filename(self, value):
+        if value is None:
+            self._filename = None
         if not isinstance(value, str):
             raise TypeError("filename must be of type str")
         if not value.endswith(".csv"):
@@ -73,6 +73,13 @@ class SurfaceFlux(F.SurfaceQuantity):
 
         self._field = value
 
+    @property
+    def write_to_file(self):
+        if self.filename is None:
+            return False
+        else:
+            return True
+
     def compute(self, mesh, ds):
         self.value = fem.assemble_scalar(
             fem.form(
@@ -81,6 +88,7 @@ class SurfaceFlux(F.SurfaceQuantity):
                 * ds(self.surface_subdomain.id)
             )
         )
+        self.data.append(self.value)
 
     def write(self, t):
         with open(self.filename, mode="a", newline="") as file:

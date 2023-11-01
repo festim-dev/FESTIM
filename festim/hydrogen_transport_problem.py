@@ -100,8 +100,6 @@ class HydrogenTransportProblem:
         self.volume_subdomains = []
         self.bc_forms = []
         self.derived_quantities = {}
-        self.D_global = []
-        self.D_global_expr = []
 
     @property
     def temperature(self):
@@ -152,44 +150,58 @@ class HydrogenTransportProblem:
                 if isinstance(export, F.XDMFExport):
                     export.writer.write_mesh(self.mesh.mesh)
 
-            # initialise surface flux derived quantity
+        # compute diffusivity function for surface fluxes
+
+        spe_to_D_global = {}  # links species to global D function
+        spe_to_D_global_expr = {}  # links species to D expression
+
+        for export in self.exports:
             if isinstance(export, F.SurfaceFlux):
-                self.define_D_global(export)
+                if export.field in spe_to_D_global:
+                    # if already computed then use the same D
+                    D = spe_to_D_global[export.field]
+                    D_expr = spe_to_D_global_expr[export.field]
+                else:
+                    # if not computed then compute D and add it to the dict
+                    D, D_expr = self.define_D_global(export.field)
+                    spe_to_D_global[export.field] = D
+                    spe_to_D_global_expr[export.field] = D_expr
+
                 self.derived_quantities[f"{export.title}"] = []
 
-    def define_D_global(self, export):
-        for spe in self.species:
-            D_0 = fem.Function(self.V_DG_0)
-            E_D = fem.Function(self.V_DG_0)
-            for vol in self.volume_subdomains:
-                entities = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
-                if not self.multispecies:
-                    if isinstance(vol.material.D_0, (float, int, fem.Constant)):
-                        D_0.x.array[entities] = vol.material.D_0
-                        E_D.x.array[entities] = vol.material.E_D
-                    else:
-                        raise NotImplementedError(
-                            "diffusion values as functions not supported"
-                        )
-                else:
-                    D_0.x.array[entities] = vol.material.D_0[f"{spe}"]
-                    E_D.x.array[entities] = vol.material.E_D[f"{spe}"]
-
-            # create global D function
-            D = fem.Function(self.V_DG_1)
-            expr = D_0 * ufl.exp(
-                -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature
-            )
-            D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
-            D.interpolate(D_expr)
-
-            # add the global D to the export
-            if export.field == spe:
+                # add the global D to the export
                 export.D = D
+                export.D_expr = D_expr
 
-            # add to global list for updating later
-            self.D_global_expr.append(D_expr)
-            self.D_global.append(D)
+    def define_D_global(self, species):
+        """Defines the global diffusion coefficient for a given species
+
+        Args:
+            species (F.Species): the species
+
+        Returns:
+            dolfinx.fem.Function, dolfinx.fem.Expression: the global diffusion
+                coefficient and the expression of the global diffusion coefficient
+        """
+        assert isinstance(species, F.Species)
+
+        D_0 = fem.Function(self.V_DG_0)
+        E_D = fem.Function(self.V_DG_0)
+        for vol in self.volume_subdomains:
+            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+
+            # replace values of D_0 and E_D by values from the material
+            D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
+            E_D.x.array[cell_indices] = vol.material.get_E_D(species=species)
+
+        # create global D function
+        D = fem.Function(self.V_DG_1)
+        expr = D_0 * ufl.exp(
+            -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature
+        )
+        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+        D.interpolate(D_expr)
+        return D, D_expr
 
     def define_function_space(self):
         """Creates the function space of the model, creates a mixed element if
@@ -432,9 +444,15 @@ class HydrogenTransportProblem:
 
             # update global D if temperature time dependent or internal
             # variables time dependent
-            for D, expr in zip(self.D_global, self.D_global_expr):
-                D.interpolate(expr)
+            species_not_updated = self.species.copy()  # make a copy of the species
+            for export in self.exports:
+                if isinstance(export, F.SurfaceFlux):
+                    # if the D of the species has not been updated yet
+                    if export.field in species_not_updated:
+                        export.D.interpolate(export.D_expr)
+                        species_not_updated.remove(export.field)
 
+            # solve main problem
             self.solver.solve(self.u)
 
             # post processing
