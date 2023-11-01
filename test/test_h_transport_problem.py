@@ -52,7 +52,7 @@ def test_time_dependent_temperature_attribute(input, expected_value):
 
 
 def test_define_temperature_value_error_raised():
-    """Test that a ValueError is rasied when the temperature is None"""
+    """Test that a ValueError is raised when the temperature is None"""
 
     # BUILD
     my_model = F.HydrogenTransportProblem(mesh=test_mesh)
