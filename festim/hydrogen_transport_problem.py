@@ -100,8 +100,6 @@ class HydrogenTransportProblem:
         self.volume_subdomains = []
         self.bc_forms = []
         self.derived_quantities = {}
-        self.D_global = []
-        self.D_global_expr = []
 
     @property
     def temperature(self):
@@ -151,13 +149,18 @@ class HydrogenTransportProblem:
                 if isinstance(export, F.XDMFExport):
                     export.writer.write_mesh(self.mesh.mesh)
 
+            spe_to_D_global = {}
+            spe_to_D_global_expr = {}
             if isinstance(export, F.SurfaceFlux):
-                D, D_expr = self.define_D_global(export.field)
+                if export.field in spe_to_D_global:
+                    D = spe_to_D_global[export.field]
+                    D_expr = spe_to_D_global_expr[export.field]
+                else:
+                    D, D_expr = self.define_D_global(export.field)
                 self.derived_quantities[f"{export.title}"] = []
                 # add the global D to the export
                 export.D = D
-                self.D_global_expr.append(D_expr)
-                self.D_global.append(D)
+                export.D_expr = D_expr
 
     def define_D_global(self, spe):
         assert isinstance(spe, F.Species)
@@ -427,9 +430,13 @@ class HydrogenTransportProblem:
 
             # update global D if temperature time dependent or internal
             # variables time dependent
-            for D, expr in zip(self.D_global, self.D_global_expr):
-                D.interpolate(expr)
+            species_not_updated = self.species.copy()
+            for export in self.exports:
+                if isinstance(export, F.SurfaceFlux):
+                    if export.field in species_not_updated:
+                        export.D.interpolate(export.D_expr)
 
+            # solve main problem
             self.solver.solve(self.u)
 
             # post processing
