@@ -100,6 +100,8 @@ class HydrogenTransportProblem:
         self.volume_subdomains = []
         self.bc_forms = []
         self.derived_quantities = {}
+        self.D_global = []
+        self.D_global_expr = []
 
     @property
     def temperature(self):
@@ -117,7 +119,7 @@ class HydrogenTransportProblem:
         return len(self.species) > 1
 
     def initialise(self):
-        self.define_function_space()
+        self.define_function_spaces()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
 
@@ -149,10 +151,44 @@ class HydrogenTransportProblem:
                     export.writer.write_mesh(self.mesh.mesh)
 
             if isinstance(export, F.SurfaceFlux):
+                self.define_D_global(export)
                 self.derived_quantities["t(s)"] = []
                 self.derived_quantities[f"{export.title}"] = []
 
-    def define_function_space(self):
+    def define_D_global(self, export):
+        for spe in self.species:
+            D_0 = fem.Function(self.V_DG_0)
+            E_D = fem.Function(self.V_DG_0)
+            for vol in self.volume_subdomains:
+                entities = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+                if not self.multispecies:
+                    if isinstance(vol.material.D_0, (float, int, fem.Constant)):
+                        D_0.x.array[entities] = vol.material.D_0
+                        E_D.x.array[entities] = vol.material.E_D
+                    else:
+                        raise NotImplementedError(
+                            "diffusion values as functions not supported"
+                        )
+                else:
+                    D_0.x.array[entities] = vol.material.D_0[f"{spe}"]
+                    E_D.x.array[entities] = vol.material.E_D[f"{spe}"]
+
+            # create global D function
+            D = fem.Function(self.V_DG_1)
+            expr = D_0 * ufl.exp(
+                -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature
+            )
+            D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+            D.interpolate(D_expr)
+
+            # add the global D to the export
+            export.D = D
+
+            # add to global list for updating later
+            self.D_global_expr.append(D_expr)
+            self.D_global.append(D)
+
+    def define_function_spaces(self):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n."""
@@ -173,6 +209,8 @@ class HydrogenTransportProblem:
             element = ufl.MixedElement(elements)
 
         self.function_space = fem.FunctionSpace(self.mesh.mesh, element)
+        self.V_DG_0 = fem.FunctionSpace(self.mesh.mesh, ("DG", 0))
+        self.V_DG_1 = fem.FunctionSpace(self.mesh.mesh, ("DG", 1))
 
         self.u = Function(self.function_space)
         self.u_n = Function(self.function_space)
@@ -389,10 +427,15 @@ class HydrogenTransportProblem:
             for bc in self.boundary_conditions:
                 bc.update(float(self.t))
 
+            # update global D if temperature time dependent or internal
+            # variables time dependent
+            for D, expr in zip(self.D_global, self.D_global_expr):
+                D.interpolate(expr)
+
             self.solver.solve(self.u)
 
             # post processing
-            self.post_processing(times, flux_values, flux_values_1, flux_values_2)
+            self.post_processing()
 
             # update previous solution
             self.u_n.x.array[:] = self.u.x.array[:]
@@ -402,58 +445,23 @@ class HydrogenTransportProblem:
 
         return times, flux_values
 
-    def post_processing(self, times, flux_values, flux_values_1, flux_values_2):
+    def post_processing(self):
         if not self.multispecies:
-            D_D = self.subdomains[0].material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature, self.species[0]
-            )
-            cm = self.u
             self.species[0].post_processing_solution = self.u
-
-            surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
-            flux = assemble_scalar(surface_flux)
-            flux_values.append(flux)
-            times.append(float(self.t))
         else:
             for idx, spe in enumerate(self.species):
                 spe.post_processing_solution = self.u.sub(idx)
 
-            cm_1, cm_2 = self.u.split()
-            D_1 = self.subdomains[0].material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature, self.species[0]
-            )
-            D_2 = self.subdomains[0].material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature, self.species[1]
-            )
-            surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
-            surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
-            flux_1 = assemble_scalar(surface_flux_1)
-            flux_2 = assemble_scalar(surface_flux_2)
-            flux_values_1.append(flux_1)
-            flux_values_2.append(flux_2)
-            times.append(float(self.t))
-
-        # for export in self.exports:
-        #     if isinstance(export, F.SurfaceQuantity):
-        #         export.compute(self.mesh, self.ds)
-        #     if isinstance(export, F.VolumeQuantity):
-        #         export.compute(self.mesh, self.dx)
-
+        self.derived_quantities["t(s)"].append(float(self.t))
         for export in self.exports:
+            # TODO if export type derived quantity
             if isinstance(export, F.SurfaceFlux):
-                # evaluate value of export
-                D_export = export.volume_subdomain.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, export.field
-                )
-                export_value = export.compute_quantity(
-                    D_export,
+                export.compute(
                     self.mesh,
                     self.ds,
                 )
-
                 # update derived quantities dict
-                self.derived_quantities["t(s)"].append(float(self.t))
-                self.derived_quantities[f"{export.title}"].append(export_value)
+                self.derived_quantities[f"{export.title}"].append(export.value)
 
                 export.write(t=float(self.t))
 
