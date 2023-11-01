@@ -61,13 +61,13 @@ def test_permeation_problem(mesh_size=1001):
             subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
         ),
     ]
+    outgassing_flux = F.SurfaceFlux(
+        field=mobile_H,
+        surface_subdomain=right_surface,
+    )
     my_model.exports = [
         F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
-        F.SurfaceFlux(
-            filename="my_surface_flux.csv",
-            field=mobile_H,
-            surface_subdomain=right_surface,
-        ),
+        outgassing_flux,
     ]
 
     my_model.settings = F.Settings(
@@ -92,10 +92,8 @@ def test_permeation_problem(mesh_size=1001):
 
     my_model.run()
 
-    # print(my_model.derived_quantities.keys())
-
-    times = my_model.derived_quantities["t(s)"]
-    flux_values = my_model.derived_quantities["Flux surface 2: H"]
+    times = outgassing_flux.t
+    flux_values = outgassing_flux.data
 
     # -------------------------- analytical solution -------------------------------------
 
@@ -158,15 +156,15 @@ def test_permeation_problem_multi_volume(tmp_path):
             subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
         ),
     ]
+    outgassing_flux = F.SurfaceFlux(
+        field=mobile_H,
+        surface_subdomain=right_surface,
+    )
     my_model.exports = [
         F.VTXExport(
             os.path.join(tmp_path, "mobile_concentration_h.bp"), field=mobile_H
         ),
-        F.SurfaceFlux(
-            filename=os.path.join(tmp_path, "my_surface_flux.csv"),
-            field=mobile_H,
-            surface_subdomain=right_surface,
-        ),
+        outgassing_flux,
     ]
 
     my_model.settings = F.Settings(
@@ -191,8 +189,8 @@ def test_permeation_problem_multi_volume(tmp_path):
 
     my_model.run()
 
-    times = my_model.derived_quantities["t(s)"]
-    flux_values = my_model.derived_quantities["Flux surface 2: H"]
+    times = outgassing_flux.t
+    flux_values = outgassing_flux.data
 
     # ---------------------- analytical solution -----------------------------
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
@@ -210,8 +208,3 @@ def test_permeation_problem_multi_volume(tmp_path):
     )
 
     assert error < 0.01
-
-
-if __name__ == "__main__":
-    test_permeation_problem()
-    # test_permeation_problem_multi_volume(tmp_path=".")

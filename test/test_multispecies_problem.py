@@ -87,18 +87,17 @@ def test_multispecies_permeation_problem():
     )
     my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
 
-    my_model.exports = [
-        F.SurfaceFlux(
-            filename="flux_spe_1.csv",
-            field=spe_1,
-            surface_subdomain=right_surface,
-        ),
-        F.SurfaceFlux(
-            filename="flux_spe_2.csv",
-            field=spe_2,
-            surface_subdomain=right_surface,
-        ),
-    ]
+    outgassing_flux_spe_1 = F.SurfaceFlux(
+        filename="flux_spe_1.csv",
+        field=spe_1,
+        surface_subdomain=right_surface,
+    )
+    outgassing_flux_spe_2 = F.SurfaceFlux(
+        filename="flux_spe_2.csv",
+        field=spe_2,
+        surface_subdomain=right_surface,
+    )
+    my_model.exports = [outgassing_flux_spe_1, outgassing_flux_spe_2]
     my_model.initialise()
 
     my_model.solver.convergence_criterion = "incremental"
@@ -112,16 +111,15 @@ def test_multispecies_permeation_problem():
 
     my_model.run()
 
-    times = my_model.derived_quantities["t(s)"]
-    flux_values_spe_1 = my_model.derived_quantities["Flux surface 2: spe_1"]
-    flux_values_spe_2 = my_model.derived_quantities["Flux surface 2: spe_2"]
+    times = outgassing_flux_spe_1.t
+    flux_values_spe_1 = outgassing_flux_spe_1.data
+    flux_values_spe_2 = outgassing_flux_spe_2.data
 
     # ---------------------- analytical solutions -----------------------------
 
     # common values
     times = np.array(times)
     P_up = float(my_model.boundary_conditions[-1].pressure)
-    # flux_values_spe_1, flux_values_spe_2 = flux_values[0], flux_values[1]
 
     # ##### compute analyical solution for species 1 ##### #
     D_spe_1 = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature, spe_1)
