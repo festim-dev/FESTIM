@@ -133,6 +133,7 @@ class HydrogenTransportProblem:
         """Defines the export writers of the model, if field is given as
         a string, find species object in self.species"""
         self.derived_quantities["t(s)"] = []
+
         for export in self.exports:
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
@@ -149,8 +150,12 @@ class HydrogenTransportProblem:
                 if isinstance(export, F.XDMFExport):
                     export.writer.write_mesh(self.mesh.mesh)
 
-            spe_to_D_global = {}
-            spe_to_D_global_expr = {}
+        # compute diffusivity function for surface fluxes
+        # correspondance dicts
+        spe_to_D_global = {}
+        spe_to_D_global_expr = {}
+
+        for export in self.exports:
             if isinstance(export, F.SurfaceFlux):
                 if export.field in spe_to_D_global:
                     D = spe_to_D_global[export.field]
