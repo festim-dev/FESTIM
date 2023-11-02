@@ -1,22 +1,26 @@
 import festim as F
+import csv
 
 
 class SurfaceQuantity:
     """Export SurfaceQuantity
 
     Args:
+        field (festim.Species): species for which the surface flux is computed
+        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        filename (str, optional): name of the file to which the surface flux is exported
 
     Attributes:
+        field (festim.Species): species for which the surface flux is computed
+        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        filename (str): name of the file to which the surface flux is exported
+        write_to_file (bool): True if the data is exported to a file
     """
 
     def __init__(self, field, surface_subdomain, filename: str = None) -> None:
         self.field = field
         self.surface_subdomain = surface_subdomain
         self.filename = filename
-        self.ds = None
-        self.n = None
-        self.D = None
-        self.S = None
 
     @property
     def filename(self):
@@ -62,3 +66,8 @@ class SurfaceQuantity:
             return False
         else:
             return True
+
+    def write(self, t):
+        with open(self.filename, mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([t, self.value])
