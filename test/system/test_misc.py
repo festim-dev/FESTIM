@@ -140,7 +140,7 @@ def test_txt_export_all_times(tmp_path):
     my_model.run()
 
     assert os.path.exists(
-        "{}/{}_{}s.txt".format(my_export.folder, my_export.label, 0.5)
+        "{}/{}_transient.txt".format(my_export.folder, my_export.label, 0.5)
     )
 
 
