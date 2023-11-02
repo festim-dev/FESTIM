@@ -53,6 +53,7 @@ class TXTExport(festim.Export):
 
     def write(self, current_time, nb_iteration, steady):
         # create a DG1 functionspace
+        # TODO ideally we wouldn't recreate this everytime but store it in an attribute
         V_DG1 = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
 
         solution = f.project(self.function, V_DG1)
