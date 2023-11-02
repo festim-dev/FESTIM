@@ -82,7 +82,7 @@ def test_filename_setter_raises_TypeError(tmp_path):
     """Test that a TypeError is raised when the filename is not a string"""
 
     with pytest.raises(TypeError):
-        F.SurfaceFlux(
+        F.SurfaceQuantity(
             filename=os.path.join(tmp_path, 1),
             field=F.Species("test"),
             surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
@@ -93,7 +93,7 @@ def test_filename_setter_raises_ValueError(tmp_path):
     """Test that a ValueError is raised when the filename does not end with .csv"""
 
     with pytest.raises(ValueError):
-        F.SurfaceFlux(
+        F.SurfaceQuantity(
             filename=os.path.join(tmp_path, "my_export.xdmf"),
             field=F.Species("test"),
             surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
@@ -102,7 +102,7 @@ def test_filename_setter_raises_ValueError(tmp_path):
 
 def test_writer(tmp_path):
     """Test that the writes values at each timestep"""
-    my_export = F.SurfaceFlux(
+    my_export = F.SurfaceQuantity(
         filename=os.path.join(tmp_path, "my_export.csv"),
         field=F.Species("test"),
         surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
@@ -112,9 +112,8 @@ def test_writer(tmp_path):
     for i in range(10):
         my_export.write(i)
 
-    # computed value should be range + 1 for the header
     computed_value = len(np.genfromtxt(my_export.filename, delimiter=","))
 
-    expected_value = 11
+    expected_value = 10
 
     assert computed_value == expected_value

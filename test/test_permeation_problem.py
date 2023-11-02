@@ -157,6 +157,7 @@ def test_permeation_problem_multi_volume(tmp_path):
         ),
     ]
     outgassing_flux = F.SurfaceFlux(
+        filename=os.path.join(tmp_path, "outgassing_flux.csv"),
         field=mobile_H,
         surface_subdomain=right_surface,
     )

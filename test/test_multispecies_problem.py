@@ -88,12 +88,10 @@ def test_multispecies_permeation_problem():
     my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
 
     outgassing_flux_spe_1 = F.SurfaceFlux(
-        filename="flux_spe_1.csv",
         field=spe_1,
         surface_subdomain=right_surface,
     )
     outgassing_flux_spe_2 = F.SurfaceFlux(
-        filename="flux_spe_2.csv",
         field=spe_2,
         surface_subdomain=right_surface,
     )
