@@ -298,8 +298,9 @@ class HydrogenTransportProblem:
 
         # create global D function
         D = fem.Function(self.V_DG_1)
+
         expr = D_0 * ufl.exp(
-            -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature
+            -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature_fenics
         )
         D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
         D.interpolate(D_expr)
