@@ -5,7 +5,7 @@ L = 20e-6
 vertices = np.concatenate(
     [
         np.linspace(0, 30e-9, num=200, endpoint=False),
-        np.linspace(30e-9, 3e-6, num=200, endpoint=False),
+        np.linspace(30e-9, 3e-6, num=300, endpoint=False),
         np.linspace(3e-6, 20e-6, num=200),
     ]
 )
@@ -31,15 +31,11 @@ trapped_H1 = F.Species("trapped_H1", mobile=False)
 empty_trap1 = F.ImplicitSpecies(
     n=1.3e-3 * w_atom_density, others=[trapped_H1], name="empty_trap1"
 )
-# trapped_H2 = F.Species("trapped_H2", mobile=False)
-# empty_trap2 = F.ImplicitSpecies(
-#     n=4e-4 * w_atom_density, others=[trapped_H2], name="empty_trap2"
-# )
-my_model.species = [
-    mobile_H,
-    trapped_H1,
-    # trapped_H2,
-]
+trapped_H2 = F.Species("trapped_H2", mobile=False)
+empty_trap2 = F.ImplicitSpecies(
+    n=4e-3 * w_atom_density, others=[trapped_H2], name="empty_trap2"
+)
+my_model.species = [mobile_H, trapped_H1, trapped_H2]
 
 my_model.reactions = [
     F.Reaction(
@@ -51,15 +47,15 @@ my_model.reactions = [
         reactant2=empty_trap1,
         product=trapped_H1,
     ),
-    # F.Reaction(
-    #     k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
-    #     E_k=0.39,
-    #     p_0=1e13,
-    #     E_p=1.0,
-    #     reactant1=mobile_H,
-    #     reactant2=empty_trap2,
-    #     product=trapped_H2,
-    # ),
+    F.Reaction(
+        k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
+        E_k=0.39,
+        p_0=1e13,
+        E_p=1.0,
+        reactant1=mobile_H,
+        reactant2=empty_trap2,
+        product=trapped_H2,
+    ),
 ]
 
 implantation_time = 400
@@ -94,16 +90,16 @@ my_model.boundary_conditions = [
     F.DirichletBC(subdomain=right_surface, value=0, species=mobile_H),
 ]
 my_model.exports = [
-    # F.VTXExport("mobile_concentration_h.bp", field=mobile_H),  # produces 0 in file
-    # F.VTXExport("trapped_concentration_h.bp", field=trapped_H),  # produces 0 in file
+    # F.VTXExport("mobile_concentration_h.bp", field=mobile_H),
+    # F.VTXExport("trapped_concentration_h.bp", field=trapped_H1),
     F.XDMFExport("mobile_concentration_h.xdmf", field=mobile_H),
     F.XDMFExport("trapped_concentration_h1.xdmf", field=trapped_H1),
-    # F.XDMFExport("trapped_concentration_h2.xdmf", field=trapped_H2),
+    F.XDMFExport("trapped_concentration_h2.xdmf", field=trapped_H2),
 ]
 
 my_model.settings = F.Settings(
     atol=1e10,
-    rtol=1e-9,
+    rtol=1e-10,
     max_iterations=30,
     final_time=500,
 )
@@ -123,6 +119,52 @@ my_model.initialise()
 # opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
 # ksp.setFromOptions()
 
+from dolfinx.fem import form, assemble_scalar
+from ufl import dot, grad
+
+
+# needs monkey patching of iterate method
+
+
+def new_iterate(cls, skip_postprocessing=False):
+    cls.progress.update(cls.dt.value)
+    cls.t.value += cls.dt.value
+
+    cls.update_time_dependent_values()
+
+    cls.solver.solve(cls.u)
+
+    for idx, spe in enumerate(cls.species):
+        spe.post_processing_solution = cls.u.sub(idx)
+
+    cm, *trapped_cs = cls.u.split()
+
+    D = cls.subdomains[0].material.get_diffusion_coefficient(
+        cls.mesh.mesh, cls.temperature_fenics, mobile_H
+    )
+    surface_flux_left = assemble_scalar(form(D * dot(grad(cm), cls.mesh.n) * cls.ds(1)))
+    surface_flux_right = assemble_scalar(
+        form(D * dot(grad(cm), cls.mesh.n) * cls.ds(2))
+    )
+
+    cls.times.append(float(cls.t))
+    cls.flux_values_1.append(surface_flux_left)
+    cls.flux_values_2.append(surface_flux_right)
+
+    for export in cls.exports:
+        if isinstance(export, (F.VTXExport, F.XDMFExport)):
+            export.write(float(cls.t))
+
+    # update previous solution
+    cls.u_n.x.array[:] = cls.u.x.array[:]
+
+
+F.HydrogenTransportProblem.iterate = new_iterate
+
+
 times, flux_values = my_model.run()
-np.savetxt("outgassing_flux_tds.txt", np.array(flux_values))
+np.savetxt(
+    "outgassing_flux_tds.txt",
+    np.array(my_model.flux_values_1) + np.array(my_model.flux_values_2),
+)
 np.savetxt("times_tds.txt", np.array(times))
