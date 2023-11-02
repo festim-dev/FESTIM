@@ -207,3 +207,22 @@ def test_update_time_dependent_values_temperature(T_function, expected_values):
             computed_value = my_model.temperature_fenics.vector.array[-1]
             print(computed_value)
         assert np.isclose(computed_value, expected_values[i])
+
+
+def test_initialise_exports_find_species_with_one_field():
+    """Test that a species can be found from the model species if given as a string"""
+
+    # BUILD
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0])),
+        species=[F.Species("H"), F.Species("D")],
+        temperature=1,
+    )
+    surf = F.SurfaceSubdomain1D(id=1, x=1)
+
+    my_model.exports = [F.SurfaceFlux(field="J", surface_subdomain=surf)]
+    my_model.define_function_spaces()
+
+    # TEST
+    with pytest.raises(ValueError, match="Species J not found in list of species"):
+        my_model.initialise_exports()
