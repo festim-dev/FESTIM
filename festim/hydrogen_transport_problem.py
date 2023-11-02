@@ -3,6 +3,7 @@ from dolfinx.nls.petsc import NewtonSolver
 from dolfinx.io import XDMFFile
 import basix
 import ufl
+from ufl.core.operator import Operator
 from mpi4py import MPI
 from dolfinx.fem import Function, form, assemble_scalar
 from dolfinx.mesh import meshtags
@@ -196,6 +197,8 @@ class HydrogenTransportProblem:
         elif callable(self.temperature):
             arguments = self.temperature.__code__.co_varnames
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                if isinstance(self.temperature(t=float(self.t)), Operator):
+                    raise ValueError("wrong type for temperature")
                 # only t is an argument
                 self.temperature_fenics = F.as_fenics_constant(
                     mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))

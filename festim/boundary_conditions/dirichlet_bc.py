@@ -1,5 +1,6 @@
 import festim as F
 import ufl
+from ufl.core.operator import Operator
 from dolfinx import fem
 import numpy as np
 
@@ -98,6 +99,8 @@ class DirichletBC:
 
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 # only t is an argument
+                if isinstance(self.value(t=float(t)), Operator):
+                    raise ValueError("wrong type for temperature")
                 self.value_fenics = F.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
                 )
