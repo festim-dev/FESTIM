@@ -28,6 +28,7 @@ class TXTExport(festim.Export):
             self.times = times
         self.label = label
         self.folder = folder
+        self._first_time = True
 
     def is_it_time_to_export(self, current_time):
         if self.times is None:
@@ -45,18 +46,13 @@ class TXTExport(festim.Export):
                 return time
         return None
 
-    def is_it_first_time_to_export(self, current_time, nb_iteration):
-        if self.times is None:
-            return True if nb_iteration == 0 else False
-        else:
-            return True if np.isclose(self.times[0], current_time) else False
-
-    def write(self, current_time, nb_iteration, steady):
+    def write(self, current_time, steady):
         # create a DG1 functionspace
         # TODO ideally we wouldn't recreate this everytime but store it in an attribute
         V_DG1 = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
 
         solution = f.project(self.function, V_DG1)
+        solution_column = np.transpose(solution.vector()[:])
         if self.is_it_time_to_export(current_time):
             if steady:
                 filename = "{}/{}_steady.txt".format(self.folder, self.label)
@@ -64,43 +60,33 @@ class TXTExport(festim.Export):
             else:
                 filename = "{}/{}_transient.txt".format(self.folder, self.label)
                 header = "x,t={}s".format(current_time)
-            x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
+
             # if the directory doesn't exist
             # create it
             dirname = os.path.dirname(filename)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
+
             # if steady or it is the first time to export
             # write data
             # else append new column to the existing file
-            if steady or self.is_it_first_time_to_export(current_time, nb_iteration):
-                np.savetxt(
-                    filename,
-                    np.transpose([x.vector()[:], solution.vector()[:]]),
-                    header=header,
-                    delimiter=",",
-                    comments="",
-                )
+            if steady or self._first_time:
+                x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
+                x_column = np.transpose([x.vector()[:]])
+                data = np.column_stack([x_column, solution_column])
+                self._first_time = False
             else:
                 # Update the header
                 old_file = open(filename)
-                header = old_file.readline().split("\n")[0] + ",t={}s".format(
-                    current_time
-                )
+                old_header = old_file.readline().split("\n")[0]
                 old_file.close()
+                header = old_header + f",t={current_time}s"
+
                 # Append new column
-                np.savetxt(
-                    filename,
-                    np.column_stack(
-                        [
-                            np.loadtxt(filename, delimiter=",", skiprows=1),
-                            np.transpose(solution.vector()[:]),
-                        ]
-                    ),
-                    header=header,
-                    delimiter=",",
-                    comments="",
-                )
+                old_columns = np.loadtxt(filename, delimiter=",", skiprows=1)
+                data = np.column_stack([old_columns, solution_column])
+
+            np.savetxt(filename, data, header="x,t=steady", delimiter=",", comments="")
 
 
 class TXTExports:
