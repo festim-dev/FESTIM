@@ -1,16 +1,23 @@
 import festim as F
 import numpy as np
 
-L = 3e-06
-vertices = np.linspace(0, L, num=1000)
-
+L = 20e-6
+vertices = np.concatenate(
+    [
+        np.linspace(0, 30e-9, num=200, endpoint=False),
+        np.linspace(30e-9, 3e-6, num=200, endpoint=False),
+        np.linspace(3e-6, 20e-6, num=200),
+    ]
+)
 my_mesh = F.Mesh1D(vertices)
 
 my_model = F.HydrogenTransportProblem()
 my_model.mesh = my_mesh
 
-my_mat = F.Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
-my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L], material=my_mat)
+w_atom_density = 6.3e28  # atom/m3
+
+tungsten = F.Material(D_0=4.1e-7, E_D=0.39, name="my_mat")
+my_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, L], material=tungsten)
 left_surface = F.SurfaceSubdomain1D(id=1, x=0)
 right_surface = F.SurfaceSubdomain1D(id=2, x=L)
 my_model.subdomains = [
@@ -20,67 +27,102 @@ my_model.subdomains = [
 ]
 
 mobile_H = F.Species("H")
-trapped_H = F.Species("trapped_H", mobile=False)
-empty_trap = F.ImplicitSpecies(n=1e-3 * 6.3e28, others=[trapped_H], name="empty_trap")
-my_model.species = [mobile_H, trapped_H]
+trapped_H1 = F.Species("trapped_H1", mobile=False)
+empty_trap1 = F.ImplicitSpecies(
+    n=1.3e-3 * w_atom_density, others=[trapped_H1], name="empty_trap1"
+)
+# trapped_H2 = F.Species("trapped_H2", mobile=False)
+# empty_trap2 = F.ImplicitSpecies(
+#     n=4e-4 * w_atom_density, others=[trapped_H2], name="empty_trap2"
+# )
+my_model.species = [
+    mobile_H,
+    trapped_H1,
+    # trapped_H2,
+]
 
 my_model.reactions = [
     F.Reaction(
+        k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
+        E_k=0.39,
         p_0=1e13,
         E_p=0.87,
-        k_0=3.8e-17,
-        E_k=0.2,
         reactant1=mobile_H,
-        reactant2=empty_trap,
-        product=trapped_H,
-    )
+        reactant2=empty_trap1,
+        product=trapped_H1,
+    ),
+    # F.Reaction(
+    #     k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
+    #     E_k=0.39,
+    #     p_0=1e13,
+    #     E_p=1.0,
+    #     reactant1=mobile_H,
+    #     reactant2=empty_trap2,
+    #     product=trapped_H2,
+    # ),
 ]
 
-from ufl import conditional, lt
-
-implantation_time = 100
+implantation_time = 400
+start_tds = implantation_time + 50
 implantation_temp = 300
 temperature_ramp = 8  # K/s
 
 
 def temp_function(t):
-    ramping_temperature = implantation_temp + temperature_ramp * (t - implantation_time)
-    return conditional(lt(t, implantation_time), implantation_temp, ramping_temperature)
+    if t < start_tds:
+        return implantation_temp
+    else:
+        return implantation_temp + temperature_ramp * (t - start_tds)
 
 
 my_model.temperature = temp_function
 
+
+def left_conc_value(T):
+    D = tungsten.D_0 * np.exp(-tungsten.E_D / F.k_B / T)
+    return 2.5e19 * 4.5e-9 / D
+
+
+left_concentration = F.DirichletBC(
+    subdomain=left_surface,
+    value=lambda t: left_conc_value(temp_function(t)) if t < implantation_time else 0.0,
+    species=mobile_H,
+)
+
 my_model.boundary_conditions = [
-    F.DirichletBC(subdomain=right_surface, value=0, species="H"),
-    F.DirichletBC(subdomain=left_surface, value=1e12, species=mobile_H),
+    left_concentration,
+    F.DirichletBC(subdomain=right_surface, value=0, species=mobile_H),
 ]
 my_model.exports = [
-    F.VTXExport("mobile_concentration_h.bp", field=mobile_H),  # produces 0 in file
-    F.VTXExport("trapped_concentration_h.bp", field=trapped_H),  # produces 0 in file
+    # F.VTXExport("mobile_concentration_h.bp", field=mobile_H),  # produces 0 in file
+    # F.VTXExport("trapped_concentration_h.bp", field=trapped_H),  # produces 0 in file
     F.XDMFExport("mobile_concentration_h.xdmf", field=mobile_H),
-    F.XDMFExport("trapped_concentration_h.xdmf", field=trapped_H),
+    F.XDMFExport("trapped_concentration_h1.xdmf", field=trapped_H1),
+    # F.XDMFExport("trapped_concentration_h2.xdmf", field=trapped_H2),
 ]
 
 my_model.settings = F.Settings(
     atol=1e10,
-    rtol=1e-10,
+    rtol=1e-9,
     max_iterations=30,
-    final_time=200,
+    final_time=500,
 )
 
-my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
+my_model.settings.stepsize = F.Stepsize(initial_value=0.5)
 
 my_model.initialise()
 
-from petsc4py import PETSc
+# from petsc4py import PETSc
 
-my_model.solver.convergence_criterion = "incremental"
-ksp = my_model.solver.krylov_solver
-opts = PETSc.Options()
-option_prefix = ksp.getOptionsPrefix()
-opts[f"{option_prefix}ksp_type"] = "cg"
-opts[f"{option_prefix}pc_type"] = "gamg"
-opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-ksp.setFromOptions()
+# my_model.solver.convergence_criterion = "incremental"
+# ksp = my_model.solver.krylov_solver
+# opts = PETSc.Options()
+# option_prefix = ksp.getOptionsPrefix()
+# opts[f"{option_prefix}ksp_type"] = "cg"
+# opts[f"{option_prefix}pc_type"] = "gamg"
+# opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
+# ksp.setFromOptions()
 
 times, flux_values = my_model.run()
+np.savetxt("outgassing_flux_tds.txt", np.array(flux_values))
+np.savetxt("times_tds.txt", np.array(times))
