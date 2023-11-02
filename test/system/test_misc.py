@@ -123,7 +123,7 @@ def test_wrong_value_for_bc_field(field):
 
 def test_txt_export_desired_times(tmp_path):
     """
-    Tests that TXTExport can be exported at all timesteps
+    Tests that TXTExport can be exported at desired times
     """
     my_model = F.Simulation()
 
