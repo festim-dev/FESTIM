@@ -33,9 +33,13 @@ class TestWrite:
         current_time = 1
         nb_iteration = 1
         my_export.function = function
-        my_export.write(current_time=current_time, nb_iteration=nb_iteration, steady=False)
-        my_export.write(current_time=current_time, nb_iteration=nb_iteration, steady=True)
-        
+        my_export.write(
+            current_time=current_time, nb_iteration=nb_iteration, steady=False
+        )
+        my_export.write(
+            current_time=current_time, nb_iteration=nb_iteration, steady=True
+        )
+
         assert os.path.exists(
             "{}/{}_transient.txt".format(my_export.folder, my_export.label)
         )
@@ -47,7 +51,9 @@ class TestWrite:
         current_time = 10
         nb_iteration = 1
         my_export.function = function
-        my_export.write(current_time=current_time, nb_iteration=nb_iteration, steady=False)
+        my_export.write(
+            current_time=current_time, nb_iteration=nb_iteration, steady=False
+        )
 
         assert not os.path.exists(
             "{}/{}_transient.txt".format(my_export.folder, my_export.label)
@@ -59,7 +65,9 @@ class TestWrite:
         nb_iteration = 1
         my_export.function = function
         my_export.folder += "/folder2"
-        my_export.write(current_time=current_time, nb_iteration=nb_iteration, steady=False)
+        my_export.write(
+            current_time=current_time, nb_iteration=nb_iteration, steady=False
+        )
 
         assert os.path.exists(
             "{}/{}_transient.txt".format(my_export.folder, my_export.label)
@@ -69,7 +77,9 @@ class TestWrite:
         current_time = 1
         nb_iteration = 1
         my_export.function = function_subspace
-        my_export.write(current_time=current_time, nb_iteration=nb_iteration, steady=False)
+        my_export.write(
+            current_time=current_time, nb_iteration=nb_iteration, steady=False
+        )
 
         assert os.path.exists(
             "{}/{}_transient.txt".format(my_export.folder, my_export.label)
@@ -120,14 +130,14 @@ class TestIsItFirstTimeToExport:
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder1")
         my_export = TXTExport("solute", "solute_label", str(Path(d)), times=[1, 2, 3])
-        
+
         return my_export
 
     @pytest.fixture
     def my_export_all_times(self, tmpdir):
         d = tmpdir.mkdir("test_folder2")
         my_export_all_times = TXTExport("solute", "solute_label", str(Path(d)))
-        
+
         return my_export_all_times
 
     def test_true(self, my_export, my_export_all_times):
