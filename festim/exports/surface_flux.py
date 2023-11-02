@@ -25,7 +25,7 @@ class SurfaceFlux(F.SurfaceQuantity):
     def __init__(
         self,
         field,
-        surface_subdomain: int or F.SurfaceSubdomain1D,
+        surface_subdomain: F.SurfaceSubdomain1D,
         filename: str = None,
     ) -> None:
         super().__init__(field, surface_subdomain, filename)
