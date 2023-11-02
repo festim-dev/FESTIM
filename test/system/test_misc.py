@@ -123,7 +123,7 @@ def test_wrong_value_for_bc_field(field):
 
 def test_txt_export_desired_times(tmp_path):
     """
-    Tests that TXTExport can be exported at desired timesteps
+    Tests that TXTExport can be exported at all timesteps
     """
     my_model = F.Simulation()
 
@@ -133,7 +133,9 @@ def test_txt_export_desired_times(tmp_path):
     my_model.T = F.Temperature(500)
     my_model.dt = F.Stepsize(0.1)
 
-    my_export = F.TXTExport("solute", label="mobile_conc", times = [0.2,0.5], folder=tmp_path)
+    my_export = F.TXTExport(
+        "solute", label="mobile_conc", times=[0.2, 0.5], folder=tmp_path
+    )
     my_model.exports = [my_export]
 
     my_model.initialise()
@@ -142,8 +144,12 @@ def test_txt_export_desired_times(tmp_path):
     assert os.path.exists(
         "{}/{}_transient.txt".format(my_export.folder, my_export.label)
     )
-    
-    data = np.genfromtxt("{}/{}_transient.txt".format(my_export.folder, my_export.label), skip_header = 1, delimiter = ',')
+
+    data = np.genfromtxt(
+        "{}/{}_transient.txt".format(my_export.folder, my_export.label),
+        skip_header=1,
+        delimiter=",",
+    )
     assert len(data[0, :]) == len(my_export.times) + 1
 
 
@@ -168,8 +174,12 @@ def test_txt_export_all_times(tmp_path):
     assert os.path.exists(
         "{}/{}_transient.txt".format(my_export.folder, my_export.label)
     )
-    
-    data = np.genfromtxt("{}/{}_transient.txt".format(my_export.folder, my_export.label), skip_header = 1, delimiter = ',')
+
+    data = np.genfromtxt(
+        "{}/{}_transient.txt".format(my_export.folder, my_export.label),
+        skip_header=1,
+        delimiter=",",
+    )
     assert len(data[0, :]) == 11
 
 
@@ -190,15 +200,14 @@ def test_txt_export_steady_state(tmp_path):
     my_model.initialise()
     my_model.run()
 
-    assert os.path.exists(
-        "{}/{}_steady.txt".format(my_export.folder, my_export.label)
-    )
+    assert os.path.exists("{}/{}_steady.txt".format(my_export.folder, my_export.label))
 
     txt = open("{}/{}_steady.txt".format(my_export.folder, my_export.label))
     header = txt.readline().rstrip()
     txt.close()
 
-    assert header == 'x,t=steady'
+    assert header == "x,t=steady"
+
 
 def test_finaltime_overshoot():
     """Checks that the time doesn't overshoot the final time"""
