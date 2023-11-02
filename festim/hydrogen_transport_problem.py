@@ -53,6 +53,10 @@ class HydrogenTransportProblem:
             that is used to update the temperature_fenics
         temperature_time_dependent (bool): True if the temperature is time
             dependent
+        V_DG_0 (dolfinx.fem.FunctionSpace): A DG function space of degree 0
+            over domain
+        V_DG_1 (dolfinx.fem.FunctionSpace): A DG function space of degree 1
+            over domain
 
 
     Usage:
