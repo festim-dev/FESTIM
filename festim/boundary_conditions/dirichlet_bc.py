@@ -42,7 +42,6 @@ class DirichletBC:
 
         self.value_fenics = None
         self.bc_expr = None
-        self.time_dependent = False
 
     @property
     def value_fenics(self):
@@ -103,13 +102,11 @@ class DirichletBC:
                 self.value_fenics = F.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
                 )
-                self.time_dependent = True
             else:
                 self.value_fenics = fem.Function(function_space)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = t
-                    self.time_dependent = True
                 if "x" in arguments:
                     kwargs["x"] = x
                 if "T" in arguments:
