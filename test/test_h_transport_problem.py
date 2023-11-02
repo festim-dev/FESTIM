@@ -220,7 +220,7 @@ def test_initialise_exports_find_species_with_one_field():
     )
     surf = F.SurfaceSubdomain1D(id=1, x=1)
 
-    my_model.exports = [F.SurfaceFlux(field="J", surface_subdomain=surf)]
+    my_model.exports = [F.SurfaceFlux(field="J", surface=surf)]
     my_model.define_function_spaces()
 
     # TEST

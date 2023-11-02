@@ -89,11 +89,11 @@ def test_multispecies_permeation_problem():
 
     outgassing_flux_spe_1 = F.SurfaceFlux(
         field=spe_1,
-        surface_subdomain=right_surface,
+        surface=right_surface,
     )
     outgassing_flux_spe_2 = F.SurfaceFlux(
         field=spe_2,
-        surface_subdomain=right_surface,
+        surface=right_surface,
     )
     my_model.exports = [outgassing_flux_spe_1, outgassing_flux_spe_2]
     my_model.initialise()

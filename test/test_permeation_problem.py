@@ -63,7 +63,7 @@ def test_permeation_problem(mesh_size=1001):
     ]
     outgassing_flux = F.SurfaceFlux(
         field=mobile_H,
-        surface_subdomain=right_surface,
+        surface=right_surface,
     )
     my_model.exports = [
         F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
@@ -159,7 +159,7 @@ def test_permeation_problem_multi_volume(tmp_path):
     outgassing_flux = F.SurfaceFlux(
         filename=os.path.join(tmp_path, "outgassing_flux.csv"),
         field=mobile_H,
-        surface_subdomain=right_surface,
+        surface=right_surface,
     )
     my_model.exports = [
         F.VTXExport(

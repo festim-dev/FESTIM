@@ -39,7 +39,7 @@ def surface_flux_export_compute():
     my_export = F.SurfaceFlux(
         filename="my_surface_flux.csv",
         field=my_species,
-        surface_subdomain=dummy_surface,
+        surface=dummy_surface,
     )
     my_export.D = D
 
@@ -53,29 +53,14 @@ def surface_flux_export_compute():
     assert np.isclose(computed_value, expected_value, rtol=1e-2)
 
 
-@pytest.mark.parametrize(
-    "input, expected_value",
-    [("export.csv", True), (None, False)],
-)
-def test_write_to_file_attribute(input, expected_value):
-    """Test that the write_to_file attribute is correctly set when a filename is given"""
-    my_export = F.SurfaceQuantity(
-        filename=input,
-        field="H",
-        surface_subdomain=1,
-    )
-
-    assert my_export.write_to_file is expected_value
-
-
 def test_title_generation(tmp_path):
     """Test that the title is made to be written to the header"""
     my_export = F.SurfaceFlux(
         filename=os.path.join(tmp_path, "my_export.csv"),
         field=F.Species("TEST"),
-        surface_subdomain=F.SurfaceSubdomain1D(id=35, x=1),
+        surface=F.SurfaceSubdomain1D(id=35, x=1),
     )
-    my_export.create_file()
+    my_export.initialise_export()
     assert my_export.title == "Flux surface 35: TEST"
 
 
@@ -86,7 +71,7 @@ def test_filename_setter_raises_TypeError():
         F.SurfaceQuantity(
             filename=1,
             field=F.Species("test"),
-            surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
+            surface=F.SurfaceSubdomain1D(id=1, x=0),
         )
 
 
@@ -97,7 +82,7 @@ def test_filename_setter_raises_ValueError(tmp_path):
         F.SurfaceQuantity(
             filename=os.path.join(tmp_path, "my_export.xdmf"),
             field=F.Species("test"),
-            surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
+            surface=F.SurfaceSubdomain1D(id=1, x=0),
         )
 
 
@@ -107,7 +92,7 @@ def test_field_setter_raises_TypeError():
     with pytest.raises(TypeError):
         F.SurfaceQuantity(
             field=1,
-            surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
+            surface=F.SurfaceSubdomain1D(id=1, x=0),
         )
 
 
@@ -116,7 +101,7 @@ def test_writer(tmp_path):
     my_export = F.SurfaceQuantity(
         filename=os.path.join(tmp_path, "my_export.csv"),
         field=F.Species("test"),
-        surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
+        surface=F.SurfaceSubdomain1D(id=1, x=0),
     )
     my_export.value = 2.0
 

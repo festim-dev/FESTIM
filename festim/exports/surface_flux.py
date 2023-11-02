@@ -9,26 +9,25 @@ class SurfaceFlux(F.SurfaceQuantity):
 
     Args:
         field (festim.Species): species for which the surface flux is computed
-        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        surface (festim.SurfaceSubdomain1D): surface subdomain
         filename (str, optional): name of the file to which the surface flux is exported
 
     Attributes:
         field (festim.Species): species for which the surface flux is computed
-        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        surface (festim.SurfaceSubdomain1D): surface subdomain
         filename (str): name of the file to which the surface flux is exported
         t (list): list of time values
         data (list): list of surface flux values
         title (str): title of the exported data
-        write_to_file (bool): True if the data is exported to a file
     """
 
     def __init__(
         self,
         field,
-        surface_subdomain: F.SurfaceSubdomain1D,
+        surface: F.SurfaceSubdomain1D,
         filename: str = None,
     ) -> None:
-        super().__init__(field, surface_subdomain, filename)
+        super().__init__(field, surface, filename)
 
         self.t = []
         self.data = []
@@ -38,17 +37,15 @@ class SurfaceFlux(F.SurfaceQuantity):
             fem.form(
                 -self.D
                 * ufl.dot(ufl.grad(self.field.solution), n)
-                * ds(self.surface_subdomain.id)
+                * ds(self.surface.id)
             )
         )
         self.data.append(self.value)
 
-    def create_file(self):
-        self.title = "Flux surface {}: {}".format(
-            self.surface_subdomain.id, self.field.name
-        )
+    def initialise_export(self):
+        self.title = "Flux surface {}: {}".format(self.surface.id, self.field.name)
 
-        if self.write_to_file:
+        if self.filename is not None:
             with open(self.filename, mode="w", newline="") as file:
                 writer = csv.writer(file)
                 writer.writerow(["t(s)", f"{self.title}"])

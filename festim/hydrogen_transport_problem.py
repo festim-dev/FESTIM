@@ -247,7 +247,7 @@ class HydrogenTransportProblem:
                 if isinstance(export, F.XDMFExport):
                     export.writer.write_mesh(self.mesh.mesh)
             elif isinstance(export, F.SurfaceQuantity):
-                export.create_file()
+                export.initialise_export()
 
         # compute diffusivity function for surface fluxes
 

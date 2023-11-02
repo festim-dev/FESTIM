@@ -7,19 +7,18 @@ class SurfaceQuantity:
 
     Args:
         field (festim.Species): species for which the surface flux is computed
-        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        surface (festim.SurfaceSubdomain1D): surface subdomain
         filename (str, optional): name of the file to which the surface flux is exported
 
     Attributes:
         field (festim.Species): species for which the surface flux is computed
-        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        surface (festim.SurfaceSubdomain1D): surface subdomain
         filename (str): name of the file to which the surface flux is exported
-        write_to_file (bool): True if the data is exported to a file
     """
 
-    def __init__(self, field, surface_subdomain, filename: str = None) -> None:
+    def __init__(self, field, surface, filename: str = None) -> None:
         self.field = field
-        self.surface_subdomain = surface_subdomain
+        self.surface = surface
         self.filename = filename
 
     @property
@@ -37,16 +36,16 @@ class SurfaceQuantity:
         self._filename = value
 
     @property
-    def surface_subdomain(self):
-        return self._surface_subdomain
+    def surface(self):
+        return self._surface
 
-    @surface_subdomain.setter
-    def surface_subdomain(self, value):
+    @surface.setter
+    def surface(self, value):
         if not isinstance(value, (int, F.SurfaceSubdomain1D)) or isinstance(
             value, bool
         ):
             raise TypeError("surface should be an int or F.SurfaceSubdomain1D")
-        self._surface_subdomain = value
+        self._surface = value
 
     @property
     def field(self):
@@ -59,13 +58,6 @@ class SurfaceQuantity:
             raise TypeError("field must be of type festim.Species")
 
         self._field = value
-
-    @property
-    def write_to_file(self):
-        if self.filename is None:
-            return False
-        else:
-            return True
 
     def write(self, t):
         with open(self.filename, mode="a", newline="") as file:
