@@ -20,7 +20,7 @@ def test_different_surface_ids():
         volume_subdomain,
     ]
 
-    my_test_model.define_function_space()
+    my_test_model.define_function_spaces()
     my_test_model.define_markers_and_measures()
 
     for surf_id in surface_subdomains_ids:

@@ -65,7 +65,7 @@ def test_callable_for_value():
         mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
@@ -103,7 +103,7 @@ def test_value_callable_x_t_T():
         mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
@@ -146,7 +146,7 @@ def test_callable_t_only(value):
         species=[species],
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
@@ -189,7 +189,7 @@ def test_callable_x_only():
         species=[species],
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
