@@ -35,7 +35,6 @@ class TXTExport(festim.Export):
         for time in self.times:
             if np.isclose(time, current_time):
                 return True
-
         return False
 
     def when_is_next_time(self, current_time):
@@ -60,10 +59,10 @@ class TXTExport(festim.Export):
         if self.is_it_time_to_export(current_time):
             if steady:
                 filename = "{}/{}_steady.txt".format(self.folder, self.label)
-                header = 'x,t=steady'
+                header = "x,t=steady"
             else:
                 filename = "{}/{}_transient.txt".format(self.folder, self.label)
-                header = 'x,t={}s'.format(current_time)
+                header = "x,t={}s".format(current_time)
             x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
             # if the directory doesn't exist
             # create it
@@ -72,16 +71,35 @@ class TXTExport(festim.Export):
                 os.makedirs(dirname, exist_ok=True)
             # if steady or it is the first time to export
             # write data
-            # else append new column to the existing file    
+            # else append new column to the existing file
             if steady or self.is_it_first_time_to_export(current_time, nb_iteration):
-                np.savetxt(filename, np.transpose([x.vector()[:], solution.vector()[:]]), header = header, delimiter = ',', comments='')
+                np.savetxt(
+                    filename,
+                    np.transpose([x.vector()[:], solution.vector()[:]]),
+                    header=header,
+                    delimiter=",",
+                    comments="",
+                )
             else:
                 # Update the header
                 old_file = open(filename)
-                header = old_file.readline().split('\n')[0] + ',t={}s'.format(current_time)
+                header = old_file.readline().split("\n")[0] + ",t={}s".format(
+                    current_time
+                )
                 old_file.close()
                 # Append new column
-                np.savetxt(filename, np.column_stack([np.loadtxt(filename, delimiter = ',', skiprows = 1), np.transpose(solution.vector()[:])]), header=header, delimiter = ',', comments='')
+                np.savetxt(
+                    filename,
+                    np.column_stack(
+                        [
+                            np.loadtxt(filename, delimiter=",", skiprows=1),
+                            np.transpose(solution.vector()[:]),
+                        ]
+                    ),
+                    header=header,
+                    delimiter=",",
+                    comments="",
+                )
 
 
 class TXTExports:
