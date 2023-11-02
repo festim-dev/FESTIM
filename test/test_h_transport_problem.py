@@ -226,3 +226,81 @@ def test_initialise_exports_find_species_with_one_field():
     # TEST
     with pytest.raises(ValueError, match="Species J not found in list of species"):
         my_model.initialise_exports()
+
+
+def test_define_D_global_different_temperatures():
+    D_0, E_D = 1.5, 0.1
+    my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
+    surf = F.SurfaceSubdomain1D(id=1, x=0)
+    H = F.Species("H")
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 4, num=101)),
+        subdomains=[
+            F.VolumeSubdomain1D(id=1, borders=[0, 2], material=my_mat),
+            F.VolumeSubdomain1D(id=2, borders=[2, 4], material=my_mat),
+        ],
+        species=[H],
+        temperature=lambda x: 100.0 * x[0] + 50,
+        exports=[
+            F.SurfaceFlux(
+                field=H,
+                surface=surf,
+            ),
+        ],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.define_temperature()
+
+    D_computed, D_expr = my_model.define_D_global(H)
+
+    computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
+
+    D_analytical_left = D_0 * np.exp(-E_D / (F.k_B * 50))
+    D_analytical_right = D_0 * np.exp(-E_D / (F.k_B * 450))
+
+    expected_values = [D_analytical_left, D_analytical_right]
+
+    assert np.isclose(computed_values, expected_values).all()
+
+
+def test_define_D_global_different_materials():
+    D_0_left, E_D_left = 1.0, 0.1
+    D_0_right, E_D_right = 2.0, 0.2
+    my_mat_L = F.Material(D_0=D_0_left, E_D=E_D_left, name="my_mat_L")
+    my_mat_R = F.Material(D_0=D_0_right, E_D=E_D_right, name="my_mat_R")
+    surf = F.SurfaceSubdomain1D(id=1, x=0)
+    H = F.Species("H")
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 4, num=101)),
+        subdomains=[
+            F.VolumeSubdomain1D(id=1, borders=[0, 2], material=my_mat_L),
+            F.VolumeSubdomain1D(id=2, borders=[2, 4], material=my_mat_R),
+        ],
+        species=[F.Species("H"), F.Species("D")],
+        temperature=500,
+        exports=[
+            F.SurfaceFlux(
+                field=H,
+                surface=surf,
+            ),
+        ],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.define_temperature()
+
+    D_computed, D_expr = my_model.define_D_global(H)
+
+    computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
+
+    D_analytical_left = D_0_left * np.exp(-E_D_left / (F.k_B * my_model.temperature))
+    D_analytical_right = D_0_right * np.exp(-E_D_right / (F.k_B * my_model.temperature))
+
+    expected_values = [D_analytical_left, D_analytical_right]
+
+    assert np.isclose(computed_values, expected_values).all()
