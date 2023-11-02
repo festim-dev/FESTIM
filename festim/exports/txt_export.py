@@ -49,7 +49,7 @@ class TXTExport(festim.Export):
         if self.times is None:
             return nb_iteration == 0
         else:
-            return True if np.isclose(self.times[0], current_time) else False
+            return np.isclose(self.times[0], current_time)
 
     def write(self, current_time, nb_iteration, steady):
         # create a DG1 functionspace
