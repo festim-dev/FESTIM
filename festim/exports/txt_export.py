@@ -47,7 +47,7 @@ class TXTExport(festim.Export):
 
     def is_it_first_time_to_export(self, current_time, nb_iteration):
         if self.times is None:
-            return True if nb_iteration == 0 else False
+            return nb_iteration == 0
         else:
             return True if np.isclose(self.times[0], current_time) else False
 
