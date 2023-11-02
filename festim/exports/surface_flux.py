@@ -8,10 +8,18 @@ class SurfaceFlux(F.SurfaceQuantity):
     """Exports surface flux at a given subdomain
 
     Args:
+        field (festim.Species): species for which the surface flux is computed
+        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        filename (str, optional): name of the file to which the surface flux is exported
 
     Attributes:
-
-    Usage:
+        field (festim.Species): species for which the surface flux is computed
+        surface_subdomain (festim.SurfaceSubdomain1D): surface subdomain
+        filename (str): name of the file to which the surface flux is exported
+        t (list): list of time values
+        data (list): list of surface flux values
+        title (str): title of the exported data
+        write_to_file (bool): True if the data is exported to a file
     """
 
     def __init__(
@@ -34,17 +42,12 @@ class SurfaceFlux(F.SurfaceQuantity):
                 writer = csv.writer(file)
                 writer.writerow(["Time", f"{self.title}"])
 
-    def compute(self, mesh, ds):
+    def compute(self, n, ds):
         self.value = fem.assemble_scalar(
             fem.form(
-                self.D
-                * ufl.dot(ufl.grad(self.field.solution), mesh.n)
+                -self.D
+                * ufl.dot(ufl.grad(self.field.solution), n)
                 * ds(self.surface_subdomain.id)
             )
         )
         self.data.append(self.value)
-
-    def write(self, t):
-        with open(self.filename, mode="a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([t, self.value])
