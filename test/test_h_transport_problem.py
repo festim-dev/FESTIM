@@ -130,7 +130,7 @@ def test_iterate():
 
     for i in range(10):
         # RUN
-        my_model.iterate(skip_post_processing=True)
+        my_model.iterate()
 
         # TEST
 
