@@ -304,3 +304,42 @@ def test_define_D_global_different_materials():
     expected_values = [D_analytical_left, D_analytical_right]
 
     assert np.isclose(computed_values, expected_values).all()
+
+
+def test_initialise_exports_multiple_exports_same_species():
+    D_0, E_D = 1.5, 0.1
+    my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
+    surf_1 = F.SurfaceSubdomain1D(id=1, x=0)
+    surf_2 = F.SurfaceSubdomain1D(id=1, x=4)
+    H = F.Species("H")
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 4, num=101)),
+        subdomains=[
+            F.VolumeSubdomain1D(id=1, borders=[0, 2], material=my_mat),
+            F.VolumeSubdomain1D(id=2, borders=[2, 4], material=my_mat),
+        ],
+        species=[H],
+        temperature=500,
+        exports=[
+            F.SurfaceFlux(
+                field=H,
+                surface=surf_1,
+            ),
+            F.SurfaceFlux(
+                field=H,
+                surface=surf_2,
+            ),
+        ],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.define_temperature()
+    my_model.initialise_exports()
+
+    Ds = []
+    for export in my_model.exports:
+        Ds.append(export.D)
+
+    assert np.isclose(Ds[0].x.array[0], Ds[1].x.array[0])
