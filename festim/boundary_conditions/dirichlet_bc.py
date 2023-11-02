@@ -24,7 +24,6 @@ class DirichletBC:
             fenics format
         bc_expr (fem.Expression): the expression of the boundary condition that is used to
             update the value_fenics
-        time_dependent (bool): True if the boundary condition is time dependent
 
     Usage:
         >>> from festim import DirichletBC
