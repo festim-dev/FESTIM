@@ -75,6 +75,7 @@ def test_title_generation(tmp_path):
         field=F.Species("TEST"),
         surface_subdomain=F.SurfaceSubdomain1D(id=35, x=1),
     )
+    my_export.create_file()
     assert my_export.title == "Flux surface 35: TEST"
 
 
