@@ -7,7 +7,6 @@ from mpi4py import MPI
 from dolfinx.fem import Function, form, assemble_scalar
 from dolfinx.mesh import meshtags
 from ufl import TestFunction, dot, grad, Measure, FacetNormal
-from ufl.conditional import Conditional
 import numpy as np
 import tqdm.autonotebook
 
@@ -142,7 +141,7 @@ class HydrogenTransportProblem:
             return
         elif not isinstance(
             value,
-            (fem.Constant, fem.Function, Conditional),
+            (fem.Constant, fem.Function),
         ):
             raise TypeError(f"Value must be a fem.Constant or fem.Function")
         self._temperature_fenics = value
@@ -221,15 +220,9 @@ class HydrogenTransportProblem:
                         f"self.temperature should return a float or an int, not {type(self.temperature(t=float(self.t)))} "
                     )
                 # only t is an argument
-                if isinstance(self.temperature(t=self.t), Conditional):
-                    self.temperature_fenics = self.temperature(t=self.t)
-                else:
-                    # TODO do we need to have it as a fem.Constant or can we just have
-                    # self.temperature_fenics = self.temperature(t=self.t)
-                    # this way we wouldn't have to update it since self.t is a Constant
-                    self.temperature_fenics = F.as_fenics_constant(
-                        mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
-                    )
+                self.temperature_fenics = F.as_fenics_constant(
+                    mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
+                )
             else:
                 x = ufl.SpatialCoordinate(self.mesh.mesh)
                 degree = 1
@@ -589,7 +582,5 @@ class HydrogenTransportProblem:
                 self.temperature_fenics.value = self.temperature(t=t)
             elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
-            elif isinstance(self.temperature_fenics, Conditional):
-                pass
         for bc in self.boundary_conditions:
             bc.update(t)
