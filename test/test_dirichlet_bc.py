@@ -226,6 +226,7 @@ def test_callable_x_only():
         lambda x, t: 1.0 + x[0] + t,
         lambda x, t, T: 1.0 + x[0] + t + T,
         lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+        lambda t: 100.0 if t < 1 else 0.0,
     ],
 )
 def test_integration_with_HTransportProblem(value):

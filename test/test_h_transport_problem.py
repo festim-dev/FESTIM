@@ -4,6 +4,7 @@ import mpi4py.MPI as MPI
 import dolfinx.mesh
 from dolfinx import fem, nls
 import ufl
+from ufl.conditional import Conditional
 import numpy as np
 import pytest
 
@@ -77,6 +78,7 @@ def test_define_temperature_value_error_raised():
         (lambda x: 1.0 + x[0], fem.Function),
         (lambda x, t: 1.0 + x[0] + t, fem.Function),
         (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), fem.Function),
+        (lambda t: 100.0 if t < 1 else 0.0, fem.Constant),
     ],
 )
 def test_define_temperature(input, expected_type):
