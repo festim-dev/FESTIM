@@ -566,6 +566,13 @@ class HydrogenTransportProblem:
             else:
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
+        for bc in self.boundary_conditions:
+            bc.update(t=t)
+
+    def post_processing(self):
+        """Post processes the model"""
+
+        if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
             # variables time dependent
             species_not_updated = self.species.copy()  # make a copy of the species
@@ -575,12 +582,6 @@ class HydrogenTransportProblem:
                     if export.field in species_not_updated:
                         export.D.interpolate(export.D_expr)
                         species_not_updated.remove(export.field)
-
-        for bc in self.boundary_conditions:
-            bc.update(t=t)
-
-    def post_processing(self):
-        """Post processes the model"""
 
         for export in self.exports:
             # TODO if export type derived quantity
