@@ -542,11 +542,6 @@ class HydrogenTransportProblem:
         while self.t.value < self.settings.final_time:
             self.iterate()
 
-        if self.multispecies:
-            self.flux_values = [self.flux_values_1, self.flux_values_2]
-
-        return self.times, self.flux_values
-
     def iterate(self):
         """Iterates the model for a given time step"""
         self.progress.update(self.dt.value)
