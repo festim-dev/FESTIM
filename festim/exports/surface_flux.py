@@ -33,15 +33,6 @@ class SurfaceFlux(F.SurfaceQuantity):
         self.t = []
         self.data = []
 
-        self.title = "Flux surface {}: {}".format(
-            self.surface_subdomain.id, self.field.name
-        )
-
-        if self.write_to_file:
-            with open(self.filename, mode="w", newline="") as file:
-                writer = csv.writer(file)
-                writer.writerow(["Time", f"{self.title}"])
-
     def compute(self, n, ds):
         self.value = fem.assemble_scalar(
             fem.form(
@@ -51,3 +42,13 @@ class SurfaceFlux(F.SurfaceQuantity):
             )
         )
         self.data.append(self.value)
+
+    def create_file(self):
+        self.title = "Flux surface {}: {}".format(
+            self.surface_subdomain.id, self.field.name
+        )
+
+        if self.write_to_file:
+            with open(self.filename, mode="w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(["t(s)", f"{self.title}"])
