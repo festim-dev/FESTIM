@@ -297,6 +297,7 @@ def test_species_predefined():
     my_model.species = [F.Species("H")]
     my_bc = F.DirichletBC(subdomain, 1.0, "J")
     my_model.boundary_conditions = [my_bc]
+    my_model.temperature = 1
     my_model.settings = F.Settings(atol=1, rtol=0.1)
     my_model.settings.stepsize = 1
 
