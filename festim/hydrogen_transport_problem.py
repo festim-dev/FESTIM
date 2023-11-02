@@ -3,7 +3,6 @@ from dolfinx.nls.petsc import NewtonSolver
 from dolfinx.io import XDMFFile
 import basix
 import ufl
-from ufl.core.operator import Operator
 from mpi4py import MPI
 from dolfinx.fem import Function, form, assemble_scalar
 from dolfinx.mesh import meshtags

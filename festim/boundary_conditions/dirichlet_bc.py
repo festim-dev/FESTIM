@@ -1,6 +1,5 @@
 import festim as F
 import ufl
-from ufl.core.operator import Operator
 from dolfinx import fem
 import numpy as np
 

@@ -4,7 +4,6 @@ import mpi4py.MPI as MPI
 import dolfinx.mesh
 from dolfinx import fem, nls
 import ufl
-from ufl.conditional import Conditional
 import numpy as np
 import pytest
 
