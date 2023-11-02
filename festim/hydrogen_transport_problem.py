@@ -195,7 +195,11 @@ class HydrogenTransportProblem:
         # if temperature is callable, process accordingly
         elif callable(self.temperature):
             arguments = self.temperature.__code__.co_varnames
-            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+            if "t" in arguments and "x" not in arguments:
+                if not isinstance(self.temperature(t=float(self.t)), (float, int)):
+                    raise ValueError(
+                        f"self.temperature should return a float or an int, not {type(self.temperature(t=float(self.t)))} "
+                    )
                 # only t is an argument
                 self.temperature_fenics = F.as_fenics_constant(
                     mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
