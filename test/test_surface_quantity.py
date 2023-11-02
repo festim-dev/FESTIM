@@ -78,12 +78,12 @@ def test_title_generation(tmp_path):
     assert my_export.title == "Flux surface 35: TEST"
 
 
-def test_filename_setter_raises_TypeError(tmp_path):
+def test_filename_setter_raises_TypeError():
     """Test that a TypeError is raised when the filename is not a string"""
 
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="filename must be of type str"):
         F.SurfaceQuantity(
-            filename=os.path.join(tmp_path, 1),
+            filename=1,
             field=F.Species("test"),
             surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
         )
@@ -96,6 +96,16 @@ def test_filename_setter_raises_ValueError(tmp_path):
         F.SurfaceQuantity(
             filename=os.path.join(tmp_path, "my_export.xdmf"),
             field=F.Species("test"),
+            surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
+        )
+
+
+def test_field_setter_raises_TypeError():
+    """Test that a TypeError is raised when the field is not a F.Species"""
+
+    with pytest.raises(TypeError):
+        F.SurfaceQuantity(
+            field=1,
             surface_subdomain=F.SurfaceSubdomain1D(id=1, x=0),
         )
 
