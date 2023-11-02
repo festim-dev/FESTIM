@@ -18,7 +18,8 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (float or fem.Constant): the temperature of the model
+        temperature (float, int, fem.Constant, fem.Function or callable): the
+            temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
@@ -29,7 +30,8 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
-        temperature (fem.Constant): the temperature of the model
+        temperature (float, int, fem.Constant, fem.Function or callable): the
+            temperature of the model (K)
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
@@ -43,7 +45,15 @@ class HydrogenTransportProblem:
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
-        multispecies (bool): True if the model has more than one species
+        multispecies (bool): True if the model has more than one species.
+        temperature_fenics (fem.Constant or fem.Function): the
+            temperature of the model as a fenics object (fem.Constant or
+            fem.Function).
+        temperature_expr (fem.Expression): the expression of the temperature
+            that is used to update the temperature_fenics
+        temperature_time_dependent (bool): True if the temperature is time
+            dependent
+
 
     Usage:
         >>> import festim as F
@@ -95,6 +105,7 @@ class HydrogenTransportProblem:
         self.formulation = None
         self.volume_subdomains = []
         self.bc_forms = []
+        self.temperature_fenics = None
 
     @property
     def temperature(self):
@@ -104,8 +115,39 @@ class HydrogenTransportProblem:
     def temperature(self, value):
         if value is None:
             self._temperature = value
+        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+            self._temperature = value
+        elif callable(value):
+            self._temperature = value
         else:
-            self._temperature = F.as_fenics_constant(value, self.mesh.mesh)
+            raise TypeError(
+                f"Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )
+
+    @property
+    def temperature_fenics(self):
+        return self._temperature_fenics
+
+    @temperature_fenics.setter
+    def temperature_fenics(self, value):
+        if value is None:
+            self._temperature_fenics = value
+            return
+        elif not isinstance(value, (fem.Constant, fem.Function)):
+            raise TypeError(f"Value must be a fem.Constant or fem.Function")
+        self._temperature_fenics = value
+
+    @property
+    def temperature_time_dependent(self):
+        if self.temperature is None:
+            return False
+        if isinstance(self.temperature, fem.Constant):
+            return False
+        if callable(self.temperature):
+            arguments = self.temperature.__code__.co_varnames
+            return "t" in arguments
+        else:
+            return False
 
     @property
     def multispecies(self):
@@ -119,10 +161,67 @@ class HydrogenTransportProblem:
         self.t = fem.Constant(self.mesh.mesh, 0.0)
         self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
 
+        self.define_temperature()
         self.define_boundary_conditions()
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
+
+    def define_temperature(self):
+        """Sets the value of temperature_fenics_value. The type depends on
+        self.temperature. If self.temperature is a function on t only, create
+        a fem.Constant. Else, create an dolfinx.fem.Expression (stored in
+        self.temperature_expr) to be updated, a dolfinx.fem.Function object
+        is created from the Expression (stored in self.temperature_fenics_value).
+        Raise a ValueError if temperature is None.
+        """
+        # check if temperature is None
+        if self.temperature is None:
+            raise ValueError("the temperature attribute needs to be defined")
+
+        # if temperature is a float or int, create a fem.Constant
+        elif isinstance(self.temperature, (float, int)):
+            self.temperature_fenics = F.as_fenics_constant(
+                self.temperature, self.mesh.mesh
+            )
+        # if temperature is a fem.Constant or function, pass it to temperature_fenics
+        elif isinstance(self.temperature, (fem.Constant, fem.Function)):
+            self.temperature_fenics = self.temperature
+
+        # if temperature is callable, process accordingly
+        elif callable(self.temperature):
+            arguments = self.temperature.__code__.co_varnames
+            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                # only t is an argument
+                self.temperature_fenics = F.as_fenics_constant(
+                    mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
+                )
+            else:
+                x = ufl.SpatialCoordinate(self.mesh.mesh)
+                degree = 1
+                element_temperature = basix.ufl.element(
+                    basix.ElementFamily.P,
+                    self.mesh.mesh.basix_cell(),
+                    degree,
+                    basix.LagrangeVariant.equispaced,
+                )
+                function_space_temperature = fem.FunctionSpace(
+                    self.mesh.mesh, element_temperature
+                )
+                self.temperature_fenics = fem.Function(function_space_temperature)
+                kwargs = {}
+                if "t" in arguments:
+                    kwargs["t"] = self.t
+                if "x" in arguments:
+                    kwargs["x"] = x
+
+                # store the expression of the temperature
+                # to update the temperature_fenics later
+                self.temperature_expr = fem.Expression(
+                    self.temperature(**kwargs),
+                    function_space_temperature.element.interpolation_points(),
+                )
+                self.temperature_fenics.interpolate(self.temperature_expr)
 
     def initialise_exports(self):
         """Defines the export writers of the model, if field is given as
@@ -202,10 +301,11 @@ class HydrogenTransportProblem:
         function u and u_n. Create global DG function spaces of degree 0 and 1
         for the global diffusion coefficient"""
 
+        degree = 1
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
-            1,
+            degree,
             basix.LagrangeVariant.equispaced,
         )
         if not self.multispecies:
@@ -237,7 +337,7 @@ class HydrogenTransportProblem:
             sub_prev_solution = [self.u_n]
             sub_test_functions = [ufl.TestFunction(self.function_space)]
             self.species[0].sub_function_space = self.function_space
-            self.species[0].post_processing_solution = fem.Function(self.function_space)
+            self.species[0].post_processing_solution = self.u
         else:
             sub_solutions = list(ufl.split(self.u))
             sub_prev_solution = list(ufl.split(self.u_n))
@@ -245,7 +345,7 @@ class HydrogenTransportProblem:
 
             for idx, spe in enumerate(self.species):
                 spe.sub_function_space = self.function_space.sub(idx)
-                spe.post_processing_solution = self.u.sub(idx).collapse()
+                spe.post_processing_solution = self.u.sub(idx)
                 spe.collapsed_function_space, _ = self.function_space.sub(
                     idx
                 ).collapse()
@@ -336,7 +436,7 @@ class HydrogenTransportProblem:
 
         bc.create_value(
             mesh=self.mesh.mesh,
-            temperature=self.temperature,
+            temperature=self.temperature_fenics,
             function_space=function_space_value,
             t=self.t,
         )
@@ -385,7 +485,7 @@ class HydrogenTransportProblem:
 
             for vol in self.volume_subdomains:
                 D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature, spe
+                    self.mesh.mesh, self.temperature_fenics, spe
                 )
 
                 self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
@@ -419,27 +519,36 @@ class HydrogenTransportProblem:
         self.solver.max_it = self.settings.max_iterations
 
     def run(self):
-        """Runs the model for a given time
+        """Runs the model
 
         Returns:
             list of float: the times of the simulation
             list of float: the fluxes of the simulation
         """
-        times, flux_values = [], []
-        flux_values_1, flux_values_2 = [], []
+        self.times, self.flux_values = [], []
+        self.flux_values_1, self.flux_values_2 = [], []
 
-        progress = tqdm.autonotebook.tqdm(
+        self.progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem",
             total=self.settings.final_time,
             unit_scale=True,
         )
         while self.t.value < self.settings.final_time:
-            progress.update(self.dt.value)
-            self.t.value += self.dt.value
+            self.iterate()
 
-            # update boundary conditions
-            for bc in self.boundary_conditions:
-                bc.update(float(self.t))
+        if self.multispecies:
+            self.flux_values = [self.flux_values_1, self.flux_values_2]
+
+        return self.times, self.flux_values
+
+    def iterate(
+        self, skip_post_processing=False
+    ):  # TODO remove skip_post_processing flag, just temporary
+        """Iterates the model for a given time step"""
+        self.progress.update(self.dt.value)
+        self.t.value += self.dt.value
+
+        self.update_time_dependent_values()
 
             # update global D if temperature time dependent or internal
             # variables time dependent
@@ -457,11 +566,16 @@ class HydrogenTransportProblem:
             # post processing
             self.post_processing()
 
-            # update previous solution
-            self.u_n.x.array[:] = self.u.x.array[:]
+        # update previous solution
+        self.u_n.x.array[:] = self.u.x.array[:]
 
-        if self.multispecies:
-            flux_values = [flux_values_1, flux_values_2]
+    def update_time_dependent_values(self):
+        t = float(self.t)
+        if self.temperature_time_dependent:
+            if isinstance(self.temperature_fenics, fem.Constant):
+                self.temperature_fenics.value = self.temperature(t=t)
+            else:
+                self.temperature_fenics.interpolate(self.temperature_expr)
 
         return times, flux_values
 
@@ -488,3 +602,4 @@ class HydrogenTransportProblem:
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.write(float(self.t))
+
