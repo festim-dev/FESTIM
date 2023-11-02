@@ -86,7 +86,7 @@ class TXTExport(festim.Export):
                 old_columns = np.loadtxt(filename, delimiter=",", skiprows=1)
                 data = np.column_stack([old_columns, solution_column])
 
-            np.savetxt(filename, data, header="x,t=steady", delimiter=",", comments="")
+            np.savetxt(filename, data, header=header, delimiter=",", comments="")
 
 
 class TXTExports:
