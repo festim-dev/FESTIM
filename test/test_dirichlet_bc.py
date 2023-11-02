@@ -304,7 +304,9 @@ def test_define_value_error_if_ufl_conditional_t_only(value):
 
     t = fem.Constant(mesh, 0.0)
 
-    with pytest.raises(ValueError, match="wrong type for temperature"):
+    with pytest.raises(
+        ValueError, match="self.value should return a float or an int, not "
+    ):
         bc.create_value(mesh=mesh, function_space=None, temperature=None, t=t)
 
 

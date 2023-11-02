@@ -99,8 +99,10 @@ class DirichletBC:
 
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 # only t is an argument
-                if isinstance(self.value(t=float(t)), Operator):
-                    raise ValueError("wrong type for temperature")
+                if not isinstance(self.value(t=float(t)), (float, int)):
+                    raise ValueError(
+                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "
+                    )
                 self.value_fenics = F.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
                 )

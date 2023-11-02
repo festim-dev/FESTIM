@@ -116,7 +116,9 @@ def test_define_temperature_error_if_ufl_conditional_t_only(input):
 
     my_model.temperature = input
 
-    with pytest.raises(ValueError, match="wrong type for temperature"):
+    with pytest.raises(
+        ValueError, match="self.temperature should return a float or an int, not "
+    ):
         my_model.define_temperature()
 
 
