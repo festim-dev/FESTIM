@@ -534,4 +534,5 @@ class HydrogenTransportProblem:
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
         for bc in self.boundary_conditions:
-            bc.update(t)
+            if bc.time_dependent:
+                bc.update(t)
