@@ -113,3 +113,16 @@ def test_writer(tmp_path):
     expected_value = 10
 
     assert computed_value == expected_value
+
+
+def test_surface_setter_raises_TypeError():
+    """Test that a TypeError is raised when the surface is not a
+    F.SurfaceSubdomain1D"""
+
+    with pytest.raises(
+        TypeError, match="surface should be an int or F.SurfaceSubdomain1D"
+    ):
+        F.SurfaceQuantity(
+            field=F.Species("H"),
+            surface="1",
+        )
