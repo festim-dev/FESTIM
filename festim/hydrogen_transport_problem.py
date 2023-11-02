@@ -567,7 +567,18 @@ class HydrogenTransportProblem:
                 self.flux_values_1.append(flux_1)
                 self.flux_values_2.append(flux_2)
                 self.times.append(float(self.t))
-
+        # cm_1, ct1, ct2 = self.u.split()
+        # self.times.append(float(self.t))
+        # D = self.subdomains[0].material.get_diffusion_coefficient(
+        #     self.mesh.mesh, self.temperature_fenics, self.species[0]
+        # )
+        # surface_flux_1 = assemble_scalar(
+        #     form(D * dot(grad(cm_1), self.mesh.n) * self.ds(2))
+        # )
+        # surface_flux_2 = assemble_scalar(
+        #     form(D * dot(grad(cm_1), self.mesh.n) * self.ds(2))
+        # )
+        # self.flux_values.append(surface_flux_1 + surface_flux_2)
         for export in self.exports:
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.write(float(self.t))
