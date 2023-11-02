@@ -77,6 +77,7 @@ def test_define_temperature_value_error_raised():
         (lambda x: 1.0 + x[0], fem.Function),
         (lambda x, t: 1.0 + x[0] + t, fem.Function),
         (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), fem.Function),
+        (lambda t: 100.0 if t < 1 else 0.0, fem.Constant),
     ],
 )
 def test_define_temperature(input, expected_type):
@@ -95,6 +96,29 @@ def test_define_temperature(input, expected_type):
 
     # TEST
     assert isinstance(my_model.temperature_fenics, expected_type)
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        lambda t: ufl.conditional(ufl.lt(t, 1.0), 1, 2),
+        lambda t: 1 + ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+        lambda t: 2 * ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+        lambda t: 2 / ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+    ],
+)
+def test_define_temperature_error_if_ufl_conditional_t_only(input):
+    """Test that a ValueError is raised when the temperature attribute is a callable
+    of t only and contains a ufl conditional"""
+    my_model = F.HydrogenTransportProblem(mesh=test_mesh)
+    my_model.t = fem.Constant(test_mesh.mesh, 0.0)
+
+    my_model.temperature = input
+
+    with pytest.raises(
+        ValueError, match="self.temperature should return a float or an int, not "
+    ):
+        my_model.define_temperature()
 
 
 def test_iterate():

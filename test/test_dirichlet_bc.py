@@ -226,6 +226,7 @@ def test_callable_x_only():
         lambda x, t: 1.0 + x[0] + t,
         lambda x, t, T: 1.0 + x[0] + t + T,
         lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+        lambda t: 100.0 if t < 1 else 0.0,
     ],
 )
 def test_integration_with_HTransportProblem(value):
@@ -281,6 +282,32 @@ def test_integration_with_HTransportProblem(value):
     if isinstance(expected_value, Conditional):
         expected_value = float(expected_value)
     assert np.isclose(computed_value, expected_value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        lambda t: ufl.conditional(ufl.lt(t, 1.0), 1, 2),
+        lambda t: 1 + ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+        lambda t: 2 * ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+        lambda t: 2 / ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+    ],
+)
+def test_define_value_error_if_ufl_conditional_t_only(value):
+    """Test that a ValueError is raised when the value attribute is a callable
+    of t only and contains a ufl conditional"""
+
+    subdomain = F.SurfaceSubdomain1D(1, x=1)
+    species = F.Species("test")
+
+    bc = F.DirichletBC(subdomain, value, species)
+
+    t = fem.Constant(mesh, 0.0)
+
+    with pytest.raises(
+        ValueError, match="self.value should return a float or an int, not "
+    ):
+        bc.create_value(mesh=mesh, function_space=None, temperature=None, t=t)
 
 
 def test_species_predefined():
