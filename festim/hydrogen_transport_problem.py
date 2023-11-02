@@ -249,13 +249,13 @@ class HydrogenTransportProblem:
         spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
-            if isinstance(export, F.SurfaceFlux):
+            if isinstance(export, F.SurfaceQuantity):
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
                     D = spe_to_D_global[export.field]
                     D_expr = spe_to_D_global_expr[export.field]
                 else:
-                    # if not computed then compute D and add it to the dict
+                    # compute D and add it to the dict
                     D, D_expr = self.define_D_global(export.field)
                     spe_to_D_global[export.field] = D
                     spe_to_D_global_expr[export.field] = D_expr
@@ -541,30 +541,18 @@ class HydrogenTransportProblem:
 
         return self.times, self.flux_values
 
-    def iterate(
-        self, skip_post_processing=False
-    ):  # TODO remove skip_post_processing flag, just temporary
+    def iterate(self):
         """Iterates the model for a given time step"""
         self.progress.update(self.dt.value)
         self.t.value += self.dt.value
 
         self.update_time_dependent_values()
 
-            # update global D if temperature time dependent or internal
-            # variables time dependent
-            species_not_updated = self.species.copy()  # make a copy of the species
-            for export in self.exports:
-                if isinstance(export, F.SurfaceFlux):
-                    # if the D of the species has not been updated yet
-                    if export.field in species_not_updated:
-                        export.D.interpolate(export.D_expr)
-                        species_not_updated.remove(export.field)
+        # solve main problem
+        self.solver.solve(self.u)
 
-            # solve main problem
-            self.solver.solve(self.u)
-
-            # post processing
-            self.post_processing()
+        # post processing
+        self.post_processing()
 
         # update previous solution
         self.u_n.x.array[:] = self.u.x.array[:]
@@ -577,20 +565,27 @@ class HydrogenTransportProblem:
             else:
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
-        return times, flux_values
+            # update global D if temperature time dependent or internal
+            # variables time dependent
+            species_not_updated = self.species.copy()  # make a copy of the species
+            for export in self.exports:
+                if isinstance(export, F.SurfaceFlux):
+                    # if the D of the species has not been updated yet
+                    if export.field in species_not_updated:
+                        export.D.interpolate(export.D_expr)
+                        species_not_updated.remove(export.field)
+
+        for bc in self.boundary_conditions:
+            bc.update(t=t)
 
     def post_processing(self):
-        if not self.multispecies:
-            self.species[0].post_processing_solution = self.u
-        else:
-            for idx, spe in enumerate(self.species):
-                spe.post_processing_solution = self.u.sub(idx)
+        """Post processes the model"""
 
         for export in self.exports:
             # TODO if export type derived quantity
-            if isinstance(export, F.SurfaceFlux):
+            if isinstance(export, F.SurfaceQuantity):
                 export.compute(
-                    self.mesh,
+                    self.mesh.n,
                     self.ds,
                 )
                 # update export data
@@ -602,4 +597,3 @@ class HydrogenTransportProblem:
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.write(float(self.t))
-
