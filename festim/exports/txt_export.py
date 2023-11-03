@@ -30,6 +30,10 @@ class TXTExport(festim.Export):
         self.folder = folder
         self._first_time = True
 
+    @property
+    def filename(self):
+        return f"{self.folder}/{self.label}.txt"
+        
     def is_it_time_to_export(self, current_time):
         if self.times is None:
             return True
@@ -48,22 +52,19 @@ class TXTExport(festim.Export):
 
     def write(self, current_time, steady):
         # create a DG1 functionspace
-        # TODO ideally we wouldn't recreate this everytime but store it in an attribute
         V_DG1 = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
 
         solution = f.project(self.function, V_DG1)
         solution_column = np.transpose(solution.vector()[:])
         if self.is_it_time_to_export(current_time):
             if steady:
-                filename = "{}/{}_steady.txt".format(self.folder, self.label)
                 header = "x,t=steady"
             else:
-                filename = "{}/{}_transient.txt".format(self.folder, self.label)
                 header = "x,t={}s".format(current_time)
 
             # if the directory doesn't exist
             # create it
-            dirname = os.path.dirname(filename)
+            dirname = os.path.dirname(self.filename)
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
 
@@ -77,16 +78,15 @@ class TXTExport(festim.Export):
                 self._first_time = False
             else:
                 # Update the header
-                old_file = open(filename)
+                old_file = open(self.filename)
                 old_header = old_file.readline().split("\n")[0]
                 old_file.close()
-                header = old_header + f",t={current_time}s"
-
+                header = old_header + f",t={}s".format(current_time)
                 # Append new column
-                old_columns = np.loadtxt(filename, delimiter=",", skiprows=1)
+                old_columns = np.loadtxt(self.filename, delimiter=",", skiprows=1)
                 data = np.column_stack([old_columns, solution_column])
 
-            np.savetxt(filename, data, header=header, delimiter=",", comments="")
+            np.savetxt(self.filename, data, header=header, delimiter=",", comments="")
 
 
 class TXTExports:
