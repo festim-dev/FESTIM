@@ -81,7 +81,7 @@ class TXTExport(festim.Export):
                 old_file = open(self.filename)
                 old_header = old_file.readline().split("\n")[0]
                 old_file.close()
-                header = old_header + f",t={}s".format(current_time)
+                header = old_header + ",t={}s".format(current_time)
                 # Append new column
                 old_columns = np.loadtxt(self.filename, delimiter=",", skiprows=1)
                 data = np.column_stack([old_columns, solution_column])
