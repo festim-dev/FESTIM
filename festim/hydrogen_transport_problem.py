@@ -18,6 +18,7 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
+        reactions (list of festim.Reaction): the reactions of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
@@ -30,6 +31,7 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
+        reactions (list of festim.Reaction): the reactions of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
         boundary_conditions (list of festim.BoundaryCondition): the boundary
