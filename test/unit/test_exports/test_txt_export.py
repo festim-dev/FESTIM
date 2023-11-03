@@ -41,7 +41,7 @@ class TestWrite:
         my_export.function = function
         my_export.write(current_time=current_time, steady=False)
 
-        assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+        assert not os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
 
     def test_create_folder(self, my_export, function):
         """Checks that write() creates the folder if it doesn't exist"""
