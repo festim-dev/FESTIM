@@ -200,7 +200,7 @@ def test_txt_export_steady_state(tmp_path):
     my_model.initialise()
     my_model.run()
 
-    assert os.path.exists("{}/{}_steady.txt".format(my_export.folder, my_export.label))
+    assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
 
     txt = open("{}/{}.txt".format(my_export.folder, my_export.label))
     header = txt.readline().rstrip()
