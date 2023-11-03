@@ -33,7 +33,6 @@ class TXTExport(festim.Export):
     @property
     def filename(self):
         return f"{self.folder}/{self.label}.txt"
-        
     def is_it_time_to_export(self, current_time):
         if self.times is None:
             return True
