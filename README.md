@@ -25,3 +25,8 @@ It simulates the diffusion and trapping of hydrogen, coupled to heat transfer wi
 - J. Dark, _et al._, _Influence of hydrogen trapping on WCLL breeding blanket performances_. Nuclear Fusion, 62, (2021). https://doi.org/10.1088/1741-4326/ac28b0.
 
 For full list of publications using FESTIM see the [publications](https://festim.readthedocs.io/en/latest/publications.html) section in the docs
+
+
+## Contact
+
+   Join our [Slack](https://join.slack.com/t/festimworkspace/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g) channel
