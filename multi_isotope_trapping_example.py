@@ -147,10 +147,10 @@ my_model.exports = [
 # -------- Settings --------- #
 
 my_model.settings = F.Settings(
-    atol=1e-10, rtol=1e-10, max_iterations=30, final_time=500
+    atol=1e-10, rtol=1e-10, max_iterations=30, final_time=3000
 )
 
-my_model.settings.stepsize = F.Stepsize(initial_value=5)
+my_model.settings.stepsize = F.Stepsize(initial_value=20)
 
 # -------- Run --------- #
 
