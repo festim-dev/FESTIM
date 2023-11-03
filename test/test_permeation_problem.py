@@ -4,6 +4,7 @@ from ufl import exp
 import numpy as np
 import festim as F
 import os
+import ufl
 
 
 def relative_error_computed_to_analytical(
@@ -60,7 +61,14 @@ def test_permeation_problem(mesh_size=1001):
             subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
         ),
     ]
-    my_model.exports = [F.XDMFExport("mobile_concentration.xdmf", field=mobile_H)]
+    outgassing_flux = F.SurfaceFlux(
+        field=mobile_H,
+        surface=right_surface,
+    )
+    my_model.exports = [
+        F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
+        outgassing_flux,
+    ]
 
     my_model.settings = F.Settings(
         atol=1e10,
@@ -82,7 +90,10 @@ def test_permeation_problem(mesh_size=1001):
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    times, flux_values = my_model.run()
+    my_model.run()
+
+    times = outgassing_flux.t
+    flux_values = outgassing_flux.data
 
     # -------------------------- analytical solution -------------------------------------
 
@@ -145,8 +156,16 @@ def test_permeation_problem_multi_volume(tmp_path):
             subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
         ),
     ]
+    outgassing_flux = F.SurfaceFlux(
+        filename=os.path.join(tmp_path, "outgassing_flux.csv"),
+        field=mobile_H,
+        surface=right_surface,
+    )
     my_model.exports = [
-        F.VTXExport(os.path.join(tmp_path, "mobile_concentration_h.bp"), field=mobile_H)
+        F.VTXExport(
+            os.path.join(tmp_path, "mobile_concentration_h.bp"), field=mobile_H
+        ),
+        outgassing_flux,
     ]
 
     my_model.settings = F.Settings(
@@ -169,7 +188,10 @@ def test_permeation_problem_multi_volume(tmp_path):
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    times, flux_values = my_model.run()
+    my_model.run()
+
+    times = outgassing_flux.t
+    flux_values = outgassing_flux.data
 
     # ---------------------- analytical solution -----------------------------
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, temperature)
