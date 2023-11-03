@@ -1,46 +1,6 @@
 import festim as F
 import numpy as np
-from dolfinx.fem import form, assemble_scalar
-from ufl import dot, grad
 
-
-# needs monkey patching of iterate method before #629 is merged
-
-
-def new_iterate(cls, skip_postprocessing=False):
-    cls.progress.update(cls.dt.value)
-    cls.t.value += cls.dt.value
-
-    cls.update_time_dependent_values()
-
-    cls.solver.solve(cls.u)
-
-    for idx, spe in enumerate(cls.species):
-        spe.post_processing_solution = cls.u.sub(idx)
-
-    cm, *trapped_cs = cls.u.split()
-
-    D = cls.subdomains[0].material.get_diffusion_coefficient(
-        cls.mesh.mesh, cls.temperature_fenics, mobile_H
-    )
-    surface_flux_left = assemble_scalar(form(D * dot(grad(cm), cls.mesh.n) * cls.ds(1)))
-    surface_flux_right = assemble_scalar(
-        form(D * dot(grad(cm), cls.mesh.n) * cls.ds(2))
-    )
-
-    cls.times.append(float(cls.t))
-    cls.flux_values_1.append(surface_flux_left)
-    cls.flux_values_2.append(surface_flux_right)
-
-    for export in cls.exports:
-        if isinstance(export, (F.VTXExport, F.XDMFExport)):
-            export.write(float(cls.t))
-
-    # update previous solution
-    cls.u_n.x.array[:] = cls.u.x.array[:]
-
-
-F.HydrogenTransportProblem.iterate = new_iterate
 
 my_model = F.HydrogenTransportProblem()
 
@@ -143,12 +103,17 @@ my_model.boundary_conditions = [
 
 # -------- Exports --------- #
 
+left_flux = F.SurfaceFlux(field=mobile_H, surface=left_surface)
+right_flux = F.SurfaceFlux(field=mobile_H, surface=right_surface)
+
 my_model.exports = [
     # F.VTXExport("mobile_concentration_h.bp", field=mobile_H),
     # F.VTXExport("trapped_concentration_h.bp", field=trapped_H1),
     F.XDMFExport("mobile_concentration_h.xdmf", field=mobile_H),
     F.XDMFExport("trapped_concentration_h1.xdmf", field=trapped_H1),
     F.XDMFExport("trapped_concentration_h2.xdmf", field=trapped_H2),
+    left_flux,
+    right_flux,
 ]
 
 # -------- Settings --------- #
@@ -166,6 +131,6 @@ my_model.run()
 
 np.savetxt(
     "outgassing_flux_tds.txt",
-    np.array(my_model.flux_values_1) + np.array(my_model.flux_values_2),
+    np.array(left_flux.data) + np.array(right_flux.data),
 )
-np.savetxt("times_tds.txt", np.array(my_model.times))
+np.savetxt("times_tds.txt", np.array(left_flux.t))
