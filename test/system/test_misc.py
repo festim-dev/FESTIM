@@ -142,11 +142,11 @@ def test_txt_export_desired_times(tmp_path):
     my_model.run()
 
     assert os.path.exists(
-        "{}/{}_transient.txt".format(my_export.folder, my_export.label)
+        "{}/{}.txt".format(my_export.folder, my_export.label)
     )
 
     data = np.genfromtxt(
-        "{}/{}_transient.txt".format(my_export.folder, my_export.label),
+        "{}/{}.txt".format(my_export.folder, my_export.label),
         skip_header=1,
         delimiter=",",
     )
@@ -172,11 +172,11 @@ def test_txt_export_all_times(tmp_path):
     my_model.run()
 
     assert os.path.exists(
-        "{}/{}_transient.txt".format(my_export.folder, my_export.label)
+        "{}/{}.txt".format(my_export.folder, my_export.label)
     )
 
     data = np.genfromtxt(
-        "{}/{}_transient.txt".format(my_export.folder, my_export.label),
+        "{}/{}.txt".format(my_export.folder, my_export.label),
         skip_header=1,
         delimiter=",",
     )
@@ -202,7 +202,7 @@ def test_txt_export_steady_state(tmp_path):
 
     assert os.path.exists("{}/{}_steady.txt".format(my_export.folder, my_export.label))
 
-    txt = open("{}/{}_steady.txt".format(my_export.folder, my_export.label))
+    txt = open("{}/{}.txt".format(my_export.folder, my_export.label))
     header = txt.readline().rstrip()
     txt.close()
 
