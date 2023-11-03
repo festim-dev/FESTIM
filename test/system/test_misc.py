@@ -169,9 +169,7 @@ def test_txt_export_all_times(tmp_path):
     my_model.initialise()
     my_model.run()
 
-    assert os.path.exists(
-        "{}/{}.txt".format(my_export.folder, my_export.label)
-    )
+    assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
 
     data = np.genfromtxt(
         "{}/{}.txt".format(my_export.folder, my_export.label),
