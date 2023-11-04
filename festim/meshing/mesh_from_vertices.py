@@ -24,12 +24,12 @@ class MeshFromVertices(Mesh1D):
 
     def generate_mesh_from_vertices(self):
         """Generates a 1D mesh"""
+        mesh = f.Mesh()
         if f.MPI.comm_world.rank == 0:
             vertices = sorted(np.unique(self.vertices))
             nb_points = len(vertices)
             nb_cells = nb_points - 1
             editor = f.MeshEditor()
-            mesh = f.Mesh()
             editor.open(mesh, "interval", 1, 1)  # top. and geom. dimension are both 1
             editor.init_vertices(nb_points)  # number of vertices
             editor.init_cells(nb_cells)  # number of cells
