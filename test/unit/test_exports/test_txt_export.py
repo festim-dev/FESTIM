@@ -34,18 +34,14 @@ class TestWrite:
         my_export.function = function
         my_export.write(current_time=current_time, steady=False)
 
-        assert os.path.exists(
-            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time)
-        )
+        assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
 
     def test_file_doesnt_exist(self, my_export, function):
         current_time = 10
         my_export.function = function
         my_export.write(current_time=current_time, steady=False)
 
-        assert not os.path.exists(
-            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time)
-        )
+        assert not os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
 
     def test_create_folder(self, my_export, function):
         """Checks that write() creates the folder if it doesn't exist"""
@@ -54,18 +50,14 @@ class TestWrite:
         my_export.folder += "/folder2"
         my_export.write(current_time=current_time, steady=False)
 
-        assert os.path.exists(
-            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time)
-        )
+        assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
 
     def test_subspace(self, my_export, function_subspace):
         current_time = 1
         my_export.function = function_subspace
         my_export.write(current_time=current_time, steady=False)
 
-        assert os.path.exists(
-            "{}/{}_{}s.txt".format(my_export.folder, my_export.label, current_time)
-        )
+        assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
 
 
 class TestIsItTimeToExport:
