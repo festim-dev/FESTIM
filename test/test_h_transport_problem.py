@@ -343,3 +343,50 @@ def test_initialise_exports_multiple_exports_same_species():
         Ds.append(export.D)
 
     assert np.isclose(Ds[0].x.array[0], Ds[1].x.array[0])
+
+
+def test_post_processing_update_D_global():
+    """Test that the D_global attribute is updated at each time
+    step when temperture is time dependent"""
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    surf = F.SurfaceSubdomain1D(id=1, x=1)
+
+    # create species and interpolate solution
+    H = F.Species("H")
+    V = fem.FunctionSpace(my_mesh.mesh, ("CG", 1))
+    u = fem.Function(V)
+    u.interpolate(lambda x: 2 * x[0] ** 2 + 1)
+    H.solution = u
+
+    my_export = F.SurfaceFlux(
+        field=H,
+        surface=surf,
+    )
+
+    # Build the model
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat), surf],
+        species=[H],
+        temperature=lambda t: 500 * t,
+        exports=[my_export],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
+    my_model.define_temperature()
+    my_model.initialise_exports()
+
+    # RUN
+    my_model.post_processing()
+    value_t_1 = my_export.D.x.array[-1]
+
+    my_model.t = fem.Constant(my_model.mesh.mesh, 2.0)
+    my_model.update_time_dependent_values()
+    my_model.post_processing()
+    value_t_2 = my_export.D.x.array[-1]
+
+    # TEST
+    assert value_t_1 != value_t_2
