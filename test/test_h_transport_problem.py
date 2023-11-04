@@ -338,7 +338,7 @@ def test_initialise_exports_multiple_exports_same_species():
     my_model.define_temperature()
     my_model.initialise_exports()
 
-    Ds = [export.D for export in my_model_exports]
+    Ds = [export.D for export in my_model.exports]
 
     assert np.isclose(Ds[0].x.array[0], Ds[1].x.array[0])
 

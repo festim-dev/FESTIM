@@ -99,19 +99,19 @@ def test_field_setter_raises_TypeError():
 
 def test_writer(tmp_path):
     """Test that the writes values at each timestep"""
-    my_export = F.SurfaceQuantity(
+    my_export = F.SurfaceFlux(
         filename=os.path.join(tmp_path, "my_export.csv"),
         field=F.Species("test"),
         surface=F.SurfaceSubdomain1D(id=1, x=0),
     )
     my_export.value = 2.0
+    my_export.initialise_export()
 
     for i in range(10):
         my_export.write(i)
-
         file_length = len(np.genfromtxt(my_export.filename, delimiter=","))
 
-        expected_length = i + 1
+        expected_length = i + 2
 
         assert file_length == expected_length
 
