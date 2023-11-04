@@ -30,11 +30,11 @@ def surface_flux_export_compute():
 
     # give function to species
     V = fem.FunctionSpace(my_mesh.mesh, ("CG", 1))
-    u = fem.Function(V)
-    u.interpolate(lambda x: 2 * x[0] ** 2 + 1)
+    c = fem.Function(V)
+    c.interpolate(lambda x: 2 * x[0] ** 2 + 1)
 
     my_species = F.Species("H")
-    my_species.solution = u
+    my_species.solution = c
 
     my_export = F.SurfaceFlux(
         filename="my_surface_flux.csv",
@@ -47,6 +47,7 @@ def surface_flux_export_compute():
     my_export.compute(n=my_mesh.n, ds=ds)
 
     # TEST
+    # flux = -D grad(c)_ \cdot n = -D dc/dx = -D * 4 * x
     expected_value = -D * 4 * dummy_surface.x
     computed_value = my_export.value
 
@@ -108,11 +109,11 @@ def test_writer(tmp_path):
     for i in range(10):
         my_export.write(i)
 
-    computed_value = len(np.genfromtxt(my_export.filename, delimiter=","))
+        file_length = len(np.genfromtxt(my_export.filename, delimiter=","))
 
-    expected_value = 10
+        expected_length = i + 1
 
-    assert computed_value == expected_value
+        assert file_length == expected_length
 
 
 def test_surface_setter_raises_TypeError():
