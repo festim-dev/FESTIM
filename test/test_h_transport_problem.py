@@ -229,6 +229,8 @@ def test_initialise_exports_find_species_with_one_field():
 
 
 def test_define_D_global_different_temperatures():
+    """Test that the D_global attribute is correctly defined when the temperature
+    is different in the volume subdomains"""
     D_0, E_D = 1.5, 0.1
     my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
     surf = F.SurfaceSubdomain1D(id=1, x=0)
@@ -267,6 +269,8 @@ def test_define_D_global_different_temperatures():
 
 
 def test_define_D_global_different_materials():
+    """Test that the D_global attribute is correctly defined when the material
+    is different in the volume subdomains"""
     D_0_left, E_D_left = 1.0, 0.1
     D_0_right, E_D_right = 2.0, 0.2
     my_mat_L = F.Material(D_0=D_0_left, E_D=E_D_left, name="my_mat_L")
@@ -307,6 +311,8 @@ def test_define_D_global_different_materials():
 
 
 def test_initialise_exports_multiple_exports_same_species():
+    """Test that the D attribute is the same for multiple exports of the same species,
+    and that D_global is only created once per species"""
     D_0, E_D = 1.5, 0.1
     my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
     surf_1 = F.SurfaceSubdomain1D(id=1, x=0)
@@ -341,6 +347,56 @@ def test_initialise_exports_multiple_exports_same_species():
     Ds = [export.D for export in my_model.exports]
 
     assert np.isclose(Ds[0].x.array[0], Ds[1].x.array[0])
+
+
+def test_define_D_global_multispecies():
+    """Test that the D_global attribute is correctly defined when there are multiple
+    species in one subdomain"""
+    A = F.Species("A")
+    B = F.Species("B")
+
+    D_0_A, D_0_B = 1.0, 2.0
+    E_D_A, E_D_B = 0.1, 0.2
+
+    my_mat = F.Material(
+        D_0={A: D_0_A, B: D_0_B}, E_D={A: E_D_A, B: E_D_B}, name="my_mat"
+    )
+    surf = F.SurfaceSubdomain1D(id=1, x=1)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 1, num=101)),
+        subdomains=[
+            F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat),
+        ],
+        species=[F.Species("A"), F.Species("B")],
+        temperature=500,
+        exports=[
+            F.SurfaceFlux(
+                field=A,
+                surface=surf,
+            ),
+            F.SurfaceFlux(
+                field=A,
+                surface=surf,
+            ),
+        ],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.define_temperature()
+
+    D_A_computed, D_A_expr = my_model.define_D_global(A)
+    D_B_computed, D_B_expr = my_model.define_D_global(B)
+
+    computed_values = [D_A_computed.x.array[-1], D_B_computed.x.array[-1]]
+
+    D_analytical_A = D_0_A * np.exp(-E_D_A / (F.k_B * my_model.temperature))
+    D_analytical_B = D_0_B * np.exp(-E_D_B / (F.k_B * my_model.temperature))
+
+    expected_values = [D_analytical_A, D_analytical_B]
+
+    assert np.isclose(computed_values, expected_values).all()
 
 
 def test_post_processing_update_D_global():
