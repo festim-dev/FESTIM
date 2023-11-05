@@ -37,7 +37,6 @@ def surface_flux_export_compute():
     my_species.solution = c
 
     my_export = F.SurfaceFlux(
-        filename="my_surface_flux.csv",
         field=my_species,
         surface=dummy_surface,
     )
@@ -54,15 +53,20 @@ def surface_flux_export_compute():
     assert np.isclose(computed_value, expected_value, rtol=1e-2)
 
 
-def test_title_generation(tmp_path):
-    """Test that the title is made to be written to the header"""
+@pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
+def test_title_generation(tmp_path, value):
+    """Test that the title is made to be written to the header in a csv or txt file"""
     my_export = F.SurfaceFlux(
-        filename=os.path.join(tmp_path, "my_export.csv"),
+        filename=os.path.join(tmp_path, f"{value}"),
         field=F.Species("TEST"),
         surface=F.SurfaceSubdomain1D(id=35, x=1),
     )
     my_export.initialise_export()
-    assert my_export.title == "Flux surface 35: TEST"
+    title = np.genfromtxt(my_export.filename, delimiter=",", max_rows=1, dtype=str)
+
+    expected_title = "Flux surface 35: TEST"
+
+    assert title[1] == expected_title
 
 
 def test_filename_setter_raises_TypeError():
@@ -77,7 +81,7 @@ def test_filename_setter_raises_TypeError():
 
 
 def test_filename_setter_raises_ValueError(tmp_path):
-    """Test that a ValueError is raised when the filename does not end with .csv"""
+    """Test that a ValueError is raised when the filename does not end with .csv or .txt"""
 
     with pytest.raises(ValueError):
         F.SurfaceQuantity(
@@ -97,10 +101,11 @@ def test_field_setter_raises_TypeError():
         )
 
 
-def test_writer(tmp_path):
-    """Test that the writes values at each timestep"""
+@pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
+def test_writer(tmp_path, value):
+    """Test that the writes values at each timestep to either a csv or txt file"""
     my_export = F.SurfaceFlux(
-        filename=os.path.join(tmp_path, "my_export.csv"),
+        filename=os.path.join(tmp_path, f"{value}"),
         field=F.Species("test"),
         surface=F.SurfaceSubdomain1D(id=1, x=0),
     )

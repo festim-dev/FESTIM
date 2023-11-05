@@ -21,6 +21,9 @@ class SurfaceQuantity:
         self.surface = surface
         self.filename = filename
 
+        self.t = []
+        self.data = []
+
     @property
     def filename(self):
         return self._filename
@@ -31,8 +34,8 @@ class SurfaceQuantity:
             self._filename = None
         elif not isinstance(value, str):
             raise TypeError("filename must be of type str")
-        elif not value.endswith(".csv"):
-            raise ValueError("filename must end with .csv")
+        elif not value.endswith(".csv") and not value.endswith(".txt"):
+            raise ValueError("filename must end with .csv or .txt")
         self._filename = value
 
     @property
