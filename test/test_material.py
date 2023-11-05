@@ -98,6 +98,7 @@ def test_multispecies_dict_different_keys():
 def test_D_0_type_raises_error():
     """Test that a value error is raised in the get_diffusion_coefficient
     function"""
+    # TODO remove this when material class is updated
     A = F.Species("A")
     my_mat = F.Material(D_0=[1, 1], E_D=0.1)
 
@@ -128,3 +129,71 @@ def test_error_raised_when_species_not_not_in_D_0_dict():
 
     with pytest.raises(ValueError, match="J is not in D_0 keys"):
         my_mat.get_diffusion_coefficient(test_mesh.mesh, 500, species=J)
+
+
+def test_D_0_raises_ValueError_if_species_not_provided_in_dict():
+    """Test that a value error is raised in the get_diffusion_coefficient
+    function"""
+    # TODO remove this when material class is updated
+    A = F.Species("A")
+    B = F.Species("B")
+    my_mat = F.Material(D_0={A: 1, B: 2}, E_D=1)
+
+    with pytest.raises(ValueError, match="species must be provided if D_0 is a dict"):
+        my_mat.get_D_0()
+
+
+def test_D_0_raises_ValueError_if_species_given_not_in_dict_keys():
+    """Test that a value error is raised in the get_diffusion_coefficient
+    function"""
+    # TODO remove this when material class is updated
+    A = F.Species("A")
+    B = F.Species("B")
+    J = F.Species("J")
+    my_mat = F.Material(D_0={A: 1, B: 2}, E_D=1)
+
+    with pytest.raises(ValueError, match="J is not in D_0 keys"):
+        my_mat.get_D_0(species=J)
+
+
+def test_raises_TypeError_when_D_0_is_not_correct_type():
+    """Test that a TypeError is raised when D_0 is not a float or a dict"""
+
+    my_mat = F.Material(D_0=[1, 2], E_D=1)
+
+    with pytest.raises(TypeError, match="D_0 must be either a float, int or a dict"):
+        my_mat.get_D_0()
+
+
+def test_E_D_raises_ValueError_if_species_not_provided_in_dict():
+    """Test that a value error is raised in the get_diffusion_coefficient
+    function"""
+    # TODO remove this when material class is updated
+    A = F.Species("A")
+    B = F.Species("B")
+    my_mat = F.Material(D_0=1, E_D={A: 1, B: 2})
+
+    with pytest.raises(ValueError, match="species must be provided if E_D is a dict"):
+        my_mat.get_E_D()
+
+
+def test_E_D_raises_ValueError_if_species_given_not_in_dict_keys():
+    """Test that a value error is raised in the get_diffusion_coefficient
+    function"""
+    # TODO remove this when material class is updated
+    A = F.Species("A")
+    B = F.Species("B")
+    J = F.Species("J")
+    my_mat = F.Material(D_0=1, E_D={A: 1, B: 2})
+
+    with pytest.raises(ValueError, match="J is not in E_D keys"):
+        my_mat.get_E_D(species=J)
+
+
+def test_raises_TypeError_when_E_D_is_not_correct_type():
+    """Test that a TypeError is raised when E_D is not a float or a dict"""
+
+    my_mat = F.Material(D_0=1, E_D=[1, 2])
+
+    with pytest.raises(TypeError, match="E_D must be either a float, int or a dict"):
+        my_mat.get_E_D()
