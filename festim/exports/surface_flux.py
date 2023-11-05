@@ -20,7 +20,7 @@ class SurfaceFlux(F.SurfaceQuantity):
 
     def __init__(
         self,
-        field,
+        field: F.Species,
         surface: F.SurfaceSubdomain1D,
         filename: str = None,
     ) -> None:
