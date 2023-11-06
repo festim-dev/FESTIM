@@ -57,6 +57,30 @@ class DirichletBC:
             )
         self._value_fenics = value
 
+    @property
+    def time_dependent(self):
+        if self.value is None:
+            return False
+        if isinstance(self.value, fem.Constant):
+            return False
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            return "t" in arguments
+        else:
+            return False
+
+    @property
+    def temperature_dependent(self):
+        if self.value is None:
+            return False
+        if isinstance(self.value, fem.Constant):
+            return False
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            return "T" in arguments
+        else:
+            return False
+
     def define_surface_subdomain_dofs(self, facet_meshtags, mesh, function_space):
         """Defines the facets and the degrees of freedom of the boundary
         condition
