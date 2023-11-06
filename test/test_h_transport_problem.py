@@ -229,6 +229,8 @@ def test_initialise_exports_find_species_with_one_field():
 
 
 def test_define_D_global_different_temperatures():
+    """Test that the D_global object is correctly defined when the temperature
+    is different in the volume subdomains"""
     D_0, E_D = 1.5, 0.1
     my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
     surf = F.SurfaceSubdomain1D(id=1, x=0)
@@ -242,12 +244,6 @@ def test_define_D_global_different_temperatures():
         ],
         species=[H],
         temperature=lambda x: 100.0 * x[0] + 50,
-        exports=[
-            F.SurfaceFlux(
-                field=H,
-                surface=surf,
-            ),
-        ],
     )
 
     my_model.define_function_spaces()
@@ -267,11 +263,12 @@ def test_define_D_global_different_temperatures():
 
 
 def test_define_D_global_different_materials():
+    """Test that the D_global object is correctly defined when the material
+    is different in the volume subdomains"""
     D_0_left, E_D_left = 1.0, 0.1
     D_0_right, E_D_right = 2.0, 0.2
     my_mat_L = F.Material(D_0=D_0_left, E_D=E_D_left, name="my_mat_L")
     my_mat_R = F.Material(D_0=D_0_right, E_D=E_D_right, name="my_mat_R")
-    surf = F.SurfaceSubdomain1D(id=1, x=0)
     H = F.Species("H")
 
     my_model = F.HydrogenTransportProblem(
@@ -280,14 +277,8 @@ def test_define_D_global_different_materials():
             F.VolumeSubdomain1D(id=1, borders=[0, 2], material=my_mat_L),
             F.VolumeSubdomain1D(id=2, borders=[2, 4], material=my_mat_R),
         ],
-        species=[F.Species("H"), F.Species("D")],
+        species=[H],
         temperature=500,
-        exports=[
-            F.SurfaceFlux(
-                field=H,
-                surface=surf,
-            ),
-        ],
     )
 
     my_model.define_function_spaces()
@@ -298,15 +289,19 @@ def test_define_D_global_different_materials():
 
     computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
 
-    D_analytical_left = D_0_left * np.exp(-E_D_left / (F.k_B * my_model.temperature))
-    D_analytical_right = D_0_right * np.exp(-E_D_right / (F.k_B * my_model.temperature))
+    D_expected_left = D_0_left * np.exp(-E_D_left / (F.k_B * my_model.temperature))
+    D_expected_right = D_0_right * np.exp(-E_D_right / (F.k_B * my_model.temperature))
 
-    expected_values = [D_analytical_left, D_analytical_right]
+    expected_values = [D_expected_left, D_expected_right]
 
     assert np.isclose(computed_values, expected_values).all()
 
 
 def test_initialise_exports_multiple_exports_same_species():
+    """Test that the diffusion coefficient within the D_global object function is the same
+    for multiple exports of the same species, and that D_global object is only
+    created once per species"""
+
     D_0, E_D = 1.5, 0.1
     my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
     surf_1 = F.SurfaceSubdomain1D(id=1, x=0)
@@ -338,8 +333,93 @@ def test_initialise_exports_multiple_exports_same_species():
     my_model.define_temperature()
     my_model.initialise_exports()
 
-    Ds = []
-    for export in my_model.exports:
-        Ds.append(export.D)
+    Ds = [export.D for export in my_model.exports]
 
-    assert np.isclose(Ds[0].x.array[0], Ds[1].x.array[0])
+    assert Ds[0].x.array[0] == Ds[1].x.array[0]
+
+
+def test_define_D_global_multispecies():
+    """Test that the D_global object is correctly defined when there are multiple
+    species in one subdomain"""
+    A = F.Species("A")
+    B = F.Species("B")
+
+    D_0_A, D_0_B = 1.0, 2.0
+    E_D_A, E_D_B = 0.1, 0.2
+
+    my_mat = F.Material(
+        D_0={A: D_0_A, B: D_0_B}, E_D={A: E_D_A, B: E_D_B}, name="my_mat"
+    )
+    surf = F.SurfaceSubdomain1D(id=1, x=1)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 1, num=101)),
+        subdomains=[
+            F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat),
+        ],
+        species=[F.Species("A"), F.Species("B")],
+        temperature=500,
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.define_temperature()
+
+    D_A_computed, D_A_expr = my_model.define_D_global(A)
+    D_B_computed, D_B_expr = my_model.define_D_global(B)
+
+    computed_values = [D_A_computed.x.array[-1], D_B_computed.x.array[-1]]
+
+    D_expected_A = D_0_A * np.exp(-E_D_A / (F.k_B * my_model.temperature))
+    D_expected_B = D_0_B * np.exp(-E_D_B / (F.k_B * my_model.temperature))
+
+    expected_values = [D_expected_A, D_expected_B]
+
+    assert np.isclose(computed_values, expected_values).all()
+
+
+def test_post_processing_update_D_global():
+    """Test that the D_global object is updated at each time
+    step when temperture is time dependent"""
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    surf = F.SurfaceSubdomain1D(id=1, x=1)
+
+    # create species and interpolate solution
+    H = F.Species("H")
+    V = fem.FunctionSpace(my_mesh.mesh, ("CG", 1))
+    u = fem.Function(V)
+    u.interpolate(lambda x: 2 * x[0] ** 2 + 1)
+    H.solution = u
+
+    my_export = F.SurfaceFlux(
+        field=H,
+        surface=surf,
+    )
+
+    # Build the model
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat), surf],
+        species=[H],
+        temperature=lambda t: 500 * t,
+        exports=[my_export],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
+    my_model.define_temperature()
+    my_model.initialise_exports()
+
+    # RUN
+    my_model.post_processing()
+    value_t_1 = my_export.D.x.array[-1]
+
+    my_model.t = fem.Constant(my_model.mesh.mesh, 2.0)
+    my_model.update_time_dependent_values()
+    my_model.post_processing()
+    value_t_2 = my_export.D.x.array[-1]
+
+    # TEST
+    assert value_t_1 != value_t_2

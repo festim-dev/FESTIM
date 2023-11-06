@@ -62,6 +62,7 @@ def test_permeation_problem(mesh_size=1001):
         ),
     ]
     outgassing_flux = F.SurfaceFlux(
+        filename="outgassing_flux.txt",
         field=mobile_H,
         surface=right_surface,
     )

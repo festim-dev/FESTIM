@@ -59,7 +59,7 @@ class Material:
                 raise ValueError(f"{species} is not in D_0 keys")
 
         else:
-            raise ValueError("D_0 must be either a float or a dict")
+            raise TypeError("D_0 must be either a float, int or a dict")
 
     def get_E_D(self, species=None):
         """Returns the activation energy of the diffusion coefficient
@@ -85,7 +85,7 @@ class Material:
                 raise ValueError(f"{species} is not in E_D keys")
 
         else:
-            raise ValueError("E_D must be either a float or a dict")
+            raise TypeError("E_D must be either a float, int or a dict")
 
     def get_diffusion_coefficient(self, mesh, temperature, species=None):
         """Defines the diffusion coefficient
