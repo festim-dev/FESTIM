@@ -24,6 +24,8 @@ class DirichletBC:
             fenics format
         bc_expr (fem.Expression): the expression of the boundary condition that is used to
             update the value_fenics
+        time_dependent (bool): True if the value of the bc is time dependent
+        temperature_dependent (bool): True if the value of the bc is temperature dependent
 
     Usage:
         >>> from festim import DirichletBC
