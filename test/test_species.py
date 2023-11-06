@@ -23,7 +23,7 @@ def test_assign_functions_to_species():
             # F.Species(name="Trap"),
         ],
     )
-    model.define_function_space()
+    model.define_function_spaces()
     model.assign_functions_to_species()
 
     for spe in model.species:

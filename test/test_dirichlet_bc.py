@@ -65,7 +65,7 @@ def test_callable_for_value():
         mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
@@ -103,7 +103,7 @@ def test_value_callable_x_t_T():
         mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
@@ -146,7 +146,7 @@ def test_callable_t_only(value):
         species=[species],
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
@@ -189,7 +189,7 @@ def test_callable_x_only():
         species=[species],
     )
 
-    my_model.define_function_space()
+    my_model.define_function_spaces()
     my_model.define_markers_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
@@ -226,6 +226,7 @@ def test_callable_x_only():
         lambda x, t: 1.0 + x[0] + t,
         lambda x, t, T: 1.0 + x[0] + t + T,
         lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+        lambda t: 100.0 if t < 1 else 0.0,
     ],
 )
 def test_integration_with_HTransportProblem(value):
@@ -281,6 +282,32 @@ def test_integration_with_HTransportProblem(value):
     if isinstance(expected_value, Conditional):
         expected_value = float(expected_value)
     assert np.isclose(computed_value, expected_value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        lambda t: ufl.conditional(ufl.lt(t, 1.0), 1, 2),
+        lambda t: 1 + ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+        lambda t: 2 * ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+        lambda t: 2 / ufl.conditional(ufl.lt(t, 1.0), 1, 2.0),
+    ],
+)
+def test_define_value_error_if_ufl_conditional_t_only(value):
+    """Test that a ValueError is raised when the value attribute is a callable
+    of t only and contains a ufl conditional"""
+
+    subdomain = F.SurfaceSubdomain1D(1, x=1)
+    species = F.Species("test")
+
+    bc = F.DirichletBC(subdomain, value, species)
+
+    t = fem.Constant(mesh, 0.0)
+
+    with pytest.raises(
+        ValueError, match="self.value should return a float or an int, not "
+    ):
+        bc.create_value(mesh=mesh, function_space=None, temperature=None, t=t)
 
 
 def test_species_predefined():
@@ -377,44 +404,3 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
     if isinstance(expected_value, Conditional):
         expected_value = float(expected_value)
     assert np.isclose(computed_value, expected_value)
-
-
-@pytest.mark.parametrize(
-    "value",
-    [
-        1.0,
-        lambda t: t,
-        lambda t: 1.0 + t,
-        lambda x: 1.0 + x[0],
-        lambda x, t: 1.0 + x[0] + t,
-        lambda x, t, T: 1.0 + x[0] + t + T,
-        lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
-    ],
-)
-def test_time_dependence_attribute(value):
-    subdomain = F.SurfaceSubdomain1D(1, x=0)
-    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-
-    my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh),
-        subdomains=[vol_subdomain, subdomain],
-    )
-    my_model.species = [F.Species("H")]
-    my_bc = F.DirichletBC(subdomain, value, "H")
-    my_model.boundary_conditions = [my_bc]
-
-    my_model.temperature = fem.Constant(my_model.mesh.mesh, 550.0)
-
-    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
-    my_model.settings.stepsize = F.Stepsize(initial_value=1)
-
-    my_model.initialise()
-
-    if isinstance(value, (float, int)):
-        assert not my_model.boundary_conditions[0].time_dependent
-    else:
-        arguments = value.__code__.co_varnames
-        if "t" in arguments:
-            assert my_model.boundary_conditions[0].time_dependent
-        else:
-            assert not my_model.boundary_conditions[0].time_dependent
