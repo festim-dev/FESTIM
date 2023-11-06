@@ -1,16 +1,12 @@
 from dolfinx import fem
+from dolfinx.mesh import meshtags
 from dolfinx.nls.petsc import NewtonSolver
-from dolfinx.io import XDMFFile
 import basix
 import ufl
 from mpi4py import MPI
-from dolfinx.fem import Function, form, assemble_scalar
 from dolfinx.mesh import meshtags
-from ufl import TestFunction, dot, grad, Measure, FacetNormal
 import numpy as np
 import tqdm.autonotebook
-
-
 import festim as F
 
 
@@ -57,6 +53,10 @@ class HydrogenTransportProblem:
             that is used to update the temperature_fenics
         temperature_time_dependent (bool): True if the temperature is time
             dependent
+        V_DG_0 (dolfinx.fem.FunctionSpace): A DG function space of degree 0
+            over domain
+        V_DG_1 (dolfinx.fem.FunctionSpace): A DG function space of degree 1
+            over domain
 
 
     Usage:
@@ -158,7 +158,7 @@ class HydrogenTransportProblem:
         return len(self.species) > 1
 
     def initialise(self):
-        self.define_function_space()
+        self.define_function_spaces()
         self.define_markers_and_measures()
         self.assign_functions_to_species()
 
@@ -169,7 +169,7 @@ class HydrogenTransportProblem:
         self.define_boundary_conditions()
         self.create_formulation()
         self.create_solver()
-        self.defing_export_writers()
+        self.initialise_exports()
 
     def define_temperature(self):
         """Sets the value of temperature_fenics_value. The type depends on
@@ -231,24 +231,85 @@ class HydrogenTransportProblem:
                 )
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
-    def defing_export_writers(self):
+    def initialise_exports(self):
         """Defines the export writers of the model, if field is given as
         a string, find species object in self.species"""
+
         for export in self.exports:
             # if name of species is given then replace with species object
-            for idx, field in enumerate(export.field):
-                if isinstance(field, str):
-                    export.field[idx] = F.find_species_from_name(field, self.species)
+            if isinstance(export.field, list):
+                for idx, field in enumerate(export.field):
+                    if isinstance(field, str):
+                        export.field[idx] = F.find_species_from_name(
+                            field, self.species
+                        )
+            elif isinstance(export.field, str):
+                export.field = F.find_species_from_name(export.field, self.species)
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
                 if isinstance(export, F.XDMFExport):
                     export.writer.write_mesh(self.mesh.mesh)
 
-    def define_function_space(self):
+        # compute diffusivity function for surface fluxes
+
+        spe_to_D_global = {}  # links species to global D function
+        spe_to_D_global_expr = {}  # links species to D expression
+
+        for export in self.exports:
+            if isinstance(export, F.SurfaceQuantity):
+                if export.field in spe_to_D_global:
+                    # if already computed then use the same D
+                    D = spe_to_D_global[export.field]
+                    D_expr = spe_to_D_global_expr[export.field]
+                else:
+                    # compute D and add it to the dict
+                    D, D_expr = self.define_D_global(export.field)
+                    spe_to_D_global[export.field] = D
+                    spe_to_D_global_expr[export.field] = D_expr
+
+                # add the global D to the export
+                export.D = D
+                export.D_expr = D_expr
+
+    def define_D_global(self, species):
+        """Defines the global diffusion coefficient for a given species
+
+        Args:
+            species (F.Species): the species
+
+        Returns:
+            dolfinx.fem.Function, dolfinx.fem.Expression: the global diffusion
+                coefficient and the expression of the global diffusion coefficient
+                for a given species
+        """
+        assert isinstance(species, F.Species)
+
+        D_0 = fem.Function(self.V_DG_0)
+        E_D = fem.Function(self.V_DG_0)
+        for vol in self.volume_subdomains:
+            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+
+            # replace values of D_0 and E_D by values from the material
+            D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
+            E_D.x.array[cell_indices] = vol.material.get_E_D(species=species)
+
+        # create global D function
+        D = fem.Function(self.V_DG_1)
+
+        expr = D_0 * ufl.exp(
+            -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature_fenics
+        )
+        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+        D.interpolate(D_expr)
+        return D, D_expr
+
+    def define_function_spaces(self):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
-        function u and u_n."""
+        function u and u_n. Create global DG function spaces of degree 0 and 1
+        for the global diffusion coefficient"""
+
         degree = 1
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
@@ -268,8 +329,12 @@ class HydrogenTransportProblem:
 
         self.function_space = fem.FunctionSpace(self.mesh.mesh, element)
 
-        self.u = Function(self.function_space)
-        self.u_n = Function(self.function_space)
+        # create global DG function spaces of degree 0 and 1
+        self.V_DG_0 = fem.FunctionSpace(self.mesh.mesh, ("DG", 0))
+        self.V_DG_1 = fem.FunctionSpace(self.mesh.mesh, ("DG", 1))
+
+        self.u = fem.Function(self.function_space)
+        self.u_n = fem.Function(self.function_space)
 
     def assign_functions_to_species(self):
         """Creates the solution, prev solution, test function and
@@ -341,10 +406,10 @@ class HydrogenTransportProblem:
         )
 
         # define measures
-        self.ds = Measure(
+        self.ds = ufl.Measure(
             "ds", domain=self.mesh.mesh, subdomain_data=self.facet_meshtags
         )
-        self.dx = Measure(
+        self.dx = ufl.Measure(
             "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
         )
 
@@ -432,7 +497,9 @@ class HydrogenTransportProblem:
                     self.mesh.mesh, self.temperature_fenics, spe
                 )
 
-                self.formulation += dot(D * grad(u), grad(v)) * self.dx(vol.id)
+                self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
+                    vol.id
+                )
                 self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
                 # add sources
@@ -478,53 +545,18 @@ class HydrogenTransportProblem:
         while self.t.value < self.settings.final_time:
             self.iterate()
 
-        if self.multispecies:
-            self.flux_values = [self.flux_values_1, self.flux_values_2]
-
-        return self.times, self.flux_values
-
-    def iterate(
-        self, skip_post_processing=False
-    ):  # TODO remove skip_post_processing flag, just temporary
+    def iterate(self):
         """Iterates the model for a given time step"""
         self.progress.update(self.dt.value)
         self.t.value += self.dt.value
 
         self.update_time_dependent_values()
 
+        # solve main problem
         self.solver.solve(self.u)
 
         # post processing
-        # TODO remove this
-        if not skip_post_processing:
-            if not self.multispecies:
-                D_D = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, self.species[0]
-                )
-                cm = self.u
-                surface_flux = form(D_D * dot(grad(cm), self.mesh.n) * self.ds(2))
-                flux = assemble_scalar(surface_flux)
-                self.flux_values.append(flux)
-                self.times.append(float(self.t))
-            else:
-                cm_1, cm_2 = self.u.split()
-                D_1 = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, self.species[0]
-                )
-                D_2 = self.subdomains[0].material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, self.species[1]
-                )
-                surface_flux_1 = form(D_1 * dot(grad(cm_1), self.mesh.n) * self.ds(2))
-                surface_flux_2 = form(D_2 * dot(grad(cm_2), self.mesh.n) * self.ds(2))
-                flux_1 = assemble_scalar(surface_flux_1)
-                flux_2 = assemble_scalar(surface_flux_2)
-                self.flux_values_1.append(flux_1)
-                self.flux_values_2.append(flux_2)
-                self.times.append(float(self.t))
-
-        for export in self.exports:
-            if isinstance(export, (F.VTXExport, F.XDMFExport)):
-                export.write(float(self.t))
+        self.post_processing()
 
         # update previous solution
         self.u_n.x.array[:] = self.u.x.array[:]
@@ -538,4 +570,35 @@ class HydrogenTransportProblem:
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
         for bc in self.boundary_conditions:
-            bc.update(t)
+            bc.update(t=t)
+
+    def post_processing(self):
+        """Post processes the model"""
+
+        if self.temperature_time_dependent:
+            # update global D if temperature time dependent or internal
+            # variables time dependent
+            species_not_updated = self.species.copy()  # make a copy of the species
+            for export in self.exports:
+                if isinstance(export, F.SurfaceFlux):
+                    # if the D of the species has not been updated yet
+                    if export.field in species_not_updated:
+                        export.D.interpolate(export.D_expr)
+                        species_not_updated.remove(export.field)
+
+        for export in self.exports:
+            # TODO if export type derived quantity
+            if isinstance(export, F.SurfaceQuantity):
+                export.compute(
+                    self.mesh.n,
+                    self.ds,
+                )
+                # update export data
+                export.t.append(float(self.t))
+
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))
+
+            if isinstance(export, (F.VTXExport, F.XDMFExport)):
+                export.write(float(self.t))
