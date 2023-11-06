@@ -61,7 +61,8 @@ def test_title_generation(tmp_path, value):
         field=F.Species("TEST"),
         surface=F.SurfaceSubdomain1D(id=35, x=1),
     )
-    my_export.initialise_export()
+    my_export.value = 2.0
+    my_export.write(0)
     title = np.genfromtxt(my_export.filename, delimiter=",", max_rows=1, dtype=str)
 
     expected_title = "Flux surface 35: TEST"
@@ -110,7 +111,6 @@ def test_writer(tmp_path, value):
         surface=F.SurfaceSubdomain1D(id=1, x=0),
     )
     my_export.value = 2.0
-    my_export.initialise_export()
 
     for i in range(10):
         my_export.write(i)
