@@ -202,10 +202,8 @@ def test_update_time_dependent_values_temperature(T_function, expected_values):
         # TEST
         if isinstance(my_model.temperature_fenics, fem.Constant):
             computed_value = float(my_model.temperature_fenics)
-            print(computed_value)
         else:
             computed_value = my_model.temperature_fenics.vector.array[-1]
-            print(computed_value)
         assert np.isclose(computed_value, expected_values[i])
 
 
@@ -473,10 +471,8 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
         # TEST
         if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
             computed_value = float(my_model.boundary_conditions[0].value_fenics)
-            print(computed_value)
         else:
             computed_value = my_model.boundary_conditions[0].value_fenics.vector.array[
                 -1
             ]
-            print(computed_value)
         assert np.isclose(computed_value, expected_values[i])
