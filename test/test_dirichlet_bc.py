@@ -410,7 +410,8 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
     "input, expected_value",
     [
         (1.0, False),
-        (1, False),
+        (None, False),
+        (fem.Constant(mesh, 1.0), False),
         (lambda t: t, True),
         (lambda t: 1.0 + t, True),
         (lambda x: 1.0 + x[0], False),
@@ -432,6 +433,8 @@ def test_bc_time_dependent_attribute(input, expected_value):
     "input, expected_value",
     [
         (1.0, False),
+        (None, False),
+        (fem.Constant(mesh, 1.0), False),
         (lambda T: T, True),
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),
