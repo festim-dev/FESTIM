@@ -1,7 +1,6 @@
 from dolfinx import fem
 import festim as F
 import ufl
-import csv
 
 
 class SurfaceFlux(F.SurfaceQuantity):

@@ -15,6 +15,8 @@ class SurfaceQuantity:
         field (festim.Species): species for which the surface flux is computed
         surface (festim.SurfaceSubdomain1D): surface subdomain
         filename (str): name of the file to which the surface flux is exported
+        t (list): list of time values
+        data (list): list of values of the surface quantity
     """
 
     def __init__(self, field, surface, filename: str = None) -> None:
@@ -64,6 +66,9 @@ class SurfaceQuantity:
         self._field = value
 
     def write(self, t):
+        """If the filename doesnt exist yet, create it and write the header,
+        then append the time and value to the file"""
+
         if not os.path.isfile(self.filename):
             title = "Flux surface {}: {}".format(self.surface.id, self.field.name)
 
