@@ -250,8 +250,6 @@ class HydrogenTransportProblem:
                 export.define_writer(MPI.COMM_WORLD)
                 if isinstance(export, F.XDMFExport):
                     export.writer.write_mesh(self.mesh.mesh)
-            elif isinstance(export, F.SurfaceQuantity):
-                export.initialise_export()
 
         # compute diffusivity function for surface fluxes
 

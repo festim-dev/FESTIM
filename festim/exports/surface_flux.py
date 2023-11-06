@@ -41,11 +41,3 @@ class SurfaceFlux(F.SurfaceQuantity):
             )
         )
         self.data.append(self.value)
-
-    def initialise_export(self):
-        title = "Flux surface {}: {}".format(self.surface.id, self.field.name)
-
-        if self.filename is not None:
-            with open(self.filename, mode="w", newline="") as file:
-                writer = csv.writer(file)
-                writer.writerow(["t(s)", f"{title}"])

@@ -1,5 +1,6 @@
 import festim as F
 import csv
+import os
 
 
 class SurfaceQuantity:
@@ -63,6 +64,14 @@ class SurfaceQuantity:
         self._field = value
 
     def write(self, t):
+        if not os.path.isfile(self.filename):
+            title = "Flux surface {}: {}".format(self.surface.id, self.field.name)
+
+            if self.filename is not None:
+                with open(self.filename, mode="w", newline="") as file:
+                    writer = csv.writer(file)
+                    writer.writerow(["t(s)", f"{title}"])
+
         with open(self.filename, mode="a", newline="") as file:
             writer = csv.writer(file)
             writer.writerow([t, self.value])
