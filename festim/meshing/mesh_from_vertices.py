@@ -25,6 +25,8 @@ class MeshFromVertices(Mesh1D):
     def generate_mesh_from_vertices(self):
         """Generates a 1D mesh"""
         mesh = f.Mesh()
+        # the following is needed to avoid breaking in parrallel
+        # see issue 497
         if f.MPI.comm_world.rank == 0:
             vertices = sorted(np.unique(self.vertices))
             nb_points = len(vertices)
