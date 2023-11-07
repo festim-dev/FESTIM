@@ -423,3 +423,18 @@ def test_post_processing_update_D_global():
 
     # TEST
     assert value_t_1 != value_t_2
+
+
+def test_all_species_correct_type():
+    """Test that the D_global object is updated at each time
+    step when temperture is time dependent"""
+
+    my_model = F.HydrogenTransportProblem()
+    C = 1
+    my_species = [F.Species("A"), F.Species("B"), C]
+
+    with pytest.raises(
+        TypeError,
+        match="elements of species must be of type festim.Species not <class 'int'>",
+    ):
+        my_model.species = my_species
