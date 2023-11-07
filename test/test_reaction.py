@@ -1,6 +1,6 @@
 import pytest
 import festim as F
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import FunctionSpace, Function, Constant
 from dolfinx.mesh import create_unit_cube
 from mpi4py import MPI
 from ufl import exp
@@ -67,24 +67,31 @@ def test_reaction_str():
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
+    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+    V = FunctionSpace(mesh, ("Lagrange", 1))
+
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
 
+    species1.solution = Function(V)
+    species2.solution = Function(V)
+
     # create a product species
     product = F.Species("C")
 
+    product.solution = Function(V)
+
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3
+        species1,
+        species2,
+        product,
+        k_0=1.0,
+        E_k=0.2,
+        p_0=1.0,
+        E_p=0.3,
     )
-
-    # set the concentrations of the species
-    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
-    V = FunctionSpace(mesh, ("Lagrange", 1))
-    species1.solution = Function(V)
-    species2.solution = Function(V)
-    product.solution = Function(V)
 
     # test the reaction term at a given temperature
     def arrhenius(pre, act, T):
@@ -92,8 +99,43 @@ def test_reaction_reaction_term(temperature):
 
     k = arrhenius(reaction.k_0, reaction.E_k, temperature)
     p = arrhenius(reaction.p_0, reaction.E_p, temperature)
+
     expected_reaction_term = (
         k * species1.solution * species2.solution - p * product.solution
     )
 
-    assert reaction.reaction_term(temperature) == expected_reaction_term
+    assert reaction.reaction_term(temperature=temperature) == expected_reaction_term
+
+
+def test_reactant1_setter_raises_error_with_wrong_type():
+    """Test a type error is raised when the reactant1 is given a wrong type."""
+    with pytest.raises(
+        TypeError,
+        match="reactant1 must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
+    ):
+        F.Reaction(
+            reactant1="A",
+            reactant2=F.Species("B"),
+            product=F.Species("C"),
+            k_0=1,
+            E_k=0.1,
+            p_0=2,
+            E_p=0.2,
+        )
+
+
+def test_reactant1_setter_raises_error_with_wrong_type():
+    """Test a type error is raised when the reactant2 is given a wrong type."""
+    with pytest.raises(
+        TypeError,
+        match="reactant2 must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
+    ):
+        F.Reaction(
+            reactant1=F.Species("A"),
+            reactant2="B",
+            product=F.Species("C"),
+            k_0=1,
+            E_k=0.1,
+            p_0=2,
+            E_p=0.2,
+        )
