@@ -24,6 +24,8 @@ class DirichletBC:
             fenics format
         bc_expr (fem.Expression): the expression of the boundary condition that is used to
             update the value_fenics
+        time_dependent (bool): True if the value of the bc is time dependent
+        temperature_dependent (bool): True if the value of the bc is temperature dependent
 
     Usage:
         >>> from festim import DirichletBC
@@ -56,6 +58,30 @@ class DirichletBC:
                 f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
             )
         self._value_fenics = value
+
+    @property
+    def time_dependent(self):
+        if self.value is None:
+            return False
+        if isinstance(self.value, fem.Constant):
+            return False
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            return "t" in arguments
+        else:
+            return False
+
+    @property
+    def temperature_dependent(self):
+        if self.value is None:
+            return False
+        if isinstance(self.value, fem.Constant):
+            return False
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            return "T" in arguments
+        else:
+            return False
 
     def define_surface_subdomain_dofs(self, facet_meshtags, mesh, function_space):
         """Defines the facets and the degrees of freedom of the boundary

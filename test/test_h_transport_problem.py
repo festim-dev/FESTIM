@@ -202,10 +202,8 @@ def test_update_time_dependent_values_temperature(T_function, expected_values):
         # TEST
         if isinstance(my_model.temperature_fenics, fem.Constant):
             computed_value = float(my_model.temperature_fenics)
-            print(computed_value)
         else:
             computed_value = my_model.temperature_fenics.vector.array[-1]
-            print(computed_value)
         assert np.isclose(computed_value, expected_values[i])
 
 
@@ -423,3 +421,58 @@ def test_post_processing_update_D_global():
 
     # TEST
     assert value_t_1 != value_t_2
+
+
+@pytest.mark.parametrize(
+    "temperature_value, bc_value, expected_values",
+    [
+        (5, 1.0, [1.0, 1.0, 1.0]),
+        (lambda t: t + 1, lambda T: T, [2.0, 3.0, 4.0]),
+        (lambda x: 1 + x[0], lambda T: 2 * T, [10.0, 10.0, 10.0]),
+        (lambda x, t: t + x[0], lambda T: 0.5 * T, [2.5, 3.0, 3.5]),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 2), 3 + x[0], 0.0),
+            lambda T: T,
+            [7.0, 0.0, 0.0],
+        ),
+    ],
+)
+def test_update_time_dependent_bcs_with_time_dependent_temperature(
+    temperature_value, bc_value, expected_values
+):
+    """Test that temperature dependent bcs are updated at each time step when the
+    temperature is time dependent, and match an expected value"""
+
+    # BUILD
+    H = F.Species("H")
+    volume_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    surface_subdomain = F.SurfaceSubdomain1D(id=1, x=4)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh, species=[H], subdomains=[volume_subdomain, surface_subdomain]
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    dt = fem.Constant(test_mesh.mesh, 1.0)
+
+    my_model.temperature = temperature_value
+    my_bc = F.DirichletBC(species=H, value=bc_value, subdomain=surface_subdomain)
+    my_model.boundary_conditions = [my_bc]
+
+    my_model.define_temperature()
+    my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    my_model.define_markers_and_measures()
+    my_model.create_dirichletbc_form(my_bc)
+
+    for i in range(3):
+        # RUN
+        my_model.t.value += dt.value
+        my_model.update_time_dependent_values()
+
+        # TEST
+        if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.boundary_conditions[0].value_fenics)
+        else:
+            computed_value = my_model.boundary_conditions[0].value_fenics.vector.array[
+                -1
+            ]
+        assert np.isclose(computed_value, expected_values[i])

@@ -570,7 +570,10 @@ class HydrogenTransportProblem:
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
         for bc in self.boundary_conditions:
-            bc.update(t=t)
+            if bc.time_dependent:
+                bc.update(t=t)
+            elif self.temperature_time_dependent and bc.temperature_dependent:
+                bc.update(t=t)
 
     def post_processing(self):
         """Post processes the model"""
