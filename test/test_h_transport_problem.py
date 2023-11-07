@@ -438,3 +438,54 @@ def test_all_species_correct_type():
         match="elements of species must be of type festim.Species not <class 'int'>",
     ):
         my_model.species = my_species
+
+
+def test_create_formulation_with_reactions():
+    A, B, C = F.Species("A"), F.Species("B"), F.Species("C")
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 1, num=11)),
+        temperature=500,
+        species=[A, B, C],
+        subdomains=[F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)],
+    )
+
+    my_reaction = F.Reaction(
+        reactant1=A,
+        reactant2=B,
+        product=C,
+        k_0=2.0,
+        E_k=0.2,
+        p_0=1.0,
+        E_p=0.1,
+    )
+    my_model.reactions = [my_reaction]
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
+    my_model.dt = fem.Constant(my_model.mesh.mesh, 0.1)
+    my_model.define_temperature()
+    my_model.create_formulation()
+
+    # remove all white spaces between characters
+    computed_formulation = str(my_model.formulation).translate(
+        str.maketrans("", "", " \n\t\r")
+    )
+
+    expected_formulation = """{ ({ A | A_{i_8} = (grad(f[0]))[i_8] * c_47 * exp(-1 * c_48 / 8.6173303e-05 / c_46) }) . (grad(v_0[0])) } * dx(<Mesh #8>[1], {})
+        +  { v_0[0] * (f[0] + -1 * f[0]) / c_45 } * dx(<Mesh #8>[1], {})
+        +  { ({ A | A_{i_9} = (grad(f[1]))[i_9] * c_49 * exp(-1 * c_50 / 8.6173303e-05 / c_46) }) . (grad(v_0[1])) } * dx(<Mesh #8>[1], {})
+        +  { v_0[1] * (f[1] + -1 * f[1]) / c_45 } * dx(<Mesh #8>[1], {})
+        +  { ({ A | A_{i_{10}} = (grad(f[2]))[i_{10}] * c_51 * exp(-1 * c_52 / 8.6173303e-05 / c_46) }) . (grad(v_0[2])) } * dx(<Mesh #8>[1], {})
+        +  { v_0[2] * (f[2] + -1 * f[2]) / c_45 } * dx(<Mesh #8>[1], {})
+        +  { v_0[0] * (f[1] * f[0] * 2.0 * exp(-0.2 / 8.6173303e-05 * c_46) + -1 * f[2] * exp(-0.1 / 8.6173303e-05 * c_46)) } * dx(<Mesh #8>[everywhere], {})
+        +  { v_0[1] * (f[1] * f[0] * 2.0 * exp(-0.2 / 8.6173303e-05 * c_46) + -1 * f[2] * exp(-0.1 / 8.6173303e-05 * c_46)) } * dx(<Mesh #8>[everywhere], {})
+        +  { v_0[2] * -1 * (f[1] * f[0] * 2.0 * exp(-0.2 / 8.6173303e-05 * c_46) + -1 * f[2] * exp(-0.1 / 8.6173303e-05 * c_46)) } * dx(<Mesh #8>[everywhere], {})
+        """
+    # remove all white spaces between characters
+    expected_formulation = expected_formulation.translate(
+        str.maketrans("", "", " \n\t\r")
+    )
+
+    assert computed_formulation == expected_formulation
