@@ -539,8 +539,8 @@ def test_update_time_dependent_values_source(source_value, expected_values):
 def test_update_sources_with_time_dependent_temperature(
     temperature_value, source_value, expected_values
 ):
-    """Test that temperature dependent bcs are updated at each time step when the
-    temperature is time dependent, and match an expected value"""
+    """Test that temperature dependent source terms are updated at each time step
+    when the temperature is time dependent, and match an expected value"""
 
     # BUILD
     H = F.Species("H")
@@ -576,3 +576,33 @@ def test_update_sources_with_time_dependent_temperature(
         else:
             computed_value = my_model.sources[0].value_fenics.vector.array[-1]
         assert np.isclose(computed_value, expected_values[i])
+
+
+def test_define_sources_multispecies():
+    """Test that the define_sources method correctly sets the value_fenics attribute in
+    a multispecies case"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol],
+        species=[F.Species("H"), F.Species("D")],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
+
+    my_source_1 = F.Source(value=lambda t: t + 1, volume=my_vol, species="H")
+    my_source_2 = F.Source(value=lambda t: 2 * t + 3, volume=my_vol, species="D")
+    my_model.sources = [my_source_1, my_source_2]
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+
+    # RUN
+    my_model.define_sources()
+
+    # TEST
+    assert np.isclose(my_model.sources[0].value_fenics.value, 5)
+    assert np.isclose(my_model.sources[1].value_fenics.value, 11)
