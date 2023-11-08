@@ -68,20 +68,20 @@ def test_create_value(value, expected_type):
     """Test that the create value method produces either a fem.Constant or
     fem.Function depending on the value input"""
 
+    # BUILD
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
 
     source = F.Source(volume=vol_subdomain, value=value, species=species)
 
     my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
-
-    source.create_value(mesh, my_function_space, 500, 0)
-
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
+
+    # RUN
     source.create_value(mesh, my_function_space, T, t)
 
+    # TEST
     # check that the value_fenics attribute is set correctly
     assert isinstance(source.value_fenics, expected_type)
 
@@ -129,3 +129,26 @@ def test_bc_temperature_dependent_attribute(input, expected_value):
     my_source = F.Source(input, volume, species)
 
     assert my_source.temperature_dependent is expected_value
+
+
+def test_ValueError_raised_when_callable_returns_wrong_type():
+    """Test that the create value method produces either a fem.Constant or
+    fem.Function depending on the value input"""
+
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+    species = F.Species("test")
+
+    def my_value(t):
+        return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
+
+    source = F.Source(volume=vol_subdomain, value=my_value, species=species)
+
+    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
+    T = fem.Constant(mesh, 550.0)
+    t = fem.Constant(mesh, 0.0)
+
+    with pytest.raises(
+        ValueError,
+        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
+    ):
+        source.create_value(mesh, my_function_space, T, t)
