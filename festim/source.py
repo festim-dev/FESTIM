@@ -42,6 +42,7 @@ class Source:
         self.species = species
 
         self.value_fenics = None
+        self.source_expr = None
 
     @property
     def value_fenics(self):
