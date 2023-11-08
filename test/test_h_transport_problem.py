@@ -476,3 +476,47 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
                 -1
             ]
         assert np.isclose(computed_value, expected_values[i])
+
+
+@pytest.mark.parametrize(
+    "source_value, expected_values",
+    [
+        (lambda t: t, [1.0, 2.0, 3.0]),
+        (lambda t: 1.0 + t, [2.0, 3.0, 4.0]),
+        (lambda x, t: 1.0 + x[0] + t, [6.0, 7.0, 8.0]),
+        (lambda T, t: T + 2 * t, [12.0, 14.0, 16.0]),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.5), 100.0 + x[0], 0.0),
+            [104.0, 0.0, 0.0],
+        ),
+    ],
+)
+def test_update_time_dependent_values_source(source_value, expected_values):
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh, temperature=10, subdomains=[my_vol], species=[F.Species("H")]
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    dt = fem.Constant(test_mesh.mesh, 1.0)
+
+    my_source = F.Source(value=source_value, volume=my_vol, species="H")
+    my_model.sources = [my_source]
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+    my_model.define_sources()
+
+    for i in range(3):
+        # RUN
+        my_model.t.value += dt.value
+        my_model.update_time_dependent_values()
+
+        # TEST
+        if isinstance(my_model.sources[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.sources[0].value_fenics)
+        else:
+            computed_value = my_model.sources[0].value_fenics.vector.array[-1]
+        assert np.isclose(computed_value, expected_values[i])
