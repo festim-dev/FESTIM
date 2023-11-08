@@ -167,6 +167,7 @@ class HydrogenTransportProblem:
 
         self.define_temperature()
         self.define_boundary_conditions()
+        self.define_sources()
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
@@ -480,6 +481,29 @@ class HydrogenTransportProblem:
 
         return form
 
+    def define_sources(self):
+        """Defines the sources of the model"""
+        for source in self.sources:
+            if isinstance(source.species, str):
+                # if name of species is given then replace with species object
+                source.species = F.find_species_from_name(source.species, self.species)
+            if isinstance(source, F.Source):
+                function_space_value = None
+
+                if callable(source.value):
+                    # if bc.value is a callable then need to provide a functionspace
+                    if not self.multispecies:
+                        function_space_value = source.species.sub_function_space
+                    else:
+                        function_space_value = source.species.collapsed_function_space
+
+                source.create_value(
+                    mesh=self.mesh.mesh,
+                    temperature=self.temperature_fenics,
+                    function_space=function_space_value,
+                    t=self.t,
+                )
+
     def create_formulation(self):
         """Creates the formulation of the model"""
         if len(self.sources) > 1:
@@ -503,11 +527,10 @@ class HydrogenTransportProblem:
                 self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
                 # add sources
-                # TODO implement this
-                # for source in self.sources:
-                #     # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
-                #     if source.species == spe:
-                #         formulation += source * v * self.dx
+                for source in self.sources:
+                    if source.species == spe:
+                        self.formulation -= source.value_fenics * v * self.dx
+
                 # add fluxes
                 # TODO implement this
                 # for bc in self.boundary_conditions:
@@ -528,14 +551,7 @@ class HydrogenTransportProblem:
         self.solver.max_it = self.settings.max_iterations
 
     def run(self):
-        """Runs the model
-
-        Returns:
-            list of float: the times of the simulation
-            list of float: the fluxes of the simulation
-        """
-        self.times, self.flux_values = [], []
-        self.flux_values_1, self.flux_values_2 = [], []
+        """Runs the model"""
 
         self.progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem",
@@ -574,6 +590,12 @@ class HydrogenTransportProblem:
                 bc.update(t=t)
             elif self.temperature_time_dependent and bc.temperature_dependent:
                 bc.update(t=t)
+
+        for source in self.sources:
+            if source.time_dependent:
+                source.update(t=t)
+            elif self.temperature_time_dependent and source.temperature_dependent:
+                source.update(t=t)
 
     def post_processing(self):
         """Post processes the model"""

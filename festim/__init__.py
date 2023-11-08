@@ -30,6 +30,8 @@ from .hydrogen_transport_problem import HydrogenTransportProblem
 
 from .settings import Settings
 
+from .source import Source
+
 from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
 from .subdomain.surface_subdomain import SurfaceSubdomain1D
