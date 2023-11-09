@@ -35,7 +35,7 @@ from .source import Source
 from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
 from .subdomain.surface_subdomain import SurfaceSubdomain1D
-from .subdomain.volume_subdomain import VolumeSubdomain1D
+from .subdomain.volume_subdomain import VolumeSubdomain1D, find_volume_from_id
 
 from .stepsize import Stepsize
 

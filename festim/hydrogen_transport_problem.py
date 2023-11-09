@@ -484,18 +484,26 @@ class HydrogenTransportProblem:
     def define_sources(self):
         """Create a fenics object value for each source of the model"""
         for source in self.sources:
-            if isinstance(source.species, str):
-                # if name of species is given then replace with species object
-                source.species = F.find_species_from_name(source.species, self.species)
+            for idx, spe in enumerate(source.species):
+                if isinstance(spe, str):
+                    # if name of species is given then replace with species object
+                    source.species[idx] = F.find_species_from_name(spe, self.species)
+            for idx, vol in enumerate(source.volume):
+                if isinstance(vol, int):
+                    # if name of species is given then replace with species object
+                    source.volume[idx] = F.find_volume_from_id(
+                        source.volume, self.volume_subdomains
+                    )
             if isinstance(source, F.Source):
                 function_space_value = None
-
                 if callable(source.value):
                     # if bc.value is a callable then need to provide a functionspace
                     if not self.multispecies:
-                        function_space_value = source.species.sub_function_space
+                        function_space_value = source.species[0].sub_function_space
                     else:
-                        function_space_value = source.species.collapsed_function_space
+                        function_space_value = source.species[
+                            0
+                        ].collapsed_function_space
 
                 source.create_value(
                     mesh=self.mesh.mesh,
@@ -528,8 +536,12 @@ class HydrogenTransportProblem:
 
                 # add sources
                 for source in self.sources:
-                    if source.species == spe:
-                        self.formulation -= source.value_fenics * v * self.dx
+                    for source_spe in source.species:
+                        for source_vol in source.volume:
+                            if source_spe == spe and source_vol == vol:
+                                self.formulation -= (
+                                    source.value_fenics * v * self.dx(vol.id)
+                                )
 
                 # add fluxes
                 # TODO implement this

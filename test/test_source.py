@@ -22,9 +22,9 @@ def test_init():
     source = F.Source(volume=volume, value=value, species=species)
 
     # check that the attributes are set correctly
-    assert source.volume == volume
+    assert source.volume == [volume]
     assert source.value == value
-    assert source.species == species
+    assert source.species == [species]
     assert source.value_fenics is None
     assert source.source_expr is None
 

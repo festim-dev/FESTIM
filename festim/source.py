@@ -45,6 +45,56 @@ class Source:
         self.source_expr = None
 
     @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, value):
+        # check that volume is festim.VolumeSubdomain1D or list of festim.VolumeSubdomain1D
+        if not isinstance(value, (F.VolumeSubdomain1D, int)) and not isinstance(
+            value, list
+        ):
+            raise TypeError(
+                "volume must be of type festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int"
+            )
+        # check that all elements of list are festim.VolumeSubdomain1D
+        if isinstance(value, list):
+            for element in value:
+                if not isinstance(element, (F.VolumeSubdomain1D, int)):
+                    raise TypeError(
+                        "volume must be of type festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int"
+                    )
+        # if volume is festim.VolumeSubdomain1D, convert to list
+        if not isinstance(value, list):
+            value = [value]
+
+        self._volume = value
+
+    @property
+    def species(self):
+        return self._species
+
+    @species.setter
+    def species(self, value):
+        # check that species is festim.Species or list of festim.Species
+        if not isinstance(value, (F.Species, str)) and not isinstance(value, list):
+            raise TypeError(
+                "species must be of type festim.Species or str or a list of festim.Species or str"
+            )
+        # check that all elements of list are festim.Species
+        if isinstance(value, list):
+            for element in value:
+                if not isinstance(element, (F.Species, str)):
+                    raise TypeError(
+                        "species must be of type festim.Species or str or a list of festim.Species or str"
+                    )
+        # if species is festim.Species, convert to list
+        if not isinstance(value, list):
+            value = [value]
+
+        self._species = value
+
+    @property
     def value_fenics(self):
         return self._value_fenics
 
