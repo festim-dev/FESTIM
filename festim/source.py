@@ -9,16 +9,18 @@ class Source:
     Source class
 
     Args:
-        volume (festim.VolumeSubdomain1D): the volume subdomain where the source
-            is applied
+        volume (festim.VolumeSubdomain1D, int, list of festim.VolumeSubdomain1Ds or list of ints):
+            the volume subdomains where the source is applied
         value (float, int, fem.Constant or callable): the value of the soure
-        species (str): the name of the species to which the source is applied
+        species (festim.Species, str, list of festim.Species or list of str): the name of the species
+            to which the source is applied
 
     Attributes:
-        volume (festim.VolumeSubdomain1D): the volume subdomain where the source
-            is applied
+        volume (festim.VolumeSubdomain1D, int, list of festim.VolumeSubdomain1Ds or list of ints):
+            the volume subdomains where the source is applied
         value (float, int, fem.Constant or callable): the value of the soure
-        species (str): the name of the species to which the source is applied
+        species (festim.Species, str, list of festim.Species or list of str): the name of the species
+            to which the source is applied
         value_fenics (fem.Function or fem.Constant): the value of the source in
             fenics format
         source_expr (fem.Expression): the expression of the source term that is
@@ -64,9 +66,6 @@ class Source:
                     raise TypeError(
                         "volume must be of type festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int"
                     )
-        # if volume is festim.VolumeSubdomain1D, convert to list
-        if not isinstance(value, list):
-            value = [value]
 
         self._volume = value
 
@@ -88,10 +87,6 @@ class Source:
                     raise TypeError(
                         "species must be of type festim.Species or str or a list of festim.Species or str"
                     )
-        # if species is festim.Species, convert to list
-        if not isinstance(value, list):
-            value = [value]
-
         self._species = value
 
     @property
@@ -133,7 +128,7 @@ class Source:
         else:
             return False
 
-    def create_value(
+    def create_value_fenics(
         self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
     ):
         """Creates the value of the source as a fenics object and sets it to

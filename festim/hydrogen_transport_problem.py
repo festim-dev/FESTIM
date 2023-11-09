@@ -167,7 +167,7 @@ class HydrogenTransportProblem:
 
         self.define_temperature()
         self.define_boundary_conditions()
-        self.define_sources()
+        self.create_source_values_fenics()
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
@@ -481,19 +481,32 @@ class HydrogenTransportProblem:
 
         return form
 
-    def define_sources(self):
-        """Create a fenics object value for each source of the model"""
+    def create_source_values_fenics(self):
+        """For each source in the model, check if the species and volumes are lists,
+        create one if not, check if each element in species and volumes are
+        festim.Species and festim.VolumeSubdomain1D, then create the value fenics
+        attribute.
+        """
         for source in self.sources:
+            # iterate through species, find species if name of species is given
+            if not isinstance(source.species, list):
+                source.species = [source.species]
             for idx, spe in enumerate(source.species):
                 if isinstance(spe, str):
                     # if name of species is given then replace with species object
                     source.species[idx] = F.find_species_from_name(spe, self.species)
+
+            # iterate through volumes, find volume if id of volume is given
+            if not isinstance(source.volume, list):
+                source.volume = [source.volume]
             for idx, vol in enumerate(source.volume):
                 if isinstance(vol, int):
                     # if name of species is given then replace with species object
                     source.volume[idx] = F.find_volume_from_id(
                         source.volume, self.volume_subdomains
                     )
+
+            # create value_fenics for all F.Source objects
             if isinstance(source, F.Source):
                 function_space_value = None
                 if callable(source.value):
@@ -505,7 +518,7 @@ class HydrogenTransportProblem:
                             0
                         ].collapsed_function_space
 
-                source.create_value(
+                source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
                     function_space=function_space_value,

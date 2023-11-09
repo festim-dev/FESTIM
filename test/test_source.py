@@ -22,9 +22,9 @@ def test_init():
     source = F.Source(volume=volume, value=value, species=species)
 
     # check that the attributes are set correctly
-    assert source.volume == [volume]
+    assert source.volume == volume
     assert source.value == value
-    assert source.species == [species]
+    assert source.species == species
     assert source.value_fenics is None
     assert source.source_expr is None
 
@@ -64,7 +64,7 @@ def test_value_fenics():
         (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), fem.Function),
     ],
 )
-def test_create_value(value, expected_type):
+def test_create_value_fenics(value, expected_type):
     """Test that the create value method produces either a fem.Constant or
     fem.Function depending on the value input"""
 
@@ -79,7 +79,7 @@ def test_create_value(value, expected_type):
     t = fem.Constant(mesh, 0.0)
 
     # RUN
-    source.create_value(mesh, my_function_space, T, t)
+    source.create_value_fenics(mesh, my_function_space, T, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
@@ -151,4 +151,4 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        source.create_value(mesh, my_function_space, T, t)
+        source.create_value_fenics(mesh, my_function_space, T, t)
