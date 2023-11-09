@@ -514,8 +514,6 @@ class HydrogenTransportProblem:
 
     def create_formulation(self):
         """Creates the formulation of the model"""
-        if len(self.sources) > 1:
-            raise NotImplementedError("Sources not implemented yet")
 
         self.formulation = 0
 
