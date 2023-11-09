@@ -482,7 +482,7 @@ class HydrogenTransportProblem:
         return form
 
     def define_sources(self):
-        """Defines the sources of the model"""
+        """Create a fenics object value for each source of the model"""
         for source in self.sources:
             if isinstance(source.species, str):
                 # if name of species is given then replace with species object
