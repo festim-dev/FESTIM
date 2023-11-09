@@ -394,6 +394,11 @@ class HydrogenTransportProblem:
         if isinstance(self.mesh, F.Mesh1D):
             self.mesh.check_borders(self.volume_subdomains)
 
+        # check volume ids are unique
+        vol_ids = [vol.id for vol in self.volume_subdomains]
+        if len(vol_ids) != len(np.unique(vol_ids)):
+            raise ValueError("Volume ids are not unique")
+
         # dofs and tags need to be in np.in32 format for meshtags
         facet_indices = np.array(facet_indices, dtype=np.int32)
         tags_facets = np.array(tags_facets, dtype=np.int32)
@@ -503,7 +508,7 @@ class HydrogenTransportProblem:
                 if isinstance(vol, int):
                     # if name of species is given then replace with species object
                     source.volume[idx] = F.find_volume_from_id(
-                        source.volume, self.volume_subdomains
+                        vol, self.volume_subdomains
                     )
 
             # create value_fenics for all F.Source objects
@@ -530,6 +535,7 @@ class HydrogenTransportProblem:
 
         self.formulation = 0
 
+        # add diffusion and time derivative for each species
         for spe in self.species:
             u = spe.solution
             u_n = spe.prev_solution
@@ -545,14 +551,12 @@ class HydrogenTransportProblem:
                 )
                 self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
-                # add sources
-                for source in self.sources:
-                    for source_spe in source.species:
-                        for source_vol in source.volume:
-                            if source_spe == spe and source_vol == vol:
-                                self.formulation -= (
-                                    source.value_fenics * v * self.dx(vol.id)
-                                )
+        # add sources
+        for source in self.sources:
+            for source_spe in source.species:
+                v = source_spe.test_function
+                for source_vol in source.volume:
+                    self.formulation -= source.value_fenics * v * self.dx(source_vol.id)
 
                 # add fluxes
                 # TODO implement this
