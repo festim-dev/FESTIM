@@ -28,7 +28,7 @@ class HenrysBC(F.DirichletBC):
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
         species (festim.Species or str): the name of the species
-        H_0 (float or fem.Constant): the Henrys constant pre-exponential factor (H/m3/Pa0.5)
+        H_0 (float or fem.Constant): the Henrys constant pre-exponential factor (H/m3/Pa)
         E_H (float or fem.Constant): the Henrys constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
 
