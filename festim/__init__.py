@@ -20,6 +20,7 @@ from .helpers import as_fenics_constant
 
 from .boundary_conditions.dirichlet_bc import DirichletBC
 from .boundary_conditions.sieverts_bc import SievertsBC
+from .boundary_conditions.henrys_bc import HenrysBC
 
 from .material import Material
 
