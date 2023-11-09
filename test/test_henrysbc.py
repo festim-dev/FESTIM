@@ -13,6 +13,11 @@ def henrys_law(T, H_0, E_H, pressure):
     return H * pressure
 
 
+def test_raise_error():
+    with pytest.raises(ValueError, match="pressure function not supported"):
+        F.HenrysBC(subdomain=None, H_0=1.0, E_H=1.0, pressure=lambda c: c, species="H")
+
+
 @pytest.mark.parametrize(
     "pressure",
     [
