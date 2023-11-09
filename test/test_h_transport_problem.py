@@ -580,7 +580,7 @@ def test_update_sources_with_time_dependent_temperature(
         assert np.isclose(computed_value, expected_values[i])
 
 
-def test_define_sources_multispecies():
+def test_create_source_values_fenics_multispecies():
     """Test that the define_sources method correctly sets the value_fenics attribute in
     a multispecies case"""
     # BUILD
@@ -608,3 +608,60 @@ def test_define_sources_multispecies():
     # TEST
     assert np.isclose(my_model.sources[0].value_fenics.value, 5)
     assert np.isclose(my_model.sources[1].value_fenics.value, 11)
+
+
+def test_create_source_values_creates_list_of_species_and_volumes():
+    """Test that the create_source_values_fenics method turns the species and volume
+    into lists if not given as one"""
+    # BUILD
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol],
+        species=[F.Species("H"), F.Species("D")],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
+
+    my_source = F.Source(value=lambda t: t + 1, volume=vol, species="H")
+    my_model.sources = [my_source]
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+
+    # RUN
+    my_model.create_source_values_fenics()
+
+    # TEST
+    assert isinstance(my_source.species, list)
+    assert isinstance(my_source.volume, list)
+
+
+def test_create_source_values_fenics_finds_species_and_volumes():
+    """Test that the create_source_values_fenics method finds the species and volumes
+    of the problem when given the species names and volume id's"""
+
+    # BUILD
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 2], material=dummy_mat)
+    vol_2 = F.VolumeSubdomain1D(id=2, borders=[2, 4], material=dummy_mat)
+    H, D = F.Species("H"), F.Species("D")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol_1, vol_2],
+        species=[H, D],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
+
+    my_source = F.Source(value=1, volume=[1, 2], species=["H", "D"])
+    my_model.sources = [my_source]
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+
+    # RUN
+    my_model.create_source_values_fenics()
