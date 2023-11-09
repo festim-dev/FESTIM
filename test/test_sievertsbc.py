@@ -10,11 +10,11 @@ from mpi4py import MPI
 def sieverts_law(T, S_0, E_S, pressure):
     """Applies the Sieverts law to compute the concentration at the boundary"""
     S = S_0 * ufl.exp(-E_S / F.k_B / T)
-    return S * pressure**0.5
+    return S * pressure ** 0.5
 
 
 def test_raise_error():
-     """Test that a value error is raised if the pressure function is not supported in SievertsBC"""
+    """Test that a value error is raised if the pressure function is not supported in SievertsBC"""
     with pytest.raises(ValueError, match="pressure function not supported"):
         F.SievertsBC(
             subdomain=None, S_0=1.0, E_S=1.0, pressure=lambda c: c, species="H"
