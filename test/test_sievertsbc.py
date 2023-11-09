@@ -10,7 +10,7 @@ from mpi4py import MPI
 def sieverts_law(T, S_0, E_S, pressure):
     """Applies the Sieverts law to compute the concentration at the boundary"""
     S = S_0 * ufl.exp(-E_S / F.k_B / T)
-    return S * pressure ** 0.5
+    return S * pressure**0.5
 
 
 def test_raise_error():
