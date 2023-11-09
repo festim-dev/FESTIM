@@ -492,6 +492,8 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
     ],
 )
 def test_update_time_dependent_values_source(source_value, expected_values):
+    """Test that time dependent sources are updated at each time step,
+    and match an expected value"""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HydrogenTransportProblem(

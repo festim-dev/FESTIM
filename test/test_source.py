@@ -132,8 +132,8 @@ def test_bc_temperature_dependent_attribute(input, expected_value):
 
 
 def test_ValueError_raised_when_callable_returns_wrong_type():
-    """Test that the create value method produces either a fem.Constant or
-    fem.Function depending on the value input"""
+    """The create_value method should raise a ValueError when the callable
+    returns an object which is not a float or int"""
 
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
