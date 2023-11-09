@@ -14,6 +14,8 @@ class Reaction:
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
+        volume (festim.VolumSubdomain1D): The volume subdomain in which the reaction
+            takes place
 
     Attributes:
         reactant1 (Union[F.Species, F.ImplicitSpecies]): The first reactant.
@@ -23,6 +25,8 @@ class Reaction:
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
+        volume (festim.VolumSubdomain1D): The volume subdomain in which the reaction
+            takes place
 
     Usage:
         >>> # create two species
@@ -52,6 +56,7 @@ class Reaction:
         E_k: float,
         p_0: float,
         E_p: float,
+        volume: F.VolumeSubdomain1D,
     ) -> None:
         self.reactant1 = reactant1
         self.reactant2 = reactant2
@@ -60,6 +65,7 @@ class Reaction:
         self.E_k = E_k
         self.p_0 = p_0
         self.E_p = E_p
+        self.volume = volume
 
     @property
     def reactant1(self):

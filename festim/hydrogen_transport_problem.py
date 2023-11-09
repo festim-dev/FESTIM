@@ -535,27 +535,27 @@ class HydrogenTransportProblem:
                 #     pass
                 #     if bc.species == spe and bc.type != "dirichlet":
                 #         formulation += bc * v * self.ds
-        # TODO what if a reaction happens only in one sudomain
+
         for reaction in self.reactions:
             # reactant 1
             if isinstance(reaction.reactant1, F.Species):
                 self.formulation += (
                     reaction.reaction_term(self.temperature_fenics)
                     * reaction.reactant1.test_function
-                    * self.dx
+                    * self.dx(reaction.volume.id)
                 )
             # reactant 2
             if isinstance(reaction.reactant2, F.Species):
                 self.formulation += (
                     reaction.reaction_term(self.temperature_fenics)
                     * reaction.reactant2.test_function
-                    * self.dx
+                    * self.dx(reaction.volume.id)
                 )
             # product
             self.formulation += (
                 -reaction.reaction_term(self.temperature_fenics)
                 * reaction.product.test_function
-                * self.dx
+                * self.dx(reaction.volume.id)
             )
 
     def create_solver(self):
