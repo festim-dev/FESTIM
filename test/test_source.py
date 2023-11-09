@@ -152,3 +152,49 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
         source.create_value_fenics(mesh, my_function_space, T, t)
+
+
+@pytest.mark.parametrize(
+    "volume_input",
+    [
+        1.0,
+        "1",
+        ["1"],
+        [1.0],
+        [[1]],
+        [[F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)]],
+        None,
+    ],
+)
+def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
+    """Test that a TypeError is raised when the volume is not of type
+    festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int
+    """
+    with pytest.raises(
+        TypeError,
+        match="volume must be of type festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int",
+    ):
+        F.Source(volume=volume_input, value=1.0, species="test")
+
+
+@pytest.mark.parametrize(
+    "species_input",
+    [
+        1,
+        1.0,
+        [1],
+        [1.0],
+        [["test"]],
+        [[F.Species("test")]],
+        None,
+    ],
+)
+def test_TypeError_is_raised_when_species_wrong_type(species_input):
+    """Test that a TypeError is raised when the species is not of type
+    festim.Species or str or a list of festim.Species or str
+    """
+    with pytest.raises(
+        TypeError,
+        match="species must be of type festim.Species or str or a list of festim.Species or str",
+    ):
+        F.Source(volume=1, value=1.0, species=species_input)
