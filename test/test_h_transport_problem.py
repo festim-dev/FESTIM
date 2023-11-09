@@ -635,8 +635,8 @@ def test_create_source_values_creates_list_of_species_and_volumes():
     my_model.create_source_values_fenics()
 
     # TEST
-    assert isinstance(my_source.species, list)
-    assert isinstance(my_source.volume, list)
+    assert isinstance(my_source.species_festim, list)
+    assert isinstance(my_source.volume_festim, list)
 
 
 def test_create_source_values_fenics_finds_species_and_volumes():

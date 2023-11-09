@@ -495,19 +495,25 @@ class HydrogenTransportProblem:
         for source in self.sources:
             # iterate through species, find species if name of species is given
             if not isinstance(source.species, list):
-                source.species = [source.species]
-            for idx, spe in enumerate(source.species):
+                source.species_festim = [source.species]
+            else:
+                source.species_festim = source.species
+            for idx, spe in enumerate(source.species_festim):
                 if isinstance(spe, str):
                     # if name of species is given then replace with species object
-                    source.species[idx] = F.find_species_from_name(spe, self.species)
+                    source.species_festim[idx] = F.find_species_from_name(
+                        spe, self.species
+                    )
 
             # iterate through volumes, find volume if id of volume is given
             if not isinstance(source.volume, list):
-                source.volume = [source.volume]
-            for idx, vol in enumerate(source.volume):
+                source.volume_festim = [source.volume]
+            else:
+                source.volume_festim = source.volume
+            for idx, vol in enumerate(source.volume_festim):
                 if isinstance(vol, int):
                     # if name of species is given then replace with species object
-                    source.volume[idx] = F.find_volume_from_id(
+                    source.volume_festim[idx] = F.find_volume_from_id(
                         vol, self.volume_subdomains
                     )
 
@@ -517,9 +523,11 @@ class HydrogenTransportProblem:
                 if callable(source.value):
                     # if bc.value is a callable then need to provide a functionspace
                     if not self.multispecies:
-                        function_space_value = source.species[0].sub_function_space
+                        function_space_value = source.species_festim[
+                            0
+                        ].sub_function_space
                     else:
-                        function_space_value = source.species[
+                        function_space_value = source.species_festim[
                             0
                         ].collapsed_function_space
 
@@ -553,10 +561,10 @@ class HydrogenTransportProblem:
 
         # add sources
         for source in self.sources:
-            for source_spe in source.species:
-                v = source_spe.test_function
-                for source_vol in source.volume:
-                    self.formulation -= source.value_fenics * v * self.dx(source_vol.id)
+            for spe in source.species_festim:
+                v = spe.test_function
+                for vol in source.volume_festim:
+                    self.formulation -= source.value_fenics * v * self.dx(vol.id)
 
                 # add fluxes
                 # TODO implement this

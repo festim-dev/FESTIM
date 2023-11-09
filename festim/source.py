@@ -28,6 +28,10 @@ class Source:
         time_dependent (bool): True if the value of the source is time dependent
         temperature_dependent (bool): True if the value of the source is temperature
             dependent
+        species_festim (festim.Species or list of festim.Species) the species to which the source is
+            applied
+        volume_festim (festim.VolumeSubdomain1D or list of festim.VolumeSubdomain1D) the volume subdomains
+            where the source is applied
 
     Usage:
         >>> from festim import Source
@@ -44,6 +48,8 @@ class Source:
         self.species = species
 
         self.value_fenics = None
+        self.species_festim = None
+        self.volume_festim = None
         self.source_expr = None
 
     @property
