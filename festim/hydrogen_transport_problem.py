@@ -542,20 +542,20 @@ class HydrogenTransportProblem:
                 self.formulation += (
                     reaction.reaction_term(self.temperature_fenics)
                     * reaction.reactant1.test_function
-                    * self.dx(reaction.volume.id)
+                    * self.dx
                 )
             # reactant 2
             if isinstance(reaction.reactant2, F.Species):
                 self.formulation += (
                     reaction.reaction_term(self.temperature_fenics)
                     * reaction.reactant2.test_function
-                    * self.dx(reaction.volume.id)
+                    * self.dx
                 )
             # product
             self.formulation += (
                 -reaction.reaction_term(self.temperature_fenics)
                 * reaction.product.test_function
-                * self.dx(reaction.volume.id)
+                * self.dx
             )
 
     def create_solver(self):
