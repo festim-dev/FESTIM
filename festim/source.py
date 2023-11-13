@@ -9,18 +9,14 @@ class Source:
     Source class
 
     Args:
-        volume (festim.VolumeSubdomain1D, int, list of festim.VolumeSubdomain1Ds or list of ints):
-            the volume subdomains where the source is applied
+        volume (festim.VolumeSubdomain1D): the volume subdomains where the source is applied
         value (float, int, fem.Constant or callable): the value of the soure
-        species (festim.Species, str, list of festim.Species or list of str): the name of the species
-            to which the source is applied
+        species (festim.Species): the species to which the source is applied
 
     Attributes:
-        volume (festim.VolumeSubdomain1D, int, list of festim.VolumeSubdomain1Ds or list of ints):
-            the volume subdomains where the source is applied
+        volume (festim.VolumeSubdomain1D): the volume subdomains where the source is applied
         value (float, int, fem.Constant or callable): the value of the soure
-        species (festim.Species, str, list of festim.Species or list of str): the name of the species
-            to which the source is applied
+        species (festim.Species): the species to which the source is applied
         value_fenics (fem.Function or fem.Constant): the value of the source in
             fenics format
         source_expr (fem.Expression): the expression of the source term that is
@@ -28,10 +24,6 @@ class Source:
         time_dependent (bool): True if the value of the source is time dependent
         temperature_dependent (bool): True if the value of the source is temperature
             dependent
-        species_festim (festim.Species or list of festim.Species) the species to which the source is
-            applied
-        volume_festim (festim.VolumeSubdomain1D or list of festim.VolumeSubdomain1D) the volume subdomains
-            where the source is applied
 
     Usage:
         >>> from festim import Source
@@ -58,21 +50,9 @@ class Source:
 
     @volume.setter
     def volume(self, value):
-        # check that volume is festim.VolumeSubdomain1D or list of festim.VolumeSubdomain1D
-        if not isinstance(value, (F.VolumeSubdomain1D, int)) and not isinstance(
-            value, list
-        ):
-            raise TypeError(
-                "volume must be of type festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int"
-            )
-        # check that all elements of list are festim.VolumeSubdomain1D
-        if isinstance(value, list):
-            for element in value:
-                if not isinstance(element, (F.VolumeSubdomain1D, int)):
-                    raise TypeError(
-                        "volume must be of type festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int"
-                    )
-
+        # check that volume is festim.VolumeSubdomain1D
+        if not isinstance(value, F.VolumeSubdomain1D):
+            raise TypeError("volume must be of type festim.VolumeSubdomain1D")
         self._volume = value
 
     @property
@@ -82,17 +62,9 @@ class Source:
     @species.setter
     def species(self, value):
         # check that species is festim.Species or list of festim.Species
-        if not isinstance(value, (F.Species, str)) and not isinstance(value, list):
-            raise TypeError(
-                "species must be of type festim.Species or str or a list of festim.Species or str"
-            )
-        # check that all elements of list are festim.Species
-        if isinstance(value, list):
-            for element in value:
-                if not isinstance(element, (F.Species, str)):
-                    raise TypeError(
-                        "species must be of type festim.Species or str or a list of festim.Species or str"
-                    )
+        if not isinstance(value, F.Species):
+            raise TypeError("species must be of type festim.Species")
+
         self._species = value
 
     @property

@@ -18,7 +18,7 @@ def test_init():
     # create a Source object
     volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
     value = 1.0
-    species = "test"
+    species = F.Species("test")
     source = F.Source(volume=volume, value=value, species=species)
 
     # check that the attributes are set correctly
@@ -36,7 +36,7 @@ def test_value_fenics():
     # create a Source object
     volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
     value = 1.0
-    species = "test"
+    species = F.Species("test")
     source = F.Source(volume=volume, value=value, species=species)
 
     # set the value_fenics attribute to a valid value
@@ -168,13 +168,14 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 )
 def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
     """Test that a TypeError is raised when the volume is not of type
-    festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int
-    """
+    festim.VolumeSubdomain1D"""
+
+    my_spe = F.Species("test")
     with pytest.raises(
         TypeError,
-        match="volume must be of type festim.VolumeSubdomain1D or int or a list of festim.VolumeSubdomain1D or int",
+        match="volume must be of type festim.VolumeSubdomain1D",
     ):
-        F.Source(volume=volume_input, value=1.0, species="test")
+        F.Source(volume=volume_input, value=1.0, species=my_spe)
 
 
 @pytest.mark.parametrize(
@@ -191,10 +192,12 @@ def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
 )
 def test_TypeError_is_raised_when_species_wrong_type(species_input):
     """Test that a TypeError is raised when the species is not of type
-    festim.Species or str or a list of festim.Species or str
-    """
+    festim.Species"""
+
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+
     with pytest.raises(
         TypeError,
-        match="species must be of type festim.Species or str or a list of festim.Species or str",
+        match="species must be of type festim.Species",
     ):
-        F.Source(volume=1, value=1.0, species=species_input)
+        F.Source(volume=my_vol, value=1.0, species=species_input)
