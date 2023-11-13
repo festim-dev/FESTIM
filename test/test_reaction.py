@@ -149,7 +149,7 @@ def test_reactant1_setter_raises_error_with_wrong_type():
         )
 
 
-def test_reactant1_setter_raises_error_with_wrong_type():
+def test_reactant2_setter_raises_error_with_wrong_type():
     """Test a type error is raised when the reactant2 is given a wrong type."""
     with pytest.raises(
         TypeError,
