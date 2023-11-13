@@ -487,7 +487,7 @@ class HydrogenTransportProblem:
         return form
 
     def create_source_values_fenics(self):
-        """For each source TODO this"""
+        """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all F.Source objects
             if isinstance(source, F.Source):
