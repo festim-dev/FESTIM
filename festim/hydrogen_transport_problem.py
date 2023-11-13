@@ -487,49 +487,17 @@ class HydrogenTransportProblem:
         return form
 
     def create_source_values_fenics(self):
-        """For each source in the model, check if the species and volumes are lists,
-        create one if not, check if each element in species and volumes are
-        festim.Species and festim.VolumeSubdomain1D, then create the value fenics
-        attribute.
-        """
+        """For each source TODO this"""
         for source in self.sources:
-            # iterate through species, find species if name of species is given
-            if not isinstance(source.species, list):
-                source.species_festim = [source.species]
-            else:
-                source.species_festim = source.species
-            for idx, spe in enumerate(source.species_festim):
-                if isinstance(spe, str):
-                    # if name of species is given then replace with species object
-                    source.species_festim[idx] = F.find_species_from_name(
-                        spe, self.species
-                    )
-
-            # iterate through volumes, find volume if id of volume is given
-            if not isinstance(source.volume, list):
-                source.volume_festim = [source.volume]
-            else:
-                source.volume_festim = source.volume
-            for idx, vol in enumerate(source.volume_festim):
-                if isinstance(vol, int):
-                    # if name of species is given then replace with species object
-                    source.volume_festim[idx] = F.find_volume_from_id(
-                        vol, self.volume_subdomains
-                    )
-
             # create value_fenics for all F.Source objects
             if isinstance(source, F.Source):
                 function_space_value = None
                 if callable(source.value):
                     # if bc.value is a callable then need to provide a functionspace
                     if not self.multispecies:
-                        function_space_value = source.species_festim[
-                            0
-                        ].sub_function_space
+                        function_space_value = source.species.sub_function_space
                     else:
-                        function_space_value = source.species_festim[
-                            0
-                        ].collapsed_function_space
+                        function_space_value = source.species.collapsed_function_space
 
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
@@ -561,17 +529,16 @@ class HydrogenTransportProblem:
 
         # add sources
         for source in self.sources:
-            for spe in source.species_festim:
-                v = spe.test_function
-                for vol in source.volume_festim:
-                    self.formulation -= source.value_fenics * v * self.dx(vol.id)
+            self.formulation -= (
+                source.value_fenics * source.species.test_function * self.dx(vol.id)
+            )
 
-                # add fluxes
-                # TODO implement this
-                # for bc in self.boundary_conditions:
-                #     pass
-                #     if bc.species == spe and bc.type != "dirichlet":
-                #         formulation += bc * v * self.ds
+            # add fluxes
+            # TODO implement this
+            # for bc in self.boundary_conditions:
+            #     pass
+            #     if bc.species == spe and bc.type != "dirichlet":
+            #         formulation += bc * v * self.ds
 
     def create_solver(self):
         """Creates the solver of the model"""
