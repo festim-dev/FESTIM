@@ -530,7 +530,9 @@ class HydrogenTransportProblem:
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics * source.species.test_function * self.dx(vol.id)
+                source.value_fenics
+                * source.species.test_function
+                * self.dx(source.volume.id)
             )
 
             # add fluxes

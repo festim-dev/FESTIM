@@ -6,6 +6,7 @@ from dolfinx import fem, nls
 import ufl
 import numpy as np
 import pytest
+import ufl.algorithms.renumbering
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
@@ -610,3 +611,53 @@ def test_create_source_values_fenics_multispecies():
     # TEST
     assert np.isclose(my_model.sources[0].value_fenics.value, 5)
     assert np.isclose(my_model.sources[1].value_fenics.value, 11)
+
+
+def test_create_formulation_sources():
+    """Test that the create_formulation_sources method correctly sets the
+    formulation_sources attribute"""
+    # BUILD festim form
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol],
+        species=[H],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
+    my_model.dt = fem.Constant(my_model.mesh.mesh, 0.1)
+
+    my_source_1 = F.Source(value=1, volume=my_vol, species=H)
+    my_model.sources = [my_source_1]
+
+    my_model.define_function_spaces()
+    my_model.define_markers_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+    my_model.create_source_values_fenics()
+    my_model.create_formulation()
+
+    F_computed = my_model.formulation
+
+    # BUILD FEniCS form
+    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    u = fem.Function(V)
+    u_n = fem.Function(V)
+    v = ufl.TestFunction(V)
+    dt = fem.Constant(test_mesh.mesh, 0.1)
+    D = fem.Constant(test_mesh.mesh, 1.0) * ufl.exp(
+        -fem.Constant(test_mesh.mesh, 1.0) / F.k_B / fem.Constant(test_mesh.mesh, 10.0)
+    )
+
+    # make formulation
+    F_expected = ((u - u_n) / dt) * v * ufl.dx
+    F_expected += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * ufl.dx
+
+    # with source term
+    F_expected += 1 * v * ufl.dx
+
+    # TEST
+    ufl.algorithms.renumbering.renumber_indices(F_computed).equals(
+        ufl.algorithms.renumbering.renumber_indices(F_expected)
+    )
