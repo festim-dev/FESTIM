@@ -495,11 +495,5 @@ def test_create_formulation_with_reactions():
     expected_formulation = expected_formulation.translate(
         str.maketrans("", "", " \n\t\r")
     )
-    # TODO Fix this test
-    # print(expected_formulation)
-    # print(computed_formulation)
 
-    # assert computed_formulation == expected_formulation
-    # print(type(my_model.formulation))
-    # ufl.form.Form
-    # assert False
+    assert computed_formulation == expected_formulation
