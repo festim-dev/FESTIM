@@ -71,36 +71,24 @@ class InitialCondition:
             temperature (float): the temperature
         """
         x = ufl.SpatialCoordinate(mesh)
-        t = 0.0
 
         if isinstance(self.value, (int, float)):
-            self.species.solution.interpolate(
+            self.species.prev_solution.interpolate(
                 F.as_fenics_constant(mesh=mesh, value=self.value)
             )
 
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
+            kwargs = {}
+            if "t" in arguments:
+                raise ValueError("Initial condition cannot be a function of time.")
+            if "x" in arguments:
+                kwargs["x"] = x
+            if "T" in arguments:
+                kwargs["T"] = temperature
 
-            if "t" in arguments and "x" not in arguments and "T" not in arguments:
-                # only t is an argument
-                if not isinstance(self.value(t=float(t)), (float, int)):
-                    raise ValueError(
-                        f"self.value should return a float or an int, not {type(self.value(t))} "
-                    )
-                self.species.solution.interpolate(
-                    F.as_fenics_constant(mesh=mesh, value=self.value(t))
-                )
-            else:
-                kwargs = {}
-                if "t" in arguments:
-                    kwargs["t"] = t
-                if "x" in arguments:
-                    kwargs["x"] = x
-                if "T" in arguments:
-                    kwargs["T"] = temperature
-
-                condition_expr = fem.Expression(
-                    self.value(**kwargs),
-                    self.species.solution.function_space.element.interpolation_points(),
-                )
-                self.species.solution.interpolate(condition_expr)
+            condition_expr = fem.Expression(
+                self.value(**kwargs),
+                self.species.prev_solution.function_space.element.interpolation_points(),
+            )
+            self.species.prev_solution.interpolate(condition_expr)
