@@ -1,40 +1,31 @@
-import dolfinx.mesh
-import numpy as np
-
-
-class SurfaceSubdomain1D:
+class SurfaceSubdomain:
     """
-    Surface subdomain class for 1D cases
+    Surface subdomain class
 
     Args:
         id (int): the id of the surface subdomain
-        x (float): the x coordinate of the surface subdomain
-
-    Attributes:
-        id (int): the id of the surface subdomain
-        x (float): the x coordinate of the surface subdomain
-
-    Usage:
-        >>> surf_subdomain = F.SurfaceSubdomain1D(id=1, x=1)
     """
 
-    def __init__(self, id, x) -> None:
+    def __init__(self, id):
         self.id = id
-        self.x = x
 
-    def locate_boundary_facet_indices(self, mesh, fdim):
-        """Locates the dof of the surface subdomain within the function space
-        and return the index of the dof
 
-        Args:
-            mesh (dolfinx.mesh.Mesh): the mesh of the simulation
-            fdim (int): the dimension of the model facets
+def find_surface_from_id(id: int, surfaces: list):
+    """Returns the correct surface subdomain object from a list of surface ids
+    based on an int
 
-        Returns:
-            index (np.array): the first value in the list of surface facet
-                indices of the subdomain
-        """
-        indices = dolfinx.mesh.locate_entities_boundary(
-            mesh, fdim, lambda x: np.isclose(x[0], self.x)
-        )
-        return indices[0]
+    Args:
+        id (int): the id of the surface subdomain
+        surfaces (list of F.SurfaceSubdomain): the list of surfaces
+
+    Returns:
+        festim.SurfaceSubdomain: the surface subdomain object with the correct id
+
+    Raises:
+        ValueError: if the surface name is not found in the list of surfaces
+
+    """
+    for surf in surfaces:
+        if surf.id == id:
+            return surf
+    raise ValueError(f"id {id} not found in list of surfaces")
