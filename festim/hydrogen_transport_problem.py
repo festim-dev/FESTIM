@@ -88,6 +88,7 @@ class HydrogenTransportProblem:
         species=[],
         temperature=None,
         sources=[],
+        initial_conditions=[],
         boundary_conditions=[],
         settings=None,
         exports=[],
@@ -97,6 +98,7 @@ class HydrogenTransportProblem:
         self.species = species
         self.temperature = temperature
         self.sources = sources
+        self.initial_conditions = initial_conditions
         self.boundary_conditions = boundary_conditions
         self.settings = settings
         self.exports = exports
@@ -168,6 +170,7 @@ class HydrogenTransportProblem:
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
+        self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
@@ -505,6 +508,14 @@ class HydrogenTransportProblem:
                     function_space=function_space_value,
                     t=self.t,
                 )
+
+    def create_initial_conditions(self):
+        """For each initial condition create the value_fenics"""
+        for condition in self.initial_conditions:
+            condition.create_initial_condition(
+                mesh=self.mesh.mesh,
+                temperature=self.temperature_fenics,
+            )
 
     def create_formulation(self):
         """Creates the formulation of the model"""

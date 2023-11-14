@@ -29,6 +29,8 @@ from .mesh.mesh_1d import Mesh1D
 
 from .hydrogen_transport_problem import HydrogenTransportProblem
 
+from .initial_condition import InitialCondition
+
 from .settings import Settings
 
 from .source import Source
