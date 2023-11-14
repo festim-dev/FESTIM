@@ -102,17 +102,18 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     volume_file.write_meshtags(volume_meshtags, mesh.geometry)
 
     # read files
-    my_mesh = F.MeshFromXDMF(
-        volume_file=os.path.join(tmp_path, "volumes_file.xdmf"),
-        facet_file=os.path.join(tmp_path, "facets_file.xdmf"),
-        mesh_name="mesh",
-        meshtags_name="mesh_tags",
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.MeshFromXDMF(
+            volume_file=os.path.join(tmp_path, "volumes_file.xdmf"),
+            facet_file=os.path.join(tmp_path, "facets_file.xdmf"),
+            mesh_name="mesh",
+            meshtags_name="mesh_tags",
+        )
     )
-    facet_meshtags_2 = my_mesh.define_surface_markers()
-    volume_meshtags_2 = my_mesh.define_volume_markers()
+    my_model.define_markers_and_measures()
 
     # # TEST
-    assert volume_meshtags.dim == volume_meshtags_2.dim
-    assert volume_meshtags.values.all() == volume_meshtags_2.values.all()
-    assert facet_meshtags.dim == facet_meshtags_2.dim
-    assert facet_meshtags.values.all() == facet_meshtags_2.values.all()
+    assert volume_meshtags.dim == my_model.volume_meshtags.dim
+    assert volume_meshtags.values.all() == my_model.volume_meshtags.values.all()
+    assert facet_meshtags.dim == my_model.facet_meshtags.dim
+    assert facet_meshtags.values.all() == my_model.facet_meshtags.values.all()
