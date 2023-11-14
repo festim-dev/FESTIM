@@ -107,9 +107,10 @@ class HydrogenTransportProblem:
         self.facet_meshtags = None
         self.volume_meshtags = None
         self.formulation = None
-        self.volume_subdomains = []
         self.bc_forms = []
         self.temperature_fenics = None
+        self.surface_subdomains = []
+        self.volume_subdomains = []
 
     @property
     def temperature(self):
@@ -368,48 +369,57 @@ class HydrogenTransportProblem:
     def define_markers_and_measures(self):
         """Defines the markers and measures of the model"""
 
-        facet_indices, tags_facets = [], []
+        if isinstance(self.mesh, F.MeshFromXDMF):
+            self.facet_meshtags = self.mesh.define_surface_markers()
+            self.volume_meshtags = self.mesh.define_volume_markers()
 
-        # find all cells in domain and mark them as 0
-        num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
-        mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-        tags_volumes = np.full(num_cells, 0, dtype=np.int32)
+        else:
+            facet_indices, tags_facets = [], []
 
-        for sub_dom in self.subdomains:
-            if isinstance(sub_dom, F.SurfaceSubdomain1D):
-                facet_index = sub_dom.locate_boundary_facet_indices(
-                    self.mesh.mesh, self.mesh.fdim
-                )
-                facet_indices.append(facet_index)
-                tags_facets.append(sub_dom.id)
-            if isinstance(sub_dom, F.VolumeSubdomain1D):
-                # find all cells in subdomain and mark them as sub_dom.id
-                self.volume_subdomains.append(sub_dom)
-                entities = sub_dom.locate_subdomain_entities(
-                    self.mesh.mesh, self.mesh.vdim
-                )
-                tags_volumes[entities] = sub_dom.id
+            # find all cells in domain and mark them as 0
+            num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
+            mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+            tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
-        # check if all borders are defined
-        if isinstance(self.mesh, F.Mesh1D):
-            self.mesh.check_borders(self.volume_subdomains)
+            for sub_dom in self.subdomains:
+                if isinstance(sub_dom, F.SurfaceSubdomain):
+                    self.surface_subdomains.append(sub_dom)
+                if isinstance(sub_dom, F.VolumeSubdomain):
+                    self.volume_subdomains.append(sub_dom)
 
-        # check volume ids are unique
-        vol_ids = [vol.id for vol in self.volume_subdomains]
-        if len(vol_ids) != len(np.unique(vol_ids)):
-            raise ValueError("Volume ids are not unique")
+                if isinstance(sub_dom, F.SurfaceSubdomain1D):
+                    facet_index = sub_dom.locate_boundary_facet_indices(
+                        self.mesh.mesh, self.mesh.fdim
+                    )
+                    facet_indices.append(facet_index)
+                    tags_facets.append(sub_dom.id)
+                if isinstance(sub_dom, F.VolumeSubdomain1D):
+                    # find all cells in subdomain and mark them as sub_dom.id
+                    entities = sub_dom.locate_subdomain_entities(
+                        self.mesh.mesh, self.mesh.vdim
+                    )
+                    tags_volumes[entities] = sub_dom.id
 
-        # dofs and tags need to be in np.in32 format for meshtags
-        facet_indices = np.array(facet_indices, dtype=np.int32)
-        tags_facets = np.array(tags_facets, dtype=np.int32)
+            # check if all borders are defined
+            if isinstance(self.mesh, F.Mesh1D):
+                self.mesh.check_borders(self.volume_subdomains)
 
-        # define mesh tags
-        self.facet_meshtags = meshtags(
-            self.mesh.mesh, self.mesh.fdim, facet_indices, tags_facets
-        )
-        self.volume_meshtags = meshtags(
-            self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
-        )
+            # check volume ids are unique
+            vol_ids = [vol.id for vol in self.volume_subdomains]
+            if len(vol_ids) != len(np.unique(vol_ids)):
+                raise ValueError("Volume ids are not unique")
+
+            # dofs and tags need to be in np.in32 format for meshtags
+            facet_indices = np.array(facet_indices, dtype=np.int32)
+            tags_facets = np.array(tags_facets, dtype=np.int32)
+
+            # define mesh tags
+            self.facet_meshtags = meshtags(
+                self.mesh.mesh, self.mesh.fdim, facet_indices, tags_facets
+            )
+            self.volume_meshtags = meshtags(
+                self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
+            )
 
         # define measures
         self.ds = ufl.Measure(
