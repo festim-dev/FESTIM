@@ -122,9 +122,9 @@ my_model.temperature = 300
 
 my_model.boundary_conditions = [
     F.DirichletBC(subdomain=left_surface, value=1e20, species=mobile_H),
-    F.DirichletBC(subdomain=left_surface, value=1e19, species=mobile_D),
+    F.DirichletBC(subdomain=right_surface, value=1e19, species=mobile_D),
     F.DirichletBC(subdomain=right_surface, value=0, species=mobile_H),
-    F.DirichletBC(subdomain=right_surface, value=0, species=mobile_D),
+    F.DirichletBC(subdomain=left_surface, value=0, species=mobile_D),
 ]
 
 # -------- Exports --------- #
