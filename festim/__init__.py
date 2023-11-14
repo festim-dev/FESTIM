@@ -20,6 +20,7 @@ from .helpers import as_fenics_constant
 
 from .boundary_conditions.dirichlet_bc import DirichletBC
 from .boundary_conditions.sieverts_bc import SievertsBC
+from .boundary_conditions.henrys_bc import HenrysBC
 
 from .material import Material
 
@@ -30,10 +31,12 @@ from .hydrogen_transport_problem import HydrogenTransportProblem
 
 from .settings import Settings
 
+from .source import Source
+
 from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
 from .subdomain.surface_subdomain import SurfaceSubdomain1D
-from .subdomain.volume_subdomain import VolumeSubdomain1D
+from .subdomain.volume_subdomain import VolumeSubdomain1D, find_volume_from_id
 
 from .stepsize import Stepsize
 

@@ -7,18 +7,16 @@ import dolfinx.mesh
 from mpi4py import MPI
 
 
-def sieverts_law(T, S_0, E_S, pressure):
-    """Applies the Sieverts law to compute the concentration at the boundary"""
-    S = S_0 * ufl.exp(-E_S / F.k_B / T)
-    return S * pressure**0.5
+def henrys_law(T, H_0, E_H, pressure):
+    """Applies the Henrys law to compute the concentration at the boundary"""
+    H = H_0 * ufl.exp(-E_H / F.k_B / T)
+    return H * pressure
 
 
 def test_raise_error():
-    """Test that a value error is raised if the pressure function is not supported in SievertsBC"""
+    """Test that a value error is raised if the pressure function is not supported in HenrysBC"""
     with pytest.raises(ValueError, match="pressure function not supported"):
-        F.SievertsBC(
-            subdomain=None, S_0=1.0, E_S=1.0, pressure=lambda c: c, species="H"
-        )
+        F.HenrysBC(subdomain=None, H_0=1.0, E_H=1.0, pressure=lambda c: c, species="H")
 
 
 @pytest.mark.parametrize(
@@ -36,9 +34,7 @@ def test_raise_error():
     ],
 )
 def test_create_new_value_function(pressure):
-    my_BC = F.SievertsBC(
-        subdomain=None, S_0=1.0, E_S=1.0, pressure=pressure, species="H"
-    )
+    my_BC = F.HenrysBC(subdomain=None, H_0=1.0, E_H=1.0, pressure=pressure, species="H")
     assert my_BC.value is not None
     assert callable(my_BC.value)
 
@@ -56,11 +52,11 @@ def test_create_new_value_function(pressure):
 
     computed_value = my_BC.value(**value_kwargs)
     if callable(pressure):
-        expected_value = sieverts_law(
-            T=500.0, S_0=1.0, E_S=1.0, pressure=pressure(**pressure_kwargs)
+        expected_value = henrys_law(
+            T=500.0, H_0=1.0, E_H=1.0, pressure=pressure(**pressure_kwargs)
         )
     else:
-        expected_value = sieverts_law(T=500.0, S_0=1.0, E_S=1.0, pressure=pressure)
+        expected_value = henrys_law(T=500.0, H_0=1.0, E_H=1.0, pressure=pressure)
     assert np.isclose(computed_value, expected_value)
 
 
@@ -89,10 +85,10 @@ def test_integration_with_HTransportProblem(pressure):
         mesh=F.Mesh(mesh), subdomains=[vol_subdomain, subdomain]
     )
     my_model.species = [F.Species("H")]
-    my_bc = F.SievertsBC(
+    my_bc = F.HenrysBC(
         subdomain=subdomain,
-        S_0=2.0,
-        E_S=0.5,
+        H_0=2.0,
+        E_H=0.5,
         pressure=pressure,
         species=my_model.species[0],
     )

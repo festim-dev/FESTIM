@@ -4,45 +4,68 @@ from dolfinx import fem
 import numpy as np
 
 
-class DirichletBC:
+class Source:
     """
-    Dirichlet boundary condition class
-    c = value
+    Source class
 
     Args:
-        subdomain (festim.Subdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
-        species (str): the name of the species
+        volume (festim.VolumeSubdomain1D): the volume subdomains where the source is applied
+        value (float, int, fem.Constant or callable): the value of the soure
+        species (festim.Species): the species to which the source is applied
 
     Attributes:
-        subdomain (festim.Subdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
-        species (str): the name of the species
-        value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
+        volume (festim.VolumeSubdomain1D): the volume subdomains where the source is applied
+        value (float, int, fem.Constant or callable): the value of the soure
+        species (festim.Species): the species to which the source is applied
+        value_fenics (fem.Function or fem.Constant): the value of the source in
             fenics format
-        bc_expr (fem.Expression): the expression of the boundary condition that is used to
-            update the value_fenics
-        time_dependent (bool): True if the value of the bc is time dependent
-        temperature_dependent (bool): True if the value of the bc is temperature dependent
+        source_expr (fem.Expression): the expression of the source term that is
+            used to update the value_fenics
+        time_dependent (bool): True if the value of the source is time dependent
+        temperature_dependent (bool): True if the value of the source is temperature
+            dependent
 
     Usage:
-        >>> from festim import DirichletBC
-        >>> DirichletBC(subdomain=my_subdomain, value=1, species="H")
-        >>> DirichletBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
-        >>> DirichletBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
-        >>> DirichletBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-        >>> DirichletBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+        >>> from festim import Source
+        >>> Source(volume=my_vol, value=1, species="H")
+        >>> Source(volume=my_vol, value=lambda x: 1 + x[0], species="H")
+        >>> Source(volume=my_vol, value=lambda t: 1 + t, species="H")
+        >>> Source(volume=my_vol, value=lambda T: 1 + T, species="H")
+        >>> Source(volume=my_vol, value=lambda x, t: 1 + x[0] + t, species="H")
     """
 
-    def __init__(self, subdomain, value, species) -> None:
-        self.subdomain = subdomain
+    def __init__(self, value, volume, species):
         self.value = value
+        self.volume = volume
         self.species = species
 
         self.value_fenics = None
-        self.bc_expr = None
+        self.species_festim = None
+        self.volume_festim = None
+        self.source_expr = None
+
+    @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, value):
+        # check that volume is festim.VolumeSubdomain1D
+        if not isinstance(value, F.VolumeSubdomain1D):
+            raise TypeError("volume must be of type festim.VolumeSubdomain1D")
+        self._volume = value
+
+    @property
+    def species(self):
+        return self._species
+
+    @species.setter
+    def species(self, value):
+        # check that species is festim.Species or list of festim.Species
+        if not isinstance(value, F.Species):
+            raise TypeError("species must be of type festim.Species")
+
+        self._species = value
 
     @property
     def value_fenics(self):
@@ -83,25 +106,10 @@ class DirichletBC:
         else:
             return False
 
-    def define_surface_subdomain_dofs(self, facet_meshtags, mesh, function_space):
-        """Defines the facets and the degrees of freedom of the boundary
-        condition
-
-        Args:
-            facet_meshtags (ddolfinx.mesh.MeshTags): the mesh tags of the
-                surface facets
-            mesh (dolfinx.mesh.Mesh): the mesh
-            function_space (dolfinx.fem.FunctionSpace): the function space
-        """
-        bc_facets = facet_meshtags.find(self.subdomain.id)
-        bc_dofs = fem.locate_dofs_topological(function_space, mesh.fdim, bc_facets)
-
-        return bc_dofs
-
-    def create_value(
+    def create_value_fenics(
         self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
     ):
-        """Creates the value of the boundary condition as a fenics object and sets it to
+        """Creates the value of the source as a fenics object and sets it to
         self.value_fenics.
         If the value is a constant, it is converted to a fenics.Constant.
         If the value is a function of t, it is converted to a fenics.Constant.
@@ -141,16 +149,16 @@ class DirichletBC:
                 if "T" in arguments:
                     kwargs["T"] = temperature
 
-                # store the expression of the boundary condition
+                # store the expression of the source
                 # to update the value_fenics later
-                self.bc_expr = fem.Expression(
+                self.source_expr = fem.Expression(
                     self.value(**kwargs),
                     function_space.element.interpolation_points(),
                 )
-                self.value_fenics.interpolate(self.bc_expr)
+                self.value_fenics.interpolate(self.source_expr)
 
     def update(self, t):
-        """Updates the boundary condition value
+        """Updates the source value
 
         Args:
             t (float): the time
@@ -160,4 +168,4 @@ class DirichletBC:
             if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
                 self.value_fenics.value = self.value(t=t)
             else:
-                self.value_fenics.interpolate(self.bc_expr)
+                self.value_fenics.interpolate(self.source_expr)

@@ -93,3 +93,45 @@ def test_raise_error_with_no_volume_subdomain():
 
     with pytest.raises(ValueError, match="No volume subdomains defined"):
         mesh.check_borders([])
+
+
+@pytest.mark.parametrize("input", [1, 2, 3, 4])
+def test_find_volume_from_int(input):
+    """test that the correct volume is returned when input is an int"""
+
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
+    vol_2 = F.VolumeSubdomain1D(id=2, borders=[1, 2], material=None)
+    vol_3 = F.VolumeSubdomain1D(id=3, borders=[2, 3], material=None)
+    vol_4 = F.VolumeSubdomain1D(id=4, borders=[3, 4], material=None)
+
+    volumes = [vol_1, vol_2, vol_3, vol_4]
+
+    assert F.find_volume_from_id(input, volumes) == volumes[input - 1]
+
+
+def test_ValueError_raised_when_id_not_found_in_volumes():
+    """test that a ValueError is raised when the id is not found in the list of volumes"""
+
+    volumes = [F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)]
+
+    with pytest.raises(ValueError, match="id 5 not found in list of volumes"):
+        F.find_volume_from_id(5, volumes)
+
+
+def test_ValueError_rasied_when_volume_ids_are_not_unique():
+    """Checks"""
+    my_test_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 2, num=10)), species=[F.Species("H")]
+    )
+
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
+    vol_2 = F.VolumeSubdomain1D(id=1, borders=[1, 2], material=None)
+    my_test_model.subdomains = [
+        vol_1,
+        vol_2,
+    ]
+
+    my_test_model.define_function_spaces()
+
+    with pytest.raises(ValueError, match="Volume ids are not unique"):
+        my_test_model.define_markers_and_measures()
