@@ -7,6 +7,7 @@ from ufl import exp
 
 
 def test_reaction_init():
+    """Test that the Reaction class initialises correctly"""
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -36,6 +37,8 @@ def test_reaction_init():
 
 
 def test_reaction_repr():
+    """Test that the Reaction __repr__ method returns the expected string"""
+
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -60,6 +63,8 @@ def test_reaction_repr():
 
 
 def test_reaction_str():
+    """Test that the Reaction __str__ method returns the expected string"""
+
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -79,6 +84,8 @@ def test_reaction_str():
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
+    """Test that the Reaction.reaction_term method returns the expected reaction term"""
+
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
     V = FunctionSpace(mesh, ("Lagrange", 1))
 
