@@ -144,3 +144,17 @@ def test_ValueError_raised_when_id_not_found_in_surface_subdomains():
 
     with pytest.raises(ValueError, match="id 3 not found in list of surfaces"):
         F.find_surface_from_id(3, surfaces)
+
+
+@pytest.mark.parametrize("input", [1, 2, 3, 4])
+def test_find_surface_from_id(input):
+    """test that the correct surface is returned when input is an int"""
+
+    surf_1 = F.SurfaceSubdomain(id=1)
+    surf_2 = F.SurfaceSubdomain(id=2)
+    surf_3 = F.SurfaceSubdomain(id=3)
+    surf_4 = F.SurfaceSubdomain(id=4)
+
+    surfaces = [surf_1, surf_2, surf_3, surf_4]
+
+    assert F.find_volume_from_id(input, surfaces) == surfaces[input - 1]
