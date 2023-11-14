@@ -188,7 +188,6 @@ class HydrogenTransportProblem:
 
         self.define_temperature()
         self.define_boundary_conditions()
-        self.create_source_values_fenics()
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
@@ -414,11 +413,6 @@ class HydrogenTransportProblem:
         if isinstance(self.mesh, F.Mesh1D):
             self.mesh.check_borders(self.volume_subdomains)
 
-        # check volume ids are unique
-        vol_ids = [vol.id for vol in self.volume_subdomains]
-        if len(vol_ids) != len(np.unique(vol_ids)):
-            raise ValueError("Volume ids are not unique")
-
         # dofs and tags need to be in np.in32 format for meshtags
         facet_indices = np.array(facet_indices, dtype=np.int32)
         tags_facets = np.array(tags_facets, dtype=np.int32)
@@ -506,32 +500,13 @@ class HydrogenTransportProblem:
 
         return form
 
-    def create_source_values_fenics(self):
-        """For each source create the value_fenics"""
-        for source in self.sources:
-            # create value_fenics for all F.Source objects
-            if isinstance(source, F.Source):
-                function_space_value = None
-                if callable(source.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = source.species.sub_function_space
-                    else:
-                        function_space_value = source.species.collapsed_function_space
-
-                source.create_value_fenics(
-                    mesh=self.mesh.mesh,
-                    temperature=self.temperature_fenics,
-                    function_space=function_space_value,
-                    t=self.t,
-                )
-
     def create_formulation(self):
         """Creates the formulation of the model"""
+        if len(self.sources) > 1:
+            raise NotImplementedError("Sources not implemented yet")
 
         self.formulation = 0
 
-        # add diffusion and time derivative for each species
         for spe in self.species:
             u = spe.solution
             u_n = spe.prev_solution
@@ -548,20 +523,18 @@ class HydrogenTransportProblem:
 
                 self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
-        # add sources
-        for source in self.sources:
-            self.formulation -= (
-                source.value_fenics
-                * source.species.test_function
-                * self.dx(source.volume.id)
-            )
-
-            # add fluxes
-            # TODO implement this
-            # for bc in self.boundary_conditions:
-            #     pass
-            #     if bc.species == spe and bc.type != "dirichlet":
-            #         formulation += bc * v * self.ds
+                # add sources
+                # TODO implement this
+                # for source in self.sources:
+                #     # f = Constant(my_mesh.mesh, (PETSc.ScalarType(0)))
+                #     if source.species == spe:
+                #         formulation += source * v * self.dx
+                # add fluxes
+                # TODO implement this
+                # for bc in self.boundary_conditions:
+                #     pass
+                #     if bc.species == spe and bc.type != "dirichlet":
+                #         formulation += bc * v * self.ds
 
         for reaction in self.reactions:
             # reactant 1
@@ -598,7 +571,14 @@ class HydrogenTransportProblem:
         self.solver.max_it = self.settings.max_iterations
 
     def run(self):
-        """Runs the model"""
+        """Runs the model
+
+        Returns:
+            list of float: the times of the simulation
+            list of float: the fluxes of the simulation
+        """
+        self.times, self.flux_values = [], []
+        self.flux_values_1, self.flux_values_2 = [], []
 
         self.progress = tqdm.autonotebook.tqdm(
             desc="Solving H transport problem",
@@ -632,16 +612,7 @@ class HydrogenTransportProblem:
             elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
         for bc in self.boundary_conditions:
-            if bc.time_dependent:
-                bc.update(t=t)
-            elif self.temperature_time_dependent and bc.temperature_dependent:
-                bc.update(t=t)
-
-        for source in self.sources:
-            if source.time_dependent:
-                source.update(t=t)
-            elif self.temperature_time_dependent and source.temperature_dependent:
-                source.update(t=t)
+            bc.update(t=t)
 
     def post_processing(self):
         """Post processes the model"""
