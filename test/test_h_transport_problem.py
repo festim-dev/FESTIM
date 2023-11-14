@@ -610,3 +610,18 @@ def test_create_source_values_fenics_multispecies():
     # TEST
     assert np.isclose(my_model.sources[0].value_fenics.value, 5)
     assert np.isclose(my_model.sources[1].value_fenics.value, 11)
+
+    
+def test_all_species_correct_type():
+    """Test that the D_global object is updated at each time
+    step when temperture is time dependent"""
+
+    my_model = F.HydrogenTransportProblem()
+    C = 1
+    my_species = [F.Species("A"), F.Species("B"), C]
+
+    with pytest.raises(
+        TypeError,
+        match="elements of species must be of type festim.Species not <class 'int'>",
+    ):
+        my_model.species = my_species
