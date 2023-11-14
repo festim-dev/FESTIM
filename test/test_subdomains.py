@@ -109,8 +109,8 @@ def test_find_volume_from_int(input):
     assert F.find_volume_from_id(input, volumes) == volumes[input - 1]
 
 
-def test_ValueError_raised_when_id_not_found_in_volumes():
-    """test that a ValueError is raised when the id is not found in the list of volumes"""
+def test_ValueError_raised_when_id_not_found_in_volumes_subdomains():
+    """test that a ValueError is raised when an id is not found in the list of volume subdomains"""
 
     volumes = [F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)]
 
@@ -135,3 +135,12 @@ def test_ValueError_rasied_when_volume_ids_are_not_unique():
 
     with pytest.raises(ValueError, match="Volume ids are not unique"):
         my_test_model.define_markers_and_measures()
+
+
+def test_ValueError_raised_when_id_not_found_in_surface_subdomains():
+    """test that a ValueError is raised when an id is not found in the list of surface subdomains"""
+
+    surfaces = [F.SurfaceSubdomain(id=1)]
+
+    with pytest.raises(ValueError, match="id 3 not found in list of surfaces"):
+        F.find_surface_from_id(3, surfaces)
