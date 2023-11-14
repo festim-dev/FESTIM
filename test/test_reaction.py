@@ -5,6 +5,8 @@ from dolfinx.mesh import create_unit_cube
 from mpi4py import MPI
 from ufl import exp
 
+my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
+
 
 def test_reaction_init():
     """Test that the Reaction class initialises correctly"""
@@ -17,13 +19,7 @@ def test_reaction_init():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1,
-        species2,
-        product,
-        k_0=1.0,
-        E_k=0.2,
-        p_0=0.1,
-        E_p=0.3,
+        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # check that the attributes are set correctly
@@ -48,13 +44,7 @@ def test_reaction_repr():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1,
-        species2,
-        product,
-        k_0=1.0,
-        E_k=0.2,
-        p_0=0.1,
-        E_p=0.3,
+        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # check that the __repr__ method returns the expected string
@@ -74,7 +64,7 @@ def test_reaction_str():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3
+        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # check that the __str__ method returns the expected string
@@ -101,7 +91,7 @@ def test_reaction_reaction_term(temperature):
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3
+        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # test the reaction term at a given temperature
@@ -132,6 +122,7 @@ def test_reactant1_setter_raises_error_with_wrong_type():
             E_k=0.1,
             p_0=2,
             E_p=0.2,
+            volume=my_vol,
         )
 
 
@@ -149,4 +140,5 @@ def test_reactant2_setter_raises_error_with_wrong_type():
             E_k=0.1,
             p_0=2,
             E_p=0.2,
+            volume=my_vol,
         )
