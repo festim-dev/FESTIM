@@ -43,3 +43,24 @@ class VolumeSubdomain1D:
             lambda x: np.logical_and(x[0] >= self.borders[0], x[0] <= self.borders[1]),
         )
         return entities
+
+
+def find_volume_from_id(id: int, volumes: list):
+    """Returns the correct volume subdomain object from a list of volume ids
+    based on an int
+
+    Args:
+        id (int): the id of the volume subdomain
+        volumes (list): the list of volumes
+
+    Returns:
+        volume (festim.VolumeSubdomain1D): the volume subdomain object with the correct id
+
+    Raises:
+        ValueError: if the volume name is not found in the list of volumes
+
+    """
+    for vol in volumes:
+        if vol.id == id:
+            return vol
+    raise ValueError(f"id {id} not found in list of volumes")
