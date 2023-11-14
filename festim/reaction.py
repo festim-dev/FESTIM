@@ -62,6 +62,30 @@ class Reaction:
         self.p_0 = p_0
         self.E_p = E_p
 
+    @property
+    def reactant1(self):
+        return self._reactant1
+
+    @reactant1.setter
+    def reactant1(self, value):
+        if not isinstance(value, (F.Species, F.ImplicitSpecies)):
+            raise TypeError(
+                f"reactant1 must be an F.Species or F.ImplicitSpecies, not {type(value)}"
+            )
+        self._reactant1 = value
+
+    @property
+    def reactant2(self):
+        return self._reactant2
+
+    @reactant2.setter
+    def reactant2(self, value):
+        if not isinstance(value, (F.Species, F.ImplicitSpecies)):
+            raise TypeError(
+                f"reactant2 must be an F.Species or F.ImplicitSpecies, not {type(value)}"
+            )
+        self._reactant2 = value
+
     def __repr__(self) -> str:
         return f"Reaction({self.reactant1} + {self.reactant2} <--> {self.product}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
 
