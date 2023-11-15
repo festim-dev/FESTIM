@@ -632,3 +632,16 @@ def test_run_in_steady_state():
 
     # TEST
     assert my_model.t.value == 0.0
+
+
+def test_species_setter():
+    """Test that a TypeError is rasied when a species of type other than F.Species is
+    given"""
+
+    my_model = F.HydrogenTransportProblem()
+
+    with pytest.raises(
+        TypeError,
+        match="elements of species must be of type festim.Species not <class 'int'>",
+    ):
+        my_model.species = [1, 2, 3]
