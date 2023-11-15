@@ -175,6 +175,7 @@ class HydrogenTransportProblem:
     def surface_subdomains(self):
         return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
 
+    @property
     def species(self):
         return self._species
 
