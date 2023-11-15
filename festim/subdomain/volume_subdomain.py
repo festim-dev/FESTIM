@@ -6,8 +6,9 @@ class VolumeSubdomain:
         id (int): the id of the volume subdomain
     """
 
-    def __init__(self, id):
+    def __init__(self, id, material):
         self.id = id
+        self.material = material
 
 
 def find_volume_from_id(id: int, volumes: list):

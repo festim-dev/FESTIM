@@ -23,9 +23,8 @@ class VolumeSubdomain1D(F.VolumeSubdomain):
     """
 
     def __init__(self, id, borders, material) -> None:
-        super().__init__(id)
+        super().__init__(id, material)
         self.borders = borders
-        self.material = material
 
     def locate_subdomain_entities(self, mesh, vdim):
         """Locates all cells in subdomain borders within domain
