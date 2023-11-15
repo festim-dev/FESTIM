@@ -10,14 +10,19 @@ class MeshFromXDMF(F.Mesh):
     Args:
         volume_file (str): path to the volume file
         facet_file (str): path to the facet file
-        mesh_name (str, optional): name of the mesh in the XDMF file. Defaults to "Grid".
-        meshtags_name (str, optional): name of the meshtags in the XDMF file. Defaults to "Grid".
+        mesh_name (str, optional): name of the mesh in the volume XDMF file.
+            Defaults to "Grid".
+        surface_meshtags_name (str, optional): name of the surface meshtags in the
+            facet XDMF file. Defaults to "Grid".
+        volume_meshtags_name (str, optional): name of the volume meshtags in the
+            volume XDMF file. Defaults to "Grid".
 
     Attributes:
         volume_file (str): path to the volume file
         facet_file (str): path to the facet file
-        mesh_name (str): name of the mesh in the XDMF file. Defaults to "Grid".
-        meshtags_name (str): name of the meshtags in the XDMF file. Defaults to "Grid".
+        mesh_name (str): name of the mesh in the volume XDMF file.
+        surface_meshtags_name (str): name of the surface meshtags in the facet XDMF file.
+        volume_meshtags_name (str): name of the volume meshtags in the volume XDMF file
         mesh (fenics.mesh.Mesh): the fenics mesh
     """
 
