@@ -52,22 +52,21 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     facet_indices = []
     for i in range(vdim):
         # add the boundary entities at 0 and 1 in each dimension
-        facet_indices.append(
-            fenics_mesh.locate_entities_boundary(
-                mesh, fdim, lambda x: np.isclose(x[i], 0)
-            )
+        facets_zero = fenics_mesh.locate_entities_boundary(
+            mesh, fdim, lambda x: np.isclose(x[i], 0)
         )
-        facet_indices.append(
-            fenics_mesh.locate_entities_boundary(
-                mesh, fdim, lambda x: np.isclose(x[i], 1)
-            )
+        facets_one = fenics_mesh.locate_entities_boundary(
+            mesh, fdim, lambda x: np.isclose(x[i], 1)
         )
-    facet_tags = []
-    for i in range(len(facet_indices)):
-        # add tags for each boundary
-        facet_tags.append(np.full(len(facet_indices[0]), i + 1, dtype=np.int32))
 
-    print(facet_tags)
+        facet_indices += [facets_zero, facets_one]
+
+    facet_tags = []
+
+    for idx, _ in enumerate(facet_indices):
+        # add tags for each boundary
+        facet_tag = np.full(len(facet_indices[i]), idx + 1, dtype=np.int32)
+        facet_tags.append(facet_tag)
 
     facet_meshtags = fenics_mesh.meshtags(mesh, fdim, facet_indices, facet_tags)
 
@@ -94,23 +93,21 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     volume_meshtags = fenics_mesh.meshtags(mesh, vdim, mesh_cell_indices, tags_volumes)
 
     # write files
-    surface_file = XDMFFile(
-        MPI.COMM_WORLD, os.path.join(tmp_path, "facets_file.xdmf"), "w"
-    )
+    surface_file_path = os.path.join(tmp_path, "facets_file.xdmf")
+    surface_file = XDMFFile(MPI.COMM_WORLD, surface_file_path, "w")
     surface_file.write_mesh(mesh)
     surface_file.write_meshtags(facet_meshtags, mesh.geometry)
 
-    volume_file = XDMFFile(
-        MPI.COMM_WORLD, os.path.join(tmp_path, "volumes_file.xdmf"), "w"
-    )
+    volume_file_path = os.path.join(tmp_path, "volumes_file.xdmf")
+    volume_file = XDMFFile(MPI.COMM_WORLD, volume_file_path, "w")
     volume_file.write_mesh(mesh)
     volume_file.write_meshtags(volume_meshtags, mesh.geometry)
 
     # read files
     my_model = F.HydrogenTransportProblem(
         mesh=F.MeshFromXDMF(
-            volume_file=os.path.join(tmp_path, "volumes_file.xdmf"),
-            facet_file=os.path.join(tmp_path, "facets_file.xdmf"),
+            volume_file=volume_file_path,
+            facet_file=surface_file_path,
             mesh_name="mesh",
             surface_meshtags_name="mesh_tags",
             volume_meshtags_name="mesh_tags",
