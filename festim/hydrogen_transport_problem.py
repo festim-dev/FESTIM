@@ -430,11 +430,6 @@ class HydrogenTransportProblem:
             if isinstance(self.mesh, F.Mesh1D):
                 self.mesh.check_borders(self.volume_subdomains)
 
-            # check volume ids are unique
-            vol_ids = [vol.id for vol in self.volume_subdomains]
-            if len(vol_ids) != len(np.unique(vol_ids)):
-                raise ValueError("Volume ids are not unique")
-
             # dofs and tags need to be in np.in32 format for meshtags
             facet_indices = np.array(facet_indices, dtype=np.int32)
             tags_facets = np.array(tags_facets, dtype=np.int32)
@@ -446,6 +441,11 @@ class HydrogenTransportProblem:
             self.volume_meshtags = meshtags(
                 self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
             )
+
+        # check volume ids are unique
+        vol_ids = [vol.id for vol in self.volume_subdomains]
+        if len(vol_ids) != len(np.unique(vol_ids)):
+            raise ValueError("Volume ids are not unique")
 
         # define measures
         self.ds = ufl.Measure(
