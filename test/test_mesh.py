@@ -51,6 +51,7 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     # create facet meshtags
     facet_indices = []
     for i in range(vdim):
+        # add the boundary entities at 0 and 1 in each dimension
         facet_indices.append(
             fenics_mesh.locate_entities_boundary(
                 mesh, fdim, lambda x: np.isclose(x[i], 0)
@@ -63,14 +64,19 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
         )
     facet_tags = []
     for i in range(len(facet_indices)):
+        # add tags for each boundary
         facet_tags.append(np.full(len(facet_indices[0]), i + 1, dtype=np.int32))
+
+    print(facet_tags)
 
     facet_meshtags = fenics_mesh.meshtags(mesh, fdim, facet_indices, facet_tags)
 
     # create volume meshtags
     num_cells = mesh.topology.index_map(vdim).size_local
     mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+    # tag all volumes with 0
     tags_volumes = np.full(num_cells, 0, dtype=np.int32)
+    # create 2 volumes for x<0.5 and x>0.5
     volume_indices_left = fenics_mesh.locate_entities(
         mesh,
         vdim,
@@ -82,7 +88,6 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
         vdim,
         lambda x: x[0] >= 0.5,
     )
-
     tags_volumes[volume_indices_left] = 2
     tags_volumes[volume_indices_right] = 3
 
