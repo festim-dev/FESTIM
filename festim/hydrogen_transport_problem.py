@@ -18,6 +18,7 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
+        reactions (list of festim.Reaction): the reactions of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
@@ -30,6 +31,7 @@ class HydrogenTransportProblem:
         mesh (festim.Mesh): the mesh of the model
         subdomains (list of festim.Subdomain): the subdomains of the model
         species (list of festim.Species): the species of the model
+        reactions (list of festim.Reaction): the reactions of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
         boundary_conditions (list of festim.BoundaryCondition): the boundary
@@ -90,6 +92,7 @@ class HydrogenTransportProblem:
         mesh=None,
         subdomains=[],
         species=[],
+        reactions=[],
         temperature=None,
         sources=[],
         boundary_conditions=[],
@@ -99,6 +102,7 @@ class HydrogenTransportProblem:
         self.mesh = mesh
         self.subdomains = subdomains
         self.species = species
+        self.reactions = reactions
         self.temperature = temperature
         self.sources = sources
         self.boundary_conditions = boundary_conditions
@@ -140,7 +144,10 @@ class HydrogenTransportProblem:
         if value is None:
             self._temperature_fenics = value
             return
-        elif not isinstance(value, (fem.Constant, fem.Function)):
+        elif not isinstance(
+            value,
+            (fem.Constant, fem.Function),
+        ):
             raise TypeError(f"Value must be a fem.Constant or fem.Function")
         self._temperature_fenics = value
 
@@ -167,6 +174,19 @@ class HydrogenTransportProblem:
     @property
     def surface_subdomains(self):
         return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
+
+    def species(self):
+        return self._species
+
+    @species.setter
+    def species(self, value):
+        # check that all species are of type festim.Species
+        for spe in value:
+            if not isinstance(spe, F.Species):
+                raise TypeError(
+                    f"elements of species must be of type festim.Species not {type(spe)}"
+                )
+        self._species = value
 
     def initialise(self):
         self.define_function_spaces()
@@ -335,7 +355,6 @@ class HydrogenTransportProblem:
             elements = []
             for spe in self.species:
                 if isinstance(spe, F.Species):
-                    # TODO check if mobile or immobile for traps
                     elements.append(element_CG)
             element = ufl.MixedElement(elements)
 
@@ -537,12 +556,34 @@ class HydrogenTransportProblem:
                 D = vol.material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature_fenics, spe
                 )
+                if spe.mobile:
+                    self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
+                        vol.id
+                    )
 
-                self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
-                    vol.id
-                )
                 self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
+        for reaction in self.reactions:
+            # reactant 1
+            if isinstance(reaction.reactant1, F.Species):
+                self.formulation += (
+                    reaction.reaction_term(self.temperature_fenics)
+                    * reaction.reactant1.test_function
+                    * self.dx(reaction.volume.id)
+                )
+            # reactant 2
+            if isinstance(reaction.reactant2, F.Species):
+                self.formulation += (
+                    reaction.reaction_term(self.temperature_fenics)
+                    * reaction.reactant2.test_function
+                    * self.dx(reaction.volume.id)
+                )
+            # product
+            self.formulation += (
+                -reaction.reaction_term(self.temperature_fenics)
+                * reaction.product.test_function
+                * self.dx(reaction.volume.id)
+            )
         # add sources
         for source in self.sources:
             self.formulation -= (
@@ -602,9 +643,8 @@ class HydrogenTransportProblem:
         if self.temperature_time_dependent:
             if isinstance(self.temperature_fenics, fem.Constant):
                 self.temperature_fenics.value = self.temperature(t=t)
-            else:
+            elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
-
         for bc in self.boundary_conditions:
             if bc.time_dependent:
                 bc.update(t=t)

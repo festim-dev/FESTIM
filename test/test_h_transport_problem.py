@@ -610,3 +610,16 @@ def test_create_source_values_fenics_multispecies():
     # TEST
     assert np.isclose(my_model.sources[0].value_fenics.value, 5)
     assert np.isclose(my_model.sources[1].value_fenics.value, 11)
+
+
+def test_species_setter():
+    """Test that a TypeError is rasied when a species of type other than F.Species is
+    given"""
+
+    my_model = F.HydrogenTransportProblem()
+
+    with pytest.raises(
+        TypeError,
+        match="elements of species must be of type festim.Species not <class 'int'>",
+    ):
+        my_model.species = [1, 2, 3]
