@@ -109,8 +109,8 @@ class HydrogenTransportProblem:
         self.formulation = None
         self.bc_forms = []
         self.temperature_fenics = None
-        self.surface_subdomains = []
-        self.volume_subdomains = []
+        # self.surface_subdomains = []
+        # self.volume_subdomains = []
 
     @property
     def temperature(self):
@@ -157,6 +157,22 @@ class HydrogenTransportProblem:
     @property
     def multispecies(self):
         return len(self.species) > 1
+
+    @property
+    def volume_subdomains(self):
+        values = []
+        for subdom in self.subdomains:
+            if isinstance(subdom, F.VolumeSubdomain):
+                values.append(subdom)
+        return values
+
+    @property
+    def surface_subdomains(self):
+        values = []
+        for subdom in self.subdomains:
+            if isinstance(subdom, F.SurfaceSubdomain):
+                values.append(subdom)
+        return values
 
     def initialise(self):
         self.define_function_spaces()
@@ -382,11 +398,6 @@ class HydrogenTransportProblem:
             tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
             for sub_dom in self.subdomains:
-                if isinstance(sub_dom, F.SurfaceSubdomain):
-                    self.surface_subdomains.append(sub_dom)
-                if isinstance(sub_dom, F.VolumeSubdomain):
-                    self.volume_subdomains.append(sub_dom)
-
                 if isinstance(sub_dom, F.SurfaceSubdomain1D):
                     facet_index = sub_dom.locate_boundary_facet_indices(
                         self.mesh.mesh, self.mesh.fdim
