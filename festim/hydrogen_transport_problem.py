@@ -41,7 +41,9 @@ class HydrogenTransportProblem:
         function_space (dolfinx.fem.FunctionSpace): the function space of the
             model
         facet_meshtags (dolfinx.mesh.MeshTags): the facet tags of the model
-        volume_meshtags (dolfinx.mesh.MeshTags): the volume tags of the
+        volume_meshtags (dolfinx.mesh.MeshTags): the volume meshtags of the
+            model
+        surface_meshtags (dolfinx.mesh.MeshTags): the surface meshtags of the
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
@@ -166,7 +168,7 @@ class HydrogenTransportProblem:
 
     def initialise(self):
         self.define_function_spaces()
-        self.define_markers_and_measures()
+        self.define_meshtags_and_measures()
         self.assign_functions_to_species()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
@@ -372,12 +374,13 @@ class HydrogenTransportProblem:
             spe.prev_solution = sub_prev_solution[idx]
             spe.test_function = sub_test_functions[idx]
 
-    def define_markers_and_measures(self):
-        """Defines the markers and measures of the model"""
+    def define_meshtags_and_measures(self):
+        """Defines the facet and volume meshtags of the model which are used
+        to define the measures fo the model, dx and ds"""
 
         if isinstance(self.mesh, F.MeshFromXDMF):
-            self.facet_meshtags = self.mesh.define_surface_markers()
-            self.volume_meshtags = self.mesh.define_volume_markers()
+            self.facet_meshtags = self.mesh.define_surface_meshtags()
+            self.volume_meshtags = self.mesh.define_volume_meshtags()
 
         else:
             facet_indices, tags_facets = [], []

@@ -50,7 +50,7 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
 
     # create facet meshtags
     facet_indices = []
-    for i in range(1):
+    for i in range(vdim):
         facet_indices.append(
             fenics_mesh.locate_entities_boundary(
                 mesh, fdim, lambda x: np.isclose(x[i], 0)
@@ -62,7 +62,7 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
             )
         )
     facet_tags = []
-    for i in range(2):
+    for i in range(len(facet_indices)):
         facet_tags.append(np.full(len(facet_indices[0]), i + 1, dtype=np.int32))
 
     facet_meshtags = fenics_mesh.meshtags(mesh, fdim, facet_indices, facet_tags)
@@ -107,12 +107,13 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
             volume_file=os.path.join(tmp_path, "volumes_file.xdmf"),
             facet_file=os.path.join(tmp_path, "facets_file.xdmf"),
             mesh_name="mesh",
-            meshtags_name="mesh_tags",
+            surface_meshtags_name="mesh_tags",
+            volume_meshtags_name="mesh_tags",
         )
     )
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
 
-    # # TEST
+    # TEST
     assert volume_meshtags.dim == my_model.volume_meshtags.dim
     assert volume_meshtags.values.all() == my_model.volume_meshtags.values.all()
     assert facet_meshtags.dim == my_model.facet_meshtags.dim
