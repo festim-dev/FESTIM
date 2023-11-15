@@ -18,7 +18,7 @@ class MeshFromXDMF(F.Mesh):
         facet_file (str): path to the facet file
         mesh_name (str, optional): name of the mesh in the XDMF file. Defaults to "Grid".
         meshtags_name (str, optional): name of the meshtags in the XDMF file. Defaults to "Grid".
-        mesh (fenics.mesh.Mesh): the mesh
+        mesh (fenics.mesh.Mesh): the fenics mesh
     """
 
     def __init__(

@@ -109,8 +109,6 @@ class HydrogenTransportProblem:
         self.formulation = None
         self.bc_forms = []
         self.temperature_fenics = None
-        # self.surface_subdomains = []
-        # self.volume_subdomains = []
 
     @property
     def temperature(self):
@@ -160,19 +158,11 @@ class HydrogenTransportProblem:
 
     @property
     def volume_subdomains(self):
-        values = []
-        for subdom in self.subdomains:
-            if isinstance(subdom, F.VolumeSubdomain):
-                values.append(subdom)
-        return values
+        return [s for s in self.subdomains if isinstance(s, F.VolumeSubdomain)]
 
     @property
     def surface_subdomains(self):
-        values = []
-        for subdom in self.subdomains:
-            if isinstance(subdom, F.SurfaceSubdomain):
-                values.append(subdom)
-        return values
+        return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
 
     def initialise(self):
         self.define_function_spaces()
