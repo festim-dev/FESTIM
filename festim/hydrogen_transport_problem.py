@@ -40,10 +40,8 @@ class HydrogenTransportProblem:
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpace): the function space of the
             model
-        facet_meshtags (dolfinx.mesh.MeshTags): the facet tags of the model
+        facet_meshtags (dolfinx.mesh.MeshTags): the facet meshtags of the model
         volume_meshtags (dolfinx.mesh.MeshTags): the volume meshtags of the
-            model
-        surface_meshtags (dolfinx.mesh.MeshTags): the surface meshtags of the
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
@@ -59,6 +57,10 @@ class HydrogenTransportProblem:
             over domain
         V_DG_1 (dolfinx.fem.FunctionSpace): A DG function space of degree 1
             over domain
+        volume_subdomains (list of festim.VolumeSubdomain): the volume subdomains
+            of the model
+        surface_subdomains (list of festim.SurfaceSubdomain): the surface subdomains
+            of the model
 
 
     Usage:
