@@ -9,6 +9,7 @@ class Settings:
         rtol (float): Relative tolerance for the solver.
         max_iterations (int, optional): Maximum number of iterations for the
             solver. Defaults to 30.
+        transient (bool, optional): Whether the simulation is transient or not.
         final_time (float, optional): Final time for a transient simulation.
             Defaults to None
         stepsize (festim.Stepsize, optional): stepsize for a transient
@@ -18,6 +19,7 @@ class Settings:
         atol (float): Absolute tolerance for the solver.
         rtol (float): Relative tolerance for the solver.
         max_iterations (int): Maximum number of iterations for the solver.
+        transient (bool): Whether the simulation is transient or not.
         final_time (float): Final time for a transient simulation.
         stepsize (festim.Stepsize): stepsize for a transient
             simulation.
@@ -28,12 +30,14 @@ class Settings:
         atol,
         rtol,
         max_iterations=30,
+        transient=True,
         final_time=None,
         stepsize=None,
     ) -> None:
         self.atol = atol
         self.rtol = rtol
         self.max_iterations = max_iterations
+        self.transient = transient
         self.final_time = final_time
         self.stepsize = stepsize
 

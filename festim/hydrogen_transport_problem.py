@@ -163,7 +163,8 @@ class HydrogenTransportProblem:
         self.assign_functions_to_species()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
-        self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
+        if self.settings.transient:
+            self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
 
         self.define_temperature()
         self.define_boundary_conditions()
@@ -525,7 +526,8 @@ class HydrogenTransportProblem:
                 self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
                     vol.id
                 )
-                self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
+                if self.settings.transient:
+                    self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
         # add sources
         for source in self.sources:
@@ -557,13 +559,19 @@ class HydrogenTransportProblem:
     def run(self):
         """Runs the model"""
 
-        self.progress = tqdm.autonotebook.tqdm(
-            desc="Solving H transport problem",
-            total=self.settings.final_time,
-            unit_scale=True,
-        )
-        while self.t.value < self.settings.final_time:
-            self.iterate()
+        if self.settings.transient:
+            # Solve transient
+            self.progress = tqdm.autonotebook.tqdm(
+                desc="Solving H transport problem",
+                total=self.settings.final_time,
+                unit_scale=True,
+            )
+            while self.t.value < self.settings.final_time:
+                self.iterate()
+        else:
+            # Solve steady-state
+            self.solver.solve(self.u)
+            self.post_processing()
 
     def iterate(self):
         """Iterates the model for a given time step"""

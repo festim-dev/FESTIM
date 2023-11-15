@@ -610,3 +610,25 @@ def test_create_source_values_fenics_multispecies():
     # TEST
     assert np.isclose(my_model.sources[0].value_fenics.value, 5)
     assert np.isclose(my_model.sources[1].value_fenics.value, 11)
+
+
+# TODO replace this by a proper MMS test
+def test_run_in_steady_state():
+    """Test that the run method works in steady state"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
+        subdomains=[my_vol],
+        species=[F.Species("H")],
+    )
+
+    my_model.initialise()
+
+    # RUN
+    my_model.run()
+
+    # TEST
+    assert my_model.t.value == 0.0
