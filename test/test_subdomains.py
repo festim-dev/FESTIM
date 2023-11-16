@@ -169,7 +169,7 @@ def test_surface_and_volume_subdomain_properties():
         F.SurfaceSubdomain(id=7),
         F.SurfaceSubdomain1D(id=4, x=0),
         F.SurfaceSubdomain(id=2),
-        F.VolumeSubdomain(id=1),
+        F.VolumeSubdomain(id=1, material=None),
         F.VolumeSubdomain1D(id=9, borders=[0, 1], material=None),
     ]
 
