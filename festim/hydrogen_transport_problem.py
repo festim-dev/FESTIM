@@ -592,15 +592,12 @@ class HydrogenTransportProblem:
                 # if species mobile, already defined in diffusion term
                 if not spe.mobile:
                     not_defined_in_volume = self.volume_subdomains.copy()
-                    for vol in not_defined_in_volume:
+                    for vol in self.volume_subdomains:
                         # check reactions
                         for reaction in self.reactions:
                             if vol == reaction.volume:
                                 not_defined_in_volume.remove(vol)
-                        # check sources
-                        for source in self.sources:
-                            if vol == source.volume:
-                                not_defined_in_volume.remove(vol)
+
                     # if species not defined in all volumes, add to formulation
                     for vol in not_defined_in_volume:
                         self.formulation += (
