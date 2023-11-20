@@ -73,9 +73,7 @@ class InitialCondition:
         x = ufl.SpatialCoordinate(mesh)
 
         if isinstance(self.value, (int, float)):
-            self.species.prev_solution.interpolate(
-                F.as_fenics_constant(mesh=mesh, value=self.value)
-            )
+            self.species.prev_solution.x.array[:] = float(self.value)
 
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
