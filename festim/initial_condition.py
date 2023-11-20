@@ -15,8 +15,6 @@ class InitialCondition:
         volume (festim.VolumeSubdomain1D): the volume subdomains where the condition is applied
         value (float, int, fem.Constant or callable): the value of the initial condition
         species (festim.Species): the species to which the source is applied
-        value_fenics (fem.Function or fem.Constant): the value of the initial condition in
-            fenics format
 
     Usage:
         >>> from festim import InitialCondition
@@ -32,15 +30,12 @@ class InitialCondition:
         self.volume = volume
         self.species = species
 
-        self.value_fenics = None
-
     def create_initial_condition(self, mesh, temperature):
-        """Creates the value of the initial condition as a fenics object and interpolates
-        the value to the solution of the species.
-        If the value is a constant, it is converted to a fenics.Constant.
-        If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a fenics.Function and the
-        expression of the function is interpolated to the solution of the species.
+        """Creates the value of the initial condition.
+        If the value is a float or int, it is interpolated over the prev_solution
+        of the species.
+        Otherwise, it is converted to a fenics.Function and the expression of the
+        function is interpolated to the prev_solution of the species.
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
