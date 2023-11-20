@@ -617,14 +617,12 @@ def test_run_in_steady_state():
     """Test that the run method works in steady state"""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
-    H = F.Species("H")
     my_model = F.HydrogenTransportProblem(
         mesh=test_mesh,
         temperature=500,
-        sources=[F.Source(value=1.0, volume=my_vol, species=H)],
         settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
         subdomains=[my_vol],
-        species=[H],
+        species=[F.Species("H")],
     )
 
     my_model.initialise()
@@ -647,7 +645,3 @@ def test_species_setter():
         match="elements of species must be of type festim.Species not <class 'int'>",
     ):
         my_model.species = [1, 2, 3]
-
-
-if __name__ == "__main__":
-    test_run_in_steady_state()
