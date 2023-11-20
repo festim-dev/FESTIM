@@ -407,6 +407,7 @@ class HydrogenTransportProblem:
             )
         elif isinstance(self.mesh, F.Mesh):
             # FIXME # refer to issue #647
+            # create empty mesh tags for now
             facet_indices = np.array([], dtype=np.int32)
             facet_tags = np.array([], dtype=np.int32)
             self.facet_meshtags = meshtags(
