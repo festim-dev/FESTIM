@@ -11,7 +11,7 @@ test_mesh = F.Mesh1D(np.linspace(0, 1, 100))
 
 def test_init():
     """Test that the attributes are set correctly"""
-    # create a Source object
+    # create an InitialCondition object
     volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
     value = 1.0
     species = F.Species("test")
@@ -24,18 +24,18 @@ def test_init():
 
 
 @pytest.mark.parametrize(
-    "value",
+    "input_value, expected_value",
     [
-        1.0,
-        1,
-        lambda T: 1.0 + T,
-        lambda x: 1.0 + x[0],
-        lambda x, T: 1.0 + x[0] + T,
+        (1.0, 1.0),
+        (1, 1.0),
+        (lambda T: 1.0 + T, 11.0),
+        (lambda x: 1.0 + x[0], 2.0),
+        (lambda x, T: 1.0 + x[0] + T, 12.0),
     ],
 )
-def test_create_initial_condition(value):
-    """Test that the create initial conditions method produces either a fem.Constant or
-    fem.Function depending on the value input"""
+def test_create_initial_condition(input_value, expected_value):
+    """Test that the create initial conditions method produces a fenics function with the
+    correct value at point x=1.0."""
 
     # BUILD
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
@@ -43,13 +43,12 @@ def test_create_initial_condition(value):
     # give function to species
     V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
     c = fem.Function(V)
-    # c.interpolate(lambda x: 2 * x[0] ** 2 + 1)
 
     my_species = F.Species("test")
-    my_species.solution = c
+    my_species.prev_solution = c
 
     init_cond = F.InitialCondition(
-        volume=vol_subdomain, value=value, species=my_species
+        volume=vol_subdomain, value=input_value, species=my_species
     )
 
     T = fem.Constant(test_mesh.mesh, 10.0)
@@ -58,6 +57,4 @@ def test_create_initial_condition(value):
     init_cond.create_initial_condition(test_mesh.mesh, T)
 
     # TEST
-    print(init_cond.species.solution[0])
-    quit()
-    assert isinstance(init_cond.species.solution.all(), value.all())
+    assert np.isclose(init_cond.species.prev_solution.vector.array[-1], expected_value)
