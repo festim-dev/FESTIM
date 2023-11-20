@@ -405,40 +405,22 @@ class HydrogenTransportProblem:
             self.facet_meshtags = self.mesh.define_surface_meshtags()
             self.volume_meshtags = self.mesh.define_volume_meshtags()
 
-        else:
-            facet_indices, tags_facets = [], []
+        elif isinstance(self.mesh, F.Mesh1D):
+            self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
+                subdomains=self.subdomains,
+                volume_subdomains=self.volume_subdomains,
+            )
+        elif isinstance(self.mesh, F.Mesh):
+            # FIXME # refer to issue #647
+            facet_indices = np.array([], dtype=np.int32)
+            facet_tags = np.array([], dtype=np.int32)
+            self.facet_meshtags = meshtags(
+                self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
+            )
 
-            # find all cells in domain and mark them as 0
             num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
             mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-            tags_volumes = np.full(num_cells, 0, dtype=np.int32)
-
-            for sub_dom in self.subdomains:
-                if isinstance(sub_dom, F.SurfaceSubdomain1D):
-                    facet_index = sub_dom.locate_boundary_facet_indices(
-                        self.mesh.mesh, self.mesh.fdim
-                    )
-                    facet_indices.append(facet_index)
-                    tags_facets.append(sub_dom.id)
-                if isinstance(sub_dom, F.VolumeSubdomain1D):
-                    # find all cells in subdomain and mark them as sub_dom.id
-                    entities = sub_dom.locate_subdomain_entities(
-                        self.mesh.mesh, self.mesh.vdim
-                    )
-                    tags_volumes[entities] = sub_dom.id
-
-            # check if all borders are defined
-            if isinstance(self.mesh, F.Mesh1D):
-                self.mesh.check_borders(self.volume_subdomains)
-
-            # dofs and tags need to be in np.in32 format for meshtags
-            facet_indices = np.array(facet_indices, dtype=np.int32)
-            tags_facets = np.array(tags_facets, dtype=np.int32)
-
-            # define mesh tags
-            self.facet_meshtags = meshtags(
-                self.mesh.mesh, self.mesh.fdim, facet_indices, tags_facets
-            )
+            tags_volumes = np.full(num_cells, 1, dtype=np.int32)
             self.volume_meshtags = meshtags(
                 self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
             )

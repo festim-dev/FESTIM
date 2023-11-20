@@ -2,10 +2,11 @@ import dolfinx.mesh
 from mpi4py import MPI
 import ufl
 import numpy as np
-from festim import Mesh
+import festim as F
+from dolfinx.mesh import meshtags
 
 
-class Mesh1D(Mesh):
+class Mesh1D(F.Mesh):
     """
     1D Mesh
 
@@ -19,8 +20,8 @@ class Mesh1D(Mesh):
     def __init__(self, vertices, **kwargs) -> None:
         self.vertices = vertices
 
-        mesh = self.generate_mesh()
-        super().__init__(mesh=mesh, **kwargs)
+        self.mesh = self.generate_mesh()
+        super().__init__(mesh=self.mesh, **kwargs)
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
@@ -61,3 +62,48 @@ class Mesh1D(Mesh):
             or sorted_borders[-1] != self.vertices[-1]
         ):
             raise ValueError("borders dont match domain borders")
+
+    def define_meshtags(self, subdomains, volume_subdomains):
+        """Defines the facet and volume meshtags of the mesh
+
+        Args:
+            subdomains (list of festim.SufaceSubdomains and/or festim.VolumeSubdomains): the subdomains of the model
+            volume_subdomains (list of festim.VolumeSubdomains): the volume subdomains of the model
+
+        Returns:
+            dolfinx.mesh.MeshTags: the facet meshtags
+            dolfinx.mesh.MeshTags: the volume meshtags
+        """
+        facet_indices, tags_facets = [], []
+
+        # find all cells in domain and mark them as 0
+        num_cells = self.mesh.topology.index_map(self.vdim).size_local
+        mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+        tags_volumes = np.full(num_cells, 0, dtype=np.int32)
+
+        for sub_dom in subdomains:
+            if isinstance(sub_dom, F.SurfaceSubdomain1D):
+                facet_index = sub_dom.locate_boundary_facet_indices(
+                    self.mesh, self.fdim
+                )
+                facet_indices.append(facet_index)
+                tags_facets.append(sub_dom.id)
+            if isinstance(sub_dom, F.VolumeSubdomain1D):
+                # find all cells in subdomain and mark them as sub_dom.id
+                entities = sub_dom.locate_subdomain_entities(self.mesh, self.vdim)
+                tags_volumes[entities] = sub_dom.id
+
+        # check if all borders are defined
+        self.check_borders(volume_subdomains)
+
+        # dofs and tags need to be in np.in32 format for meshtags
+        facet_indices = np.array(facet_indices, dtype=np.int32)
+        tags_facets = np.array(tags_facets, dtype=np.int32)
+
+        # define mesh tags
+        facet_meshtags = meshtags(self.mesh, self.fdim, facet_indices, tags_facets)
+        volume_meshtags = meshtags(
+            self.mesh, self.vdim, mesh_cell_indices, tags_volumes
+        )
+
+        return facet_meshtags, volume_meshtags
