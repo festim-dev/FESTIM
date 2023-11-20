@@ -160,8 +160,8 @@ def test_find_surface_from_id(input_id, output_index):
     assert F.find_surface_from_id(input_id, surfaces) == surfaces[output_index]
 
 
-def test_surface_and_volume_subdomain_properties():
-    """Tests that the volume and surface subdomain properies obtain the correct
+def test_volume_subdomain_properties():
+    """Tests that the volume subdomain property obtains the correct
     subdomains from the the model subdomains list"""
 
     my_model = F.HydrogenTransportProblem()
@@ -176,7 +176,3 @@ def test_surface_and_volume_subdomain_properties():
     assert len(my_model.volume_subdomains) == 2
     for subdomain in my_model.volume_subdomains:
         assert isinstance(subdomain, F.VolumeSubdomain)
-
-    assert len(my_model.surface_subdomains) == 3
-    for subdomain in my_model.surface_subdomains:
-        assert isinstance(subdomain, F.SurfaceSubdomain)

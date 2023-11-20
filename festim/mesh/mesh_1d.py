@@ -20,8 +20,8 @@ class Mesh1D(F.Mesh):
     def __init__(self, vertices, **kwargs) -> None:
         self.vertices = vertices
 
-        self.mesh = self.generate_mesh()
-        super().__init__(mesh=self.mesh, **kwargs)
+        mesh = self.generate_mesh()
+        super().__init__(mesh=mesh, **kwargs)
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
@@ -63,18 +63,18 @@ class Mesh1D(F.Mesh):
         ):
             raise ValueError("borders dont match domain borders")
 
-    def define_meshtags(self, subdomains, volume_subdomains):
+    def define_meshtags(self, subdomains):
         """Defines the facet and volume meshtags of the mesh
 
         Args:
             subdomains (list of festim.SufaceSubdomains and/or festim.VolumeSubdomains): the subdomains of the model
-            volume_subdomains (list of festim.VolumeSubdomains): the volume subdomains of the model
 
         Returns:
             dolfinx.mesh.MeshTags: the facet meshtags
             dolfinx.mesh.MeshTags: the volume meshtags
         """
         facet_indices, tags_facets = [], []
+        volume_subdomains = []
 
         # find all cells in domain and mark them as 0
         num_cells = self.mesh.topology.index_map(self.vdim).size_local
@@ -90,6 +90,7 @@ class Mesh1D(F.Mesh):
                 tags_facets.append(sub_dom.id)
             if isinstance(sub_dom, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
+                volume_subdomains.append(sub_dom)
                 entities = sub_dom.locate_subdomain_entities(self.mesh, self.vdim)
                 tags_volumes[entities] = sub_dom.id
 
