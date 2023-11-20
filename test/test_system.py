@@ -30,10 +30,6 @@ def test_sim_reaction_not_in_every_volume():
         ),
     ]
 
-    my_model.boundary_conditions = [
-        F.DirichletBC(value=1e18, subdomain=left, species=cm)
-    ]
-
     my_model.temperature = 600
 
     my_model.settings = F.Settings(atol=1e10, rtol=1e-10, transient=False)
