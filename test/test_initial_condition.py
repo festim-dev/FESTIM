@@ -58,3 +58,27 @@ def test_create_initial_condition(input_value, expected_value):
 
     # TEST
     assert np.isclose(init_cond.species.prev_solution.vector.array[-1], expected_value)
+
+
+def test_ValueError_raised_when_giving_time_as_arg():
+    """Test that ValueError is raised if the value is given with t in its arguments"""
+
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+
+    # give function to species
+    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    my_species = F.Species("test")
+    my_species.prev_solution = fem.Function(V)
+
+    my_value = lambda t: 1.0 + t
+
+    init_cond = F.InitialCondition(
+        volume=vol_subdomain, value=my_value, species=my_species
+    )
+
+    T = fem.Constant(test_mesh.mesh, 10.0)
+
+    with pytest.raises(
+        ValueError, match="Initial condition cannot be a function of time."
+    ):
+        init_cond.create_initial_condition(test_mesh.mesh, T)

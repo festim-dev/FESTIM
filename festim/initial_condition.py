@@ -35,29 +35,6 @@ class InitialCondition:
 
         self.value_fenics = None
 
-    @property
-    def volume(self):
-        return self._volume
-
-    @volume.setter
-    def volume(self, value):
-        # check that volume is festim.VolumeSubdomain1D
-        if not isinstance(value, F.VolumeSubdomain1D):
-            raise TypeError("volume must be of type festim.VolumeSubdomain1D")
-        self._volume = value
-
-    @property
-    def species(self):
-        return self._species
-
-    @species.setter
-    def species(self, value):
-        # check that species is festim.Species or list of festim.Species
-        if not isinstance(value, F.Species):
-            raise TypeError("species must be of type festim.Species")
-
-        self._species = value
-
     def create_initial_condition(self, mesh, temperature):
         """Creates the value of the initial condition as a fenics object and interpolates
         the value to the solution of the species.
