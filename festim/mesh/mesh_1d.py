@@ -82,16 +82,14 @@ class Mesh1D(F.Mesh):
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
         for surf in surface_subdomains:
-            if isinstance(surf, F.SurfaceSubdomain1D):
-                facet_index = surf.locate_boundary_facet_indices(self.mesh, self.fdim)
-                facet_indices.append(facet_index)
-                tags_facets.append(surf.id)
+            facet_index = surf.locate_boundary_facet_indices(self.mesh, self.fdim)
+            facet_indices.append(facet_index)
+            tags_facets.append(surf.id)
 
         for vol in volume_subdomains:
-            if isinstance(vol, F.VolumeSubdomain1D):
-                # find all cells in subdomain and mark them as sub_dom.id
-                entities = vol.locate_subdomain_entities(self.mesh, self.vdim)
-                tags_volumes[entities] = vol.id
+            # find all cells in subdomain and mark them as sub_dom.id
+            entities = vol.locate_subdomain_entities(self.mesh, self.vdim)
+            tags_volumes[entities] = vol.id
 
         # check if all borders are defined
         self.check_borders(volume_subdomains)
