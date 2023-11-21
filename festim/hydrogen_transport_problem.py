@@ -21,6 +21,8 @@ class HydrogenTransportProblem:
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
+        initial_conditions (list of festim.InitialCondition): the initial conditions
+            of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
@@ -32,6 +34,9 @@ class HydrogenTransportProblem:
         species (list of festim.Species): the species of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
+        sources (list of festim.Source): the hydrogen sources of the model
+        initial_conditions (list of festim.InitialCondition): the initial conditions
+            of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
