@@ -40,8 +40,6 @@ class Source:
         self.species = species
 
         self.value_fenics = None
-        self.species_festim = None
-        self.volume_festim = None
         self.source_expr = None
 
     @property
