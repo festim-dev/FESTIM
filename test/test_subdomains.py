@@ -176,3 +176,7 @@ def test_volume_subdomain_properties():
     assert len(my_model.volume_subdomains) == 2
     for subdomain in my_model.volume_subdomains:
         assert isinstance(subdomain, F.VolumeSubdomain)
+
+    assert len(my_model.surface_subdomains) == 3
+    for subdomain in my_model.surface_subdomains:
+        assert isinstance(subdomain, F.SurfaceSubdomain)
