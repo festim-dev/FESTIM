@@ -172,6 +172,10 @@ class HydrogenTransportProblem:
         return [s for s in self.subdomains if isinstance(s, F.VolumeSubdomain)]
 
     @property
+    def surface_subdomains(self):
+        return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
+
+    @property
     def species(self):
         return self._species
 
@@ -403,7 +407,8 @@ class HydrogenTransportProblem:
 
         elif isinstance(self.mesh, F.Mesh1D):
             self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
-                subdomains=self.subdomains,
+                surface_subdomains=self.surface_subdomains,
+                volume_subdomains=self.volume_subdomains,
             )
         elif isinstance(self.mesh, F.Mesh):
             # FIXME # refer to issue #647

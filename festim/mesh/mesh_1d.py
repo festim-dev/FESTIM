@@ -63,36 +63,35 @@ class Mesh1D(F.Mesh):
         ):
             raise ValueError("borders dont match domain borders")
 
-    def define_meshtags(self, subdomains):
+    def define_meshtags(self, surface_subdomains, volume_subdomains):
         """Defines the facet and volume meshtags of the mesh
 
         Args:
-            subdomains (list of festim.SufaceSubdomains and/or festim.VolumeSubdomains): the subdomains of the model
+            surface_subdomains (list of festim.SufaceSubdomains): the surface subdomains of the model
+            volume_subdomains (list of festim.VolumeSubdomains): the volume subdomains of the model
 
         Returns:
             dolfinx.mesh.MeshTags: the facet meshtags
             dolfinx.mesh.MeshTags: the volume meshtags
         """
         facet_indices, tags_facets = [], []
-        volume_subdomains = []
 
         # find all cells in domain and mark them as 0
         num_cells = self.mesh.topology.index_map(self.vdim).size_local
         mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
-        for sub_dom in subdomains:
-            if isinstance(sub_dom, F.SurfaceSubdomain1D):
-                facet_index = sub_dom.locate_boundary_facet_indices(
-                    self.mesh, self.fdim
-                )
+        for surf in surface_subdomains:
+            if isinstance(surf, F.SurfaceSubdomain1D):
+                facet_index = surf.locate_boundary_facet_indices(self.mesh, self.fdim)
                 facet_indices.append(facet_index)
-                tags_facets.append(sub_dom.id)
-            if isinstance(sub_dom, F.VolumeSubdomain1D):
+                tags_facets.append(surf.id)
+
+        for vol in volume_subdomains:
+            if isinstance(vol, F.VolumeSubdomain1D):
                 # find all cells in subdomain and mark them as sub_dom.id
-                volume_subdomains.append(sub_dom)
-                entities = sub_dom.locate_subdomain_entities(self.mesh, self.vdim)
-                tags_volumes[entities] = sub_dom.id
+                entities = vol.locate_subdomain_entities(self.mesh, self.vdim)
+                tags_volumes[entities] = vol.id
 
         # check if all borders are defined
         self.check_borders(volume_subdomains)
