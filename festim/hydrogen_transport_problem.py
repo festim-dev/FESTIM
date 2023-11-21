@@ -598,7 +598,7 @@ class HydrogenTransportProblem:
                             if vol == reaction.volume:
                                 not_defined_in_volume.remove(vol)
 
-                    # if species not defined in all volumes, add to formulation
+                    # add c = 0 to formulation where needed
                     for vol in not_defined_in_volume:
                         self.formulation += (
                             spe.solution * spe.test_function * self.dx(vol.id)
