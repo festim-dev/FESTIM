@@ -7,8 +7,7 @@ import ufl
 import numpy as np
 import pytest
 
-# test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
-test_mesh = F.Mesh1D(vertices=np.linspace(0, 4, num=11))
+test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 
