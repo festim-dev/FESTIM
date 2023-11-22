@@ -1,8 +1,7 @@
 import numpy as np
 import festim as F
-import ufl
 import pytest
-import ufl
+from types import LambdaType
 from dolfinx import fem
 
 dummy_mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
@@ -12,33 +11,30 @@ test_mesh = F.Mesh1D(np.linspace(0, 1, 100))
 def test_init():
     """Test that the attributes are set correctly"""
     # create an InitialCondition object
-    volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
     value = 1.0
     species = F.Species("test")
-    init_cond = F.InitialCondition(volume=volume, value=value, species=species)
+    init_cond = F.InitialCondition(value=value, species=species)
 
     # check that the attributes are set correctly
-    assert init_cond.volume == volume
     assert init_cond.value == value
     assert init_cond.species == species
 
 
 @pytest.mark.parametrize(
-    "input_value, expected_value",
+    "input_value, expected_type",
     [
-        (1.0, 1.0),
-        (1, 1.0),
-        (lambda T: 1.0 + T, 11.0),
-        (lambda x: 1.0 + x[0], 2.0),
-        (lambda x, T: 1.0 + x[0] + T, 12.0),
+        (1.0, LambdaType),
+        (1, LambdaType),
+        (lambda T: 1.0 + T, fem.Expression),
+        (lambda x: 1.0 + x[0], fem.Expression),
+        (lambda x, T: 1.0 + x[0] + T, fem.Expression),
     ],
 )
-def test_create_initial_condition(input_value, expected_value):
-    """Test that the create initial conditions method produces a fenics function with the
-    correct value at point x=1.0."""
+def test_create_value_fenics(input_value, expected_type):
+    """Test that after calling .assign_value_to_species, the prev_solution
+    attribute of the species has the correct value at x=1.0."""
 
     # BUILD
-    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
 
     # give function to species
     V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
@@ -47,23 +43,19 @@ def test_create_initial_condition(input_value, expected_value):
     my_species = F.Species("test")
     my_species.prev_solution = c
 
-    init_cond = F.InitialCondition(
-        volume=vol_subdomain, value=input_value, species=my_species
-    )
+    init_cond = F.InitialCondition(value=input_value, species=my_species)
 
     T = fem.Constant(test_mesh.mesh, 10.0)
 
     # RUN
-    init_cond.create_initial_condition(test_mesh.mesh, T)
+    init_cond.create_expr_fenics(test_mesh.mesh, T, V)
 
     # TEST
-    assert np.isclose(init_cond.species.prev_solution.vector.array[-1], expected_value)
+    assert isinstance(init_cond.expr_fenics, expected_type)
 
 
-def test_ValueError_raised_when_giving_time_as_arg():
-    """Test that ValueError is raised if the value is given with t in its arguments"""
-
-    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+def test_warning_raised_when_giving_time_as_arg():
+    """Test that a warning is raised if the value is given with t in its arguments"""
 
     # give function to species
     V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
@@ -72,13 +64,9 @@ def test_ValueError_raised_when_giving_time_as_arg():
 
     my_value = lambda t: 1.0 + t
 
-    init_cond = F.InitialCondition(
-        volume=vol_subdomain, value=my_value, species=my_species
-    )
+    init_cond = F.InitialCondition(value=my_value, species=my_species)
 
     T = fem.Constant(test_mesh.mesh, 10.0)
 
-    with pytest.raises(
-        ValueError, match="Initial condition cannot be a function of time."
-    ):
-        init_cond.create_initial_condition(test_mesh.mesh, T)
+    with pytest.warns(match="Initial condition cannot be a function of time."):
+        init_cond.create_expr_fenics(test_mesh.mesh, T, V)

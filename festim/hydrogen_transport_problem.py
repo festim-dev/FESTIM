@@ -417,6 +417,7 @@ class HydrogenTransportProblem:
                 entities = sub_dom.locate_subdomain_entities(
                     self.mesh.mesh, self.mesh.vdim
                 )
+                sub_dom.entities = entities
                 tags_volumes[entities] = sub_dom.id
 
         # check if all borders are defined
@@ -536,12 +537,40 @@ class HydrogenTransportProblem:
                 )
 
     def create_initial_conditions(self):
-        """For each initial condition create the value_fenics"""
+        """For each initial condition, create the value_fenics and assign it to
+        the previous solution of the condition's species"""
+
+        if len(self.initial_conditions) >= 1 and not self.settings.transient:
+            raise ValueError(
+                "Initial conditions can only be defined for transient simulations"
+            )
+
+        function_space_value = None
+
         for condition in self.initial_conditions:
-            condition.create_initial_condition(
+            # create value_fenics for condition
+            function_space_value = None
+            if callable(condition.value):
+                # if bc.value is a callable then need to provide a functionspace
+                if not self.multispecies:
+                    function_space_value = condition.species.sub_function_space
+                else:
+                    function_space_value = condition.species.collapsed_function_space
+
+            condition.create_expr_fenics(
                 mesh=self.mesh.mesh,
                 temperature=self.temperature_fenics,
+                function_space=function_space_value,
             )
+
+            # assign to previous solution of species
+            if not self.multispecies:
+                condition.species.prev_solution.interpolate(condition.expr_fenics)
+            else:
+                for idx, spe in enumerate(self.species):
+                    if spe == condition.species:
+                        self.u_n.sub(idx).interpolate(condition.expr_fenics)
+                        break
 
     def create_formulation(self):
         """Creates the formulation of the model"""
