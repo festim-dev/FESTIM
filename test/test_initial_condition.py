@@ -31,7 +31,7 @@ def test_init():
     ],
 )
 def test_create_value_fenics(input_value, expected_type):
-    """Test that after calling .assign_value_to_species, the prev_solution
+    """Test that after calling .create_expr_fenics, the prev_solution
     attribute of the species has the correct value at x=1.0."""
 
     # BUILD
