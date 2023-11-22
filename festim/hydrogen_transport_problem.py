@@ -417,7 +417,6 @@ class HydrogenTransportProblem:
                 entities = sub_dom.locate_subdomain_entities(
                     self.mesh.mesh, self.mesh.vdim
                 )
-                sub_dom.entities = entities
                 tags_volumes[entities] = sub_dom.id
 
         # check if all borders are defined
