@@ -1,10 +1,10 @@
 # FESTIM
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/RemDelaporteMathurin/FESTIM/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/RemDelaporteMathurin/FESTIM/tree/main)
-[![codecov](https://codecov.io/gh/RemDelaporteMathurin/FESTIM/branch/master/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/RemDelaporteMathurin/FESTIM)
+[![CI](https://github.com/festim-dev/FESTIM/actions/workflows/ci.yml/badge.svg)](https://github.com/festim-dev/FESTIM/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/festim-dev/FESTIM/branch/master/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/festim-dev/FESTIM)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
-![GitHub stars](https://img.shields.io/github/stars/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Stars&logoColor=white)
-![GitHub forks](https://img.shields.io/github/forks/RemDelaporteMathurin/FESTIM.svg?logo=github&label=Forks&logoColor=white)
+![GitHub stars](https://img.shields.io/github/stars/festim-dev/FESTIM.svg?logo=github&label=Stars&logoColor=white)
+![GitHub forks](https://img.shields.io/github/forks/festim-dev/FESTIM.svg?logo=github&label=Forks&logoColor=white)
 
 FESTIM (Finite Elements Simulation of Tritium in Materials) is a tool for modeling hydrogen transport in materials. 
 It simulates the diffusion and trapping of hydrogen, coupled to heat transfer with [FEniCS](https://fenicsproject.org).
@@ -13,7 +13,7 @@ It simulates the diffusion and trapping of hydrogen, coupled to heat transfer wi
 
 :point_right: [Documentation](https://festim.readthedocs.io/)
 
-:point_right: [Tutorials](https://github.com/RemDelaporteMathurin/FESTIM-workshop)
+:point_right: [Tutorials](https://github.com/festim-dev/FESTIM-workshop)
 
 
 
