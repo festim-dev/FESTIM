@@ -34,6 +34,28 @@ class Stepsize:
     def adaptive(self):
         return self.growth_factor or self.cutback_factor or self.target_nb_iterations
 
+    @property
+    def growth_factor(self):
+        return self._growth_factor
+
+    @growth_factor.setter
+    def growth_factor(self, value):
+        if value < 1:
+            raise ValueError("growth factor should be greater than one")
+
+        self._growth_factor = value
+
+    @property
+    def cutback_factor(self):
+        return self._cutback_factor
+
+    @cutback_factor.setter
+    def cutback_factor(self, value):
+        if value > 1:
+            raise ValueError("cutback factor should be smaller than one")
+
+        self._cutback_factor = value
+
     def modify_value(self, value, nb_iterations, t=None):
         if not self.is_adapt(t):
             return value
