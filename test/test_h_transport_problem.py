@@ -127,6 +127,7 @@ def test_iterate():
     my_model = F.HydrogenTransportProblem()
 
     my_model.settings = F.Settings(atol=1e-6, rtol=1e-6, final_time=10)
+    my_model.settings.stepsize = 2.0
 
     my_model.progress = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
