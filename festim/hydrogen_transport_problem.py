@@ -185,7 +185,9 @@ class HydrogenTransportProblem:
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
         if self.settings.transient:
-            self.dt = self.settings.stepsize.get_dt(self.mesh.mesh)
+            self.dt = F.as_fenics_constant(
+                self.settings.stepsize.initial_value, self.mesh.mesh
+            )
 
         self.define_temperature()
         self.define_boundary_conditions()
