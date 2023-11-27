@@ -18,11 +18,4 @@ FESTIM is under version control with `git <https://git-scm.com/>`_. Even though 
 Where can I find help?
 ----------------------
 
-If you're having an issue, the best way to find help is to `raise an issue <https://github.com/RemDelaporteMathurin/FESTIM/issues/new/choose>`_ on the FESTIM GitHub repository.
-Before raising an issue, please check that someone didn't have the same problem to avoid duplicates.
-
------------------
-Discourse Forum
------------------
-
-Join the FESTIM community on our https://festim.discourse.group. Engage in discussions, ask questions, and connect with other users. This is a collaborative space where you can share your experiences and seek assistance.
+If you're having an issue, the best way to find help is to join the `FESTIM discourse <https://festim.discourse.group>`. Engage in discussions, ask questions, and connect with other users. This is a collaborative space where you can share your experiences and seek assistance.
