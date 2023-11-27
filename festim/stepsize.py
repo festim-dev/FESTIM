@@ -24,11 +24,15 @@ class Stepsize:
         initial_value,
     ) -> None:
         self.initial_value = initial_value
-        self.growth_factor = 1.2
-        self.cutback_factor = 0.8
-        self.target_nb_iterations = 4
+        self.growth_factor = None
+        self.cutback_factor = None
+        self.target_nb_iterations = None
 
         # TODO should this class hold the dt object used in the formulation
+
+    @property
+    def adaptive(self):
+        return self.growth_factor or self.cutback_factor or self.target_nb_iterations
 
     def modify_value(self, value, nb_iterations, t=None):
         if not self.is_adapt(t):

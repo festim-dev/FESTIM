@@ -185,6 +185,7 @@ class HydrogenTransportProblem:
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
         if self.settings.transient:
+            # TODO Should this be an attribute of festim.Stepsize?
             self.dt = F.as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
@@ -625,13 +626,20 @@ class HydrogenTransportProblem:
         self.update_time_dependent_values()
 
         # solve main problem
-        self.solver.solve(self.u)
+        nb_its, converged = self.solver.solve(self.u)
 
         # post processing
         self.post_processing()
 
         # update previous solution
         self.u_n.x.array[:] = self.u.x.array[:]
+
+        # adapt stepsize
+        if self.settings.stepsize.adaptive:
+            new_stepsize = self.settings.stepsize.modify_value(
+                value=self.dt.value, nb_iterations=nb_its, t=self.t.value
+            )
+            self.dt.value = new_stepsize
 
     def update_time_dependent_values(self):
         t = float(self.t)
