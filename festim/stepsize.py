@@ -28,16 +28,18 @@ class Stepsize:
         self.cutback_factor = 0.8
         self.target_nb_iterations = 4
 
+        # TODO should this class hold the dt object used in the formulation
+
     def modify_value(self, value, nb_iterations, t=None):
         if not self.is_adapt(t):
             return value
 
         if nb_iterations < self.target_nb_iterations:
-            new_value = value * self.growth_factor
+            return value * self.growth_factor
         elif nb_iterations > self.target_nb_iterations:
-            new_value = value * self.cutback_factor
-
-        return new_value
+            return value * self.cutback_factor
+        else:
+            return value
 
     def is_adapt(self, t):
         """
