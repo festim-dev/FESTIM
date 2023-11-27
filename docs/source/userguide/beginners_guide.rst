@@ -16,7 +16,7 @@ FESTIM is under version control with `git <https://git-scm.com/>`_. Even though 
 Discourse Forum
 -----------------
 
-Join the FESTIM community on our [Discourse Forum](https://festim.discourse.group/). Engage in discussions, ask questions, and connect with other users. This is a collaborative space where you can share your experiences and seek assistance.
+Join the FESTIM community on our https://festim.discourse.group. Engage in discussions, ask questions, and connect with other users. This is a collaborative space where you can share your experiences and seek assistance.
 
 ----------------------
 Where can I find help?
