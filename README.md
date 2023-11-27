@@ -15,7 +15,9 @@ It simulates the diffusion and trapping of hydrogen, coupled to heat transfer wi
 
 :point_right: [Tutorials](https://github.com/festim-dev/FESTIM-workshop)
 
+### Forum
 
+Join the FESTIM community on our [Discourse Forum](https://festim.discourse.group/).
 
 ## References
 - R. Delaporte-Mathurin, _et al._, _Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components using FESTIM_. Nuclear Materials and Energy, 21, (2019). https://doi.org/10.1016/j.nme.2019.100709.
