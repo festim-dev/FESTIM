@@ -31,6 +31,10 @@ Exports
     :members:
     :show-inheritance:
 
+.. autoclass:: PointValue
+    :members:
+    :show-inheritance:
+
 .. autoclass:: AverageSurface
     :members:
     :show-inheritance:
