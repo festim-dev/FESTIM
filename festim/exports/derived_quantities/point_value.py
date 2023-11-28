@@ -11,6 +11,7 @@ class PointValue(DerivedQuantity):
 
     def __init__(self, field: str or int, x: int or float or list) -> None:
         super().__init__(field)
+        # make sure x is an iterable
         if not hasattr(x, "__iter__"):
             x = [x]
         self.x = x
