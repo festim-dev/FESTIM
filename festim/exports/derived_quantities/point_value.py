@@ -5,7 +5,7 @@ class PointValue(DerivedQuantity):
     """DerivedQuantity relative to a point
 
     Args:
-        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
         point (int, float, list): the point coordinates
     """
 
