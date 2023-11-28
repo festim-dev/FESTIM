@@ -7,14 +7,14 @@ def test_title_H():
     x = 1
     field = "solute"
     my_value = PointValue(field, x)
-    assert my_value.title == "{} value at {}".format(field, x)
+    assert my_value.title == "{} value at [{}]".format(field, x)
 
 
 def test_title_T():
     x = 1
     field = "T"
     my_value = PointValue(field, x)
-    assert my_value.title == "{} value at {}".format(field, x)
+    assert my_value.title == "{} value at [{}]".format(field, x)
 
 
 class TestCompute:

@@ -9,8 +9,10 @@ class PointValue(DerivedQuantity):
         point (int, float, list): the point coordinates
     """
 
-    def __init__(self, field: str or int, x: float or list) -> None:
+    def __init__(self, field: str or int, x: int or float or list) -> None:
         super().__init__(field)
+        if not hasattr(x, "__iter__"):
+            x = [x]
         self.x = x
         self.title = "{} value at {}".format(field, x)
 
