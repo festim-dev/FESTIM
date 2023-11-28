@@ -40,8 +40,9 @@ class Stepsize:
 
     @growth_factor.setter
     def growth_factor(self, value):
-        if value < 1:
-            raise ValueError("growth factor should be greater than one")
+        if value is not None:
+            if value < 1:
+                raise ValueError("growth factor should be greater than one")
 
         self._growth_factor = value
 
@@ -51,8 +52,9 @@ class Stepsize:
 
     @cutback_factor.setter
     def cutback_factor(self, value):
-        if value > 1:
-            raise ValueError("cutback factor should be smaller than one")
+        if value is not None:
+            if value > 1:
+                raise ValueError("cutback factor should be smaller than one")
 
         self._cutback_factor = value
 
