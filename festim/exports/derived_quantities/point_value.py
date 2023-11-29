@@ -6,10 +6,10 @@ class PointValue(DerivedQuantity):
 
     Args:
         field (str, int): the field ("solute", 0, 1, "T", "retention")
-        point (int, float, list): the point coordinates
+        point (int, float, tuple, list): the point coordinates
     """
 
-    def __init__(self, field: str or int, x: int or float or list) -> None:
+    def __init__(self, field: str or int, x: int or float or tuple or list) -> None:
         super().__init__(field)
         # make sure x is an iterable
         if not hasattr(x, "__iter__"):
