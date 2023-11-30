@@ -25,7 +25,7 @@ def test_adaptive_stepsize_grows(growth_factor, target):
     assert np.isclose(new_value, expected_value)
 
 
-@pytest.mark.parametrize("cutback_factor, target", [(10, 5), (1.2, 2), (1, 1)])
+@pytest.mark.parametrize("cutback_factor, target", [(0.8, 5), (0.5, 2), (1, 1)])
 def test_adaptive_stepsize_shrinks(cutback_factor, target):
     """Checks that the stepsize is shrinks correctly
 
