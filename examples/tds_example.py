@@ -55,6 +55,7 @@ my_model.reactions = [
         reactant1=mobile_H,
         reactant2=empty_trap1,
         product=trapped_H1,
+        volume=my_subdomain,
     ),
     F.Reaction(
         k_0=4.1e-7 / (1.1e-10**2 * 6 * w_atom_density),
@@ -64,6 +65,7 @@ my_model.reactions = [
         reactant1=mobile_H,
         reactant2=empty_trap2,
         product=trapped_H2,
+        volume=my_subdomain,
     ),
 ]
 
