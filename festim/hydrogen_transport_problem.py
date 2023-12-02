@@ -44,8 +44,8 @@ class HydrogenTransportProblem:
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpace): the function space of the
             model
-        facet_meshtags (dolfinx.mesh.MeshTags): the facet tags of the model
-        volume_meshtags (dolfinx.mesh.MeshTags): the volume tags of the
+        facet_meshtags (dolfinx.mesh.MeshTags): the facet meshtags of the model
+        volume_meshtags (dolfinx.mesh.MeshTags): the volume meshtags of the
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
@@ -61,6 +61,10 @@ class HydrogenTransportProblem:
             over domain
         V_DG_1 (dolfinx.fem.FunctionSpace): A DG function space of degree 1
             over domain
+        volume_subdomains (list of festim.VolumeSubdomain): the volume subdomains
+            of the model
+        surface_subdomains (list of festim.SurfaceSubdomain): the surface subdomains
+            of the model
 
 
     Usage:
@@ -115,7 +119,6 @@ class HydrogenTransportProblem:
         self.facet_meshtags = None
         self.volume_meshtags = None
         self.formulation = None
-        self.volume_subdomains = []
         self.bc_forms = []
         self.temperature_fenics = None
 
@@ -169,6 +172,14 @@ class HydrogenTransportProblem:
         return len(self.species) > 1
 
     @property
+    def volume_subdomains(self):
+        return [s for s in self.subdomains if isinstance(s, F.VolumeSubdomain)]
+
+    @property
+    def surface_subdomains(self):
+        return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
+
+    @property
     def species(self):
         return self._species
 
@@ -188,7 +199,7 @@ class HydrogenTransportProblem:
             self.create_species_from_trap()
 
         self.define_function_spaces()
-        self.define_markers_and_measures()
+        self.define_meshtags_and_measures()
         self.assign_functions_to_species()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
@@ -402,51 +413,39 @@ class HydrogenTransportProblem:
             spe.prev_solution = sub_prev_solution[idx]
             spe.test_function = sub_test_functions[idx]
 
-    def define_markers_and_measures(self):
-        """Defines the markers and measures of the model"""
+    def define_meshtags_and_measures(self):
+        """Defines the facet and volume meshtags of the model which are used
+        to define the measures fo the model, dx and ds"""
 
-        facet_indices, tags_facets = [], []
+        if isinstance(self.mesh, F.MeshFromXDMF):
+            self.facet_meshtags = self.mesh.define_surface_meshtags()
+            self.volume_meshtags = self.mesh.define_volume_meshtags()
 
-        # find all cells in domain and mark them as 0
-        num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
-        mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-        tags_volumes = np.full(num_cells, 0, dtype=np.int32)
+        elif isinstance(self.mesh, F.Mesh1D):
+            self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
+                surface_subdomains=self.surface_subdomains,
+                volume_subdomains=self.volume_subdomains,
+            )
+        elif isinstance(self.mesh, F.Mesh):
+            # FIXME # refer to issue #647
+            # create empty mesh tags for now
+            facet_indices = np.array([], dtype=np.int32)
+            facet_tags = np.array([], dtype=np.int32)
+            self.facet_meshtags = meshtags(
+                self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
+            )
 
-        for sub_dom in self.subdomains:
-            if isinstance(sub_dom, F.SurfaceSubdomain1D):
-                facet_index = sub_dom.locate_boundary_facet_indices(
-                    self.mesh.mesh, self.mesh.fdim
-                )
-                facet_indices.append(facet_index)
-                tags_facets.append(sub_dom.id)
-            if isinstance(sub_dom, F.VolumeSubdomain1D):
-                # find all cells in subdomain and mark them as sub_dom.id
-                self.volume_subdomains.append(sub_dom)
-                entities = sub_dom.locate_subdomain_entities(
-                    self.mesh.mesh, self.mesh.vdim
-                )
-                tags_volumes[entities] = sub_dom.id
-
-        # check if all borders are defined
-        if isinstance(self.mesh, F.Mesh1D):
-            self.mesh.check_borders(self.volume_subdomains)
+            num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
+            mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+            tags_volumes = np.full(num_cells, 1, dtype=np.int32)
+            self.volume_meshtags = meshtags(
+                self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
+            )
 
         # check volume ids are unique
         vol_ids = [vol.id for vol in self.volume_subdomains]
         if len(vol_ids) != len(np.unique(vol_ids)):
             raise ValueError("Volume ids are not unique")
-
-        # dofs and tags need to be in np.in32 format for meshtags
-        facet_indices = np.array(facet_indices, dtype=np.int32)
-        tags_facets = np.array(tags_facets, dtype=np.int32)
-
-        # define mesh tags
-        self.facet_meshtags = meshtags(
-            self.mesh.mesh, self.mesh.fdim, facet_indices, tags_facets
-        )
-        self.volume_meshtags = meshtags(
-            self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
-        )
 
         # define measures
         self.ds = ufl.Measure(
