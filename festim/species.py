@@ -1,4 +1,5 @@
 from typing import List
+import festim as F
 
 
 class Species:
@@ -62,23 +63,60 @@ class Trap(Species):
 
     Args:
         name (str, optional): a name given to the trap. Defaults to None.
+        species (F.Species): the mobile species to be trapped
+        k_0 (float): the trapping rate constant pre-exponential factor.
+        E_k (float): the trapping rate constant activation energy.
+        p_0 (float): the detrapping rate constant pre-exponential factor.
+        E_p (float): the detrapping rate constant activation energy.
+        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+
 
     Attributes:
-        name (str): a name given to the trap.
-        attributes of Species class
+        name (str, optional): a name given to the trap. Defaults to None.
+        species (F.Species): the mobile species to be trapped
+        k_0 (float): the trapping rate constant pre-exponential factor.
+        E_k (float): the trapping rate constant activation energy.
+        p_0 (float): the detrapping rate constant pre-exponential factor.
+        E_p (float): the detrapping rate constant activation energy.
+        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+        trapped_concentration (F.Species): The immobile trapped concentration
+        trap_reaction (F.Reaction): The reaction for trapping the mobile conc.
 
     Usage:
-        >>> from festim import Trap, HTransportProblem
-        >>> trap = Trap(name="Trap")
+        >>> import festim as F
+        >>> trap = F.Trap(name="Trap", species=H, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol)
         >>> trap.name
         'Trap'
-        >>> my_model = HTransportProblem()
-        >>> my_model.species.append(trap)
+        >>> my_model = F.HydorgenTransportProblem()
+        >>> my_model.traps = [trap]
 
     """
 
-    def __init__(self, name: str = None) -> None:
+    def __init__(self, name: str, species, k_0, E_k, p_0, E_p, n, volume) -> None:
         super().__init__(name)
+        self.species = species
+        self.k_0 = k_0
+        self.E_k = E_k
+        self.p_0 = p_0
+        self.E_p = E_p
+        self.n = n
+        self.volume = volume
+
+    def create_species_and_reaction(self):
+        """create the immobile trapped species object and the reaction for trapping"""
+        self.trapped_concentration = F.Species(name=self.name, mobile=False)
+        trap_site = F.ImplicitSpecies(n=self.n, others=[self.trapped_concentration])
+
+        self.trap_reaction = F.Reaction(
+            reactant1=self.species,
+            reactant2=trap_site,
+            product=self.trapped_concentration,
+            k_0=self.k_0,
+            E_k=self.E_k,
+            p_0=self.p_0,
+            E_p=self.E_p,
+            volume=self.volume,
+        )
 
 
 class ImplicitSpecies:
