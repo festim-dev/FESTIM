@@ -645,3 +645,25 @@ def test_species_setter():
         match="elements of species must be of type festim.Species not <class 'int'>",
     ):
         my_model.species = [1, 2, 3]
+
+
+def test_create_species_from_trap():
+    "Test that a new species and reaction is created when a trap is given"
+    my_model = F.HydrogenTransportProblem()
+    my_mobile_species = F.Species("test_mobile")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
+    my_trap = F.Trap(
+        name="test",
+        species=my_mobile_species,
+        k_0=1,
+        E_k=1,
+        p_0=1,
+        E_p=1,
+        n=1,
+        volume=my_vol,
+    )
+    my_model.traps = [my_trap]
+    my_model.create_species_from_trap()
+
+    assert len(my_model.species) == 1
+    assert len(my_model.reactions) == 1

@@ -115,3 +115,29 @@ def test_implicit_species_concentration_with_no_solution():
     # test that a ValueError is raised when the second species has no solution
     with pytest.raises(ValueError):
         implicit_species.concentration
+
+
+def test_create_species_and_reaction():
+    """test that the trapped_concentration and trap_reaction attribites
+    are correctly set"""
+
+    # BUILD
+    my_mobile_species = F.Species("test_mobile")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
+    my_trap = F.Trap(
+        name="test",
+        species=my_mobile_species,
+        k_0=1,
+        E_k=1,
+        p_0=1,
+        E_p=1,
+        n=1,
+        volume=my_vol,
+    )
+
+    # RUN
+    my_trap.create_species_and_reaction()
+
+    # TEST
+    assert isinstance(my_trap.trapped_concentration, F.Species)
+    assert isinstance(my_trap.trap_reaction, F.Reaction)
