@@ -661,7 +661,7 @@ def test_species_setter():
     ],
 )
 def test_update_time_dependent_values_flux(bc_value, expected_values):
-    """Test that time dependent sources are updated at each time step,
+    """Test that time dependent fluxes are updated at each time step,
     and match an expected value"""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
@@ -714,7 +714,7 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
 def test_update_fluxes_with_time_dependent_temperature(
     temperature_value, bc_value, expected_values
 ):
-    """Test that temperature dependent source terms are updated at each time step
+    """Test that temperature dependent flux terms are updated at each time step
     when the temperature is time dependent, and match an expected value"""
 
     # BUILD
@@ -755,32 +755,33 @@ def test_update_fluxes_with_time_dependent_temperature(
         assert np.isclose(computed_value, expected_values[i])
 
 
-# def test_create_source_values_fenics_multispecies():
-#     """Test that the define_sources method correctly sets the value_fenics attribute in
-#     a multispecies case"""
-#     # BUILD
-#     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
-#     H, D = F.Species("H"), F.Species("D")
-#     my_model = F.HydrogenTransportProblem(
-#         mesh=test_mesh,
-#         temperature=10,
-#         subdomains=[my_vol],
-#         species=[H, D],
-#     )
-#     my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
+def test_create_source_values_fenics_multispecies():
+    """Test that the create_flux_values_fenics method correctly sets the value_fenics
+    attribute in a multispecies case"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    surface = F.SurfaceSubdomain1D(id=2, x=0)
+    H, D = F.Species("H"), F.Species("D")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol, surface],
+        species=[H, D],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
 
-#     my_source_1 = F.Source(value=lambda t: t + 1, volume=my_vol, species=H)
-#     my_source_2 = F.Source(value=lambda t: 2 * t + 3, volume=my_vol, species=D)
-#     my_model.sources = [my_source_1, my_source_2]
+    my_bc_1 = F.FluxBC(subdomain=surface, value=lambda t: t + 1, species=H)
+    my_bc_2 = F.FluxBC(subdomain=surface, value=lambda t: 2 * t + 3, species=D)
+    my_model.boundary_conditions = [my_bc_1, my_bc_2]
 
-#     my_model.define_function_spaces()
-#     my_model.define_meshtags_and_measures()
-#     my_model.assign_functions_to_species()
-#     my_model.define_temperature()
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
 
-#     # RUN
-#     my_model.create_source_values_fenics()
+    # RUN
+    my_model.create_flux_values_fenics()
 
-#     # TEST
-#     assert np.isclose(my_model.sources[0].value_fenics.value, 5)
-#     assert np.isclose(my_model.sources[1].value_fenics.value, 11)
+    # TEST
+    assert np.isclose(my_model.boundary_conditions[0].value_fenics.value, 5)
+    assert np.isclose(my_model.boundary_conditions[1].value_fenics.value, 11)
