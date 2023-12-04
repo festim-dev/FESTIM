@@ -667,6 +667,6 @@ def test_create_species_from_trap():
 
     assert len(my_model.species) == 1
     assert isinstance(my_model.species[0], F.Species)
-    
+
     assert len(my_model.reactions) == 1
     assert isinstance(my_model.reactions[0], F.Reaction)
