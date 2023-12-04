@@ -648,7 +648,8 @@ def test_species_setter():
 
 
 def test_reinstantiation_of_class():
-    """Test"""
+    """Test that when an attribute defaults to empty list, when the class
+    is reinstantiated the list is not passed to the new class object"""
 
     model_1 = F.HydrogenTransportProblem()
     model_1.species.append(F.Species("test"))
