@@ -578,12 +578,13 @@ class HydrogenTransportProblem:
                 * self.dx(source.volume.id)
             )
 
-            # add fluxes
-            # TODO implement this
-            # for bc in self.boundary_conditions:
-            #     pass
-            #     if bc.species == spe and bc.type != "dirichlet":
-            #         formulation += bc * v * self.ds
+        for bc in self.boundary_conditions:
+            if isinstance(bc, F.FluxBC):
+                self.formulation -= (
+                    bc.value_fenics
+                    * bc.species.test_function
+                    * self.ds(bc.subdomain.id)
+                )
 
     def create_solver(self):
         """Creates the solver of the model"""
