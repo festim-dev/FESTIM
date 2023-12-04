@@ -195,7 +195,7 @@ class HydrogenTransportProblem:
 
     def initialise(self):
         # if traps are given, create the necessary objects
-        if len(self.traps) >0:
+        if len(self.traps) > 0:
             self.create_species_from_trap()
 
         self.define_function_spaces()
