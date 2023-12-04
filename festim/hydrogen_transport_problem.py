@@ -566,10 +566,8 @@ class HydrogenTransportProblem:
             if not self.multispecies:
                 condition.species.prev_solution.interpolate(condition.expr_fenics)
             else:
-                for idx, spe in enumerate(self.species):
-                    if spe == condition.species:
-                        self.u_n.sub(idx).interpolate(condition.expr_fenics)
-                        break
+                idx = self.species.index(condition.species)
+                self.u_n.sub(idx).interpolate(condition.expr_fenics)
 
     def create_formulation(self):
         """Creates the formulation of the model"""
