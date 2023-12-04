@@ -109,3 +109,71 @@ def test_value_fenics_setter_error():
         match="Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not <class 'str'>",
     ):
         bc.value_fenics = "coucou"
+
+
+def test_ValueError_raised_when_callable_returns_wrong_type():
+    """The create_value_fenics method should raise a ValueError when the callable
+    returns an object which is not a float or int"""
+
+    surface = F.SurfaceSubdomain(id=1)
+    species = F.Species("test")
+
+    def my_value(t):
+        return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
+
+    bc = F.FluxBC(subdomain=surface, value=my_value, species=species)
+
+    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
+    T = fem.Constant(mesh, 550.0)
+    t = fem.Constant(mesh, 0.0)
+
+    with pytest.raises(
+        ValueError,
+        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
+    ):
+        bc.create_value_fenics(mesh, my_function_space, T, t)
+
+
+@pytest.mark.parametrize(
+    "input, expected_value",
+    [
+        (1.0, False),
+        (None, False),
+        (fem.Constant(mesh, 1.0), False),
+        (lambda t: t, True),
+        (lambda t: 1.0 + t, True),
+        (lambda x: 1.0 + x[0], False),
+        (lambda x, t: 1.0 + x[0] + t, True),
+        (lambda x, t, T: 1.0 + x[0] + t + T, True),
+        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), True),
+    ],
+)
+def test_bc_time_dependent_attribute(input, expected_value):
+    """Test that the time_dependent attribute is correctly set"""
+    surface = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+    my_species = F.Species("test")
+    my_bc = F.FluxBC(subdomain=surface, value=input, species=my_species)
+
+    assert my_bc.time_dependent is expected_value
+
+
+@pytest.mark.parametrize(
+    "input, expected_value",
+    [
+        (1.0, False),
+        (None, False),
+        (fem.Constant(mesh, 1.0), False),
+        (lambda T: T, True),
+        (lambda t: 1.0 + t, False),
+        (lambda x, T: 1.0 + x[0] + T, True),
+        (lambda x, t, T: 1.0 + x[0] + t + T, True),
+        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), False),
+    ],
+)
+def test_bc_temperature_dependent_attribute(input, expected_value):
+    """Test that the temperature_dependent attribute is correctly set"""
+    surface = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+    my_species = F.Species("test")
+    my_bc = F.FluxBC(subdomain=surface, value=input, species=my_species)
+
+    assert my_bc.temperature_dependent is expected_value
