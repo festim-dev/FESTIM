@@ -118,7 +118,7 @@ def test_implicit_species_concentration_with_no_solution():
 
 
 def test_create_species_and_reaction():
-    """test that the trapped_concentration and trap_reaction attribites
+    """test that the trapped_concentration and trap_reaction attributes
     are correctly set"""
 
     # BUILD
