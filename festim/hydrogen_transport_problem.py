@@ -90,15 +90,15 @@ class HydrogenTransportProblem:
     def __init__(
         self,
         mesh=None,
-        subdomains=[],
-        species=[],
-        reactions=[],
+        subdomains=None,
+        species=None,
+        reactions=None,
         temperature=None,
-        sources=[],
-        boundary_conditions=[],
+        sources=None,
+        boundary_conditions=None,
         settings=None,
-        exports=[],
-    ) -> None:
+        exports=None,
+    ):
         self.mesh = mesh
         self.subdomains = subdomains
         self.species = species
@@ -108,6 +108,19 @@ class HydrogenTransportProblem:
         self.boundary_conditions = boundary_conditions
         self.settings = settings
         self.exports = exports
+
+        if self.subdomains is None:
+            self.subdomains = []
+        if self.species is None:
+            self.species = []
+        if self.reactions is None:
+            self.reactions = []
+        if self.sources is None:
+            self.sources = []
+        if self.boundary_conditions is None:
+            self.boundary_conditions = []
+        if self.exports is None:
+            self.exports = []
 
         self.dx = None
         self.ds = None
@@ -181,13 +194,16 @@ class HydrogenTransportProblem:
 
     @species.setter
     def species(self, value):
-        # check that all species are of type festim.Species
-        for spe in value:
-            if not isinstance(spe, F.Species):
-                raise TypeError(
-                    f"elements of species must be of type festim.Species not {type(spe)}"
-                )
-        self._species = value
+        if value is None:
+            self._species = value
+        else:
+            # check that all species are of type festim.Species
+            for spe in value:
+                if not isinstance(spe, F.Species):
+                    raise TypeError(
+                        f"elements of species must be of type festim.Species not {type(spe)}"
+                    )
+            self._species = value
 
     def initialise(self):
         self.define_function_spaces()
