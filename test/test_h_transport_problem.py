@@ -654,7 +654,7 @@ def test_create_species_from_trap():
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
     my_trap = F.Trap(
         name="test",
-        species=my_mobile_species,
+        mobile_species=my_mobile_species,
         k_0=1,
         E_k=1,
         p_0=1,
@@ -666,4 +666,7 @@ def test_create_species_from_trap():
     my_model.create_species_from_trap()
 
     assert len(my_model.species) == 1
+    assert isinstance(my_model.species[0], F.Species)
+    
     assert len(my_model.reactions) == 1
+    assert isinstance(my_model.reactions[0], F.Reaction)
