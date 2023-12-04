@@ -645,3 +645,13 @@ def test_species_setter():
         match="elements of species must be of type festim.Species not <class 'int'>",
     ):
         my_model.species = [1, 2, 3]
+
+
+def test_reinstantiation_of_class():
+    """Test"""
+
+    model_1 = F.HydrogenTransportProblem()
+    model_1.species.append(F.Species("test"))
+
+    model_2 = F.HydrogenTransportProblem()
+    assert len(model_2.species) == 0
