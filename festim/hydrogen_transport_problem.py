@@ -594,12 +594,30 @@ class HydrogenTransportProblem:
                 * self.dx(source.volume.id)
             )
 
-            # add fluxes
-            # TODO implement this
-            # for bc in self.boundary_conditions:
-            #     pass
-            #     if bc.species == spe and bc.type != "dirichlet":
-            #         formulation += bc * v * self.ds
+        # add fluxes
+        # TODO implement this
+        # for bc in self.boundary_conditions:
+        #     pass
+        #     if bc.species == spe and bc.type != "dirichlet":
+        #         formulation += bc * v * self.ds
+
+        # check if each species is defined in all volumes
+        if not self.settings.transient:
+            for spe in self.species:
+                # if species mobile, already defined in diffusion term
+                if not spe.mobile:
+                    not_defined_in_volume = self.volume_subdomains.copy()
+                    for vol in self.volume_subdomains:
+                        # check reactions
+                        for reaction in self.reactions:
+                            if vol == reaction.volume:
+                                not_defined_in_volume.remove(vol)
+
+                    # add c = 0 to formulation where needed
+                    for vol in not_defined_in_volume:
+                        self.formulation += (
+                            spe.solution * spe.test_function * self.dx(vol.id)
+                        )
 
     def create_solver(self):
         """Creates the solver of the model"""
