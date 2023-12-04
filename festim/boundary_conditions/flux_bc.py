@@ -60,6 +60,30 @@ class FluxBC:
             )
         self._value_fenics = value
 
+    @property
+    def time_dependent(self):
+        if self.value is None:
+            return False
+        if isinstance(self.value, fem.Constant):
+            return False
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            return "t" in arguments
+        else:
+            return False
+
+    @property
+    def temperature_dependent(self):
+        if self.value is None:
+            return False
+        if isinstance(self.value, fem.Constant):
+            return False
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            return "T" in arguments
+        else:
+            return False
+
     def create_value_fenics(
         self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
     ):
@@ -122,4 +146,4 @@ class FluxBC:
             if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
                 self.value_fenics.value = self.value(t=t)
             else:
-                self.value_fenics.interpolate(self.source_expr)
+                self.value_fenics.interpolate(self.bc_expr)
