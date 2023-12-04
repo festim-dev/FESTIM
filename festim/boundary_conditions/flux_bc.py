@@ -60,7 +60,7 @@ class FluxBC:
             )
         self._value_fenics = value
 
-    def create_value(
+    def create_value_fenics(
         self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
@@ -110,3 +110,16 @@ class FluxBC:
                     function_space.element.interpolation_points(),
                 )
                 self.value_fenics.interpolate(self.bc_expr)
+
+    def update(self, t):
+        """Updates the source value
+
+        Args:
+            t (float): the time
+        """
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
+                self.value_fenics.value = self.value(t=t)
+            else:
+                self.value_fenics.interpolate(self.source_expr)
