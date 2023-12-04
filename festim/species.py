@@ -61,23 +61,26 @@ class Species:
 class Trap(Species):
     """Trap species class for H transport simulation.
 
+    This class only works for 1 mobile species and 1 trapping level and is
+    for convenience, for more details see notes.
+
     Args:
         name (str, optional): a name given to the trap. Defaults to None.
-        species (F.Species): the mobile species to be trapped
-        k_0 (float): the trapping rate constant pre-exponential factor.
-        E_k (float): the trapping rate constant activation energy.
-        p_0 (float): the detrapping rate constant pre-exponential factor.
-        E_p (float): the detrapping rate constant activation energy.
+        mobile_species (F.Species): the mobile species to be trapped
+        k_0 (float): the trapping rate constant pre-exponential factor (m3 s-1)
+        E_k (float): the trapping rate constant activation energy (eV)
+        p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
+        E_p (float): the detrapping rate constant activation energy (eV)
         volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
 
 
     Attributes:
         name (str, optional): a name given to the trap. Defaults to None.
-        species (F.Species): the mobile species to be trapped
-        k_0 (float): the trapping rate constant pre-exponential factor.
-        E_k (float): the trapping rate constant activation energy.
-        p_0 (float): the detrapping rate constant pre-exponential factor.
-        E_p (float): the detrapping rate constant activation energy.
+        mobile_species (F.Species): the mobile species to be trapped
+        k_0 (float): the trapping rate constant pre-exponential factor (m3 s-1)
+        E_k (float): the trapping rate constant activation energy (eV)
+        p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
+        E_p (float): the detrapping rate constant activation energy (eV)
         volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
         trapped_concentration (F.Species): The immobile trapped concentration
         trap_reaction (F.Reaction): The reaction for trapping the mobile conc.
@@ -90,11 +93,50 @@ class Trap(Species):
         >>> my_model = F.HydorgenTransportProblem()
         >>> my_model.traps = [trap]
 
+    Notes:
+        This convenience class replaces the need to specify an implicit species and
+        the associated reaction, thus:
+
+        cm = F.Species("mobile")
+        my_trap = F.Trap(
+            name="trapped",
+            mobile_species=cm,
+            k_0=1,
+            E_k=1,
+            p_0=1,
+            E_p=1,
+            n=1,
+            volume=my_vol,
+        )
+        my_model.species = [cm]
+        my_model.traps = [my_trap]
+
+        is equivalent to:
+
+        cm = F.Species("mobile")
+        ct = F.Species("trapped")
+        trap_sites = F.ImplicitSpecies(n=1, others=[ct])
+        trap_reaction = F.Reaction(
+            reactant1=cm,
+            reactant2=trap_sites,
+            product=ct,
+            k_0=1,
+            E_k=1,
+            p_0=1,
+            E_p=1,
+            volume=my_vol,
+        )
+        my_model.species = [cm, ct]
+        my_model.reactions = [trap_reaction]
+
+
     """
 
-    def __init__(self, name: str, species, k_0, E_k, p_0, E_p, n, volume) -> None:
+    def __init__(
+        self, name: str, mobile_species, k_0, E_k, p_0, E_p, n, volume
+    ) -> None:
         super().__init__(name)
-        self.species = species
+        self.mobile_species = mobile_species
         self.k_0 = k_0
         self.E_k = E_k
         self.p_0 = p_0
@@ -108,7 +150,7 @@ class Trap(Species):
         trap_site = F.ImplicitSpecies(n=self.n, others=[self.trapped_concentration])
 
         self.trap_reaction = F.Reaction(
-            reactant1=self.species,
+            reactant1=self.mobile_species,
             reactant2=trap_site,
             product=self.trapped_concentration,
             k_0=self.k_0,
