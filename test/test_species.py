@@ -140,4 +140,4 @@ def test_create_species_and_reaction():
 
     # TEST
     assert isinstance(my_trap.trapped_concentration, F.Species)
-    assert isinstance(my_trap.trap_reaction, F.Reaction)
+    assert isinstance(my_trap.reaction, F.Reaction)

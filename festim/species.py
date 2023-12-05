@@ -144,12 +144,15 @@ class Trap(Species):
         self.n = n
         self.volume = volume
 
+        self.trapped_concentration = None
+        self.reaction = None
+
     def create_species_and_reaction(self):
         """create the immobile trapped species object and the reaction for trapping"""
         self.trapped_concentration = F.Species(name=self.name, mobile=False)
         trap_site = F.ImplicitSpecies(n=self.n, others=[self.trapped_concentration])
 
-        self.trap_reaction = F.Reaction(
+        self.reaction = F.Reaction(
             reactant1=self.mobile_species,
             reactant2=trap_site,
             product=self.trapped_concentration,

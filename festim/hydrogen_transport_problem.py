@@ -197,10 +197,7 @@ class HydrogenTransportProblem:
         self._species = value
 
     def initialise(self):
-        # if traps are given, create the necessary objects
-        if len(self.traps) > 0:
-            self.create_species_from_trap()
-
+        self.create_species_from_traps()
         self.define_function_spaces()
         self.define_meshtags_and_measures()
         self.assign_functions_to_species()
@@ -216,13 +213,13 @@ class HydrogenTransportProblem:
         self.create_solver()
         self.initialise_exports()
 
-    def create_species_from_trap(self):
+    def create_species_from_traps(self):
         """Generate a species and reaction per trap defined in self.traps"""
 
         for trap in self.traps:
             trap.create_species_and_reaction()
             self.species.append(trap.trapped_concentration)
-            self.reactions.append(trap.trap_reaction)
+            self.reactions.append(trap.reaction)
 
     def define_temperature(self):
         """Sets the value of temperature_fenics_value. The type depends on
