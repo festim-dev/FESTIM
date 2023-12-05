@@ -100,27 +100,14 @@ class HydrogenTransportProblem:
         exports=None,
     ):
         self.mesh = mesh
-        self.subdomains = subdomains
-        self.species = species
-        self.reactions = reactions
+        self.subdomains = subdomains or []
+        self.species = species or []
+        self.reactions = reactions or []
         self.temperature = temperature
-        self.sources = sources
-        self.boundary_conditions = boundary_conditions
+        self.sources = sources or []
+        self.boundary_conditions = boundary_conditions or []
         self.settings = settings
-        self.exports = exports
-
-        if self.subdomains is None:
-            self.subdomains = []
-        if self.species is None:
-            self.species = []
-        if self.reactions is None:
-            self.reactions = []
-        if self.sources is None:
-            self.sources = []
-        if self.boundary_conditions is None:
-            self.boundary_conditions = []
-        if self.exports is None:
-            self.exports = []
+        self.exports = exports or []
 
         self.dx = None
         self.ds = None
