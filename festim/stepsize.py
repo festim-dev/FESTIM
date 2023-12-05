@@ -7,6 +7,14 @@ class Stepsize:
 
     Args:
         initial_value (float, int): initial stepsize.
+        grwoth_factor (float, optional): factor by which the stepsize is
+            increased when adapting
+        cutback_factor (float, optional): factor by which the stepsize is
+            decreased when adapting
+        target_nb_iterations (int, optional): number of Newton iterations
+            over (resp. under) which the stepsize is increased
+            (resp. decreased)
+
 
     Attributes:
         initial_value (float, int): initial stepsize.
@@ -22,11 +30,14 @@ class Stepsize:
     def __init__(
         self,
         initial_value,
+        growth_factor=None,
+        cutback_factor=None,
+        target_nb_iterations=None,
     ) -> None:
         self.initial_value = initial_value
-        self.growth_factor = None
-        self.cutback_factor = None
-        self.target_nb_iterations = None
+        self.growth_factor = growth_factor
+        self.cutback_factor = cutback_factor
+        self.target_nb_iterations = target_nb_iterations
 
         # TODO should this class hold the dt object used in the formulation
 
