@@ -135,23 +135,6 @@ def test_create_species_and_reaction():
         volume=my_vol,
     )
 
-    cm = F.Species("mobile")
-    ct = F.Species("trapped")
-    trap_sites = F.ImplicitSpecies(n=1, others=[ct])
-    my_model.species = [cm, ct]
-
-    trap_reaction = F.Reaction(
-        reactant1=cm,
-        reactant2=trap_sites,
-        product=ct,
-        k_0=1,
-        E_k=1,
-        p_0=1,
-        E_p=1,
-        volume=my_vol,
-    )
-    my_model.reactions = [trap_reaction]
-
     # RUN
     my_trap.create_species_and_reaction()
 
