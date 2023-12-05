@@ -647,12 +647,23 @@ def test_species_setter():
         my_model.species = [1, 2, 3]
 
 
-def test_reinstantiation_of_class():
+@pytest.mark.parametrize(
+    "attribute, value",
+    [
+        ("species", F.Species("test")),
+        ("reactions", None),
+        ("sources", None),
+        ("subdomains", None),
+        ("boundary_conditions", None),
+        ("exports", None),
+    ],
+)
+def test_reinstantiation_of_class(attribute, value):
     """Test that when an attribute defaults to empty list, when the class
     is reinstantiated the list is not passed to the new class object"""
 
     model_1 = F.HydrogenTransportProblem()
-    model_1.species.append(F.Species("test"))
+    getattr(model_1, attribute).append(value)
 
     model_2 = F.HydrogenTransportProblem()
-    assert len(model_2.species) == 0
+    assert len(getattr(model_2, attribute)) == 0
