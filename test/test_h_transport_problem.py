@@ -645,3 +645,25 @@ def test_species_setter():
         match="elements of species must be of type festim.Species not <class 'int'>",
     ):
         my_model.species = [1, 2, 3]
+
+
+@pytest.mark.parametrize(
+    "attribute, value",
+    [
+        ("species", F.Species("test")),
+        ("reactions", None),
+        ("sources", None),
+        ("subdomains", None),
+        ("boundary_conditions", None),
+        ("exports", None),
+    ],
+)
+def test_reinstantiation_of_class(attribute, value):
+    """Test that when an attribute defaults to empty list, when the class
+    is reinstantiated the list is not passed to the new class object"""
+
+    model_1 = F.HydrogenTransportProblem()
+    getattr(model_1, attribute).append(value)
+
+    model_2 = F.HydrogenTransportProblem()
+    assert len(getattr(model_2, attribute)) == 0
