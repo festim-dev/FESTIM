@@ -61,6 +61,20 @@ def test_stepsize_is_unchanged():
     assert np.isclose(new_value, current_value)
 
 
+def test_custom_stepsize_not_adaptive():
+    """Checks that a custom stepsize that isn't adaptive is unchanged"""
+
+    class CustomStepsize(F.Stepsize):
+        def is_adapt(self, t):
+            return False
+
+    my_stepsize = CustomStepsize(initial_value=2)
+    current_value = 2
+    new_value = my_stepsize.modify_value(value=current_value, nb_iterations=5)
+
+    assert np.isclose(new_value, current_value)
+
+
 def test_growth_factor_setter():
     """Checks that the growth factor setter works correctly"""
     stepsize = F.Stepsize(1)
