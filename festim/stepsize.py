@@ -25,6 +25,7 @@ class Stepsize:
         target_nb_iterations (int): number of Newton iterations
             over (resp. under) which the stepsize is increased
             (resp. decreased)
+        adaptive (bool): True if the stepsize is adaptive, False otherwise.
     """
 
     def __init__(
