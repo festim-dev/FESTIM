@@ -649,11 +649,14 @@ def test_species_setter():
 
 def test_create_species_from_trap():
     "Test that a new species and reaction is created when a trap is given"
-    my_model = F.HydrogenTransportProblem()
+
+    # BUILD
+    my_model = F.HydrogenTransportProblem(mesh=test_mesh)
     my_mobile_species = F.Species("test_mobile")
-    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
+    mat = F.Material(D_0=1, E_D=1, name="mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=mat)
     my_trap = F.Trap(
-        name="test",
+        name="test_trap",
         mobile_species=my_mobile_species,
         k_0=1,
         E_k=1,
@@ -662,11 +665,23 @@ def test_create_species_from_trap():
         n=1,
         volume=my_vol,
     )
-    my_model.traps = [my_trap]
-    my_model.create_species_from_trap()
+    my_settings = F.Settings(atol=1, rtol=1, transient=False)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        subdomains=[my_vol],
+        species=[my_mobile_species],
+        traps=[my_trap],
+        temperature=100,
+        settings=my_settings,
+    )
 
-    assert len(my_model.species) == 1
-    assert isinstance(my_model.species[0], F.Species)
+    # RUN
+    my_model.initialise()
+
+    # TEST
+    # test that an additional species is generated
+    assert len(my_model.species) == 2
+    assert isinstance(my_model.species[1], F.Species)
 
     assert len(my_model.reactions) == 1
     assert isinstance(my_model.reactions[0], F.Reaction)
