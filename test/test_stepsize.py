@@ -59,3 +59,29 @@ def test_stepsize_is_unchanged():
     new_value = my_stepsize.modify_value(value=current_value, nb_iterations=5)
 
     assert np.isclose(new_value, current_value)
+
+
+def test_growth_factor_setter():
+    """Checks that the growth factor setter works correctly"""
+    stepsize = F.Stepsize(1)
+
+    # Test that setting a growth factor less than 1 raises a ValueError
+    with pytest.raises(ValueError, match="growth factor should be greater than one"):
+        stepsize.growth_factor = 0.5
+
+    # Test that setting growth factor to None works
+    stepsize.growth_factor = None
+    assert stepsize.growth_factor is None
+
+
+def test_cutback_factor_setter():
+    """Checks that the cutback factor setter works correctly"""
+    stepsize = F.Stepsize(1)
+
+    # Test that setting a cutback factor greater than 1 raises a ValueError
+    with pytest.raises(ValueError, match="cutback factor should be smaller than one"):
+        stepsize.cutback_factor = 1.5
+
+    # Test that setting cutback factor to None works
+    stepsize.cutback_factor = None
+    assert stepsize.cutback_factor is None
