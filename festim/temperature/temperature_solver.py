@@ -8,7 +8,7 @@ class HeatTransferProblem(festim.Temperature):
     Args:
         transient (bool, optional): If True, a transient simulation will
             be run. Defaults to True.
-        initial_value (sp.Add, float, optional): The initial value.
+        initial_value (festim.InitialCondition, optional): The initial value.
             Only needed if transient is True. Defaults to 0.
         absolute_tolerance (float, optional): the absolute tolerance of the newton
             solver. Defaults to 1e-03
@@ -25,7 +25,7 @@ class HeatTransferProblem(festim.Temperature):
     Attributes:
         F (fenics.Form): the variational form of the heat transfer problem
         v_T (fenics.TestFunction): the test function
-        initial_value (sp.Add, int, float): the initial value
+        initial_value (festim.InitialCondition): the initial value
         sub_expressions (list): contains time dependent fenics.Expression to
             be updated
         sources (list): contains festim.Source objects for volumetric heat
@@ -75,9 +75,19 @@ class HeatTransferProblem(festim.Temperature):
         self.v_T = f.TestFunction(V)
 
         if self.transient:
-            ccode_T_ini = sp.printing.ccode(self.initial_value)
-            self.initial_value = f.Expression(ccode_T_ini, degree=2, t=0)
-            self.T_n.assign(f.interpolate(self.initial_value, V))
+            if isinstance(self.initial_value.value, str):
+                if self.initial_value.value.endswith(".xdmf"):
+                    with f.XDMFFile(self.initial_value.value) as file:
+                        file.read_checkpoint(
+                            self.T,
+                            self.initial_value.label,
+                            self.initial_value.time_step,
+                        )
+                self.T_n.assign(self.T)
+            else:
+                ccode_T_ini = sp.printing.ccode(self.initial_value.value)
+                self.initial_value.value = f.Expression(ccode_T_ini, degree=2, t=0)
+                self.T_n.assign(f.interpolate(self.initial_value.value, V))
 
         self.define_variational_problem(materials, mesh, dt)
         self.create_dirichlet_bcs(mesh.surface_markers)

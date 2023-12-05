@@ -107,7 +107,9 @@ def test_run_temperature_transient(tmpdir):
         festim.DirichletBC(surfaces=[1, 2], value=u, field="T"),
     ]
 
-    my_temp = festim.HeatTransferProblem(transient=True, initial_value=u)
+    my_temp = festim.HeatTransferProblem(
+        transient=True, initial_value=festim.InitialCondition(field="T", value=u)
+    )
 
     my_sources = [
         festim.Source(
