@@ -21,7 +21,7 @@ def test_different_surface_ids():
     ]
 
     my_test_model.define_function_spaces()
-    my_test_model.define_markers_and_measures()
+    my_test_model.define_meshtags_and_measures()
 
     for surf_id in surface_subdomains_ids:
         assert surf_id in np.array(my_test_model.facet_meshtags.values)
@@ -43,7 +43,7 @@ def test_different_volume_ids():
     )
     my_model.subdomains = [vol_subdomain_1, vol_subdomain_2, vol_subdomain_3]
 
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
 
     for vol_id in vol_subdom_ids:
         assert vol_id in np.array(my_model.volume_meshtags.values)
@@ -109,8 +109,8 @@ def test_find_volume_from_int(input):
     assert F.find_volume_from_id(input, volumes) == volumes[input - 1]
 
 
-def test_ValueError_raised_when_id_not_found_in_volumes():
-    """test that a ValueError is raised when the id is not found in the list of volumes"""
+def test_ValueError_raised_when_id_not_found_in_volumes_subdomains():
+    """test that a ValueError is raised when an id is not found in the list of volume subdomains"""
 
     volumes = [F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)]
 
@@ -134,4 +134,49 @@ def test_ValueError_rasied_when_volume_ids_are_not_unique():
     my_test_model.define_function_spaces()
 
     with pytest.raises(ValueError, match="Volume ids are not unique"):
-        my_test_model.define_markers_and_measures()
+        my_test_model.define_meshtags_and_measures()
+
+
+def test_ValueError_raised_when_id_not_found_in_surface_subdomains():
+    """test that a ValueError is raised when an id is not found in the list of surface subdomains"""
+
+    surfaces = [F.SurfaceSubdomain(id=1)]
+
+    with pytest.raises(ValueError, match="id 3 not found in list of surfaces"):
+        F.find_surface_from_id(3, surfaces)
+
+
+@pytest.mark.parametrize("input_id, output_index", [(1, 2), (4, 0), (7, 1), (9, 3)])
+def test_find_surface_from_id(input_id, output_index):
+    """test that the correct surface is returned when input is an int"""
+
+    surf_1 = F.SurfaceSubdomain(id=7)
+    surf_2 = F.SurfaceSubdomain1D(id=4, x=0)
+    surf_3 = F.SurfaceSubdomain1D(id=9, x=1)
+    surf_4 = F.SurfaceSubdomain(id=1)
+
+    surfaces = [surf_2, surf_1, surf_4, surf_3]
+
+    assert F.find_surface_from_id(input_id, surfaces) == surfaces[output_index]
+
+
+def test_volume_subdomain_properties():
+    """Tests that the volume subdomain property obtains the correct
+    subdomains from the the model subdomains list"""
+
+    my_model = F.HydrogenTransportProblem()
+    my_model.subdomains = [
+        F.SurfaceSubdomain(id=7),
+        F.SurfaceSubdomain1D(id=4, x=0),
+        F.SurfaceSubdomain(id=2),
+        F.VolumeSubdomain(id=1, material=None),
+        F.VolumeSubdomain1D(id=9, borders=[0, 1], material=None),
+    ]
+
+    assert len(my_model.volume_subdomains) == 2
+    for subdomain in my_model.volume_subdomains:
+        assert isinstance(subdomain, F.VolumeSubdomain)
+
+    assert len(my_model.surface_subdomains) == 3
+    for subdomain in my_model.surface_subdomains:
+        assert isinstance(subdomain, F.SurfaceSubdomain)

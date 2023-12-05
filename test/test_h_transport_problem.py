@@ -246,7 +246,7 @@ def test_define_D_global_different_temperatures():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.define_temperature()
 
     D_computed, D_expr = my_model.define_D_global(H)
@@ -281,7 +281,7 @@ def test_define_D_global_different_materials():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.define_temperature()
 
     D_computed, D_expr = my_model.define_D_global(H)
@@ -328,7 +328,7 @@ def test_initialise_exports_multiple_exports_same_species():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.define_temperature()
     my_model.initialise_exports()
 
@@ -361,7 +361,7 @@ def test_define_D_global_multispecies():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.define_temperature()
 
     D_A_computed, D_A_expr = my_model.define_D_global(A)
@@ -406,7 +406,7 @@ def test_post_processing_update_D_global():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
     my_model.initialise_exports()
@@ -461,7 +461,7 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
     my_model.define_temperature()
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.create_dirichletbc_form(my_bc)
 
     for i in range(3):
@@ -508,7 +508,7 @@ def test_update_time_dependent_values_source(source_value, expected_values):
     my_model.sources = [my_source]
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.assign_functions_to_species()
     my_model.define_temperature()
     my_model.create_source_values_fenics()
@@ -566,7 +566,7 @@ def test_update_sources_with_time_dependent_temperature(
     my_model.define_temperature()
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.create_source_values_fenics()
 
     for i in range(3):
@@ -601,7 +601,7 @@ def test_create_source_values_fenics_multispecies():
     my_model.sources = [my_source_1, my_source_2]
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
     my_model.assign_functions_to_species()
     my_model.define_temperature()
 
@@ -718,3 +718,25 @@ def test_adaptive_timestepping_shrinks():
         assert my_model.dt.value < previous_value
 
         previous_value = float(my_model.dt)
+
+
+@pytest.mark.parametrize(
+    "attribute, value",
+    [
+        ("species", F.Species("test")),
+        ("reactions", None),
+        ("sources", None),
+        ("subdomains", None),
+        ("boundary_conditions", None),
+        ("exports", None),
+    ],
+)
+def test_reinstantiation_of_class(attribute, value):
+    """Test that when an attribute defaults to empty list, when the class
+    is reinstantiated the list is not passed to the new class object"""
+
+    model_1 = F.HydrogenTransportProblem()
+    getattr(model_1, attribute).append(value)
+
+    model_2 = F.HydrogenTransportProblem()
+    assert len(getattr(model_2, attribute)) == 0

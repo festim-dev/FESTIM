@@ -66,7 +66,7 @@ def test_callable_for_value():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
@@ -104,7 +104,7 @@ def test_value_callable_x_t_T():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
@@ -147,7 +147,7 @@ def test_callable_t_only(value):
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
@@ -190,7 +190,7 @@ def test_callable_x_only():
     )
 
     my_model.define_function_spaces()
-    my_model.define_markers_and_measures()
+    my_model.define_meshtags_and_measures()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
