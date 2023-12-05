@@ -92,26 +92,29 @@ class HydrogenTransportProblem:
     def __init__(
         self,
         mesh=None,
-        subdomains=[],
-        species=[],
-        reactions=[],
+        subdomains=None,
+        species=None,
+        reactions=None,
         temperature=None,
-        sources=[],
-        boundary_conditions=[],
+        sources=None,
+        boundary_conditions=None,
         settings=None,
-        exports=[],
-        traps=[],
-    ) -> None:
+        exports=None,
+        traps=None,
+    ):
         self.mesh = mesh
-        self.subdomains = subdomains
-        self.species = species
-        self.reactions = reactions
         self.temperature = temperature
-        self.sources = sources
-        self.boundary_conditions = boundary_conditions
         self.settings = settings
-        self.exports = exports
-        self.traps = traps
+
+        # for arguments to initliase as empty list
+        # if arg not None, assign arg, else assign empty list
+        self.subdomains = subdomains or []
+        self.species = species or []
+        self.reactions = reactions or []
+        self.sources = sources or []
+        self.boundary_conditions = boundary_conditions or []
+        self.exports = exports or []
+        self.traps = traps or []
 
         self.dx = None
         self.ds = None

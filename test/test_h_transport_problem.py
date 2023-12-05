@@ -670,3 +670,25 @@ def test_create_species_from_trap():
 
     assert len(my_model.reactions) == 1
     assert isinstance(my_model.reactions[0], F.Reaction)
+
+
+@pytest.mark.parametrize(
+    "attribute, value",
+    [
+        ("species", F.Species("test")),
+        ("reactions", None),
+        ("sources", None),
+        ("subdomains", None),
+        ("boundary_conditions", None),
+        ("exports", None),
+    ],
+)
+def test_reinstantiation_of_class(attribute, value):
+    """Test that when an attribute defaults to empty list, when the class
+    is reinstantiated the list is not passed to the new class object"""
+
+    model_1 = F.HydrogenTransportProblem()
+    getattr(model_1, attribute).append(value)
+
+    model_2 = F.HydrogenTransportProblem()
+    assert len(getattr(model_2, attribute)) == 0
