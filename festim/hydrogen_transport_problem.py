@@ -181,16 +181,13 @@ class HydrogenTransportProblem:
 
     @species.setter
     def species(self, value):
-        if value is None:
-            self._species = value
-        else:
-            # check that all species are of type festim.Species
-            for spe in value:
-                if not isinstance(spe, F.Species):
-                    raise TypeError(
-                        f"elements of species must be of type festim.Species not {type(spe)}"
-                    )
-            self._species = value
+        # check that all species are of type festim.Species
+        for spe in value:
+            if not isinstance(spe, F.Species):
+                raise TypeError(
+                    f"elements of species must be of type festim.Species not {type(spe)}"
+                )
+        self._species = value
 
     def initialise(self):
         self.define_function_spaces()
