@@ -100,13 +100,16 @@ class HydrogenTransportProblem:
         exports=None,
     ):
         self.mesh = mesh
+        self.temperature = temperature
+        self.settings = settings
+
+        # for arguments to initliase as empty list
+        # if arg not None, assign arg, else assign empty list
         self.subdomains = subdomains or []
         self.species = species or []
         self.reactions = reactions or []
-        self.temperature = temperature
         self.sources = sources or []
         self.boundary_conditions = boundary_conditions or []
-        self.settings = settings
         self.exports = exports or []
 
         self.dx = None
