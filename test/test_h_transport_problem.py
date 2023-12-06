@@ -663,12 +663,11 @@ def test_create_initial_conditions_ValueError_raised_when_not_transient():
         settings=F.Settings(atol=1, rtol=1, transient=False),
     )
 
-    my_model.initialise()
-    
     with pytest.raises(
         ValueError,
         match="Initial conditions can only be defined for transient simulations",
     ):
+        my_model.initialise()
 
 
 @pytest.mark.parametrize(
@@ -696,15 +695,16 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
         initial_conditions=[F.InitialCondition(value=input_value, species=H)],
         settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
     )
-    
+
     # RUN
     my_model.initialise()
-    
+
     assert np.isclose(
         my_model.species[0].prev_solution.vector.array[-1],
         expected_value,
     )
-        
+
+
 def test_create_species_from_trap():
     "Test that a new species and reaction is created when a trap is given"
 
