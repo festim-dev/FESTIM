@@ -741,8 +741,8 @@ def test_create_initial_conditions_value_fenics_multispecies(
     my_model.initialise()
 
     # TEST
-    assert np.isclose(my_model.u_n.sub(0).x.array[-2], expected_value_1)
-    assert np.isclose(my_model.u_n.sub(1).x.array[-1], expected_value_2)
+    assert np.isclose(my_model.u_n.x.array[-2], expected_value_1)
+    assert np.isclose(my_model.u_n.x.array[-1], expected_value_2)
 
 
 @pytest.mark.parametrize(
