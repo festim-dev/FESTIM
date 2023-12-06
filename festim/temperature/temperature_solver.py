@@ -8,8 +8,8 @@ class HeatTransferProblem(festim.Temperature):
     Args:
         transient (bool, optional): If True, a transient simulation will
             be run. Defaults to True.
-        initial_value (festim.InitialCondition, optional): The initial value.
-            Only needed if transient is True. Defaults to 0.
+        initial_condition (festim.InitialCondition, optional): The initial condition.
+            Only needed if transient is True.
         absolute_tolerance (float, optional): the absolute tolerance of the newton
             solver. Defaults to 1e-03
         relative_tolerance (float, optional): the relative tolerance of the newton
@@ -25,7 +25,7 @@ class HeatTransferProblem(festim.Temperature):
     Attributes:
         F (fenics.Form): the variational form of the heat transfer problem
         v_T (fenics.TestFunction): the test function
-        initial_value (festim.InitialCondition): the initial value
+        initial_condition (festim.InitialCondition): the initial condition
         sub_expressions (list): contains time dependent fenics.Expression to
             be updated
         sources (list): contains festim.Source objects for volumetric heat
@@ -36,7 +36,7 @@ class HeatTransferProblem(festim.Temperature):
     def __init__(
         self,
         transient=True,
-        initial_value=0.0,
+        initial_condition=None,
         absolute_tolerance=1e-3,
         relative_tolerance=1e-10,
         maximum_iterations=30,
@@ -44,7 +44,7 @@ class HeatTransferProblem(festim.Temperature):
     ) -> None:
         super().__init__()
         self.transient = transient
-        self.initial_value = initial_value
+        self.initial_condition = initial_condition
         self.absolute_tolerance = absolute_tolerance
         self.relative_tolerance = relative_tolerance
         self.maximum_iterations = maximum_iterations
@@ -75,19 +75,19 @@ class HeatTransferProblem(festim.Temperature):
         self.v_T = f.TestFunction(V)
 
         if self.transient:
-            if isinstance(self.initial_value.value, str):
-                if self.initial_value.value.endswith(".xdmf"):
-                    with f.XDMFFile(self.initial_value.value) as file:
+            if isinstance(self.initial_condition.value, str):
+                if self.initial_condition.value.endswith(".xdmf"):
+                    with f.XDMFFile(self.initial_condition.value) as file:
                         file.read_checkpoint(
                             self.T,
-                            self.initial_value.label,
-                            self.initial_value.time_step,
+                            self.initial_condition.label,
+                            self.initial_condition.time_step,
                         )
-                self.T_n.assign(self.T)
+                    self.T_n.assign(self.T)
             else:
-                ccode_T_ini = sp.printing.ccode(self.initial_value.value)
-                self.initial_value.value = f.Expression(ccode_T_ini, degree=2, t=0)
-                self.T_n.assign(f.interpolate(self.initial_value.value, V))
+                ccode_T_ini = sp.printing.ccode(self.initial_condition.value)
+                self.initial_condition.value = f.Expression(ccode_T_ini, degree=2, t=0)
+                self.T_n.assign(f.interpolate(self.initial_condition.value, V))
 
         self.define_variational_problem(materials, mesh, dt)
         self.create_dirichlet_bcs(mesh.surface_markers)

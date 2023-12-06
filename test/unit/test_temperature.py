@@ -70,7 +70,7 @@ def test_formulation_heat_transfer():
     bc2 = festim.FluxBC(surfaces=[2], value=2, field="T")
 
     my_temp = festim.HeatTransferProblem(
-        transient=True, initial_value=festim.InitialCondition(field="T", value=0)
+        transient=True, initial_condition=festim.InitialCondition(field="T", value=0)
     )
     my_temp.boundary_conditions = [bc1, bc2]
     my_temp.sources = [festim.Source(-4, volume=[1], field="T")]
@@ -93,6 +93,41 @@ def test_formulation_heat_transfer():
     neumann_flux = expressions[1]
     expected_form += -neumann_flux * v * ds(2)
     assert expected_form.equals(F)
+
+
+def test_heat_transfer_create_functions_transient(tmpdir):
+    """Test for the HeatTransferProblem.create_functions().
+    Creates a function, writes it to an XDMF file, then a HeatTransferProblem
+    class is created from this file and the error norm between the written and
+    read fuctions is computed to ensure they are the same.
+    """
+    # create function to be comapared
+    mesh = fenics.UnitIntervalMesh(10)
+    V = fenics.FunctionSpace(mesh, "CG", 1)
+    expr = fenics.Expression("1 + x[0]", degree=2)
+    T = fenics.interpolate(expr, V)
+    # write function to temporary file
+    T_file = tmpdir.join("T.xdmf")
+    fenics.XDMFFile(str(Path(T_file))).write_checkpoint(
+        T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
+    )
+    # HeatTransferProblem needs a festim mesh and a festim material
+    my_mesh = festim.Mesh(mesh)
+    my_mesh.dx = fenics.dx
+    my_mesh.ds = fenics.ds
+    my_mats = festim.Materials(
+        [festim.Material(id=1, D_0=1, E_D=0, thermal_cond=1, heat_capacity=1, rho=1)]
+    )
+    my_temp = festim.HeatTransferProblem(
+        transient=True,
+        initial_condition=festim.InitialCondition(
+            field="T", value=str(Path(T_file)), label="T", time_step=0
+        ),
+    )
+    my_temp.create_functions(my_mats, my_mesh, dt=festim.Stepsize(initial_value=2))
+    # evaluate error between original and read function
+    error_L2 = fenics.errornorm(T, my_temp.T, "L2")
+    assert error_L2 < 1e-9
 
 
 def test_temperature_from_xdmf_create_functions(tmpdir):
