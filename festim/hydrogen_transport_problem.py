@@ -26,6 +26,7 @@ class HydrogenTransportProblem:
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
+        traps (list of F.Trap): the traps of the model
 
     Attributes:
         mesh (festim.Mesh): the mesh of the model
@@ -38,6 +39,7 @@ class HydrogenTransportProblem:
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
+        traps (list of F.Trap): the traps of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpace): the function space of the
@@ -98,6 +100,7 @@ class HydrogenTransportProblem:
         boundary_conditions=None,
         settings=None,
         exports=None,
+        traps=None,
     ):
         self.mesh = mesh
         self.temperature = temperature
@@ -111,6 +114,7 @@ class HydrogenTransportProblem:
         self.sources = sources or []
         self.boundary_conditions = boundary_conditions or []
         self.exports = exports or []
+        self.traps = traps or []
 
         self.dx = None
         self.ds = None
@@ -193,6 +197,7 @@ class HydrogenTransportProblem:
         self._species = value
 
     def initialise(self):
+        self.create_species_from_traps()
         self.define_function_spaces()
         self.define_meshtags_and_measures()
         self.assign_functions_to_species()
@@ -211,6 +216,14 @@ class HydrogenTransportProblem:
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
+
+    def create_species_from_traps(self):
+        """Generate a species and reaction per trap defined in self.traps"""
+
+        for trap in self.traps:
+            trap.create_species_and_reaction()
+            self.species.append(trap.trapped_concentration)
+            self.reactions.append(trap.reaction)
 
     def define_temperature(self):
         """Sets the value of temperature_fenics_value. The type depends on

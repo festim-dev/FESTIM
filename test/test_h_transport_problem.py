@@ -648,6 +648,46 @@ def test_species_setter():
         my_model.species = [1, 2, 3]
 
 
+def test_create_species_from_trap():
+    "Test that a new species and reaction is created when a trap is given"
+
+    # BUILD
+    my_model = F.HydrogenTransportProblem(mesh=test_mesh)
+    my_mobile_species = F.Species("test_mobile")
+    mat = F.Material(D_0=1, E_D=1, name="mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=mat)
+    my_trap = F.Trap(
+        name="test_trap",
+        mobile_species=my_mobile_species,
+        k_0=1,
+        E_k=1,
+        p_0=1,
+        E_p=1,
+        n=1,
+        volume=my_vol,
+    )
+    my_settings = F.Settings(atol=1, rtol=1, transient=False)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        subdomains=[my_vol],
+        species=[my_mobile_species],
+        traps=[my_trap],
+        temperature=100,
+        settings=my_settings,
+    )
+
+    # RUN
+    my_model.initialise()
+
+    # TEST
+    # test that an additional species is generated
+    assert len(my_model.species) == 2
+    assert isinstance(my_model.species[1], F.Species)
+
+    assert len(my_model.reactions) == 1
+    assert isinstance(my_model.reactions[0], F.Reaction)
+
+
 def test_adaptive_timestepping_grows():
     """Tests that the stepsize grows"""
     # BUILD
