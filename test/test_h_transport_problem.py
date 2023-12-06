@@ -663,11 +663,12 @@ def test_create_initial_conditions_ValueError_raised_when_not_transient():
         settings=F.Settings(atol=1, rtol=1, transient=False),
     )
 
+    my_model.initialise()
+    
     with pytest.raises(
         ValueError,
         match="Initial conditions can only be defined for transient simulations",
     ):
-        my_model.initialise()
 
 
 @pytest.mark.parametrize(
@@ -695,15 +696,53 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
         initial_conditions=[F.InitialCondition(value=input_value, species=H)],
         settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
     )
+    
+    # RUN
+    my_model.initialise()
+    
+    assert np.isclose(
+        my_model.species[0].prev_solution.vector.array[-1],
+        expected_value,
+    )
+        
+def test_create_species_from_trap():
+    "Test that a new species and reaction is created when a trap is given"
+
+    # BUILD
+    my_model = F.HydrogenTransportProblem(mesh=test_mesh)
+    my_mobile_species = F.Species("test_mobile")
+    mat = F.Material(D_0=1, E_D=1, name="mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=mat)
+    my_trap = F.Trap(
+        name="test_trap",
+        mobile_species=my_mobile_species,
+        k_0=1,
+        E_k=1,
+        p_0=1,
+        E_p=1,
+        n=1,
+        volume=my_vol,
+    )
+    my_settings = F.Settings(atol=1, rtol=1, transient=False)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        subdomains=[my_vol],
+        species=[my_mobile_species],
+        traps=[my_trap],
+        temperature=100,
+        settings=my_settings,
+    )
 
     # RUN
     my_model.initialise()
 
     # TEST
-    assert np.isclose(
-        my_model.species[0].prev_solution.vector.array[-1],
-        expected_value,
-    )
+    # test that an additional species is generated
+    assert len(my_model.species) == 2
+    assert isinstance(my_model.species[1], F.Species)
+
+    assert len(my_model.reactions) == 1
+    assert isinstance(my_model.reactions[0], F.Reaction)
 
 
 @pytest.mark.parametrize(
