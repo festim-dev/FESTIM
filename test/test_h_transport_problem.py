@@ -127,6 +127,7 @@ def test_iterate():
     my_model = F.HydrogenTransportProblem()
 
     my_model.settings = F.Settings(atol=1e-6, rtol=1e-6, final_time=10)
+    my_model.settings.stepsize = 2.0
 
     my_model.progress = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
@@ -645,6 +646,78 @@ def test_species_setter():
         match="elements of species must be of type festim.Species not <class 'int'>",
     ):
         my_model.species = [1, 2, 3]
+
+
+def test_adaptive_timestepping_grows():
+    """Tests that the stepsize grows"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=True, final_time=10),
+        subdomains=[my_vol],
+        species=[F.Species("H")],
+    )
+
+    stepsize = F.Stepsize(initial_value=1)
+    stepsize.growth_factor = 1.2
+    stepsize.target_nb_iterations = 100  # force it to always grow
+    my_model.settings.stepsize = stepsize
+
+    my_model.initialise()
+
+    my_model.progress = tqdm.autonotebook.tqdm(
+        desc="Solving H transport problem",
+        total=my_model.settings.final_time,
+        unit_scale=True,
+    )
+
+    # RUN & TEST
+    previous_value = stepsize.initial_value
+    for i in range(10):
+        my_model.iterate()
+
+        # check that the current value is greater than the previous one
+        assert my_model.dt.value > previous_value
+
+        previous_value = float(my_model.dt)
+
+
+def test_adaptive_timestepping_shrinks():
+    """Tests that the stepsize shrinks"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=True, final_time=10),
+        subdomains=[my_vol],
+        species=[F.Species("H")],
+    )
+
+    stepsize = F.Stepsize(initial_value=1)
+    stepsize.cutback_factor = 0.8
+    stepsize.target_nb_iterations = -1  # force it to always shrink
+    my_model.settings.stepsize = stepsize
+
+    my_model.initialise()
+
+    my_model.progress = tqdm.autonotebook.tqdm(
+        desc="Solving H transport problem",
+        total=my_model.settings.final_time,
+        unit_scale=True,
+    )
+
+    # RUN & TEST
+    previous_value = stepsize.initial_value
+    for i in range(10):
+        my_model.iterate()
+
+        # check that the current value is smaller than the previous one
+        assert my_model.dt.value < previous_value
+
+        previous_value = float(my_model.dt)
 
 
 @pytest.mark.parametrize(
