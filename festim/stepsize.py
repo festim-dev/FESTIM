@@ -7,7 +7,7 @@ class Stepsize:
 
     Args:
         initial_value (float, int): initial stepsize.
-        grwoth_factor (float, optional): factor by which the stepsize is
+        growth_factor (float, optional): factor by which the stepsize is
             increased when adapting
         cutback_factor (float, optional): factor by which the stepsize is
             decreased when adapting
