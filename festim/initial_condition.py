@@ -1,7 +1,5 @@
 import ufl
 from dolfinx import fem
-import warnings
-import festim as F
 import numpy as np
 
 
@@ -53,8 +51,7 @@ class InitialCondition:
             arguments = self.value.__code__.co_varnames
             kwargs = {}
             if "t" in arguments:
-                warnings.warn("Initial condition cannot be a function of time.")
-                kwargs["t"] = F.as_fenics_constant(0.0, mesh)
+                raise ValueError("Initial condition cannot be a function of time.")
             if "x" in arguments:
                 kwargs["x"] = x
             if "T" in arguments:

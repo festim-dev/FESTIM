@@ -68,5 +68,7 @@ def test_warning_raised_when_giving_time_as_arg():
 
     T = fem.Constant(test_mesh.mesh, 10.0)
 
-    with pytest.warns(match="Initial condition cannot be a function of time."):
+    with pytest.raises(
+        ValueError, match="Initial condition cannot be a function of time."
+    ):
         init_cond.create_expr_fenics(test_mesh.mesh, T, V)
