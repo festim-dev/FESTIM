@@ -45,7 +45,6 @@ class InitialCondition:
             function_space(dolfinx.fem.FunctionSpace): the function space of the species
         """
         x = ufl.SpatialCoordinate(mesh)
-        t = F.as_fenics_constant(0.0, mesh)
 
         if isinstance(self.value, (int, float)):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
@@ -55,7 +54,7 @@ class InitialCondition:
             kwargs = {}
             if "t" in arguments:
                 warnings.warn("Initial condition cannot be a function of time.")
-                kwargs["t"] = t
+                kwargs["t"] = F.as_fenics_constant(0.0, mesh)
             if "x" in arguments:
                 kwargs["x"] = x
             if "T" in arguments:
