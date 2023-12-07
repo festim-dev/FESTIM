@@ -126,7 +126,7 @@ def test_heat_transfer_create_functions_transient(tmpdir):
     )
     my_temp.create_functions(my_mats, my_mesh, dt=festim.Stepsize(initial_value=2))
     # evaluate error between original and read function
-    error_L2 = fenics.errornorm(T, my_temp.T, "L2")
+    error_L2 = fenics.errornorm(T, my_temp.T_n, "L2")
     assert error_L2 < 1e-9
 
 
