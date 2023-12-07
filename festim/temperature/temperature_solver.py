@@ -79,11 +79,10 @@ class HeatTransferProblem(festim.Temperature):
                 if self.initial_condition.value.endswith(".xdmf"):
                     with f.XDMFFile(self.initial_condition.value) as file:
                         file.read_checkpoint(
-                            self.T,
+                            self.T_n,
                             self.initial_condition.label,
                             self.initial_condition.time_step,
                         )
-                    self.T_n.assign(self.T)
             else:
                 ccode_T_ini = sp.printing.ccode(self.initial_condition.value)
                 self.initial_condition.value = f.Expression(ccode_T_ini, degree=2, t=0)
