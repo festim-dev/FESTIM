@@ -74,7 +74,7 @@ class HeatTransferProblem(festim.Temperature):
         self.T_n = f.Function(V, name="T_n")
         self.v_T = f.TestFunction(V)
 
-        if self.transient:
+        if self.transient and self.initial_condition:
             if isinstance(self.initial_condition.value, str):
                 if self.initial_condition.value.endswith(".xdmf"):
                     with f.XDMFFile(self.initial_condition.value) as file:
