@@ -157,6 +157,9 @@ in three categories: 1) enforcing the value of the solution at a boundary
 (Neumann’s condition) 3) enforcing the value of the gradient as a function of 
 the solution itself (Robin’s condition).
 
+Dirichlet BC
+^^^^^^^^^^^^^
+
 In FESTIM, users can fix the mobile hydrogen concentration :math:`c_\mathrm{m}` 
 and the temperature :math:`T` at boundaries :math:`\delta \Omega` (Dirichlet):
 
@@ -206,6 +209,9 @@ reduced to:
     
     c_\mathrm{m} = \frac{\varphi_{impl} R_p}{D}~\text{on}~\delta\Omega
 
+Neumann BC
+^^^^^^^^^^^^
+
 One can also impose hydrogen fluxes or heat fluxes at boundaries (Neumann). 
 Note: we will assume for simplicity that the Soret effect is not included 
 and :math:`J = -D\nabla c_\mathrm{m}`:
@@ -222,6 +228,9 @@ and :math:`J = -D\nabla c_\mathrm{m}`:
     -\lambda\nabla T \cdot \mathrm{\textbf{n}} = f(x,y,z,t)~\text{on}~\delta\Omega
 
 where :math:`\mathrm{\textbf{n}}` is the normal vector of the boundary.
+
+Robin BC
+^^^^^^^^^^
 
 Recombination and dissociation fluxes can also be applied:
 
