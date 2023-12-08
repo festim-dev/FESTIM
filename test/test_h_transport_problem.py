@@ -682,7 +682,7 @@ def test_create_initial_conditions_ValueError_raised_when_not_transient():
 )
 def test_create_initial_conditions_expr_fenics(input_value, expected_value):
     """Test that after calling create_initial_conditions, the prev_solution
-    attribute of the species has the correct value at x=1.0."""
+    attribute of the species has the correct value at x=4.0."""
 
     # BUILD
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 4], material=dummy_mat)
@@ -759,7 +759,7 @@ def test_create_initial_conditions_value_fenics_multispecies(
     input_value_1, input_value_2, expected_value_1, expected_value_2
 ):
     """Test that after calling create_initial_conditions, the prev_solution
-    attribute of each species has the correct value at x=1.0 in a multispecies case"""
+    attribute of each species has the correct value at x=4.0 in a multispecies case"""
 
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 4, num=101))
@@ -781,6 +781,9 @@ def test_create_initial_conditions_value_fenics_multispecies(
     my_model.initialise()
 
     # TEST
+    # When in multispecies, the u and u_n x arrays are structured as follows:
+    # [H, D, ..., H, D, H, D], thus the last two values are the ones we are
+    # interested in
     assert np.isclose(my_model.u_n.x.array[-2], expected_value_1)
     assert np.isclose(my_model.u_n.x.array[-1], expected_value_2)
 
