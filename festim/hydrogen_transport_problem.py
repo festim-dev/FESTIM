@@ -558,7 +558,7 @@ class HydrogenTransportProblem:
         """For each initial condition, create the value_fenics and assign it to
         the previous solution of the condition's species"""
 
-        if len(self.initial_conditions) >= 1 and not self.settings.transient:
+        if len(self.initial_conditions) > 0 and not self.settings.transient:
             raise ValueError(
                 "Initial conditions can only be defined for transient simulations"
             )
