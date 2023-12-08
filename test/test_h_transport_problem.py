@@ -784,7 +784,11 @@ def test_create_initial_conditions_value_fenics_multispecies(
     # When in multispecies, the u and u_n x arrays are structured as follows:
     # [H, D, ..., H, D, H, D], thus the last two values are the ones we are
     # interested in
+
+    # test value of H at x = 4.0
     assert np.isclose(my_model.u_n.x.array[-2], expected_value_1)
+
+    # test value of D at x = 4.0
     assert np.isclose(my_model.u_n.x.array[-1], expected_value_2)
 
 
