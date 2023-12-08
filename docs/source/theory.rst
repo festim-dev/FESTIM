@@ -4,5 +4,264 @@
 Theory
 ======
 
+--------------
+Bulk physics 
+--------------
 
-WIP
+H transport
+^^^^^^^^^^^
+
+The model developed by McNabb & Foster [:ref:`1 <McNabb and Foster>`] is used to model hydrogen transport in materials in FESTIM. The principle is to separate mobile hydrogen :math:`c_\mathrm{m}` and trapped hydrogen :math:`c_\mathrm{t}`. The diffusion of mobile particles is governed by Fick’s law of diffusion where the hydrogen flux is
+
+.. math::
+    :label: eq_difflux
+    
+    J = -D \nabla c_\mathrm{m}
+
+where :math:`D=D(T)` is the diffusivity. Each trap :math:`i` is associated with a 
+trapping and a detrapping rate :math:`k_i` and :math:`p_i`, respectively, as well 
+as a trap density :math:`n_i`.
+
+The temporal evolution of :math:`c_\mathrm{m}` and :math:`c_\mathrm{t}` are then 
+given by:
+
+.. math::
+    :label: eq_mobile_conc
+
+    \frac {\partial c_\mathrm{m}} { \partial t} = \nabla \cdot (D\nabla c_\mathrm{m}) - \sum \frac{\partial c_{\mathrm{t},i}}{\partial t} + \sum S_j
+
+
+.. math::
+    :label: eq_trapped_conc
+
+    \frac {\partial c_\mathrm{t}} { \partial t} = k_i c_\mathrm{m} (n_i - c_{\mathrm{t},i}) - p_i c_{\mathrm{t},i}
+
+where :math:`S_j=S_j(x,y,z,t)` is a source :math:`j` of mobile hydrogen. In FESTIM, 
+source terms can be space and time dependent. These are used to simulate plasma 
+implantation in materials, tritium generation from neutron interactions, etc. 
+These equations can be solved in cartesian coordinates but also in cylindrical 
+and spherical coordinates. This is useful for instance when simulating hydrogen 
+transport in a pipe or in a pebble. FESTIM can solve steady-state hydrogen transport 
+problems.
+
+
+Soret effect
+^^^^^^^^^^^^
+
+FESTIM can include the Soret effect [:ref:`2 <Longhurst>`] (also called
+thermophoresis, temperature-assisted diffusion, or even thermodiffusion)
+to hydrogen transport. The flux of hydrogen :math:`J` is then written as:
+
+.. math::
+    :label: eq_Soret
+
+    J = -D \nabla c_\mathrm{m} - D\frac{H c_\mathrm{m}}{R_g T^2} \nabla T
+
+where :math:`H` is the Soret coefficient (also called heat of transport) and 
+:math:`R_g` is the gas constant.
+
+Conservation of chemical potential at interfaces
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Continuity of local partial pressure :math:`P` at interfaces between materials has 
+to be ensured. In the case of a material behaving according to Sievert’s law 
+of solubility (metals), the partial pressure is expressed as:
+
+.. math::
+    :label: eq_Sievert   
+
+    P = \frac{c_\mathrm{m}^2}{K_S^2}
+
+where :math:`K_S` is the material solubility (or Sivert's constant).
+
+In the case of a material behaving according to Henry's law of solubility,
+the partial pressure is expressed as:
+
+.. math::
+    :label: eq_Henry 
+
+    P = \frac{c_\mathrm{m}}{K_H}
+
+where :math:`K_H` is the material solubility (or Henry's constant).
+
+Two different interface cases can then occur. At the interface between 
+two Sievert or two Henry materials, the continuity of partial pressure yields:
+
+.. math::
+    :label: eq_continuity  
+
+    \begin{eqnarray} 
+    \frac{c_\mathrm{m}^-}{K_S^-}&=&\frac{c_\mathrm{m}^+}{K_S^+} \\
+    &\mathrm{or}& \\
+    \frac{c_\mathrm{m}^-}{K_H^-}&=&\frac{c_\mathrm{m}^+}{K_H^+}
+    \end{eqnarray}
+
+where exponents :math:`+` and :math:`-` denote both sides of the interface.
+
+At the interface between a Sievert and a Henry material:
+
+.. math::
+    :label: eq_continuity_HS  
+
+    \left(\frac{c_\mathrm{m}^-}{K_S^-}\right)^2 = \frac{c_\mathrm{m}^+}{K_H^+}
+
+It appears from these equilibrium equations that a difference in solubilities 
+introduces a concentration jump at interfaces.
+
+In FESTIM, the conservation of chemical potential is obtained by a change of 
+variables [:ref:`3 <Delaporte-Mathurin et al. 1>`]. The variable :math:`\theta` is 
+introduced and:
+
+.. math::
+    :label: eq_theta
+
+    \theta = 
+    \begin{cases}
+    \frac{c_\mathrm{m}^2}{K_S^2} & \text{in Sievert materials} \\
+    \frac{c_\mathrm{m}}{K_H}     & \text{in Henry materials}
+    \end{cases}
+
+The variable :math:`\theta` is continuous at interfaces.
+
+Equations :eq:`eq_mobile_conc` and :eq:`eq_trapped_conc` are then rewritten and 
+solved for :math:`\theta`. Note, the boundary conditions are also rewritten. Once
+solved, the discontinuous :math:`c_\mathrm{m}` field is obtained from :math:`\theta` 
+and the solubilities by solving Equation :eq:`eq_theta` for :math:`c_\mathrm{m}`.
+
+Heat transfer
+^^^^^^^^^^^^^^
+
+As many parameters involved in hydrogen transport are thermally activated and 
+follow an Arrhenius law of temperature, an accurate representation of the 
+temperature field is often required. To this end, FESTIM can solve a heat transfer 
+problem governed by the heat equation:
+
+.. math::
+    :label: eq_heat_transfer
+
+    \rho C_p \frac{\partial T}{\partial t} = \nabla \cdot (\lambda \nabla T) + Q
+
+where :math:`T` is the temperature, :math:`C_p` is the specific heat capacity,
+:math:`\rho` is the material's density, :math:`\lambda` is the thermal conductivity
+and :math:`Q` is a volumetric heat source. As for the hydrogen transport problem, 
+the heat equation can be solved in steady state. In FESTIM, the thermal properties 
+of materials can be arbitrary functions of temperature.
+
+---------------
+Surface physics 
+---------------
+
+To fully pose the hydrogen transport problem and optionally the heat transfer 
+problem, boundary conditions are required. Boundary conditions are separated 
+in three categories: 1) enforcing the value of the solution at a boundary 
+(Dirichlet’s condition) 2) enforcing the value of gradient of the solution 
+(Neumann’s condition) 3) enforcing the value of the gradient as a function of 
+the solution itself (Robin’s condition).
+
+In FESTIM, users can fix the mobile hydrogen concentration :math:`c_\mathrm{m}` 
+and the temperature :math:`T` at boundaries :math:`\delta \Omega` (Dirichlet):
+
+.. math::
+    :label: eq_DirichletBC_c
+    
+    c_\mathrm{m} = f(x,y,z,t)~\text{on}~\delta\Omega
+
+.. math::
+    :label: eq_DirichletBC_T
+    
+    T = f(x,y,z,t)~\text{on}~\delta\Omega
+
+where :math:`f` is an arbitrary function of coordinates :math:`x,y,z` and 
+time :math:`t`.
+
+FESTIM has built-in Dirichlet’s boundary conditions for Sievert’s condition, 
+Henry’s condition (see Equations :eq:`eq_DirichletBC_Sievert` and 
+:eq:`eq_DirichletBC_Henry`, respectively).
+
+.. math::
+    :label: eq_DirichletBC_Sievert
+    
+    c_\mathrm{m} = K_S \sqrt{P}~\text{on}~\delta\Omega
+
+.. math::
+    :label: eq_DirichletBC_Henry
+    
+    c_\mathrm{m} = K_H P~\text{on}~\delta\Omega
+
+Dirichlet’s boundary conditions can also be used to approximate plasma 
+implantation in near surface regions to be more computationally efficient 
+[:ref:`4 <Delaporte-Mathurin et al. 2>`]:
+
+.. math::
+    :label: eq_DirichletBC_triangle
+    
+    c_\mathrm{m} = \frac{\varphi_{impl} R_p}{D} + \sqrt{\frac{\varphi_{impl}}{K_r}}~\text{on}~\delta\Omega
+
+where :math:`\varphi_{impl}` is the implantation flux, :math:`R_p` is the implantation
+range, :math:`K_r` is the recombination coefficient. When recombination is fast 
+(i.e. :math:`K_r\rightarrow\infty`), Equation :eq:`eq_DirichletBC_triangle` can be 
+reduced to:
+
+.. math::
+    :label: eq_DirichletBC_triangle
+    
+    c_\mathrm{m} = \frac{\varphi_{impl} R_p}{D}~\text{on}~\delta\Omega
+
+One can also impose hydrogen fluxes or heat fluxes at boundaries (Neumann). 
+Note: we will assume for simplicity that the Soret effect is not included 
+and :math:`J = -D\nabla c_\mathrm{m}`:
+
+.. math::
+    :label: eq_NeumannBC_c
+    
+    J \cdot \mathrm{\textbf{n}} = -D\nabla c_\mathrm{m} \cdot \mathrm{\textbf{n}}
+    =f(x,y,z,t)~\text{on}~\delta\Omega
+
+.. math::
+    :label: eq_NeumannBC_T
+    
+    -\lambda\nabla T \cdot \mathrm{\textbf{n}} = f(x,y,z,t)~\text{on}~\delta\Omega
+
+where :math:`\mathrm{\textbf{n}}` is the normal vector of the boundary.
+
+Recombination and dissociation fluxes can also be applied:
+
+.. math::
+    :label: eq_NeumannBC_DisRec
+    
+    J \cdot \mathrm{\textbf{n}} = -D\nabla c_\mathrm{m} \cdot \mathrm{\textbf{n}}
+    = K_d P - K_r c_\mathrm{m}^{\{1,2\}} ~\text{on}~\delta\Omega
+
+where :math:`K_d` is the dissociation coefficient and :math:`K_r` is the recombination
+coefficient. In Equation :eq:`eq_NeumannBC_DisRec`, the exponent of :math:`c_\mathrm{m}`
+is either 1 or 2 depending on the reaction order. These boundary conditions are 
+Robin boundary conditions since the gradient is imposed as a function of the solution. 
+
+Finally, convective heat fluxes can be applied to boundaries:
+
+.. math::
+    :label: eq_convective
+    
+    -\lambda\nabla T \cdot \mathrm{\textbf{n}} = h (T-T_{ext})~\text{on}~\delta\Omega
+
+where :math:`h` is the heat transfer coefficient and :math:`T_{ext}` is the external 
+temperature.
+
+---------------
+References
+---------------
+
+.. _McNabb and Foster:
+
+[1] \A. McNabb and P. K. Foster, “A new analysis of the diffusion of hydrogen in iron and ferritic steels”, Transactions of the Metallurgical Society of AIME, vol. 227, pp. 618–627, 1963.
+
+.. _Longhurst:
+
+[2] \G. R. Longhurst, “The soret effect and its implications for fusion reactors,” Journal of Nuclear Materials, vol. 131, no. 1, pp. 61–69, Mar. 1985. [`Online <http://www.sciencedirect.com/science/article/pii/0022311585904258>`_].
+
+.. _Delaporte-Mathurin et al. 1:
+
+[3] \R. Delaporte-Mathurin, E. Hodille, J. Mougenot, Y. Charles, G. D. Temmerman, F. Leblond, and C. Grisolia, “Influence of interface conditions on hydrogen transport studies,” Nuclear Fusion, vol. 61, no. 3, p. 036038, 2021. [`Online <http://iopscience.iop.org/article/10.1088/1741-4326/abd95f>`_].
+
+.. _Delaporte-Mathurin et al. 2:
+
+[3] \R. Delaporte-Mathurin, “Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure,” These de doctorat, Paris 13, Oct. 2022. [`Online <https://www.theses.fr/2022PA131054>`_].
