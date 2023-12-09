@@ -273,4 +273,4 @@ References
 
 .. _Delaporte-Mathurin et al. 2:
 
-[3] \R. Delaporte-Mathurin, “Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure,” These de doctorat, Paris 13, Oct. 2022. [`Online <https://www.theses.fr/2022PA131054>`_].
+[4] \R. Delaporte-Mathurin, “Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure,” These de doctorat, Paris 13, Oct. 2022. [`Online <https://www.theses.fr/2022PA131054>`_].
