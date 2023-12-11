@@ -77,11 +77,15 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     tags_volumes = np.full(num_cells, 0, dtype=np.int32)
     # create 2 volumes for x<0.5 and x>0.5
     volume_indices_left = fenics_mesh.locate_entities(
-        mesh, vdim, lambda x: x[0] <= 0.5,
+        mesh,
+        vdim,
+        lambda x: x[0] <= 0.5,
     )
 
     volume_indices_right = fenics_mesh.locate_entities(
-        mesh, vdim, lambda x: x[0] >= 0.5,
+        mesh,
+        vdim,
+        lambda x: x[0] >= 0.5,
     )
     tags_volumes[volume_indices_left] = 2
     tags_volumes[volume_indices_right] = 3
