@@ -17,11 +17,19 @@ class Mesh1D(F.Mesh):
         vertices (list): the mesh x-coordinates (m)
     """
 
-    def __init__(self, vertices, **kwargs) -> None:
+    def __init__(self, vertices, **kwargs) -> None:        
         self.vertices = vertices
 
         mesh = self.generate_mesh()
         super().__init__(mesh=mesh, **kwargs)
+    
+    @property
+    def vertices(self):
+        return self._vertices
+
+    @vertices.setter
+    def vertices(self, value):
+        self._vertices = sorted(np.unique(value))
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
