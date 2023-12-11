@@ -30,6 +30,8 @@ from .mesh.mesh_from_xdmf import MeshFromXDMF
 
 from .hydrogen_transport_problem import HydrogenTransportProblem
 
+from .initial_condition import InitialCondition
+
 from .settings import Settings
 
 from .source import Source

@@ -22,6 +22,8 @@ class HydrogenTransportProblem:
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
+        initial_conditions (list of festim.InitialCondition): the initial conditions
+            of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
@@ -35,6 +37,9 @@ class HydrogenTransportProblem:
         reactions (list of festim.Reaction): the reactions of the model
         temperature (float, int, fem.Constant, fem.Function or callable): the
             temperature of the model (K)
+        sources (list of festim.Source): the hydrogen sources of the model
+        initial_conditions (list of festim.InitialCondition): the initial conditions
+            of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
         solver_parameters (dict): the solver parameters of the model
@@ -97,6 +102,7 @@ class HydrogenTransportProblem:
         reactions=None,
         temperature=None,
         sources=None,
+        initial_conditions=None,
         boundary_conditions=None,
         settings=None,
         exports=None,
@@ -112,6 +118,7 @@ class HydrogenTransportProblem:
         self.species = species or []
         self.reactions = reactions or []
         self.sources = sources or []
+        self.initial_conditions = initial_conditions or []
         self.boundary_conditions = boundary_conditions or []
         self.exports = exports or []
         self.traps = traps or []
@@ -213,6 +220,7 @@ class HydrogenTransportProblem:
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
+        self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
@@ -545,6 +553,40 @@ class HydrogenTransportProblem:
                     function_space=function_space_value,
                     t=self.t,
                 )
+
+    def create_initial_conditions(self):
+        """For each initial condition, create the value_fenics and assign it to
+        the previous solution of the condition's species"""
+
+        if len(self.initial_conditions) > 0 and not self.settings.transient:
+            raise ValueError(
+                "Initial conditions can only be defined for transient simulations"
+            )
+
+        function_space_value = None
+
+        for condition in self.initial_conditions:
+            # create value_fenics for condition
+            function_space_value = None
+            if callable(condition.value):
+                # if bc.value is a callable then need to provide a functionspace
+                if not self.multispecies:
+                    function_space_value = condition.species.sub_function_space
+                else:
+                    function_space_value = condition.species.collapsed_function_space
+
+            condition.create_expr_fenics(
+                mesh=self.mesh.mesh,
+                temperature=self.temperature_fenics,
+                function_space=function_space_value,
+            )
+
+            # assign to previous solution of species
+            if not self.multispecies:
+                condition.species.prev_solution.interpolate(condition.expr_fenics)
+            else:
+                idx = self.species.index(condition.species)
+                self.u_n.sub(idx).interpolate(condition.expr_fenics)
 
     def create_formulation(self):
         """Creates the formulation of the model"""
