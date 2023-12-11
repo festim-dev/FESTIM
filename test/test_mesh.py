@@ -120,3 +120,9 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     assert volume_meshtags.values.all() == my_model.volume_meshtags.values.all()
     assert facet_meshtags.dim == my_model.facet_meshtags.dim
     assert facet_meshtags.values.all() == my_model.facet_meshtags.values.all()
+
+def test_mesh_from_list():
+    """Check that giving a list as input works"""
+    F.Mesh1D(mesh_test,vertices=[1,2,3,4])
+
+    assert isinstance(mesh_test.vertices, ndarray)
