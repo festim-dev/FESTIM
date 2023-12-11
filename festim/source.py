@@ -80,8 +80,6 @@ class Source:
                 fem.Function,
                 fem.Constant,
                 np.ndarray,
-                ufl.algebra.Product,
-                ufl.algebra.Sum,
             ),
         ):
             raise TypeError(
@@ -134,7 +132,7 @@ class Source:
         if isinstance(self.value, (int, float)):
             self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
 
-        if isinstance(self.value, (ufl.algebra.Product, ufl.algebra.Sum)):
+        if isinstance(self.value, fem.Function):
             self.value_fenics = self.value
 
         elif callable(self.value):
