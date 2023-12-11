@@ -64,11 +64,11 @@ def test_MMS_steady_state():
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = test_mesh_1d
-
     my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
     vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
+
     my_model.subdomains = [vol, left, right]
 
     A = F.Species("A")
@@ -92,11 +92,9 @@ def test_MMS_steady_state():
     my_model.exports = [F.XDMFExport("results/mms/computed_solution.xdmf", field=A)]
 
     my_model.initialise()
-
     my_model.run()
 
     u_computed = my_model.species[0].post_processing_solution
-
     L2_error = error_L2(u_computed, u_numpy)
 
     assert L2_error < 1e-7
@@ -142,7 +140,6 @@ def test_MMS_steady_state_1_trap():
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = test_mesh_1d
-
     my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
     vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
     left = F.SurfaceSubdomain1D(id=2, x=0)
@@ -189,7 +186,6 @@ def test_MMS_steady_state_1_trap():
     ]
 
     my_model.initialise()
-
     my_model.run()
 
     u_computed = my_model.species[0].post_processing_solution
