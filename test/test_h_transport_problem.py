@@ -648,6 +648,63 @@ def test_species_setter():
         my_model.species = [1, 2, 3]
 
 
+def test_create_initial_conditions_ValueError_raised_when_not_transient():
+    """Test that ValueError is raised if initial conditions are defined in
+    a steady state simulation"""
+
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol],
+        species=[H],
+        initial_conditions=[F.InitialCondition(value=1.0, species=H)],
+        settings=F.Settings(atol=1, rtol=1, transient=False),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Initial conditions can only be defined for transient simulations",
+    ):
+        my_model.initialise()
+
+
+@pytest.mark.parametrize(
+    "input_value, expected_value",
+    [
+        (1.0, 1.0),
+        (1, 1.0),
+        (lambda T: 1.0 + T, 11.0),
+        (lambda x: 1.0 + x[0], 5.0),
+        (lambda x, T: 1.0 + x[0] + T, 15.0),
+    ],
+)
+def test_create_initial_conditions_expr_fenics(input_value, expected_value):
+    """Test that after calling create_initial_conditions, the prev_solution
+    attribute of the species has the correct value at x=4.0."""
+
+    # BUILD
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 4], material=dummy_mat)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol_subdomain],
+        species=[H],
+        initial_conditions=[F.InitialCondition(value=input_value, species=H)],
+        settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
+    )
+
+    # RUN
+    my_model.initialise()
+
+    assert np.isclose(
+        my_model.species[0].prev_solution.vector.array[-1],
+        expected_value,
+    )
+
+
 def test_create_species_from_trap():
     "Test that a new species and reaction is created when a trap is given"
 
@@ -686,6 +743,53 @@ def test_create_species_from_trap():
 
     assert len(my_model.reactions) == 1
     assert isinstance(my_model.reactions[0], F.Reaction)
+
+
+@pytest.mark.parametrize(
+    "input_value_1, input_value_2, expected_value_1, expected_value_2",
+    [
+        (1.0, 1.0, 1.0, 1.0),
+        (1.0, 1, 1.0, 1.0),
+        (1.0, lambda T: 1.0 + T, 1.0, 11.0),
+        (1.0, lambda x: 1.0 + x[0], 1.0, 5.0),
+        (1.0, lambda x, T: 1.0 + x[0] + T, 1.0, 15.0),
+    ],
+)
+def test_create_initial_conditions_value_fenics_multispecies(
+    input_value_1, input_value_2, expected_value_1, expected_value_2
+):
+    """Test that after calling create_initial_conditions, the prev_solution
+    attribute of each species has the correct value at x=4.0 in a multispecies case"""
+
+    # BUILD
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, 4, num=101))
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 4], material=dummy_mat)
+    H, D = F.Species("H"), F.Species("D")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol_subdomain],
+        species=[H, D],
+        initial_conditions=[
+            F.InitialCondition(value=input_value_2, species=D),
+            F.InitialCondition(value=input_value_1, species=H),
+        ],
+        settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
+    )
+
+    # RUN
+    my_model.initialise()
+
+    # TEST
+    # When in multispecies, the u and u_n x arrays are structured as follows:
+    # [H, D, ..., H, D, H, D], thus the last two values are the ones we are
+    # interested in
+
+    # test value of H at x = 4.0
+    assert np.isclose(my_model.u_n.x.array[-2], expected_value_1)
+
+    # test value of D at x = 4.0
+    assert np.isclose(my_model.u_n.x.array[-1], expected_value_2)
 
 
 def test_adaptive_timestepping_grows():
