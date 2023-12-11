@@ -11,10 +11,10 @@ class Mesh1D(F.Mesh):
     1D Mesh
 
     Args:
-        vertices (list): the mesh x-coordinates (m)
+        vertices (list or np.array): the mesh x-coordinates (m)
 
     Attributes:
-        vertices (list): the mesh x-coordinates (m)
+        vertices (np.array): the mesh x-coordinates (m)
     """
 
     def __init__(self, vertices, **kwargs) -> None:
