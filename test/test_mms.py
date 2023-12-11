@@ -7,8 +7,6 @@ import mpi4py.MPI as MPI
 
 
 test_mesh_1d = F.Mesh1D(np.linspace(0, 1, 10000))
-x = ufl.SpatialCoordinate(test_mesh_1d.mesh)
-k_B = 8.6173303e-05
 
 
 def error_L2(u_computed, u_exact, degree_raise=3):
@@ -62,12 +60,12 @@ def test_MMS_steady_state():
 
     D_0 = 1
     E_D = 0
-    D = D_0 * ufl.exp(-E_D / (k_B * 1))
+    D = D_0 * ufl.exp(-E_D / (F.k_B * 1))
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = test_mesh_1d
 
-    my_mat = F.Material(name="mat", D_0=1, E_D=0.0)
+    my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
     vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
@@ -83,7 +81,7 @@ def test_MMS_steady_state():
         F.DirichletBC(subdomain=right, value=u_ufl, species=A),
     ]
 
-    f_expr = lambda x: 4 * np.pi**2 * np.sin(2 * np.pi * x[0])
+    f_expr = lambda x: D * 4 * np.pi**2 * np.sin(2 * np.pi * x[0])
     f = fem.Function(V)
     f.interpolate(f_expr)
 
@@ -100,14 +98,13 @@ def test_MMS_steady_state():
     u_computed = my_model.species[0].post_processing_solution
 
     L2_error = error_L2(u_computed, u_numpy)
-    print(L2_error)
 
-    # assert L2_error < 1e-7
+    assert L2_error < 1e-7
 
 
 def test_MMS_steady_state_1_trap():
     """
-    MMS test with one trap at steady state
+    MMS test with one mobile species and one trap at steady state
     """
 
     def u_exact(mod):
@@ -120,19 +117,6 @@ def test_MMS_steady_state_1_trap():
     u_numpy = u_exact(np)
     v_ufl = v_exact(ufl)
     v_numpy = v_exact(np)
-
-    functionspace = fem.FunctionSpace(test_mesh_1d.mesh, ("CG", 1))
-    f_u_ex = fem.Function(functionspace)
-    f_u_ex.interpolate(u_numpy)
-    A_xdmf = XDMFFile(MPI.COMM_WORLD, "results/mms/exact_solution_A.xdmf", "w")
-    A_xdmf.write_mesh(test_mesh_1d.mesh)
-    A_xdmf.write_function(f_u_ex)
-
-    f_v_ex = fem.Function(functionspace)
-    f_v_ex.interpolate(v_numpy)
-    B_xdmf = XDMFFile(MPI.COMM_WORLD, "results/mms/exact_solution_B.xdmf", "w")
-    B_xdmf.write_mesh(test_mesh_1d.mesh)
-    B_xdmf.write_function(f_v_ex)
 
     k_0 = 2
     E_k = 1.5
