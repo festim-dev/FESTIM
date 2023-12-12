@@ -197,7 +197,7 @@ implantation in near surface regions to be more computationally efficient
 .. math::
     :label: eq_DirichletBC_triangle
     
-    c_\mathrm{m} = \frac{\varphi_{impl} R_p}{D} + \sqrt{\frac{\varphi_{impl}}{K_r}}~\text{on}~\delta\Omega
+    c_\mathrm{m} = \frac{\varphi_\mathrm{impl} R_p}{D} + \sqrt{\frac{\varphi_\mathrm{impl}}{K_r}}~\text{on}~\delta\Omega
 
 where :math:`\varphi_{impl}` is the implantation flux, :math:`R_p` is the implantation
 range, :math:`K_r` is the recombination coefficient. When recombination is fast 
