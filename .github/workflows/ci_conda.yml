@@ -9,7 +9,7 @@ jobs:
 
     steps:
     - name: Echo secret
-      run: echo "this is the codecov token $CODECOV_TOKEN"
+      run: echo "this is the codecov token $CODECOV_TOKEN over"
 
     - name: Echo other secret
       run: echo "$TESTBLABLA"
