@@ -9,10 +9,10 @@ jobs:
 
     steps:
     - name: Echo secret
-      run: echo $CODECOV_TOKEN
+      run: echo "this is the codecov token $CODECOV_TOKEN"
 
     - name: Echo other secret
-      run: echo $TESTBLABLA
+      run: echo "$TESTBLABLA"
 
     - name: Checkout code
       uses: actions/checkout@v2
