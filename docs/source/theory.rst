@@ -28,7 +28,7 @@ given by:
 .. math::
     :label: eq_mobile_conc
 
-    \frac {\partial c_\mathrm{m}} { \partial t} = \nabla \cdot (D\nabla c_\mathrm{m}) - \sum \frac{\partial c_{\mathrm{t},i}}{\partial t} + \sum S_j
+    \frac {\partial c_{\mathrm{m}, i}} { \partial t} = \nabla \cdot (D\nabla c_\mathrm{m}) - \sum_i \frac{\partial c_{\mathrm{t},i}}{\partial t} + \sum_j S_j
 
 
 .. math::
