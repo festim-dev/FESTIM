@@ -40,7 +40,7 @@ where :math:`S_j=S_j(x,y,z,t)` is a source :math:`j` of mobile hydrogen. In FEST
 source terms can be space and time dependent. These are used to simulate plasma 
 implantation in materials, tritium generation from neutron interactions, etc. 
 These equations can be solved in cartesian coordinates but also in cylindrical 
-and spherical coordinates. This is useful for instance when simulating hydrogen 
+and spherical coordinates. This is useful, for instance, when simulating hydrogen 
 transport in a pipe or in a pebble. FESTIM can solve steady-state hydrogen transport 
 problems.
 
@@ -48,16 +48,16 @@ problems.
 Soret effect
 ^^^^^^^^^^^^
 
-FESTIM can include the Soret effect [:ref:`2 <Longhurst>`] (also called
-thermophoresis, temperature-assisted diffusion, or even thermodiffusion)
+FESTIM can include the Soret effect [:ref:`2 <Longhurst>`, :ref:`3 <Pendergrass>`] 
+(also called thermophoresis, temperature-assisted diffusion, or even thermodiffusion)
 to hydrogen transport. The flux of hydrogen :math:`J` is then written as:
 
 .. math::
     :label: eq_Soret
 
-    J = -D \nabla c_\mathrm{m} - D\frac{H c_\mathrm{m}}{R_g T^2} \nabla T
+    J = -D \nabla c_\mathrm{m} - D\frac{Q^* c_\mathrm{m}}{R_g T^2} \nabla T
 
-where :math:`H` is the Soret coefficient (also called heat of transport) and 
+where :math:`Q^*` is the Soret coefficient (also called heat of transport) and 
 :math:`R_g` is the gas constant.
 
 Conservation of chemical potential at interfaces
@@ -108,7 +108,7 @@ It appears from these equilibrium equations that a difference in solubilities
 introduces a concentration jump at interfaces.
 
 In FESTIM, the conservation of chemical potential is obtained by a change of 
-variables [:ref:`3 <Delaporte-Mathurin et al. 1>`]. The variable :math:`\theta` is 
+variables [:ref:`4 <Delaporte-Mathurin et al. 1>`]. The variable :math:`\theta` is 
 introduced and:
 
 .. math::
@@ -138,11 +138,11 @@ problem governed by the heat equation:
 .. math::
     :label: eq_heat_transfer
 
-    \rho C_p \frac{\partial T}{\partial t} = \nabla \cdot (\lambda \nabla T) + Q
+    \rho C_p \frac{\partial T}{\partial t} = \nabla \cdot (\lambda \nabla T) + \sum Q_i
 
 where :math:`T` is the temperature, :math:`C_p` is the specific heat capacity,
 :math:`\rho` is the material's density, :math:`\lambda` is the thermal conductivity
-and :math:`Q` is a volumetric heat source. As for the hydrogen transport problem, 
+and :math:`Q_i` is a volumetric heat source :math:`i`. As for the hydrogen transport problem, 
 the heat equation can be solved in steady state. In FESTIM, the thermal properties 
 of materials can be arbitrary functions of temperature.
 
@@ -190,24 +190,73 @@ Henry’s condition (see Equations :eq:`eq_DirichletBC_Sievert` and
     
     c_\mathrm{m} = K_H P~\text{on}~\delta\Omega
 
-Dirichlet’s boundary conditions can also be used to approximate plasma 
-implantation in near surface regions to be more computationally efficient 
-[:ref:`4 <Delaporte-Mathurin et al. 2>`]:
+Plasma implantation approximattion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Dirichlet’s boundary conditions can also be used to approximate plasma implantation 
+in near surface regions to be more computationally efficient [:ref:`5 <Delaporte-Mathurin et al. 2>`]. 
+Let us consider a volumetric source term of hydrogen :math:`\Gamma=\varphi_{\mathrm{imp}}f(x)`, 
+where :math:`f(x)` is a narrow Gaussian distribution. The concentration profile of mobile 
+species can be approximated by a triangular shape [:ref:`6 <Schmid>`] with maximum at :math:`x=R_p`.
+
+The expression of maximum concentration value :math:`c_{\mathrm{m}}` can be obtained by expressing
+the flux balance at equilibrium:
+
+.. math::
+    :label: eq_flux_balance
+
+    \varphi_{\mathrm{imp}} = \varphi_{\mathrm{recomb}} + \varphi_{\mathrm{bulk}}
+
+where :math:`\varphi_{\mathrm{recomb}}` is the recombination flux and :math:`\varphi_{\mathrm{bulk}}` is the
+migration flux into the bulk. :math:`\varphi_{\mathrm{bulk}}` can be expressed as:
+
+.. math::
+    :label: eq_bulk_flux
+
+    \varphi_{\mathrm{bulk}} = D \cdot \frac{c_{\mathrm{m}}}{R_d(t)-R_p}
+
+with :math:`R_d` the diffusion depth and :math:`R_p` the implantation range. When :math:`R_d \gg R_p`, 
+:math:`\varphi_{\mathrm{bulk}} \rightarrow 0`. Equation :eq:`eq_flux_balance` can therefore be written as:
+
+.. math::
+    :label: eq_flux_balance_approx1
+
+    \begin{eqnarray}
+    \varphi_{\mathrm{recomb}} &=& D \cdot \frac{c_{\mathrm{m}} - c_0}{R_p} = \varphi_{\mathrm{imp}}\\
+    \Leftrightarrow c_{\mathrm{m}} &=& \frac{\varphi_{\mathrm{imp}} R_p}{D} + c_0
+    \end{eqnarray}
+
+Assuming second order recombination, :math:`\varphi_{\mathrm{recomb}}` can also be expressed as 
+as a function of the recombination coefficient :math:`K_r`:
+
+.. math::
+    :label: eq_flux_balance_approx2
+
+    \begin{eqnarray}
+    \varphi_{\mathrm{recomb}} &=& K_r c_0^2 = \varphi_{\mathrm{imp}}\\
+    \Leftrightarrow c_0 &=& \sqrt{\frac{\varphi_{\mathrm{imp}}}{K_r}}
+    \end{eqnarray}
+
+By substituting Equation :eq:`eq_flux_balance_approx2` into :eq:`eq_flux_balance_approx1` one 
+can obtain:
+
+.. math::
+    :label: eq_DirichletBC_triangle_full
+    
+    c_\mathrm{m} = \frac{\varphi_{\mathrm{imp}} R_p}{D} + \sqrt{\frac{\varphi_{\mathrm{imp}}}{K_r}}
+
+When recombination is fast (i.e. :math:`K_r\rightarrow\infty`), Equation :eq:`eq_DirichletBC_triangle_full` 
+can be reduced to:
 
 .. math::
     :label: eq_DirichletBC_triangle
     
-    c_\mathrm{m} = \frac{\varphi_\mathrm{impl} R_p}{D} + \sqrt{\frac{\varphi_\mathrm{impl}}{K_r}}~\text{on}~\delta\Omega
+    c_\mathrm{m} = \frac{\varphi_{\mathrm{imp}} R_p}{D}
 
-where :math:`\varphi_\mathrm{impl}` is the implantation flux, :math:`R_p` is the implantation
-range, :math:`K_r` is the recombination coefficient. When recombination is fast 
-(i.e. :math:`K_r\rightarrow\infty`), Equation :eq:`eq_DirichletBC_triangle` can be 
-reduced to:
-
-.. math::
-    :label: eq_DirichletBC_triangle
-    
-    c_\mathrm{m} = \frac{\varphi_\mathrm{impl} R_p}{D}~\text{on}~\delta\Omega
+Since the main driver of for the diffusion is the value :math:`c_{\mathrm{m}}`, when
+:math:`R_p` is negligible compared to the dimension of the simulation domain, one can
+simply impose Equations :eq:`eq_DirichletBC_triangle_full` and :eq:`eq_DirichletBC_triangle`
+at boundaries :math:`\delta \Omega`.
 
 Neumann BC
 ^^^^^^^^^^^^
@@ -250,9 +299,9 @@ Finally, convective heat fluxes can be applied to boundaries:
 .. math::
     :label: eq_convective
     
-    -\lambda\nabla T \cdot \mathrm{\textbf{n}} = h (T-T_{ext})~\text{on}~\delta\Omega
+    -\lambda\nabla T \cdot \mathrm{\textbf{n}} = h (T-T_{\mathrm{ext}})~\text{on}~\delta\Omega
 
-where :math:`h` is the heat transfer coefficient and :math:`T_{ext}` is the external 
+where :math:`h` is the heat transfer coefficient and :math:`T_{\mathrm{ext}}` is the external 
 temperature.
 
 ---------------
@@ -265,12 +314,20 @@ References
 
 .. _Longhurst:
 
-[2] \G. R. Longhurst, “The soret effect and its implications for fusion reactors,” Journal of Nuclear Materials, vol. 131, no. 1, pp. 61–69, Mar. 1985. [`Online <http://www.sciencedirect.com/science/article/pii/0022311585904258>`_].
+[2] \G. R. Longhurst, “The soret effect and its implications for fusion reactors”, Journal of Nuclear Materials, vol. 131, no. 1, pp. 61–69, Mar. 1985. [`Online <http://www.sciencedirect.com/science/article/pii/0022311585904258>`_].
+
+.. _Pendergrass:
+
+[3] \J. H. Pendergrass, “Temperature-dependent ordinary and thermal diffusion of hydrogen isotopes through thermonuclear reactor components”, [`Online <https://www.osti.gov/biblio/7333557>`_].
 
 .. _Delaporte-Mathurin et al. 1:
 
-[3] \R. Delaporte-Mathurin, E. Hodille, J. Mougenot, Y. Charles, G. D. Temmerman, F. Leblond, and C. Grisolia, “Influence of interface conditions on hydrogen transport studies,” Nuclear Fusion, vol. 61, no. 3, p. 036038, 2021. [`Online <http://iopscience.iop.org/article/10.1088/1741-4326/abd95f>`_].
+[4] \R. Delaporte-Mathurin, E. Hodille, J. Mougenot, Y. Charles, G. D. Temmerman, F. Leblond, and C. Grisolia, “Influence of interface conditions on hydrogen transport studies”, Nuclear Fusion, vol. 61, no. 3, p. 036038, 2021. [`Online <http://iopscience.iop.org/article/10.1088/1741-4326/abd95f>`_].
 
 .. _Delaporte-Mathurin et al. 2:
 
-[4] \R. Delaporte-Mathurin, “Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure,” These de doctorat, Paris 13, Oct. 2022. [`Online <https://www.theses.fr/2022PA131054>`_].
+[5] \R. Delaporte-Mathurin, “Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure”, These de doctorat, Paris 13, Oct. 2022. [`Online <https://www.theses.fr/2022PA131054>`_].
+
+.. _Schmid:
+
+[6] \K. Schmid, “Diffusion-trapping modelling of hydrogen recycling in tungsten under ELM-like heat loads”,  Physica Scripta, vol. T167, p. 014025, 2016. [`Online <https://iopscience.iop.org/article/10.1088/0031-8949/T167/1/014025/meta>`_].
