@@ -80,4 +80,4 @@ html_theme_options = {
     "path_to_docs": "./docs/source",
 }
 
-html_title = "FESTIM"
+html_title = "FESTIM Documentation"
