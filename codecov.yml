@@ -1,2 +1,4 @@
+codecov:
+  token: "blablablablablabla"
 ignore:
   - "festim/_version.py"  # ignore version file
