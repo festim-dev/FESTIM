@@ -9,6 +9,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    - name: Echo secret
+      run: echo ${{ secrets.TEST_SECRET }}
+
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v2
       with:
