@@ -190,14 +190,21 @@ Henry’s condition (see Equations :eq:`eq_DirichletBC_Sievert` and
     
     c_\mathrm{m} = K_H P~\text{on}~\delta\Omega
 
-Plasma implantation approximattion
+Plasma implantation approximation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Dirichlet’s boundary conditions can also be used to approximate plasma implantation 
 in near surface regions to be more computationally efficient [:ref:`5 <Delaporte-Mathurin et al. 2>`]. 
 Let us consider a volumetric source term of hydrogen :math:`\Gamma=\varphi_{\mathrm{imp}}f(x)`, 
 where :math:`f(x)` is a narrow Gaussian distribution. The concentration profile of mobile 
-species can be approximated by a triangular shape [:ref:`6 <Schmid>`] with maximum at :math:`x=R_p`.
+species can be approximated by a triangular shape [:ref:`6 <Schmid>`] with maximum at :math:`x=R_p` 
+(see the figure below).
+
+.. figure:: docs/source/images/recomb_sketch.png
+    :align: center
+    :alt: Concentration profile with recombination flux and volumetric source term at :math:`x=R_p`. Dashed lines correspond to the time evolution
+
+    Concentration profie with recombination flux and volumetric source term at :math:`x=R_p`. Dashed lines correspond to the time evolution
 
 The expression of maximum concentration value :math:`c_{\mathrm{m}}` can be obtained by expressing
 the flux balance at equilibrium:
