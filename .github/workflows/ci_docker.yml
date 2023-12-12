@@ -8,6 +8,9 @@ jobs:
       runs-on: ubuntu-latest
       container: dolfinx/dolfinx:v0.7.0
       steps:
+        - name: Echo secret
+          run: echo $CODECOV_TOKEN
+
         - name: Checkout code
           uses: actions/checkout@v2
       
