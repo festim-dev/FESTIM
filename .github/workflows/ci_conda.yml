@@ -8,6 +8,12 @@ jobs:
       CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
 
     steps:
+    - name: Echo secret
+      run: echo $CODECOV_TOKEN
+
+    - name: Echo other secret
+      run: echo $TESTBLABLA
+
     - name: Checkout code
       uses: actions/checkout@v2
 
