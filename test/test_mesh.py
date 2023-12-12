@@ -123,7 +123,11 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
 
 
 def test_mesh_vertices_from_list():
-    """Check that giving vertices as a list is correctly processed"""
+    """Check that giving vertices as a list is correctly processed and ends up as a np.ndarray for the mesh"""
     my_mesh = F.Mesh1D(vertices=[1, 2, 3, 4])
 
     assert isinstance(my_mesh.vertices, np.ndarray)
+
+    my_mesh_2 = F.Mesh1D(vertices=[0, 0.1, 0.2, 0.3, 0.4, 0.5])
+
+    assert isinstance(my_mesh_2.vertices,np.ndarray)

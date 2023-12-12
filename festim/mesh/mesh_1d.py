@@ -29,7 +29,7 @@ class Mesh1D(F.Mesh):
 
     @vertices.setter
     def vertices(self, value):
-        self._vertices = np.sort(np.unique(np.array(value, dtype=np.float64)))
+        self._vertices = np.sort(np.unique(value))
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
