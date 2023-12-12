@@ -11,7 +11,7 @@ class Mesh1D(F.Mesh):
     1D Mesh
 
     Args:
-        vertices (list or np.array): the mesh x-coordinates (m)
+        vertices (list or np.ndarray): the mesh x-coordinates (m)
 
     Attributes:
         vertices (np.array): the mesh x-coordinates (m)
