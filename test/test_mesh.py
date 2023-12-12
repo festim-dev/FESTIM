@@ -130,4 +130,4 @@ def test_mesh_vertices_from_list():
 
     my_mesh_2 = F.Mesh1D(vertices=[0, 0.1, 0.2, 0.3, 0.4, 0.5])
 
-    assert isinstance(my_mesh_2.vertices,np.ndarray)
+    assert isinstance(my_mesh_2.vertices, np.ndarray)
