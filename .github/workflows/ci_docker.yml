@@ -4,7 +4,7 @@ on: [pull_request, push]
 jobs:
   run-tests:
       env:
-      CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
+        CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
       runs-on: ubuntu-latest
       container: dolfinx/dolfinx:v0.7.0
       steps:
