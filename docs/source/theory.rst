@@ -22,7 +22,7 @@ where :math:`D=D(T)` is the diffusivity. Each trap :math:`i` is associated with 
 trapping and a detrapping rate :math:`k_i` and :math:`p_i`, respectively, as well 
 as a trap density :math:`n_i`.
 
-The temporal evolution of :math:`c_\mathrm{m}` and :math:`c_\mathrm{t}` are then 
+The temporal evolution of :math:`c_\mathrm{m}` and :math:`c_{\mathrm{t}, i}` are then 
 given by:
 
 .. math::
