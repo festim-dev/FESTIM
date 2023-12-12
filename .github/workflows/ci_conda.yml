@@ -4,6 +4,8 @@ on: [pull_request, push]
 jobs:
   run-tests:
     runs-on: ubuntu-latest
+    env:
+      CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
 
     steps:
     - name: Checkout code
@@ -34,8 +36,6 @@ jobs:
     
     - name: Upload to codecov
       uses: codecov/codecov-action@v3
-      env:
-        CODECOV_TOKEN: "${{ secrets.CODECOV_TOKEN }}"
       with:
         files: ./coverage.xml
         verbose: true
