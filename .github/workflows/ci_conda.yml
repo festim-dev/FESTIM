@@ -12,7 +12,7 @@ jobs:
       run: echo "this is the codecov token $CODECOV_TOKEN over"
 
     - name: Echo other secret
-      run: echo "$TESTBLABLA"
+      run: echo "this is my test secret $TEST_SECRET"
 
     - name: Checkout code
       uses: actions/checkout@v2
