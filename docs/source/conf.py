@@ -64,7 +64,7 @@ pygments_style = None
 add_module_names = False
 
 # bibliography file
-bibtex_bibfiles = ['bibliography/references.bib']
+bibtex_bibfiles = ["bibliography/references.bib"]
 
 # -- Options for HTML output -------------------------------------------------
 
