@@ -200,7 +200,7 @@ where :math:`f(x)` is a narrow Gaussian distribution. The concentration profile 
 species can be approximated by a triangular shape [:ref:`6 <Schmid>`] with maximum at :math:`x=R_p` 
 (see the figure below).
 
-.. figure:: docs/source/images/recomb_sketch.png
+.. figure:: images/recomb_sketch.png
     :align: center
     :alt: Concentration profile with recombination flux and volumetric source term at :math:`x=R_p`. Dashed lines correspond to the time evolution
 
