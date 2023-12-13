@@ -10,7 +10,7 @@ Bulk physics
 
 H transport
 ^^^^^^^^^^^
-The model developed by McNabb & Foster :cite:`McNabb1963` is used to model hydrogen transport in materials in FESTIM. The principle is to separate mobile hydrogen :math:`c_\mathrm{m}` and trapped hydrogen :math:`c_\mathrm{t}`. The diffusion of mobile particles is governed by Fick’s law of diffusion where the hydrogen flux is
+The model developed by McNabb & Foster [McNabb1963] is used to model hydrogen transport in materials in FESTIM. The principle is to separate mobile hydrogen :math:`c_\mathrm{m}` and trapped hydrogen :math:`c_\mathrm{t}`. The diffusion of mobile particles is governed by Fick’s law of diffusion where the hydrogen flux is
 
 .. math::
     :label: eq_difflux
@@ -36,7 +36,7 @@ These equations can be solved in cartesian coordinates but also in cylindrical a
 
 Soret effect
 ^^^^^^^^^^^^
-FESTIM can include the Soret effect :cite:`Pendergrass1976,Longhurst1985` (also called thermophoresis, temperature-assisted diffusion, or even thermodiffusion) to hydrogen transport. The flux of hydrogen :math:`J` is then written as:
+FESTIM can include the Soret effect [Pendergrass1976,Longhurst1985] (also called thermophoresis, temperature-assisted diffusion, or even thermodiffusion) to hydrogen transport. The flux of hydrogen :math:`J` is then written as:
 
 .. math::
     :label: eq_Soret
@@ -87,7 +87,7 @@ At the interface between a Sievert and a Henry material:
 
 It appears from these equilibrium equations that a difference in solubilities introduces a concentration jump at interfaces.
 
-In FESTIM, the conservation of chemical potential is obtained by a change of variables :cite:`Delaporte-Mathurin2021`. The variable :math:`\theta` is introduced and:
+In FESTIM, the conservation of chemical potential is obtained by a change of variables [Delaporte-Mathurin2021]. The variable :math:`\theta` is introduced and:
 
 .. math::
     :label: eq_theta
@@ -162,8 +162,8 @@ FESTIM has built-in Dirichlet’s boundary conditions for Sievert’s condition,
 Plasma implantation approximation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Dirichlet’s boundary conditions can also be used to approximate plasma implantation in near surface regions to be more computationally efficient :cite:`Delaporte-Mathurin2022`. 
-Let us consider a volumetric source term of hydrogen :math:`\Gamma=\varphi_{\mathrm{imp}}f(x)`, where :math:`f(x)` is a narrow Gaussian distribution. The concentration profile of mobile species can be approximated by a triangular shape :cite:`Schmid2016` with maximum at :math:`x=R_p` (see the figure below).
+Dirichlet’s boundary conditions can also be used to approximate plasma implantation in near surface regions to be more computationally efficient [Delaporte-Mathurin2022]. 
+Let us consider a volumetric source term of hydrogen :math:`\Gamma=\varphi_{\mathrm{imp}}f(x)`, where :math:`f(x)` is a narrow Gaussian distribution. The concentration profile of mobile species can be approximated by a triangular shape [Schmid2016] with maximum at :math:`x=R_p` (see the figure below).
 
 .. figure:: images/recomb_sketch.png
     :align: center
@@ -267,6 +267,3 @@ where :math:`h` is the heat transfer coefficient and :math:`T_{\mathrm{ext}}` is
 ---------------
 References
 ---------------
-
-.. bibliography:: bibliography/references.bib
-    :style: unsrt
