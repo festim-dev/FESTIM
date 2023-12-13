@@ -120,3 +120,11 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     assert volume_meshtags.values.all() == my_model.volume_meshtags.values.all()
     assert facet_meshtags.dim == my_model.facet_meshtags.dim
     assert facet_meshtags.values.all() == my_model.facet_meshtags.values.all()
+
+
+@pytest.mark.parametrize("vertices", [[1, 2, 3, 4], [0, 0.1, 0.2, 0.3, 0.4, 0.5]])
+def test_mesh_vertices_from_list(vertices):
+    """Check that giving vertices as a list is correctly processed and ends up as a np.ndarray for the mesh"""
+    my_mesh = F.Mesh1D(vertices=vertices)
+
+    assert isinstance(my_mesh.vertices, np.ndarray)

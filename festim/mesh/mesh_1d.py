@@ -11,10 +11,10 @@ class Mesh1D(F.Mesh):
     1D Mesh
 
     Args:
-        vertices (list): the mesh x-coordinates (m)
+        vertices (list or np.ndarray): the mesh x-coordinates (m)
 
     Attributes:
-        vertices (list): the mesh x-coordinates (m)
+        vertices (np.ndarray): the mesh x-coordinates (m)
     """
 
     def __init__(self, vertices, **kwargs) -> None:
@@ -22,6 +22,14 @@ class Mesh1D(F.Mesh):
 
         mesh = self.generate_mesh()
         super().__init__(mesh=mesh, **kwargs)
+
+    @property
+    def vertices(self):
+        return self._vertices
+
+    @vertices.setter
+    def vertices(self, value):
+        self._vertices = np.sort(np.unique(value)).astype(float)
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
