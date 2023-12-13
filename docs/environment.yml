@@ -8,7 +8,7 @@ dependencies:
   - pip>=20.1
   - pip:
     - sympy
-    - sphinx_book_theme==1.0.1
-    - sphinx==6.2.1
+    - sphinx_book_theme==1.1.0rc1
+    - sphinx~=7
     - sphinx-design==0.4.1
     - sphinxcontrib-bibtex
