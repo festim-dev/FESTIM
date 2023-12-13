@@ -18,9 +18,10 @@ sys.path.insert(0, os.path.abspath("../.."))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "FESTIM"
-copyright = "2022, Remi Delaporte-Mathurin"
-author = "Remi Delaporte-Mathurin"
-release = "v0.10.2"
+copyright = "2022-2023, FESTIM contributors"
+author = "FESTIM-dev"
+release = "1.0.0"
+version = "1.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -76,11 +77,11 @@ html_static_path = ["_static"]
 html_css_files = ["style.css"]
 
 html_theme_options = {
-    "repository_url": "https://github.com/RemDelaporteMathurin/FESTIM",
+    "repository_url": "https://github.com/festim-dev/FESTIM",
     "use_repository_button": True,
     "use_edit_page_button": True,
     "repository_branch": "main",
     "path_to_docs": "./docs/source",
 }
 
-html_title = "FESTIM"
+html_title = "FESTIM Documentation"
