@@ -11,3 +11,4 @@ dependencies:
     - sphinx_book_theme==1.0.1
     - sphinx==6.2.1
     - sphinx-design==0.4.1
+    - sphinxcontrib-bibtex
