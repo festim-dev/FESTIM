@@ -77,15 +77,11 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     tags_volumes = np.full(num_cells, 0, dtype=np.int32)
     # create 2 volumes for x<0.5 and x>0.5
     volume_indices_left = fenics_mesh.locate_entities(
-        mesh,
-        vdim,
-        lambda x: x[0] <= 0.5,
+        mesh, vdim, lambda x: x[0] <= 0.5,
     )
 
     volume_indices_right = fenics_mesh.locate_entities(
-        mesh,
-        vdim,
-        lambda x: x[0] >= 0.5,
+        mesh, vdim, lambda x: x[0] >= 0.5,
     )
     tags_volumes[volume_indices_left] = 2
     tags_volumes[volume_indices_right] = 3
@@ -120,6 +116,7 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     assert volume_meshtags.values.all() == my_model.volume_meshtags.values.all()
     assert facet_meshtags.dim == my_model.facet_meshtags.dim
     assert facet_meshtags.values.all() == my_model.facet_meshtags.values.all()
+
 
 @pytest.mark.parametrize("vertices", [[1, 2, 3, 4], [0, 0.1, 0.2, 0.3, 0.4, 0.5]])
 def test_mesh_vertices_from_list(vertices):
