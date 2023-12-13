@@ -2,11 +2,11 @@ import festim as F
 import numpy as np
 from dolfinx import fem
 import ufl
-from dolfinx.io import XDMFFile
 import mpi4py.MPI as MPI
 
 
 test_mesh_1d = F.Mesh1D(np.linspace(0, 1, 10000))
+x = ufl.SpatialCoordinate(test_mesh_1d.mesh)
 
 
 def error_L2(u_computed, u_exact, degree_raise=3):
@@ -52,15 +52,13 @@ def test_MMS_steady_state():
 
     elements = ufl.FiniteElement("CG", test_mesh_1d.mesh.ufl_cell(), 1)
     V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
-    exact = fem.Function(V)
-    exact.interpolate(u_numpy)
-    exact_xdmf = XDMFFile(MPI.COMM_WORLD, "results/mms/exact_solution.xdmf", "w")
-    exact_xdmf.write_mesh(test_mesh_1d.mesh)
-    exact_xdmf.write_function(exact)
+    T = fem.Function(V)
 
     D_0 = 1
-    E_D = 0
-    D = D_0 * ufl.exp(-E_D / (F.k_B * 1))
+    E_D = 0.1
+    T_expr = lambda x: 500 + 100 * x[0]
+    T.interpolate(T_expr)
+    D = D_0 * ufl.exp(-E_D / (F.k_B * T))
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = test_mesh_1d
@@ -71,30 +69,30 @@ def test_MMS_steady_state():
 
     my_model.subdomains = [vol, left, right]
 
-    A = F.Species("A")
-    my_model.species = [A]
+    H = F.Species("H")
+    my_model.species = [H]
 
-    my_model.temperature = 1
+    my_model.temperature = T_expr
 
     my_model.boundary_conditions = [
-        F.DirichletBC(subdomain=left, value=u_ufl, species=A),
-        F.DirichletBC(subdomain=right, value=u_ufl, species=A),
+        F.DirichletBC(subdomain=left, value=u_ufl, species=H),
+        F.DirichletBC(subdomain=right, value=u_ufl, species=H),
     ]
 
-    f_expr = lambda x: D * 4 * np.pi**2 * np.sin(2 * np.pi * x[0])
+    f_value = -ufl.div(D * ufl.grad(u_ufl(x)))
+    f_expr = fem.Expression(f_value, V.element.interpolation_points())
     f = fem.Function(V)
     f.interpolate(f_expr)
 
-    my_model.sources = [F.Source(value=f, volume=vol, species=A)]
+    my_model.sources = [F.Source(value=f_value, volume=vol, species=H)]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
-
-    my_model.exports = [F.XDMFExport("results/mms/computed_solution.xdmf", field=A)]
 
     my_model.initialise()
     my_model.run()
 
     u_computed = my_model.species[0].post_processing_solution
+
     L2_error = error_L2(u_computed, u_numpy)
 
     assert L2_error < 1e-7
@@ -109,18 +107,25 @@ def test_MMS_steady_state_1_trap():
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0])
 
     def v_exact(mod):
-        return lambda x: mod.sin(mod.pi * x[0])
+        return lambda x: mod.sin(3 * mod.pi * x[0])
 
-    u_ufl = u_exact(ufl)
-    u_numpy = u_exact(np)
-    v_ufl = v_exact(ufl)
-    v_numpy = v_exact(np)
+    mobile_ufl = u_exact(ufl)
+    mobile_numpy = u_exact(np)
+    trapped_ufl = v_exact(ufl)
+    trapped_numpy = v_exact(np)
+
+    elements = ufl.FiniteElement("P", test_mesh_1d.mesh.ufl_cell(), 1)
+    V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
+    T = fem.Function(V)
+    f = fem.Function(V)
+    g = fem.Function(V)
 
     k_0 = 2
     E_k = 1.5
     p_0 = 0.2
     E_p = 0.1
-    T = 500
+    T_expr = lambda x: 500 + 100 * x[0]
+    T.interpolate(T_expr)
     n_trap = 3
     E_D = 0.1
     D_0 = 2
@@ -129,13 +134,16 @@ def test_MMS_steady_state_1_trap():
     k = k_0 * ufl.exp(-E_k / (k_B * T))
     p = p_0 * ufl.exp(-E_p / (k_B * T))
 
-    V = fem.FunctionSpace(test_mesh_1d.mesh, ("CG", 1))
-    f = fem.Function(V)
-    f_expr = lambda x: D * 9 * ufl.pi**2 * np.sin(3 * ufl.pi * x[0])
+    f_value = (
+        -ufl.div(D * ufl.grad(mobile_ufl(x)))
+        + k * mobile_ufl(x) * (n_trap - trapped_ufl(x))
+        - p * trapped_ufl(x)
+    )
+    f_expr = fem.Expression(f_value, V.element.interpolation_points())
     f.interpolate(f_expr)
 
-    g = fem.Function(V)
-    g_expr = lambda x: p * v_numpy(x) - k * u_numpy(x) * (n_trap - v_numpy(x))
+    g_value = p * trapped_ufl(x) - k * mobile_ufl(x) * (n_trap - trapped_ufl(x))
+    g_expr = fem.Expression(g_value, V.element.interpolation_points())
     g.interpolate(g_expr)
 
     my_model = F.HydrogenTransportProblem()
@@ -146,16 +154,16 @@ def test_MMS_steady_state_1_trap():
     right = F.SurfaceSubdomain1D(id=3, x=1)
     my_model.subdomains = [vol, left, right]
 
-    A = F.Species("A")
-    B = F.Species("B", mobile=False)
-    traps = F.ImplicitSpecies(n=n_trap, others=[B])
-    my_model.species = [A, B]
+    mobile = F.Species("mobile")
+    trapped = F.Species("trapped", mobile=False)
+    traps = F.ImplicitSpecies(n=n_trap, others=[trapped])
+    my_model.species = [mobile, trapped]
 
     my_model.reactions = [
         F.Reaction(
-            reactant1=A,
+            reactant1=mobile,
             reactant2=traps,
-            product=B,
+            product=trapped,
             k_0=k_0,
             E_k=E_k,
             p_0=p_0,
@@ -164,35 +172,30 @@ def test_MMS_steady_state_1_trap():
         )
     ]
 
-    my_model.temperature = T
+    my_model.temperature = T_expr
 
     my_model.boundary_conditions = [
-        F.DirichletBC(subdomain=left, value=u_ufl, species=A),
-        F.DirichletBC(subdomain=right, value=u_ufl, species=A),
-        F.DirichletBC(subdomain=left, value=v_ufl, species=B),
-        F.DirichletBC(subdomain=right, value=v_ufl, species=B),
+        F.DirichletBC(subdomain=left, value=mobile_ufl, species=mobile),
+        F.DirichletBC(subdomain=right, value=mobile_ufl, species=mobile),
+        F.DirichletBC(subdomain=left, value=trapped_ufl, species=trapped),
+        F.DirichletBC(subdomain=right, value=trapped_ufl, species=trapped),
     ]
 
     my_model.sources = [
-        F.Source(value=f, volume=vol, species=A),
-        F.Source(value=g, volume=vol, species=B),
+        F.Source(value=f, volume=vol, species=mobile),
+        F.Source(value=g, volume=vol, species=trapped),
     ]
 
-    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
-
-    my_model.exports = [
-        F.XDMFExport("results/mms/computed_solution_A.xdmf", field=A),
-        F.XDMFExport("results/mms/computed_solution_B.xdmf", field=B),
-    ]
+    my_model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
 
     my_model.initialise()
     my_model.run()
 
-    u_computed = my_model.species[0].post_processing_solution
-    v_computed = my_model.species[1].post_processing_solution
+    mobile_computed = mobile.post_processing_solution
+    trapped_computed = trapped.post_processing_solution
 
-    L2_error_A = error_L2(u_computed, u_numpy)
-    L2_error_B = error_L2(v_computed, v_numpy)
+    L2_error_mobile = error_L2(mobile_computed, mobile_numpy)
+    L2_error_trapped = error_L2(trapped_computed, trapped_numpy)
 
-    assert L2_error_A < 1e-02
-    assert L2_error_B < 1e-07
+    assert L2_error_mobile < 2e-07
+    assert L2_error_trapped < 1e-07
