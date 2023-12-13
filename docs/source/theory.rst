@@ -167,6 +167,7 @@ Let us consider a volumetric source term of hydrogen :math:`\Gamma=\varphi_{\mat
 
 .. figure:: images/recomb_sketch.png
     :align: center
+    :width: 700
     :alt: Concentration profile with recombination flux and volumetric source term at :math:`x=R_p`. Dashed lines correspond to the time evolution
 
     Concentration profie with recombination flux and volumetric source term at :math:`x=R_p`. Dashed lines correspond to the time evolution
