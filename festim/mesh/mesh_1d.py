@@ -14,7 +14,7 @@ class Mesh1D(F.Mesh):
         vertices (list or np.ndarray): the mesh x-coordinates (m)
 
     Attributes:
-        vertices (np.array): the mesh x-coordinates (m)
+        vertices (np.ndarray): the mesh x-coordinates (m)
     """
 
     def __init__(self, vertices, **kwargs) -> None:
