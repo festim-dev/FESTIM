@@ -9,6 +9,6 @@ dependencies:
   - pip:
     - sympy
     - sphinx_book_theme==1.1.0rc1
-    - sphinx~=7
+    - sphinx==7
     - sphinx-design==0.4.1
     - sphinxcontrib-bibtex
