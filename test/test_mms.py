@@ -47,8 +47,8 @@ def test_MMS_steady_state():
     def u_exact(mod):
         return lambda x: 1 + mod.sin(2 * mod.pi * x[0])
 
-    u_ufl = u_exact(ufl)
-    u_numpy = u_exact(np)
+    H_analytical_ufl = u_exact(ufl)
+    H_analytical_np = u_exact(np)
 
     elements = ufl.FiniteElement("CG", test_mesh_1d.mesh.ufl_cell(), 1)
     V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
@@ -75,25 +75,25 @@ def test_MMS_steady_state():
     my_model.temperature = T_expr
 
     my_model.boundary_conditions = [
-        F.DirichletBC(subdomain=left, value=u_ufl, species=H),
-        F.DirichletBC(subdomain=right, value=u_ufl, species=H),
+        F.DirichletBC(subdomain=left, value=H_analytical_ufl, species=H),
+        F.DirichletBC(subdomain=right, value=H_analytical_ufl, species=H),
     ]
 
-    f_value = -ufl.div(D * ufl.grad(u_ufl(x)))
+    f_value = -ufl.div(D * ufl.grad(H_analytical_ufl(x)))
     f_expr = fem.Expression(f_value, V.element.interpolation_points())
     f = fem.Function(V)
     f.interpolate(f_expr)
 
-    my_model.sources = [F.Source(value=f_value, volume=vol, species=H)]
+    my_model.sources = [F.Source(value=f, volume=vol, species=H)]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
 
     my_model.initialise()
     my_model.run()
 
-    u_computed = my_model.species[0].post_processing_solution
+    H_computed = H.post_processing_solution
 
-    L2_error = error_L2(u_computed, u_numpy)
+    L2_error = error_L2(H_computed, H_analytical_np)
 
     assert L2_error < 1e-7
 
@@ -109,10 +109,10 @@ def test_MMS_steady_state_1_trap():
     def v_exact(mod):
         return lambda x: mod.sin(3 * mod.pi * x[0])
 
-    mobile_ufl = u_exact(ufl)
-    mobile_numpy = u_exact(np)
-    trapped_ufl = v_exact(ufl)
-    trapped_numpy = v_exact(np)
+    mobile_analytical_ufl = u_exact(ufl)
+    mobile_analytical_np = u_exact(np)
+    trapped_analytical_ufl = v_exact(ufl)
+    trapped_analytical_np = v_exact(np)
 
     elements = ufl.FiniteElement("P", test_mesh_1d.mesh.ufl_cell(), 1)
     V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
@@ -135,14 +135,16 @@ def test_MMS_steady_state_1_trap():
     p = p_0 * ufl.exp(-E_p / (k_B * T))
 
     f_value = (
-        -ufl.div(D * ufl.grad(mobile_ufl(x)))
-        + k * mobile_ufl(x) * (n_trap - trapped_ufl(x))
-        - p * trapped_ufl(x)
+        -ufl.div(D * ufl.grad(mobile_analytical_ufl(x)))
+        + k * mobile_analytical_ufl(x) * (n_trap - trapped_analytical_ufl(x))
+        - p * trapped_analytical_ufl(x)
     )
     f_expr = fem.Expression(f_value, V.element.interpolation_points())
     f.interpolate(f_expr)
 
-    g_value = p * trapped_ufl(x) - k * mobile_ufl(x) * (n_trap - trapped_ufl(x))
+    g_value = p * trapped_analytical_ufl(x) - k * mobile_analytical_ufl(x) * (
+        n_trap - trapped_analytical_ufl(x)
+    )
     g_expr = fem.Expression(g_value, V.element.interpolation_points())
     g.interpolate(g_expr)
 
@@ -175,10 +177,10 @@ def test_MMS_steady_state_1_trap():
     my_model.temperature = T_expr
 
     my_model.boundary_conditions = [
-        F.DirichletBC(subdomain=left, value=mobile_ufl, species=mobile),
-        F.DirichletBC(subdomain=right, value=mobile_ufl, species=mobile),
-        F.DirichletBC(subdomain=left, value=trapped_ufl, species=trapped),
-        F.DirichletBC(subdomain=right, value=trapped_ufl, species=trapped),
+        F.DirichletBC(subdomain=left, value=mobile_analytical_ufl, species=mobile),
+        F.DirichletBC(subdomain=right, value=mobile_analytical_ufl, species=mobile),
+        F.DirichletBC(subdomain=left, value=trapped_analytical_ufl, species=trapped),
+        F.DirichletBC(subdomain=right, value=trapped_analytical_ufl, species=trapped),
     ]
 
     my_model.sources = [
@@ -194,8 +196,8 @@ def test_MMS_steady_state_1_trap():
     mobile_computed = mobile.post_processing_solution
     trapped_computed = trapped.post_processing_solution
 
-    L2_error_mobile = error_L2(mobile_computed, mobile_numpy)
-    L2_error_trapped = error_L2(trapped_computed, trapped_numpy)
+    L2_error_mobile = error_L2(mobile_computed, mobile_analytical_np)
+    L2_error_trapped = error_L2(trapped_computed, trapped_analytical_np)
 
     assert L2_error_mobile < 2e-07
     assert L2_error_trapped < 1e-07
