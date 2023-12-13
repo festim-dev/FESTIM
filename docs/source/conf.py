@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx_design",
+    "sphinxcontrib.bibtex",
     "matplotlib.sphinxext.plot_directive",
 ]
 
@@ -61,6 +62,9 @@ pygments_style = None
 
 # shorten module names in readme
 add_module_names = False
+
+# bibliography file
+bibtex_bibfiles = ["bibliography/references.bib"]
 
 # -- Options for HTML output -------------------------------------------------
 
