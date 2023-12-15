@@ -75,12 +75,7 @@ class Source:
             self._value_fenics = value
             return
         if not isinstance(
-            value,
-            (
-                fem.Function,
-                fem.Constant,
-                np.ndarray,
-            ),
+            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
         ):
             raise TypeError(
                 f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
@@ -132,7 +127,7 @@ class Source:
         if isinstance(self.value, (int, float)):
             self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
 
-        if isinstance(self.value, fem.Function):
+        if isinstance(self.value, (fem.Function, ufl.core.expr.Expr)):
             self.value_fenics = self.value
 
         elif callable(self.value):
