@@ -80,11 +80,7 @@ def test_MMS_steady_state():
         F.DirichletBC(subdomain=right, value=H_analytical_ufl, species=H),
     ]
 
-    f_value = -ufl.div(D * ufl.grad(H_analytical_ufl(x)))
-    f_expr = fem.Expression(f_value, V.element.interpolation_points())
-    f = fem.Function(V)
-    f.interpolate(f_expr)
-
+    f = -ufl.div(D * ufl.grad(H_analytical_ufl(x)))
     my_model.sources = [F.Source(value=f, volume=vol, species=H)]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
@@ -135,19 +131,15 @@ def test_MMS_steady_state_1_trap():
     k = k_0 * ufl.exp(-E_k / (k_B * T))
     p = p_0 * ufl.exp(-E_p / (k_B * T))
 
-    f_value = (
+    f = (
         -ufl.div(D * ufl.grad(mobile_analytical_ufl(x)))
         + k * mobile_analytical_ufl(x) * (n_trap - trapped_analytical_ufl(x))
         - p * trapped_analytical_ufl(x)
     )
-    f_expr = fem.Expression(f_value, V.element.interpolation_points())
-    f.interpolate(f_expr)
 
-    g_value = p * trapped_analytical_ufl(x) - k * mobile_analytical_ufl(x) * (
+    g = p * trapped_analytical_ufl(x) - k * mobile_analytical_ufl(x) * (
         n_trap - trapped_analytical_ufl(x)
     )
-    g_expr = fem.Expression(g_value, V.element.interpolation_points())
-    g.interpolate(g_expr)
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = test_mesh_1d
@@ -212,15 +204,15 @@ def test_MMS_transient():
     final_time = 0.1
 
     def u_exact(mod):
-        return lambda x, t: 1 + mod.sin(2 * mod.pi * x[0]) + t**2
+        return lambda x, t: 1 + mod.sin(2 * mod.pi * x[0]) + 2 * t**2
 
     def u_exact_alt(mod):
-        return lambda x: 1 + mod.sin(2 * mod.pi * x[0]) + final_time**2
+        return lambda x: 1 + mod.sin(2 * mod.pi * x[0]) + 2 * final_time**2
 
     H_analytical_ufl = u_exact(ufl)
     H_analytical_np = u_exact_alt(np)
 
-    elements = ufl.FiniteElement("CG", test_mesh_1d.mesh.ufl_cell(), 1)
+    elements = ufl.FiniteElement("P", test_mesh_1d.mesh.ufl_cell(), 1)
     V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
     T = fem.Function(V)
 
@@ -254,16 +246,11 @@ def test_MMS_transient():
     init_value = lambda x: 1 + ufl.sin(2 * ufl.pi * x[0])
     my_model.initial_conditions = [F.InitialCondition(value=init_value, species=H)]
 
-    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=final_time)
-    my_model.settings.stepsize = final_time / 20
-
-    my_model.initialise()
-
-    f = lambda x, t: (
-        (H_analytical_ufl(x, t) - H.prev_solution) / my_model.dt
-    ) - ufl.div(D * ufl.grad(H_analytical_ufl(x, t)))
-
+    f = lambda x, t: 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x, t)))
     my_model.sources = [F.Source(value=f, volume=vol, species=H)]
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=final_time)
+    my_model.settings.stepsize = final_time / 50
 
     my_model.initialise()
     my_model.run()
@@ -272,8 +259,4 @@ def test_MMS_transient():
 
     L2_error = error_L2(H_computed, H_analytical_np)
 
-    assert L2_error < 1e-7
-
-
-if __name__ == "__main__":
-    test_MMS_transient()
+    assert L2_error < 4e-3
