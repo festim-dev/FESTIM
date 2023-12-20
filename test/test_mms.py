@@ -198,7 +198,7 @@ def test_MMS_steady_state_1_trap():
 
 def test_MMS_transient():
     """
-    MMS test with one mobile species in 0.1s transient
+    MMS test with one mobile species in 0.1s transient. Analytical solution
     """
 
     final_time = 0.1
@@ -259,4 +259,4 @@ def test_MMS_transient():
 
     L2_error = error_L2(H_computed, H_analytical_np)
 
-    assert L2_error < 4e-3
+    assert L2_error < 5e-4
