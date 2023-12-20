@@ -203,3 +203,23 @@ def test_temperature_from_xdmf_transient_case(tmpdir):
     my_model.settings.final_time = 10
     my_model.initialise()
     my_model.run()
+
+
+def test_temperature_from_xdmf(tmpdir):
+    """
+    Tests that .is_steady_state() can be run for
+    a TemperatureFromXDMF object
+    """
+    mesh = fenics.UnitSquareMesh(10, 10)
+    V = fenics.FunctionSpace(mesh, "CG", 1)
+    expr = fenics.Expression("1 + x[0] + 2*x[1]", degree=2)
+    T = fenics.interpolate(expr, V)
+    # write function to temporary file
+    T_file = str(tmpdir.join("T.xdmf"))
+    fenics.XDMFFile(T_file).write_checkpoint(
+        T, "T", 0, fenics.XDMFFile.Encoding.HDF5, append=False
+    )
+
+    temperature = festim.TemperatureFromXDMF(T_file, "T")
+
+    assert temperature.is_steady_state()
