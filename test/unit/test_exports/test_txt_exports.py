@@ -6,11 +6,11 @@ from pathlib import Path
 
 
 class TestWrite:
-    @pytest.fixture
-    def my_export(self, tmpdir):
+    @pytest.fixture(params=[[1, 2, 3], None])
+    def my_export(self, tmpdir, request):
         d = tmpdir.mkdir("test_folder")
         my_export = TXTExports(
-            ["solute", "T"], ["solute_label", "T_label"], [1, 2, 3], str(Path(d))
+            ["solute", "T"], ["solute_label", "T_label"], request.param, str(Path(d))
         )
 
         return my_export
@@ -22,4 +22,4 @@ class TestWrite:
 
 def test_error_when_fields_and_labels_have_different_lengths():
     with pytest.raises(ValueError, match="Number of fields to be exported"):
-        TXTExports(["solute", "T"], [1], ["solute_label"])
+        TXTExports(["solute", "T"], ["solute_label"], [1])
