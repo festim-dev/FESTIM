@@ -10,7 +10,7 @@ class TestWrite:
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
         my_export = TXTExports(
-            ["solute", "T"], [1, 2, 3], ["solute_label", "T_label"], str(Path(d))
+            ["solute", "T"], ["solute_label", "T_label"], [1, 2, 3], str(Path(d))
         )
 
         return my_export

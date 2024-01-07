@@ -18,9 +18,11 @@ class TXTExport(festim.Export):
         times (list, optional): if provided, the field will be
             exported at these timesteps. Otherwise exports at all
             timesteps. Defaults to None.
+        header_format (str, optional): the format of column headers.
+            Defautls to ".2e".
     """
 
-    def __init__(self, field, label, folder, times=None) -> None:
+    def __init__(self, field, label, folder, times=None, header_format=".2e") -> None:
         super().__init__(field=field)
         if times:
             self.times = sorted(times)
@@ -28,6 +30,7 @@ class TXTExport(festim.Export):
             self.times = times
         self.label = label
         self.folder = folder
+        self.header_format = header_format
         self._first_time = True
 
     @property
@@ -60,7 +63,7 @@ class TXTExport(festim.Export):
             if steady:
                 header = "x,t=steady"
             else:
-                header = "x,t={}s".format(current_time)
+                header = f"x,t={format(current_time, self.header_format)}s"
 
             # if the directory doesn't exist
             # create it
@@ -81,7 +84,7 @@ class TXTExport(festim.Export):
                 old_file = open(self.filename)
                 old_header = old_file.readline().split("\n")[0]
                 old_file.close()
-                header = old_header + ",t={}s".format(current_time)
+                header = old_header + f",t={format(current_time, self.header_format)}s"
                 # Append new column
                 old_columns = np.loadtxt(self.filename, delimiter=",", skiprows=1)
                 data = np.column_stack([old_columns, solution_column])
@@ -90,16 +93,27 @@ class TXTExport(festim.Export):
 
 
 class TXTExports:
-    def __init__(self, fields=[], times=[], labels=[], folder=None) -> None:
+    def __init__(
+        self, fields=[], labels=[], times=None, folder=None, header_format=".2e"
+    ) -> None:
+        msg = "TXTExports class will be depricated in future versions of FESTIM"
+        warnings.warn(msg, DeprecationWarning)
+
         self.fields = fields
         if len(self.fields) != len(labels):
             raise ValueError(
                 "Number of fields to be exported "
                 "doesn't match number of labels in txt exports"
             )
-        self.times = sorted(times)
+        if times:
+            self.times = sorted(times)
+        else:
+            self.times = times
         self.labels = labels
         self.folder = folder
+        self.header_format = header_format
         self.exports = []
         for function, label in zip(self.fields, self.labels):
-            self.exports.append(TXTExport(function, label, folder, times))
+            self.exports.append(
+                TXTExport(function, label, folder, times, header_format)
+            )
