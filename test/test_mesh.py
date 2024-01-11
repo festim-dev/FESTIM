@@ -5,6 +5,7 @@ import pytest
 import numpy as np
 import os
 from dolfinx.io import XDMFFile
+from dolfinx.mesh import meshtags
 
 mesh_1D = fenics_mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 mesh_2D = fenics_mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
@@ -128,3 +129,22 @@ def test_mesh_vertices_from_list(vertices):
     my_mesh = F.Mesh1D(vertices=vertices)
 
     assert isinstance(my_mesh.vertices, np.ndarray)
+
+
+def test_mesh_custom_fenics_type_hints():
+    """Test that the custom fenics mesh is correctly processed"""
+
+    # BULD
+    surface_indices = np.array([], dtype=np.int32)
+    surface_tags = np.array([], dtype=np.int32)
+    surface_meshtags = meshtags(mesh_1D, 0, surface_indices, surface_tags)
+
+    num_cells = mesh_1D.topology.index_map(1).size_local
+    mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+    tags_volumes = np.full(num_cells, 1, dtype=np.int32)
+    volume_meshtags = meshtags(mesh_1D, 1, mesh_cell_indices, tags_volumes)
+
+    # TEST
+    F.CustomFenicsMesh(
+        mesh=mesh_1D, surface_meshtags=surface_meshtags, volume_meshtags=volume_meshtags
+    )
