@@ -438,9 +438,24 @@ class HydrogenTransportProblem:
                 surface_subdomains=self.surface_subdomains,
                 volume_subdomains=self.volume_subdomains,
             )
-        elif isinstance(self.mesh, F.Mesh):
+
+        elif isinstance(self.mesh, F.CustomFenicsMesh):
             self.facet_meshtags = self.mesh.surface_meshtags
             self.volume_meshtags = self.mesh.volume_meshtags
+
+        elif isinstance(self.mesh, F.Mesh):
+            facet_indices = np.array([], dtype=np.int32)
+            facet_tags = np.array([], dtype=np.int32)
+            self.facet_meshtags = meshtags(
+                self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
+            )
+
+            num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
+            mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+            tags_volumes = np.full(num_cells, 1, dtype=np.int32)
+            self.volume_meshtags = meshtags(
+                self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
+            )
 
         # check volume ids are unique
         vol_ids = [vol.id for vol in self.volume_subdomains]
