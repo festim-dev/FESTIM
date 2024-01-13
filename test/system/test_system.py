@@ -344,7 +344,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         my_exports = festim.Exports(
             [
                 festim.TXTExport(
-                    "solute", times=[100], label="solute", folder=str(Path(d))
+                    "solute", times=[100], filename="{}/solute.txt".format(str(Path(d)))
                 ),
             ]
         )

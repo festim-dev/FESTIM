@@ -10,7 +10,12 @@ class TestWrite:
     def my_export(self, tmpdir, request):
         d = tmpdir.mkdir("test_folder")
         my_export = TXTExports(
-            ["solute", "T"], ["solute_label", "T_label"], request.param, str(Path(d))
+            fields=["solute", "T"],
+            filenames=[
+                "{}/solute_label.txt".format(str(Path(d))),
+                "{}/T_label.txt".format(str(Path(d))),
+            ],
+            times=request.param,
         )
 
         return my_export
@@ -22,4 +27,4 @@ class TestWrite:
 
 def test_error_when_fields_and_labels_have_different_lengths():
     with pytest.raises(ValueError, match="Number of fields to be exported"):
-        TXTExports(["solute", "T"], ["solute_label"], [1])
+        TXTExports(["solute", "T"], ["solute_label.txt"], [1])

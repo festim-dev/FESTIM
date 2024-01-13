@@ -9,12 +9,10 @@ warnings.simplefilter("always", DeprecationWarning)
 
 class TXTExport(festim.Export):
     """
-
     Args:
         field (str): the exported field ("solute", "1", "retention",
             "T"...)
-        label (str): label of the field. Will also be the filename.
-        folder (str): the export folder
+        filename (str): the filename (must end with .txt).
         times (list, optional): if provided, the field will be
             exported at these timesteps. Otherwise exports at all
             timesteps. Defaults to None.
@@ -22,20 +20,28 @@ class TXTExport(festim.Export):
             Defautls to ".2e".
     """
 
-    def __init__(self, field, label, folder, times=None, header_format=".2e") -> None:
+    def __init__(self, field, filename, times=None, header_format=".2e") -> None:
         super().__init__(field=field)
         if times:
             self.times = sorted(times)
         else:
             self.times = times
-        self.label = label
-        self.folder = folder
+        self.filename = filename
         self.header_format = header_format
         self._first_time = True
 
     @property
     def filename(self):
-        return f"{self.folder}/{self.label}.txt"
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if value is not None:
+            if not isinstance(value, str):
+                raise TypeError("filename must be a string")
+            if not value.endswith(".txt"):
+                raise ValueError("filename must end with .txt")
+        self._filename = value
 
     def is_it_time_to_export(self, current_time):
         if self.times is None:
@@ -60,11 +66,6 @@ class TXTExport(festim.Export):
         solution = f.project(self.function, V_DG1)
         solution_column = np.transpose(solution.vector()[:])
         if self.is_it_time_to_export(current_time):
-            if steady:
-                header = "x,t=steady"
-            else:
-                header = f"x,t={format(current_time, self.header_format)}s"
-
             # if the directory doesn't exist
             # create it
             dirname = os.path.dirname(self.filename)
@@ -75,6 +76,10 @@ class TXTExport(festim.Export):
             # write data
             # else append new column to the existing file
             if steady or self._first_time:
+                if steady:
+                    header = "x,t=steady"
+                else:
+                    header = f"x,t={format(current_time, self.header_format)}s"
                 x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
                 x_column = np.transpose([x.vector()[:]])
                 data = np.column_stack([x_column, solution_column])
@@ -93,27 +98,36 @@ class TXTExport(festim.Export):
 
 
 class TXTExports:
+    """
+    Args:
+        fields (list): list of exported fields ("solute", "1", "retention",
+            "T"...)
+        filenames (list): list of the filenames for each field (must end with .txt).
+        times (list, optional): if provided, fields will be
+            exported at these timesteps. Otherwise exports at all
+            timesteps. Defaults to None.
+        header_format (str, optional): the format of column headers.
+            Defautls to ".2e".
+    """
+
     def __init__(
-        self, fields=[], labels=[], times=None, folder=None, header_format=".2e"
+        self, fields=[], filenames=[], times=None, header_format=".2e"
     ) -> None:
         msg = "TXTExports class will be depricated in future versions of FESTIM"
         warnings.warn(msg, DeprecationWarning)
 
         self.fields = fields
-        if len(self.fields) != len(labels):
+        if len(self.fields) != len(filenames):
             raise ValueError(
                 "Number of fields to be exported "
-                "doesn't match number of labels in txt exports"
+                "doesn't match number of filenames in txt exports"
             )
         if times:
             self.times = sorted(times)
         else:
             self.times = times
-        self.labels = labels
-        self.folder = folder
+        self.filenames = filenames
         self.header_format = header_format
         self.exports = []
-        for function, label in zip(self.fields, self.labels):
-            self.exports.append(
-                TXTExport(function, label, folder, times, header_format)
-            )
+        for function, filename in zip(self.fields, self.filenames):
+            self.exports.append(TXTExport(function, filename, times, header_format))
