@@ -1,6 +1,5 @@
 from festim import Concentration, FluxBC, k_B, R, RadioactiveDecay
 from fenics import *
-import sympy as sp
 
 
 class Mobile(Concentration):
