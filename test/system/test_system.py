@@ -181,7 +181,9 @@ def test_run_MMS(tmpdir):
 
     f = (
         sp.diff(u, festim.t)
-        + sp.diff(v, festim.t)
+        # + sp.diff(v, festim.t)
+        - p * v
+        + k * u * (n_trap - v)
         - D * sp.diff(u, festim.x, 2)
         - sp.diff(D, festim.x) * sp.diff(u, festim.x)
     )
@@ -303,7 +305,8 @@ def test_run_MMS_chemical_pot(tmpdir):
 
     f = (
         sp.diff(u, festim.t)
-        + sp.diff(v, festim.t)
+        - p * v
+        + k * u * (n_trap - v)
         - D * sp.diff(u, festim.x, 2)
         - sp.diff(D, festim.x) * sp.diff(u, festim.x)
     )
