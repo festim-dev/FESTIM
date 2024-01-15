@@ -1,4 +1,4 @@
-from festim import Concentration, FluxBC, k_B, R
+from festim import Concentration, FluxBC, k_B, R, RadioactiveDecay
 from fenics import *
 import sympy as sp
 
@@ -132,6 +132,9 @@ class Mobile(Concentration):
                 volumes = source.volume
             else:
                 volumes = [source.volume]
+            if isinstance(source, RadioactiveDecay):
+                source.value = -source.form(self.mobile_concentration())
+
             for volume in volumes:
                 F_source += -source.value * self.test_function * dx(volume)
             if isinstance(source.value, (Expression, UserExpression)):
