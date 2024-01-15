@@ -134,17 +134,17 @@ def test_txt_export_desired_times(tmp_path):
     my_model.dt = F.Stepsize(0.1)
 
     my_export = F.TXTExport(
-        "solute", label="mobile_conc", times=[0.2, 0.5], folder=tmp_path
+        "solute", times=[0.2, 0.5], filename="{}/mobile_conc.txt".format(tmp_path)
     )
     my_model.exports = [my_export]
 
     my_model.initialise()
     my_model.run()
 
-    assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+    assert os.path.exists(my_export.filename)
 
     data = np.genfromtxt(
-        "{}/{}.txt".format(my_export.folder, my_export.label),
+        my_export.filename,
         skip_header=1,
         delimiter=",",
     )
@@ -163,16 +163,16 @@ def test_txt_export_all_times(tmp_path):
     my_model.T = F.Temperature(500)
     my_model.dt = F.Stepsize(0.1)
 
-    my_export = F.TXTExport("solute", label="mobile_conc", folder=tmp_path)
+    my_export = F.TXTExport("solute", filename="{}/mobile_conc.txt".format(tmp_path))
     my_model.exports = [my_export]
 
     my_model.initialise()
     my_model.run()
 
-    assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+    assert os.path.exists(my_export.filename)
 
     data = np.genfromtxt(
-        "{}/{}.txt".format(my_export.folder, my_export.label),
+        my_export.filename,
         skip_header=1,
         delimiter=",",
     )
@@ -190,15 +190,15 @@ def test_txt_export_steady_state(tmp_path):
     my_model.settings = F.Settings(1e-10, 1e-10, transient=False)
     my_model.T = F.Temperature(500)
 
-    my_export = F.TXTExport("solute", label="mobile_conc", folder=tmp_path)
+    my_export = F.TXTExport("solute", filename="{}/mobile_conc.txt".format(tmp_path))
     my_model.exports = [my_export]
 
     my_model.initialise()
     my_model.run()
 
-    assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+    assert os.path.exists(my_export.filename)
 
-    txt = open("{}/{}.txt".format(my_export.folder, my_export.label))
+    txt = open(my_export.filename)
     header = txt.readline().rstrip()
     txt.close()
 

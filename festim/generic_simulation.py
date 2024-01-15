@@ -2,6 +2,7 @@ import festim
 from festim.h_transport_problem import HTransportProblem
 from fenics import *
 import numpy as np
+import warnings
 
 
 class Simulation:
@@ -272,6 +273,20 @@ class Simulation:
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials
         )
+
+        # needed to ensure that data is actually exported at TXTExport.times
+        # see issue 675
+        for export in self.exports.exports:
+            if isinstance(export, festim.TXTExport) and export.times:
+                if not self.dt.milestones:
+                    self.dt.milestones = []
+                for time in export.times:
+                    if time not in self.dt.milestones:
+                        msg = "To ensure that TXTExport exports data at the desired times "
+                        msg += "TXTExport.times are added to milestones"
+                        warnings.warn(msg)
+                        self.dt.milestones.append(time)
+                self.dt.milestones.sort()
 
     def run(self, completion_tone=False):
         """Runs the model.
