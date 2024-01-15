@@ -159,13 +159,26 @@ class TestCreateDiffusionForm:
         c_0_n = my_mobile.previous_solution
         expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
         expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
+        form_trapping_expected = 0
         for trap in my_traps.traps:
-            expected_form += (
-                ((trap.solution - trap.previous_solution) / self.dt.value)
+            form_trapping_expected += (
+                (
+                    -trap.k_0
+                    * f.exp(-trap.E_k / festim.k_B / self.my_temp.T)
+                    * c_0
+                    * (trap.density[0] - trap.solution)
+                )
                 * v
-                * self.my_mesh.dx
+                * self.my_mesh.dx(1)
             )
-
+            form_trapping_expected += (
+                trap.p_0
+                * f.exp(-trap.E_p / festim.k_B / self.my_temp.T)
+                * trap.solution
+                * v
+                * self.my_mesh.dx(1)
+            )
+        expected_form += -form_trapping_expected
         print("expected F:")
         print(expected_form)
         print("produced F:")
