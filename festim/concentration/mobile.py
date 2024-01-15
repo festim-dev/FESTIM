@@ -133,7 +133,7 @@ class Mobile(Concentration):
             else:
                 volumes = [source.volume]
             if isinstance(source, RadioactiveDecay):
-                source.value = -source.form(self.mobile_concentration())
+                source.value = source.form(self.mobile_concentration())
 
             for volume in volumes:
                 F_source += -source.value * self.test_function * dx(volume)

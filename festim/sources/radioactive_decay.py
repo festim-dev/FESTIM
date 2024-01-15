@@ -19,4 +19,4 @@ class RadioactiveDecay(Source):
         self._decay_constant = value
 
     def form(self, concentration):
-        return self.decay_constant * concentration
+        return -self.decay_constant * concentration

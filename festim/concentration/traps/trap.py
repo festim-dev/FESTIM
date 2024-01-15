@@ -205,7 +205,8 @@ class Trap(Concentration):
         """
         for source in self.sources:
             if isinstance(source, RadioactiveDecay):
-                source.value = -source.form(self.solution)
+                source.value = source.form(self.solution)
             self.F_source = -source.value * self.test_function * dx(source.volume)
             self.F += self.F_source
-            self.sub_expressions.append(source.value)
+            if isinstance(source.value, (Expression, UserExpression)):
+                self.sub_expressions.append(source.value)
