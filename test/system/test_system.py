@@ -1102,3 +1102,101 @@ def test_mms_radioactive_decay():
     msg = f"Maximum error on u is: {error_max_u}"
     print(msg)
     assert error_max_u < tol_u
+
+
+def test_MMS_decay_with_trap():
+    """MMS test for radioactive decay
+    Steady state, solute and trap
+    """
+    u = 1 + festim.x
+    v = 1 + festim.x * 2
+    size = 1
+    k_0 = 2
+    E_k = 1.5
+    p_0 = 0.2
+    E_p = 0.1
+    T = 700 + 30 * festim.x
+    decay_constant = 0.1
+    n_trap = 1
+    E_D = 0.1
+    D_0 = 2
+    k_B = festim.k_B
+    D = D_0 * sp.exp(-E_D / k_B / T)
+    p = p_0 * sp.exp(-E_p / k_B / T)
+    k = k_0 * sp.exp(-E_k / k_B / T)
+
+    f = (
+        -p * v
+        + k * u * (n_trap - v)
+        - D * sp.diff(u, festim.x, 2)
+        - sp.diff(D, festim.x) * sp.diff(u, festim.x)
+        + decay_constant * u
+    )
+    g = p * v - k * u * (n_trap - v) + decay_constant * v
+
+    my_materials = festim.Materials(
+        [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
+    )
+
+    my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap)
+
+    size = 0.1
+    my_mesh = festim.MeshFromVertices(np.linspace(0, size, 1600))
+
+    my_sources = [
+        festim.Source(f, 1, "solute"),
+        festim.Source(g, 1, "1"),
+        festim.RadioactiveDecay(decay_constant=decay_constant, volume=1),
+    ]
+
+    my_temp = festim.Temperature(T)
+
+    my_bcs = [
+        festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
+        festim.DirichletBC(surfaces=[1, 2], value=v, field=1),
+    ]
+
+    my_settings = festim.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=50,
+        transient=False,
+        traps_element_type="DG",
+    )
+
+    my_sim = festim.Simulation(
+        mesh=my_mesh,
+        materials=my_materials,
+        traps=my_trap,
+        boundary_conditions=my_bcs,
+        sources=my_sources,
+        temperature=my_temp,
+        settings=my_settings,
+    )
+
+    my_sim.initialise()
+    my_sim.run()
+    error_max_u = compute_error(
+        u,
+        computed=my_sim.mobile.post_processing_solution,
+        t=my_sim.t,
+        norm="error_max",
+    )
+    error_max_v = compute_error(
+        v,
+        computed=my_sim.traps.traps[0].post_processing_solution,
+        t=my_sim.t,
+        norm="error_max",
+    )
+
+    tol_u = 1e-10
+    tol_v = 1e-7
+    msg = (
+        "Maximum error on u is:"
+        + str(error_max_u)
+        + "\n \
+        Maximum error on v is:"
+        + str(error_max_v)
+    )
+    print(msg)
+    assert error_max_u < tol_u and error_max_v < tol_v
