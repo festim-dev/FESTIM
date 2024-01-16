@@ -591,12 +591,11 @@ def test_run_MMS_steady_state(tmpdir):
     k = k_0 * sp.exp(-E_k / k_B / T)
 
     f = (
-        sp.diff(u, festim.t)
-        + sp.diff(v, festim.t)
-        - D * sp.diff(u, festim.x, 2)
+        -D * sp.diff(u, festim.x, 2)
         - sp.diff(D, festim.x) * sp.diff(u, festim.x)
+        - (p * v - k * u * (n_trap - v))
     )
-    g = sp.diff(v, festim.t) + p * v - k * u * (n_trap - v)
+    g = p * v - k * u * (n_trap - v)
 
     def run(h):
         my_materials = festim.Materials(

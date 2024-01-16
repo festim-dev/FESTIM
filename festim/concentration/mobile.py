@@ -106,38 +106,37 @@ class Mobile(Concentration):
 
         # add the trapping terms
         F_trapping = 0
-        if dt is not None:
-            if traps is not None:
-                for trap in traps.traps:
-                    for i, mat in enumerate(trap.materials):
-                        if type(trap.k_0) is list:
-                            k_0 = trap.k_0[i]
-                            E_k = trap.E_k[i]
-                            p_0 = trap.p_0[i]
-                            E_p = trap.E_p[i]
-                            density = trap.density[i]
-                        else:
-                            k_0 = trap.k_0
-                            E_k = trap.E_k
-                            p_0 = trap.p_0
-                            E_p = trap.E_p
-                            density = trap.density[0]
-                        c_m, _ = self.get_concentration_for_a_given_material(mat, T)
-                        F_trapping += (
-                            -k_0
-                            * exp(-E_k / k_B / T.T)
-                            * c_m
-                            * (density - trap.solution)
-                            * self.test_function
-                            * dx(mat.id)
-                        )
-                        F_trapping += (
-                            p_0
-                            * exp(-E_p / k_B / T.T)
-                            * trap.solution
-                            * self.test_function
-                            * dx(mat.id)
-                        )
+        if traps is not None:
+            for trap in traps.traps:
+                for i, mat in enumerate(trap.materials):
+                    if type(trap.k_0) is list:
+                        k_0 = trap.k_0[i]
+                        E_k = trap.E_k[i]
+                        p_0 = trap.p_0[i]
+                        E_p = trap.E_p[i]
+                        density = trap.density[i]
+                    else:
+                        k_0 = trap.k_0
+                        E_k = trap.E_k
+                        p_0 = trap.p_0
+                        E_p = trap.E_p
+                        density = trap.density[0]
+                    c_m, _ = self.get_concentration_for_a_given_material(mat, T)
+                    F_trapping += (
+                        -k_0
+                        * exp(-E_k / k_B / T.T)
+                        * c_m
+                        * (density - trap.solution)
+                        * self.test_function
+                        * dx(mat.id)
+                    )
+                    F_trapping += (
+                        p_0
+                        * exp(-E_p / k_B / T.T)
+                        * trap.solution
+                        * self.test_function
+                        * dx(mat.id)
+                    )
         F += -F_trapping
 
         self.F_diffusion = F
