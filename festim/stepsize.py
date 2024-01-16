@@ -95,7 +95,7 @@ class Stepsize:
         next_milestone = self.next_milestone(t)
         if next_milestone is not None:
             if t + float(self.value) > next_milestone and not np.isclose(
-                t, next_milestone
+                t, next_milestone, atol=0
             ):
                 self.value.assign((next_milestone - t))
 
