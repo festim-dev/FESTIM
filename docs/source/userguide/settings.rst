@@ -30,3 +30,5 @@ More advanced settings are also available:
 * the type of finite elements for traps (DG elements can be useful to account for discontinuities)
 * Wether to update the jacobian at each iteration or not
 * the linear solver
+
+See :ref:`settings_api` for more details.
