@@ -26,8 +26,7 @@ And/or contribute to the source code by:
 Contributing to the code
 ------------------------
 
-.. admonition:: Tip
-   :class: tip
+.. tip::
 
    If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/festim-dev/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
 
@@ -59,8 +58,7 @@ Click `here <https://www.atlassian.com/continuous-delivery/continuous-integratio
 
 All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
 
-.. admonition:: Tip
-   :class: tip
+.. note::
 
    If you have installed the FEniCS Anaconda python package, make sure to install pytest to run the test suite locally:
 
