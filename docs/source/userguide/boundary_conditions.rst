@@ -18,8 +18,7 @@ Imposing the solution
 
     my_bc = DirichletBC(surfaces=[2, 4], value=10, field=0)
 
-.. admonition:: Note
-   :class: tip
+.. note::
 
     Here, we set :code:`field=0` to specify this BC applies to the mobile hydrogen concentration. :code:`1` would stand for the trap 1 concentration and :code:`"T"` for temperature.
 
@@ -145,8 +144,7 @@ Moreover, assuming an instantaneous recombination :math:`Kr = \infty`:
 .. math::
     c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D}
 
-.. admonition:: Note
-   :class: tip
+.. note::
 
     Refer to the :ref:`theory` section for more details.
 
