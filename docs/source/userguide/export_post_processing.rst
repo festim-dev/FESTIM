@@ -75,6 +75,7 @@ Setting it to ``last`` will export the solution only at the last timestep.
         )
     ]
 
+In order for the XDMF file to be readable by FESTIM, the ``checkpoint`` attribute must be set to ``True``.
 
 ^^^^^^^^^^^^^^^
 TXT export (1D)

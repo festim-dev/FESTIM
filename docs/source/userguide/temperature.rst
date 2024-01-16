@@ -65,3 +65,18 @@ For a steady-state problem:
     my_temp = HeatTransferProblem(transient=False)
 
 :ref:`Boundary conditions<boundary conditions>` and :ref:`heat sources<sources>` can then be applied to this heat transfer problem.
+
+----------------
+From a XDMF file
+----------------
+
+Temperature can also be read from a XDMF file.
+
+.. code-block:: python
+
+    my_temp = TemperatureFromXDMF('temperature.xdmf', label='temperature')
+
+.. note::
+    
+        The XDMF file must contain a scalar field named 'temperature'.
+        Moreover, it has to have been exported in "checkpoint" mode (see :ref:`XDMF export`).
