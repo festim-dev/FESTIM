@@ -29,16 +29,16 @@ Contributing to the code
 .. admonition:: Tip
    :class: tip
 
-   If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/RemDelaporteMathurin/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
+   If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/festim-dev/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
 
    These issues are usually fairly easy to tackle and therefore perfect for newcomers.
 
-1) `Fork the repository <https://github.com/RemDelaporteMathurin/FESTIM/fork>`_
+1) `Fork the repository <https://github.com/festim-dev/FESTIM/fork>`_
 
 By forking the repository, you create a copy of it where you can safely make changes.
 
 2) Make your changes
-3) `Open a PR <https://github.com/RemDelaporteMathurin/FESTIM/compare>`_
+3) `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
 4) Wait for a maintainer to review your PR
 
 Before merging your changes, they have to be reviewed. During the review, we make sure the changes don't break anything and eventually propose/request improvements.
@@ -57,7 +57,7 @@ This is to make sure the changes don't break existing functionalities.
 It is also very useful to catch bugs that developers could have missed.
 Click `here <https://www.atlassian.com/continuous-delivery/continuous-integration>`_ for more information on CI.
 
-All the tests can be found in the `test folder <https://github.com/RemDelaporteMathurin/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
+All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
 
 .. admonition:: Tip
    :class: tip
@@ -85,7 +85,7 @@ Debugging
 
 When you find a bug in the code, there are several steps to follow to make things easier for maintainers.
 
-#. | `Raise an issue <https://github.com/RemDelaporteMathurin/FESTIM/issues/new/choose>`_
+#. | `Raise an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
    |
    | This is important to keep track of things.
    | The issue is a place to talk about the bug, troubleshoot users and sometimes find workarounds.
@@ -102,7 +102,7 @@ When you find a bug in the code, there are several steps to follow to make thing
 Implementing a new feature
 --------------------------
 
-#. | `Raise an issue <https://github.com/RemDelaporteMathurin/FESTIM/issues/new/choose>`_
+#. | `Raise an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
    |
    | Before spending time implementing a new great feature, it is better to open an issue first to discuss with the maintainers.
    | For all you know, someone is already working at implementing it and all your time would be spent for nothing.

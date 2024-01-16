@@ -10,7 +10,7 @@ To make the most out of FESTIM, a basic knowledge of `Python <https://www.learnp
 
 New users should familiarise themselves with `Conda <https://anaconda.org/>`_.
 
-FESTIM is under version control with `git <https://git-scm.com/>`_. Even though users don't need git to install FESTIM, it is convenient to have a basic understanding of how it works. You can fin `git turorials <https://git-scm.com/doc>`_ to help you getting started. The `FESTIM source code <https://github.com/RemDelaporteMathurin/FESTIM>`_ is hosted on GitHub. It is recommended to sign up for free to GitHub in order to receive the latest updates, follow the development and submit `bug reports <https://github.com/festim-dev/FESTIM/issues/new/choose>`_.
+FESTIM is under version control with `git <https://git-scm.com/>`_. Even though users don't need git to install FESTIM, it is convenient to have a basic understanding of how it works. You can fin `git turorials <https://git-scm.com/doc>`_ to help you getting started. The `FESTIM source code <https://github.com/festim-dev/FESTIM>`_ is hosted on GitHub. It is recommended to sign up for free to GitHub in order to receive the latest updates, follow the development and submit `bug reports <https://github.com/festim-dev/FESTIM/issues/new/choose>`_.
 
 ----------------------
 Where can I find help?
