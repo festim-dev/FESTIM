@@ -181,7 +181,6 @@ def test_run_MMS(tmpdir):
 
     f = (
         sp.diff(u, festim.t)
-        # + sp.diff(v, festim.t)
         - p * v
         + k * u * (n_trap - v)
         - D * sp.diff(u, festim.x, 2)
