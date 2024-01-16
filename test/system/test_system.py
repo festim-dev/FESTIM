@@ -1095,7 +1095,7 @@ def test_mms_radioactive_decay():
     error_max_u = compute_error(
         u,
         computed=my_sim.mobile.post_processing_solution,
-        t=my_sim.t,
+        t=0,
         norm="error_max",
     )
 
