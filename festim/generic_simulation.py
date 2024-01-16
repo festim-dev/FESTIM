@@ -189,13 +189,8 @@ class Simulation:
         # set sources
         for source in self.sources:
             if isinstance(source, festim.RadioactiveDecay) and source.field == "all":
-                # this could be refactored if sources accept several fields
-                # (e.g. festim.Source(field=["0", "T"]))
-                # for field in source.field:
-                #    field_to_object[field].sources.append(source)
-
-                # create list of all unique festim.Concentration objects in field_to_object
-                # and assign source to each of them
+                # assign source to each of the unique festim.Concentration
+                # objects in field_to_object
                 for obj in set(field_to_object.values()):
                     if isinstance(obj, festim.Concentration):
                         obj.sources.append(source)
