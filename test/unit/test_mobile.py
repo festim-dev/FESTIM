@@ -185,6 +185,65 @@ class TestCreateDiffusionForm:
         print(my_mobile.F)
         assert my_mobile.F.equals(expected_form)
 
+    def test_with_trap_conglo_transient(self):
+        # build
+        Index._globalcount = 8
+        my_mobile = festim.Mobile()
+        my_mobile.F = 0
+        my_mobile.solution = f.Function(self.V, name="c_m")
+        my_mobile.previous_solution = f.Function(self.V, name="c_m_n")
+        my_mobile.test_function = f.TestFunction(self.V)
+        my_mats = festim.Materials([self.mat1, self.mat2])
+
+        trap1 = festim.Trap(
+            [1, 2], [1, 2], [1, 2], [1, 2], [self.mat1, self.mat2], [1, 2]
+        )
+        add_functions(trap1, self.V, id=1)
+
+        my_traps = festim.Traps([trap1])
+
+        # run
+        my_mobile.create_diffusion_form(
+            my_mats, self.my_mesh, self.my_temp, dt=self.dt, traps=my_traps
+        )
+
+        # test
+        Index._globalcount = 8
+        v = my_mobile.test_function
+        D1 = self.mat1.D_0 * f.exp(-self.mat1.E_D / festim.k_B / self.my_temp.T)
+        D2 = self.mat2.D_0 * f.exp(-self.mat2.E_D / festim.k_B / self.my_temp.T)
+        c_0 = my_mobile.solution
+        c_0_n = my_mobile.previous_solution
+        expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
+        expected_form += ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(2)
+        expected_form += f.dot(D1 * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
+        expected_form += f.dot(D2 * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(2)
+        form_trapping_expected = 0
+        for i in range(2):
+            form_trapping_expected += (
+                (
+                    -trap1.k_0[i]
+                    * f.exp(-trap1.E_k[i] / festim.k_B / self.my_temp.T)
+                    * c_0
+                    * (trap1.density[i] - trap1.solution)
+                )
+                * v
+                * self.my_mesh.dx(i + 1)
+            )
+            form_trapping_expected += (
+                trap1.p_0[i]
+                * f.exp(-trap1.E_p[i] / festim.k_B / self.my_temp.T)
+                * trap1.solution
+                * v
+                * self.my_mesh.dx(i + 1)
+            )
+        expected_form += -form_trapping_expected
+        print("expected F:")
+        print(expected_form)
+        print("produced F:")
+        print(my_mobile.F)
+        assert my_mobile.F.equals(expected_form)
+
     def test_error_soret_cylindrical_spherical(self):
         """Tests that the appropriate error is raised when trying to use Soret
         with cylindrical or spherical system
