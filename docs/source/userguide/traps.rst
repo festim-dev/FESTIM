@@ -92,9 +92,7 @@ Grouped-trap
 
 Let's imaging a case where you have two subdomains. Trap 1 is defined only in the first subdomain, whereas Trap 2 is defined in the second.
 It would be possible to simply define one trap in each subdomain.
-
-
-But grouping traps together helps saving computational time.
+Grouping traps together helps saving computational time as it reduces the number of degrees of freedom.
 
 .. code-block:: python
 
