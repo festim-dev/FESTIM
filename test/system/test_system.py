@@ -1101,7 +1101,6 @@ def test_mms_radioactive_decay():
     )
 
     tol_u = 1e-7
-    dt = 0.1 / 50
     msg = f"Maximum error on u is: {error_max_u}"
     print(msg)
     assert error_max_u < tol_u
