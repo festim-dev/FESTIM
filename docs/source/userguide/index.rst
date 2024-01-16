@@ -16,5 +16,4 @@ User's Guide
    traps
    settings
    export_post_processing
-   simulations
    troubleshooting
