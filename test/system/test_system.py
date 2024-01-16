@@ -1034,3 +1034,74 @@ def test_completion_tone():
     )
     my_model.initialise()
     my_model.run(completion_tone=True)
+
+
+def test_mms_radioactive_decay():
+    """MMS test for radioactive decay
+    Steady state, only solute
+    """
+    u = 1 + sp.sin(2 * fenics.pi * festim.x)
+    size = 1
+    T = 700 + 30 * festim.x
+    E_D = 0.1
+    D_0 = 2
+    decay_constant = 0.1
+    k_B = festim.k_B
+    D = D_0 * sp.exp(-E_D / k_B / T)
+
+    f = (
+        -D * sp.diff(u, festim.x, 2)
+        - sp.diff(D, festim.x) * sp.diff(u, festim.x)
+        + decay_constant * u
+    )
+
+    my_materials = festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)
+
+    my_initial_conditions = [
+        festim.InitialCondition(field=0, value=u),
+    ]
+
+    my_mesh = festim.MeshFromVertices(np.linspace(0, size, 1000))
+
+    my_bcs = [
+        festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
+    ]
+
+    my_temp = festim.Temperature(T)
+
+    my_sources = [
+        festim.Source(f, 1, "0"),  # MMS source term
+        festim.RadioactiveDecay(decay_constant=decay_constant, volume=1),
+    ]
+
+    my_settings = festim.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=50,
+        transient=False,
+    )
+
+    my_sim = festim.Simulation(
+        mesh=my_mesh,
+        materials=my_materials,
+        initial_conditions=my_initial_conditions,
+        boundary_conditions=my_bcs,
+        temperature=my_temp,
+        sources=my_sources,
+        settings=my_settings,
+    )
+
+    my_sim.initialise()
+    my_sim.run()
+    error_max_u = compute_error(
+        u,
+        computed=my_sim.mobile.post_processing_solution,
+        t=my_sim.t,
+        norm="error_max",
+    )
+
+    tol_u = 1e-7
+    dt = 0.1 / 50
+    msg = f"Maximum error on u is: {error_max_u}"
+    print(msg)
+    assert error_max_u < tol_u
