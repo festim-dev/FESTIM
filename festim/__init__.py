@@ -19,6 +19,7 @@ k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 from .helpers import as_fenics_constant
 
 from .boundary_conditions.dirichlet_bc import DirichletBC
+from .boundary_conditions.fixed_temperature import FixedTemperatureBC
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .boundary_conditions.henrys_bc import HenrysBC
 
@@ -29,6 +30,7 @@ from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
 
 from .hydrogen_transport_problem import HydrogenTransportProblem
+from .heat_transfer_problem import HeatTransferProblem
 
 from .initial_condition import InitialCondition
 

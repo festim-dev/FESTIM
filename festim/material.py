@@ -35,6 +35,8 @@ class Material:
         self.E_D = E_D
         self.name = name
 
+        self.thermal_conductivity = None
+
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient
         Args:
