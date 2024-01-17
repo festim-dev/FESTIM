@@ -1,10 +1,11 @@
 import festim as F
 import ufl
-from dolfinx import fem
+import dolfinx
+from dolfinx import fem, mesh
 import numpy as np
 
 
-class Source:
+class SourceBase:
     """
     Source class
 
@@ -34,10 +35,9 @@ class Source:
         >>> Source(volume=my_vol, value=lambda x, t: 1 + x[0] + t, species="H")
     """
 
-    def __init__(self, value, volume, species):
+    def __init__(self, value, volume):
         self.value = value
         self.volume = volume
-        self.species = species
 
         self.value_fenics = None
         self.source_expr = None
@@ -52,18 +52,6 @@ class Source:
         if not isinstance(value, F.VolumeSubdomain1D):
             raise TypeError("volume must be of type festim.VolumeSubdomain1D")
         self._volume = value
-
-    @property
-    def species(self):
-        return self._species
-
-    @species.setter
-    def species(self, value):
-        # check that species is festim.Species or list of festim.Species
-        if not isinstance(value, F.Species):
-            raise TypeError("species must be of type festim.Species")
-
-        self._species = value
 
     @property
     def value_fenics(self):
@@ -91,6 +79,37 @@ class Source:
             return "t" in arguments
         else:
             return False
+
+    def update(self, t):
+        """Updates the source value
+
+        Args:
+            t (float): the time
+        """
+        if callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
+                self.value_fenics.value = self.value(t=t)
+            else:
+                self.value_fenics.interpolate(self.source_expr)
+
+
+class ParticleSource(SourceBase):
+    def __init__(self, value, volume, species):
+        self.species = species
+        super().__init__(value, volume)
+
+    @property
+    def species(self):
+        return self._species
+
+    @species.setter
+    def species(self, value):
+        # check that species is festim.Species or list of festim.Species
+        if not isinstance(value, F.Species):
+            raise TypeError("species must be of type festim.Species")
+
+        self._species = value
 
     @property
     def temperature_dependent(self):
@@ -155,15 +174,65 @@ class Source:
                 )
                 self.value_fenics.interpolate(self.source_expr)
 
-    def update(self, t):
-        """Updates the source value
+
+# create a class Source that is an alias for ParticleSource
+# to avoid breaking the API
+class Source(ParticleSource):
+    def __init__(self, value, volume, species):
+        super().__init__(value, volume, species)
+
+
+class HeatSource(SourceBase):
+    def __init__(self, value, volume):
+        super().__init__(value, volume)
+
+    def create_value_fenics(
+        self,
+        mesh: dolfinx.mesh.Mesh,
+        function_space: fem.FunctionSpace,
+        t: fem.Constant,
+    ):
+        """Creates the value of the source as a fenics object and sets it to
+        self.value_fenics.
+        If the value is a constant, it is converted to a fenics.Constant.
+        If the value is a function of t, it is converted to a fenics.Constant.
+        Otherwise, it is converted to a fenics.Function and the
+        expression of the function is stored in self.bc_expr.
 
         Args:
-            t (float): the time
+            mesh (dolfinx.mesh.Mesh) : the mesh
+            function_space (dolfinx.fem.FunctionSpace): the function space
+            t (dolfinx.fem.Constant): the time
         """
-        if callable(self.value):
+        x = ufl.SpatialCoordinate(mesh)
+
+        if isinstance(self.value, (int, float)):
+            self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
+
+        elif callable(self.value):
             arguments = self.value.__code__.co_varnames
-            if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
-                self.value_fenics.value = self.value(t=t)
+
+            if "t" in arguments and "x" not in arguments:
+                # only t is an argument
+                if not isinstance(self.value(t=float(t)), (float, int)):
+                    raise ValueError(
+                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "
+                    )
+                self.value_fenics = F.as_fenics_constant(
+                    mesh=mesh, value=self.value(t=float(t))
+                )
             else:
+                self.value_fenics = fem.Function(function_space)
+                kwargs = {}
+                if "t" in arguments:
+                    kwargs["t"] = t
+                if "x" in arguments:
+                    kwargs["x"] = x
+
+                # store the expression of the source
+                # to update the value_fenics later
+                self.source_expr = fem.Expression(
+                    self.value(**kwargs),
+                    function_space.element.interpolation_points(),
+                )
                 self.value_fenics.interpolate(self.source_expr)
