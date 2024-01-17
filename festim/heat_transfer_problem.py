@@ -35,7 +35,6 @@ class HeatTransferProblem:
         self.formulation = None
         self.bc_forms = []
 
-    # add setter for sources to check it only contains F.HeatSource objects
     @property
     def sources(self):
         return self._sources
@@ -45,6 +44,18 @@ class HeatTransferProblem:
         if not all(isinstance(source, F.HeatSource) for source in value):
             raise TypeError("sources must be a list of festim.HeatSource objects")
         self._sources = value
+
+    @property
+    def boundary_conditions(self):
+        return self._boundary_conditions
+
+    @boundary_conditions.setter
+    def boundary_conditions(self, value):
+        if not all(isinstance(bc, F.FixedTemperatureBC) for bc in value):
+            raise TypeError(
+                "boundary_conditions must be a list of festim.FixedTemperatureBC objects"
+            )
+        self._boundary_conditions = value
 
     def initialise(self):
         self.define_function_space()
@@ -125,7 +136,7 @@ class HeatTransferProblem:
     def define_boundary_conditions(self):
         """Defines the dirichlet boundary conditions of the model"""
         for bc in self.boundary_conditions:
-            if isinstance(bc, F.DirichletBC):
+            if isinstance(bc, F.DirichletBCBase):
                 form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
 
@@ -133,16 +144,14 @@ class HeatTransferProblem:
         """Creates a dirichlet boundary condition form
 
         Args:
-            bc (festim.DirichletBC): the boundary condition
+            bc (festim.FixedTemperatureBC): the boundary condition
 
         Returns:
             dolfinx.fem.bcs.DirichletBC: A representation of
                 the boundary condition for modifying linear systems.
         """
-
         bc.create_value(
             mesh=self.mesh.mesh,
-            temperature=None,
             function_space=self.function_space,
             t=self.t,
         )
@@ -156,6 +165,7 @@ class HeatTransferProblem:
         form = fem.dirichletbc(
             value=bc.value_fenics,
             dofs=bc_dofs,
+            V=self.function_space,
         )
 
         return form
