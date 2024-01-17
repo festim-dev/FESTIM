@@ -1,5 +1,6 @@
 import dolfinx.mesh
 from mpi4py import MPI
+import basix.ufl
 import ufl
 import numpy as np
 import festim as F
@@ -33,9 +34,15 @@ class Mesh1D(F.Mesh):
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
-        gdim, shape, degree = 1, "interval", 1
-        cell = ufl.Cell(shape, geometric_dimension=gdim)
-        domain = ufl.Mesh(ufl.VectorElement("Lagrange", cell, degree))
+        degree = 1
+        domain = ufl.Mesh(
+            basix.ufl.element(
+                basix.ElementFamily.P,
+                "interval",
+                degree,
+                shape=(1,)
+            )
+        )
 
         mesh_points = np.reshape(self.vertices, (len(self.vertices), 1))
         indexes = np.arange(self.vertices.shape[0])

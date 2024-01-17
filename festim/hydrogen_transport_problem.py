@@ -2,9 +2,9 @@ from dolfinx import fem
 from dolfinx.mesh import meshtags
 from dolfinx.nls.petsc import NewtonSolver
 import basix
+import basix.ufl
 import ufl
 from mpi4py import MPI
-from dolfinx.mesh import meshtags
 import numpy as np
 import tqdm.autonotebook
 import festim as F
@@ -386,13 +386,25 @@ class HydrogenTransportProblem:
             for spe in self.species:
                 if isinstance(spe, F.Species):
                     elements.append(element_CG)
-            element = ufl.MixedElement(elements)
+            element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
 
         # create global DG function spaces of degree 0 and 1
-        self.V_DG_0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
-        self.V_DG_1 = fem.functionspace(self.mesh.mesh, ("DG", 1))
+        element_DG0 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            0,
+            basix.LagrangeVariant.equispaced,
+        )
+        element_DG1 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            1,
+            basix.LagrangeVariant.equispaced,
+        )
+        self.V_DG_0 = fem.functionspace(self.mesh.mesh, element_DG0)
+        self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
 
         self.u = fem.Function(self.function_space)
         self.u_n = fem.Function(self.function_space)
