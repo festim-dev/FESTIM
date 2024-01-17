@@ -9,7 +9,7 @@ User's Guide
    beginners_guide
    units
    materials
-   boundary_conditions
+   boundary_and_initial_conditions
    sources
    temperature
    mesh
