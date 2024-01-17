@@ -121,7 +121,11 @@ def test_wrong_value_for_bc_field(field):
         sim.initialise()
 
 
-def test_txt_export_desired_times(tmp_path):
+@pytest.mark.parametrize(
+    "final_time,stepsize,export_times",
+    [(1, 0.1, [0.2, 0.5]), (1e-7, 1e-9, [1e-8, 1.5e-8, 2e-8])],
+)
+def test_txt_export_desired_times(tmp_path, final_time, stepsize, export_times):
     """
     Tests that TXTExport can be exported at desired times
     Also catches the bug #682
@@ -130,12 +134,12 @@ def test_txt_export_desired_times(tmp_path):
 
     my_model.mesh = F.MeshFromVertices(np.linspace(0, 1))
     my_model.materials = F.Material(1, 1, 0)
-    my_model.settings = F.Settings(1e-10, 1e-10, final_time=1e-7)
+    my_model.settings = F.Settings(1e-10, 1e-10, final_time=final_time)
     my_model.T = F.Temperature(500)
-    my_model.dt = F.Stepsize(1e-9)
+    my_model.dt = F.Stepsize(stepsize)
 
     my_export = F.TXTExport(
-        "solute", times=[1e-8, 2e-8], filename="{}/mobile_conc.txt".format(tmp_path)
+        "solute", times=export_times, filename="{}/mobile_conc.txt".format(tmp_path)
     )
     my_model.exports = [my_export]
 
