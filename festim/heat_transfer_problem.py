@@ -162,11 +162,12 @@ class HeatTransferProblem:
             function_space=self.function_space,
         )
 
-        form = fem.dirichletbc(
-            value=bc.value_fenics,
-            dofs=bc_dofs,
-            V=self.function_space,
-        )
+        if isinstance(bc.value_fenics, (fem.Function)):
+            form = fem.dirichletbc(value=bc.value_fenics, dofs=bc_dofs)
+        else:
+            form = fem.dirichletbc(
+                value=bc.value_fenics, dofs=bc_dofs, V=self.function_space
+            )
 
         return form
 
