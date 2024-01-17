@@ -18,8 +18,12 @@ k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 from .helpers import as_fenics_constant
 
-from .boundary_conditions.dirichlet_bc import DirichletBC
-from .boundary_conditions.fixed_temperature import FixedTemperatureBC
+from .boundary_conditions.dirichlet_bc import (
+    DirichletBCBase,
+    DirichletBC,
+    FixedTemperatureBC,
+    FixedConcentrationBC,
+)
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .boundary_conditions.henrys_bc import HenrysBC
 
