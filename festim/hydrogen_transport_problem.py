@@ -708,7 +708,7 @@ class HydrogenTransportProblem:
 
     def iterate(self):
         """Iterates the model for a given time step"""
-        self.progress.update(self.dt.value)
+        self.progress.update(min(self.dt.value, abs(self.settings.final_time - self.t.value)))
         self.t.value += self.dt.value
 
         self.update_time_dependent_values()

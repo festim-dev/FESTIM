@@ -819,7 +819,7 @@ def test_adaptive_timestepping_grows():
 
     # RUN & TEST
     previous_value = stepsize.initial_value
-    for i in range(10):
+    while my_model.t.value < my_model.settings.final_time:
         my_model.iterate()
 
         # check that the current value is greater than the previous one
@@ -855,7 +855,7 @@ def test_adaptive_timestepping_shrinks():
 
     # RUN & TEST
     previous_value = stepsize.initial_value
-    for i in range(10):
+    while my_model.t.value < my_model.settings.final_time and my_model.dt.value > 0.1:
         my_model.iterate()
 
         # check that the current value is smaller than the previous one
