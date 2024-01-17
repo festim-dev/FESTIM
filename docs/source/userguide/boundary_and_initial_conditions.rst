@@ -154,3 +154,26 @@ A convective heat flux can be set as :math:`\mathrm{flux} = - h (T - T_\mathrm{e
     from festim import t
 
     my_bc = ConvectiveFlux(surfaces=3, h_coeff=0.1, T_ext=600 + 10*t)
+
+==================
+Initial conditions
+==================
+
+The initial conditions are essential to transient FESTIM simulations. They describe the mathematical problem at the beginning of the simulation.
+By default, the initial conditions are set to zero.
+However, it is possible to set the initial conditions with the :class:`festim.InitialCondition` class.
+
+.. code-block:: python
+
+    import festim as F
+
+    my_ic = F.InitialCondition(value=10, field=0)
+
+The value can also be a function of space:
+
+.. code-block:: python
+
+    import festim as F
+    from festim import x, y, z
+
+    my_ic = F.InitialCondition(value=x**2 + y**2 + z**2, field=0)
