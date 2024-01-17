@@ -15,5 +15,6 @@ User's Guide
    mesh
    traps
    settings
+   stepsize
    export_post_processing
    troubleshooting
