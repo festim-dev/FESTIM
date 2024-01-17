@@ -40,7 +40,7 @@ class InitialCondition:
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
             temperature (float): the temperature
-            function_space(dolfinx.fem.FunctionSpace): the function space of the species
+            function_space(dolfinx.fem.FunctionSpaceBase): the function space of the species
         """
         x = ufl.SpatialCoordinate(mesh)
 

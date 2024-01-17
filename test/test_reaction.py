@@ -1,6 +1,6 @@
 import pytest
 import festim as F
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import functionspace, Function
 from dolfinx.mesh import create_unit_cube
 from mpi4py import MPI
 from ufl import exp
@@ -77,7 +77,7 @@ def test_reaction_reaction_term(temperature):
     """Test that the Reaction.reaction_term method returns the expected reaction term"""
 
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
-    V = FunctionSpace(mesh, ("Lagrange", 1))
+    V = functionspace(mesh, ("Lagrange", 1))
 
     # create two species
     species1 = F.Species("A")

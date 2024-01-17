@@ -47,7 +47,7 @@ class HydrogenTransportProblem:
         traps (list of F.Trap): the traps of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
-        function_space (dolfinx.fem.FunctionSpace): the function space of the
+        function_space (dolfinx.fem.FunctionSpaceBase): the function space of the
             model
         facet_meshtags (dolfinx.mesh.MeshTags): the facet meshtags of the model
         volume_meshtags (dolfinx.mesh.MeshTags): the volume meshtags of the
@@ -62,9 +62,9 @@ class HydrogenTransportProblem:
             that is used to update the temperature_fenics
         temperature_time_dependent (bool): True if the temperature is time
             dependent
-        V_DG_0 (dolfinx.fem.FunctionSpace): A DG function space of degree 0
+        V_DG_0 (dolfinx.fem.FunctionSpaceBase): A DG function space of degree 0
             over domain
-        V_DG_1 (dolfinx.fem.FunctionSpace): A DG function space of degree 1
+        V_DG_1 (dolfinx.fem.FunctionSpaceBase): A DG function space of degree 1
             over domain
         volume_subdomains (list of festim.VolumeSubdomain): the volume subdomains
             of the model
@@ -275,7 +275,7 @@ class HydrogenTransportProblem:
                     degree,
                     basix.LagrangeVariant.equispaced,
                 )
-                function_space_temperature = fem.FunctionSpace(
+                function_space_temperature = fem.functionspace(
                     self.mesh.mesh, element_temperature
                 )
                 self.temperature_fenics = fem.Function(function_space_temperature)
@@ -388,11 +388,11 @@ class HydrogenTransportProblem:
                     elements.append(element_CG)
             element = ufl.MixedElement(elements)
 
-        self.function_space = fem.FunctionSpace(self.mesh.mesh, element)
+        self.function_space = fem.functionspace(self.mesh.mesh, element)
 
         # create global DG function spaces of degree 0 and 1
-        self.V_DG_0 = fem.FunctionSpace(self.mesh.mesh, ("DG", 0))
-        self.V_DG_1 = fem.FunctionSpace(self.mesh.mesh, ("DG", 1))
+        self.V_DG_0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
+        self.V_DG_1 = fem.functionspace(self.mesh.mesh, ("DG", 1))
 
         self.u = fem.Function(self.function_space)
         self.u_n = fem.Function(self.function_space)

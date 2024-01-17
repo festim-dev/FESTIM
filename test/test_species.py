@@ -3,7 +3,7 @@ import dolfinx
 import ufl
 import numpy as np
 import pytest
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import functionspace, Function
 from dolfinx.mesh import create_unit_cube
 from mpi4py import MPI
 
@@ -84,7 +84,7 @@ def test_implicit_species_concentration():
 
     # set the solutions of the two species
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
-    V = FunctionSpace(mesh, ("Lagrange", 1))
+    V = functionspace(mesh, ("Lagrange", 1))
     species1.solution = Function(V)
     species2.solution = Function(V)
 
@@ -109,7 +109,7 @@ def test_implicit_species_concentration_with_no_solution():
 
     # set the solution of the first species
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
-    V = FunctionSpace(mesh, ("Lagrange", 1))
+    V = functionspace(mesh, ("Lagrange", 1))
     species1.solution = Function(V)
 
     # test that a ValueError is raised when the second species has no solution
