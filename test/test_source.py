@@ -74,7 +74,7 @@ def test_create_value_fenics(value, expected_type):
 
     source = F.Source(volume=vol_subdomain, value=value, species=species)
 
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
+    my_function_space = fem.FunctionSpace(mesh, ("Lagrange", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
@@ -143,7 +143,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     source = F.Source(volume=vol_subdomain, value=my_value, species=species)
 
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
+    my_function_space = fem.FunctionSpace(mesh, ("Lagrange", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
