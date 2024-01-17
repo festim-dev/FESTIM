@@ -2,7 +2,7 @@
 Settings
 ========
 
-The settings of a FESTIM simulation are defined with a :code:`Settings` object.
+The settings of a FESTIM simulation are defined with a :class:`festim.Settings` object.
 
 .. code-block:: python
 

@@ -46,12 +46,14 @@ would be passed to FESTIM as:
 
     my_temp = Temperature(sp.exp(x)*sp.sin(t))
 
+For more details, see :class:`festim.Temperature`.
+
 ---------------------------
 From a heat transfer solver
 ---------------------------
 
 Temperature can also be obtained by solving the heat equation.
-Users can define heat transfer problems using :code:`HeatTransferProblem`.
+Users can define heat transfer problems using :class:`festim.HeatTransferProblem`.
 
 
 .. code-block:: python
@@ -70,13 +72,13 @@ For a steady-state problem:
 From a XDMF file
 ----------------
 
-Temperature can also be read from a XDMF file.
+Temperature can also be read from a XDMF file (see :class:`festim.TemperatureFromXDMF`).
 
 .. code-block:: python
 
     my_temp = TemperatureFromXDMF('temperature.xdmf', label='temperature')
 
 .. note::
-    
-        The XDMF file must contain a scalar field named 'temperature'.
-        Moreover, it has to have been exported in "checkpoint" mode (see :ref:`XDMF export`).
+
+    The XDMF file must contain a scalar field named 'temperature'.
+    Moreover, it has to have been exported in "checkpoint" mode (see :ref:`XDMF export`).

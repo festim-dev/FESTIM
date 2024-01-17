@@ -2,7 +2,7 @@
 Post-processing
 ===============
 
-Exports are added to the simulation object as a list of ``Export`` objects:
+Exports are added to the simulation object as a list of :class:`festim.Export` objects:
 
 .. code-block:: python
 
@@ -20,7 +20,7 @@ Exporting solutions
 XDMF export
 ^^^^^^^^^^^
 
-The most straightforward way to export solutions (concentrations, temperature) with FESTIM is to use the ``XDMFExport`` class.
+The most straightforward way to export solutions (concentrations, temperature) with FESTIM is to use the :class:`festim.XDMFExport` class.
 This class leverages the ``XDMFFile`` class of ``fenics`` and allows to export solutions in the XDMF format.
 The following example shows how to export the solution of a 1D problem:
 
@@ -58,7 +58,7 @@ The following example shows how to export the solution of a 1D problem:
 Running this should produce a file called ``mobile_conc.xdmf`` in the current directory.
 The file can then be opened in Paraview or any other software that can read XDMF files.
 
-For transient simulations, by default, ``XDMFExport`` will export the solution at each timestep.
+For transient simulations, by default, :class:`festim.XDMFExport` will export the solution at each timestep.
 It is however possible to change this behaviour in order to limit the number of times the file is written to.
 By setting the ``mode`` attribute to ``10`` for example, the solution will be exported every 10 timesteps.
 Setting it to ``last`` will export the solution only at the last timestep.
@@ -82,7 +82,7 @@ TXT export (1D)
 ^^^^^^^^^^^^^^^
 
 The ``TXTExport`` class allows to export solutions in a simple text format.
-It works in 1D only. For multi-dimensional problems, use the ``XDMFExport`` class instead.
+It works in 1D only. For multi-dimensional problems, use the :class:`festim.XDMFExport` class instead.
 
 .. code-block:: python
 
@@ -105,8 +105,18 @@ To only export at specific times in the simulation, use the ``times`` argument:
 Point value
 ^^^^^^^^^^^
 
-If information about the solution at a specific point is needed, the ``PointValue`` class can be used.
-It is implemented as a derived quantity, see :ref:`Derived quantities` for more information.
+If information about the solution at a specific point is needed, the :class:`festim.PointValue` class can be used.
+It is implemented as a derived quantity, see :ref:`Derived quantities` for more information. Here are a few examples:
+
+.. code-block:: python
+
+    import festim as F
+
+    my_export = F.PointValue(field="solute", x=[0.5, 0.5, 0.5])
+    my_export = F.PointValue(field="solute", x=(0.5, 0.5, 0.5))
+    my_export = F.PointValue(field="solute", x=[0.5, 0.5])
+    my_export = F.PointValue(field="solute", x=[0.5])
+    my_export = F.PointValue(field="solute", x=0.5)
 
 ------------------
 Derived quantities
@@ -115,9 +125,9 @@ Derived quantities
 In addition to exporting the actual solutions, it is possible to export derived quantities.
 For instance, you may want to compute the flux of mobile particles at a given boundary.
 
-First you want to create a ``DerivedQuantities`` object. This will encompass all the derived quantities you want to compute.
+First you want to create a :class:`festim.DerivedQuantities` object. This will encompass all the derived quantities you want to compute.
 Then you can add the derived quantities you want to compute to this object.
-Finally, you can add the ``DerivedQuantities`` object to the simulation object.
+Finally, you can add the :class:`festim.DerivedQuantities` object to the simulation object.
 
 .. code-block:: python
 
@@ -136,7 +146,7 @@ Finally, you can add the ``DerivedQuantities`` object to the simulation object.
 The complete list of derived quantities can be found at: :ref:`Exports`.
 
 The data can be accessed in three different ways:
-- directly from the ``DerivedQuantities`` (plural) object:
+- directly from the :class:`festim.DerivedQuantities` (plural) object:
 
 .. code-block:: python
 
@@ -157,7 +167,7 @@ The data can be accessed in three different ways:
     print(my_derived_quantities.t)
     print(my_derived_quantities.data)
 
-- from the ``DerivedQuantity`` (singular) object (eg. ``F.SurfaceFlux(...)``):
+- from the :class:`festim.DerivedQuantity` (singular) object (eg. ``F.SurfaceFlux(...)``):
 
 .. code-block:: python
 
@@ -202,7 +212,7 @@ The data can be accessed in three different ways:
 
 
 By default, the derived quantities will be computed at each timestep and exported at the last timestep.
-This behaviour can be changed by setting the ``nb_iterations_between_compute`` and ``nb_iterations_between_exports`` attributes of the ``DerivedQuantities`` object.
+This behaviour can be changed by setting the ``nb_iterations_between_compute`` and ``nb_iterations_between_exports`` attributes of the :class:`festim.DerivedQuantities` object.
 
 .. code-block:: python
 

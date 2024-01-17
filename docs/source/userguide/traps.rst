@@ -24,7 +24,7 @@ A trap in FESTIM is defined by:
 
     my_trap = F.Trap(k_0=1e-16, E_k=0.2, p_0=1e13, E_p=0.8, density=1e16, materials=my_material)
 
-If the trap is located in several materials, instead of creating another :code:`Trap` object, simply use a list of materials:
+If the trap is located in several materials, instead of creating another :class:`festim.Trap` object, simply use a list of materials:
 
 .. code-block:: python
 
