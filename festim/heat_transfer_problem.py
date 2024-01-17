@@ -35,6 +35,17 @@ class HeatTransferProblem:
         self.formulation = None
         self.bc_forms = []
 
+    # add setter for sources to check it only contains F.HeatSource objects
+    @property
+    def sources(self):
+        return self._sources
+
+    @sources.setter
+    def sources(self, value):
+        if not all(isinstance(source, F.HeatSource) for source in value):
+            raise TypeError("sources must be a list of festim.HeatSource objects")
+        self._sources = value
+
     def initialise(self):
         self.define_function_space()
         self.define_meshtags_and_measures()
@@ -152,14 +163,12 @@ class HeatTransferProblem:
     def create_source_values_fenics(self):
         """For each source create the value_fenics"""
         for source in self.sources:
-            # create value_fenics for all F.Source objects
-            if isinstance(source, F.Source):
-                source.create_value_fenics(
-                    mesh=self.mesh.mesh,
-                    temperature=None,
-                    function_space=self.function_space,
-                    t=self.t,
-                )
+            # create value_fenics for all source objects
+            source.create_value_fenics(
+                mesh=self.mesh.mesh,
+                function_space=self.function_space,
+                t=self.t,
+            )
 
     def create_initial_conditions(self):
         """For each initial condition, create the value_fenics and assign it to

@@ -36,7 +36,7 @@ from .initial_condition import InitialCondition
 
 from .settings import Settings
 
-from .source import Source
+from .source import Source, ParticleSource, HeatSource
 
 from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
