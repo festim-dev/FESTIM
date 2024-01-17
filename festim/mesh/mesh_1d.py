@@ -36,12 +36,7 @@ class Mesh1D(F.Mesh):
         """Generates a 1D mesh"""
         degree = 1
         domain = ufl.Mesh(
-            basix.ufl.element(
-                basix.ElementFamily.P,
-                "interval",
-                degree,
-                shape=(1,)
-            )
+            basix.ufl.element(basix.ElementFamily.P, "interval", degree, shape=(1,))
         )
 
         mesh_points = np.reshape(self.vertices, (len(self.vertices), 1))
