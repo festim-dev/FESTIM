@@ -91,7 +91,7 @@ It works in 1D only. For multi-dimensional problems, use the :class:`festim.XDMF
     my_export = F.TXTExport(field="solute", filename="./mobile_conc.txt")
 
 Adding this export to the simulation object will produce a file called ``mobile_conc.txt`` in the current directory.
-This file will contain the solution of the ``solute`` field at the degree of freedom of the mesh and at each timestep.
+This file will contain the solution of the ``solute`` field at the degrees of freedom of the mesh and at each timestep.
 
 To only export at specific times in the simulation, use the ``times`` argument:
 
