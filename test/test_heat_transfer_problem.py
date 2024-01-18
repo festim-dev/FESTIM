@@ -4,6 +4,8 @@ from dolfinx import fem
 import ufl
 import mpi4py.MPI as MPI
 
+import pytest
+
 
 def source_from_exact_solution(
     exact_solution, thermal_conductivity, density, heat_capacity
@@ -271,3 +273,35 @@ def test_sympify():
     exact_solution_end = lambda x: exact_solution(x, final_time_sim)
     L2_error = error_L2(computed_solution, exact_solution_end)
     assert L2_error < 1e-7
+
+
+def test_sources():
+    """Tests the sources setter of the HeatTransferProblem class"""
+    htp = F.HeatTransferProblem()
+    vol = F.VolumeSubdomain1D(1, borders=[0, 1], material=None)
+    # Test that setting valid sources works
+    valid_sources = [
+        F.HeatSource(value=1, volume=vol),
+        F.HeatSource(value=1, volume=vol),
+    ]
+    htp.sources = valid_sources
+    assert htp.sources == valid_sources
+
+    # Test that setting invalid sources raises a TypeError
+    with pytest.raises(TypeError):
+        htp.sources = [F.ParticleSource(1, 1, 0), F.ParticleSource(1, 1, 0)]
+
+
+def test_boundary_conditions():
+    """Tests the boundary_conditions setter of the HeatTransferProblem class"""
+    htp = F.HeatTransferProblem()
+    left = F.SurfaceSubdomain(1)
+
+    # Test that setting valid boundary conditions works
+    valid_bcs = [F.FixedTemperatureBC(left, 0), F.FixedTemperatureBC(left, 0)]
+    htp.boundary_conditions = valid_bcs
+    assert htp.boundary_conditions == valid_bcs
+
+    # Test that setting invalid boundary conditions raises a TypeError
+    with pytest.raises(TypeError):
+        htp.boundary_conditions = [F.FixedConcentrationBC(left, 0, 0)]
