@@ -210,6 +210,47 @@ def test_heat_transfer_transient():
     assert L2_error < 1e-7
 
 
+def test_MES():
+    """Method of Exact Solution test for transient heat transfer
+    with thermal cond. k = 2, T = 0 on surfaces, and source term q = 8 k
+
+    Analytical solution: T(x) = 4 x (1 - x)
+    """
+    my_problem = F.HeatTransferProblem()
+
+    my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 3000))
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+    mat = F.Material(D_0=None, E_D=None)
+    mat.thermal_conductivity = 2
+
+    volume_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    my_problem.subdomains = [left, right, volume_subdomain]
+
+    my_problem.boundary_conditions = [
+        F.FixedTemperatureBC(subdomain=left, value=0),
+        F.FixedTemperatureBC(subdomain=right, value=0),
+    ]
+
+    my_problem.sources = [
+        F.HeatSource(value=8 * mat.thermal_conductivity, volume=volume_subdomain)
+    ]
+
+    my_problem.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-10,
+        transient=False,
+    )
+
+    my_problem.initialise()
+    my_problem.run()
+
+    computed_solution = my_problem.u
+    analytical_solution = lambda x: 4 * x[0] * (1 - x[0])
+    L2_error = error_L2(computed_solution, analytical_solution)
+    assert L2_error < 1e-7
+
+
 # TODO populate this in other tests
 def test_sympify():
     exact_solution = lambda x, t: 2 * x[0] ** 2 + 20 * t
@@ -398,3 +439,24 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     assert volume_meshtags.values.all() == my_model.volume_meshtags.values.all()
     assert facet_meshtags.dim == my_model.facet_meshtags.dim
     assert facet_meshtags.values.all() == my_model.facet_meshtags.values.all()
+
+
+def test_raise_error_non_unique_vol_ids():
+    """Test that an error is raised if the volume ids are not unique"""
+    my_problem = F.HeatTransferProblem()
+    my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+    mat = F.Material(D_0=None, E_D=None)
+    mat.thermal_conductivity = 1
+
+    my_problem.subdomains = [
+        left,
+        right,
+        F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat),
+        F.VolumeSubdomain1D(id=1, borders=[0.5, 1], material=mat),
+    ]
+
+    # read files
+    with pytest.raises(ValueError):
+        my_problem.define_meshtags_and_measures()
