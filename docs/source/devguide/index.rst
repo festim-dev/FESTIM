@@ -49,7 +49,7 @@ The time before the review will depend on the maintainers' availability.
 Test suite
 ----------
 
-FESTIM uses continuous integration (CI) to ensure code quality and eliminate as much bugs as possible.
+FESTIM uses continuous integration (CI) to ensure code quality and eliminate as many bugs as possible.
 
 In a nutshell, every time a change is pushed to the repository (or to a PR), a suite of tests is automatically triggered.
 This is to make sure the changes don't break existing functionalities.
