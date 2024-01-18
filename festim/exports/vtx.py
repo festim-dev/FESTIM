@@ -8,8 +8,6 @@ class VTXExportBase:
     def __init__(self, filename: str) -> None:
         self.filename = filename
 
-        self.functions = []
-
     @property
     def filename(self):
         return self._filename
@@ -101,5 +99,3 @@ class VTXExport(VTXExportBase):
 class VTXExportForTemperature(VTXExportBase):
     def __init__(self, filename: str) -> None:
         super().__init__(filename)
-
-        self.functions = None
