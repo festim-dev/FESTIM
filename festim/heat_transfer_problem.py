@@ -222,12 +222,15 @@ class HeatTransferProblem:
             ) * self.dx(vol.id)
 
             if self.settings.transient:
-                raise NotImplementedError(
-                    "Transient simulations are not implemented yet, need to add rho and cp"
-                )
+                density = vol.material.density
+                heat_capacity = vol.material.heat_capacity
+                if callable(density):
+                    density = density(self.u)
+                if callable(heat_capacity):
+                    heat_capacity = heat_capacity(self.u)
                 self.formulation += (
-                    rho
-                    * cp
+                    density
+                    * heat_capacity
                     * ((self.u - self.u_n) / self.dt)
                     * self.test_function
                     * self.dx(vol.id)
@@ -325,6 +328,9 @@ class HeatTransferProblem:
         """Post processes the model"""
 
         for export in self.exports:
+            raise NotImplementedError(
+                "Exports are not implemented yet for heat transfer problems"
+            )
             # TODO if export type derived quantity
             if isinstance(export, F.SurfaceQuantity):
                 export.compute(
