@@ -19,6 +19,7 @@ class HeatTransferProblem:
         boundary_conditions=None,
         sources=None,
         exports=None,
+        settings=None,
     ) -> None:
         self.mesh = mesh
         self.subdomains = subdomains or []
@@ -26,6 +27,7 @@ class HeatTransferProblem:
         self.boundary_conditions = boundary_conditions or []
         self.sources = sources or []
         self.exports = exports or []
+        self.settings = settings
 
         self.dx = None
         self.ds = None
