@@ -340,5 +340,5 @@ class HeatTransferProblem:
                 if export.filename is not None:
                     export.write(t=float(self.t))
 
-            if isinstance(export, (F.VTXExport, F.XDMFExport)):
+            if isinstance(export, (F.VTXExportForTemperature, F.XDMFExport)):
                 export.write(float(self.t))
