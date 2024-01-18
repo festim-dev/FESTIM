@@ -320,7 +320,7 @@ class Simulation:
         #  Time-stepping
         print("Time stepping...")
         while self.t < self.settings.final_time and not np.isclose(
-            self.t, self.settings.final_time
+            self.t, self.settings.final_time, atol=0
         ):
             self.iterate()
 
@@ -370,7 +370,10 @@ class Simulation:
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(self.t)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-        if not np.isclose(self.t, self.settings.final_time) and self.log_level == 40:
+        if (
+            not np.isclose(self.t, self.settings.final_time, atol=0)
+            and self.log_level == 40
+        ):
             print(msg, end="\r")
         else:
             print(msg)

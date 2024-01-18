@@ -121,20 +121,25 @@ def test_wrong_value_for_bc_field(field):
         sim.initialise()
 
 
-def test_txt_export_desired_times(tmp_path):
+@pytest.mark.parametrize(
+    "final_time,stepsize,export_times",
+    [(1, 0.1, [0.2, 0.5]), (1e-7, 1e-9, [1e-8, 1.5e-8, 2e-8])],
+)
+def test_txt_export_desired_times(tmp_path, final_time, stepsize, export_times):
     """
     Tests that TXTExport can be exported at desired times
+    Also catches the bug #682
     """
     my_model = F.Simulation()
 
     my_model.mesh = F.MeshFromVertices(np.linspace(0, 1))
     my_model.materials = F.Material(1, 1, 0)
-    my_model.settings = F.Settings(1e-10, 1e-10, final_time=1)
+    my_model.settings = F.Settings(1e-10, 1e-10, final_time=final_time)
     my_model.T = F.Temperature(500)
-    my_model.dt = F.Stepsize(0.1)
+    my_model.dt = F.Stepsize(stepsize)
 
     my_export = F.TXTExport(
-        "solute", times=[0.2, 0.5], filename="{}/mobile_conc.txt".format(tmp_path)
+        "solute", times=export_times, filename="{}/mobile_conc.txt".format(tmp_path)
     )
     my_model.exports = [my_export]
 
@@ -252,3 +257,20 @@ def test_derived_quantities_exported_last_timestep_with_small_stepsize(tmp_path)
     my_model.run()
 
     assert os.path.exists(f"{tmp_path}/out.csv")
+
+
+def test_small_timesteps_final_time_bug():
+    """
+    Test to catch the bug #682
+    Runs a sim on small timescales and checks that the final time is reached
+    """
+    my_model = F.Simulation(log_level=40)
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1, 10))
+    my_model.materials = F.Material(1, 1, 0.1)
+    my_model.T = F.Temperature(1000)
+    my_model.settings = F.Settings(1e-10, 1e-10, final_time=1e-7)
+    my_model.dt = F.Stepsize(1e-9)
+    my_model.initialise()
+    my_model.run()
+
+    assert np.isclose(my_model.t, my_model.settings.final_time, atol=0.0)

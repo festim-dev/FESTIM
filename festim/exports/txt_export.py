@@ -47,7 +47,7 @@ class TXTExport(festim.Export):
         if self.times is None:
             return True
         for time in self.times:
-            if np.isclose(time, current_time):
+            if np.isclose(time, current_time, atol=0):
                 return True
         return False
 
