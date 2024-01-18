@@ -10,3 +10,7 @@ Sources
 .. autoclass:: ImplantationFlux
     :members:
     :show-inheritance:
+
+.. autoclass:: RadioactiveDecay
+    :members:
+    :show-inheritance:

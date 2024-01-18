@@ -188,7 +188,14 @@ class Simulation:
 
         # set sources
         for source in self.sources:
-            field_to_object[source.field].sources.append(source)
+            if isinstance(source, festim.RadioactiveDecay) and source.field == "all":
+                # assign source to each of the unique festim.Concentration
+                # objects in field_to_object
+                for obj in set(field_to_object.values()):
+                    if isinstance(obj, festim.Concentration):
+                        obj.sources.append(source)
+            else:
+                field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
         """Assigns boundary_conditions to mobile and T"""

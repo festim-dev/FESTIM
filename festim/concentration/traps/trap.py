@@ -1,4 +1,4 @@
-from festim import Concentration, k_B, Material, Theta
+from festim import Concentration, k_B, Material, Theta, RadioactiveDecay
 from fenics import *
 import sympy as sp
 import numpy as np
@@ -204,6 +204,9 @@ class Trap(Concentration):
             dx (fenics.Measure): the dx measure of the sim
         """
         for source in self.sources:
+            if isinstance(source, RadioactiveDecay):
+                source.value = source.form(self.solution)
             self.F_source = -source.value * self.test_function * dx(source.volume)
             self.F += self.F_source
-            self.sub_expressions.append(source.value)
+            if isinstance(source.value, (Expression, UserExpression)):
+                self.sub_expressions.append(source.value)
