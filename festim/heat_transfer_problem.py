@@ -214,6 +214,8 @@ class HeatTransferProblem:
         # add diffusion and time derivative for each species
         for vol in self.volume_subdomains:
             thermal_cond = vol.material.thermal_conductivity
+            if callable(thermal_cond):
+                thermal_cond = thermal_cond(self.u)
 
             self.formulation += ufl.dot(
                 thermal_cond * ufl.grad(self.u), ufl.grad(self.test_function)
