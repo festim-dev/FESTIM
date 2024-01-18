@@ -294,8 +294,9 @@ def test_sources():
     assert htp.sources == valid_sources
 
     # Test that setting invalid sources raises a TypeError
-    with pytest.raises(TypeError):
-        htp.sources = [F.ParticleSource(1, 1, 0), F.ParticleSource(1, 1, 0)]
+    with pytest.raises(TypeError, match="festim.HeatSource objects"):
+        spe = F.Species("H")
+        htp.sources = [F.ParticleSource(1, vol, spe), F.ParticleSource(1, vol, spe)]
 
 
 def test_boundary_conditions():
