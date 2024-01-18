@@ -26,7 +26,7 @@ For more information, see :class:`festim.Source`.
 Implantation flux
 -----------------
 
-Hydrogen implanted in a material can be simulated by a gaussian-shaped volumetric source with the :class:`festim.ImplantationFlux` class.
+Hydrogen implanted in a material can be simulated by a Gaussian-shaped volumetric source with the :class:`festim.ImplantationFlux` class.
 
 .. code:: python
 

@@ -22,7 +22,7 @@ The value of solutions (concentration, temperature) can be imposed on boundaries
 
 .. note::
 
-    Here, we set :code:`field=0` to specify this BC applies to the mobile hydrogen concentration. :code:`1` would stand for the trap 1 concentration and :code:`"T"` for temperature.
+    Here, we set :code:`field=0` to specify that this BC applies to the mobile hydrogen concentration. :code:`1` would stand for the trap 1 concentration, and :code:`"T"` for temperature.
 
 The `value` argument can be space and time dependent by making use of the FESTIM variables ``x``, ``y``, ``z`` and ``t``:
 
@@ -82,7 +82,7 @@ Some BCs are specific to hydrogen transport. FESTIM provides a handful of conven
 Recombination flux
 ^^^^^^^^^^^^^^^^^^
 
-A recombination flux can be set on boundaries as: :math:`Kr \, c_\mathrm{m}^n` (see :class:`festim.RecombinationFlux`).
+A recombination flux can be set on boundaries as follows: :math:`Kr \, c_\mathrm{m}^n` (See :class:`festim.RecombinationFlux`).
 Where :math:`Kr` is the recombination coefficient, :math:`c_\mathrm{m}` is the mobile hydrogen concentration and :math:`n` is the recombination order.
 
 .. code-block:: python
@@ -116,7 +116,7 @@ Impose the mobile concentration of hydrogen as :math:`c_\mathrm{m} = S(T) \sqrt{
 Henry's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Similarily, the mobile concentration can be set from Henry's law of solubility :math:`c_\mathrm{m} = K_H P` where :math:`K_H` is the Henry solubility (see :class:`festim.HenrysBC`).
+Similarly, the mobile concentration can be set from Henry's law of solubility :math:`c_\mathrm{m} = K_H P` where :math:`K_H` is the Henry solubility (see :class:`festim.HenrysBC`).
 
 
 .. code-block:: python
@@ -128,7 +128,7 @@ Similarily, the mobile concentration can be set from Henry's law of solubility :
 Plasma implantation approximation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A plasma implantation can be approximated by a Dirichlet boundary condition with the class :class:`festim.ImplantationDirichlet` . Refer to the :ref:`theory` section for more details.
+Plasma implantation can be approximated by a Dirichlet boundary condition with the class :class:`festim.ImplantationDirichlet` . Refer to the :ref:`theory` section for more details.
 
 
 .. code-block:: python

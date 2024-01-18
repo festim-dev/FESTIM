@@ -90,9 +90,9 @@ If the temporal evolution of the trap's density is known `a priori`, then a "nor
 Grouped-trap
 ------------
 
-Let's imaging a case where you have two subdomains. Trap 1 is defined only in the first subdomain, whereas Trap 2 is defined in the second.
-It would be possible to simply define one trap in each subdomain.
-Grouping traps together helps saving computational time as it reduces the number of degrees of freedom.
+Let's imagine a case where you have two subdomains. Trap 1 is defined only in the first subdomain, whereas Trap 2 is defined in the second.
+It would be possible to define one trap in each subdomain.
+Grouping traps together helps save computational time by reducing the number of degrees of freedom.
 
 .. code-block:: python
 

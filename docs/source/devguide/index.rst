@@ -30,17 +30,17 @@ Contributing to the code
 
    If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/festim-dev/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
 
-   These issues are usually fairly easy to tackle and therefore perfect for newcomers.
+   These issues are usually relatively easy to tackle and perfect for newcomers.
 
 1) `Fork the repository <https://github.com/festim-dev/FESTIM/fork>`_
 
-By forking the repository, you create a copy of it where you can safely make changes.
+By forking the repository, you create a copy where you can safely make changes.
 
 2) Make your changes
 3) `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
 4) Wait for a maintainer to review your PR
 
-Before merging your changes, they have to be reviewed. During the review, we make sure the changes don't break anything and eventually propose/request improvements.
+Before merging your changes, they have to be reviewed. We ensure the changes don't break anything during the review and eventually propose/request improvements.
 The time before the review will depend on the maintainers' availability.
 
 5) When everything is in order, the maintainers will merge your PR!

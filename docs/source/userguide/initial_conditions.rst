@@ -34,11 +34,11 @@ Initial conditions can also be read from a previously written XDMF file. This is
         field=0
     )
 
-In the snipset above, the initial condition is read from the file ``ic_file.xdmf``.
+In the snippet above, the initial condition is read from the file ``ic_file.xdmf``.
 The label ``mobile`` is used to identify the mesh in the file.
 The timestep ``-1`` indicates that the last timestep of the file should be read.
 
 .. note::
 
-    The XDMF file must be readable. To do so, the XDMF file has to be created with checkpointing on. See :class:`festim.XDMFExport`.
+    The XDMF file must be readable. To do so, the XDMF file must be created with checkpointing. See :class:`festim.XDMFExport`.
     For more information on checkpointing in FEniCS, see `this page <https://fenicsproject.discourse.group/t/loading-xdmf-data-back-in/1925/4>`_.
