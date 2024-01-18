@@ -5,6 +5,7 @@ from dolfinx.io import XDMFFile
 from dolfinx import fem
 import ufl
 import mpi4py.MPI as MPI
+import tqdm.autonotebook
 
 import pytest
 import os
@@ -460,3 +461,102 @@ def test_raise_error_non_unique_vol_ids():
     # read files
     with pytest.raises(ValueError):
         my_problem.define_meshtags_and_measures()
+
+
+def test_initial_condition():
+    """Test that an error is raised when initial conditions are defined for a transient simulation"""
+    my_problem = F.HeatTransferProblem()
+
+    my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 3000))
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+    mat = F.Material(D_0=None, E_D=None)
+    mat.thermal_conductivity = 2
+
+    volume_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    my_problem.subdomains = [left, right, volume_subdomain]
+
+    my_problem.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    my_problem.initial_condition = F.InitialTemperature(100)
+
+    with pytest.raises(
+        ValueError,
+        match="Initial conditions can only be defined for transient simulations",
+    ):
+        my_problem.initialise()
+
+
+test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
+dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
+dummy_mat.thermal_conductivity = 1
+dummy_mat.density = 1
+dummy_mat.heat_capacity = 1
+
+
+def test_adaptive_timestepping_grows():
+    """Tests that the stepsize grows"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HeatTransferProblem(
+        mesh=test_mesh,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=True, final_time=10),
+        subdomains=[my_vol],
+    )
+
+    stepsize = F.Stepsize(initial_value=1)
+    stepsize.growth_factor = 1.2
+    stepsize.target_nb_iterations = 100  # force it to always grow
+    my_model.settings.stepsize = stepsize
+
+    my_model.initialise()
+
+    my_model.progress = tqdm.autonotebook.tqdm(
+        desc="Solving H transport problem",
+        total=my_model.settings.final_time,
+        unit_scale=True,
+    )
+
+    # RUN & TEST
+    previous_value = stepsize.initial_value
+    for i in range(10):
+        my_model.iterate()
+
+        # check that the current value is greater than the previous one
+        assert my_model.dt.value > previous_value
+
+        previous_value = float(my_model.dt)
+
+
+def test_adaptive_timestepping_shrinks():
+    """Tests that the stepsize shrinks"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HeatTransferProblem(
+        mesh=test_mesh,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=True, final_time=10),
+        subdomains=[my_vol],
+    )
+
+    stepsize = F.Stepsize(initial_value=1)
+    stepsize.cutback_factor = 0.8
+    stepsize.target_nb_iterations = -1  # force it to always shrink
+    my_model.settings.stepsize = stepsize
+
+    my_model.initialise()
+
+    my_model.progress = tqdm.autonotebook.tqdm(
+        desc="Solving H transport problem",
+        total=my_model.settings.final_time,
+        unit_scale=True,
+    )
+
+    # RUN & TEST
+    previous_value = stepsize.initial_value
+    for i in range(10):
+        my_model.iterate()
+
+        # check that the current value is smaller than the previous one
+        assert my_model.dt.value < previous_value
+
+        previous_value = float(my_model.dt)
