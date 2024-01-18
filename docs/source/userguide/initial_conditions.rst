@@ -20,3 +20,25 @@ The value can also be a function of space:
     from festim import x, y, z
 
     my_ic = F.InitialCondition(value=x**2 + y**2 + z**2, field=0)
+
+Initial conditions can also be read from a previously written XDMF file. This is useful when restarting a simulation.
+
+.. code-block:: python
+
+    import festim as F
+
+    my_ic = F.InitialCondition(
+        filename="ic_file.xdmf",
+        label="mobile",
+        timestep=-1,
+        field=0
+    )
+
+In the snipset above, the initial condition is read from the file ``ic_file.xdmf``.
+The label ``mobile`` is used to identify the mesh in the file.
+The timestep ``-1`` indicates that the last timestep of the file should be read.
+
+.. note::
+
+    The XDMF file must be readable. To do so, the XDMF file has to be created with checkpointing on. See :class:`festim.XDMFExport`.
+    For more information on checkpointing in FEniCS, see `this page <https://fenicsproject.discourse.group/t/loading-xdmf-data-back-in/1925/4>`_.
