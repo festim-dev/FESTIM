@@ -119,17 +119,22 @@ def test_MMS_T_dependent_thermal_cond():
 
 
 def test_heat_transfer_transient():
-    density = 1
-    heat_capacity = 2
-    thermal_conductivity = 2
+    """
+    MMS test for transient heat transfer
+    constant thermal conductivity density and heat capacity
+    """
+    density = 2
+    heat_capacity = 3
+    thermal_conductivity = 4
     exact_solution = lambda x, t: 2 * x[0] ** 2 + 20 * t
-    mms_source = 1  # FIXME
+    dTdt = 20
+    mms_source = density * heat_capacity * dTdt - thermal_conductivity * 4
 
     my_problem = F.HeatTransferProblem()
 
-    my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
-    left = F.SurfaceSubdomain1D(id=1, x=0)
-    right = F.SurfaceSubdomain1D(id=2, x=1)
+    my_problem.mesh = F.Mesh1D(vertices=np.linspace(2, 3, 2000))
+    left = F.SurfaceSubdomain1D(id=1, x=2)
+    right = F.SurfaceSubdomain1D(id=2, x=3)
     my_problem.surface_subdomains = [left, right]
     mat = F.Material(D_0=None, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
@@ -137,9 +142,10 @@ def test_heat_transfer_transient():
     mat.heat_capacity = heat_capacity
 
     my_problem.volume_subdomains = [
-        F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+        F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat)
     ]
 
+    # NOTE: it's good to check that without the IC the solution is not the exact one
     my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
 
     my_problem.boundary_conditions = [
@@ -152,12 +158,14 @@ def test_heat_transfer_transient():
     ]
 
     my_problem.settings = F.Settings(
-        atol=1e-10,
+        atol=1e-8,
         rtol=1e-10,
-        final_time=10,
+        final_time=1,  # final time shouldn't be too long so that a potential error at the initial timestep is not negligible
     )
 
-    my_problem.settings.stepsize = F.Stepsize(1)
+    # Forward euler isn't great so dt should be small
+    # although it's ok here since the time derivative is constant
+    my_problem.settings.stepsize = F.Stepsize(0.1)
 
     my_problem.exports = [
         F.VTXExportForTemperature(filename="test_transient_heat_transfer.bp")
@@ -167,6 +175,9 @@ def test_heat_transfer_transient():
     my_problem.run()
 
     computed_solution = my_problem.u
-    exact_solution_end = lambda x: exact_solution(x, my_problem.settings.final_time)
+    final_time_sim = (
+        my_problem.t.value
+    )  # we use the exact final time of the simulation which may differ from the one specified in the settings
+    exact_solution_end = lambda x: exact_solution(x, final_time_sim)
     L2_error = error_L2(computed_solution, exact_solution_end)
     assert L2_error < 1e-7
