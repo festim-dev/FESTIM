@@ -71,12 +71,13 @@ def test_MMS_1():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
-    my_problem.surface_subdomains = [left, right]
     mat = F.Material(D_0=None, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
 
-    my_problem.volume_subdomains = [
-        F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    my_problem.subdomains = [
+        left,
+        right,
+        F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat),
     ]
 
     my_problem.boundary_conditions = [
@@ -113,14 +114,14 @@ def test_MMS_T_dependent_thermal_cond():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
-    my_problem.surface_subdomains = [left, right]
     mat = F.Material(D_0=None, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
 
-    my_problem.volume_subdomains = [
-        F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    my_problem.subdomains = [
+        left,
+        right,
+        F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat),
     ]
-
     my_problem.boundary_conditions = [
         F.FixedTemperatureBC(subdomain=left, value=exact_solution),
         F.FixedTemperatureBC(subdomain=right, value=exact_solution),
@@ -161,16 +162,16 @@ def test_heat_transfer_transient():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(2, 3, 2000))
     left = F.SurfaceSubdomain1D(id=1, x=2)
     right = F.SurfaceSubdomain1D(id=2, x=3)
-    my_problem.surface_subdomains = [left, right]
     mat = F.Material(D_0=None, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
     mat.density = density
     mat.heat_capacity = heat_capacity
 
-    my_problem.volume_subdomains = [
-        F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat)
+    my_problem.subdomains = [
+        left,
+        right,
+        F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat),
     ]
-
     # NOTE: it's good to check that without the IC the solution is not the exact one
     my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
 
@@ -230,14 +231,15 @@ def test_sympify():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(2, 3, 2100))
     left = F.SurfaceSubdomain1D(id=1, x=2)
     right = F.SurfaceSubdomain1D(id=2, x=3)
-    my_problem.surface_subdomains = [left, right]
     mat = F.Material(D_0=None, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
     mat.density = density
     mat.heat_capacity = heat_capacity
 
-    my_problem.volume_subdomains = [
-        F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat)
+    my_problem.subdomains = [
+        left,
+        right,
+        F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat),
     ]
 
     # NOTE: it's good to check that without the IC the solution is not the exact one
