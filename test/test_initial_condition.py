@@ -72,3 +72,51 @@ def test_warning_raised_when_giving_time_as_arg():
         ValueError, match="Initial condition cannot be a function of time."
     ):
         init_cond.create_expr_fenics(test_mesh.mesh, T, V)
+
+
+def test_warning_raised_when_giving_time_as_arg_initial_temperature():
+    """Test that a warning is raised if the value is given with t in its arguments"""
+
+    # give function to species
+    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    my_species = F.Species("test")
+    my_species.prev_solution = fem.Function(V)
+
+    my_value = lambda t: 1.0 + t
+
+    init_cond = F.InitialTemperature(value=my_value)
+
+    with pytest.raises(
+        ValueError, match="Initial condition cannot be a function of time."
+    ):
+        init_cond.create_expr_fenics(test_mesh.mesh, V)
+
+
+@pytest.mark.parametrize(
+    "input_value, expected_type",
+    [
+        (1.0, LambdaType),
+        (1, LambdaType),
+        (lambda x: 1.0 + x[0], fem.Expression),
+    ],
+)
+def test_create_value_fenics_initial_temperature(input_value, expected_type):
+    """Test that after calling .create_expr_fenics, the prev_solution
+    attribute of the species has the correct value at x=1.0."""
+
+    # BUILD
+
+    # give function to species
+    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    c = fem.Function(V)
+
+    my_species = F.Species("test")
+    my_species.prev_solution = c
+
+    init_cond = F.InitialTemperature(value=input_value)
+
+    # RUN
+    init_cond.create_expr_fenics(test_mesh.mesh, V)
+
+    # TEST
+    assert isinstance(init_cond.expr_fenics, expected_type)
