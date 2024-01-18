@@ -159,6 +159,10 @@ def test_heat_transfer_transient():
 
     my_problem.settings.stepsize = F.Stepsize(1)
 
+    my_problem.exports = [
+        F.VTXExportForTemperature(filename="test_transient_heat_transfer.vtx")
+    ]
+
     my_problem.initialise()
     my_problem.run()
 

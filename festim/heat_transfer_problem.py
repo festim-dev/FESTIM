@@ -261,12 +261,13 @@ class HeatTransferProblem:
         a string, find species object in self.species"""
 
         for export in self.exports:
-            if isinstance(export, (F.VTXExport, F.XDMFExport)):
-                raise NotImplementedError(
-                    "VTX and XDMF exports are not implemented yet for heat transfer problems"
-                )
+            if isinstance(export, (F.VTXExportForTemperature, F.XDMFExport)):
+                export.function = self.u
                 export.define_writer(MPI.COMM_WORLD)
                 if isinstance(export, F.XDMFExport):
+                    raise NotImplementedError(
+                        "XDMF export is not implemented yet for heat transfer problems"
+                    )
                     export.writer.write_mesh(self.mesh.mesh)
 
     def run(self):
@@ -323,11 +324,11 @@ class HeatTransferProblem:
         """Post processes the model"""
 
         for export in self.exports:
-            raise NotImplementedError(
-                "Exports are not implemented yet for heat transfer problems"
-            )
             # TODO if export type derived quantity
             if isinstance(export, F.SurfaceQuantity):
+                raise NotImplementedError(
+                    "SurfaceQuantity export is not implemented yet for heat transfer problems"
+                )
                 export.compute(
                     self.mesh.n,
                     self.ds,

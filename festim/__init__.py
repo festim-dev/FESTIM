@@ -53,7 +53,7 @@ from .stepsize import Stepsize
 
 from .exports.surface_quantity import SurfaceQuantity
 from .exports.surface_flux import SurfaceFlux
-from .exports.vtx import VTXExport
+from .exports.vtx import VTXExport, VTXExportForTemperature
 from .exports.xdmf import XDMFExport
 
 from .reaction import Reaction

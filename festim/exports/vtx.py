@@ -85,3 +85,31 @@ class VTXExport:
             t (float): the time of export
         """
         self.writer.write(t)
+
+
+class VTXExportForTemperature:
+    def __init__(self, filename: str) -> None:
+        self.filename = filename
+
+        self.function = None
+
+    def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
+        """Define the writer
+
+        Args:
+            comm (mpi4py.MPI.Intracomm): the MPI communicator
+        """
+        self.writer = VTXWriter(
+            comm,
+            self.filename,
+            [self.function],
+            "BP4",
+        )
+
+    def write(self, t: float):
+        """Write functions to VTX file
+
+        Args:
+            t (float): the time of export
+        """
+        self.writer.write(t)
