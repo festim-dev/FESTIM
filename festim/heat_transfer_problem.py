@@ -57,6 +57,14 @@ class HeatTransferProblem:
             )
         self._boundary_conditions = value
 
+    @property
+    def volume_subdomains(self):
+        return [s for s in self.subdomains if isinstance(s, F.VolumeSubdomain)]
+
+    @property
+    def surface_subdomains(self):
+        return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
+
     def initialise(self):
         self.define_function_space()
         self.define_meshtags_and_measures()
