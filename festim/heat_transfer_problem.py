@@ -15,14 +15,14 @@ class HeatTransferProblem:
         self,
         mesh=None,
         subdomains=None,
-        initial_conditions=None,
+        initial_condition=None,
         boundary_conditions=None,
         sources=None,
         exports=None,
     ) -> None:
         self.mesh = mesh
         self.subdomains = subdomains or []
-        self.initial_conditions = initial_conditions or []
+        self.initial_condition = initial_condition
         self.boundary_conditions = boundary_conditions or []
         self.sources = sources or []
         self.exports = exports or []
@@ -185,26 +185,21 @@ class HeatTransferProblem:
         """For each initial condition, create the value_fenics and assign it to
         the previous solution of the condition's species"""
 
-        if len(self.initial_conditions) > 0 and not self.settings.transient:
-            raise ValueError(
-                "Initial conditions can only be defined for transient simulations"
-            )
+        if self.initial_condition:
+            if not self.settings.transient:
+                raise ValueError(
+                    "Initial conditions can only be defined for transient simulations"
+                )
 
-        for condition in self.initial_conditions:
-            raise NotImplementedError(
-                "Initial conditions are not implemented yet for heat transfer problems"
-            )
             # create value_fenics for condition
 
-            condition.create_expr_fenics(
+            self.initial_condition.create_expr_fenics(
                 mesh=self.mesh.mesh,
-                temperature=None,
                 function_space=self.function_space,
             )
 
             # assign to previous solution of species
-
-            self.u_n.interpolate(condition.expr_fenics)
+            self.u_n.interpolate(self.initial_condition.expr_fenics)
 
     def create_formulation(self):
         """Creates the formulation of the model"""

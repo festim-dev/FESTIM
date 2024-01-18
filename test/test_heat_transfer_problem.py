@@ -118,44 +118,51 @@ def test_MMS_T_dependent_thermal_cond():
     assert L2_error < 1e-7
 
 
-# def test_heat_transfer_transient():
-#     density = lambda T: 2 * T
-#     heat_capacity = lambda T: 3 * T
-#     thermal_conductivity = lambda T: 4 * T
-#     exact_solution = lambda x, t: 2 * x[0] ** 2 + 2 * t
-#     mms_source = 1  # FIXME
+def test_heat_transfer_transient():
+    density = 1
+    heat_capacity = 2
+    thermal_conductivity = 2
+    exact_solution = lambda x, t: 2 * x[0] ** 2 + 20 * t
+    mms_source = 1  # FIXME
 
-#     my_problem = F.HeatTransferProblem()
+    my_problem = F.HeatTransferProblem()
 
-#     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
-#     left = F.SurfaceSubdomain1D(id=1, x=0)
-#     right = F.SurfaceSubdomain1D(id=2, x=1)
-#     my_problem.surface_subdomains = [left, right]
-#     mat = F.Material(D_0=None, E_D=None)
-#     mat.thermal_conductivity = thermal_conductivity
-#     mat.density = density
-#     mat.heat_capacity = heat_capacity
+    my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+    my_problem.surface_subdomains = [left, right]
+    mat = F.Material(D_0=None, E_D=None)
+    mat.thermal_conductivity = thermal_conductivity
+    mat.density = density
+    mat.heat_capacity = heat_capacity
 
-#     my_problem.volume_subdomains = [
-#         F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
-#     ]
+    my_problem.volume_subdomains = [
+        F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    ]
 
-#     my_problem.boundary_conditions = [
-#         F.FixedTemperatureBC(subdomain=left, value=exact_solution),
-#         F.FixedTemperatureBC(subdomain=right, value=exact_solution),
-#     ]
+    my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
 
-#     my_problem.sources = [
-#         F.HeatSource(value=mms_source, volume=my_problem.volume_subdomains[0])
-#     ]
+    my_problem.boundary_conditions = [
+        F.FixedTemperatureBC(subdomain=left, value=exact_solution),
+        F.FixedTemperatureBC(subdomain=right, value=exact_solution),
+    ]
 
-#     my_problem.settings = F.Settings(
-#         atol=1e-10,
-#         rtol=1e-10,
-#         final_time=10,
-#     )
+    my_problem.sources = [
+        F.HeatSource(value=mms_source, volume=my_problem.volume_subdomains[0])
+    ]
 
-#     my_problem.settings.stepsize = F.Stepsize(1)
+    my_problem.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-10,
+        final_time=10,
+    )
 
-#     my_problem.initialise()
-#     my_problem.run()
+    my_problem.settings.stepsize = F.Stepsize(1)
+
+    my_problem.initialise()
+    my_problem.run()
+
+    computed_solution = my_problem.u
+    exact_solution_end = lambda x: exact_solution(x, my_problem.settings.final_time)
+    L2_error = error_L2(computed_solution, exact_solution_end)
+    assert L2_error < 1e-7

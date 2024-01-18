@@ -36,7 +36,7 @@ from .mesh.mesh_from_xdmf import MeshFromXDMF
 from .hydrogen_transport_problem import HydrogenTransportProblem
 from .heat_transfer_problem import HeatTransferProblem
 
-from .initial_condition import InitialCondition
+from .initial_condition import InitialCondition, InitialTemperature
 
 from .settings import Settings
 
