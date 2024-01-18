@@ -262,7 +262,7 @@ class HeatTransferProblem:
 
         for export in self.exports:
             if isinstance(export, (F.VTXExportForTemperature, F.XDMFExport)):
-                export.function = self.u
+                export.functions = [self.u]
                 export.define_writer(MPI.COMM_WORLD)
                 if isinstance(export, F.XDMFExport):
                     raise NotImplementedError(

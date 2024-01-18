@@ -4,7 +4,47 @@ import mpi4py
 import festim as F
 
 
-class VTXExport:
+class VTXExportBase:
+    def __init__(self, filename: str) -> None:
+        self.filename = filename
+
+        self.functions = []
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if not isinstance(value, str):
+            raise TypeError("filename must be of type str")
+        if not value.endswith(".bp"):
+            raise ValueError("filename must end with .bp")
+        self._filename = value
+
+    def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
+        """Define the writer
+
+        Args:
+            comm (mpi4py.MPI.Intracomm): the MPI communicator
+        """
+        self.writer = VTXWriter(
+            comm,
+            self.filename,
+            self.functions,
+            "BP4",
+        )
+
+    def write(self, t: float):
+        """Write functions to VTX file
+
+        Args:
+            t (float): the time of export
+        """
+        self.writer.write(t)
+
+
+class VTXExport(VTXExportBase):
     """Export functions to VTX file
 
     Args:
@@ -26,20 +66,8 @@ class VTXExport:
     """
 
     def __init__(self, filename: str, field) -> None:
-        self.filename = filename
         self.field = field
-
-    @property
-    def filename(self):
-        return self._filename
-
-    @filename.setter
-    def filename(self, value):
-        if not isinstance(value, str):
-            raise TypeError("filename must be of type str")
-        if not value.endswith(".bp"):
-            raise ValueError("filename must end with .bp")
-        self._filename = value
+        super().__init__(filename)
 
     @property
     def field(self):
@@ -65,51 +93,13 @@ class VTXExport:
 
         self._field = value
 
-    def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
-        """Define the writer
-
-        Args:
-            comm (mpi4py.MPI.Intracomm): the MPI communicator
-        """
-        self.writer = VTXWriter(
-            comm,
-            self.filename,
-            [field.post_processing_solution for field in self.field],
-            "BP4",
-        )
-
-    def write(self, t: float):
-        """Write functions to VTX file
-
-        Args:
-            t (float): the time of export
-        """
-        self.writer.write(t)
+    @property
+    def functions(self):
+        return [field.post_processing_solution for field in self.field]
 
 
-class VTXExportForTemperature:
+class VTXExportForTemperature(VTXExportBase):
     def __init__(self, filename: str) -> None:
-        self.filename = filename
+        super().__init__(filename)
 
-        self.function = None
-
-    def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
-        """Define the writer
-
-        Args:
-            comm (mpi4py.MPI.Intracomm): the MPI communicator
-        """
-        self.writer = VTXWriter(
-            comm,
-            self.filename,
-            [self.function],
-            "BP4",
-        )
-
-    def write(self, t: float):
-        """Write functions to VTX file
-
-        Args:
-            t (float): the time of export
-        """
-        self.writer.write(t)
+        self.functions = None
