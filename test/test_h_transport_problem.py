@@ -884,3 +884,34 @@ def test_reinstantiation_of_class(attribute, value):
 
     model_2 = F.HydrogenTransportProblem()
     assert len(getattr(model_2, attribute)) == 0
+
+
+def test_define_meshtags_and_measures_with_custom_fenics_mesh():
+    """Test that the define_meshtags_and_measures method works when the mesh is
+    a custom fenics mesh"""
+
+    # BUILD
+    mesh_1D = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
+    # 1D meshtags
+    my_surface_meshtags = dolfinx.mesh.meshtags(
+        mesh_1D, 0, np.array([0, 10], dtype=np.int32), np.array([1, 2], dtype=np.int32)
+    )
+
+    num_cells = mesh_1D.topology.index_map(1).size_local
+    my_volume_meshtags = dolfinx.mesh.meshtags(
+        mesh_1D,
+        1,
+        np.arange(num_cells, dtype=np.int32),
+        np.full(num_cells, 1, dtype=np.int32),
+    )
+
+    my_mesh = F.CustomFenicsMesh(
+        mesh=mesh_1D,
+        surface_meshtags=my_surface_meshtags,
+        volume_meshtags=my_volume_meshtags,
+    )
+
+    my_model = F.HydrogenTransportProblem(mesh=my_mesh)
+
+    # TEST
+    my_model.define_meshtags_and_measures()
