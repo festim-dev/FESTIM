@@ -11,6 +11,19 @@ mesh_1D = fenics_mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 mesh_2D = fenics_mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
 mesh_3D = fenics_mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 
+# 1D meshtags
+my_surface_meshtags = meshtags(
+    mesh_1D, 0, np.array([0, 10], dtype=np.int32), np.array([1, 2], dtype=np.int32)
+)
+
+num_cells = mesh_1D.topology.index_map(1).size_local
+my_volume_meshtags = meshtags(
+    mesh_1D,
+    1,
+    np.arange(num_cells, dtype=np.int32),
+    np.full(num_cells, 1, dtype=np.int32),
+)
+
 
 @pytest.mark.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
 def test_get_fdim(mesh):
@@ -148,3 +161,38 @@ def test_mesh_custom_fenics_type_hints():
     F.CustomFenicsMesh(
         mesh=mesh_1D, surface_meshtags=surface_meshtags, volume_meshtags=volume_meshtags
     )
+
+
+def test_error_rasied_when_custom_fenics_mesh_wrong_mesh_type():
+    """Test that an TypeError is raised when the mesh is not a dolfinx mesh"""
+
+    with pytest.raises(TypeError, match="Mesh must be of type dolfinx.mesh.Mesh"):
+        F.CustomFenicsMesh(
+            mesh="mesh",
+            surface_meshtags=my_surface_meshtags,
+            volume_meshtags=my_volume_meshtags,
+        )
+
+
+def test_error_rasied_when_custom_fenics_mesh_wrong_surface_mesh_tags_type():
+    """Test that an TypeError is raised when the surface meshtags is not of
+    type dolfinx.mesh.MeshTags"""
+
+    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
+        F.CustomFenicsMesh(
+            mesh=mesh_1D,
+            surface_meshtags=[0, 1],
+            volume_meshtags=my_volume_meshtags,
+        )
+
+
+def test_error_rasied_when_custom_fenics_mesh_wrong_volume_mesh_tags_type():
+    """Test that an TypeError is raised when the volume meshtags is not of
+    type dolfinx.mesh.MeshTags"""
+
+    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
+        F.CustomFenicsMesh(
+            mesh=mesh_1D,
+            surface_meshtags=my_surface_meshtags,
+            volume_meshtags=[0, 1],
+        )
