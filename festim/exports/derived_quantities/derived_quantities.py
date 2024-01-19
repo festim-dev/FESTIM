@@ -20,7 +20,8 @@ class DerivedQuantities:
             iterations between each derived quantities computation.
             Defaults to 1.
         nb_iterations_between_exports (int, optional): number of
-            iterations between each export. Defaults to None.
+            iterations between each export. If None, the file will be
+            exported at the last timestep. Defaults to None.
     """
 
     def __init__(
