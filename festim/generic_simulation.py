@@ -279,7 +279,6 @@ class Simulation:
                         for q in export.derived_quantities
                     ]
                 ):
-                    print("coucou")
                     if self.mesh.type != "cartesian":
                         warnings.warn(
                             "SurfaceFlux may not work as intended for non-cartesian meshes"
