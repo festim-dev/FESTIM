@@ -273,15 +273,22 @@ class Simulation:
         # raise warning if SurfaceFlux is used with non-cartesian meshes
         for export in self.exports.exports:
             if isinstance(export, festim.DerivedQuantities):
+                allowed_quantities = (
+                    festim.MaximumSurface,
+                    festim.MinimumSurface,
+                    festim.MaximumVolume,
+                    festim.MinimumVolume,
+                    festim.PointValue,
+                )
                 if any(
                     [
-                        isinstance(q, festim.SurfaceFlux)
+                        not isinstance(q, allowed_quantities)
                         for q in export.derived_quantities
                     ]
                 ):
                     if self.mesh.type != "cartesian":
                         warnings.warn(
-                            "SurfaceFlux may not work as intended for non-cartesian meshes"
+                            "Some derived quantities may not work as intended for non-cartesian meshes"
                         )
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials

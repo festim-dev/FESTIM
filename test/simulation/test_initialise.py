@@ -106,8 +106,20 @@ def test_TXTExport_times_added_to_milestones(tmpdir):
     assert my_model.dt.milestones == txt_export.times
 
 
+@pytest.mark.parametrize(
+    "quantity",
+    [
+        F.SurfaceFlux(field="solute", surface=1),
+        F.TotalVolume(field="solute", volume=1),
+        F.TotalSurface(field="solute", surface=1),
+        F.AverageSurface(field="solute", surface=1),
+        F.AverageVolume(field="solute", volume=1),
+        F.HydrogenFlux(surface=1),
+        F.ThermalFlux(surface=1),
+    ],
+)
 @pytest.mark.parametrize("sys", ["cylindrical", "spherical"])
-def test_cartesian_and_surface_flux_warning(sys):
+def test_cartesian_and_surface_flux_warning(quantity, sys):
     """Creates a Simulation object and checks that, if either a cylindrical
     or spherical meshes are given with a SurfaceFlux, a warning is raised.
     """
@@ -121,9 +133,9 @@ def test_cartesian_and_surface_flux_warning(sys):
         absolute_tolerance=1e-10, relative_tolerance=1e-10, final_time=4
     )
 
-    derived_quantities = F.DerivedQuantities([F.SurfaceFlux(field="solute", surface=1)])
+    derived_quantities = F.DerivedQuantities([quantity])
     my_model.exports = [derived_quantities]
 
     # test
-    with pytest.warns(UserWarning, match="SurfaceFlux .* non-cartesian"):
+    with pytest.warns(UserWarning, match="Some derived quantities .* non-cartesian"):
         my_model.initialise()
