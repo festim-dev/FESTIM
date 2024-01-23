@@ -1,5 +1,6 @@
 import festim as F
 from pathlib import Path
+import pytest
 
 
 def test_initialise_changes_nb_of_sources():
@@ -103,3 +104,26 @@ def test_TXTExport_times_added_to_milestones(tmpdir):
 
     # test
     assert my_model.dt.milestones == txt_export.times
+
+
+@pytest.mark.parametrize("sys", ["cylindrical", "spherical"])
+def test_cartesian_and_surface_flux_warning(sys):
+    """Creates a Simulation object and checks that, if either a cylindrical
+    or spherical meshes are given with a SurfaceFlux, a warning is raised.
+    """
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3], type=sys)
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = F.Temperature(100)
+    my_model.dt = F.Stepsize(initial_value=3)
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, final_time=4
+    )
+
+    derived_quantities = F.DerivedQuantities([F.SurfaceFlux(field="solute", surface=1)])
+    my_model.exports = [derived_quantities]
+
+    # test
+    with pytest.warns(UserWarning, match="SurfaceFlux .* non-cartesian"):
+        my_model.initialise()
