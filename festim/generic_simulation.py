@@ -270,6 +270,19 @@ class Simulation:
 
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
+        for export in self.exports.exports:
+            if isinstance(export, festim.DerivedQuantities):
+                if any(
+                    [
+                        isinstance(q, festim.SurfaceFlux)
+                        for q in export.derived_quantities
+                    ]
+                ):
+                    print("coucou")
+                    if self.mesh.type != "cartesian":
+                        warnings.warn(
+                            "SurfaceFlux may not work as intended for non-cartesian meshes"
+                        )
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials
         )
