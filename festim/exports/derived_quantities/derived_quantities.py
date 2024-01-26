@@ -79,7 +79,7 @@ class DerivedQuantities:
             quantity.D = materials.D
             quantity.S = materials.S
             quantity.thermal_cond = materials.thermal_cond
-            quantity.H = materials.H
+            quantity.Q = materials.Q
 
     def compute(self, t):
         # TODO need to support for soret flag in surface flux

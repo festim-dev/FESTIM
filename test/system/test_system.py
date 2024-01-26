@@ -474,28 +474,14 @@ def test_run_MMS_soret(tmpdir):
     D_0 = 2
     k_B = festim.k_B
     D = D_0 * sp.exp(-E_D / k_B / T)
-    H = -2
-    S = 3
-    R = festim.R
+    Q = lambda T: -2e-5 * T + 3e-5
     f = sp.diff(u, festim.t) - sp.diff(
-        (
-            D
-            * (
-                sp.diff(u, festim.x)
-                + (H * T + S) * u / (R * T**2) * sp.diff(T, festim.x)
-            )
-        ),
+        (D * (sp.diff(u, festim.x) + Q(T) * u / (k_B * T**2) * sp.diff(T, festim.x))),
         festim.x,
     )
 
     def run(h):
-        my_materials = festim.Materials(
-            [
-                festim.Material(
-                    id=1, D_0=D_0, E_D=E_D, H={"free_enthalpy": H, "entropy": S}
-                )
-            ]
-        )
+        my_materials = festim.Materials([festim.Material(id=1, D_0=D_0, E_D=E_D, Q=Q)])
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
         ]
