@@ -23,6 +23,18 @@ class Material:
         solubility_law (str, optional): the material's solubility law.
             Can be "henry" or "sievert". Defaults to "sievert".
         name (str, optional): name of the material. Defaults to None.
+
+    Example::
+
+        my_mat = Material(
+            id=1,
+            D_0=2e-7,
+            E_d=0.2,
+            thermal_cond=lambda T: 3 * T + 2,
+            heat_capacity=lambda T: 4 * T + 8,
+            rho=lambda T: 7 * T + 5,
+            Q=lambda T: -0.5 * T**2,
+        )
     """
 
     def __init__(
