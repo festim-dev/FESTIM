@@ -3,6 +3,7 @@ from fenics import *
 import pytest
 import warnings
 
+
 def test_find_material_from_id():
     """Tests the function find_material_from_id() for cases with one id per
     material
