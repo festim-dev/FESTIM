@@ -1,6 +1,7 @@
 import festim as F
 from fenics import *
 import pytest
+import warnings
 
 
 def test_find_material_from_id():
@@ -78,14 +79,11 @@ def test_unused_thermal_cond():
 
     # this shouldn't throw warnings
     derived_quantities = [F.SurfaceFlux("T", surface=0)]
-    # record the warnings
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
         my_mats.check_for_unused_properties(
             T=F.Temperature(100), derived_quantities=derived_quantities
         )
-
-    # check that no warning were raised
-    assert len(record) == 0
 
 
 def test_missing_thermal_cond():
