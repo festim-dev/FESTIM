@@ -35,7 +35,7 @@ Some other parameters are optional and are only required for some types of simul
 * :code:`thermal_cond`: the thermal conductivity in W/m/K
 * :code:`heat_capacity`: the heat capacity in J/kg/K
 * :code:`rho`: the volumetric density in kg/m3
-* :code:`H`: the heat of transport in J/mol that takes a dictionary {"free_enthalpy": …, "entropy": …} so that H = free_enthalpy + entropy*T. For more information see :ref:`Soret effect`.
+* :code:`Q`: the heat of transport in eV. For more information see :ref:`Soret effect`.
 
 --------------------
 Integration with HTM

@@ -21,7 +21,7 @@ class Materials:
         self.thermal_cond = None
         self.heat_capacity = None
         self.density = None
-        self.H = None
+        self.Q = None
 
     def check_borders(self, size):
         """Checks that the borders of the materials match
@@ -131,7 +131,7 @@ class Materials:
             "heat_capacity": [],
             "rho": [],
             "borders": [],
-            "H": [],
+            "Q": [],
         }
 
         for attr, value in attributes.items():
@@ -261,8 +261,8 @@ class Materials:
             self.thermal_cond = ThermalProp(self, vm, T, "thermal_cond", degree=2)
             self.heat_capacity = ThermalProp(self, vm, T, "heat_capacity", degree=2)
             self.density = ThermalProp(self, vm, T, "rho", degree=2)
-        if self.materials[0].H is not None:
-            self.H = HCoeff(self, vm, T, degree=2)
+        if self.materials[0].Q is not None:
+            self.Q = ThermalProp(self, vm, T, "Q", degree=2)
 
     def solubility_as_function(self, mesh, T):
         """
@@ -358,24 +358,6 @@ class ThermalProp(f.UserExpression):
             value[0] = attribute(self._T(x))
         else:
             value[0] = attribute
-
-    def value_shape(self):
-        return ()
-
-
-class HCoeff(f.UserExpression):
-    def __init__(self, materials, vm, T, **kwargs):
-        super().__init__(kwargs)
-        self._T = T
-        self._vm = vm
-        self._materials = materials
-
-    def eval_cell(self, value, x, ufc_cell):
-        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
-        subdomain_id = self._vm[cell]
-        material = self._materials.find_material_from_id(subdomain_id)
-
-        value[0] = material.free_enthalpy + self._T(x) * material.entropy
 
     def value_shape(self):
         return ()

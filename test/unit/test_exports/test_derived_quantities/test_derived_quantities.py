@@ -103,7 +103,7 @@ class TestAssignPropertiesToQuantities:
     my_mats = Materials()
     my_mats.D = f.Function(V)
     my_mats.S = f.Function(V)
-    my_mats.H = f.Function(V)
+    my_mats.Q = f.Function(V)
     my_mats.thermal_cond = f.Function(V)
     T = f.Function(V)
 
@@ -117,9 +117,9 @@ class TestAssignPropertiesToQuantities:
         for quantity in self.my_quantities.derived_quantities:
             assert quantity.S == self.my_mats.S
 
-    def test_quantities_have_H(self):
+    def test_quantities_have_Q(self):
         for quantity in self.my_quantities.derived_quantities:
-            assert quantity.H == self.my_mats.H
+            assert quantity.Q == self.my_mats.Q
 
     def test_quantities_have_thermal_cond(self):
         for quantity in self.my_quantities.derived_quantities:

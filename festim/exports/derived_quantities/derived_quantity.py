@@ -15,7 +15,7 @@ class DerivedQuantity(Export):
         self.D = None
         self.S = None
         self.thermal_cond = None
-        self.H = None
+        self.Q = None
         self.data = []
         self.t = []
 

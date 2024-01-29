@@ -1,4 +1,4 @@
-from festim import Concentration, FluxBC, k_B, R, RadioactiveDecay
+from festim import Concentration, FluxBC, k_B, RadioactiveDecay
 from fenics import *
 
 
@@ -80,10 +80,12 @@ class Mobile(Concentration):
                 if mesh.type == "cartesian":
                     F += dot(D * grad(c_0), grad(self.test_function)) * dx
                     if soret:
-                        Q = material.free_enthalpy * T.T + material.entropy
+                        Q = material.Q
+                        if callable(Q):
+                            Q = Q(T.T)
                         F += (
                             dot(
-                                D * Q * c_0 / (R * T.T**2) * grad(T.T),
+                                D * Q * c_0 / (k_B * T.T**2) * grad(T.T),
                                 grad(self.test_function),
                             )
                             * dx
