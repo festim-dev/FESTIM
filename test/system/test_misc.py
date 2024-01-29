@@ -121,6 +121,33 @@ def test_wrong_value_for_bc_field(field):
         sim.initialise()
 
 
+@pytest.mark.parametrize("field", ["solute", "T"])
+@pytest.mark.parametrize("surfaces", [1, 2, [1, 2]])
+def test_error_DirichletBC_on_same_surface(field, surfaces):
+    """
+    Tests that an error is raised when a DiricheltBC is set on
+    a surface together with another boundary condition for the
+    same field
+    """
+    sim = F.Simulation()
+
+    sim.mesh = F.MeshFromVertices(np.linspace(0, 1, num=10))
+
+    sim.T = F.Temperature(500)
+
+    sim.materials = F.Materials([F.Material(1, D_0=1, E_D=0)])
+
+    sim.settings = F.Settings(1e-10, 1e-10, transient=False)
+
+    with pytest.raises(ValueError):
+        sim.boundary_conditions = [
+            F.FluxBC(value=1, field=field, surfaces=1),
+            F.DirichletBC(value=1, field=field, surfaces=2),
+            F.DirichletBC(value=1, field=field, surfaces=surfaces),
+        ]
+        sim.initialise()
+
+
 @pytest.mark.parametrize(
     "final_time,stepsize,export_times",
     [(1, 0.1, [0.2, 0.5]), (1e-7, 1e-9, [1e-8, 1.5e-8, 2e-8])],
