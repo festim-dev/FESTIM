@@ -230,7 +230,7 @@ class Simulation:
                 # check if BCs share the same surfaces using the set().isdisjoint() method
                 # that returns True if the first set has no elements in common with other containers
                 if not set(bc.surfaces).isdisjoint(dc_bc.surfaces):
-                    # convert lists of surfaces to sets and obtain their intersetion
+                    # convert lists of surfaces to sets and obtain their intersection
                     intersection = set(bc.surfaces) & set(dc_bc.surfaces)
                     raise ValueError(
                         f"A DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_bc.field}"
