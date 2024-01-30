@@ -210,9 +210,7 @@ class Simulation:
 
         # collect all DirichletBCs
         dc_bcs = [
-            bc
-            for bc in self.boundary_conditions
-            if isinstance(bc, festim.DirichletBC) and (bc.field in valid_fields)
+            bc for bc in self.boundary_conditions if isinstance(bc, festim.DirichletBC)
         ]
 
         for bc in self.boundary_conditions:
@@ -229,11 +227,14 @@ class Simulation:
                     bc == dc_bc or bc.field != dc_bc.field
                 ):  # skip if the same BC or different fields
                     continue
-                for surf in bc.surfaces:
-                    if surf in dc_bc.surfaces:
-                        raise ValueError(
-                            f"A DirichletBC is simultaneously set with another boundary condition on surface {surf} for field {dc_bc.field}"
-                        )
+                # check if BCs share the same surfaces using the set().isdisjoint() method
+                # that returns True if the first set has no elements in common with other containers
+                if not set(bc.surfaces).isdisjoint(dc_bc.surfaces):
+                    # convert lists of surfaces to sets and obtain their intersetion
+                    intersection = set(bc.surfaces) & set(dc_bc.surfaces)
+                    raise ValueError(
+                        f"A DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_bc.field}"
+                    )
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
