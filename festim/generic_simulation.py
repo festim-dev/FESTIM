@@ -136,8 +136,6 @@ class Simulation:
             self._materials = festim.Materials(value)
         elif isinstance(value, festim.Material):
             self._materials = festim.Materials([value])
-        elif isinstance(value, festim.Materials):
-            self._materials = value
         elif value is None:
             self._materials = value
         else:
