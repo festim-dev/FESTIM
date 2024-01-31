@@ -73,7 +73,7 @@ class Mesh1D(Mesh):
 
     def define_measures(self, materials):
         """Creates the fenics.Measure objects for self.dx and self.ds"""
-        if materials.materials[0].borders is not None:
+        if materials[0].borders is not None:
             materials.check_borders(self.size)
         self.define_markers(materials)
         super().define_measures()

@@ -151,7 +151,7 @@ class Trap(Concentration):
             # if the sim is steady state and
             # if a trap is not defined in one subdomain
             # add c_t = 0 to the form in this subdomain
-            for mat in materials.materials:
+            for mat in materials:
                 if mat not in self.materials:
                     F_trapping += solution * test_function * dx(mat.id)
 

@@ -30,7 +30,7 @@ class Theta(Mobile):
         v = f.TestFunction(V)
         dx = f.Measure("dx", subdomain_data=self.volume_markers)
         F = 0
-        for mat in self.materials.materials:
+        for mat in self.materials:
             S = mat.S_0 * f.exp(-mat.E_S / k_B / self.T.T)
             F += -prev_sol * v * dx(mat.id)
             if mat.solubility_law == "sievert":
@@ -110,7 +110,7 @@ class Theta(Mobile):
         c = f.TrialFunction(V)
 
         F += -c * v * dx
-        for mat in materials.materials:
+        for mat in materials:
             if mat.solubility_law == "sievert":
                 # for sievert materials c = theta * S
                 F += self.solution * self.S * v * dx(mat.id)
