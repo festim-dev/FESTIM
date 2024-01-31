@@ -9,9 +9,7 @@ from typing import Union
 
 class Materials(list):
     """
-    Args:
-        materials (list, optional): contains festim.Material objects.
-            Defaults to [].
+    A list of festim.Material objects
     """
 
     def __init__(self, *args):

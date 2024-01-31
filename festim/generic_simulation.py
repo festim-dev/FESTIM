@@ -132,7 +132,9 @@ class Simulation:
 
     @materials.setter
     def materials(self, value):
-        if isinstance(value, list):
+        if isinstance(value, festim.Materials):
+            self._materials = value
+        elif isinstance(value, list):
             self._materials = festim.Materials(value)
         elif isinstance(value, festim.Material):
             self._materials = festim.Materials([value])
