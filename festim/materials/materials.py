@@ -21,6 +21,24 @@ class Materials(list):
         self.density = None
         self.Q = None
 
+    def __eq__(self, __value: object) -> bool:
+        """
+        A custom method to check equality of F.Materials objects
+
+        Usage:
+            F.Materials([]) == F.Materials([])
+        """
+        return id(self) == id(__value)
+
+    def __ne__(self, __value: object) -> bool:
+        """
+        A custom method to check unequality of F.Materials objects
+
+        Usage:
+            F.Materials([]) != F.Materials([])
+        """
+        return not id(self) == id(__value)
+
     def check_borders(self, size):
         """Checks that the borders of the materials match
 

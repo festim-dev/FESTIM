@@ -297,3 +297,14 @@ def test_error_wrong_solubility_law_string():
         match="Acceptable values for solubility_law are 'henry' and 'sievert'",
     ):
         F.Material(1, 1, 1, solubility_law="foo")
+
+
+def test_materials_setter():
+    my_model = F.Simulation()
+    test_materials = F.Materials([])
+    my_model.materials = test_materials
+    assert my_model.materials == test_materials
+
+
+def test_two_empty_materials_are_different():
+    assert F.Materials([]) != F.Materials([])
