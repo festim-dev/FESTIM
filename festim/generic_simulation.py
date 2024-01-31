@@ -208,6 +208,11 @@ class Simulation:
             + [i + 1 for i, _ in enumerate(self.traps.traps)]
         )
 
+        # collect all DirichletBCs
+        dc_bcs = [
+            bc for bc in self.boundary_conditions if isinstance(bc, festim.DirichletBC)
+        ]
+
         for bc in self.boundary_conditions:
             if bc.field not in valid_fields:
                 raise ValueError(f"{bc.field} is not a valid field for BC")
@@ -215,6 +220,21 @@ class Simulation:
                 self.T.boundary_conditions.append(bc)
             else:
                 self.h_transport_problem.boundary_conditions.append(bc)
+            # checks that DirichletBC is not set with another bc on the same surface
+            # iterate through all BCs
+            for dc_bc in dc_bcs:
+                if (
+                    bc == dc_bc or bc.field != dc_bc.field
+                ):  # skip if the same BC or different fields
+                    continue
+                # check if BCs share the same surfaces using the set().isdisjoint() method
+                # that returns True if the first set has no elements in common with other containers
+                if not set(bc.surfaces).isdisjoint(dc_bc.surfaces):
+                    # convert lists of surfaces to sets and obtain their intersection
+                    intersection = set(bc.surfaces) & set(dc_bc.surfaces)
+                    raise ValueError(
+                        f"A DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_bc.field}"
+                    )
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
