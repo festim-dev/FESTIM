@@ -303,7 +303,7 @@ class Simulation:
 
         # needed to ensure that data is actually exported at TXTExport.times
         # see issue 675
-        for export in self.exports.exports:
+        for export in self.exports:
             if isinstance(export, festim.TXTExport) and export.times:
                 if not self.dt.milestones:
                     self.dt.milestones = []

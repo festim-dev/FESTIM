@@ -320,7 +320,7 @@ class HTransportProblem:
             bool: True if the solute needs to be projected, False else.
         """
         need_solute = False  # initialises to false
-        for export in exports.exports:
+        for export in exports:
             if isinstance(export, festim.DerivedQuantities):
                 for quantity in export.derived_quantities:
                     if isinstance(quantity, festim.SurfaceFlux):
