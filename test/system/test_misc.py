@@ -301,3 +301,14 @@ def test_small_timesteps_final_time_bug():
     my_model.run()
 
     assert np.isclose(my_model.t, my_model.settings.final_time, atol=0.0)
+
+
+def test_materials_setter():
+    """
+    Checks that @materials.setter properly assigns F.Materials to F.Simulation.materials
+    see #694 for the details
+    """
+    my_model = F.Simulation()
+    test_materials = F.Materials([])
+    my_model.materials = test_materials
+    assert my_model.materials is test_materials
