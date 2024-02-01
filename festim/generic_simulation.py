@@ -153,12 +153,12 @@ class Simulation:
     def exports(self, value):
         if value is None:
             self._exports = festim.Exports([])
+        elif isinstance(value, festim.Exports):
+            self._exports = value
         elif isinstance(value, list):
             self._exports = festim.Exports(value)
         elif isinstance(value, festim.Export):
             self._exports = festim.Exports([value])
-        elif isinstance(value, festim.Exports):
-            self._exports = value
         else:
             raise TypeError(
                 "accepted types for exports are list, festim.Export or festim.Exports"
