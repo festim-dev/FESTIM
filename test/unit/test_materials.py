@@ -297,3 +297,13 @@ def test_error_wrong_solubility_law_string():
         match="Acceptable values for solubility_law are 'henry' and 'sievert'",
     ):
         F.Material(1, 1, 1, solubility_law="foo")
+
+
+def test_equality_identity_two_empty_materials():
+    """
+    Tests equality and two of two empty F.Materials objects, i.e. checks
+    that these F.Materials are equal but refer to different objects
+    """
+    my_materials1 = F.Materials([])
+    my_materials2 = F.Materials([])
+    assert (my_materials1 == my_materials2) and (my_materials1 is not my_materials2)

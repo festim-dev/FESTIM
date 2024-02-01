@@ -61,7 +61,7 @@ class Mobile(Concentration):
             raise ValueError(msg)
 
         F = 0
-        for material in materials.materials:
+        for material in materials:
             D_0 = material.D_0
             E_D = material.E_D
             c_0, c_0_n = self.get_concentration_for_a_given_material(material, T)
