@@ -306,27 +306,3 @@ class HTransportProblem:
             self.mobile.post_processing_solution_to_concentration()
         else:
             self.mobile.post_processing_solution = res[0]
-
-    # TODO remove this unused method
-    def need_projecting_solute(self, exports):
-        """Checks if the user computes a Hydrogen surface flux or exports the
-        solute to XDMF. If so, the function of mobile particles will have to
-        be type fenics.Function for the post-processing.
-
-        Args:
-            exports (festim.Exports): the exports
-
-        Returns:
-            bool: True if the solute needs to be projected, False else.
-        """
-        need_solute = False  # initialises to false
-        for export in exports.exports:
-            if isinstance(export, festim.DerivedQuantities):
-                for quantity in export.derived_quantities:
-                    if isinstance(quantity, festim.SurfaceFlux):
-                        if quantity.field in ["0", 0, "solute"]:
-                            need_solute = True
-            elif isinstance(export, festim.XDMFExport):
-                if export.field in ["0", 0, "solute"]:
-                    need_solute = True
-        return need_solute

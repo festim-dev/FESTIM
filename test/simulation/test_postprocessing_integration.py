@@ -51,7 +51,7 @@ class TestPostProcessing:
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 
-        my_sim.exports.exports = [derived_quantities]
+        my_sim.exports = [derived_quantities]
         t = 0
         dt = 1
         for i in range(1, 3):
@@ -59,8 +59,8 @@ class TestPostProcessing:
             my_sim.t = t
             my_sim.run_post_processing()
 
-        assert len(my_sim.exports.exports[0].data) == i + 1
-        assert my_sim.exports.exports[0].data[i][0] == t
+        assert len(my_sim.exports[0].data) == i + 1
+        assert my_sim.exports[0].data[i][0] == t
 
     def test_pure_diffusion(self, my_sim):
         my_sim.materials = festim.Materials(
@@ -94,7 +94,7 @@ class TestPostProcessing:
         ]
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
 
-        my_sim.exports.exports = [derived_quantities]
+        my_sim.exports = [derived_quantities]
 
         t = 0
         dt = 1
@@ -142,7 +142,7 @@ class TestPostProcessing:
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 
-        my_sim.exports.exports = [derived_quantities]
+        my_sim.exports = [derived_quantities]
 
         my_sim.run_post_processing()
         data = derived_quantities.data
@@ -165,7 +165,7 @@ class TestPostProcessing:
         # build
         d = tmpdir.mkdir("test_folder")
 
-        my_sim.exports.exports = [
+        my_sim.exports = [
             festim.XDMFExport("solute", "solute", folder=str(Path(d))),
             festim.XDMFExport("T", "temperature", folder=str(Path(d))),
         ]
@@ -176,7 +176,7 @@ class TestPostProcessing:
 
         # run and test
         for mode in [10, 2, 1]:
-            for export in my_sim.exports.exports:
+            for export in my_sim.exports:
                 export.mode = mode
                 export.append = False
             my_sim.nb_iterations = 0
@@ -207,7 +207,7 @@ class TestPostProcessing:
         """
         d = tmpdir.mkdir("test_folder")
 
-        my_sim.exports.exports = [
+        my_sim.exports = [
             festim.XDMFExport("solute", "solute", mode="last", folder=str(Path(d))),
             festim.XDMFExport("T", "temperature", mode="last", folder=str(Path(d))),
         ]

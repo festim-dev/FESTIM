@@ -957,11 +957,11 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
 
     sim_short = init_sim(10)
     sim_short.run()
-    short_derived_quantities = sim_short.exports.exports[0].data
+    short_derived_quantities = sim_short.exports[0].data
 
     sim_long = init_sim(1)
     sim_long.run()
-    long_derived_quantities = sim_long.exports.exports[0].data
+    long_derived_quantities = sim_long.exports[0].data
 
     assert len(long_derived_quantities) > len(short_derived_quantities)
 

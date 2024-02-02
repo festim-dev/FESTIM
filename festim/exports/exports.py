@@ -2,9 +2,13 @@ import festim
 import fenics as f
 
 
-class Exports:
-    def __init__(self, exports=[]) -> None:
-        self.exports = exports
+class Exports(list):
+    """
+    A list of festim.Export objects
+    """
+
+    def __init__(self, *args):
+        super().__init__(*args)
         self.t = None
         self.V_DG1 = None
         self.final_time = None
@@ -17,7 +21,7 @@ class Exports:
             label_to_function (dict): dictionary of labels mapped to solutions
             dx (fenics.Measure): the measure for dx
         """
-        for export in self.exports:
+        for export in self:
             if isinstance(export, festim.DerivedQuantities):
                 # compute derived quantities
                 if export.is_compute(self.nb_iterations):
@@ -73,7 +77,7 @@ class Exports:
             ds (fenics.Measure): the measure for ds
             materials (festim.Materials): the materials
         """
-        for export in self.exports:
+        for export in self:
             if isinstance(export, festim.DerivedQuantities):
                 export.data = [export.make_header()]
                 export.assign_measures_to_quantities(dx, ds)

@@ -153,12 +153,12 @@ class Simulation:
     def exports(self, value):
         if value is None:
             self._exports = festim.Exports([])
+        elif isinstance(value, festim.Exports):
+            self._exports = value
         elif isinstance(value, list):
             self._exports = festim.Exports(value)
         elif isinstance(value, festim.Export):
             self._exports = festim.Exports([value])
-        elif isinstance(value, festim.Exports):
-            self._exports = value
         else:
             raise TypeError(
                 "accepted types for exports are list, festim.Export or festim.Exports"
@@ -303,7 +303,7 @@ class Simulation:
 
         # needed to ensure that data is actually exported at TXTExport.times
         # see issue 675
-        for export in self.exports.exports:
+        for export in self.exports:
             if isinstance(export, festim.TXTExport) and export.times:
                 if not self.dt.milestones:
                     self.dt.milestones = []
