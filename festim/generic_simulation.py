@@ -118,10 +118,7 @@ class Simulation:
         elif isinstance(value, festim.Traps):
             self._traps = value
         elif isinstance(value, list):
-            if not all(isinstance(t, festim.Trap) for t in value):
-                raise TypeError("traps must be a list of festim.Trap")
-            else:
-                self._traps = festim.Traps(value)
+            self._traps = festim.Traps(value)
         elif isinstance(value, festim.Trap):
             self._traps = festim.Traps([value])
         else:
