@@ -160,7 +160,7 @@ class TestCreateDiffusionForm:
         expected_form = ((c_0 - c_0_n) / self.dt.value) * v * self.my_mesh.dx(1)
         expected_form += f.dot(D * f.grad(c_0), f.grad(v)) * self.my_mesh.dx(1)
         form_trapping_expected = 0
-        for trap in my_traps.traps:
+        for trap in my_traps:
             form_trapping_expected += (
                 (
                     -trap.k_0

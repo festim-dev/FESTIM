@@ -109,7 +109,7 @@ class Mobile(Concentration):
         # add the trapping terms
         F_trapping = 0
         if traps is not None:
-            for trap in traps.traps:
+            for trap in traps:
                 for i, mat in enumerate(trap.materials):
                     if type(trap.k_0) is list:
                         k_0 = trap.k_0[i]

@@ -115,10 +115,13 @@ class Simulation:
     def traps(self, value):
         if value is None:
             self._traps = festim.Traps([])
-        elif isinstance(value, list):
-            self._traps = festim.Traps(value)
         elif isinstance(value, festim.Traps):
             self._traps = value
+        elif isinstance(value, list):
+            if not all(isinstance(t, festim.Trap) for t in value):
+                raise TypeError("traps must be a list of festim.Trap")
+            else:
+                self._traps = festim.Traps(value)
         elif isinstance(value, festim.Trap):
             self._traps = festim.Traps([value])
         else:
@@ -171,7 +174,7 @@ class Simulation:
         # reinitialise sources for concentrations and temperature
         self.mobile.sources = []
         self.T.sources = []
-        for t in self.traps.traps:
+        for t in self.traps:
             t.sources = []
 
         # make field_to_object dict
@@ -182,7 +185,7 @@ class Simulation:
             "mobile": self.mobile,
             "T": self.T,
         }
-        for i, trap in enumerate(self.traps.traps, 1):
+        for i, trap in enumerate(self.traps, 1):
             field_to_object[i] = trap
             field_to_object[str(i)] = trap
 
@@ -204,8 +207,8 @@ class Simulation:
 
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
-            + [str(i + 1) for i, _ in enumerate(self.traps.traps)]
-            + [i + 1 for i, _ in enumerate(self.traps.traps)]
+            + [str(i + 1) for i, _ in enumerate(self.traps)]
+            + [i + 1 for i, _ in enumerate(self.traps)]
         )
 
         # collect all DirichletBCs
@@ -429,10 +432,10 @@ class Simulation:
             "T": self.T.T,
             "retention": sum(
                 [self.mobile.post_processing_solution]
-                + [trap.post_processing_solution for trap in self.traps.traps]
+                + [trap.post_processing_solution for trap in self.traps]
             ),
         }
-        for trap in self.traps.traps:
+        for trap in self.traps:
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
 

@@ -312,3 +312,29 @@ def test_materials_setter():
     test_materials = F.Materials([])
     my_model.materials = test_materials
     assert my_model.materials is test_materials
+
+
+def test_depr_warns():
+    """
+    A temporary test to check DeprecationWarnings
+    """
+
+    my_mat = F.Material(id=1, E_D=1, D_0=1)
+    my_mats = F.Materials([my_mat])
+    my_derived_quantities = F.DerivedQuantities([F.SurfaceFlux(0, 2)])
+    my_exports = F.Exports([F.Export(field=0)] + my_derived_quantities)
+    my_traps = F.Traps(
+        [F.Trap(k_0=1, E_k=1, p_0=1, E_p=1, density=1, materials=my_mat)]
+    )
+
+    with pytest.deprecated_call():
+        my_mats.materials[0]
+
+    with pytest.deprecated_call():
+        my_exports.exports[0]
+
+    with pytest.deprecated_call():
+        my_derived_quantities.derived_quantities[0]
+
+    with pytest.deprecated_call():
+        my_traps.traps[0]

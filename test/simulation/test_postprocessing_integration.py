@@ -42,12 +42,13 @@ class TestPostProcessing:
         return my_sim
 
     def test_derived_quantities_size(self, my_sim):
-        derived_quantities = festim.DerivedQuantities()
-        derived_quantities.derived_quantities = [
-            festim.SurfaceFlux("solute", 1),
-            festim.AverageVolume("T", 1),
-            festim.TotalVolume("1", 1),
-        ]
+        derived_quantities = festim.DerivedQuantities(
+            [
+                festim.SurfaceFlux("solute", 1),
+                festim.AverageVolume("T", 1),
+                festim.TotalVolume("1", 1),
+            ]
+        )
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 
@@ -85,13 +86,14 @@ class TestPostProcessing:
             ),
         )
 
-        derived_quantities = festim.DerivedQuantities()
-        derived_quantities.derived_quantities = [
-            festim.AverageVolume("solute", 2),
-            festim.AverageVolume("T", 2),
-            festim.AverageVolume("retention", 2),
-            festim.MinimumVolume("retention", 1),
-        ]
+        derived_quantities = festim.DerivedQuantities(
+            [
+                festim.AverageVolume("solute", 2),
+                festim.AverageVolume("T", 2),
+                festim.AverageVolume("retention", 2),
+                festim.MinimumVolume("retention", 1),
+            ]
+        )
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
 
         my_sim.exports = [derived_quantities]
@@ -132,13 +134,14 @@ class TestPostProcessing:
             f.interpolate(u_expr, my_sim.h_transport_problem.V.sub(0).collapse()),
         )
 
-        derived_quantities = festim.DerivedQuantities()
-        derived_quantities.derived_quantities = [
-            festim.SurfaceFlux("solute", 1),
-            festim.SurfaceFlux("solute", 2),
-            festim.SurfaceFlux("T", 1),
-            festim.SurfaceFlux("T", 2),
-        ]
+        derived_quantities = festim.DerivedQuantities(
+            [
+                festim.SurfaceFlux("solute", 1),
+                festim.SurfaceFlux("solute", 2),
+                festim.SurfaceFlux("T", 1),
+                festim.SurfaceFlux("T", 2),
+            ]
+        )
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 

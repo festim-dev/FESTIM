@@ -5,6 +5,7 @@ from festim import k_B, Material, HeatTransferProblem
 import festim
 import fenics as f
 from typing import Union
+import warnings
 
 
 class Materials(list):
@@ -13,13 +14,31 @@ class Materials(list):
     """
 
     def __init__(self, *args):
-        super().__init__(*args)
+        # checks that input is list
+        try:
+            super().__init__(*args)
+        except:
+            raise TypeError("festim.Materials must be a list")
+
+        # checks that list elements are festim.Material
+        if len(self) != 0:
+            if not all(isinstance(t, festim.Material) for t in self):
+                raise TypeError("festim.Materials must be a list of festim.Material")
+
         self.D = None
         self.S = None
         self.thermal_cond = None
         self.heat_capacity = None
         self.density = None
         self.Q = None
+
+    @property
+    def materials(self):
+        warnings.warn(
+            "The materials attribute will be deprecated in a future release, please use festim.Materials[:] instead",
+            DeprecationWarning,
+        )
+        return self
 
     def check_borders(self, size):
         """Checks that the borders of the materials match

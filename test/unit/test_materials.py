@@ -307,3 +307,23 @@ def test_equality_identity_two_empty_materials():
     my_materials1 = F.Materials([])
     my_materials2 = F.Materials([])
     assert (my_materials1 == my_materials2) and (my_materials1 is not my_materials2)
+
+
+def test_set_materials_wrong_type():
+    """Checks an error is raised when festim.Materials is set with the wrong type"""
+    my_mat = F.Material(1, 1, 0)
+
+    combinations = [my_mat, "coucou", 1, True]
+
+    for mat_combination in combinations:
+        with pytest.raises(
+            TypeError,
+            match="festim.Materials must be a list",
+        ):
+            F.Materials(mat_combination)
+
+    with pytest.raises(
+        TypeError,
+        match="festim.Materials must be a list of festim.Material",
+    ):
+        F.Materials([my_mat, 2])

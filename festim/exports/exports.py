@@ -1,5 +1,6 @@
 import festim
 import fenics as f
+import warnings
 
 
 class Exports(list):
@@ -8,11 +9,32 @@ class Exports(list):
     """
 
     def __init__(self, *args):
-        super().__init__(*args)
+        # checks that input is list
+        try:
+            super().__init__(*args)
+        except:
+            raise TypeError("festim.Exports must be a list")
+
+        # checks that list elements are festim.Export
+        if len(self) != 0:
+            if not all(
+                isinstance(t, festim.Export) or isinstance(t, festim.DerivedQuantities)
+                for t in self
+            ):
+                raise TypeError("festim.Exports must be a list of festim.Export")
+
         self.t = None
         self.V_DG1 = None
         self.final_time = None
         self.nb_iterations = 0
+
+    @property
+    def exports(self):
+        warnings.warn(
+            "The exports attribute will be deprecated in a future release, please use festim.Exports[:] instead",
+            DeprecationWarning,
+        )
+        return self
 
     def write(self, label_to_function, dx):
         """writes to file
