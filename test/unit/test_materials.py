@@ -327,3 +327,38 @@ def test_set_materials_wrong_type():
         match="festim.Materials must be a list of festim.Material",
     ):
         F.Materials([my_mat, 2])
+
+
+def test_assign_materials_wrong_type():
+    """Checks an error is raised when the wrong type is assigned to festim.Materials"""
+    my_mat = F.Material(1, 1, 0)
+    my_materials = F.Materials([my_mat])
+
+    combinations = ["coucou", 1, True]
+
+    error_pattern = "festim.Materials must be a list of festim.Material"
+
+    for mat_combination in combinations:
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_materials.append(mat_combination)
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_materials.extend([mat_combination])
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_materials[0] = mat_combination
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_materials.insert(0, mat_combination)

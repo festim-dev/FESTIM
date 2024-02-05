@@ -15,7 +15,6 @@ import pytest
 
 
 class TestMakeHeader:
-    my_derv_quant = None
     surface_flux_1 = SurfaceFlux("solute", 2)
     surface_flux_2 = SurfaceFlux("T", 3)
     average_vol_1 = AverageVolume("solute", 3)
@@ -26,39 +25,35 @@ class TestMakeHeader:
     min_vol_1 = MinimumVolume("retention", 2)
     max_vol_1 = MaximumVolume("T", 2)
 
-    @property
-    def my_derv_quant(self):
-        return self._my_derv_quant
-
-    @my_derv_quant.setter
-    def my_derv_quant(self, value):
-        self._my_derv_quant = DerivedQuantities(value)
-
     def test_simple(self):
-        self.my_derv_quant = [self.surface_flux_1]
-        header = self.my_derv_quant.make_header()
+        my_derv_quant = DerivedQuantities([self.surface_flux_1])
+        header = my_derv_quant.make_header()
         expected_header = ["t(s)", self.surface_flux_1.title]
         assert header == expected_header
 
     def test_two_quantities(self):
-        self.my_derv_quant = [
-            self.surface_flux_1,
-            self.tot_surf_1,
-        ]
-        header = self.my_derv_quant.make_header()
+        my_derv_quant = DerivedQuantities(
+            [
+                self.surface_flux_1,
+                self.tot_surf_1,
+            ]
+        )
+        header = my_derv_quant.make_header()
         expected_header = ["t(s)", self.surface_flux_1.title, self.tot_surf_1.title]
         assert header == expected_header
 
     def test_all_quantities(self):
-        self.my_derv_quant = [
-            self.surface_flux_1,
-            self.average_vol_1,
-            self.tot_surf_1,
-            self.tot_vol_1,
-            self.min_vol_1,
-            self.max_vol_1,
-        ]
-        header = self.my_derv_quant.make_header()
+        my_derv_quant = DerivedQuantities(
+            [
+                self.surface_flux_1,
+                self.average_vol_1,
+                self.tot_surf_1,
+                self.tot_vol_1,
+                self.min_vol_1,
+                self.max_vol_1,
+            ]
+        )
+        header = my_derv_quant.make_header()
         expected_header = ["t(s)"] + [
             self.surface_flux_1.title,
             self.average_vol_1.title,
@@ -108,7 +103,7 @@ class TestAssignPropertiesToQuantities:
             AverageVolume("solute", 3),
         ]
     )
-    my_mats = Materials()
+    my_mats = Materials([])
     my_mats.D = f.Function(V)
     my_mats.S = f.Function(V)
     my_mats.Q = f.Function(V)
@@ -135,7 +130,6 @@ class TestAssignPropertiesToQuantities:
 
 
 class TestCompute:
-    my_derv_quant = None
     surface_flux_1 = SurfaceFlux("solute", 2)
     surface_flux_2 = SurfaceFlux("T", 3)
     average_vol_1 = AverageVolume("solute", 1)
@@ -167,78 +161,74 @@ class TestCompute:
     n = f.FacetNormal(mesh)
 
     T = f.interpolate(f.Constant(2), V)
-    my_mats = Materials()
+    my_mats = Materials([])
     my_mats.D = f.interpolate(f.Constant(2), V)
     my_mats.S = f.interpolate(f.Constant(2), V)
     my_mats.H = f.interpolate(f.Constant(2), V)
     my_mats.thermal_cond = f.interpolate(f.Constant(2), V)
 
-    @property
-    def my_derv_quant(self):
-        return self._my_derv_quant
-
-    @my_derv_quant.setter
-    def my_derv_quant(self, value):
-        self._my_derv_quant = DerivedQuantities(value)
-
     def test_simple(self):
-        self.my_derv_quant = [self.surface_flux_1]
-        for quantity in self.my_derv_quant:
+        my_derv_quant = DerivedQuantities([self.surface_flux_1])
+        for quantity in my_derv_quant:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
-        self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
+        my_derv_quant.assign_properties_to_quantities(self.my_mats)
+        my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant]
+        expected_data = [t] + [quantity.compute() for quantity in my_derv_quant]
 
-        self.my_derv_quant.data = []
-        self.my_derv_quant.compute(t)
-        assert self.my_derv_quant.data[0] == expected_data
+        my_derv_quant.data = []
+        my_derv_quant.compute(t)
+        assert my_derv_quant.data[0] == expected_data
 
     def test_two_quantities(self):
-        self.my_derv_quant = [
-            self.surface_flux_1,
-            self.average_vol_1,
-        ]
-        for quantity in self.my_derv_quant:
+        my_derv_quant = DerivedQuantities(
+            [
+                self.surface_flux_1,
+                self.average_vol_1,
+            ]
+        )
+        for quantity in my_derv_quant:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
-        self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
+        my_derv_quant.assign_properties_to_quantities(self.my_mats)
+        my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
-        expected_data = [t] + [quantity.compute() for quantity in self.my_derv_quant]
+        expected_data = [t] + [quantity.compute() for quantity in my_derv_quant]
 
-        self.my_derv_quant.data = []
-        self.my_derv_quant.compute(t)
+        my_derv_quant.data = []
+        my_derv_quant.compute(t)
 
-        assert self.my_derv_quant.data[0] == expected_data
+        assert my_derv_quant.data[0] == expected_data
 
     def test_all_quantities(self):
-        self.my_derv_quant = [
-            self.surface_flux_1,
-            self.average_vol_1,
-            self.tot_surf_1,
-            self.tot_vol_1,
-            self.min_vol_1,
-            self.max_vol_1,
-        ]
-        for quantity in self.my_derv_quant:
+        my_derv_quant = DerivedQuantities(
+            [
+                self.surface_flux_1,
+                self.average_vol_1,
+                self.tot_surf_1,
+                self.tot_vol_1,
+                self.min_vol_1,
+                self.max_vol_1,
+            ]
+        )
+        for quantity in my_derv_quant:
             quantity.function = self.label_to_function[quantity.field]
-        self.my_derv_quant.assign_properties_to_quantities(self.my_mats)
-        self.my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
+        my_derv_quant.assign_properties_to_quantities(self.my_mats)
+        my_derv_quant.assign_measures_to_quantities(self.dx, self.ds)
         t = 2
 
         expected_data = [t]
-        for quantity in self.my_derv_quant:
+        for quantity in my_derv_quant:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):
                 expected_data.append(quantity.compute(self.vol_markers))
             else:
                 expected_data.append(quantity.compute())
 
-        self.my_derv_quant.data = []
-        self.my_derv_quant.compute(t)
+        my_derv_quant.data = []
+        my_derv_quant.compute(t)
 
-        assert self.my_derv_quant.data[0] == expected_data
+        assert my_derv_quant.data[0] == expected_data
 
 
 class TestWrite:
@@ -249,7 +239,7 @@ class TestWrite:
     @pytest.fixture
     def my_derived_quantities(self):
         filename = "my_file.csv"
-        my_derv_quant = DerivedQuantities(filename=filename)
+        my_derv_quant = DerivedQuantities([], filename=filename)
         my_derv_quant.data = [
             ["a", "b", "c"],
             [1, 2, 3],
@@ -330,13 +320,13 @@ class TestFilter:
 def test_wrong_type_filename():
     """Checks that an error is raised when filename is not a string"""
     with pytest.raises(TypeError, match="filename must be a string"):
-        DerivedQuantities(filename=2)
+        DerivedQuantities([], filename=2)
 
 
 def test_filename_ends_with_csv():
     """Checks that an error is raised when filename doesn't end with .csv"""
     with pytest.raises(ValueError, match="filename must end with .csv"):
-        DerivedQuantities(filename="coucou")
+        DerivedQuantities([], filename="coucou")
 
 
 def test_set_derived_quantitites_wrong_type():
@@ -357,3 +347,35 @@ def test_set_derived_quantitites_wrong_type():
         match="festim.DerivedQuantities must be a list of festim.DerivedQuantity",
     ):
         DerivedQuantities([flux1, 2])
+
+
+def test_assign_derived_quantitites_wrong_type():
+    """Checks an error is raised when the wrong type is assigned to festim.DerivedQuantities"""
+    my_derived_quantities = DerivedQuantities([])
+    combinations = ["coucou", 1, True]
+    error_pattern = "festim.DerivedQuantities must be a list of festim.DerivedQuantity"
+
+    for dq_combination in combinations:
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_derived_quantities.append(dq_combination)
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_derived_quantities.extend([dq_combination])
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_derived_quantities[0] = dq_combination
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_derived_quantities.insert(0, dq_combination)

@@ -33,17 +33,9 @@ class DerivedQuantities(list):
         nb_iterations_between_exports: int = None,
     ) -> None:
         # checks that input is list
-        try:
-            super().__init__(*args)
-        except:
+        if not isinstance(*args, list):
             raise TypeError("festim.DerivedQuantities must be a list")
-
-        # checks that list elements are festim.Export
-        if len(self) != 0:
-            if not all(isinstance(t, DerivedQuantity) for t in self):
-                raise TypeError(
-                    "festim.DerivedQuantities must be a list of festim.DerivedQuantity"
-                )
+        super().__init__(self._validate_derived_quantity(item) for item in args[0])
 
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
@@ -55,10 +47,47 @@ class DerivedQuantities(list):
     @property
     def derived_quantities(self):
         warnings.warn(
-            "The derived_quantities attribute will be deprecated in a future release, please use festim.DerivedQuantities[:] instead",
+            "The derived_quantities attribute will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
             DeprecationWarning,
         )
         return self
+
+    @derived_quantities.setter
+    def derived_quantities(self, value):
+        warnings.warn(
+            "The derived_quantities attribute will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
+            DeprecationWarning,
+        )
+        if isinstance(value, list):
+            if not all(isinstance(t, DerivedQuantity) for t in value):
+                raise TypeError(
+                    "derived_quantities must be a list of festim.DerivedQuantity"
+                )
+            super().__init__(value)
+        else:
+            raise TypeError("derived_quantities must be a list")
+
+    def __setitem__(self, index, item):
+        super().__setitem__(index, self._validate_derived_quantity(item))
+
+    def insert(self, index, item):
+        super().insert(index, self._validate_derived_quantity(item))
+
+    def append(self, item):
+        super().append(self._validate_derived_quantity(item))
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            super().extend(self._validate_derived_quantity(item) for item in other)
+
+    def _validate_derived_quantity(self, value):
+        if isinstance(value, DerivedQuantity):
+            return value
+        raise TypeError(
+            "festim.DerivedQuantities must be a list of festim.DerivedQuantity"
+        )
 
     @property
     def filename(self):

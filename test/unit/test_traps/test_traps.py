@@ -14,27 +14,6 @@ def test_set_traps():
         festim.Traps(trap_combination)
 
 
-def test_set_traps_wrong_type():
-    """Checks an error is raised when festim.Traps is set with the wrong type"""
-    my_mat = festim.Material(1, 1, 0)
-    trap1 = festim.Trap(1, 1, 1, 1, [my_mat], density=1)
-
-    combinations = [trap1, "coucou", 1, True]
-
-    for trap_combination in combinations:
-        with pytest.raises(
-            TypeError,
-            match="festim.Traps must be a list",
-        ):
-            festim.Traps(trap_combination)
-
-    with pytest.raises(
-        TypeError,
-        match="festim.Traps must be a list of festim.Trap",
-    ):
-        festim.Traps([trap1, 2])
-
-
 def add_functions(trap, V, id=1):
     trap.solution = f.Function(V, name="c_t_{}".format(id))
     trap.previous_solution = f.Function(V, name="c_t_n_{}".format(id))
@@ -124,3 +103,59 @@ class TestGetTrap:
         id = -2
         with pytest.raises(ValueError, match="Couldn't find trap {}".format(id)):
             self.my_traps.get_trap(id=id)
+
+
+def test_set_traps_wrong_type():
+    """Checks an error is raised when festim.Traps is set with the wrong type"""
+    my_mat = festim.Material(1, 1, 0)
+    trap1 = festim.Trap(1, 1, 1, 1, [my_mat], density=1)
+
+    combinations = [trap1, "coucou", 1, True]
+
+    for trap_combination in combinations:
+        with pytest.raises(
+            TypeError,
+            match="festim.Traps must be a list",
+        ):
+            festim.Traps(trap_combination)
+
+    with pytest.raises(
+        TypeError,
+        match="festim.Traps must be a list of festim.Trap",
+    ):
+        festim.Traps([trap1, 2])
+
+
+def test_assign_traps_wrong_type():
+    """Checks an error is raised when the wrong type is assigned to festim.Traps"""
+    my_mat = festim.Material(1, 1, 0)
+    trap1 = festim.Trap(1, 1, 1, 1, [my_mat], density=1)
+    my_traps = festim.Traps([trap1])
+
+    combinations = ["coucou", 1, True]
+    error_pattern = "festim.Traps must be a list of festim.Trap"
+
+    for trap_combination in combinations:
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_traps.append(trap_combination)
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_traps.extend([trap_combination])
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_traps[0] = trap_combination
+
+        with pytest.raises(
+            TypeError,
+            match=error_pattern,
+        ):
+            my_traps.insert(0, trap_combination)

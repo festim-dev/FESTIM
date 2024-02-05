@@ -15,15 +15,9 @@ class Materials(list):
 
     def __init__(self, *args):
         # checks that input is list
-        try:
-            super().__init__(*args)
-        except:
+        if not isinstance(*args, list):
             raise TypeError("festim.Materials must be a list")
-
-        # checks that list elements are festim.Material
-        if len(self) != 0:
-            if not all(isinstance(t, festim.Material) for t in self):
-                raise TypeError("festim.Materials must be a list of festim.Material")
+        super().__init__(self._validate_material(item) for item in args[0])
 
         self.D = None
         self.S = None
@@ -35,10 +29,43 @@ class Materials(list):
     @property
     def materials(self):
         warnings.warn(
-            "The materials attribute will be deprecated in a future release, please use festim.Materials[:] instead",
+            "The materials attribute will be deprecated in a future release, please use festim.Materials as a list instead",
             DeprecationWarning,
         )
         return self
+
+    @materials.setter
+    def materials(self, value):
+        warnings.warn(
+            "The materials attribute will be deprecated in a future release, please use festim.Materials as a list instead",
+            DeprecationWarning,
+        )
+        if isinstance(value, list):
+            if not all(isinstance(t, festim.Material) for t in value):
+                raise TypeError("materials must be a list of festim.Material")
+            super().__init__(value)
+        else:
+            raise TypeError("materials must be a list")
+
+    def __setitem__(self, index, item):
+        super().__setitem__(index, self._validate_material(item))
+
+    def insert(self, index, item):
+        super().insert(index, self._validate_material(item))
+
+    def append(self, item):
+        super().append(self._validate_material(item))
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            super().extend(self._validate_material(item) for item in other)
+
+    def _validate_material(self, value):
+        if isinstance(value, festim.Material):
+            return value
+        raise TypeError("festim.Materials must be a list of festim.Material")
 
     def check_borders(self, size):
         """Checks that the borders of the materials match

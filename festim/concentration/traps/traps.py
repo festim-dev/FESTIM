@@ -10,15 +10,9 @@ class Traps(list):
 
     def __init__(self, *args):
         # checks that input is list
-        try:
-            super().__init__(*args)
-        except:
+        if not isinstance(*args, list):
             raise TypeError("festim.Traps must be a list")
-
-        # checks that list elements are festim.Export
-        if len(self) != 0:
-            if not all(isinstance(t, festim.Trap) for t in self):
-                raise TypeError("festim.Traps must be a list of festim.Trap")
+        super().__init__(self._validate_trap(item) for item in args[0])
 
         self.F = None
         self.extrinsic_formulations = []
@@ -32,10 +26,43 @@ class Traps(list):
     @property
     def traps(self):
         warnings.warn(
-            "The traps attribute will be deprecated in a future release, please use festim.Traps[:] instead",
+            "The traps attribute will be deprecated in a future release, please use festim.Traps as a list instead",
             DeprecationWarning,
         )
         return self
+
+    @traps.setter
+    def traps(self, value):
+        warnings.warn(
+            "The traps attribute will be deprecated in a future release, please use festim.Traps as a list instead",
+            DeprecationWarning,
+        )
+        if isinstance(value, list):
+            if not all(isinstance(t, festim.Trap) for t in value):
+                raise TypeError("traps must be a list of festim.Trap")
+            super().__init__(value)
+        else:
+            raise TypeError("traps must be a list")
+
+    def __setitem__(self, index, item):
+        super().__setitem__(index, self._validate_trap(item))
+
+    def insert(self, index, item):
+        super().insert(index, self._validate_trap(item))
+
+    def append(self, item):
+        super().append(self._validate_trap(item))
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            super().extend(self._validate_trap(item) for item in other)
+
+    def _validate_trap(self, value):
+        if isinstance(value, festim.Trap):
+            return value
+        raise TypeError("festim.Traps must be a list of festim.Trap")
 
     def make_traps_materials(self, materials):
         for trap in self:

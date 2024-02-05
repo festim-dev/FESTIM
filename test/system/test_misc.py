@@ -314,18 +314,17 @@ def test_materials_setter():
     assert my_model.materials is test_materials
 
 
-def test_depr_warns():
+def test_property_depr_warns():
     """
-    A temporary test to check DeprecationWarnings
+    A temporary test to check DeprecationWarnings in @property
     """
 
     my_mat = F.Material(id=1, E_D=1, D_0=1)
     my_mats = F.Materials([my_mat])
     my_derived_quantities = F.DerivedQuantities([F.SurfaceFlux(0, 2)])
     my_exports = F.Exports([F.Export(field=0)] + my_derived_quantities)
-    my_traps = F.Traps(
-        [F.Trap(k_0=1, E_k=1, p_0=1, E_p=1, density=1, materials=my_mat)]
-    )
+    my_trap = F.Trap(k_0=1, E_k=1, p_0=1, E_p=1, density=1, materials=my_mat)
+    my_traps = F.Traps([my_trap])
 
     with pytest.deprecated_call():
         my_mats.materials[0]
@@ -338,3 +337,96 @@ def test_depr_warns():
 
     with pytest.deprecated_call():
         my_traps.traps[0]
+
+
+def test_property_setter_depr_warns():
+    """
+    A temporary test to check DeprecationWarnings in @property.setter
+    """
+
+    my_mat = F.Material(id=1, E_D=1, D_0=1)
+    my_derived_quantity = F.SurfaceFlux(0, 2)
+    my_export = F.Export(field=0)
+    my_trap = F.Trap(k_0=1, E_k=1, p_0=1, E_p=1, density=1, materials=my_mat)
+
+    my_exports = F.Exports([])
+    my_mats = F.Materials([])
+    my_traps = F.Traps([])
+    my_derived_quantities = F.DerivedQuantities([])
+
+    with pytest.deprecated_call():
+        my_traps.traps = [my_trap]
+
+    with pytest.deprecated_call():
+        my_derived_quantities.derived_quantities = [my_derived_quantity]
+
+    with pytest.deprecated_call():
+        my_exports.exports = [my_export]
+
+    with pytest.deprecated_call():
+        my_mats.materials = [my_mat]
+
+
+def test_set_attr_wrong_type():
+    """
+    Checks an error is raised in @property.setter when the attribute
+    is set with the wrong type
+    """
+
+    my_mat = F.Material(id=1, E_D=1, D_0=1)
+    my_derived_quantity = F.SurfaceFlux(0, 2)
+    my_export = F.Export(field=0)
+    my_trap = F.Trap(k_0=1, E_k=1, p_0=1, E_p=1, density=1, materials=my_mat)
+
+    my_exports = F.Exports([])
+    my_mats = F.Materials([])
+    my_traps = F.Traps([])
+    my_derived_quantities = F.DerivedQuantities([])
+
+    with pytest.raises(
+        TypeError,
+        match="traps must be a list",
+    ):
+        my_traps.traps = my_trap
+
+    with pytest.raises(
+        TypeError,
+        match="traps must be a list of festim.Trap",
+    ):
+        my_traps.traps = [my_trap, 1]
+
+    with pytest.raises(
+        TypeError,
+        match="derived_quantities must be a list",
+    ):
+        my_derived_quantities.derived_quantities = my_derived_quantity
+
+    with pytest.raises(
+        TypeError,
+        match="derived_quantities must be a list of festim.DerivedQuantity",
+    ):
+        my_derived_quantities.derived_quantities = [my_derived_quantity, 1]
+
+    with pytest.raises(
+        TypeError,
+        match="exports must be a list",
+    ):
+        my_exports.exports = my_export
+
+    with pytest.raises(
+        TypeError,
+        match="exports must be a list of festim.Export",
+    ):
+        my_exports.exports = [my_export, 1]
+
+    with pytest.raises(
+        TypeError,
+        match="materials must be a list",
+    ):
+        my_mats.materials = my_mat
+
+    with pytest.raises(
+        TypeError,
+        match="materials must be a list of festim.Material",
+    ):
+        my_mats.materials = [my_mat, 1]
