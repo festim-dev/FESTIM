@@ -329,6 +329,27 @@ def test_filename_ends_with_csv():
         DerivedQuantities([], filename="coucou")
 
 
+def test_derived_quantities_methods():
+    flux1 = SurfaceFlux(field="solute", surface=1)
+    flux2 = SurfaceFlux(field="solute", surface=2)
+    my_dqs = DerivedQuantities([flux1])
+
+    my_dqs.append(flux2)
+    assert my_dqs == [flux1, flux2]
+
+    my_dqs.insert(0, flux2)
+    assert my_dqs == [flux2, flux1, flux2]
+
+    my_dqs[0] = flux1
+    assert my_dqs == [flux1, flux1, flux2]
+
+    my_dqs.extend([flux1])
+    assert my_dqs == [flux1, flux1, flux2, flux1]
+
+    my_dqs.extend(DerivedQuantities([flux2]))
+    assert my_dqs == DerivedQuantities([flux1, flux1, flux2, flux1, flux2])
+
+
 def test_set_derived_quantitites_wrong_type():
     """Checks an error is raised when festim.DerivedQuantities is set with the wrong type"""
     flux1 = SurfaceFlux(field="solute", surface=1)

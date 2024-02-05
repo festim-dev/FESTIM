@@ -2,6 +2,28 @@ import festim
 import pytest
 
 
+def test_exports_methods():
+    my_exp1 = festim.Export(field=0)
+    my_exp2 = festim.Export(field="T")
+
+    my_exports = festim.Exports([my_exp1])
+
+    my_exports.append(my_exp2)
+    assert my_exports == [my_exp1, my_exp2]
+
+    my_exports.insert(0, my_exp2)
+    assert my_exports == [my_exp2, my_exp1, my_exp2]
+
+    my_exports[0] = my_exp1
+    assert my_exports == [my_exp1, my_exp1, my_exp2]
+
+    my_exports.extend([my_exp1])
+    assert my_exports == [my_exp1, my_exp1, my_exp2, my_exp1]
+
+    my_exports.extend(festim.Exports([my_exp2]))
+    assert my_exports == festim.Exports([my_exp1, my_exp1, my_exp2, my_exp1, my_exp2])
+
+
 def test_set_exports_wrong_type():
     """Checks an error is raised when festim.Exports is set with the wrong type"""
     my_export = festim.Export(field=0)

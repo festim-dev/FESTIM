@@ -105,6 +105,28 @@ class TestGetTrap:
             self.my_traps.get_trap(id=id)
 
 
+def test_traps_methods():
+    my_mat = festim.Material(1, 1, 0)
+    my_trap1 = festim.Trap(1, 1, 1, 1, [my_mat], density=1)
+    my_trap2 = festim.Trap(2, 1, 1, 1, [my_mat], density=1)
+    my_traps = festim.Traps([my_trap1])
+
+    my_traps.append(my_trap2)
+    assert my_traps == [my_trap1, my_trap2]
+
+    my_traps.insert(0, my_trap2)
+    assert my_traps == [my_trap2, my_trap1, my_trap2]
+
+    my_traps[0] = my_trap1
+    assert my_traps == [my_trap1, my_trap1, my_trap2]
+
+    my_traps.extend([my_trap1])
+    assert my_traps == [my_trap1, my_trap1, my_trap2, my_trap1]
+
+    my_traps.extend(festim.Traps([my_trap2]))
+    assert my_traps == festim.Traps([my_trap1, my_trap1, my_trap2, my_trap1, my_trap2])
+
+
 def test_set_traps_wrong_type():
     """Checks an error is raised when festim.Traps is set with the wrong type"""
     my_mat = festim.Material(1, 1, 0)

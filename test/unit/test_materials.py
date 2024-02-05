@@ -309,6 +309,28 @@ def test_equality_identity_two_empty_materials():
     assert (my_materials1 == my_materials2) and (my_materials1 is not my_materials2)
 
 
+def test_materials_methods():
+    my_mat1 = F.Material(1, 1, 0)
+    my_mat2 = F.Material(2, 1, 0)
+
+    my_materials = F.Materials([my_mat1])
+
+    my_materials.append(my_mat2)
+    assert my_materials == [my_mat1, my_mat2]
+
+    my_materials.insert(0, my_mat2)
+    assert my_materials == [my_mat2, my_mat1, my_mat2]
+
+    my_materials[0] = my_mat1
+    assert my_materials == [my_mat1, my_mat1, my_mat2]
+
+    my_materials.extend([my_mat1])
+    assert my_materials == [my_mat1, my_mat1, my_mat2, my_mat1]
+
+    my_materials.extend(F.Materials([my_mat2]))
+    assert my_materials == F.Materials([my_mat1, my_mat1, my_mat2, my_mat1, my_mat2])
+
+
 def test_set_materials_wrong_type():
     """Checks an error is raised when festim.Materials is set with the wrong type"""
     my_mat = F.Material(1, 1, 0)
