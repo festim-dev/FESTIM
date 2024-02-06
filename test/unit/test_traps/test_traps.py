@@ -105,26 +105,41 @@ class TestGetTrap:
             self.my_traps.get_trap(id=id)
 
 
-def test_traps_methods():
+class TestTrapsMethods:
+    """Checks that festim.Traps methods work properly"""
+
     my_mat = festim.Material(1, 1, 0)
     my_trap1 = festim.Trap(1, 1, 1, 1, [my_mat], density=1)
     my_trap2 = festim.Trap(2, 1, 1, 1, [my_mat], density=1)
+
     my_traps = festim.Traps([my_trap1])
 
-    my_traps.append(my_trap2)
-    assert my_traps == [my_trap1, my_trap2]
+    def test_traps_append(self):
+        self.my_traps.append(self.my_trap2)
+        assert self.my_traps == [self.my_trap1, self.my_trap2]
 
-    my_traps.insert(0, my_trap2)
-    assert my_traps == [my_trap2, my_trap1, my_trap2]
+    def test_traps_insert(self):
+        self.my_traps.insert(0, self.my_trap2)
+        assert self.my_traps == [self.my_trap2, self.my_trap1, self.my_trap2]
 
-    my_traps[0] = my_trap1
-    assert my_traps == [my_trap1, my_trap1, my_trap2]
+    def test_traps_setitem(self):
+        self.my_traps[0] = self.my_trap1
+        assert self.my_traps == [self.my_trap1, self.my_trap1, self.my_trap2]
 
-    my_traps.extend([my_trap1])
-    assert my_traps == [my_trap1, my_trap1, my_trap2, my_trap1]
+    def test_traps_extend_list_type(self):
+        self.my_traps.extend([self.my_trap1])
+        assert self.my_traps == [
+            self.my_trap1,
+            self.my_trap1,
+            self.my_trap2,
+            self.my_trap1,
+        ]
 
-    my_traps.extend(festim.Traps([my_trap2]))
-    assert my_traps == festim.Traps([my_trap1, my_trap1, my_trap2, my_trap1, my_trap2])
+    def test_traps_extend_self_type(self):
+        self.my_traps.extend(festim.Traps([self.my_trap2]))
+        assert self.my_traps == festim.Traps(
+            [self.my_trap1, self.my_trap1, self.my_trap2, self.my_trap1, self.my_trap2]
+        )
 
 
 def test_set_traps_wrong_type():
@@ -181,3 +196,47 @@ def test_assign_traps_wrong_type():
             match=error_pattern,
         ):
             my_traps.insert(0, trap_combination)
+
+
+class TestTrapsPropertyDeprWarn:
+    """
+    A temporary test to check DeprecationWarnings in festim.Traps.traps
+    """
+
+    my_mat = festim.Material(1, 1, 1)
+    my_trap = festim.Trap(1, 1, 1, 1, [my_mat], 1)
+
+    my_traps = festim.Traps([])
+
+    def test_property_depr_warns(self):
+        with pytest.deprecated_call():
+            self.my_traps.traps
+
+    def test_property_setter_depr_warns(self):
+        with pytest.deprecated_call():
+            self.my_traps.traps = [self.my_trap]
+
+
+class TestTrapsPropertyRaiseError:
+    """
+    A temporary test to check TypeErrors in festim.Traps.traps
+    """
+
+    my_mat = festim.Material(1, 1, 1)
+    my_trap = festim.Trap(1, 1, 1, 1, [my_mat], 1)
+
+    my_traps = festim.Traps([])
+
+    def test_set_traps_wrong_type(self):
+        with pytest.raises(
+            TypeError,
+            match="traps must be a list",
+        ):
+            self.my_traps.traps = self.my_trap
+
+    def test_set_traps_list_wrong_type(self):
+        with pytest.raises(
+            TypeError,
+            match="traps must be a list of festim.Trap",
+        ):
+            self.my_traps.traps = [self.my_trap, 1]

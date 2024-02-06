@@ -329,25 +329,35 @@ def test_filename_ends_with_csv():
         DerivedQuantities([], filename="coucou")
 
 
-def test_derived_quantities_methods():
+class TestDerivedQuantititesMethods:
+    """Checks that festim.DerivedQuantitites methods work properly"""
+
     flux1 = SurfaceFlux(field="solute", surface=1)
     flux2 = SurfaceFlux(field="solute", surface=2)
+
     my_dqs = DerivedQuantities([flux1])
 
-    my_dqs.append(flux2)
-    assert my_dqs == [flux1, flux2]
+    def test_DQs_append(self):
+        self.my_dqs.append(self.flux2)
+        assert self.my_dqs == [self.flux1, self.flux2]
 
-    my_dqs.insert(0, flux2)
-    assert my_dqs == [flux2, flux1, flux2]
+    def test_DQs_insert(self):
+        self.my_dqs.insert(0, self.flux2)
+        assert self.my_dqs == [self.flux2, self.flux1, self.flux2]
 
-    my_dqs[0] = flux1
-    assert my_dqs == [flux1, flux1, flux2]
+    def test_DQs_setitem(self):
+        self.my_dqs[0] = self.flux1
+        assert self.my_dqs == [self.flux1, self.flux1, self.flux2]
 
-    my_dqs.extend([flux1])
-    assert my_dqs == [flux1, flux1, flux2, flux1]
+    def test_DQs_extend_list_type(self):
+        self.my_dqs.extend([self.flux1])
+        assert self.my_dqs == [self.flux1, self.flux1, self.flux2, self.flux1]
 
-    my_dqs.extend(DerivedQuantities([flux2]))
-    assert my_dqs == DerivedQuantities([flux1, flux1, flux2, flux1, flux2])
+    def test_DQs_extend_self_type(self):
+        self.my_dqs.extend(DerivedQuantities([self.flux2]))
+        assert self.my_dqs == DerivedQuantities(
+            [self.flux1, self.flux1, self.flux2, self.flux1, self.flux2]
+        )
 
 
 def test_set_derived_quantitites_wrong_type():
@@ -400,3 +410,46 @@ def test_assign_derived_quantitites_wrong_type():
             match=error_pattern,
         ):
             my_derived_quantities.insert(0, dq_combination)
+
+
+class TestDerivedQuantititesPropertyDeprWarn:
+    """
+    A temporary test to check DeprecationWarnings in festim.DerivedQuantitites.exports
+    """
+
+    my_derived_quantity = SurfaceFlux(0, 2)
+    my_derived_quantities = DerivedQuantities([])
+
+    def test_property_depr_warns(self):
+        with pytest.deprecated_call():
+            self.my_derived_quantities.derived_quantities
+
+    def test_property_setter_depr_warns(self):
+        with pytest.deprecated_call():
+            self.my_derived_quantities.derived_quantities = [self.my_derived_quantity]
+
+
+class TestDerivedQuantititesPropertyRaiseError:
+    """
+    A temporary test to check TypeErrors in festim.DerivedQuantitites.exports
+    """
+
+    my_derived_quantity = SurfaceFlux(0, 2)
+    my_derived_quantities = DerivedQuantities([])
+
+    def test_set_der_quants_wrong_type(self):
+        with pytest.raises(
+            TypeError,
+            match="derived_quantities must be a list",
+        ):
+            self.my_derived_quantities.derived_quantities = self.my_derived_quantity
+
+    def test_set_der_quants_list_wrong_type(self):
+        with pytest.raises(
+            TypeError,
+            match="derived_quantities must be a list of festim.DerivedQuantity",
+        ):
+            self.my_derived_quantities.derived_quantities = [
+                self.my_derived_quantity,
+                1,
+            ]

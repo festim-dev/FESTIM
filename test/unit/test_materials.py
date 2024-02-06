@@ -309,26 +309,40 @@ def test_equality_identity_two_empty_materials():
     assert (my_materials1 == my_materials2) and (my_materials1 is not my_materials2)
 
 
-def test_materials_methods():
+class TestMaterialsMethods:
+    """Checks that F.Materials methods work properly"""
+
     my_mat1 = F.Material(1, 1, 0)
     my_mat2 = F.Material(2, 1, 0)
 
     my_materials = F.Materials([my_mat1])
 
-    my_materials.append(my_mat2)
-    assert my_materials == [my_mat1, my_mat2]
+    def test_mats_append(self):
+        self.my_materials.append(self.my_mat2)
+        assert self.my_materials == [self.my_mat1, self.my_mat2]
 
-    my_materials.insert(0, my_mat2)
-    assert my_materials == [my_mat2, my_mat1, my_mat2]
+    def test_mats_insert(self):
+        self.my_materials.insert(0, self.my_mat2)
+        assert self.my_materials == [self.my_mat2, self.my_mat1, self.my_mat2]
 
-    my_materials[0] = my_mat1
-    assert my_materials == [my_mat1, my_mat1, my_mat2]
+    def test_mats_setitem(self):
+        self.my_materials[0] = self.my_mat1
+        assert self.my_materials == [self.my_mat1, self.my_mat1, self.my_mat2]
 
-    my_materials.extend([my_mat1])
-    assert my_materials == [my_mat1, my_mat1, my_mat2, my_mat1]
+    def test_mats_extend_list_type(self):
+        self.my_materials.extend([self.my_mat1])
+        assert self.my_materials == [
+            self.my_mat1,
+            self.my_mat1,
+            self.my_mat2,
+            self.my_mat1,
+        ]
 
-    my_materials.extend(F.Materials([my_mat2]))
-    assert my_materials == F.Materials([my_mat1, my_mat1, my_mat2, my_mat1, my_mat2])
+    def test_mats_extend_self_type(self):
+        self.my_materials.extend(F.Materials([self.my_mat2]))
+        assert self.my_materials == F.Materials(
+            [self.my_mat1, self.my_mat1, self.my_mat2, self.my_mat1, self.my_mat2]
+        )
 
 
 def test_set_materials_wrong_type():
@@ -384,3 +398,43 @@ def test_assign_materials_wrong_type():
             match=error_pattern,
         ):
             my_materials.insert(0, mat_combination)
+
+
+class TestMaterialsPropertyDeprWarn:
+    """
+    A temporary test to check DeprecationWarnings in F.Materials.materials
+    """
+
+    my_mat = F.Material(id=1, E_D=1, D_0=1)
+    my_mats = F.Materials([])
+
+    def test_property_depr_warns(self):
+        with pytest.deprecated_call():
+            self.my_mats.materials
+
+    def test_property_setter_depr_warns(self):
+        with pytest.deprecated_call():
+            self.my_mats.materials = [self.my_mat]
+
+
+class TestMaterialsPropertyRaiseError:
+    """
+    A temporary test to check TypeErrors in F.Materials.materials
+    """
+
+    my_mat = F.Material(id=1, E_D=1, D_0=1)
+    my_mats = F.Materials([])
+
+    def test_set_materials_wrong_type(self):
+        with pytest.raises(
+            TypeError,
+            match="materials must be a list",
+        ):
+            self.my_mats.materials = self.my_mat
+
+    def test_set_materials_list_wrong_type(self):
+        with pytest.raises(
+            TypeError,
+            match="materials must be a list of festim.Material",
+        ):
+            self.my_mats.materials = [self.my_mat, 1]
