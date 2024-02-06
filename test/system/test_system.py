@@ -52,8 +52,8 @@ def test_run_temperature_stationary(tmpdir):
     )
 
     my_derived_quantities = festim.DerivedQuantities(
+        [festim.TotalVolume("solute", 1)],
         filename="{}/derived_quantities.csv".format(str(Path(d))),
-        derived_quantities=[festim.TotalVolume("solute", 1)],
     )
 
     my_exports = [
@@ -250,7 +250,7 @@ def test_run_MMS(tmpdir):
         )
         error_v = compute_error(
             v,
-            computed=my_sim.traps.traps[0].post_processing_solution,
+            computed=my_sim.traps[0].post_processing_solution,
             t=my_sim.t,
             norm="error_max",
         )
@@ -372,7 +372,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         )
 
         computed_v = fenics.project(
-            my_sim.traps.traps[0].post_processing_solution, my_sim.V_DG1
+            my_sim.traps[0].post_processing_solution, my_sim.V_DG1
         )
 
         error_u = compute_error(u, computed=computed_u, t=my_sim.t, norm="error_max")
@@ -436,8 +436,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
 
     total_solute = festim.TotalVolume("solute", 1)
     total_retention = festim.TotalVolume("retention", 1)
-    derived_quantities = festim.DerivedQuantities()
-    derived_quantities.derived_quantities = [total_solute, total_retention]
+    derived_quantities = festim.DerivedQuantities([total_solute, total_retention])
     my_exports = festim.Exports(
         [
             festim.XDMFExport(
@@ -651,7 +650,7 @@ def test_run_MMS_steady_state(tmpdir):
         )
         error_v = compute_error(
             v,
-            computed=my_sim.traps.traps[0].post_processing_solution,
+            computed=my_sim.traps[0].post_processing_solution,
             t=my_sim.t,
             norm="error_max",
         )
@@ -704,8 +703,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
         final_time=100,
     )
     my_dt = festim.Stepsize(10, stepsize_change_ratio=1.2, dt_min=1e-8)
-    my_derived_quantities = festim.DerivedQuantities()
-    my_derived_quantities.derived_quantities = [festim.TotalSurface("solute", 2)]
+    my_derived_quantities = festim.DerivedQuantities([festim.TotalSurface("solute", 2)])
     my_exports = festim.Exports(
         [
             festim.XDMFExport(
@@ -749,12 +747,13 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
         chemical_pot=True,
         transient=False,
     )
-    my_derived_quantities = festim.DerivedQuantities()
-    my_derived_quantities.derived_quantities = [
-        festim.SurfaceFlux("solute", 1),
-        festim.SurfaceFlux("T", 1),
-        festim.TotalVolume("retention", 1),
-    ]
+    my_derived_quantities = festim.DerivedQuantities(
+        [
+            festim.SurfaceFlux("solute", 1),
+            festim.SurfaceFlux("T", 1),
+            festim.TotalVolume("retention", 1),
+        ]
+    )
     my_exports = festim.Exports(
         [
             festim.XDMFExport(
@@ -936,11 +935,11 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
         my_dt = festim.Stepsize(4)
 
         my_derived_quantities = festim.DerivedQuantities(
-            nb_iterations_between_compute=nb_it_compute
+            [
+                festim.TotalVolume("retention", 1),
+            ],
+            nb_iterations_between_compute=nb_it_compute,
         )
-        my_derived_quantities.derived_quantities = [
-            festim.TotalVolume("retention", 1),
-        ]
         my_exports = festim.Exports([my_derived_quantities])
 
         my_sim = festim.Simulation(
@@ -1170,7 +1169,7 @@ def test_MMS_decay_with_trap():
     )
     error_max_v = compute_error(
         v,
-        computed=my_sim.traps.traps[0].post_processing_solution,
+        computed=my_sim.traps[0].post_processing_solution,
         t=my_sim.t,
         norm="error_max",
     )

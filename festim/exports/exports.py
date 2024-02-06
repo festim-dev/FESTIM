@@ -1,5 +1,6 @@
 import festim
 import fenics as f
+import warnings
 
 
 class Exports(list):
@@ -8,11 +9,64 @@ class Exports(list):
     """
 
     def __init__(self, *args):
-        super().__init__(*args)
+        # checks that input is list
+        if not isinstance(*args, list):
+            raise TypeError("festim.Exports must be a list")
+        super().__init__(self._validate_export(item) for item in args[0])
+
         self.t = None
         self.V_DG1 = None
         self.final_time = None
         self.nb_iterations = 0
+
+    @property
+    def exports(self):
+        warnings.warn(
+            "The exports attribute will be deprecated in a future release, please use festim.Exports as a list instead",
+            DeprecationWarning,
+        )
+        return self
+
+    @exports.setter
+    def exports(self, value):
+        warnings.warn(
+            "The exports attribute will be deprecated in a future release, please use festim.Exports as a list instead",
+            DeprecationWarning,
+        )
+        if isinstance(value, list):
+            if not all(
+                (
+                    isinstance(t, festim.Export)
+                    or isinstance(t, festim.DerivedQuantities)
+                )
+                for t in value
+            ):
+                raise TypeError("exports must be a list of festim.Export")
+            super().__init__(value)
+        else:
+            raise TypeError("exports must be a list")
+
+    def __setitem__(self, index, item):
+        super().__setitem__(index, self._validate_export(item))
+
+    def insert(self, index, item):
+        super().insert(index, self._validate_export(item))
+
+    def append(self, item):
+        super().append(self._validate_export(item))
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            super().extend(self._validate_export(item) for item in other)
+
+    def _validate_export(self, value):
+        if isinstance(value, festim.Export) or isinstance(
+            value, festim.DerivedQuantities
+        ):
+            return value
+        raise TypeError("festim.Exports must be a list of festim.Export")
 
     def write(self, label_to_function, dx):
         """writes to file
@@ -26,7 +80,7 @@ class Exports(list):
                 # compute derived quantities
                 if export.is_compute(self.nb_iterations):
                     # check if function has to be projected
-                    for quantity in export.derived_quantities:
+                    for quantity in export:
                         if isinstance(
                             quantity, (festim.MaximumVolume, festim.MinimumVolume)
                         ):

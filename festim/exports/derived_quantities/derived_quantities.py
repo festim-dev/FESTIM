@@ -7,13 +7,14 @@ import fenics as f
 import os
 import numpy as np
 from typing import Union
+import warnings
 
 
-class DerivedQuantities:
+class DerivedQuantities(list):
     """
+    A list of festim.DerivedQuantity objects
+
     Args:
-        derived_quantities (list, optional): list of F.DerivedQuantity
-            object. Defaults to None.
         filename (str, optional): the filename (must end with .csv).
             If None, the data will not be exported. Defaults to None.
         nb_iterations_between_compute (int, optional): number of
@@ -26,21 +27,67 @@ class DerivedQuantities:
 
     def __init__(
         self,
-        derived_quantities: list = None,
+        *args,
         filename: str = None,
         nb_iterations_between_compute: int = 1,
         nb_iterations_between_exports: int = None,
     ) -> None:
+        # checks that input is list
+        if not isinstance(*args, list):
+            raise TypeError("festim.DerivedQuantities must be a list")
+        super().__init__(self._validate_derived_quantity(item) for item in args[0])
+
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
 
-        self.derived_quantities = derived_quantities
-        if derived_quantities is None:
-            self.derived_quantities = []
-
         self.data = [self.make_header()]
         self.t = []
+
+    @property
+    def derived_quantities(self):
+        warnings.warn(
+            "The derived_quantities attribute will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
+            DeprecationWarning,
+        )
+        return self
+
+    @derived_quantities.setter
+    def derived_quantities(self, value):
+        warnings.warn(
+            "The derived_quantities attribute will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
+            DeprecationWarning,
+        )
+        if isinstance(value, list):
+            if not all(isinstance(t, DerivedQuantity) for t in value):
+                raise TypeError(
+                    "derived_quantities must be a list of festim.DerivedQuantity"
+                )
+            super().__init__(value)
+        else:
+            raise TypeError("derived_quantities must be a list")
+
+    def __setitem__(self, index, item):
+        super().__setitem__(index, self._validate_derived_quantity(item))
+
+    def insert(self, index, item):
+        super().insert(index, self._validate_derived_quantity(item))
+
+    def append(self, item):
+        super().append(self._validate_derived_quantity(item))
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            super().extend(self._validate_derived_quantity(item) for item in other)
+
+    def _validate_derived_quantity(self, value):
+        if isinstance(value, DerivedQuantity):
+            return value
+        raise TypeError(
+            "festim.DerivedQuantities must be a list of festim.DerivedQuantity"
+        )
 
     @property
     def filename(self):
@@ -57,13 +104,13 @@ class DerivedQuantities:
 
     def make_header(self):
         header = ["t(s)"]
-        for quantity in self.derived_quantities:
+        for quantity in self:
             header.append(quantity.title)
         return header
 
     def assign_measures_to_quantities(self, dx, ds):
         self.volume_markers = dx.subdomain_data()
-        for quantity in self.derived_quantities:
+        for quantity in self:
             quantity.dx = dx
             quantity.ds = ds
             quantity.n = f.FacetNormal(dx.subdomain_data().mesh())
@@ -75,7 +122,7 @@ class DerivedQuantities:
         Args:
             materials (festim.Materials): the materials
         """
-        for quantity in self.derived_quantities:
+        for quantity in self:
             quantity.D = materials.D
             quantity.S = materials.S
             quantity.thermal_cond = materials.thermal_cond
@@ -84,7 +131,7 @@ class DerivedQuantities:
     def compute(self, t):
         # TODO need to support for soret flag in surface flux
         row = [t]
-        for quantity in self.derived_quantities:
+        for quantity in self:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):
                 value = quantity.compute(self.volume_markers)
             else:
@@ -180,7 +227,7 @@ class DerivedQuantities:
         quantities = []
 
         # iterate through derived_quantities
-        for quantity in self.derived_quantities:
+        for quantity in self:
             # initialise flags to False
             match_surface, match_volume, match_field, match_instance = (
                 False,
