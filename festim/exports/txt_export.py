@@ -47,7 +47,7 @@ class TXTExport(festim.Export):
         if self.times is None:
             return True
         for time in self.times:
-            if np.isclose(time, current_time):
+            if np.isclose(time, current_time, atol=0):
                 return True
         return False
 
@@ -113,7 +113,7 @@ class TXTExports:
     def __init__(
         self, fields=[], filenames=[], times=None, header_format=".2e"
     ) -> None:
-        msg = "TXTExports class will be depricated in future versions of FESTIM"
+        msg = "TXTExports class will be deprecated in future versions of FESTIM"
         warnings.warn(msg, DeprecationWarning)
 
         self.fields = fields

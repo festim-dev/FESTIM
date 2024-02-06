@@ -115,10 +115,10 @@ class Simulation:
     def traps(self, value):
         if value is None:
             self._traps = festim.Traps([])
-        elif isinstance(value, list):
-            self._traps = festim.Traps(value)
         elif isinstance(value, festim.Traps):
             self._traps = value
+        elif isinstance(value, list):
+            self._traps = festim.Traps(value)
         elif isinstance(value, festim.Trap):
             self._traps = festim.Traps([value])
         else:
@@ -132,12 +132,12 @@ class Simulation:
 
     @materials.setter
     def materials(self, value):
-        if isinstance(value, list):
+        if isinstance(value, festim.Materials):
+            self._materials = value
+        elif isinstance(value, list):
             self._materials = festim.Materials(value)
         elif isinstance(value, festim.Material):
             self._materials = festim.Materials([value])
-        elif isinstance(value, festim.Materials):
-            self._materials = value
         elif value is None:
             self._materials = value
         else:
@@ -153,12 +153,12 @@ class Simulation:
     def exports(self, value):
         if value is None:
             self._exports = festim.Exports([])
+        elif isinstance(value, festim.Exports):
+            self._exports = value
         elif isinstance(value, list):
             self._exports = festim.Exports(value)
         elif isinstance(value, festim.Export):
             self._exports = festim.Exports([value])
-        elif isinstance(value, festim.Exports):
-            self._exports = value
         else:
             raise TypeError(
                 "accepted types for exports are list, festim.Export or festim.Exports"
@@ -171,7 +171,7 @@ class Simulation:
         # reinitialise sources for concentrations and temperature
         self.mobile.sources = []
         self.T.sources = []
-        for t in self.traps.traps:
+        for t in self.traps:
             t.sources = []
 
         # make field_to_object dict
@@ -182,13 +182,20 @@ class Simulation:
             "mobile": self.mobile,
             "T": self.T,
         }
-        for i, trap in enumerate(self.traps.traps, 1):
+        for i, trap in enumerate(self.traps, 1):
             field_to_object[i] = trap
             field_to_object[str(i)] = trap
 
         # set sources
         for source in self.sources:
-            field_to_object[source.field].sources.append(source)
+            if isinstance(source, festim.RadioactiveDecay) and source.field == "all":
+                # assign source to each of the unique festim.Concentration
+                # objects in field_to_object
+                for obj in set(field_to_object.values()):
+                    if isinstance(obj, festim.Concentration):
+                        obj.sources.append(source)
+            else:
+                field_to_object[source.field].sources.append(source)
 
     def attribute_boundary_conditions(self):
         """Assigns boundary_conditions to mobile and T"""
@@ -197,9 +204,14 @@ class Simulation:
 
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
-            + [str(i + 1) for i, _ in enumerate(self.traps.traps)]
-            + [i + 1 for i, _ in enumerate(self.traps.traps)]
+            + [str(i + 1) for i, _ in enumerate(self.traps)]
+            + [i + 1 for i, _ in enumerate(self.traps)]
         )
+
+        # collect all DirichletBCs
+        dc_bcs = [
+            bc for bc in self.boundary_conditions if isinstance(bc, festim.DirichletBC)
+        ]
 
         for bc in self.boundary_conditions:
             if bc.field not in valid_fields:
@@ -208,6 +220,21 @@ class Simulation:
                 self.T.boundary_conditions.append(bc)
             else:
                 self.h_transport_problem.boundary_conditions.append(bc)
+            # checks that DirichletBC is not set with another bc on the same surface
+            # iterate through all BCs
+            for dc_bc in dc_bcs:
+                if (
+                    bc == dc_bc or bc.field != dc_bc.field
+                ):  # skip if the same BC or different fields
+                    continue
+                # check if BCs share the same surfaces using the set().isdisjoint() method
+                # that returns True if the first set has no elements in common with other containers
+                if not set(bc.surfaces).isdisjoint(dc_bc.surfaces):
+                    # convert lists of surfaces to sets and obtain their intersection
+                    intersection = set(bc.surfaces) & set(dc_bc.surfaces)
+                    raise ValueError(
+                        f"A DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_bc.field}"
+                    )
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
@@ -276,7 +303,7 @@ class Simulation:
 
         # needed to ensure that data is actually exported at TXTExport.times
         # see issue 675
-        for export in self.exports.exports:
+        for export in self.exports:
             if isinstance(export, festim.TXTExport) and export.times:
                 if not self.dt.milestones:
                     self.dt.milestones = []
@@ -320,7 +347,7 @@ class Simulation:
         #  Time-stepping
         print("Time stepping...")
         while self.t < self.settings.final_time and not np.isclose(
-            self.t, self.settings.final_time
+            self.t, self.settings.final_time, atol=0
         ):
             self.iterate()
 
@@ -370,7 +397,10 @@ class Simulation:
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(self.t)
         msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
-        if not np.isclose(self.t, self.settings.final_time) and self.log_level == 40:
+        if (
+            not np.isclose(self.t, self.settings.final_time, atol=0)
+            and self.log_level == 40
+        ):
             print(msg, end="\r")
         else:
             print(msg)
@@ -399,10 +429,10 @@ class Simulation:
             "T": self.T.T,
             "retention": sum(
                 [self.mobile.post_processing_solution]
-                + [trap.post_processing_solution for trap in self.traps.traps]
+                + [trap.post_processing_solution for trap in self.traps]
             ),
         }
-        for trap in self.traps.traps:
+        for trap in self.traps:
             label_to_function[trap.id] = trap.post_processing_solution
             label_to_function[str(trap.id)] = trap.post_processing_solution
 

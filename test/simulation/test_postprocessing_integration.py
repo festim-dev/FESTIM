@@ -42,16 +42,17 @@ class TestPostProcessing:
         return my_sim
 
     def test_derived_quantities_size(self, my_sim):
-        derived_quantities = festim.DerivedQuantities()
-        derived_quantities.derived_quantities = [
-            festim.SurfaceFlux("solute", 1),
-            festim.AverageVolume("T", 1),
-            festim.TotalVolume("1", 1),
-        ]
+        derived_quantities = festim.DerivedQuantities(
+            [
+                festim.SurfaceFlux("solute", 1),
+                festim.AverageVolume("T", 1),
+                festim.TotalVolume("1", 1),
+            ]
+        )
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 
-        my_sim.exports.exports = [derived_quantities]
+        my_sim.exports = [derived_quantities]
         t = 0
         dt = 1
         for i in range(1, 3):
@@ -59,8 +60,8 @@ class TestPostProcessing:
             my_sim.t = t
             my_sim.run_post_processing()
 
-        assert len(my_sim.exports.exports[0].data) == i + 1
-        assert my_sim.exports.exports[0].data[i][0] == t
+        assert len(my_sim.exports[0].data) == i + 1
+        assert my_sim.exports[0].data[i][0] == t
 
     def test_pure_diffusion(self, my_sim):
         my_sim.materials = festim.Materials(
@@ -85,16 +86,17 @@ class TestPostProcessing:
             ),
         )
 
-        derived_quantities = festim.DerivedQuantities()
-        derived_quantities.derived_quantities = [
-            festim.AverageVolume("solute", 2),
-            festim.AverageVolume("T", 2),
-            festim.AverageVolume("retention", 2),
-            festim.MinimumVolume("retention", 1),
-        ]
+        derived_quantities = festim.DerivedQuantities(
+            [
+                festim.AverageVolume("solute", 2),
+                festim.AverageVolume("T", 2),
+                festim.AverageVolume("retention", 2),
+                festim.MinimumVolume("retention", 1),
+            ]
+        )
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
 
-        my_sim.exports.exports = [derived_quantities]
+        my_sim.exports = [derived_quantities]
 
         t = 0
         dt = 1
@@ -132,17 +134,18 @@ class TestPostProcessing:
             f.interpolate(u_expr, my_sim.h_transport_problem.V.sub(0).collapse()),
         )
 
-        derived_quantities = festim.DerivedQuantities()
-        derived_quantities.derived_quantities = [
-            festim.SurfaceFlux("solute", 1),
-            festim.SurfaceFlux("solute", 2),
-            festim.SurfaceFlux("T", 1),
-            festim.SurfaceFlux("T", 2),
-        ]
+        derived_quantities = festim.DerivedQuantities(
+            [
+                festim.SurfaceFlux("solute", 1),
+                festim.SurfaceFlux("solute", 2),
+                festim.SurfaceFlux("T", 1),
+                festim.SurfaceFlux("T", 2),
+            ]
+        )
         derived_quantities.assign_measures_to_quantities(my_sim.mesh.dx, my_sim.mesh.ds)
         derived_quantities.assign_properties_to_quantities(my_sim.materials)
 
-        my_sim.exports.exports = [derived_quantities]
+        my_sim.exports = [derived_quantities]
 
         my_sim.run_post_processing()
         data = derived_quantities.data
@@ -165,7 +168,7 @@ class TestPostProcessing:
         # build
         d = tmpdir.mkdir("test_folder")
 
-        my_sim.exports.exports = [
+        my_sim.exports = [
             festim.XDMFExport("solute", "solute", folder=str(Path(d))),
             festim.XDMFExport("T", "temperature", folder=str(Path(d))),
         ]
@@ -176,7 +179,7 @@ class TestPostProcessing:
 
         # run and test
         for mode in [10, 2, 1]:
-            for export in my_sim.exports.exports:
+            for export in my_sim.exports:
                 export.mode = mode
                 export.append = False
             my_sim.nb_iterations = 0
@@ -207,7 +210,7 @@ class TestPostProcessing:
         """
         d = tmpdir.mkdir("test_folder")
 
-        my_sim.exports.exports = [
+        my_sim.exports = [
             festim.XDMFExport("solute", "solute", mode="last", folder=str(Path(d))),
             festim.XDMFExport("T", "temperature", mode="last", folder=str(Path(d))),
         ]

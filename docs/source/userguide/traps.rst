@@ -24,7 +24,7 @@ A trap in FESTIM is defined by:
 
     my_trap = F.Trap(k_0=1e-16, E_k=0.2, p_0=1e13, E_p=0.8, density=1e16, materials=my_material)
 
-If the trap is located in several materials, instead of creating another :code:`Trap` object, simply use a list of materials:
+If the trap is located in several materials, instead of creating another :class:`festim.Trap` object, simply use a list of materials:
 
 .. code-block:: python
 
@@ -90,11 +90,9 @@ If the temporal evolution of the trap's density is known `a priori`, then a "nor
 Grouped-trap
 ------------
 
-Let's imaging a case where you have two subdomains. Trap 1 is defined only in the first subdomain, whereas Trap 2 is defined in the second.
-It would be possible to simply define one trap in each subdomain.
-
-
-But grouping traps together helps saving computational time.
+Let's imagine a case where you have two subdomains. Trap 1 is defined only in the first subdomain, whereas Trap 2 is defined in the second.
+It would be possible to define one trap in each subdomain.
+Grouping traps together helps save computational time by reducing the number of degrees of freedom.
 
 .. code-block:: python
 

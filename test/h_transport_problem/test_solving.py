@@ -24,7 +24,7 @@ def test_default_dt_min_value():
         final_time=500,
     )
     my_problem = festim.HTransportProblem(
-        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
+        festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
@@ -47,7 +47,7 @@ def test_solve_once_jacobian_is_none():
         absolute_tolerance=1e-10, relative_tolerance=1e-10, maximum_iterations=50
     )
     my_problem = festim.HTransportProblem(
-        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
+        festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
@@ -74,7 +74,7 @@ def test_solve_once_returns_false():
         absolute_tolerance=1e-20, relative_tolerance=1e-20, maximum_iterations=1
     )
     my_problem = festim.HTransportProblem(
-        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
+        festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
@@ -104,7 +104,7 @@ def test_solve_once_linear_solver_mumps():
         linear_solver="mumps",
     )
     my_problem = festim.HTransportProblem(
-        festim.Mobile(), festim.Traps(), festim.Temperature(200), my_settings, []
+        festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)

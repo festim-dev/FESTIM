@@ -52,8 +52,8 @@ def test_run_temperature_stationary(tmpdir):
     )
 
     my_derived_quantities = festim.DerivedQuantities(
+        [festim.TotalVolume("solute", 1)],
         filename="{}/derived_quantities.csv".format(str(Path(d))),
-        derived_quantities=[festim.TotalVolume("solute", 1)],
     )
 
     my_exports = [
@@ -181,7 +181,8 @@ def test_run_MMS(tmpdir):
 
     f = (
         sp.diff(u, festim.t)
-        + sp.diff(v, festim.t)
+        - p * v
+        + k * u * (n_trap - v)
         - D * sp.diff(u, festim.x, 2)
         - sp.diff(D, festim.x) * sp.diff(u, festim.x)
     )
@@ -249,7 +250,7 @@ def test_run_MMS(tmpdir):
         )
         error_v = compute_error(
             v,
-            computed=my_sim.traps.traps[0].post_processing_solution,
+            computed=my_sim.traps[0].post_processing_solution,
             t=my_sim.t,
             norm="error_max",
         )
@@ -303,7 +304,8 @@ def test_run_MMS_chemical_pot(tmpdir):
 
     f = (
         sp.diff(u, festim.t)
-        + sp.diff(v, festim.t)
+        - p * v
+        + k * u * (n_trap - v)
         - D * sp.diff(u, festim.x, 2)
         - sp.diff(D, festim.x) * sp.diff(u, festim.x)
     )
@@ -370,7 +372,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         )
 
         computed_v = fenics.project(
-            my_sim.traps.traps[0].post_processing_solution, my_sim.V_DG1
+            my_sim.traps[0].post_processing_solution, my_sim.V_DG1
         )
 
         error_u = compute_error(u, computed=computed_u, t=my_sim.t, norm="error_max")
@@ -434,8 +436,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
 
     total_solute = festim.TotalVolume("solute", 1)
     total_retention = festim.TotalVolume("retention", 1)
-    derived_quantities = festim.DerivedQuantities()
-    derived_quantities.derived_quantities = [total_solute, total_retention]
+    derived_quantities = festim.DerivedQuantities([total_solute, total_retention])
     my_exports = festim.Exports(
         [
             festim.XDMFExport(
@@ -472,28 +473,14 @@ def test_run_MMS_soret(tmpdir):
     D_0 = 2
     k_B = festim.k_B
     D = D_0 * sp.exp(-E_D / k_B / T)
-    H = -2
-    S = 3
-    R = festim.R
+    Q = lambda T: -2e-5 * T + 3e-5
     f = sp.diff(u, festim.t) - sp.diff(
-        (
-            D
-            * (
-                sp.diff(u, festim.x)
-                + (H * T + S) * u / (R * T**2) * sp.diff(T, festim.x)
-            )
-        ),
+        (D * (sp.diff(u, festim.x) + Q(T) * u / (k_B * T**2) * sp.diff(T, festim.x))),
         festim.x,
     )
 
     def run(h):
-        my_materials = festim.Materials(
-            [
-                festim.Material(
-                    id=1, D_0=D_0, E_D=E_D, H={"free_enthalpy": H, "entropy": S}
-                )
-            ]
-        )
+        my_materials = festim.Materials([festim.Material(id=1, D_0=D_0, E_D=E_D, Q=Q)])
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
         ]
@@ -589,12 +576,11 @@ def test_run_MMS_steady_state(tmpdir):
     k = k_0 * sp.exp(-E_k / k_B / T)
 
     f = (
-        sp.diff(u, festim.t)
-        + sp.diff(v, festim.t)
-        - D * sp.diff(u, festim.x, 2)
+        -D * sp.diff(u, festim.x, 2)
         - sp.diff(D, festim.x) * sp.diff(u, festim.x)
+        - (p * v - k * u * (n_trap - v))
     )
-    g = sp.diff(v, festim.t) + p * v - k * u * (n_trap - v)
+    g = p * v - k * u * (n_trap - v)
 
     def run(h):
         my_materials = festim.Materials(
@@ -664,7 +650,7 @@ def test_run_MMS_steady_state(tmpdir):
         )
         error_v = compute_error(
             v,
-            computed=my_sim.traps.traps[0].post_processing_solution,
+            computed=my_sim.traps[0].post_processing_solution,
             t=my_sim.t,
             norm="error_max",
         )
@@ -717,8 +703,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
         final_time=100,
     )
     my_dt = festim.Stepsize(10, stepsize_change_ratio=1.2, dt_min=1e-8)
-    my_derived_quantities = festim.DerivedQuantities()
-    my_derived_quantities.derived_quantities = [festim.TotalSurface("solute", 2)]
+    my_derived_quantities = festim.DerivedQuantities([festim.TotalSurface("solute", 2)])
     my_exports = festim.Exports(
         [
             festim.XDMFExport(
@@ -762,12 +747,13 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
         chemical_pot=True,
         transient=False,
     )
-    my_derived_quantities = festim.DerivedQuantities()
-    my_derived_quantities.derived_quantities = [
-        festim.SurfaceFlux("solute", 1),
-        festim.SurfaceFlux("T", 1),
-        festim.TotalVolume("retention", 1),
-    ]
+    my_derived_quantities = festim.DerivedQuantities(
+        [
+            festim.SurfaceFlux("solute", 1),
+            festim.SurfaceFlux("T", 1),
+            festim.TotalVolume("retention", 1),
+        ]
+    )
     my_exports = festim.Exports(
         [
             festim.XDMFExport(
@@ -949,11 +935,11 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
         my_dt = festim.Stepsize(4)
 
         my_derived_quantities = festim.DerivedQuantities(
-            nb_iterations_between_compute=nb_it_compute
+            [
+                festim.TotalVolume("retention", 1),
+            ],
+            nb_iterations_between_compute=nb_it_compute,
         )
-        my_derived_quantities.derived_quantities = [
-            festim.TotalVolume("retention", 1),
-        ]
         my_exports = festim.Exports([my_derived_quantities])
 
         my_sim = festim.Simulation(
@@ -970,11 +956,11 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
 
     sim_short = init_sim(10)
     sim_short.run()
-    short_derived_quantities = sim_short.exports.exports[0].data
+    short_derived_quantities = sim_short.exports[0].data
 
     sim_long = init_sim(1)
     sim_long.run()
-    long_derived_quantities = sim_long.exports.exports[0].data
+    long_derived_quantities = sim_long.exports[0].data
 
     assert len(long_derived_quantities) > len(short_derived_quantities)
 
@@ -1031,3 +1017,171 @@ def test_completion_tone():
     )
     my_model.initialise()
     my_model.run(completion_tone=True)
+
+
+def test_mms_radioactive_decay():
+    """MMS test for radioactive decay
+    Steady state, only solute
+    """
+    u = 1 + sp.sin(2 * fenics.pi * festim.x)
+    size = 1
+    T = 700 + 30 * festim.x
+    E_D = 0.1
+    D_0 = 2
+    decay_constant = 0.1
+    k_B = festim.k_B
+    D = D_0 * sp.exp(-E_D / k_B / T)
+
+    f = (
+        -D * sp.diff(u, festim.x, 2)
+        - sp.diff(D, festim.x) * sp.diff(u, festim.x)
+        + decay_constant * u
+    )
+
+    my_materials = festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)
+
+    my_initial_conditions = [
+        festim.InitialCondition(field=0, value=u),
+    ]
+
+    my_mesh = festim.MeshFromVertices(np.linspace(0, size, 1000))
+
+    my_bcs = [
+        festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
+    ]
+
+    my_temp = festim.Temperature(T)
+
+    my_sources = [
+        festim.Source(f, 1, "0"),  # MMS source term
+        festim.RadioactiveDecay(decay_constant=decay_constant, volume=1),
+    ]
+
+    my_settings = festim.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=50,
+        transient=False,
+    )
+
+    my_sim = festim.Simulation(
+        mesh=my_mesh,
+        materials=my_materials,
+        initial_conditions=my_initial_conditions,
+        boundary_conditions=my_bcs,
+        temperature=my_temp,
+        sources=my_sources,
+        settings=my_settings,
+    )
+
+    my_sim.initialise()
+    my_sim.run()
+    error_max_u = compute_error(
+        u,
+        computed=my_sim.mobile.post_processing_solution,
+        t=0,
+        norm="error_max",
+    )
+
+    tol_u = 1e-7
+    msg = f"Maximum error on u is: {error_max_u}"
+    print(msg)
+    assert error_max_u < tol_u
+
+
+def test_MMS_decay_with_trap():
+    """MMS test for radioactive decay
+    Steady state, solute and trap
+    """
+    u = 1 + festim.x
+    v = 1 + festim.x * 2
+    size = 1
+    k_0 = 2
+    E_k = 1.5
+    p_0 = 0.2
+    E_p = 0.1
+    T = 700 + 30 * festim.x
+    decay_constant = 0.1
+    n_trap = 1
+    E_D = 0.1
+    D_0 = 2
+    k_B = festim.k_B
+    D = D_0 * sp.exp(-E_D / k_B / T)
+    p = p_0 * sp.exp(-E_p / k_B / T)
+    k = k_0 * sp.exp(-E_k / k_B / T)
+
+    f = (
+        -p * v
+        + k * u * (n_trap - v)
+        - D * sp.diff(u, festim.x, 2)
+        - sp.diff(D, festim.x) * sp.diff(u, festim.x)
+        + decay_constant * u
+    )
+    g = p * v - k * u * (n_trap - v) + decay_constant * v
+
+    my_materials = festim.Materials(
+        [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
+    )
+
+    my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap)
+
+    size = 0.1
+    my_mesh = festim.MeshFromVertices(np.linspace(0, size, 1600))
+
+    my_sources = [
+        festim.Source(f, 1, "solute"),
+        festim.Source(g, 1, "1"),
+        festim.RadioactiveDecay(decay_constant=decay_constant, volume=1),
+    ]
+
+    my_temp = festim.Temperature(T)
+
+    my_bcs = [
+        festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
+        festim.DirichletBC(surfaces=[1, 2], value=v, field=1),
+    ]
+
+    my_settings = festim.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-9,
+        maximum_iterations=50,
+        transient=False,
+        traps_element_type="DG",
+    )
+
+    my_sim = festim.Simulation(
+        mesh=my_mesh,
+        materials=my_materials,
+        traps=my_trap,
+        boundary_conditions=my_bcs,
+        sources=my_sources,
+        temperature=my_temp,
+        settings=my_settings,
+    )
+
+    my_sim.initialise()
+    my_sim.run()
+    error_max_u = compute_error(
+        u,
+        computed=my_sim.mobile.post_processing_solution,
+        t=my_sim.t,
+        norm="error_max",
+    )
+    error_max_v = compute_error(
+        v,
+        computed=my_sim.traps[0].post_processing_solution,
+        t=my_sim.t,
+        norm="error_max",
+    )
+
+    tol_u = 1e-10
+    tol_v = 1e-7
+    msg = (
+        "Maximum error on u is:"
+        + str(error_max_u)
+        + "\n \
+        Maximum error on v is:"
+        + str(error_max_v)
+    )
+    print(msg)
+    assert error_max_u < tol_u and error_max_v < tol_v

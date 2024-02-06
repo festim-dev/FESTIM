@@ -1,4 +1,4 @@
-from festim import SurfaceFlux, R, SurfaceFluxCylindrical, SurfaceFluxSpherical
+from festim import SurfaceFlux, k_B, SurfaceFluxCylindrical, SurfaceFluxSpherical
 import fenics as f
 import math
 import numpy as np
@@ -35,7 +35,7 @@ class TestCompute:
     ds = f.Measure("ds", domain=mesh, subdomain_data=surface_markers)
     D = f.Constant(2)
     thermal_cond = f.Constant(3)
-    H = f.Constant(4)
+    Q = f.Constant(4)
 
     surface = 1
     n = f.FacetNormal(mesh)
@@ -46,7 +46,7 @@ class TestCompute:
     my_h_flux.n = n
     my_h_flux.ds = ds
     my_h_flux.T = T
-    my_h_flux.H = H
+    my_h_flux.Q = Q
 
     my_heat_flux = SurfaceFlux("T", surface)
     my_heat_flux.D = D
@@ -76,8 +76,8 @@ class TestCompute:
         expected_flux += f.assemble(
             self.D
             * self.c
-            * self.H
-            / (R * self.T**2)
+            * self.Q
+            / (k_B * self.T**2)
             * f.dot(f.grad(self.T), self.n)
             * self.ds(self.surface)
         )

@@ -1,6 +1,5 @@
-from festim import Concentration, FluxBC, k_B, R
+from festim import Concentration, FluxBC, k_B, RadioactiveDecay
 from fenics import *
-import sympy as sp
 
 
 class Mobile(Concentration):
@@ -62,7 +61,7 @@ class Mobile(Concentration):
             raise ValueError(msg)
 
         F = 0
-        for material in materials.materials:
+        for material in materials:
             D_0 = material.D_0
             E_D = material.E_D
             c_0, c_0_n = self.get_concentration_for_a_given_material(material, T)
@@ -81,10 +80,12 @@ class Mobile(Concentration):
                 if mesh.type == "cartesian":
                     F += dot(D * grad(c_0), grad(self.test_function)) * dx
                     if soret:
-                        Q = material.free_enthalpy * T.T + material.entropy
+                        Q = material.Q
+                        if callable(Q):
+                            Q = Q(T.T)
                         F += (
                             dot(
-                                D * Q * c_0 / (R * T.T**2) * grad(T.T),
+                                D * Q * c_0 / (k_B * T.T**2) * grad(T.T),
                                 grad(self.test_function),
                             )
                             * dx
@@ -105,15 +106,41 @@ class Mobile(Concentration):
                         * dx
                     )
 
-        # add the traps transient terms
-        if dt is not None:
-            if traps is not None:
-                for trap in traps.traps:
-                    F += (
-                        ((trap.solution - trap.previous_solution) / dt.value)
+        # add the trapping terms
+        F_trapping = 0
+        if traps is not None:
+            for trap in traps:
+                for i, mat in enumerate(trap.materials):
+                    if type(trap.k_0) is list:
+                        k_0 = trap.k_0[i]
+                        E_k = trap.E_k[i]
+                        p_0 = trap.p_0[i]
+                        E_p = trap.E_p[i]
+                        density = trap.density[i]
+                    else:
+                        k_0 = trap.k_0
+                        E_k = trap.E_k
+                        p_0 = trap.p_0
+                        E_p = trap.E_p
+                        density = trap.density[0]
+                    c_m, _ = self.get_concentration_for_a_given_material(mat, T)
+                    F_trapping += (
+                        -k_0
+                        * exp(-E_k / k_B / T.T)
+                        * c_m
+                        * (density - trap.solution)
                         * self.test_function
-                        * mesh.dx
+                        * dx(mat.id)
                     )
+                    F_trapping += (
+                        p_0
+                        * exp(-E_p / k_B / T.T)
+                        * trap.solution
+                        * self.test_function
+                        * dx(mat.id)
+                    )
+        F += -F_trapping
+
         self.F_diffusion = F
         self.F += F
 
@@ -132,6 +159,9 @@ class Mobile(Concentration):
                 volumes = source.volume
             else:
                 volumes = [source.volume]
+            if isinstance(source, RadioactiveDecay):
+                source.value = source.form(self.mobile_concentration())
+
             for volume in volumes:
                 F_source += -source.value * self.test_function * dx(volume)
             if isinstance(source.value, (Expression, UserExpression)):

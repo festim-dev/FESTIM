@@ -1,4 +1,4 @@
-from festim import SurfaceQuantity, R
+from festim import SurfaceQuantity, k_B
 import fenics as f
 import numpy as np
 
@@ -26,8 +26,8 @@ class SurfaceFlux(SurfaceQuantity):
             flux += f.assemble(
                 self.prop
                 * self.function
-                * self.H
-                / (R * self.T**2)
+                * self.Q
+                / (k_B * self.T**2)
                 * f.dot(f.grad(self.T), self.n)
                 * self.ds(self.surface)
             )
