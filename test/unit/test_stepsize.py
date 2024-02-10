@@ -38,6 +38,20 @@ class TestAdapt:
         new_value = float(my_stepsize.value)
         assert new_value == my_stepsize.adaptive_stepsize["stepsize_stop_max"]
 
+    def test_hit_stepsize_max_float(self, my_stepsize):
+        my_stepsize.value.assign(10)
+        my_stepsize.adaptive_stepsize["max_stepsize"] = 1
+        my_stepsize.adapt(t=6, converged=True, nb_it=2)
+        new_value = float(my_stepsize.value)
+        assert new_value == my_stepsize.adaptive_stepsize["max_stepsize"]
+
+    def test_hit_stepsize_max_callable(self, my_stepsize):
+        my_stepsize.value.assign(10)
+        my_stepsize.adaptive_stepsize["max_stepsize"] = lambda t: t * 0 + 1
+        my_stepsize.adapt(t=6, converged=True, nb_it=2)
+        new_value = float(my_stepsize.value)
+        assert new_value == my_stepsize.adaptive_stepsize["max_stepsize"](1)
+
 
 def test_milestones_are_hit():
     """Test that the milestones are hit at the correct times"""
@@ -86,3 +100,17 @@ def test_next_milestone():
             if expected_milestone is not None
             else next_milestone is None
         )
+
+
+def test_DeprecationWarning_t_stop():
+    """A temporary test to check DeprecationWarning in festim.Stepsize"""
+
+    my_stepsize = festim.Stepsize(
+        initial_value=1e-8,
+        stepsize_change_ratio=2,
+        dt_min=1,
+        t_stop=0,
+        stepsize_stop_max=1,
+    )
+    with pytest.deprecated_call():
+        my_stepsize.adapt(t=6, converged=True, nb_it=2)
