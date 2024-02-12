@@ -50,10 +50,14 @@ class Stepsize:
     ) -> None:
         self.adaptive_stepsize = None
         if stepsize_change_ratio is not None:
+            if t_stop or stepsize_stop_max:
+                warnings.warn(
+                    "stepsize_stop_max and t_stop attributes will be deprecated in a future release, please use max_stepsize instead",
+                    DeprecationWarning,
+                )
+                max_stepsize = lambda t: stepsize_stop_max if t >= t_stop else None
             self.adaptive_stepsize = {
                 "stepsize_change_ratio": stepsize_change_ratio,
-                "t_stop": t_stop,
-                "stepsize_stop_max": stepsize_stop_max,
                 "max_stepsize": max_stepsize,
                 "dt_min": dt_min,
             }
@@ -89,8 +93,6 @@ class Stepsize:
         if self.adaptive_stepsize:
             change_ratio = self.adaptive_stepsize["stepsize_change_ratio"]
             dt_min = self.adaptive_stepsize["dt_min"]
-            stepsize_stop_max = self.adaptive_stepsize["stepsize_stop_max"]
-            t_stop = self.adaptive_stepsize["t_stop"]
             max_stepsize = self.adaptive_stepsize["max_stepsize"]
             if callable(max_stepsize):
                 max_stepsize = max_stepsize(t)
@@ -104,15 +106,7 @@ class Stepsize:
             else:
                 self.value.assign(float(self.value) / change_ratio)
 
-            if t_stop is not None:
-                warnings.warn(
-                    "stepsize_stop_max and t_stop attributes will be deprecated in a future release, please use max_stepsize instead",
-                    DeprecationWarning,
-                )
-                if t >= t_stop:
-                    if float(self.value) > stepsize_stop_max:
-                        self.value.assign(stepsize_stop_max)
-            elif max_stepsize is not None:
+            if max_stepsize is not None:
                 if float(self.value) > max_stepsize:
                     self.value.assign(max_stepsize)
 

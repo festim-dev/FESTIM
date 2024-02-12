@@ -30,27 +30,27 @@ class TestAdapt:
             == old_value / my_stepsize.adaptive_stepsize["stepsize_change_ratio"]
         )
 
-    def test_hit_stepsize_max(self, my_stepsize):
-        my_stepsize.value.assign(10)
-        my_stepsize.adaptive_stepsize["stepsize_stop_max"] = 1
-        my_stepsize.adaptive_stepsize["t_stop"] = 0
-        my_stepsize.adapt(t=6, converged=True, nb_it=2)
-        new_value = float(my_stepsize.value)
-        assert new_value == my_stepsize.adaptive_stepsize["stepsize_stop_max"]
-
-    def test_hit_stepsize_max_float(self, my_stepsize):
+    def test_hit_stepsize_max_with_float(self, my_stepsize):
+        """
+        Assigns an initial value to the stepsize, then calls adapt at t > 0
+        and checks that the new value is equal to max_stepsize
+        """
         my_stepsize.value.assign(10)
         my_stepsize.adaptive_stepsize["max_stepsize"] = 1
         my_stepsize.adapt(t=6, converged=True, nb_it=2)
         new_value = float(my_stepsize.value)
         assert new_value == my_stepsize.adaptive_stepsize["max_stepsize"]
 
-    def test_hit_stepsize_max_callable(self, my_stepsize):
+    def test_hit_stepsize_max_with_callable(self, my_stepsize):
+        """
+        Assigns an initial value to the stepsize and a callable for max_stepsize
+        and checks that the new value is equal to max_stepsize
+        """
         my_stepsize.value.assign(10)
-        my_stepsize.adaptive_stepsize["max_stepsize"] = lambda t: t * 0 + 1
+        my_stepsize.adaptive_stepsize["max_stepsize"] = lambda t: t
         my_stepsize.adapt(t=6, converged=True, nb_it=2)
         new_value = float(my_stepsize.value)
-        assert new_value == my_stepsize.adaptive_stepsize["max_stepsize"](1)
+        assert new_value == my_stepsize.adaptive_stepsize["max_stepsize"](6)
 
 
 def test_milestones_are_hit():
@@ -105,12 +105,28 @@ def test_next_milestone():
 def test_DeprecationWarning_t_stop():
     """A temporary test to check DeprecationWarning in festim.Stepsize"""
 
+    with pytest.deprecated_call():
+        festim.Stepsize(
+            initial_value=1e-8,
+            stepsize_change_ratio=2,
+            dt_min=1,
+            t_stop=0,
+            stepsize_stop_max=1,
+        )
+
+
+@pytest.mark.parametrize("time", (0, 2))
+def test_hit_stepsize_max_with_t_stop(time):
+    """
+    A temporary test to check that when old attributes t_stop and stepsize_stop_max
+    are used their work is re-created with max_stepsize
+    """
     my_stepsize = festim.Stepsize(
-        initial_value=1e-8,
+        initial_value=10,
         stepsize_change_ratio=2,
-        dt_min=1,
-        t_stop=0,
+        dt_min=0.1,
+        t_stop=1,
         stepsize_stop_max=1,
     )
-    with pytest.deprecated_call():
-        my_stepsize.adapt(t=6, converged=True, nb_it=2)
+    max_stepsize = lambda t: 1 if t >= 1 else None
+    assert my_stepsize.adaptive_stepsize["max_stepsize"](time) == max_stepsize(time)
