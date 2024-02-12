@@ -41,9 +41,9 @@ FESTIM can include the Soret effect :cite:`Pendergrass1976,Longhurst1985` (also 
 .. math::
     :label: eq_Soret
 
-    J = -D \nabla c_\mathrm{m} - D\frac{Q^* c_\mathrm{m}}{R_g T^2} \nabla T
+    J = -D \nabla c_\mathrm{m} - D\frac{Q^* c_\mathrm{m}}{k_B T^2} \nabla T
 
-where :math:`Q^*` is the Soret coefficient (also called heat of transport) and :math:`R_g` is the gas constant.
+where :math:`Q^*` is the Soret coefficient (also called heat of transport) and :math:`k_B` is the Boltzmann constant.
 
 Conservation of chemical potential at interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -112,7 +112,7 @@ According to the latter, the rate :math:`k(T)` of a thermally activated process 
 
     k(T) = k_0 \exp \left[-\frac{E_k}{k_B T} \right]
 
-where :math:`k_0` is the pre-exponential factor, :math:`E_k` is the process activation energy, :math:`k_B` is the Boltzmann constant, and :math:`T` is the temperature. 
+where :math:`k_0` is the pre-exponential factor, :math:`E_k` is the process activation energy, and :math:`T` is the temperature. 
 
 Heat transfer
 ^^^^^^^^^^^^^^

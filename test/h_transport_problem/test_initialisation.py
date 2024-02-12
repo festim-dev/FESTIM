@@ -49,7 +49,7 @@ def test_initialisation_from_xdmf(tmpdir):
     )
 
     my_problem.V = V
-    my_mats = festim.Materials()
+    my_mats = festim.Materials([])
     my_mats.S = None
     my_problem.initialise_concentrations()
     w = my_problem.u_n

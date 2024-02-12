@@ -5,23 +5,67 @@ from festim import k_B, Material, HeatTransferProblem
 import festim
 import fenics as f
 from typing import Union
+import warnings
 
 
-class Materials:
+class Materials(list):
     """
-    Args:
-        materials (list, optional): contains festim.Material objects.
-            Defaults to [].
+    A list of festim.Material objects
     """
 
-    def __init__(self, materials=[]):
-        self.materials = materials
+    def __init__(self, *args):
+        # checks that input is list
+        if not isinstance(*args, list):
+            raise TypeError("festim.Materials must be a list")
+        super().__init__(self._validate_material(item) for item in args[0])
+
         self.D = None
         self.S = None
         self.thermal_cond = None
         self.heat_capacity = None
         self.density = None
-        self.H = None
+        self.Q = None
+
+    @property
+    def materials(self):
+        warnings.warn(
+            "The materials attribute will be deprecated in a future release, please use festim.Materials as a list instead",
+            DeprecationWarning,
+        )
+        return self
+
+    @materials.setter
+    def materials(self, value):
+        warnings.warn(
+            "The materials attribute will be deprecated in a future release, please use festim.Materials as a list instead",
+            DeprecationWarning,
+        )
+        if isinstance(value, list):
+            if not all(isinstance(t, festim.Material) for t in value):
+                raise TypeError("materials must be a list of festim.Material")
+            super().__init__(value)
+        else:
+            raise TypeError("materials must be a list")
+
+    def __setitem__(self, index, item):
+        super().__setitem__(index, self._validate_material(item))
+
+    def insert(self, index, item):
+        super().insert(index, self._validate_material(item))
+
+    def append(self, item):
+        super().append(self._validate_material(item))
+
+    def extend(self, other):
+        if isinstance(other, type(self)):
+            super().extend(other)
+        else:
+            super().extend(self._validate_material(item) for item in other)
+
+    def _validate_material(self, value):
+        if isinstance(value, festim.Material):
+            return value
+        raise TypeError("festim.Materials must be a list of festim.Material")
 
     def check_borders(self, size):
         """Checks that the borders of the materials match
@@ -38,7 +82,7 @@ class Materials:
             bool -- True if everything's alright
         """
         all_borders = []
-        for m in self.materials:
+        for m in self:
             if isinstance(m.borders[0], list):
                 for border in m.borders:
                     all_borders.append(border)
@@ -63,7 +107,7 @@ class Materials:
                 objects the derived quantities. Defaults to [].
         """
 
-        if len(self.materials) > 0:  # TODO: get rid of this...
+        if len(self) > 0:  # TODO: get rid of this...
             self.check_consistency()
 
             self.check_for_unused_properties(T, derived_quantities)
@@ -75,7 +119,7 @@ class Materials:
     def check_unique_ids(self):
         # check that ids are different
         mat_ids = []
-        for mat in self.materials:
+        for mat in self:
             if type(mat.id) is list:
                 mat_ids += mat.id
             else:
@@ -98,12 +142,12 @@ class Materials:
         # warn about unused keys
         transient_properties = ["rho", "heat_capacity"]
         if not isinstance(T, HeatTransferProblem):
-            for mat in self.materials:
+            for mat in self:
                 for key in transient_properties:
                     if getattr(mat, key) is not None:
                         warnings.warn(key + " key will be ignored", UserWarning)
 
-        for mat in self.materials:
+        for mat in self:
             if getattr(mat, "thermal_cond") is not None:
                 warn = True
                 if isinstance(T, HeatTransferProblem):
@@ -131,13 +175,13 @@ class Materials:
             "heat_capacity": [],
             "rho": [],
             "borders": [],
-            "H": [],
+            "Q": [],
         }
 
         for attr, value in attributes.items():
-            for mat in self.materials:
+            for mat in self:
                 value.append(getattr(mat, attr))
-            if value.count(None) not in [0, len(self.materials)]:
+            if value.count(None) not in [0, len(self)]:
                 raise ValueError("{} is not defined for all materials".format(attr))
 
     def check_missing_properties(self, T: festim.Temperature, derived_quantities: list):
@@ -151,12 +195,12 @@ class Materials:
             ValueError: if thermal_cond, heat_capacity or rho is None when needed
         """
         if isinstance(T, HeatTransferProblem):
-            if self.materials[0].thermal_cond is None:
+            if self[0].thermal_cond is None:
                 raise ValueError("Missing thermal_cond in materials")
             if T.transient:
-                if self.materials[0].heat_capacity is None:
+                if self[0].heat_capacity is None:
                     raise ValueError("Missing heat_capacity in materials")
-                if self.materials[0].rho is None:
+                if self[0].rho is None:
                     raise ValueError("Missing rho in materials")
         # TODO: add check for thermal cond for thermal flux computation
 
@@ -172,7 +216,7 @@ class Materials:
         Returns:
             festim.Material: the material that has the id mat_id
         """
-        for material in self.materials:
+        for material in self:
             mat_ids = material.id
             if type(mat_ids) is not list:
                 mat_ids = [mat_ids]
@@ -192,7 +236,7 @@ class Materials:
         Returns:
             festim.Material: the material object
         """
-        for material in self.materials:
+        for material in self:
             if material.name == name:
                 return material
 
@@ -225,7 +269,7 @@ class Materials:
         Returns:
             int: the corresponding subdomain id
         """
-        for material in self.materials:
+        for material in self:
             # if no borders are provided, assume only one subdomain
             if material.borders is None:
                 return material.id
@@ -255,14 +299,14 @@ class Materials:
         """
         self.D = ArheniusCoeff(self, vm, T, "D_0", "E_D", degree=2)
         # all materials have the same properties so only checking the first is enough
-        if self.materials[0].S_0 is not None:
+        if self[0].S_0 is not None:
             self.S = ArheniusCoeff(self, vm, T, "S_0", "E_S", degree=2)
-        if self.materials[0].thermal_cond is not None:
+        if self[0].thermal_cond is not None:
             self.thermal_cond = ThermalProp(self, vm, T, "thermal_cond", degree=2)
             self.heat_capacity = ThermalProp(self, vm, T, "heat_capacity", degree=2)
             self.density = ThermalProp(self, vm, T, "rho", degree=2)
-        if self.materials[0].H is not None:
-            self.H = HCoeff(self, vm, T, degree=2)
+        if self[0].Q is not None:
+            self.Q = ThermalProp(self, vm, T, "Q", degree=2)
 
     def solubility_as_function(self, mesh, T):
         """
@@ -273,7 +317,7 @@ class Materials:
         vS = f.TestFunction(V)
         dx = mesh.dx
         F = 0
-        for mat in self.materials:
+        for mat in self:
             F += -S * vS * dx(mat.id)
             F += mat.S_0 * f.exp(-mat.E_S / k_B / T) * vS * dx(mat.id)
         f.solve(F == 0, S, bcs=[])
@@ -300,7 +344,7 @@ class Materials:
         F_sievert = -sievert * test_function_sievert * mesh.dx
 
         # build the formulation depending on the
-        for mat in self.materials:
+        for mat in self:
             # make sure mat_ids is a list
             mat_ids = mat.id
             if not isinstance(mat.id, list):
@@ -358,24 +402,6 @@ class ThermalProp(f.UserExpression):
             value[0] = attribute(self._T(x))
         else:
             value[0] = attribute
-
-    def value_shape(self):
-        return ()
-
-
-class HCoeff(f.UserExpression):
-    def __init__(self, materials, vm, T, **kwargs):
-        super().__init__(kwargs)
-        self._T = T
-        self._vm = vm
-        self._materials = materials
-
-    def eval_cell(self, value, x, ufc_cell):
-        cell = f.Cell(self._vm.mesh(), ufc_cell.index)
-        subdomain_id = self._vm[cell]
-        material = self._materials.find_material_from_id(subdomain_id)
-
-        value[0] = material.free_enthalpy + self._T(x) * material.entropy
 
     def value_shape(self):
         return ()

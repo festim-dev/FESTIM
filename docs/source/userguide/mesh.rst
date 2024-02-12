@@ -9,7 +9,7 @@ As FESTIM is not a meshing tool, the meshing capabilities are limited to simple 
 1D meshes
 ---------
 
-The easiest way to define a 1D mesh in FESTIM is to define it from a list of vertices:
+The easiest way to define a 1D mesh in FESTIM is to define it from a list of vertices (see :class:`festim.MeshFromVertices`):
 
 .. code-block:: python
 
@@ -42,7 +42,7 @@ Numpy arrays can be combined to have local refinements:
 Meshes from XDMF
 ----------------
 
-More complex meshes can be read from XDMF files:
+More complex meshes can be read from XDMF files (see :class:`festim.MeshFromXDMF`):
 
 .. code-block:: python
 
@@ -56,7 +56,7 @@ GMSH example
 The DOLFINx tutorial gives an `example <https://jorgensd.github.io/dolfinx-tutorial/chapter1/membrane_code.html#creating-the-mesh>`_ of mesh generation with gmsh.
 
 ------------------
-meshes from FEniCS
+Meshes from FEniCS
 ------------------
 
 See the `FEniCS documentation <https://fenicsproject.org/olddocs/dolfin/latest/python/demos/built-in-meshes/demo_built-in-meshes.py.html>`_ for more built-in meshes.

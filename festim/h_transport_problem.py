@@ -88,7 +88,7 @@ class HTransportProblem:
         element_solute, order_solute = "CG", 1
 
         # function space for H concentrations
-        nb_traps = len(self.traps.traps)
+        nb_traps = len(self.traps)
         if nb_traps == 0:
             V = FunctionSpace(mesh.mesh, element_solute, order_solute)
         else:
@@ -120,7 +120,7 @@ class HTransportProblem:
             self.mobile.previous_solution = self.u_n
             self.mobile.test_function = self.v
         else:
-            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+            for i, concentration in enumerate([self.mobile, *self.traps]):
                 concentration.solution = self.u.sub(i)
                 # concentration.solution = list(split(self.u))[i]
                 concentration.previous_solution = self.u_n.sub(i)
@@ -132,7 +132,7 @@ class HTransportProblem:
             "0": 0,
             0: 0,
         }
-        for i, trap in enumerate(self.traps.traps, 1):
+        for i, trap in enumerate(self.traps, 1):
             field_to_component[trap.id] = i
             field_to_component[str(trap.id)] = i
         # TODO refactore this, attach the initial conditions to the objects directly
@@ -168,7 +168,7 @@ class HTransportProblem:
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
-            for i, concentration in enumerate([self.mobile, *self.traps.traps]):
+            for i, concentration in enumerate([self.mobile, *self.traps]):
                 concentration.previous_solution = list(split(self.u_n))[i]
                 concentration.solution = list(split(self.u))[i]
 
@@ -299,34 +299,10 @@ class HTransportProblem:
         else:
             res = list(self.u.split())
 
-        for i, trap in enumerate(self.traps.traps, 1):
+        for i, trap in enumerate(self.traps, 1):
             trap.post_processing_solution = res[i]
 
         if self.settings.chemical_pot:
             self.mobile.post_processing_solution_to_concentration()
         else:
             self.mobile.post_processing_solution = res[0]
-
-    # TODO remove this unused method
-    def need_projecting_solute(self, exports):
-        """Checks if the user computes a Hydrogen surface flux or exports the
-        solute to XDMF. If so, the function of mobile particles will have to
-        be type fenics.Function for the post-processing.
-
-        Args:
-            exports (festim.Exports): the exports
-
-        Returns:
-            bool: True if the solute needs to be projected, False else.
-        """
-        need_solute = False  # initialises to false
-        for export in exports.exports:
-            if isinstance(export, festim.DerivedQuantities):
-                for quantity in export.derived_quantities:
-                    if isinstance(quantity, festim.SurfaceFlux):
-                        if quantity.field in ["0", 0, "solute"]:
-                            need_solute = True
-            elif isinstance(export, festim.XDMFExport):
-                if export.field in ["0", 0, "solute"]:
-                    need_solute = True
-        return need_solute

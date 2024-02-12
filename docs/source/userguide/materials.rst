@@ -2,9 +2,9 @@
 Materials
 =========
 
-Materials are key components of hydrogen transport simulations. They hold the properties like diffusivity, solubility and even thermal properties like thermal conductivity or heat capacity.
+Materials are vital components of hydrogen transport simulations. They hold diffusivity, solubility and thermal properties like thermal conductivity or heat capacity.
 
-To define a material, use the :code:`Material` class:
+To define a material, use the :class:`festim.Material` class:
 
 .. code-block:: python
 
@@ -22,9 +22,9 @@ Materials are then assigned to the model:
 Parameters description
 ----------------------
 
-The :code:`Material` class has three required arguments:
+The :class:`festim.Material` class has three required arguments:
 
-* :code:`id`: a unique id given to the material/volume. It is useful when defining volumetric source terms or exports. Several ids can be given to the same material if multiple volumes have the same material.
+* :code:`id`: a unique id given to the material/volume. It is useful when defining volumetric source terms or exports. Several id's can be given to the same material if multiple volumes have the same material.
 * :code:`D_0`: the diffusivity pre-exponential factor expressed in m2/s
 * :code:`E_D`: the diffusivity activation energy in eV
 
@@ -35,12 +35,12 @@ Some other parameters are optional and are only required for some types of simul
 * :code:`thermal_cond`: the thermal conductivity in W/m/K
 * :code:`heat_capacity`: the heat capacity in J/kg/K
 * :code:`rho`: the volumetric density in kg/m3
-
+* :code:`Q`: the heat of transport in eV. For more information see :ref:`Soret effect`.
 
 --------------------
 Integration with HTM
 --------------------
 
-H-transport-materials (HTM) is a python database of hydrogen transport properties.
+H-transport-materials (HTM) is a Python database of hydrogen transport properties.
 Using this database will avoid making copy-pasting errors and add consistency across simulations by making sure the same properties are used.
-HTM can be easily `integrated with FESTIM <https://github.com/RemDelaporteMathurin/FESTIM-workshop/blob/main/tasks/task8.ipynb>`_.
+HTM can be easily `integrated with FESTIM <https://github.com/festim-dev/FESTIM-workshop/blob/main/tasks/task8.ipynb>`_.
