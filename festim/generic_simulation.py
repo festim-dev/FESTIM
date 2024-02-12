@@ -298,7 +298,7 @@ class Simulation:
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
         # raise warning if SurfaceFlux is used with non-cartesian meshes
-        for export in self.exports.exports:
+        for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
                 allowed_quantities = (
                     festim.MaximumSurface,
