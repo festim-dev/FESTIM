@@ -94,8 +94,6 @@ class Stepsize:
             change_ratio = self.adaptive_stepsize["stepsize_change_ratio"]
             dt_min = self.adaptive_stepsize["dt_min"]
             max_stepsize = self.adaptive_stepsize["max_stepsize"]
-            if callable(max_stepsize):
-                max_stepsize = max_stepsize(t)
 
             if not converged:
                 self.value.assign(float(self.value) / change_ratio)
@@ -106,6 +104,8 @@ class Stepsize:
             else:
                 self.value.assign(float(self.value) / change_ratio)
 
+            if callable(max_stepsize):
+                max_stepsize = max_stepsize(t)
             if max_stepsize is not None:
                 if float(self.value) > max_stepsize:
                     self.value.assign(max_stepsize)
