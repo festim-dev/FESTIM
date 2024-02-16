@@ -23,7 +23,7 @@ class ImplantationDirichlet(DirichletBC):
     The details of the approximation can be found in
     https://www.nature.com/articles/s41598-020-74844-w
 
-    c = phi*R_p/D + (phi+Kd*P/Kr)**0.5
+    c = phi*R_p/D + ((phi+Kd*P)/Kr)**0.5
 
     Args:
         surfaces (list or int): the surfaces of the BC

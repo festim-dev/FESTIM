@@ -52,7 +52,7 @@ Continuity of local partial pressure :math:`P` at interfaces between materials h
 .. math::
     :label: eq_Sievert   
 
-    P = \frac{c_\mathrm{m}^2}{K_S^2}
+    P = \left(\frac{c_\mathrm{m}}{K_S}\right)^2
 
 where :math:`K_S` is the material solubility (or Sivert's constant).
 
@@ -210,9 +210,18 @@ Assuming second order recombination, :math:`\varphi_{\mathrm{recomb}}` can also 
 By substituting Equation :eq:`eq_flux_balance_approx2` into :eq:`eq_flux_balance_approx1` one can obtain:
 
 .. math::
-    :label: eq_DirichletBC_triangle_full
+    :label: eq_DirichletBC_triangle_recomb
     
     c_\mathrm{m} = \frac{\varphi_{\mathrm{imp}} R_p}{D} + \sqrt{\frac{\varphi_{\mathrm{imp}}}{K_r}}
+
+Similarly, dissociation can be accounted for:
+
+.. math::
+    :label: eq_DirichletBC_triangle_full
+    
+    c_\mathrm{m} = \frac{\varphi_{\mathrm{imp}} R_p}{D} + \sqrt{\frac{\varphi_{\mathrm{imp}}+K_d P}{K_r}}
+
+where :math:`K_d` is the dissociation coefficient. 
 
 When recombination is fast (i.e. :math:`K_r\rightarrow\infty`), Equation :eq:`eq_DirichletBC_triangle_full` can be reduced to:
 
@@ -252,7 +261,7 @@ Recombination and dissociation fluxes can also be applied:
     J \cdot \mathrm{\textbf{n}} = -D\nabla c_\mathrm{m} \cdot \mathrm{\textbf{n}}
     = K_d P - K_r c_\mathrm{m}^{\{1,2\}} ~\text{on}~\delta\Omega
 
-where :math:`K_d` is the dissociation coefficient and :math:`K_r` is the recombination coefficient. In Equation :eq:`eq_NeumannBC_DisRec`, the exponent of :math:`c_\mathrm{m}` is either 1 or 2 depending on the reaction order. 
+In Equation :eq:`eq_NeumannBC_DisRec`, the exponent of :math:`c_\mathrm{m}` is either 1 or 2 depending on the reaction order. 
 These boundary conditions are Robin boundary conditions since the gradient is imposed as a function of the solution. 
 
 Finally, convective heat fluxes can be applied to boundaries:
