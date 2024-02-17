@@ -94,8 +94,9 @@ In FESTIM, the conservation of chemical potential is obtained by a change of var
 
     \theta = 
     \begin{cases}
-    \frac{c_\mathrm{m}^2}{K_S^2} & \text{in Sievert materials} \\
-    \frac{c_\mathrm{m}}{K_H}     & \text{in Henry materials}
+    \left(\dfrac{c_\mathrm{m}}{K_S}\right)^2 & \text{in Sievert materials} \\
+    \\
+    \dfrac{c_\mathrm{m}}{K_H}     & \text{in Henry materials}
     \end{cases}
 
 The variable :math:`\theta` is continuous at interfaces.
