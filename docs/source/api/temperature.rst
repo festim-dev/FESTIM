@@ -7,6 +7,10 @@ Temperature
     :members:
     :show-inheritance:
 
+.. autoclass:: TemperatureFromXDMF
+    :members:
+    :show-inheritance:
+
 .. autoclass:: HeatTransferProblem
     :members:
     :show-inheritance:
