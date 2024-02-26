@@ -27,7 +27,6 @@ from .material import Material
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
-from .mesh.mesh_custom_fenics import CustomFenicsMesh
 
 from .hydrogen_transport_problem import HydrogenTransportProblem
 
