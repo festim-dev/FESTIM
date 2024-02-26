@@ -33,7 +33,7 @@ def test_get_fdim(mesh):
 
 
 def test_fdim_changes_when_mesh_changes():
-    my_mesh = F.Mesh()
+    my_mesh = F.Mesh(mesh=mesh_1D)
 
     for mesh in [mesh_1D, mesh_2D, mesh_3D]:
         my_mesh.mesh = mesh
@@ -48,7 +48,7 @@ def test_get_vdim(mesh):
 
 
 def test_vdim_changes_when_mesh_changes():
-    my_mesh = F.Mesh()
+    my_mesh = F.Mesh(mesh=mesh_1D)
 
     for mesh in [mesh_1D, mesh_2D, mesh_3D]:
         my_mesh.mesh = mesh
@@ -144,55 +144,10 @@ def test_mesh_vertices_from_list(vertices):
     assert isinstance(my_mesh.vertices, np.ndarray)
 
 
-def test_mesh_custom_fenics_type_hints():
-    """Test that the custom fenics mesh is correctly processed"""
-
-    # BULD
-    surface_indices = np.array([], dtype=np.int32)
-    surface_tags = np.array([], dtype=np.int32)
-    surface_meshtags = meshtags(mesh_1D, 0, surface_indices, surface_tags)
-
-    num_cells = mesh_1D.topology.index_map(1).size_local
-    mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-    tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-    volume_meshtags = meshtags(mesh_1D, 1, mesh_cell_indices, tags_volumes)
-
-    # TEST
-    F.CustomFenicsMesh(
-        mesh=mesh_1D, surface_meshtags=surface_meshtags, volume_meshtags=volume_meshtags
-    )
-
-
-def test_error_rasied_when_custom_fenics_mesh_wrong_mesh_type():
+def test_error_rasied_when_mesh_is_wrong_type():
     """Test that an TypeError is raised when the mesh is not a dolfinx mesh"""
 
     with pytest.raises(TypeError, match="Mesh must be of type dolfinx.mesh.Mesh"):
-        F.CustomFenicsMesh(
+        F.Mesh(
             mesh="mesh",
-            surface_meshtags=my_surface_meshtags,
-            volume_meshtags=my_volume_meshtags,
-        )
-
-
-def test_error_rasied_when_custom_fenics_mesh_wrong_surface_mesh_tags_type():
-    """Test that an TypeError is raised when the surface meshtags is not of
-    type dolfinx.mesh.MeshTags"""
-
-    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
-        F.CustomFenicsMesh(
-            mesh=mesh_1D,
-            surface_meshtags=[0, 1],
-            volume_meshtags=my_volume_meshtags,
-        )
-
-
-def test_error_rasied_when_custom_fenics_mesh_wrong_volume_mesh_tags_type():
-    """Test that an TypeError is raised when the volume meshtags is not of
-    type dolfinx.mesh.MeshTags"""
-
-    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
-        F.CustomFenicsMesh(
-            mesh=mesh_1D,
-            surface_meshtags=my_surface_meshtags,
-            volume_meshtags=[0, 1],
         )

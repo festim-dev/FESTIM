@@ -1,5 +1,5 @@
+import dolfinx
 from dolfinx import fem
-from dolfinx.mesh import meshtags
 from dolfinx.nls.petsc import NewtonSolver
 import basix
 import ufl
@@ -202,6 +202,34 @@ class HydrogenTransportProblem:
                     f"elements of species must be of type festim.Species not {type(spe)}"
                 )
         self._species = value
+
+    @property
+    def facet_meshtags(self):
+        return self._facet_meshtags
+
+    @facet_meshtags.setter
+    def facet_meshtags(self, value):
+        if value is None:
+            self._facet_meshtags = value
+            return
+        elif isinstance(value, dolfinx.mesh.MeshTags):
+            self._facet_meshtags = value
+        else:
+            raise TypeError(f"value must be of type dolfinx.mesh.MeshTags")
+
+    @property
+    def volume_meshtags(self):
+        return self._volume_meshtags
+
+    @volume_meshtags.setter
+    def volume_meshtags(self, value):
+        if value is None:
+            self._volume_meshtags = value
+            return
+        elif isinstance(value, dolfinx.mesh.MeshTags):
+            self._volume_meshtags = value
+        else:
+            raise TypeError(f"value must be of type dolfinx.mesh.MeshTags")
 
     def initialise(self):
         self.create_species_from_traps()
@@ -439,23 +467,25 @@ class HydrogenTransportProblem:
                 volume_subdomains=self.volume_subdomains,
             )
 
-        elif isinstance(self.mesh, F.CustomFenicsMesh):
-            self.facet_meshtags = self.mesh.surface_meshtags
-            self.volume_meshtags = self.mesh.volume_meshtags
-
         elif isinstance(self.mesh, F.Mesh):
-            facet_indices = np.array([], dtype=np.int32)
-            facet_tags = np.array([], dtype=np.int32)
-            self.facet_meshtags = meshtags(
-                self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
-            )
+            if self.facet_meshtags is not None:
+                pass
+            else:
+                facet_indices = np.array([], dtype=np.int32)
+                facet_tags = np.array([], dtype=np.int32)
+                self.facet_meshtags = meshtags(
+                    self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
+                )
 
-            num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
-            mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-            tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-            self.volume_meshtags = meshtags(
-                self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
-            )
+            if self.volume_meshtags is not None:
+                pass
+            else:
+                num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
+                mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+                tags_volumes = np.full(num_cells, 1, dtype=np.int32)
+                self.volume_meshtags = meshtags(
+                    self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
+                )
 
         # check volume ids are unique
         vol_ids = [vol.id for vol in self.volume_subdomains]

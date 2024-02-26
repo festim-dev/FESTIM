@@ -905,13 +905,37 @@ def test_define_meshtags_and_measures_with_custom_fenics_mesh():
         np.full(num_cells, 1, dtype=np.int32),
     )
 
-    my_mesh = F.CustomFenicsMesh(
-        mesh=mesh_1D,
-        surface_meshtags=my_surface_meshtags,
-        volume_meshtags=my_volume_meshtags,
-    )
+    my_mesh = F.Mesh(mesh=mesh_1D)
 
     my_model = F.HydrogenTransportProblem(mesh=my_mesh)
+    my_model.facet_meshtags = my_surface_meshtags
+    my_model.volume_meshtags = my_volume_meshtags
 
     # TEST
     my_model.define_meshtags_and_measures()
+
+
+def test_error_rasied_when_custom_fenics_mesh_wrong_facet_meshtags_type():
+    """Test the facet_meshtags type hinting raises error when given as wrong type"""
+
+    # BUILD
+    mesh_1D = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
+    my_mesh = F.Mesh(mesh=mesh_1D)
+    my_model = F.HydrogenTransportProblem(mesh=my_mesh)
+
+    # TEST
+    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
+        my_model.facet_meshtags = [0, 1]
+
+
+def test_error_rasied_when_custom_fenics_mesh_wrong_volume_meshtags_type():
+    """Test the volume_meshtags type hinting raises error when given as wrong type"""
+
+    # BUILD
+    mesh_1D = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
+    my_mesh = F.Mesh(mesh=mesh_1D)
+    my_model = F.HydrogenTransportProblem(mesh=my_mesh)
+
+    # TEST
+    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
+        my_model.volume_meshtags = [0, 1]
