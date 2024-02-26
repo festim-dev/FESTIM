@@ -1,6 +1,7 @@
 import ufl
 import dolfinx
 
+
 class Mesh:
     """
     Mesh class
@@ -39,7 +40,7 @@ class Mesh:
             self._mesh = value
         else:
             raise TypeError(f"Mesh must be of type dolfinx.mesh.Mesh")
-        
+
     @property
     def vdim(self):
         return self.mesh.topology.dim
