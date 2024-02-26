@@ -2,6 +2,7 @@ import festim
 from festim.h_transport_problem import HTransportProblem
 from fenics import *
 import numpy as np
+import warnings
 
 
 class Simulation:
@@ -193,6 +194,7 @@ class Simulation:
         """Assigns boundary_conditions to mobile and T"""
         self.T.boundary_conditions = []
         self.h_transport_problem.boundary_conditions = []
+        surfaces_used = []
 
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
@@ -207,6 +209,14 @@ class Simulation:
                 self.T.boundary_conditions.append(bc)
             else:
                 self.h_transport_problem.boundary_conditions.append(bc)
+            for surf in bc.surfaces:
+                if surf in surfaces_used:
+                    w_msg = (
+                        "Surface {} has two boundary conditions, only the last one is applied.".format(surf)
+                    )
+                    warnings.warn(w_msg)
+                else:
+                    surfaces_used.append(surf)
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function

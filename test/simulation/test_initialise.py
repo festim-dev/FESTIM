@@ -1,4 +1,5 @@
 import festim as F
+import pytest
 
 
 def test_initialise_changes_nb_of_sources():
@@ -71,3 +72,30 @@ def test_initialise_initialise_dt():
 
     # test
     assert my_model.dt.value(2) == 3
+
+
+def test_raise_warning_two_BCs():
+    """Creates a Simulation object with two boundary conditions on the same surface and checks that
+    a warning is returned about the two conditions
+    """
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3])
+    my_model.materials = F.Materials([F.Material(id=1, D_0=1, E_D=0, thermal_cond=1)])
+    my_model.T = F.Temperature(100)
+    my_model.settings = F.Settings(
+        transient=False,
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        final_time=4,
+    )
+    my_model.boundary_conditions = [
+        F.DirichletBC(surfaces=1, value=1, field="T"),
+        F.DirichletBC(surfaces=1, value=5, field="T"),
+    ]
+
+    with pytest.warns(
+        UserWarning,
+        match=r"Surface 1 has two boundary conditions, only the last one is applied.",
+    ):
+        my_model.initialise()
