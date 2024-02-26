@@ -10,7 +10,7 @@ authors:
   - given-names: James
     family-names: Dark
 
-repository-code: 'https://github.com/RemDelaporteMathurin/FESTIM'
+repository-code: 'https://github.com/festim-dev/FESTIM'
 version: 0.8.1
 preferred-citation:
   authors:

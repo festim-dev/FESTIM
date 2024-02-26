@@ -10,11 +10,12 @@ User's Guide
    units
    materials
    boundary_conditions
+   initial_conditions
    sources
    temperature
    mesh
    traps
    settings
+   stepsize
    export_post_processing
-   simulations
    troubleshooting

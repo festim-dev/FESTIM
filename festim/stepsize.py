@@ -1,5 +1,6 @@
 import fenics as f
 import numpy as np
+import warnings
 
 
 class Stepsize:
@@ -14,6 +15,8 @@ class Stepsize:
             stops. Defaults to None.
         stepsize_stop_max (float, optional): Maximum stepsize after
             t_stop. Defaults to None.
+        max_stepsize (float or callable, optional): Maximum stepsize.
+            Can be a function of festim.t. Defaults to None.
         dt_min (float, optional): Minimum stepsize below which an error is
             raised. Defaults to None.
         milestones (list, optional): list of times by which the simulation must
@@ -24,6 +27,15 @@ class Stepsize:
         value (fenics.Constant): value of dt
         milestones (list): list of times by which the simulation must
             pass.
+
+    Example::
+
+        my_stepsize = Stepsize(
+            initial_value=0.5,
+            stepsize_change_ratio=1.1,
+            max_stepsize=lambda t: None if t < 1 else 2,
+            dt_min=1e-05
+        )
     """
 
     def __init__(
@@ -32,15 +44,21 @@ class Stepsize:
         stepsize_change_ratio=None,
         t_stop=None,
         stepsize_stop_max=None,
+        max_stepsize=None,
         dt_min=None,
         milestones=None,
     ) -> None:
         self.adaptive_stepsize = None
         if stepsize_change_ratio is not None:
+            if t_stop or stepsize_stop_max:
+                warnings.warn(
+                    "stepsize_stop_max and t_stop attributes will be deprecated in a future release, please use max_stepsize instead",
+                    DeprecationWarning,
+                )
+                max_stepsize = lambda t: stepsize_stop_max if t >= t_stop else None
             self.adaptive_stepsize = {
                 "stepsize_change_ratio": stepsize_change_ratio,
-                "t_stop": t_stop,
-                "stepsize_stop_max": stepsize_stop_max,
+                "max_stepsize": max_stepsize,
                 "dt_min": dt_min,
             }
         self.initial_value = initial_value
@@ -75,8 +93,8 @@ class Stepsize:
         if self.adaptive_stepsize:
             change_ratio = self.adaptive_stepsize["stepsize_change_ratio"]
             dt_min = self.adaptive_stepsize["dt_min"]
-            stepsize_stop_max = self.adaptive_stepsize["stepsize_stop_max"]
-            t_stop = self.adaptive_stepsize["t_stop"]
+            max_stepsize = self.adaptive_stepsize["max_stepsize"]
+
             if not converged:
                 self.value.assign(float(self.value) / change_ratio)
                 if float(self.value) < dt_min:
@@ -86,16 +104,17 @@ class Stepsize:
             else:
                 self.value.assign(float(self.value) / change_ratio)
 
-            if t_stop is not None:
-                if t >= t_stop:
-                    if float(self.value) > stepsize_stop_max:
-                        self.value.assign(stepsize_stop_max)
+            if callable(max_stepsize):
+                max_stepsize = max_stepsize(t)
+            if max_stepsize is not None:
+                if float(self.value) > max_stepsize:
+                    self.value.assign(max_stepsize)
 
         # adapt for next milestone
         next_milestone = self.next_milestone(t)
         if next_milestone is not None:
             if t + float(self.value) > next_milestone and not np.isclose(
-                t, next_milestone
+                t, next_milestone, atol=0
             ):
                 self.value.assign((next_milestone - t))
 

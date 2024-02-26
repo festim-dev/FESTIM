@@ -9,7 +9,7 @@
 FESTIM (Finite Elements Simulation of Tritium in Materials) is a tool for modeling hydrogen transport in materials. 
 It simulates the diffusion and trapping of hydrogen, coupled to heat transfer with [FEniCS](https://fenicsproject.org).
 
-:point_right: [Getting started](https://festim.readthedocs.io/en/latest/getting_started.html)
+:point_right: [Installation](https://festim.readthedocs.io/en/latest/installation.html)
 
 :point_right: [Documentation](https://festim.readthedocs.io/)
 

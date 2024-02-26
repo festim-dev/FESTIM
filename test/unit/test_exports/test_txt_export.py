@@ -25,7 +25,11 @@ class TestWrite:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", "solute_label", str(Path(d)), times=[1, 2, 3])
+        my_export = TXTExport(
+            "solute",
+            times=[1, 2, 3],
+            filename="{}/solute_label.txt".format(str(Path(d))),
+        )
 
         return my_export
 
@@ -34,37 +38,54 @@ class TestWrite:
         my_export.function = function
         my_export.write(current_time=current_time, steady=False)
 
-        assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+        assert os.path.exists(my_export.filename)
 
     def test_file_doesnt_exist(self, my_export, function):
         current_time = 10
         my_export.function = function
         my_export.write(current_time=current_time, steady=False)
 
-        assert not os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+        assert not os.path.exists(my_export.filename)
 
     def test_create_folder(self, my_export, function):
         """Checks that write() creates the folder if it doesn't exist"""
         current_time = 1
         my_export.function = function
-        my_export.folder += "/folder2"
+        slash_indx = my_export.filename.rfind("/")
+        my_export.filename = (
+            my_export.filename[:slash_indx]
+            + "/folder2"
+            + my_export.filename[slash_indx:]
+        )
         my_export.write(current_time=current_time, steady=False)
 
-        assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+        assert os.path.exists(my_export.filename)
 
     def test_subspace(self, my_export, function_subspace):
         current_time = 1
         my_export.function = function_subspace
         my_export.write(current_time=current_time, steady=False)
 
-        assert os.path.exists("{}/{}.txt".format(my_export.folder, my_export.label))
+        assert os.path.exists(my_export.filename)
+
+    def test_error_filename_endswith_txt(self, my_export):
+        with pytest.raises(ValueError, match="filename must end with .txt"):
+            my_export.filename = "coucou"
+
+    def test_error_filename_not_a_str(self, my_export):
+        with pytest.raises(TypeError, match="filename must be a string"):
+            my_export.filename = 2
 
 
 class TestIsItTimeToExport:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", "solute_label", str(Path(d)), times=[1, 2, 3])
+        my_export = TXTExport(
+            "solute",
+            times=[1, 2, 3],
+            filename="{}/solute_label.txt".format(str(Path(d))),
+        )
 
         return my_export
 
@@ -84,7 +105,11 @@ class TestWhenIsNextTime:
     @pytest.fixture
     def my_export(self, tmpdir):
         d = tmpdir.mkdir("test_folder")
-        my_export = TXTExport("solute", "solute_label", str(Path(d)), times=[1, 2, 3])
+        my_export = TXTExport(
+            "solute",
+            times=[1, 2, 3],
+            filename="{}/solute_label.txt".format(str(Path(d))),
+        )
 
         return my_export
 

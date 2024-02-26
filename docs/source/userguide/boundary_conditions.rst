@@ -14,14 +14,15 @@ These BCs can be used for heat transfer or hydrogen transport simulations.
 Imposing the solution
 ^^^^^^^^^^^^^^^^^^^^^
 
+The value of solutions (concentration, temperature) can be imposed on boundaries with :class:`festim.DirichletBC`: 
+
 .. code-block:: python
 
     my_bc = DirichletBC(surfaces=[2, 4], value=10, field=0)
 
-.. admonition:: Note
-   :class: tip
+.. note::
 
-    Here, we set :code:`field=0` to specify this BC applies to the mobile hydrogen concentration. :code:`1` would stand for the trap 1 concentration and :code:`"T"` for temperature.
+    Here, we set :code:`field=0` to specify that this BC applies to the mobile hydrogen concentration. :code:`1` would stand for the trap 1 concentration, and :code:`"T"` for temperature.
 
 The `value` argument can be space and time dependent by making use of the FESTIM variables ``x``, ``y``, ``z`` and ``t``:
 
@@ -42,7 +43,7 @@ To use more complicated mathematical expressions, you can use the sympy package:
 
 - CustomDirichlet
 
-The value of the concentration field can be temperature-dependent (useful when dealing with heat-transfer solvers) with :code:`CustomDirichlet`:
+The value of the concentration field can be temperature-dependent (useful when dealing with heat-transfer solvers) with :class:`festim.CustomDirichlet`:
 
 .. code-block:: python
 
@@ -54,7 +55,7 @@ The value of the concentration field can be temperature-dependent (useful when d
 Imposing the flux
 ^^^^^^^^^^^^^^^^^
 
-When the flux needs to be imposed on a boundary, use the :code:`FluxBC` class.
+When the flux needs to be imposed on a boundary, use the :class:`festim.FluxBC` class.
 
 
 .. code-block:: python
@@ -81,7 +82,7 @@ Some BCs are specific to hydrogen transport. FESTIM provides a handful of conven
 Recombination flux
 ^^^^^^^^^^^^^^^^^^
 
-Recombination flux can be set on boundaries as: :math:`Kr \, c_\mathrm{m}^n`.
+A recombination flux can be set on boundaries as follows: :math:`Kr \, c_\mathrm{m}^n` (See :class:`festim.RecombinationFlux`).
 Where :math:`Kr` is the recombination coefficient, :math:`c_\mathrm{m}` is the mobile hydrogen concentration and :math:`n` is the recombination order.
 
 .. code-block:: python
@@ -92,7 +93,7 @@ Where :math:`Kr` is the recombination coefficient, :math:`c_\mathrm{m}` is the m
 Dissociation flux
 ^^^^^^^^^^^^^^^^^^
 
-Dissociation flux can be set on boundaries as: :math:`Kd \, P`.
+Dissociation flux can be set on boundaries as: :math:`Kd \, P` (see :class:`festim.DissociationFlux`).
 Where :math:`Kd` is the dissociation coefficient, :math:`P` is the partial pressure of hydrogen.
 
 .. code-block:: python
@@ -103,7 +104,7 @@ Where :math:`Kd` is the dissociation coefficient, :math:`P` is the partial press
 Sievert's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Impose the mobile concentration of hydrogen as :math:`c_\mathrm{m} = S(T) \sqrt{P}` where :math:`S` is the Sievert's solubility and :math:`P` is the partial pressure of hydrogen.
+Impose the mobile concentration of hydrogen as :math:`c_\mathrm{m} = S(T) \sqrt{P}` where :math:`S` is the Sievert's solubility and :math:`P` is the partial pressure of hydrogen (see :class:`festim.SievertsBC`).
 
 .. code-block:: python
 
@@ -115,7 +116,7 @@ Impose the mobile concentration of hydrogen as :math:`c_\mathrm{m} = S(T) \sqrt{
 Henry's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Similarily, the mobile concentration can be set from Henry's law of solubility :math:`c_\mathrm{m} = K_H P` where :math:`K_H` is the Henry solubility.
+Similarly, the mobile concentration can be set from Henry's law of solubility :math:`c_\mathrm{m} = K_H P` where :math:`K_H` is the Henry solubility (see :class:`festim.HenrysBC`).
 
 
 .. code-block:: python
@@ -127,28 +128,8 @@ Similarily, the mobile concentration can be set from Henry's law of solubility :
 Plasma implantation approximation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A plasma implantation can be approximated by:
+Plasma implantation can be approximated by a Dirichlet boundary condition with the class :class:`festim.ImplantationDirichlet` . Refer to the :ref:`theory` section for more details.
 
-.. math::
-
-    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp} + Kd \cdot P}{Kr}}
-
-Where :math:`\varphi_\mathrm{imp}` is the implanted flux, :math:`R_p` is the implantation depth, :math:`D` is the diffusion coefficient, :math:`Kd` is the dissociation coefficient, :math:`P` is the partial pressure of hydrogen,  and :math:`Kr` is the recombination coefficient.
-
-When :math:`P = 0`:
-
-.. math::
-    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D} + \sqrt{\frac{\varphi_\mathrm{imp}}{Kr}}
-
-Moreover, assuming an instantaneous recombination :math:`Kr = \infty`:
-
-.. math::
-    c_\mathrm{m} = \frac{\varphi_\mathrm{imp} \, R_p}{D}
-
-.. admonition:: Note
-   :class: tip
-
-    Refer to the :ref:`theory` section for more details.
 
 .. code-block:: python
 
@@ -160,13 +141,15 @@ Moreover, assuming an instantaneous recombination :math:`Kr = \infty`:
     # non-instantaneous recombination
     my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1, Kr_0=2, E_Kr=0.2)
 
+    # non-instantaneous recombination and dissociation
+    my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1, Kr_0=2, E_Kr=0.2, Kd_0=3, E_Kd=0.3, P=4)
 
 -----------------
 Heat transfer BCs
 -----------------
 
 
-A convective heat flux can be set as :math:`\mathrm{flux} = - h (T - T_\mathrm{ext})`.
+A convective heat flux can be set as :math:`\mathrm{flux} = - h (T - T_\mathrm{ext})` (see :class:`festim.ConvectiveFlux`).
 
 .. code-block:: python
 

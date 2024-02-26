@@ -1,9 +1,6 @@
-===============
-Getting started
-===============
-
-Install
-*******
+============
+Installation
+============
 
 Installing FEniCS
 -----------------
@@ -16,8 +13,7 @@ First `install Anaconda <https://docs.continuum.io/anaconda/install>`_ then run 
 
     conda create -n festim-env
     conda activate festim-env
-    conda install mamba
-    mamba install -c conda-forge fenics
+    conda install -c conda-forge fenics numpy=1.24
 
 Alternatively, It can be installed using `Docker <https://www.docker.com/>`_::
 

@@ -46,3 +46,7 @@ class TemperatureFromXDMF(Temperature):
         refer to issue #499
         """
         pass
+
+    def is_steady_state(self):
+        # TemperatureFromXDMF is always steady state
+        return True

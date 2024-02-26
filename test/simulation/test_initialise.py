@@ -1,5 +1,9 @@
 import festim as F
+<<<<<<< HEAD
 import pytest
+=======
+from pathlib import Path
+>>>>>>> main
 
 
 def test_initialise_changes_nb_of_sources():
@@ -99,3 +103,34 @@ def test_raise_warning_two_BCs():
         match=r"Surface 1 has two boundary conditions, only the last one is applied.",
     ):
         my_model.initialise()
+
+
+def test_TXTExport_times_added_to_milestones(tmpdir):
+    """Creates a Simulation object and checks that, if no dt.milestones
+     are given and TXTExport.times are given, TXTExport.times are
+    are added to dt.milestones by .initialise()
+    """
+    # tmpdir
+    d = tmpdir.mkdir("test_folder")
+
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3])
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0, thermal_cond=1)
+    my_model.T = F.Temperature(100)
+    my_model.dt = F.Stepsize(initial_value=3)
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, final_time=4
+    )
+    txt_export = F.TXTExport(
+        field="solute",
+        filename="{}/solute_label.txt".format(str(Path(d))),
+        times=[1, 2, 3],
+    )
+    my_model.exports = [txt_export]
+
+    # run
+    my_model.initialise()
+
+    # test
+    assert my_model.dt.milestones == txt_export.times
