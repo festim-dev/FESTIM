@@ -915,7 +915,7 @@ def test_define_meshtags_and_measures_with_custom_fenics_mesh():
     my_model.define_meshtags_and_measures()
 
 
-def test_error_rasied_when_custom_fenics_mesh_wrong_facet_meshtags_type():
+def test_error_raised_when_custom_fenics_mesh_wrong_facet_meshtags_type():
     """Test the facet_meshtags type hinting raises error when given as wrong type"""
 
     # BUILD
@@ -928,7 +928,7 @@ def test_error_rasied_when_custom_fenics_mesh_wrong_facet_meshtags_type():
         my_model.facet_meshtags = [0, 1]
 
 
-def test_error_rasied_when_custom_fenics_mesh_wrong_volume_meshtags_type():
+def test_error_raised_when_custom_fenics_mesh_wrong_volume_meshtags_type():
     """Test the volume_meshtags type hinting raises error when given as wrong type"""
 
     # BUILD

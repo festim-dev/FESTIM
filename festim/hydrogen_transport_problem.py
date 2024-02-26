@@ -211,7 +211,6 @@ class HydrogenTransportProblem:
     def facet_meshtags(self, value):
         if value is None:
             self._facet_meshtags = value
-            return
         elif isinstance(value, dolfinx.mesh.MeshTags):
             self._facet_meshtags = value
         else:
@@ -225,7 +224,6 @@ class HydrogenTransportProblem:
     def volume_meshtags(self, value):
         if value is None:
             self._volume_meshtags = value
-            return
         elif isinstance(value, dolfinx.mesh.MeshTags):
             self._volume_meshtags = value
         else:
@@ -468,18 +466,16 @@ class HydrogenTransportProblem:
             )
 
         elif isinstance(self.mesh, F.Mesh):
-            if self.facet_meshtags is not None:
-                pass
-            else:
+            if not self.facet_meshtags:
+                # create empty facet_meshtags
                 facet_indices = np.array([], dtype=np.int32)
                 facet_tags = np.array([], dtype=np.int32)
                 self.facet_meshtags = meshtags(
                     self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
                 )
 
-            if self.volume_meshtags is not None:
-                pass
-            else:
+            if not self.volume_meshtags:
+                # create meshtags with all cells tagged as 1
                 num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
                 mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
                 tags_volumes = np.full(num_cells, 1, dtype=np.int32)
