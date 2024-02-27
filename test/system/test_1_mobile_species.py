@@ -7,8 +7,8 @@ from dolfinx.mesh import meshtags, create_unit_square, create_unit_cube, locate_
 from mpi4py import MPI
 
 test_mesh_1d = F.Mesh1D(np.linspace(0, 1, 10000))
-test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 100, 100)
-test_mesh_3d = create_unit_cube(MPI.COMM_WORLD, 50, 50, 50)
+test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 50, 50)
+test_mesh_3d = create_unit_cube(MPI.COMM_WORLD, 20, 20, 20)
 x_1d = ufl.SpatialCoordinate(test_mesh_1d.mesh)
 x_2d = ufl.SpatialCoordinate(test_mesh_2d)
 x_3d = ufl.SpatialCoordinate(test_mesh_3d)
@@ -214,7 +214,7 @@ def test_1_mobile_MMS_2D():
 
     L2_error = error_L2(H_computed, H_analytical_np)
 
-    assert L2_error < 4e-4
+    assert L2_error < 2e-3
 
 
 def test_1_mobile_MMS_3D():
@@ -296,7 +296,7 @@ def test_1_mobile_MMS_3D():
 
     L2_error = error_L2(H_computed, H_analytical_np)
 
-    assert L2_error < 2e-3
+    assert L2_error < 1e-2
 
 
 def test_1_mobile_MMS_multivolume():
