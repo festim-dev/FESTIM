@@ -2,7 +2,7 @@ import festim as F
 import numpy as np
 from dolfinx import fem
 import ufl
-from tools import error_L2
+from .tools import error_L2
 from dolfinx.mesh import meshtags, create_unit_square, create_unit_cube, locate_entities
 from mpi4py import MPI
 
