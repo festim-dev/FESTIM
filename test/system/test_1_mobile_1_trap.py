@@ -2,16 +2,20 @@ import festim as F
 import numpy as np
 from dolfinx import fem
 import ufl
-import mpi4py.MPI as MPI
-from dolfinx.io import XDMFFile
 from tools import error_L2
+from dolfinx.mesh import meshtags, create_unit_square, create_unit_cube, locate_entities
+from mpi4py import MPI
 
 
 test_mesh_1d = F.Mesh1D(np.linspace(0, 1, 10000))
-x = ufl.SpatialCoordinate(test_mesh_1d.mesh)
+test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 100, 100)
+test_mesh_3d = create_unit_cube(MPI.COMM_WORLD, 50, 50, 50)
+x_1d = ufl.SpatialCoordinate(test_mesh_1d.mesh)
+x_2d = ufl.SpatialCoordinate(test_mesh_2d)
+x_3d = ufl.SpatialCoordinate(test_mesh_3d)
 
 
-def test_MMS_steady_state_1_trap():
+def test_1_mobile_1_trap_MMS_steady_state():
     """
     MMS test with one mobile species and one trap at steady state
     """
@@ -48,13 +52,13 @@ def test_MMS_steady_state_1_trap():
     p = p_0 * ufl.exp(-E_p / (k_B * T))
 
     f = (
-        -ufl.div(D * ufl.grad(mobile_analytical_ufl(x)))
-        + k * mobile_analytical_ufl(x) * (n_trap - trapped_analytical_ufl(x))
-        - p * trapped_analytical_ufl(x)
+        -ufl.div(D * ufl.grad(mobile_analytical_ufl(x_1d)))
+        + k * mobile_analytical_ufl(x_1d) * (n_trap - trapped_analytical_ufl(x_1d))
+        - p * trapped_analytical_ufl(x_1d)
     )
 
-    g = p * trapped_analytical_ufl(x) - k * mobile_analytical_ufl(x) * (
-        n_trap - trapped_analytical_ufl(x)
+    g = p * trapped_analytical_ufl(x_1d) - k * mobile_analytical_ufl(x_1d) * (
+        n_trap - trapped_analytical_ufl(x_1d)
     )
 
     my_model = F.HydrogenTransportProblem()
@@ -112,7 +116,7 @@ def test_MMS_steady_state_1_trap():
     assert L2_error_trapped < 1e-07
 
 
-def test_MMS_transient():
+def test_1_mobile_1_trap_MMS_transient():
     """
     MMS test with one mobile species in 0.1s transient. Analytical solution
     """
@@ -162,7 +166,7 @@ def test_MMS_transient():
     init_value = lambda x: 1 + ufl.sin(2 * ufl.pi * x[0])
     my_model.initial_conditions = [F.InitialCondition(value=init_value, species=H)]
 
-    f = lambda x, t: 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x, t)))
+    f = lambda x, t: 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x_1d, t)))
     my_model.sources = [F.Source(value=f, volume=vol, species=H)]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=final_time)
