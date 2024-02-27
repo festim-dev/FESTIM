@@ -1,4 +1,5 @@
 import ufl
+import dolfinx
 
 
 class Mesh:
@@ -28,6 +29,17 @@ class Mesh:
             self.mesh.topology.create_connectivity(
                 self.mesh.topology.dim - 1, self.mesh.topology.dim
             )
+
+    @property
+    def mesh(self):
+        return self._mesh
+
+    @mesh.setter
+    def mesh(self, value):
+        if isinstance(value, dolfinx.mesh.Mesh):
+            self._mesh = value
+        else:
+            raise TypeError(f"Mesh must be of type dolfinx.mesh.Mesh")
 
     @property
     def vdim(self):
