@@ -17,7 +17,7 @@ x_3d = ufl.SpatialCoordinate(test_mesh_3d)
 
 def test_1_mobile_1_trap_MMS_steady_state():
     """
-    MMS test with one mobile species and one trap at steady state
+    MMS test with 1 mobile species and 1 trap at steady state
     """
 
     def u_exact(mod):
@@ -118,7 +118,8 @@ def test_1_mobile_1_trap_MMS_steady_state():
 
 def test_1_mobile_1_trap_MMS_transient():
     """
-    MMS test with one mobile species in 0.1s transient. Analytical solution
+    MMS test with 1 mobile species and 1 trap in 0.1s transient, the value at the last time step is
+    compared to an analytical solution
     """
 
     final_time = 0.1
@@ -183,7 +184,8 @@ def test_1_mobile_1_trap_MMS_transient():
 
 
 def test_1_mobile_1_trap_MMS_2D():
-    """Tests a 2D MMS problem with one mobile species"""
+    """Tests that a steady simulation can be run in a 2D domain with
+    1 mobile and 1 trapped species"""
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
@@ -311,8 +313,9 @@ def test_1_mobile_1_trap_MMS_2D():
     assert L2_error_trapped < 9e-03
 
 
-def test_1_mobile_MMS_3D():
-    """Tests a 3D MMS problem with one mobile species"""
+def test_1_mobile_1_trap_MMS_3D():
+    """Tests that a steady simulation can be run in a 3D domain with
+    1 mobile and 1 trapped species"""
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
@@ -440,8 +443,9 @@ def test_1_mobile_MMS_3D():
     assert L2_error_trapped < 2e-03
 
 
-def test_1_mobile_MMS_multivolume():
-    """Tests that a steady simulation can be run with multiple volumes"""
+def test_1_mobile_1_trap_MMS_multivolume():
+    """Tests that a steady simulation can be run with multiple volumes with
+    1 mobile and 1 trapped species"""
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0])

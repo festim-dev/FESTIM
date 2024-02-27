@@ -71,7 +71,8 @@ def test_1_mobile_MMS_steady_state():
 
 def test_1_mobile_MMS_transient():
     """
-    MMS test with one mobile species in 0.1s transient. Analytical solution
+    MMS test with 1 mobile species in 0.1s transient, the value at the last time step is
+    compared to an analytical solution
     """
 
     final_time = 0.1
@@ -136,7 +137,8 @@ def test_1_mobile_MMS_transient():
 
 
 def test_1_mobile_MMS_2D():
-    """Tests a 2D MMS problem with one mobile species"""
+    """Tests that a steady simulation can be run in a 2D domain with
+    1 mobile species"""
 
     def u_exact(mod):
         return lambda x: 1 + mod.sin(2 * mod.pi * x[0]) + mod.cos(2 * mod.pi * x[1])
@@ -218,7 +220,8 @@ def test_1_mobile_MMS_2D():
 
 
 def test_1_mobile_MMS_3D():
-    """Tests a 3D MMS problem with one mobile species"""
+    """Tests that a steady simulation can be run in a 3D domain with
+    1 mobile species"""
 
     def u_exact(mod):
         return lambda x: 1 + mod.sin(2 * mod.pi * x[0]) + mod.cos(2 * mod.pi * x[1])
@@ -300,7 +303,8 @@ def test_1_mobile_MMS_3D():
 
 
 def test_1_mobile_MMS_multivolume():
-    """Tests that a steady simulation can be run with multiple volumes"""
+    """Tests that a steady simulation can be run with multiple volumes with
+    1 mobile species"""
 
     def u_exact(mod):
         return lambda x: 1 + mod.cos(2 * mod.pi * x[0])
