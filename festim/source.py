@@ -48,9 +48,9 @@ class Source:
 
     @volume.setter
     def volume(self, value):
-        # check that volume is festim.VolumeSubdomain1D
-        if not isinstance(value, F.VolumeSubdomain1D):
-            raise TypeError("volume must be of type festim.VolumeSubdomain1D")
+        # check that volume is festim.VolumeSubdomain
+        if not isinstance(value, F.VolumeSubdomain):
+            raise TypeError("volume must be of type festim.VolumeSubdomain")
         self._volume = value
 
     @property
