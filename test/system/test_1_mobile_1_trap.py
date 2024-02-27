@@ -182,16 +182,14 @@ def test_1_mobile_1_trap_MMS_transient():
     assert L2_error < 5e-4
 
 
-
 def test_1_mobile_1_trap_MMS_2D():
     """Tests a 2D MMS problem with one mobile species"""
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
-    
+
     def v_exact(mod):
         return lambda x: mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
-
 
     mobile_analytical_ufl = u_exact(ufl)
     mobile_analytical_np = u_exact(np)
@@ -231,30 +229,30 @@ def test_1_mobile_1_trap_MMS_2D():
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh(mesh=test_mesh_3d)
 
-    # create facet meshtags 
+    # create facet meshtags
     boundaries = [
         (1, lambda x: np.isclose(x[0], 0)),
-        (2, lambda x: np.isclose(x[0], 1))
+        (2, lambda x: np.isclose(x[0], 1)),
     ]
     facet_indices, facet_markers = [], []
     fdim = test_mesh_3d.topology.dim - 1
-    for (marker, locator) in boundaries:
+    for marker, locator in boundaries:
         facets = locate_entities(test_mesh_3d, fdim, locator)
         facet_indices.append(facets)
         facet_markers.append(np.full_like(facets, marker))
     facet_indices = np.hstack(facet_indices).astype(np.int32)
     facet_markers = np.hstack(facet_markers).astype(np.int32)
     sorted_facets = np.argsort(facet_indices)
-    my_facet_meshtags = meshtags(test_mesh_3d, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
+    my_facet_meshtags = meshtags(
+        test_mesh_3d, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets]
+    )
 
     # create volume meshtags
     vdim = test_mesh_3d.topology.dim
     num_cells = test_mesh_3d.topology.index_map(vdim).size_local
     mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
     tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-    my_volume_meshtags = meshtags(
-        test_mesh_3d, vdim, mesh_cell_indices, tags_volumes
-    )
+    my_volume_meshtags = meshtags(test_mesh_3d, vdim, mesh_cell_indices, tags_volumes)
 
     my_model.facet_meshtags = my_facet_meshtags
     my_model.volume_meshtags = my_volume_meshtags
@@ -318,10 +316,9 @@ def test_1_mobile_MMS_3D():
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
-    
+
     def v_exact(mod):
         return lambda x: mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
-
 
     mobile_analytical_ufl = u_exact(ufl)
     mobile_analytical_np = u_exact(np)
@@ -361,30 +358,30 @@ def test_1_mobile_MMS_3D():
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh(mesh=test_mesh_2d)
 
-    # create facet meshtags 
+    # create facet meshtags
     boundaries = [
         (1, lambda x: np.isclose(x[0], 0)),
-        (2, lambda x: np.isclose(x[0], 1))
+        (2, lambda x: np.isclose(x[0], 1)),
     ]
     facet_indices, facet_markers = [], []
     fdim = test_mesh_2d.topology.dim - 1
-    for (marker, locator) in boundaries:
+    for marker, locator in boundaries:
         facets = locate_entities(test_mesh_2d, fdim, locator)
         facet_indices.append(facets)
         facet_markers.append(np.full_like(facets, marker))
     facet_indices = np.hstack(facet_indices).astype(np.int32)
     facet_markers = np.hstack(facet_markers).astype(np.int32)
     sorted_facets = np.argsort(facet_indices)
-    my_facet_meshtags = meshtags(test_mesh_2d, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
+    my_facet_meshtags = meshtags(
+        test_mesh_2d, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets]
+    )
 
     # create volume meshtags
     vdim = test_mesh_2d.topology.dim
     num_cells = test_mesh_2d.topology.index_map(vdim).size_local
     mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
     tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-    my_volume_meshtags = meshtags(
-        test_mesh_2d, vdim, mesh_cell_indices, tags_volumes
-    )
+    my_volume_meshtags = meshtags(test_mesh_2d, vdim, mesh_cell_indices, tags_volumes)
 
     my_model.facet_meshtags = my_facet_meshtags
     my_model.volume_meshtags = my_volume_meshtags
@@ -501,5 +498,3 @@ def test_1_mobile_MMS_multivolume():
     L2_error = error_L2(H_computed, H_analytical_np)
 
     assert L2_error < 6e-4
-
-
