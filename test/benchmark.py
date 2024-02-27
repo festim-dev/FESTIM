@@ -5,7 +5,7 @@ from dolfinx.fem import (
     Constant,
     dirichletbc,
     Function,
-    FunctionSpace,
+    functionspace,
     locate_dofs_topological,
     locate_dofs_geometrical,
     form,
@@ -54,7 +54,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
         1,
         basix.LagrangeVariant.equispaced,
     )
-    V = FunctionSpace(my_mesh, elements)
+    V = functionspace(my_mesh, elements)
     u = Function(V)
     u_n = Function(V)
     v = TestFunction(V)
