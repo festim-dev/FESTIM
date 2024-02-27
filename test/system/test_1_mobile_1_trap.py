@@ -444,57 +444,109 @@ def test_1_mobile_MMS_multivolume():
     """Tests that a steady simulation can be run with multiple volumes"""
 
     def u_exact(mod):
-        return lambda x: 1 + mod.cos(2 * mod.pi * x[0])
+        return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0])
 
-    H_analytical_ufl = u_exact(ufl)
-    H_analytical_np = u_exact(np)
+    def v_exact(mod):
+        return lambda x: mod.sin(3 * mod.pi * x[0])
 
-    elements = ufl.FiniteElement("CG", test_mesh_1d.mesh.ufl_cell(), 1)
+    mobile_analytical_ufl = u_exact(ufl)
+    mobile_analytical_np = u_exact(np)
+    trapped_analytical_ufl = v_exact(ufl)
+    trapped_analytical_np = v_exact(np)
+
+    elements = ufl.FiniteElement("P", test_mesh_1d.mesh.ufl_cell(), 1)
     V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
     T = fem.Function(V)
+    f = fem.Function(V)
+    g = fem.Function(V)
 
-    D_0 = 1
-    E_D = 0.1
+    k_0 = 2
+    E_k = 1.5
+    p_0 = 0.2
+    E_p = 0.1
     T_expr = lambda x: 500 + 100 * x[0]
     T.interpolate(T_expr)
-    D = D_0 * ufl.exp(-E_D / (F.k_B * T))
+    n_trap = 3
+    E_D = 0.1
+    D_0 = 2
+    k_B = F.k_B
+    D = D_0 * ufl.exp(-E_D / (k_B * T))
+    k = k_0 * ufl.exp(-E_k / (k_B * T))
+    p = p_0 * ufl.exp(-E_p / (k_B * T))
+
+    f = (
+        -ufl.div(D * ufl.grad(mobile_analytical_ufl(x_1d)))
+        + k * mobile_analytical_ufl(x_1d) * (n_trap - trapped_analytical_ufl(x_1d))
+        - p * trapped_analytical_ufl(x_1d)
+    )
+
+    g = p * trapped_analytical_ufl(x_1d) - k * mobile_analytical_ufl(x_1d) * (
+        n_trap - trapped_analytical_ufl(x_1d)
+    )
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = test_mesh_1d
     my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
     vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=my_mat)
-    vol_2 = F.VolumeSubdomain1D(id=4, borders=[0.5, 1], material=my_mat)
-
-    left = F.SurfaceSubdomain1D(id=1, x=0)
-    right = F.SurfaceSubdomain1D(id=2, x=1)
-
+    vol_2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=my_mat)
+    left = F.SurfaceSubdomain1D(id=2, x=0)
+    right = F.SurfaceSubdomain1D(id=3, x=1)
     my_model.subdomains = [vol_1, vol_2, left, right]
 
-    H = F.Species("H")
-    my_model.species = [H]
+    mobile = F.Species("mobile")
+    trapped = F.Species("trapped", mobile=False)
+    traps = F.ImplicitSpecies(n=n_trap, others=[trapped])
+    my_model.species = [mobile, trapped]
+
+    my_model.reactions = [
+        F.Reaction(
+            reactant1=mobile,
+            reactant2=traps,
+            product=trapped,
+            k_0=k_0,
+            E_k=E_k,
+            p_0=p_0,
+            E_p=E_p,
+            volume=vol_1,
+        ),
+        F.Reaction(
+            reactant1=mobile,
+            reactant2=traps,
+            product=trapped,
+            k_0=k_0,
+            E_k=E_k,
+            p_0=p_0,
+            E_p=E_p,
+            volume=vol_2,
+        ),
+    ]
 
     my_model.temperature = T_expr
 
     my_model.boundary_conditions = [
-        F.DirichletBC(subdomain=left, value=H_analytical_ufl, species=H),
-        F.DirichletBC(subdomain=right, value=H_analytical_ufl, species=H),
+        F.DirichletBC(subdomain=left, value=mobile_analytical_ufl, species=mobile),
+        F.DirichletBC(subdomain=right, value=mobile_analytical_ufl, species=mobile),
+        F.DirichletBC(subdomain=left, value=trapped_analytical_ufl, species=trapped),
+        F.DirichletBC(subdomain=right, value=trapped_analytical_ufl, species=trapped),
     ]
 
-    f = -ufl.div(D * ufl.grad(H_analytical_ufl(x_1d)))
     my_model.sources = [
-        F.Source(value=f, volume=vol_1, species=H),
-        F.Source(value=f, volume=vol_2, species=H),
+        F.Source(value=f, volume=vol_1, species=mobile),
+        F.Source(value=g, volume=vol_1, species=trapped),
+        F.Source(value=f, volume=vol_2, species=mobile),
+        F.Source(value=g, volume=vol_2, species=trapped),
     ]
 
-    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
-
-    my_model.exports = [F.XDMFExport(filename="test_output.xdmf", field=H)]
+    my_model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
 
     my_model.initialise()
     my_model.run()
 
-    H_computed = H.post_processing_solution
+    mobile_computed = mobile.post_processing_solution
+    trapped_computed = trapped.post_processing_solution
 
-    L2_error = error_L2(H_computed, H_analytical_np)
+    L2_error_mobile = error_L2(mobile_computed, mobile_analytical_np)
+    L2_error_trapped = error_L2(trapped_computed, trapped_analytical_np)
 
-    assert L2_error < 6e-4
+    assert L2_error_mobile < 2e-03
+    assert L2_error_trapped < 1e-07
