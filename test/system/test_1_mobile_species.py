@@ -69,7 +69,7 @@ def test_1_mobile_MMS_steady_state():
     assert L2_error < 1e-7
 
 
-def test_MMS_transient():
+def test_1_mobile_MMS_transient():
     """
     MMS test with one mobile species in 0.1s transient. Analytical solution
     """
@@ -135,7 +135,7 @@ def test_MMS_transient():
     assert L2_error < 5e-4
 
 
-def test_MMS_2D():
+def test_1_mobile_MMS_2D():
     """Tests a 2D MMS problem with one mobile species"""
 
     def u_exact(mod):
@@ -217,7 +217,7 @@ def test_MMS_2D():
     assert L2_error < 4e-4
 
 
-def test_MMS_3D():
+def test_1_mobile_MMS_3D():
     """Tests a 3D MMS problem with one mobile species"""
 
     def u_exact(mod):
@@ -299,7 +299,7 @@ def test_MMS_3D():
     assert L2_error < 2e-3
 
 
-def test_MMS_multivolume():
+def test_1_mobile_MMS_multivolume():
     """Tests that a steady simulation can be run with multiple volumes"""
 
     def u_exact(mod):
