@@ -24,7 +24,7 @@ def test_write(tmp_path):
     my_export.define_writer(MPI.COMM_WORLD)
 
     domain = mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
-    V = fem.FunctionSpace(domain, ("Lagrange", 1))
+    V = fem.functionspace(domain, ("Lagrange", 1))
     u = fem.Function(V)
 
     species.post_processing_solution = u

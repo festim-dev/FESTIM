@@ -137,7 +137,7 @@ def test_iterate():
 
     mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
 
-    V = fem.FunctionSpace(mesh, ("CG", 1))
+    V = fem.functionspace(mesh, ("Lagrange", 1))
     my_model.u = fem.Function(V)
     my_model.u_n = fem.Function(V)
     my_model.dt = fem.Constant(mesh, 2.0)
@@ -386,7 +386,7 @@ def test_post_processing_update_D_global():
 
     # create species and interpolate solution
     H = F.Species("H")
-    V = fem.FunctionSpace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: 2 * x[0] ** 2 + 1)
     H.solution = u
@@ -819,7 +819,7 @@ def test_adaptive_timestepping_grows():
 
     # RUN & TEST
     previous_value = stepsize.initial_value
-    for i in range(10):
+    while my_model.t.value < my_model.settings.final_time:
         my_model.iterate()
 
         # check that the current value is greater than the previous one
@@ -855,7 +855,7 @@ def test_adaptive_timestepping_shrinks():
 
     # RUN & TEST
     previous_value = stepsize.initial_value
-    for i in range(10):
+    while my_model.t.value < my_model.settings.final_time and my_model.dt.value > 0.1:
         my_model.iterate()
 
         # check that the current value is smaller than the previous one
