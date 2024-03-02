@@ -141,6 +141,8 @@ Plasma implantation can be approximated by a Dirichlet boundary condition with t
     # non-instantaneous recombination
     my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1, Kr_0=2, E_Kr=0.2)
 
+    # non-instantaneous recombination and dissociation
+    my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1, Kr_0=2, E_Kr=0.2, Kd_0=3, E_Kd=0.3, P=4)
 
 -----------------
 Heat transfer BCs

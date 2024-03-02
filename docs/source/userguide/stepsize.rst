@@ -28,6 +28,14 @@ To cap the stepsize after some time, the parameters ``t_stop`` and ``stepsize_st
 
     my_stepsize = F.Stepsize(initial_value=1.2, stepsize_change_ratio=1.5, dt_min=1e-6, t_stop=10, stepsize_stop_max=1.5)
 
+.. warning::
+    
+    Please note that the parameters ``t_stop`` and ``stepsize_stop_max`` will be deprecated in a future release. To set the maximal value of the stepsize, consider using the ``max_stepsize`` parameter:
+    
+    .. code-block:: python
+
+        my_stepsize = F.Stepsize(initial_value=1.2, stepsize_change_ratio=1.5, dt_min=1e-6, max_stepsize=lambda t: 1 if t < 1 else 2)
+
 The ``milestones`` argument can be used to make sure the simulation passes through specific times.
 This will modify the stepsize as needed.
 
