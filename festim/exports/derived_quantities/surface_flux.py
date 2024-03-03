@@ -59,6 +59,8 @@ class SurfaceFluxCylindrical(SurfaceFlux):
     ds is the surface measure in cylindrical coordinates.
     ds = r dr dtheta or ds = r dz dtheta
 
+    Note: for particle fluxes J is given in H/s, for heat fluxes J is given in W
+
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
@@ -117,6 +119,8 @@ class SurfaceFluxSpherical(SurfaceFlux):
     n is the normal vector of the surface
     ds is the surface measure in spherical coordinates.
     ds = r^2 sin(theta) dtheta dphi
+
+    Note: for particle fluxes J is given in H/s, for heat fluxes J is given in W
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
