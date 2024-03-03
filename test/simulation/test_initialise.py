@@ -137,5 +137,5 @@ def test_cartesian_and_surface_flux_warning(quantity, sys):
     my_model.exports = [derived_quantities]
 
     # test
-    with pytest.warns(UserWarning, match="Some derived quantities .* non-cartesian"):
+    with pytest.warns(UserWarning, match=f"may not work as intended for {sys} meshes"):
         my_model.initialise()
