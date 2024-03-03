@@ -88,7 +88,7 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
-        flux *= self.azimuth_cov
+        flux *= self.azimuth_range[1] - self.azimuth_range[0]
         return flux
 
 
