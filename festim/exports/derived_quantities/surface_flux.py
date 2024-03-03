@@ -50,6 +50,22 @@ class SurfaceFlux(SurfaceQuantity):
 
 
 class SurfaceFluxCylindrical(SurfaceFlux):
+    """
+    Object to compute the flux J of a field u through a surface
+    J = integral(-prop * grad(u) . n ds)
+    where prop is the property of the field (D, thermal conductivity, etc)
+    u is the field
+    n is the normal vector of the surface
+    ds is the surface measure in cylindrical coordinates.
+    ds = r dr dtheta or ds = r dz dtheta
+
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+        azimuth_range (tuple, optional): Range of the azimuthal angle
+            (theta) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi).
+    """
+
     def __init__(self, field, surface, azimuth_range=(0, 2 * np.pi)) -> None:
         super().__init__(field, surface)
         self.r = None
@@ -93,6 +109,24 @@ class SurfaceFluxCylindrical(SurfaceFlux):
 
 
 class SurfaceFluxSpherical(SurfaceFlux):
+    """
+    Object to compute the flux J of a field u through a surface
+    J = integral(-prop * grad(u) . n ds)
+    where prop is the property of the field (D, thermal conductivity, etc)
+    u is the field
+    n is the normal vector of the surface
+    ds is the surface measure in spherical coordinates.
+    ds = r^2 sin(theta) dtheta dphi
+
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+        azimuth_range (tuple, optional): Range of the azimuthal angle
+            (phi) needs to be between 0 and pi. Defaults to (0, np.pi).
+        polar_range (tuple, optional): Range of the polar angle
+            (theta) needs to be between - pi and pi. Defaults to (-np.pi, np.pi).
+    """
+
     def __init__(
         self, field, surface, azimuth_range=(0, np.pi), polar_range=(-np.pi, np.pi)
     ) -> None:
