@@ -50,9 +50,20 @@ class SurfaceFlux(SurfaceQuantity):
 
 
 class SurfaceFluxCylindrical(SurfaceFlux):
-    def __init__(self, field, surface) -> None:
+    def __init__(self, field, surface, azimuth_range=(0, 2 * np.pi)) -> None:
         super().__init__(field, surface)
         self.r = None
+        self.azimuth_range = azimuth_range
+
+    @property
+    def azimuth_range(self):
+        return self._azimuth_range
+
+    @azimuth_range.setter
+    def azimuth_range(self, value):
+        if value[0] < 0 or value[1] > 2 * np.pi:
+            raise ValueError("Azimuthal range must be between 0 and pi")
+        self._azimuth_range = value
 
     def compute(self, soret=False):
         if soret:
@@ -77,15 +88,38 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
-        theta = 2 * np.pi
-        flux *= theta
+        flux *= self.azimuth_cov
         return flux
 
 
 class SurfaceFluxSpherical(SurfaceFlux):
-    def __init__(self, field, surface) -> None:
+    def __init__(
+        self, field, surface, azimuth_range=(0, np.pi), polar_range=(-np.pi, np.pi)
+    ) -> None:
         super().__init__(field, surface)
         self.r = None
+        self.polar_range = polar_range
+        self.azimuth_range = azimuth_range
+
+    @property
+    def polar_range(self):
+        return self._polar_range
+
+    @polar_range.setter
+    def polar_range(self, value):
+        if value[0] < -np.pi or value[1] > np.pi:
+            raise ValueError("Polar range must be between - pi and pi")
+        self._polar_range = value
+
+    @property
+    def azimuth_range(self):
+        return self._azimuth_range
+
+    @azimuth_range.setter
+    def azimuth_range(self, value):
+        if value[0] < 0 or value[1] > np.pi:
+            raise ValueError("Azimuthal range must be between 0 and pi")
+        self._azimuth_range = value
 
     def compute(self, soret=False):
         if soret:
@@ -100,13 +134,16 @@ class SurfaceFluxSpherical(SurfaceFlux):
             rthetaphi = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
             self.r = rthetaphi[0]  # only care about r here
 
-        # dS_r = r^2 sin(theta) dtheta dphi , assuming central symmetry dS_r = r^2
+        # dS_r = r^2 sin(theta) dtheta dphi
+        # integral(f dS_r) = integral(f r^2 sin(theta) dtheta dphi)
+        #                  = (phi2 - phi1) * (-cos(theta2) + cos(theta1)) * f r^2
         flux = f.assemble(
             self.prop
             * self.r**2
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
-        # we assume a full sphere so multiply by 4 pi
-        flux *= 4 * np.pi
+        flux *= (self.polar_range[1] - self.polar_range[0]) * (
+            -np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0])
+        )
         return flux
