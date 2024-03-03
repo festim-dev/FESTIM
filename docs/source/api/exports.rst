@@ -47,6 +47,14 @@ Exports
     :members:
     :show-inheritance:
 
+.. autoclass:: SurfaceFluxCylindrical
+    :members:
+    :show-inheritance:   
+
+.. autoclass:: SurfaceFluxSpherical
+    :members:
+    :show-inheritance:    
+
 .. autoclass:: HydrogenFlux
     :members:
     :show-inheritance:
