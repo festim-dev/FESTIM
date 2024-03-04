@@ -670,11 +670,16 @@ class HydrogenTransportProblem:
                     * self.dx(reaction.volume.id)
                 )
             # product
-            self.formulation += (
-                -reaction.reaction_term(self.temperature_fenics)
-                * reaction.product.test_function
-                * self.dx(reaction.volume.id)
-            )
+            if isinstance(reaction.product, list):
+                products = reaction.product
+            else:
+                products = [reaction.product]
+            for product in products:
+                self.formulation += (
+                    -reaction.reaction_term(self.temperature_fenics)
+                    * product.test_function
+                    * self.dx(reaction.volume.id)
+                )
         # add sources
         for source in self.sources:
             self.formulation -= (
