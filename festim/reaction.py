@@ -108,5 +108,13 @@ class Reaction:
         c_A = self.reactant1.concentration
         c_B = self.reactant2.concentration
 
-        c_C = self.product.solution
-        return k * c_A * c_B - p * c_C
+        if isinstance(self.product, list):
+            products = self.product
+        else:
+            products = [self.product]
+
+        products_of_product = products[0].solution
+        for product in products[1:]:
+            products_of_product *= product.solution
+
+        return k * c_A * c_B - p * products_of_product
