@@ -8,10 +8,8 @@ class TotalVolume(F.VolumeQuantity):
         species: F.Species,
         volume: F.VolumeSubdomain,
         filename: str = None,
-    ):
-        self.volume = volume
-        self.species = species
-        self.filename = filename
+    ) -> None:
+        super().__init__(species, volume, filename)
 
     def compute(self, dx):
         return fem.assemble_scalar(
