@@ -5,13 +5,11 @@ from dolfinx import fem
 class TotalVolume(F.VolumeQuantity):
     def __init__(
         self,
-        species: F.Species,
+        field: F.Species,
         volume: F.VolumeSubdomain,
         filename: str = None,
     ) -> None:
-        super().__init__(species, volume, filename)
+        super().__init__(field, volume, filename)
 
     def compute(self, dx):
-        return fem.assemble_scalar(
-            fem.form(self.species.concentration * dx(self.volume))
-        )
+        return fem.assemble_scalar(fem.form(self.field.solution * dx(self.volume)))
