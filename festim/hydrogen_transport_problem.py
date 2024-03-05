@@ -813,6 +813,13 @@ class HydrogenTransportProblem:
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
+            elif isinstance(export, F.VolumeQuantity):
+                export.compute(self.dx)
+                # update export data
+                export.t.append(float(self.t))
 
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.write(float(self.t))
