@@ -58,7 +58,7 @@ class VolumeQuantity:
         then append the time and value to the file"""
 
         if not os.path.isfile(self.filename):
-            title = "Total volume {}: {}".format(self.surface.id, self.field.name)
+            title = "Total volume {}: {}".format(self.volume.id, self.field.name)
 
             if self.filename is not None:
                 with open(self.filename, mode="w", newline="") as file:
