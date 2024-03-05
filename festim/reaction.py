@@ -93,7 +93,6 @@ class Reaction:
     def __repr__(self) -> str:
         if isinstance(self.product, list):
             products = " + ".join([str(product) for product in self.product])
-            print(products)
         else:
             products = self.product
         return f"Reaction({self.reactant1} + {self.reactant2} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
@@ -101,7 +100,6 @@ class Reaction:
     def __str__(self) -> str:
         if isinstance(self.product, list):
             products = " + ".join([str(product) for product in self.product])
-            print(products)
         else:
             products = self.product
         return f"{self.reactant1} + {self.reactant2} <--> {products}"
