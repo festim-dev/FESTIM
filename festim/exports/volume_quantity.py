@@ -4,7 +4,7 @@ import os
 
 
 class VolumeQuantity:
-    """Export SurfaceQuantity
+    """Export VolumeQuantity
 
     Args:
         field (festim.Species): species for which the surface flux is computed
