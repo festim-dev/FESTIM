@@ -46,6 +46,8 @@ from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
 from .stepsize import Stepsize
 
 from .exports.surface_quantity import SurfaceQuantity
+from .exports.volume_quantity import VolumeQuantity
+from .exports.total_volume import TotalVolume
 from .exports.surface_flux import SurfaceFlux
 from .exports.vtx import VTXExport
 from .exports.xdmf import XDMFExport
