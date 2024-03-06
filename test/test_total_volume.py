@@ -11,7 +11,7 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy")
 
 
 def test_total_volume_export_compute():
-    """Test that the surface flux export computes the correct value"""
+    """Test that the total volume export computes the correct value"""
 
     # BUILD
     L = 4.0
