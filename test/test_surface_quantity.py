@@ -80,6 +80,7 @@ def test_write_overwrite(tmp_path):
     )
     my_export.value = 2.0
     my_export.write(0)
+    my_export.write(1)
 
     my_export2 = F.SurfaceFlux(
         filename=filename,
@@ -88,11 +89,12 @@ def test_write_overwrite(tmp_path):
     )
     my_export2.value = 3.0
     my_export2.write(1)
+    my_export2.write(2)
+    my_export2.write(3)
 
     data = np.genfromtxt(filename, delimiter=",", names=True)
-    print(data)
-    file_length = len(data)
-    expected_length = 1
+    file_length = data.size
+    expected_length = 3
 
     assert file_length == expected_length
 
