@@ -26,6 +26,7 @@ class SurfaceQuantity:
 
         self.t = []
         self.data = []
+        self._first_time_export = True
 
     @property
     def filename(self):
@@ -68,15 +69,16 @@ class SurfaceQuantity:
     def write(self, t):
         """If the filename doesnt exist yet, create it and write the header,
         then append the time and value to the file"""
-
-        if not os.path.isfile(self.filename):
-            title = "Flux surface {}: {}".format(self.surface.id, self.field.name)
-
-            if self.filename is not None:
-                with open(self.filename, mode="w", newline="") as file:
+        title = "Flux surface {}: {}".format(
+            self.surface.id, self.field.name
+        )  # TODO this should be an attribute of the quantity
+        if self.filename is not None:
+            if self._first_time_export:
+                header = ["t(s)", f"{title}"]
+                with open(self.filename, mode="w+", newline="") as file:
                     writer = csv.writer(file)
-                    writer.writerow(["t(s)", f"{title}"])
-
-        with open(self.filename, mode="a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([t, self.value])
+                    writer.writerow(header)
+                self._first_time_export = False
+            with open(self.filename, mode="a", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow([t, self.value])
