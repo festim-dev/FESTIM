@@ -1,5 +1,6 @@
 import numpy as np
 import festim as F
+import pytest
 
 
 def concentration_A_exact(t, c_A_0, k, p):
@@ -36,12 +37,15 @@ def concentration_A_exact(t, c_A_0, k, p):
     return (a - b * F) / (1 - F)
 
 
-def model_test_reaction(stepsize):
+def model_test_reaction(stepsize=1, k=350e-4, p=120e-4, c_A_0=1):
     """Creates a festim model with a single reaction and runs it.
     The reaction is A + B <-> C + D
 
     Args:
         stepsize (float): the stepsize
+        k (float): the forward reaction rate
+        p (float): the backward reaction rate
+        c_A_0 (float): the initial concentration of A and B
 
     Returns:
         festim.HydrogenTransportProblem: the model
@@ -85,9 +89,9 @@ def model_test_reaction(stepsize):
 
     my_model.reactions = [
         F.Reaction(
-            k_0=350e-4,
+            k_0=k,
             E_k=0,
-            p_0=120e-4,
+            p_0=p,
             E_p=0,
             reactant1=species_A,
             reactant2=species_B,
@@ -107,8 +111,8 @@ def model_test_reaction(stepsize):
     # -------- Initial conditions --------- #
 
     my_model.initial_conditions = [
-        F.InitialCondition(value=1, species=species_A),
-        F.InitialCondition(value=1, species=species_B),
+        F.InitialCondition(value=c_A_0, species=species_A),
+        F.InitialCondition(value=c_A_0, species=species_B),
     ]
 
     # -------- Exports --------- #
@@ -164,8 +168,9 @@ def compute_error(model):
     return error
 
 
-def test_reaction():
-    stepsize = 1
-    model = model_test_reaction(stepsize)
+@pytest.mark.parametrize("k, p, c_A_0", [(350e-4, 120e-4, 3), (200e-4, 100e-4, 2)])
+def test_reaction(k, p, c_A_0):
+    """Test the reaction A + B <-> C + D with a festim model and compare the results with the analytical solution"""
+    model = model_test_reaction(stepsize=1, k=k, p=p, c_A_0=c_A_0)
     error = compute_error(model)
     assert error < 1e-2
