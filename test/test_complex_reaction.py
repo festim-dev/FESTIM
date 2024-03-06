@@ -5,6 +5,12 @@ import festim as F
 def concentration_A_exact(t, c_A_0, k, p):
     """Analytical solution for the concentration of species A in a reaction A + B <-> C + D
     assuming [A]_0 = [B]_0 and [C]_0 = [D]_0 = 0
+    can be obtained by solving
+    d[A]/dt = -k[A][B] + p[C][D]
+    where [A] = [B] and [C] = [D] = 0 at t=0
+    Moreover, [C] = [D] = [A]_0 - [A]
+    The equation then becomes
+    d[A]/dt = -k[A]^2 + p([A]_0 - [A])^2
 
     Args:
         t (float or ndarray): time
@@ -26,10 +32,7 @@ def concentration_A_exact(t, c_A_0, k, p):
         b = roots[0]
     else:
         a, b = roots[0], roots[1]
-    correction_factor = (
-        1 - p / k
-    )  # TODO verify why this.... but checks out with scipy.solve_ivp
-    F = ((c_A_0 - a) / (c_A_0 - b)) * np.exp(-(a - b) * correction_factor * k * t)
+    F = ((c_A_0 - a) / (c_A_0 - b)) * np.exp(-(a - b) * (k - p) * t)
     return (a - b * F) / (1 - F)
 
 
