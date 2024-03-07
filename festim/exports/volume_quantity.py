@@ -7,16 +7,16 @@ class VolumeQuantity:
     """Export VolumeQuantity
 
     Args:
-        field (festim.Species): species for which the surface flux is computed
+        field (festim.Species): species for which the volume quantity is computed
         surface (festim.VolumeSubdomain): volume subdomain
-        filename (str, optional): name of the file to which the surface flux is exported
+        filename (str, optional): name of the file to which the volume quantity is exported
 
     Attributes:
-        field (festim.Species): species for which the surface flux is computed
+        field (festim.Species): species for which the volume quantity is computed
         volume (festim.VolumeSubdomain): volume subdomain
-        filename (str): name of the file to which the surface flux is exported
+        filename (str): name of the file to which the volume quantity is exported
         t (list): list of time values
-        data (list): list of values of the surface quantity
+        data (list): list of values of the volume quantity
     """
 
     def __init__(self, field, volume, filename: str = None) -> None:
