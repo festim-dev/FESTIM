@@ -7,7 +7,7 @@ import pytest
 import os
 
 
-def surface_flux_export_compute():
+def test_surface_flux_export_compute():
     """Test that the surface flux export computes the correct value"""
 
     # BUILD
