@@ -81,7 +81,7 @@ def test_1_mobile_MMS_transient():
         return lambda x, t: 1 + mod.sin(2 * mod.pi * x[0]) + 2 * t**2
 
     def u_exact_alt(mod):
-        return lambda x: 1 + mod.sin(2 * mod.pi * x[0]) + 2 * final_time**2
+        return lambda x: u_exact(mod)(x, final_time)
 
     H_analytical_ufl = u_exact(ufl)
     H_analytical_np = u_exact_alt(np)
