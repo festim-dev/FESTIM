@@ -171,6 +171,6 @@ def compute_error(model):
 @pytest.mark.parametrize("k, p, c_A_0", [(350e-4, 120e-4, 3), (200e-4, 100e-4, 2)])
 def test_reaction(k, p, c_A_0):
     """Test the reaction A + B <-> C + D with a festim model and compare the results with the analytical solution"""
-    model = model_test_reaction(stepsize=1, k=k, p=p, c_A_0=c_A_0)
+    model = model_test_reaction(stepsize=0.5, k=k, p=p, c_A_0=c_A_0)
     error = compute_error(model)
     assert error < 1e-2
