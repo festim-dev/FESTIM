@@ -43,6 +43,10 @@ Flux
     :members:
     :show-inheritance:
 
+.. autoclass:: DissociationFlux
+    :members:
+    :show-inheritance:
+
 .. autoclass:: ConvectiveFlux
     :members:
     :show-inheritance:
