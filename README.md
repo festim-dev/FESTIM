@@ -25,9 +25,13 @@ Visit the FESTIM-workshop to view the available tutorials https://github.com/fes
 ## Contact
 
 For questions on how to use FESTIM, visit our [Discourse page](https://festim.discourse.group/)
-
 or join our [Slack](https://join.slack.com/t/festimworkspace/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g) channel
 
 ## Contributing
 
 The guidelines for contributions can be found in the documentation: https://festim.readthedocs.io/en/latest/devguide/index.html
+
+## Roadmap
+
+You can follow the public roadmap on the [FESTIM projects page](https://github.com/festim-dev/FESTIM/projects?query=is%3Aopen).
+Moreover, you can check out the development branch (with support of FEniCSx) on the [_fenicsx_](https://github.com/festim-dev/FESTIM/tree/fenicsx) branch.
