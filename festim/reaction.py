@@ -91,10 +91,18 @@ class Reaction:
         self._reactant2 = value
 
     def __repr__(self) -> str:
-        return f"Reaction({self.reactant1} + {self.reactant2} <--> {self.product}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
+        if isinstance(self.product, list):
+            products = " + ".join([str(product) for product in self.product])
+        else:
+            products = self.product
+        return f"Reaction({self.reactant1} + {self.reactant2} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
 
     def __str__(self) -> str:
-        return f"{self.reactant1} + {self.reactant2} <--> {self.product}"
+        if isinstance(self.product, list):
+            products = " + ".join([str(product) for product in self.product])
+        else:
+            products = self.product
+        return f"{self.reactant1} + {self.reactant2} <--> {products}"
 
     def reaction_term(self, temperature):
         """Compute the reaction term at a given temperature.
@@ -108,5 +116,13 @@ class Reaction:
         c_A = self.reactant1.concentration
         c_B = self.reactant2.concentration
 
-        c_C = self.product.solution
-        return k * c_A * c_B - p * c_C
+        if isinstance(self.product, list):
+            products = self.product
+        else:
+            products = [self.product]
+
+        products_of_product = products[0].solution
+        for product in products[1:]:
+            products_of_product *= product.solution
+
+        return k * c_A * c_B - p * products_of_product
