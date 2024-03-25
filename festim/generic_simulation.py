@@ -425,7 +425,7 @@ class Simulation:
         elapsed_time = round(self.timer.elapsed()[0], 1)
         msg = "{:.1f} %        ".format(simulation_percentage)
         msg += "{:.1e} s".format(self.t)
-        msg += "    Ellapsed time so far: {:.1f} s".format(elapsed_time)
+        msg += "    Elapsed time so far: {:.1f} s".format(elapsed_time)
         if (
             not np.isclose(self.t, self.settings.final_time, atol=0)
             and self.log_level == 40
