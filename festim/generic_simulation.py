@@ -297,25 +297,32 @@ class Simulation:
 
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
-        # raise warning if SurfaceFlux is used with non-cartesian meshes
+        # raise warning if the derived quantities don't match the type of mesh
+        # eg. SurfaceFlux is used with cylindrical mesh
+        all_types_quantities = [
+            festim.MaximumSurface,
+            festim.MinimumSurface,
+            festim.MaximumVolume,
+            festim.MinimumVolume,
+            festim.PointValue,
+        ]  # these quantities can be used with any mesh
+        allowed_quantities = {
+            "cartesian": [
+                festim.SurfaceFlux,
+                festim.AverageSurface,
+                festim.AverageVolume,
+            ]
+            + all_types_quantities,
+            "cylindrical": [festim.SurfaceFluxCylindrical] + all_types_quantities,
+            "spherical": [festim.SurfaceFluxSpherical] + all_types_quantities,
+        }
+
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
-                allowed_quantities = (
-                    festim.MaximumSurface,
-                    festim.MinimumSurface,
-                    festim.MaximumVolume,
-                    festim.MinimumVolume,
-                    festim.PointValue,
-                )
-                if any(
-                    [
-                        not isinstance(q, allowed_quantities)
-                        for q in export.derived_quantities
-                    ]
-                ):
-                    if self.mesh.type != "cartesian":
+                for q in export.derived_quantities:
+                    if not isinstance(q, tuple(allowed_quantities[self.mesh.type])):
                         warnings.warn(
-                            "Some derived quantities may not work as intended for non-cartesian meshes"
+                            f"{type(q)} may not work as intended for {self.mesh.type} meshes"
                         )
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials
