@@ -359,6 +359,8 @@ class Simulation:
         else:
             self.run_steady()
 
+        self.timer.stop()
+
         # End
         if completion_tone:
             print("\007")
