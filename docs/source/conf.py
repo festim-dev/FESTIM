@@ -38,6 +38,7 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
+    "sphinx_copybutton",
     "sphinx_design",
     "sphinxcontrib.bibtex",
     "matplotlib.sphinxext.plot_directive",
