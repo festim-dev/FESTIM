@@ -27,7 +27,7 @@ Analysis
 
 - Rémi Delaporte-Mathurin et al., *3D Effects on Hydrogen Transport in ITER-like Monoblocks* Nuclear Fusion, (2023), https://doi.org/10.1088/1741-4326/ad1019.
 
-- Rémi Delaporte-Mathurin, “Hydrogen Transport in Tokamaks: Estimation of the ITER Divertor Tritium Inventory and Influence of Helium Exposure” (These de doctorat, Paris 13, 2022), https://www.theses.fr/2022PA131054.
+- Rémi Delaporte-Mathurin, *Hydrogen Transport in Tokamaks: Estimation of the ITER Divertor Tritium Inventory and Influence of Helium Exposure* (These de doctorat, Université Sorbonne Paris Nord, 2022), https://www.theses.fr/2022PA131054.
 
 - Delaporte-Mathurin, Rémi, Etienne A. Hodille, Jonathan Mougenot, Yann Charles, and Christian Grisolia. *Parametric Optimisation Based on TDS Experiments for Rapid and Efficient Identification of Hydrogen Transport Materials Properties*. Nuclear Materials and Energy, 27, (2021). https://doi.org/10.1016/j.nme.2021.100984.
 
