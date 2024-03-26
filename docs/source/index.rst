@@ -17,9 +17,9 @@ FESTIM was originally developed at the `Institute for Magnetic Fusion Research (
 .. admonition:: Recommended publication for citing
    :class: tip
 
-   Rémi Delaporte-Mathurin, Etienne A. Hodille, Jonathan Mougenot, Yann Charles, and Christian Grisolia.
-   "`Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components Using FESTIM.
-   Nuclear Materials and Energy 21 (2019): 100709. <https://doi.org/10.1016/j.nme.2019.100709>`_",
+   Rémi Delaporte-Mathurin, James Dark, Gabriele Ferrero, Etienne A. Hodille, Vladimir Kulagin, Samuele Meschini,
+   "`FESTIM: An open-source code for hydrogen transport simulations.
+   International Journal of Hydrogen Energy 63 (2024): 786-802. <https://doi.org/10.1016/j.ijhydene.2024.03.184>`_",
 
 --------
 Contents
