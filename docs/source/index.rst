@@ -12,6 +12,8 @@ It is capable of solving 1D/2D/3D multimaterial simulations and provides support
 Moreover, users can rapidly get started with FESTIM thanks to its python API.
 
 FESTIM was originally developed at the `Institute for Magnetic Fusion Research (IRFM) <https://irfm.cea.fr/en/index.php>`_ and the `Process and Materials Sciences Laboratory (LSPM) <https://www.lspm.cnrs.fr/en/home/>`_.
+Various research institutions and private companies now contribute actively to FESTIM's development.
+For more information, feel free to ask questions on the `FESTIM Discourse Page <https://festim.discourse.group/>`_.
 
 
 .. admonition:: Recommended publication for citing
@@ -36,10 +38,3 @@ Contents
    api/festim
    publications
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
