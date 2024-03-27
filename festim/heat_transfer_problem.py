@@ -271,14 +271,13 @@ class HeatTransferProblem:
         a string, find species object in self.species"""
 
         for export in self.exports:
+            if isinstance(export, F.XDMFExport):
+                raise NotImplementedError(
+                    "XDMF export is not implemented yet for heat transfer problems"
+                )
             if isinstance(export, (F.VTXExportForTemperature, F.XDMFExport)):
                 export.functions = [self.u]
                 export.define_writer(MPI.COMM_WORLD)
-                if isinstance(export, F.XDMFExport):
-                    raise NotImplementedError(
-                        "XDMF export is not implemented yet for heat transfer problems"
-                    )
-                    export.writer.write_mesh(self.mesh.mesh)
 
     def run(self):
         """Runs the model"""
