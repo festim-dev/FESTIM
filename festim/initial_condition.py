@@ -3,6 +3,7 @@ from dolfinx import fem
 import numpy as np
 
 
+# TODO rename this to InitialConcentration and create a new base class
 class InitialCondition:
     """
     Initial condition class
