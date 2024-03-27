@@ -1,9 +1,7 @@
-import numpy as np
 import festim as F
 import ufl
 import pytest
 import ufl
-from ufl.conditional import Conditional
 from dolfinx import fem
 import dolfinx.mesh
 from mpi4py import MPI
@@ -100,7 +98,7 @@ def test_create_value_fenics(value, expected_type):
         (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), True),
     ],
 )
-def test_bc_time_dependent_attribute(input, expected_value):
+def test_source_time_dependent_attribute(input, expected_value):
     """Test that the time_dependent attribute is correctly set"""
     volume = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
@@ -122,7 +120,7 @@ def test_bc_time_dependent_attribute(input, expected_value):
         (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), False),
     ],
 )
-def test_bc_temperature_dependent_attribute(input, expected_value):
+def test_source_temperature_dependent_attribute(input, expected_value):
     """Test that the temperature_dependent attribute is correctly set"""
     volume = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
@@ -152,6 +150,27 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
         source.create_value_fenics(mesh, my_function_space, T, t)
+
+
+def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
+    """The create_value method should raise a ValueError when the callable
+    returns an object which is not a float or int"""
+
+    vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
+
+    def my_value(t):
+        return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
+
+    source = F.HeatSource(volume=vol_subdomain, value=my_value)
+
+    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
+    t = fem.Constant(mesh, 0.0)
+
+    with pytest.raises(
+        ValueError,
+        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
+    ):
+        source.create_value_fenics(mesh, my_function_space, t)
 
 
 @pytest.mark.parametrize(
