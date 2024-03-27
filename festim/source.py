@@ -48,9 +48,9 @@ class Source:
 
     @volume.setter
     def volume(self, value):
-        # check that volume is festim.VolumeSubdomain1D
-        if not isinstance(value, F.VolumeSubdomain1D):
-            raise TypeError("volume must be of type festim.VolumeSubdomain1D")
+        # check that volume is festim.VolumeSubdomain
+        if not isinstance(value, F.VolumeSubdomain):
+            raise TypeError("volume must be of type festim.VolumeSubdomain")
         self._volume = value
 
     @property
@@ -74,9 +74,11 @@ class Source:
         if value is None:
             self._value_fenics = value
             return
-        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
+        if not isinstance(
+            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
+        ):
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or a ufl.core.expr.Expr, not {type(value)}"
             )
         self._value_fenics = value
 
