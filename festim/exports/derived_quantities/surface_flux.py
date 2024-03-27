@@ -99,7 +99,7 @@ class SurfaceFluxCylindrical(SurfaceFlux):
         # dS_z = r dr dtheta , assuming axisymmetry dS_z = theta r dr
         # dS_r = r dz dtheta , assuming axisymmetry dS_r = theta r dz
         # in both cases the expression with self.ds is the same
-        # we assume full cylinder theta = 2 pi
+
         flux = f.assemble(
             self.prop
             * self.r
