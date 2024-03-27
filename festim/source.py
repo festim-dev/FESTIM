@@ -127,6 +127,9 @@ class Source:
         if isinstance(self.value, (int, float)):
             self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
 
+        elif isinstance(self.value, (fem.Function, ufl.core.expr.Expr)):
+            self.value_fenics = self.value
+
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
 
