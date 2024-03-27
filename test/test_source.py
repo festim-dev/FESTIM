@@ -182,17 +182,18 @@ def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
         [1.0],
         [[1]],
         [[F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)]],
+        [[F.VolumeSubdomain(1, material=dummy_mat)]],
         None,
     ],
 )
 def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
     """Test that a TypeError is raised when the volume is not of type
-    festim.VolumeSubdomain1D"""
+    festim.VolumeSubdomain"""
 
     my_spe = F.Species("test")
     with pytest.raises(
         TypeError,
-        match="volume must be of type festim.VolumeSubdomain1D",
+        match="volume must be of type festim.VolumeSubdomain",
     ):
         F.Source(volume=volume_input, value=1.0, species=my_spe)
 

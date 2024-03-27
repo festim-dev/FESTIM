@@ -48,9 +48,9 @@ class SourceBase:
 
     @volume.setter
     def volume(self, value):
-        # check that volume is festim.VolumeSubdomain1D
-        if not isinstance(value, F.VolumeSubdomain1D):
-            raise TypeError("volume must be of type festim.VolumeSubdomain1D")
+        # check that volume is festim.VolumeSubdomain
+        if not isinstance(value, F.VolumeSubdomain):
+            raise TypeError("volume must be of type festim.VolumeSubdomain")
         self._volume = value
 
     @property
@@ -62,9 +62,11 @@ class SourceBase:
         if value is None:
             self._value_fenics = value
             return
-        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
+        if not isinstance(
+            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
+        ):
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or a ufl.core.expr.Expr, not {type(value)}"
             )
         self._value_fenics = value
 
@@ -143,6 +145,9 @@ class ParticleSource(SourceBase):
 
         if isinstance(self.value, (int, float)):
             self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
+
+        elif isinstance(self.value, (fem.Function, ufl.core.expr.Expr)):
+            self.value_fenics = self.value
 
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
