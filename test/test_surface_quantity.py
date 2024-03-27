@@ -7,7 +7,7 @@ import pytest
 import os
 
 
-def surface_flux_export_compute():
+def test_surface_flux_export_compute():
     """Test that the surface flux export computes the correct value"""
 
     # BUILD
@@ -29,7 +29,7 @@ def surface_flux_export_compute():
     ds = ufl.Measure("ds", domain=my_mesh.mesh, subdomain_data=facet_meshtags)
 
     # give function to species
-    V = fem.FunctionSpace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: 2 * x[0] ** 2 + 1)
 
@@ -68,6 +68,35 @@ def test_title_generation(tmp_path, value):
     expected_title = "Flux surface 35: TEST"
 
     assert title[1] == expected_title
+
+
+def test_write_overwrite(tmp_path):
+    """Test that the write method overwrites the file if it already exists"""
+    filename = os.path.join(tmp_path, "my_export.csv")
+    my_export = F.SurfaceFlux(
+        filename=filename,
+        field=F.Species("test"),
+        surface=F.SurfaceSubdomain1D(id=1, x=0),
+    )
+    my_export.value = 2.0
+    my_export.write(0)
+    my_export.write(1)
+
+    my_export2 = F.SurfaceFlux(
+        filename=filename,
+        field=F.Species("test"),
+        surface=F.SurfaceSubdomain1D(id=1, x=0),
+    )
+    my_export2.value = 3.0
+    my_export2.write(1)
+    my_export2.write(2)
+    my_export2.write(3)
+
+    data = np.genfromtxt(filename, delimiter=",", names=True)
+    file_length = data.size
+    expected_length = 3
+
+    assert file_length == expected_length
 
 
 def test_filename_setter_raises_TypeError():

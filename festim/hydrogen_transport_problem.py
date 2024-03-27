@@ -1,13 +1,15 @@
+import dolfinx
 from dolfinx import fem
-from dolfinx.mesh import meshtags
 from dolfinx.nls.petsc import NewtonSolver
 import basix
+import basix.ufl
 import ufl
 from mpi4py import MPI
-from dolfinx.mesh import meshtags
 import numpy as np
 import tqdm.autonotebook
 import festim as F
+
+from dolfinx.mesh import meshtags
 
 
 class HydrogenTransportProblem:
@@ -47,7 +49,7 @@ class HydrogenTransportProblem:
         traps (list of F.Trap): the traps of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
-        function_space (dolfinx.fem.FunctionSpace): the function space of the
+        function_space (dolfinx.fem.FunctionSpaceBase): the function space of the
             model
         facet_meshtags (dolfinx.mesh.MeshTags): the facet meshtags of the model
         volume_meshtags (dolfinx.mesh.MeshTags): the volume meshtags of the
@@ -62,9 +64,9 @@ class HydrogenTransportProblem:
             that is used to update the temperature_fenics
         temperature_time_dependent (bool): True if the temperature is time
             dependent
-        V_DG_0 (dolfinx.fem.FunctionSpace): A DG function space of degree 0
+        V_DG_0 (dolfinx.fem.FunctionSpaceBase): A DG function space of degree 0
             over domain
-        V_DG_1 (dolfinx.fem.FunctionSpace): A DG function space of degree 1
+        V_DG_1 (dolfinx.fem.FunctionSpaceBase): A DG function space of degree 1
             over domain
         volume_subdomains (list of festim.VolumeSubdomain): the volume subdomains
             of the model
@@ -203,6 +205,32 @@ class HydrogenTransportProblem:
                 )
         self._species = value
 
+    @property
+    def facet_meshtags(self):
+        return self._facet_meshtags
+
+    @facet_meshtags.setter
+    def facet_meshtags(self, value):
+        if value is None:
+            self._facet_meshtags = value
+        elif isinstance(value, dolfinx.mesh.MeshTags):
+            self._facet_meshtags = value
+        else:
+            raise TypeError(f"value must be of type dolfinx.mesh.MeshTags")
+
+    @property
+    def volume_meshtags(self):
+        return self._volume_meshtags
+
+    @volume_meshtags.setter
+    def volume_meshtags(self, value):
+        if value is None:
+            self._volume_meshtags = value
+        elif isinstance(value, dolfinx.mesh.MeshTags):
+            self._volume_meshtags = value
+        else:
+            raise TypeError(f"value must be of type dolfinx.mesh.MeshTags")
+
     def initialise(self):
         self.create_species_from_traps()
         self.define_function_spaces()
@@ -275,7 +303,7 @@ class HydrogenTransportProblem:
                     degree,
                     basix.LagrangeVariant.equispaced,
                 )
-                function_space_temperature = fem.FunctionSpace(
+                function_space_temperature = fem.functionspace(
                     self.mesh.mesh, element_temperature
                 )
                 self.temperature_fenics = fem.Function(function_space_temperature)
@@ -386,13 +414,25 @@ class HydrogenTransportProblem:
             for spe in self.species:
                 if isinstance(spe, F.Species):
                     elements.append(element_CG)
-            element = ufl.MixedElement(elements)
+            element = basix.ufl.mixed_element(elements)
 
-        self.function_space = fem.FunctionSpace(self.mesh.mesh, element)
+        self.function_space = fem.functionspace(self.mesh.mesh, element)
 
         # create global DG function spaces of degree 0 and 1
-        self.V_DG_0 = fem.FunctionSpace(self.mesh.mesh, ("DG", 0))
-        self.V_DG_1 = fem.FunctionSpace(self.mesh.mesh, ("DG", 1))
+        element_DG0 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            0,
+            basix.LagrangeVariant.equispaced,
+        )
+        element_DG1 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            1,
+            basix.LagrangeVariant.equispaced,
+        )
+        self.V_DG_0 = fem.functionspace(self.mesh.mesh, element_DG0)
+        self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
 
         self.u = fem.Function(self.function_space)
         self.u_n = fem.Function(self.function_space)
@@ -438,21 +478,24 @@ class HydrogenTransportProblem:
                 surface_subdomains=self.surface_subdomains,
                 volume_subdomains=self.volume_subdomains,
             )
-        elif isinstance(self.mesh, F.Mesh):
-            # FIXME # refer to issue #647
-            # create empty mesh tags for now
-            facet_indices = np.array([], dtype=np.int32)
-            facet_tags = np.array([], dtype=np.int32)
-            self.facet_meshtags = meshtags(
-                self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
-            )
 
-            num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
-            mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-            tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-            self.volume_meshtags = meshtags(
-                self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
-            )
+        elif isinstance(self.mesh, F.Mesh):
+            if not self.facet_meshtags:
+                # create empty facet_meshtags
+                facet_indices = np.array([], dtype=np.int32)
+                facet_tags = np.array([], dtype=np.int32)
+                self.facet_meshtags = meshtags(
+                    self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
+                )
+
+            if not self.volume_meshtags:
+                # create meshtags with all cells tagged as 1
+                num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
+                mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
+                tags_volumes = np.full(num_cells, 1, dtype=np.int32)
+                self.volume_meshtags = meshtags(
+                    self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
+                )
 
         # check volume ids are unique
         vol_ids = [vol.id for vol in self.volume_subdomains]
@@ -627,11 +670,16 @@ class HydrogenTransportProblem:
                     * self.dx(reaction.volume.id)
                 )
             # product
-            self.formulation += (
-                -reaction.reaction_term(self.temperature_fenics)
-                * reaction.product.test_function
-                * self.dx(reaction.volume.id)
-            )
+            if isinstance(reaction.product, list):
+                products = reaction.product
+            else:
+                products = [reaction.product]
+            for product in products:
+                self.formulation += (
+                    -reaction.reaction_term(self.temperature_fenics)
+                    * product.test_function
+                    * self.dx(reaction.volume.id)
+                )
         # add sources
         for source in self.sources:
             self.formulation -= (
@@ -696,7 +744,9 @@ class HydrogenTransportProblem:
 
     def iterate(self):
         """Iterates the model for a given time step"""
-        self.progress.update(self.dt.value)
+        self.progress.update(
+            min(self.dt.value, abs(self.settings.final_time - self.t.value))
+        )
         self.t.value += self.dt.value
 
         self.update_time_dependent_values()
@@ -763,6 +813,13 @@ class HydrogenTransportProblem:
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
+            elif isinstance(export, F.VolumeQuantity):
+                export.compute(self.dx)
+                # update export data
+                export.t.append(float(self.t))
 
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.write(float(self.t))

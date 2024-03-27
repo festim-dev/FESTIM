@@ -5,10 +5,24 @@ import pytest
 import numpy as np
 import os
 from dolfinx.io import XDMFFile
+from dolfinx.mesh import meshtags
 
 mesh_1D = fenics_mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 mesh_2D = fenics_mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
 mesh_3D = fenics_mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+
+# 1D meshtags
+my_surface_meshtags = meshtags(
+    mesh_1D, 0, np.array([0, 10], dtype=np.int32), np.array([1, 2], dtype=np.int32)
+)
+
+num_cells = mesh_1D.topology.index_map(1).size_local
+my_volume_meshtags = meshtags(
+    mesh_1D,
+    1,
+    np.arange(num_cells, dtype=np.int32),
+    np.full(num_cells, 1, dtype=np.int32),
+)
 
 
 @pytest.mark.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
@@ -19,7 +33,7 @@ def test_get_fdim(mesh):
 
 
 def test_fdim_changes_when_mesh_changes():
-    my_mesh = F.Mesh()
+    my_mesh = F.Mesh(mesh=mesh_1D)
 
     for mesh in [mesh_1D, mesh_2D, mesh_3D]:
         my_mesh.mesh = mesh
@@ -34,7 +48,7 @@ def test_get_vdim(mesh):
 
 
 def test_vdim_changes_when_mesh_changes():
-    my_mesh = F.Mesh()
+    my_mesh = F.Mesh(mesh=mesh_1D)
 
     for mesh in [mesh_1D, mesh_2D, mesh_3D]:
         my_mesh.mesh = mesh
@@ -128,3 +142,12 @@ def test_mesh_vertices_from_list(vertices):
     my_mesh = F.Mesh1D(vertices=vertices)
 
     assert isinstance(my_mesh.vertices, np.ndarray)
+
+
+def test_error_rasied_when_mesh_is_wrong_type():
+    """Test that an TypeError is raised when the mesh is not a dolfinx mesh"""
+
+    with pytest.raises(TypeError, match="Mesh must be of type dolfinx.mesh.Mesh"):
+        F.Mesh(
+            mesh="mesh",
+        )

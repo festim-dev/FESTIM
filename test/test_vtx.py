@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 mesh = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
-V = dolfinx.fem.FunctionSpace(mesh, ("Lagrange", 1))
+V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
 
 
 def test_vtx_export_one_function(tmpdir):

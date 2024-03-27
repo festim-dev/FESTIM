@@ -95,7 +95,20 @@ def test_multispecies_permeation_problem():
         field=spe_2,
         surface=right_surface,
     )
-    my_model.exports = [outgassing_flux_spe_1, outgassing_flux_spe_2]
+    total_species_1 = F.TotalVolume(
+        field=spe_1,
+        volume=my_subdomain,
+    )
+    total_species_2 = F.TotalVolume(
+        field=spe_2,
+        volume=my_subdomain,
+    )
+    my_model.exports = [
+        outgassing_flux_spe_1,
+        outgassing_flux_spe_2,
+        total_species_1,
+        total_species_2,
+    ]
     my_model.initialise()
 
     my_model.solver.convergence_criterion = "incremental"

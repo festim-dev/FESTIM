@@ -1,6 +1,6 @@
 import pytest
 import festim as F
-from dolfinx.fem import FunctionSpace, Function
+from dolfinx.fem import functionspace, Function
 from dolfinx.mesh import create_unit_cube
 from mpi4py import MPI
 from ufl import exp
@@ -52,6 +52,34 @@ def test_reaction_repr():
     assert repr(reaction) == expected_repr
 
 
+def test_reaction_repr_2_products():
+    """Test that the Reaction __repr__ method returns the expected string"""
+
+    # create two species
+    species1 = F.Species("A")
+    species2 = F.Species("B")
+
+    # create two product species
+    product1 = F.Species("C")
+    product2 = F.Species("D")
+
+    # create a reaction between the two species
+    reaction = F.Reaction(
+        species1,
+        species2,
+        [product1, product2],
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
+    )
+
+    # check that the __repr__ method returns the expected string
+    expected_repr = "Reaction(A + B <--> C + D, 1.0, 0.2, 0.1, 0.3)"
+    assert repr(reaction) == expected_repr
+
+
 def test_reaction_str():
     """Test that the Reaction __str__ method returns the expected string"""
 
@@ -72,12 +100,40 @@ def test_reaction_str():
     assert str(reaction) == expected_str
 
 
+def test_reaction_str_2_products():
+    """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
+
+    # create two species
+    species1 = F.Species("A")
+    species2 = F.Species("B")
+
+    # create a product species
+    product1 = F.Species("C")
+    product2 = F.Species("D")
+
+    # create a reaction between the two species
+    reaction = F.Reaction(
+        species1,
+        species2,
+        [product1, product2],
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
+    )
+
+    # check that the __str__ method returns the expected string
+    expected_str = "A + B <--> C + D"
+    assert str(reaction) == expected_str
+
+
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
     """Test that the Reaction.reaction_term method returns the expected reaction term"""
 
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
-    V = FunctionSpace(mesh, ("Lagrange", 1))
+    V = functionspace(mesh, ("Lagrange", 1))
 
     # create two species
     species1 = F.Species("A")
@@ -105,6 +161,51 @@ def test_reaction_reaction_term(temperature):
         k * species1.solution * species2.solution - p * product.solution
     )
 
+    assert reaction.reaction_term(temperature) == expected_reaction_term
+
+
+@pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
+def test_reaction_reaction_term_2_products(temperature):
+    """Test that the Reaction.reaction_term method returns the expected reaction term with two products"""
+
+    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+    V = functionspace(mesh, ("Lagrange", 1))
+
+    # create two species
+    species1 = F.Species("A")
+    species2 = F.Species("B")
+    species1.solution = Function(V)
+    species2.solution = Function(V)
+
+    # create a product species
+    product1 = F.Species("C")
+    product2 = F.Species("D")
+    product1.solution = Function(V)
+    product2.solution = Function(V)
+
+    # create a reaction between the two species
+    reaction = F.Reaction(
+        species1,
+        species2,
+        [product1, product2],
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
+    )
+
+    # test the reaction term at a given temperature
+    def arrhenius(pre, act, T):
+        return pre * exp(-act / (F.k_B * T))
+
+    k = arrhenius(reaction.k_0, reaction.E_k, temperature)
+    p = arrhenius(reaction.p_0, reaction.E_p, temperature)
+
+    product_of_products = product1.solution * product2.solution
+    expected_reaction_term = (
+        k * species1.solution * species2.solution - p * product_of_products
+    )
     assert reaction.reaction_term(temperature) == expected_reaction_term
 
 
