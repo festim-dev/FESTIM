@@ -10,6 +10,9 @@ def test_trap_density_xdmf_export_intergration_with_simultion(tmpdir):
     Creates a festim simulation and exports the trap density as an .xmdf file.
     An equivalent fenics function is created and is compared to that that read
     from the .xdmf file created. Ensures compatability with festim.Simulation()
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     density_expr = 2 + festim.x**2 + 2 * festim.y
 
@@ -58,6 +61,9 @@ def test_trap_density_xdmf_export_write(tmpdir):
     Creates a festim density function and exports as an .xmdf file.
     An equivalent fenics function is created and is compared to that that read
     from the .xdmf file created.
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     # build
     mesh = UnitSquareMesh(30, 30)
@@ -96,6 +102,9 @@ def test_trap_density_xdmf_export_traps_materials_mixed(tmpdir):
     .xmdf file. An equivalent fenics function is created and is compared to that
     that read from the .xdmf file created. Ensures compatability with
     festim.Simulation()
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     density_expr = 2e06 + festim.x**2
 

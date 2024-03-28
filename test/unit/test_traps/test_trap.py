@@ -9,49 +9,52 @@ def add_functions(trap, V, id=1):
     trap.test_function = f.TestFunction(V)
 
 
-def test_error_wrong_type_material():
+@pytest.mark.parametrize("mats", [True, [True, "mat_name"], 1, [1, 2]])
+def test_error_wrong_type_material(mats):
     """Checks that an error is raised when the wrong type is given to
     materials
+
+    Args:
+        mats (): wrong type objects for the Trap.materials attribute
     """
     msg = "Accepted types for materials are str or festim.Material"
     with pytest.raises(TypeError, match=msg):
-        festim.Trap(1, 1, 1, 1, materials=True, density=1)
-
-    with pytest.raises(TypeError, match=msg):
-        festim.Trap(1, 1, 1, 1, materials=[True, "mat_name"], density=1)
-
-    with pytest.raises(TypeError, match=msg):
-        festim.Trap(1, 1, 1, 1, materials=1, density=1)
-
-    with pytest.raises(TypeError, match=msg):
-        festim.Trap(1, 1, 1, 1, materials=[1, 2], density=1)
+        festim.Trap(1, 1, 1, 1, materials=mats, density=1)
 
 
-def test_error_if_duplicate_material():
+class TestDuplicateMaterial:
     mat1 = festim.Material(1, D_0=1, E_D=0, name="name1")
     mat2 = festim.Material(2, D_0=1, E_D=0, name="name2")
 
     materials = festim.Materials([mat1, mat2])
-    with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        festim.Trap(1, 1, 1, 1, [mat1, mat1], 1).make_materials(materials)
 
-    with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        festim.Trap(1, 1, 1, 1, ["name1", "name1", mat2], 1).make_materials(materials)
+    @pytest.mark.parametrize(
+        "mats_list",
+        [
+            [mat1, mat1],
+            ["name1", "name1", mat2],
+            ["name1", mat1, mat1],
+            ["name2", mat2],
+            [mat2, mat2],
+            ["name1", mat1],
+        ],
+    )
+    def test_error_if_duplicate_material(self, mats_list):
+        """Checks that an error is raised when there are duplicates in
+        the materials attribute of the festim.Trap class
 
-    with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        festim.Trap(1, 1, 1, 1, ["name1", mat1, mat1], 1).make_materials(materials)
-
-    with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        festim.Trap(1, 1, 1, 1, ["name2", mat2], 1).make_materials(materials)
-
-    with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        festim.Trap(1, 1, 1, 1, [mat2, mat2], 1).make_materials(materials)
-
-    with pytest.raises(ValueError, match="Duplicate materials in trap"):
-        festim.Trap(1, 1, 1, 1, ["name1", mat1], 1).make_materials(materials)
+        Args:
+            mats_list (): list containing objects with duplicate names
+        """
+        with pytest.raises(ValueError, match="Duplicate materials in trap"):
+            festim.Trap(1, 1, 1, 1, mats_list, 1).make_materials(self.materials)
 
 
 class TestCreateTrappingForm:
+    """
+    General test for the create_trapping_form method of the festim.Trap class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = festim.Mobile()
@@ -481,6 +484,10 @@ class TestCreateTrappingForm:
 
 
 class TestCreateSourceForm:
+    """
+    General test for the create_source_form method of the festim.Trap class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = festim.Mobile()
@@ -516,6 +523,10 @@ class TestCreateSourceForm:
 
 
 class TestCreateForm:
+    """
+    General test for the create_form method of the festim.Trap class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = festim.Mobile()

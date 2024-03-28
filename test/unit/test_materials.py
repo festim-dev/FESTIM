@@ -154,6 +154,8 @@ def test_non_matching_properties():
 
 
 class TestCheckBorders:
+    """General test for the check_borders method of the festim.Materials class"""
+
     def test_works(self):
         materials = [
             F.Material(id=1, D_0=None, E_D=None, borders=[0.5, 0.7]),

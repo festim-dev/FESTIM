@@ -1,23 +1,27 @@
 from festim import MinimumVolume
 import fenics as f
 import numpy as np
+import pytest
 
 
-def test_title_H():
-    volume = 1
-    field = "solute"
-    my_min = MinimumVolume(field, volume)
-    assert my_min.title == "Minimum {} volume {}".format(field, volume)
+@pytest.mark.parametrize("field,volume", [("solute", 1), ("T", 2)])
+def test_title(field, volume):
+    """
+    A simple test to check that the title is set
+    correctly in festim.MinimumVolume
 
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+    """
 
-def test_title_T():
-    volume = 2
-    field = "T"
     my_min = MinimumVolume(field, volume)
     assert my_min.title == "Minimum {} volume {}".format(field, volume)
 
 
 class TestCompute:
+    """Test that the minimum volume export computes the correct value"""
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
 

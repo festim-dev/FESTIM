@@ -9,6 +9,7 @@ import pytest
 class TestPostProcessing:
     @pytest.fixture
     def my_sim(self):
+        """A pytest fixture defining the festim.Simulation object"""
         my_sim = festim.Simulation({})
         my_sim.t = 0
         my_sim.mesh = festim.MeshFromRefinements(10, 1)
@@ -42,6 +43,13 @@ class TestPostProcessing:
         return my_sim
 
     def test_derived_quantities_size(self, my_sim):
+        """
+        Checks that the length of data produced by F.DerivedQuantities
+        equals to the number of post-processing calls
+
+        Args:
+            my_sim (festim.Simulation): the simulation object
+        """
         derived_quantities = festim.DerivedQuantities(
             [
                 festim.SurfaceFlux("solute", 1),
@@ -64,6 +72,12 @@ class TestPostProcessing:
         assert my_sim.exports[0].data[i][0] == t
 
     def test_pure_diffusion(self, my_sim):
+        """
+        Checks that run_post_processing() assigns data correctly
+
+        Args:
+            my_sim (festim.Simulation): the simulation object
+        """
         my_sim.materials = festim.Materials(
             [
                 festim.Material(1, D_0=1, E_D=1, borders=[0, 0.5]),
@@ -164,6 +178,10 @@ class TestPostProcessing:
         """Runs run_post_processing several times with different export.mode
         values and checks that the xdmf
         files have the correct timesteps
+
+        Args:
+            my_sim (festim.Simulation): a festim.Simulation object
+            tmpdir (os.PathLike): path to the pytest temporary folder
         """
         # build
         d = tmpdir.mkdir("test_folder")
@@ -205,8 +223,8 @@ class TestPostProcessing:
         correct timesteps
 
         Args:
-            my_sim (_type_): _description_
-            tmpdir (_type_): _description_
+            my_sim (festim.Simulation): the simulation object
+            tmpdir (os.PathLike): path to the pytest temporary folder
         """
         d = tmpdir.mkdir("test_folder")
 

@@ -5,6 +5,7 @@ import pytest
 
 
 def test_mobile_create_diffusion_form():
+    """Tests the create_diffusion_form method of the festim.Mobile class"""
     # build
     Index._globalcount = 8
     mesh = f.UnitIntervalMesh(10)
@@ -37,6 +38,10 @@ def test_mobile_create_diffusion_form():
 
 
 def test_mobile_create_source_form_one_dict():
+    """
+    Tests the create_source_form method of the festim.Mobile class
+    for the case of one festim.Source object
+    """
     # build
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
@@ -58,6 +63,10 @@ def test_mobile_create_source_form_one_dict():
 
 
 def test_mobile_create_source_form_several_sources():
+    """
+    Tests the create_source_form method of the festim.Mobile class
+    for the case of several festim.Source objects
+    """
     # build
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
@@ -84,6 +93,7 @@ def test_mobile_create_source_form_several_sources():
 
 
 def test_mobile_create_form():
+    """Tests the create_form method of the festim.Mobile class"""
     # build
     Index._globalcount = 8
     mesh = f.UnitIntervalMesh(10)
@@ -119,6 +129,8 @@ def add_functions(trap, V, id=1):
 
 
 class TestCreateDiffusionForm:
+    """General test for the create_diffusion_form method of the festim.Mobile class"""
+
     mesh = f.UnitIntervalMesh(10)
     my_mesh = festim.Mesh(mesh)
     my_temp = festim.Temperature(value=100)
@@ -130,6 +142,7 @@ class TestCreateDiffusionForm:
     mat2 = festim.Material(2, D_0=2, E_D=2, S_0=3, E_S=4)
 
     def test_with_traps_transient(self):
+        """Check for the case of transient simulation with traps"""
         # build
         Index._globalcount = 8
         my_mobile = festim.Mobile()
@@ -186,6 +199,7 @@ class TestCreateDiffusionForm:
         assert my_mobile.F.equals(expected_form)
 
     def test_with_trap_conglo_transient(self):
+        """Check for the case of transient simulation with a trap conglomerate"""
         # build
         Index._globalcount = 8
         my_mobile = festim.Mobile()
@@ -260,6 +274,10 @@ class TestCreateDiffusionForm:
 
 
 class TestInitialise:
+    """
+    Tests the initialise method of the festim.Mobile class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     u = f.Function(V)
@@ -277,6 +295,9 @@ class TestInitialise:
 
 
 def test_fluxes():
+    """
+    Tests the create_fluxes_form method of the festim.Mobile class
+    """
     Kr_0 = 2
     E_Kr = 3
     order = 2

@@ -21,6 +21,10 @@ def add_functions(trap, V, id=1):
 
 
 class TestCreateTrappingForms:
+    """
+    General test for the create_forms method of the festim.Traps class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = festim.Mobile()
@@ -74,6 +78,10 @@ class TestCreateTrappingForms:
 
 
 class TestGetTrap:
+    """
+    General test for the get_trap method of the festim.Traps class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = festim.Mobile()

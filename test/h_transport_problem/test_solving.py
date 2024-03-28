@@ -14,7 +14,9 @@ def test_default_dt_min_value():
 
     t = 0
     dt = festim.Stepsize(
-        initial_value=0.5, stepsize_change_ratio=1.1, t_stop=430, stepsize_stop_max=0.5
+        initial_value=0.5,
+        stepsize_change_ratio=1.1,
+        max_stepsize=None if t < 430 else 0.5,
     )
 
     my_settings = festim.Settings(
@@ -32,7 +34,8 @@ def test_default_dt_min_value():
     my_problem.F = f.dot(f.grad(my_problem.u), f.grad(my_problem.v)) * f.dx
 
     du = f.TrialFunction(my_problem.u.function_space())
-    my_problem.J = f.derivative(my_problem.F, my_problem.u, du)  # Define the Jacobian
+    # Define the Jacobian
+    my_problem.J = f.derivative(my_problem.F, my_problem.u, du)
     # run & test
     my_problem.update(t, dt)
 

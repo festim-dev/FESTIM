@@ -26,12 +26,20 @@ class TestMakeHeader:
     max_vol_1 = MaximumVolume("T", 2)
 
     def test_simple(self):
+        """
+        Tests that a proper header is made for the output .csv file
+        when there is only one festim.DerivedQuantity object
+        """
         my_derv_quant = DerivedQuantities([self.surface_flux_1])
         header = my_derv_quant.make_header()
         expected_header = ["t(s)", self.surface_flux_1.title]
         assert header == expected_header
 
     def test_two_quantities(self):
+        """
+        Tests that a proper header is made for the output .csv file
+        when there are two festim.DerivedQuantity objects
+        """
         my_derv_quant = DerivedQuantities(
             [
                 self.surface_flux_1,
@@ -43,6 +51,10 @@ class TestMakeHeader:
         assert header == expected_header
 
     def test_all_quantities(self):
+        """
+        Tests that a proper header is made for the output .csv file
+        when there are many festim.DerivedQuantity objects
+        """
         my_derv_quant = DerivedQuantities(
             [
                 self.surface_flux_1,
@@ -66,6 +78,11 @@ class TestMakeHeader:
 
 
 class TestAssignMeasuresToQuantities:
+    """
+    Tests that measure attributes are properly assigned to all
+    festim.DerivedQuantity objects
+    """
+
     my_quantities = DerivedQuantities(
         [
             SurfaceFlux("solute", 2),
@@ -81,19 +98,27 @@ class TestAssignMeasuresToQuantities:
     my_quantities.assign_measures_to_quantities(dx, ds)
 
     def test_quantities_have_dx(self):
+        """Check for the volume measure"""
         for quantity in self.my_quantities:
             assert quantity.dx == self.dx
 
     def test_quantities_have_ds(self):
+        """Check for the surface measure"""
         for quantity in self.my_quantities:
             assert quantity.ds == self.ds
 
     def test_quantities_have_n(self):
+        """Check for the normal vector of the surface"""
         for quantity in self.my_quantities:
             assert quantity.n == self.n
 
 
 class TestAssignPropertiesToQuantities:
+    """
+    Tests that property attributes are properly assigned to all
+    festim.DerivedQuantity objects
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_quantities = DerivedQuantities(
@@ -113,23 +138,29 @@ class TestAssignPropertiesToQuantities:
     my_quantities.assign_properties_to_quantities(my_mats)
 
     def test_quantities_have_D(self):
+        """Check for diffusivity"""
         for quantity in self.my_quantities:
             assert quantity.D == self.my_mats.D
 
     def test_quantities_have_S(self):
+        """Check for solubility"""
         for quantity in self.my_quantities:
             assert quantity.S == self.my_mats.S
 
     def test_quantities_have_Q(self):
+        """Check for Soret"""
         for quantity in self.my_quantities:
             assert quantity.Q == self.my_mats.Q
 
     def test_quantities_have_thermal_cond(self):
+        """Check for thermal conductivity"""
         for quantity in self.my_quantities:
             assert quantity.thermal_cond == self.my_mats.thermal_cond
 
 
 class TestCompute:
+    """Test that the derived qunatities compute the correct value"""
+
     surface_flux_1 = SurfaceFlux("solute", 2)
     surface_flux_2 = SurfaceFlux("T", 3)
     average_vol_1 = AverageVolume("solute", 1)
@@ -168,6 +199,7 @@ class TestCompute:
     my_mats.thermal_cond = f.interpolate(f.Constant(2), V)
 
     def test_simple(self):
+        """Check for the case of one festim.DerivedQuantity object"""
         my_derv_quant = DerivedQuantities([self.surface_flux_1])
         for quantity in my_derv_quant:
             quantity.function = self.label_to_function[quantity.field]
@@ -182,6 +214,7 @@ class TestCompute:
         assert my_derv_quant.data[0] == expected_data
 
     def test_two_quantities(self):
+        """Check for the case of two festim.DerivedQuantity objects"""
         my_derv_quant = DerivedQuantities(
             [
                 self.surface_flux_1,
@@ -202,6 +235,7 @@ class TestCompute:
         assert my_derv_quant.data[0] == expected_data
 
     def test_all_quantities(self):
+        """Check for the case of many festim.DerivedQuantity objects"""
         my_derv_quant = DerivedQuantities(
             [
                 self.surface_flux_1,
