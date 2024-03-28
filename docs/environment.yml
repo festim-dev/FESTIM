@@ -12,3 +12,4 @@ dependencies:
     - sphinx_book_theme==1.1.0rc1
     - sphinx-design==0.5.0
     - sphinxcontrib-bibtex
+    - sphinx-copybutton

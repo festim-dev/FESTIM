@@ -67,7 +67,11 @@ from .exports.derived_quantities.derived_quantity import (
     VolumeQuantity,
     SurfaceQuantity,
 )
-from .exports.derived_quantities.surface_flux import SurfaceFlux
+from .exports.derived_quantities.surface_flux import (
+    SurfaceFlux,
+    SurfaceFluxCylindrical,
+    SurfaceFluxSpherical,
+)
 from .exports.derived_quantities.hydrogen_flux import HydrogenFlux
 from .exports.derived_quantities.thermal_flux import ThermalFlux
 from .exports.derived_quantities.average_volume import AverageVolume

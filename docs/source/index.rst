@@ -12,14 +12,16 @@ It is capable of solving 1D/2D/3D multimaterial simulations and provides support
 Moreover, users can rapidly get started with FESTIM thanks to its python API.
 
 FESTIM was originally developed at the `Institute for Magnetic Fusion Research (IRFM) <https://irfm.cea.fr/en/index.php>`_ and the `Process and Materials Sciences Laboratory (LSPM) <https://www.lspm.cnrs.fr/en/home/>`_.
+Various research institutions and private companies now contribute actively to FESTIM's development.
+For more information, feel free to ask questions on the `FESTIM Discourse Page <https://festim.discourse.group/>`_.
 
 
 .. admonition:: Recommended publication for citing
    :class: tip
 
-   Rémi Delaporte-Mathurin, Etienne A. Hodille, Jonathan Mougenot, Yann Charles, and Christian Grisolia.
-   "`Finite Element Analysis of Hydrogen Retention in ITER Plasma Facing Components Using FESTIM.
-   Nuclear Materials and Energy 21 (2019): 100709. <https://doi.org/10.1016/j.nme.2019.100709>`_",
+   Rémi Delaporte-Mathurin, James Dark, Gabriele Ferrero, Etienne A. Hodille, Vladimir Kulagin, Samuele Meschini,
+   "`FESTIM: An open-source code for hydrogen transport simulations.
+   International Journal of Hydrogen Energy 63 (2024): 786-802. <https://doi.org/10.1016/j.ijhydene.2024.03.184>`_",
 
 --------
 Contents
@@ -36,10 +38,3 @@ Contents
    api/festim
    publications
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
