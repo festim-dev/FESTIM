@@ -1,5 +1,7 @@
 from festim import SurfaceFlux, k_B
 import fenics as f
+import math
+import numpy as np
 import pytest
 
 
