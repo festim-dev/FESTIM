@@ -33,9 +33,12 @@ class DerivedQuantities(list):
         nb_iterations_between_exports: int = None,
     ) -> None:
         # checks that input is list
-        if not isinstance(*args, list):
-            raise TypeError("festim.DerivedQuantities must be a list")
-        super().__init__(self._validate_derived_quantity(item) for item in args[0])
+        if len(args) == 0:
+            super().__init__()
+        else:
+            if not isinstance(*args, list):
+                raise TypeError("festim.DerivedQuantities must be a list")
+            super().__init__(self._validate_derived_quantity(item) for item in args[0])
 
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
