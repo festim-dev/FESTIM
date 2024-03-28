@@ -15,9 +15,12 @@ class Materials(list):
 
     def __init__(self, *args):
         # checks that input is list
-        if not isinstance(*args, list):
-            raise TypeError("festim.Materials must be a list")
-        super().__init__(self._validate_material(item) for item in args[0])
+        if len(args) == 0:
+            super().__init__()
+        else:
+            if not isinstance(*args, list):
+                raise TypeError("festim.Materials must be a list")
+            super().__init__(self._validate_material(item) for item in args[0])
 
         self.D = None
         self.S = None
