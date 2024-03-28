@@ -12,6 +12,9 @@ class Material:
         E_D (float or dict): the activation energy of the diffusion
             coeficient (eV)
         name (str): the name of the material
+        thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
+        density (float, callable): the density of the material (kg/m3)
+        heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
 
     Attributes:
         D_0 (float or dict): the pre-exponential factor of the
@@ -33,14 +36,22 @@ class Material:
             )
     """
 
-    def __init__(self, D_0, E_D, name=None) -> None:
+    def __init__(
+        self,
+        D_0,
+        E_D,
+        thermal_conductivity=None,
+        density=None,
+        heat_capacity=None,
+        name=None,
+    ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
-        self.name = name
 
-        self.thermal_conductivity = None
-        self.density = None
-        self.heat_capacity = None
+        self.thermal_conductivity = thermal_conductivity
+        self.density = density
+        self.heat_capacity = heat_capacity
+        self.name = name
 
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient
