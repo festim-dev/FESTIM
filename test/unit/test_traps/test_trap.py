@@ -164,7 +164,7 @@ class TestCreateTrappingForm:
 
     def test_chemical_potential(self):
         """
-        Test that create_trapping_form creates the correct formulation 
+        Test that create_trapping_form creates the correct formulation
         with chemical potential conservation
         """
         # build
@@ -215,7 +215,7 @@ class TestCreateTrappingForm:
 
     def test_2_materials(self):
         """
-        Test that create_trapping_form creates the correct formulation 
+        Test that create_trapping_form creates the correct formulation
         with two materials
         """
         # build
@@ -264,7 +264,7 @@ class TestCreateTrappingForm:
 
     def test_multi_parameters_trap(self):
         """
-        Test that create_trapping_form creates the correct formulation 
+        Test that create_trapping_form creates the correct formulation
         with a trap conglomerate
         """
         # build
@@ -312,7 +312,7 @@ class TestCreateTrappingForm:
 
     def test_steady_state_trap_not_defined_everywhere(self):
         """
-        Test that create_trapping_form creates the correct formulation 
+        Test that create_trapping_form creates the correct formulation
         in steady-state with a trap distribution
         """
         # build

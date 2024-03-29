@@ -6,6 +6,7 @@ class TestExtrinsicTrap:
     """
     General test for the ExtrinsicTrap class
     """
+
     my_trap = festim.ExtrinsicTrap(
         1,
         1,
@@ -32,7 +33,7 @@ class TestExtrinsicTrap:
 
     def test_that_form_parameters_are_expressions(self):
         """
-        Checks that the attributes are of correct types 
+        Checks that the attributes are of correct types
         """
         prms = [
             self.my_trap.phi_0,
