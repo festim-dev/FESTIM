@@ -11,7 +11,8 @@ def add_functions(trap, V, id=1):
 
 @pytest.mark.parametrize("mats", [True, [True, "mat_name"], 1, [1, 2]])
 def test_error_wrong_type_material(mats):
-    """Checks that an error is raised when the wrong type is given to
+    """
+    Checks that an error is raised when the wrong type is given to
     materials
 
     Args:
@@ -40,7 +41,8 @@ class TestDuplicateMaterial:
         ],
     )
     def test_error_if_duplicate_material(self, mats_list):
-        """Checks that an error is raised when there are duplicates in
+        """
+        Checks that an error is raised when there are duplicates in
         the materials attribute of the festim.Trap class
 
         Args:
@@ -71,6 +73,10 @@ class TestCreateTrappingForm:
     mat2 = festim.Material(2, D_0=2, E_D=2, S_0=3, E_S=4, name="mat2")
 
     def test_steady_state(self):
+        """
+        Test that create_trapping_form creates the correct formulation in
+        the steady-state case
+        """
         # build
         my_trap = festim.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
@@ -108,6 +114,10 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
     def test_transient(self):
+        """
+        Test that create_trapping_form creates the correct formulation in
+        the transient case
+        """
         # build
         my_trap = festim.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
@@ -153,6 +163,10 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
     def test_chemical_potential(self):
+        """
+        Test that create_trapping_form creates the correct formulation 
+        with chemical potential conservation
+        """
         # build
         my_trap = festim.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
@@ -200,6 +214,10 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
     def test_2_materials(self):
+        """
+        Test that create_trapping_form creates the correct formulation 
+        with two materials
+        """
         # build
         my_trap = festim.Trap(
             k_0=1,
@@ -245,6 +263,10 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
     def test_multi_parameters_trap(self):
+        """
+        Test that create_trapping_form creates the correct formulation 
+        with a trap conglomerate
+        """
         # build
         my_trap = festim.Trap(
             k_0=[1, 2],
@@ -289,6 +311,10 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
     def test_steady_state_trap_not_defined_everywhere(self):
+        """
+        Test that create_trapping_form creates the correct formulation 
+        in steady-state with a trap distribution
+        """
         # build
         my_trap = festim.Trap(
             k_0=1, E_k=2, p_0=3, E_p=4, materials=self.mat1, density=1 + festim.x
@@ -361,7 +387,8 @@ class TestCreateTrappingForm:
         assert my_trap.F_trapping.equals(expected_form)
 
     def test_user_expression_as_density(self):
-        """Test that create_trapping_form creates the correct formulation when
+        """
+        Test that create_trapping_form creates the correct formulation when
         a fenics.UserExpression is given as density
         """
 
@@ -551,6 +578,7 @@ class TestCreateForm:
         assert my_trap.F == 0
 
     def test_1_mat_steady(self):
+        """Tests the case of one material in steady-state"""
         # build
         my_trap = festim.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
         add_functions(my_trap, self.V, id=1)
@@ -569,6 +597,7 @@ class TestCreateForm:
         assert my_trap.F.equals(expected_form)
 
     def test_1_mat_transient(self):
+        """Tests the case of one material in transient"""
         # build
         my_trap = festim.Trap(1, 1, 1, 1, materials=self.mat1, density=1)
         add_functions(my_trap, self.V, id=1)
@@ -589,6 +618,7 @@ class TestCreateForm:
         assert my_trap.F.equals(expected_form)
 
     def test_2_mats_transient(self):
+        """Tests the case of two materials in transient"""
         # build
         my_trap = festim.Trap(1, 1, 1, 1, materials=[self.mat1, self.mat2], density=1)
         add_functions(my_trap, self.V, id=1)
@@ -609,6 +639,7 @@ class TestCreateForm:
         assert my_trap.F.equals(expected_form)
 
     def test_1_mat_and_source(self):
+        """Tests the case of one material with a source term"""
         # build
         my_trap = festim.Trap(1, 1, 1, 1, materials=self.mat2, density=1)
         my_trap.sources = [festim.Source(1 + festim.x + festim.y, volume=1, field="1")]
