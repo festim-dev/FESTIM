@@ -453,3 +453,15 @@ class TestDerivedQuantititesPropertyRaiseError:
                 self.my_derived_quantity,
                 1,
             ]
+
+
+def test_instanciate_with_no_derived_quantities():
+    """
+    Test to catch bug described in issue #724
+    """
+    # define exports
+    folder_results = "Results/"
+    DerivedQuantities(
+        filename=folder_results + "derived_quantities.csv",
+        nb_iterations_between_exports=1,
+    )

@@ -438,3 +438,11 @@ class TestMaterialsPropertyRaiseError:
             match="materials must be a list of festim.Material",
         ):
             self.my_mats.materials = [self.my_mat, 1]
+
+
+def test_instanciate_with_no_elements():
+    """
+    Test to catch bug described in issue #724
+    """
+    # define exports
+    F.Materials()

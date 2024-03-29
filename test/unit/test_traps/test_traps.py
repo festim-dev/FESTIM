@@ -240,3 +240,11 @@ class TestTrapsPropertyRaiseError:
             match="traps must be a list of festim.Trap",
         ):
             self.my_traps.traps = [self.my_trap, 1]
+
+
+def test_instanciate_with_no_elements():
+    """
+    Test to catch bug described in issue #724
+    """
+    # define exports
+    festim.Traps()
