@@ -21,10 +21,14 @@ class HeatTransferProblem(festim.Temperature):
             If None, the default fenics linear solver will be used ("umfpack").
             More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
             Defaults to None.
+        preconditioner (str, optional): preconditioning method for the newton solver,
+            options can be veiwed by print(list_krylov_solver_preconditioners()).
+            Defaults to None.
 
     Attributes:
         F (fenics.Form): the variational form of the heat transfer problem
         v_T (fenics.TestFunction): the test function
+        newton_solver (fenics.NewtonSolver): Newton solver for solving the nonlinear problem
         initial_condition (festim.InitialCondition): the initial condition
         sub_expressions (list): contains time dependent fenics.Expression to
             be updated
@@ -41,6 +45,7 @@ class HeatTransferProblem(festim.Temperature):
         relative_tolerance=1e-10,
         maximum_iterations=30,
         linear_solver=None,
+        preconditioner=None,
     ) -> None:
         super().__init__()
         self.transient = transient
@@ -49,6 +54,8 @@ class HeatTransferProblem(festim.Temperature):
         self.relative_tolerance = relative_tolerance
         self.maximum_iterations = maximum_iterations
         self.linear_solver = linear_solver
+        self.preconditioner = preconditioner
+        self.newton_solver = None
 
         self.F = 0
         self.v_T = None
@@ -89,22 +96,15 @@ class HeatTransferProblem(festim.Temperature):
                 self.T_n.assign(f.interpolate(self.initial_condition.value, V))
 
         self.define_variational_problem(materials, mesh, dt)
+        self.define_newton_solver()
         self.create_dirichlet_bcs(mesh.surface_markers)
 
         if not self.transient:
             print("Solving stationary heat equation")
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)
-            problem = f.NonlinearVariationalProblem(
-                self.F, self.T, self.dirichlet_bcs, JT
-            )
-            solver = f.NonlinearVariationalSolver(problem)
-            newton_solver_prm = solver.parameters["newton_solver"]
-            newton_solver_prm["absolute_tolerance"] = self.absolute_tolerance
-            newton_solver_prm["relative_tolerance"] = self.relative_tolerance
-            newton_solver_prm["maximum_iterations"] = self.maximum_iterations
-            newton_solver_prm["linear_solver"] = self.linear_solver
-            solver.solve()
+            problem = festim.Problem(JT, self.F, self.dirichlet_bcs)
+            self.newton_solver.solve(problem, self.T.vector())
             self.T_n.assign(self.T)
 
     def define_variational_problem(self, materials, mesh, dt=None):
@@ -183,6 +183,16 @@ class HeatTransferProblem(festim.Temperature):
                 for surf in bc.surfaces:
                     self.F += -bc.form * self.v_T * mesh.ds(surf)
 
+    def define_newton_solver(self):
+        """Creates the Newton solver and sets its parameters"""
+        self.newton_solver = f.NewtonSolver()
+        self.newton_solver.parameters["error_on_nonconvergence"] = False
+        self.newton_solver.parameters["absolute_tolerance"] = self.absolute_tolerance
+        self.newton_solver.parameters["relative_tolerance"] = self.relative_tolerance
+        self.newton_solver.parameters["maximum_iterations"] = self.maximum_iterations
+        self.newton_solver.parameters["linear_solver"] = self.linear_solver
+        self.newton_solver.parameters["preconditioner"] = self.preconditioner
+
     def create_dirichlet_bcs(self, surface_markers):
         """Creates a list of fenics.DirichletBC and add time dependent
         expressions to .sub_expressions
@@ -214,16 +224,8 @@ class HeatTransferProblem(festim.Temperature):
             # Solve heat transfers
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)  # Define the Jacobian
-            problem = f.NonlinearVariationalProblem(
-                self.F, self.T, self.dirichlet_bcs, JT
-            )
-            solver = f.NonlinearVariationalSolver(problem)
-            newton_solver_prm = solver.parameters["newton_solver"]
-            newton_solver_prm["absolute_tolerance"] = self.absolute_tolerance
-            newton_solver_prm["relative_tolerance"] = self.relative_tolerance
-            newton_solver_prm["maximum_iterations"] = self.maximum_iterations
-            newton_solver_prm["linear_solver"] = self.linear_solver
-            solver.solve()
+            problem = festim.Problem(JT, self.F, self.dirichlet_bcs)
+            self.newton_solver.solve(problem, self.T.vector())
             self.T_n.assign(self.T)
 
     def is_steady_state(self):

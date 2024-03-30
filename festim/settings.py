@@ -25,6 +25,9 @@ class Settings:
             options can be veiwed by print(list_linear_solver_methods()).
             More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
             Defaults to None, for the newton solver this is: "umfpack".
+        preconditioner (str, optional): preconditioning method for the newton solver,
+            options can be veiwed by print(list_krylov_solver_preconditioners()).
+            Defaults to None.
 
     Attributes:
         transient (bool): transient or steady state sim
@@ -40,6 +43,7 @@ class Settings:
         traps_element_type (str): Finite element used for traps.
         update_jacobian (bool):
         linear_solver (str): linear solver method for the newton solver
+        precondtitioner (str): preconditioning method for the newton solver
     """
 
     def __init__(
@@ -54,6 +58,7 @@ class Settings:
         traps_element_type="CG",
         update_jacobian=True,
         linear_solver=None,
+        preconditioner=None,
     ):
         # TODO maybe transient and final_time are redundant
         self.transient = transient
@@ -68,3 +73,4 @@ class Settings:
         self.traps_element_type = traps_element_type
         self.update_jacobian = update_jacobian
         self.linear_solver = linear_solver
+        self.preconditioner = preconditioner

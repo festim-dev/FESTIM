@@ -113,3 +113,5 @@ from .concentration.traps.neutron_induced_trap import NeutronInducedTrap
 from .h_transport_problem import HTransportProblem
 
 from .generic_simulation import Simulation
+
+from .nonlinear_problem import Problem
