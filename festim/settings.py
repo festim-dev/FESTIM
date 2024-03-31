@@ -58,7 +58,7 @@ class Settings:
         traps_element_type="CG",
         update_jacobian=True,
         linear_solver=None,
-        preconditioner=None,
+        preconditioner="default",
     ):
         # TODO maybe transient and final_time are redundant
         self.transient = transient

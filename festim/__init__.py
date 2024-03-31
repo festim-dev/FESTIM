@@ -102,6 +102,7 @@ from .materials.materials import Materials
 from .concentration.concentration import Concentration
 from .initial_condition import InitialCondition
 from .concentration.mobile import Mobile
+from .nonlinear_problem import Problem
 from .concentration.theta import Theta
 
 from .concentration.traps.trap import Trap
@@ -113,5 +114,3 @@ from .concentration.traps.neutron_induced_trap import NeutronInducedTrap
 from .h_transport_problem import HTransportProblem
 
 from .generic_simulation import Simulation
-
-from .nonlinear_problem import Problem

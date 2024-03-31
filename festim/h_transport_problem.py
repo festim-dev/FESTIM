@@ -61,6 +61,7 @@ class HTransportProblem:
             self.mobile.volume_markers = mesh.volume_markers
             self.mobile.T = self.T
         self.attribute_flux_boundary_conditions()
+
         # Define functions
         self.define_function_space(mesh)
         self.initialise_concentrations()
@@ -291,7 +292,6 @@ class HTransportProblem:
 
         problem = festim.Problem(J, self.F, self.bcs)
         nb_it, converged = self.newton_solver.solve(problem, self.u.vector())
-
         return nb_it, converged
 
     def update_previous_solutions(self):

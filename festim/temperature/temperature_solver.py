@@ -55,13 +55,13 @@ class HeatTransferProblem(festim.Temperature):
         self.maximum_iterations = maximum_iterations
         self.linear_solver = linear_solver
         self.preconditioner = preconditioner
-        self.newton_solver = None
 
         self.F = 0
         self.v_T = None
         self.sources = []
         self.boundary_conditions = []
         self.sub_expressions = []
+        self.newton_solver = None
 
     # TODO rename initialise?
     def create_functions(self, materials, mesh, dt=None):
@@ -96,8 +96,8 @@ class HeatTransferProblem(festim.Temperature):
                 self.T_n.assign(f.interpolate(self.initial_condition.value, V))
 
         self.define_variational_problem(materials, mesh, dt)
-        self.define_newton_solver()
         self.create_dirichlet_bcs(mesh.surface_markers)
+        self.define_newton_solver_temperature()
 
         if not self.transient:
             print("Solving stationary heat equation")
@@ -183,7 +183,7 @@ class HeatTransferProblem(festim.Temperature):
                 for surf in bc.surfaces:
                     self.F += -bc.form * self.v_T * mesh.ds(surf)
 
-    def define_newton_solver(self):
+    def define_newton_solver_temperature(self):
         """Creates the Newton solver and sets its parameters"""
         self.newton_solver = f.NewtonSolver()
         self.newton_solver.parameters["error_on_nonconvergence"] = False
