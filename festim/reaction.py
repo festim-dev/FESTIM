@@ -119,9 +119,9 @@ class Reaction:
         else:
             reactants = [self.reactant]
 
-        product_of_reactants = reactants[0].solution
-        for reactant in reactants:
-            product_of_reactants *= reactant.solution
+        product_of_reactants = reactants[0].concentration
+        for reactant in reactants[1:]:
+            product_of_reactants *= reactant.concentration
 
         if isinstance(self.product, list):
             products = self.product
@@ -132,7 +132,7 @@ class Reaction:
 
         if len(products) > 0:
             product_of_products = products[0].solution
-            for product in products:
+            for product in products[1:]:
                 product_of_products *= product.solution
         else:
             product_of_products = 0
