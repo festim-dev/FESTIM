@@ -72,6 +72,8 @@ class Reaction:
     def reactant(self, value):
         if not isinstance(value, list): 
             value = [value]
+        if len(value) == 0: 
+            raise ValueError(f"reactant must be an entry of one or more species objects, not zero.")
         for i in value:
             if not isinstance(i, (F.Species, F.ImplicitSpecies)):
                 raise TypeError(
