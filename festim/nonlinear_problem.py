@@ -17,18 +17,13 @@ class Problem(f.NonlinearProblem):
         self.jacobian_form = J
         self.residual_form = F
         self.bcs = bcs
+        self.assembler = f.SystemAssembler(self.jacobian_form, self.residual_form, self.bcs)
         f.NonlinearProblem.__init__(self)
 
     def F(self, b, x):
         """Assembles the RHS in Ax=b and applies the boundary conditions"""
-        f.assemble(self.residual_form, tensor=b)
-        if self.bcs:
-            for bc in self.bcs:
-                bc.apply(b, x)
+        self.assembler.assemble(b, x)
 
     def J(self, A, x):
         """Assembles the LHS in Ax=b and applies the boundary conditions"""
-        f.assemble(self.jacobian_form, tensor=A)
-        if self.bcs:
-            for bc in self.bcs:
-                bc.apply(A)
+        self.assembler.assemble(A)
