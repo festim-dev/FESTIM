@@ -19,12 +19,11 @@ def test_reaction_init():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        [species1, species], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # check that the attributes are set correctly
-    assert reaction.reactant1 == species1
-    assert reaction.reactant2 == species2
+    assert reaction.reactant == [species1, species2]
     assert reaction.product == product
     assert reaction.k_0 == 1.0
     assert reaction.E_k == 0.2
@@ -44,7 +43,7 @@ def test_reaction_repr():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # check that the __repr__ method returns the expected string
@@ -65,8 +64,7 @@ def test_reaction_repr_2_products():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1,
-        species2,
+        [species1, species2],
         [product1, product2],
         k_0=1.0,
         E_k=0.2,
@@ -92,7 +90,7 @@ def test_reaction_str():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # check that the __str__ method returns the expected string
@@ -113,8 +111,7 @@ def test_reaction_str_2_products():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1,
-        species2,
+        [species1, species2],
         [product1, product2],
         k_0=1.0,
         E_k=0.2,
@@ -147,7 +144,7 @@ def test_reaction_reaction_term(temperature):
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # test the reaction term at a given temperature
@@ -185,8 +182,7 @@ def test_reaction_reaction_term_2_products(temperature):
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1,
-        species2,
+        [species1, species2],
         [product1, product2],
         k_0=1.0,
         E_k=0.2,
@@ -209,33 +205,14 @@ def test_reaction_reaction_term_2_products(temperature):
     assert reaction.reaction_term(temperature) == expected_reaction_term
 
 
-def test_reactant1_setter_raises_error_with_wrong_type():
-    """Test a type error is raised when the reactant1 is given a wrong type."""
+def test_reactant_setter_raises_error_with_wrong_type():
+    """Test a type error is raised when the first reactant is given a wrong type."""
     with pytest.raises(
         TypeError,
-        match="reactant1 must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
+        match="reactant must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
     ):
         F.Reaction(
-            reactant1="A",
-            reactant2=F.Species("B"),
-            product=F.Species("C"),
-            k_0=1,
-            E_k=0.1,
-            p_0=2,
-            E_p=0.2,
-            volume=my_vol,
-        )
-
-
-def test_reactant2_setter_raises_error_with_wrong_type():
-    """Test a type error is raised when the reactant2 is given a wrong type."""
-    with pytest.raises(
-        TypeError,
-        match="reactant2 must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
-    ):
-        F.Reaction(
-            reactant1=F.Species("A"),
-            reactant2="B",
+            reactant=["A", F.Species("B")],
             product=F.Species("C"),
             k_0=1,
             E_k=0.1,
