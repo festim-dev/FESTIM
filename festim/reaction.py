@@ -46,7 +46,7 @@ class Reaction:
     def __init__(
         self,
         reactant: Union[F.Species, F.ImplicitSpecies],
-        product: Optional[F.Species],
+        product: Optional[Union[F.Species, List[F.Species]]],
         k_0: float,
         E_k: float,
         p_0: float,
