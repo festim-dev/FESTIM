@@ -5,6 +5,10 @@ from pathlib import Path
 
 
 class TestGetComp:
+    """
+    General test for the get_comp method of the festim.Concentration class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
 
@@ -44,6 +48,10 @@ class TestGetComp:
 
 
 class TestInitialise:
+    """
+    General test for the initialise method of the festim.Concentration class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     u = f.Function(V)

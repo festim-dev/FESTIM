@@ -79,6 +79,9 @@ def test_TXTExport_times_added_to_milestones(tmpdir):
     """Creates a Simulation object and checks that, if no dt.milestones
      are given and TXTExport.times are given, TXTExport.times are
     are added to dt.milestones by .initialise()
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     # tmpdir
     d = tmpdir.mkdir("test_folder")
@@ -120,8 +123,13 @@ def test_TXTExport_times_added_to_milestones(tmpdir):
 )
 @pytest.mark.parametrize("sys", ["cylindrical", "spherical"])
 def test_cartesian_and_surface_flux_warning(quantity, sys):
-    """Creates a Simulation object and checks that, if either a cylindrical
+    """
+    Creates a Simulation object and checks that, if either a cylindrical
     or spherical meshes are given with a SurfaceFlux, a warning is raised.
+
+    Args:
+        quantity (festim.DerivedQuantity): a festim.DerivedQuantity object
+        sys (str): type of the coordinate system
     """
     # build
     my_model = F.Simulation()

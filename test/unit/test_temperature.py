@@ -100,6 +100,9 @@ def test_heat_transfer_create_functions_transient(tmpdir):
     Creates a function, writes it to an XDMF file, then a HeatTransferProblem
     class is created from this file and the error norm between the written and
     read fuctions is computed to ensure they are the same.
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     # create function to be comapared
     mesh = fenics.UnitIntervalMesh(10)
@@ -135,6 +138,9 @@ def test_temperature_from_xdmf_create_functions(tmpdir):
     Creates a function, writes it to an XDMF file, then a TemperatureFromXDMF
     class is created from this file and the error norm between the written and
     read fuctions is computed to ensure they are the same.
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     # create function to be comapared
     mesh = fenics.UnitSquareMesh(10, 10)
@@ -160,6 +166,9 @@ def test_temperature_from_xdmf_label_checker(tmpdir):
     """Test for the label check test within the TemperatureFromXDMF class,
     ensures that a ValueError is raised when reading a file with an
     incorrect label.
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     # create function to be written
     mesh = fenics.UnitSquareMesh(10, 10)
@@ -177,8 +186,13 @@ def test_temperature_from_xdmf_label_checker(tmpdir):
 
 
 def test_temperature_from_xdmf_transient_case(tmpdir):
-    """Test that the TemperatureFromXdmf class works in a transient
-    h transport case"""
+    """
+    Test that the TemperatureFromXdmf class works in a transient
+    h transport case
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
+    """
     # create temperature field xdmf
     my_model = festim.Simulation(log_level=20)
     my_model.mesh = festim.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
@@ -209,6 +223,9 @@ def test_temperature_from_xdmf(tmpdir):
     """
     Tests that .is_steady_state() can be run for
     a TemperatureFromXDMF object
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     mesh = fenics.UnitSquareMesh(10, 10)
     V = fenics.FunctionSpace(mesh, "CG", 1)

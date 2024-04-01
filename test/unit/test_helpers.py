@@ -8,6 +8,7 @@ from festim import (
     t,
 )
 from fenics import Constant, Expression, UserExpression
+import pytest
 
 
 def test_energy_converter():
@@ -19,45 +20,44 @@ def test_energy_converter():
         assert energy_in_eV == expected_value
 
 
-def test_as_constant():
-    assert isinstance(as_constant(3), Constant)
-    assert isinstance(as_constant(3.0), Constant)
-    assert isinstance(as_constant(-2.0), Constant)
-    assert isinstance(as_constant(Constant(2.0)), Constant)
+@pytest.mark.parametrize("constant", [3, 3.0, -2.0, Constant(2.0)])
+def test_as_constant(constant):
+    assert isinstance(as_constant(constant), Constant)
 
 
-def test_as_expression():
-    assert isinstance(as_expression(3 * t), Expression)
-    assert isinstance(as_expression(Expression("2 + x[0]", degree=2)), Expression)
+class CustomExpr(UserExpression):
+    def __init__(self):
+        super().__init__()
 
-    class CustomExpr(UserExpression):
-        def __init__(self):
-            super().__init__()
-
-        def eval(self, x, values):
-            values[0] = x
-
-    assert isinstance(as_expression(CustomExpr()), UserExpression)
+    def eval(self, x, values):
+        values[0] = x
 
 
-def test_as_constant_or_expression():
-    # constants
-    assert isinstance(as_constant_or_expression(3), Constant)
-    assert isinstance(as_constant_or_expression(3.0), Constant)
-    assert isinstance(as_constant_or_expression(-2.0), Constant)
-    assert isinstance(as_constant_or_expression(Constant(2.0)), Constant)
+@pytest.mark.parametrize(
+    "expression,type",
+    [
+        (3 * t, Expression),
+        (Expression("2 + x[0]", degree=2), Expression),
+        (CustomExpr(), UserExpression),
+    ],
+)
+def test_as_expression(expression, type):
+    assert isinstance(as_expression(expression), type)
 
-    # expressions
-    assert isinstance(as_constant_or_expression(3 * t), Expression)
-    assert isinstance(
-        as_constant_or_expression(Expression("2 + x[0]", degree=2)), Expression
-    )
 
-    class CustomExpr(UserExpression):
-        def __init__(self):
-            super().__init__()
-
-        def eval(self, x, values):
-            values[0] = x
-
-    assert isinstance(as_constant_or_expression(CustomExpr()), UserExpression)
+@pytest.mark.parametrize(
+    "expression,type",
+    [
+        # constants
+        (3, Constant),
+        (3.0, Constant),
+        (-2.0, Constant),
+        (Constant(2.0), Constant),
+        # expressions
+        (3 * t, Expression),
+        (Expression("2 + x[0]", degree=2), Expression),
+        (CustomExpr(), UserExpression),
+    ],
+)
+def test_as_constant_or_expression(expression, type):
+    assert isinstance(as_constant_or_expression(expression), type)

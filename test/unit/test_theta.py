@@ -5,6 +5,10 @@ import pytest
 
 
 class TestInitialise:
+    """
+    General test for the initialise method of the festim.Theta class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     u = f.Function(V)
@@ -13,6 +17,7 @@ class TestInitialise:
     T.create_functions(festim.Mesh(mesh))
 
     def test_from_expresion_chemical_pot(self):
+        """test initialisation from an expression"""
         my_theta = festim.Theta()
         S = f.interpolate(f.Constant(2), self.V)
         my_theta.materials = festim.Materials([festim.Material(1, 1, 0, S_0=2, E_S=0)])
@@ -32,6 +37,10 @@ class TestInitialise:
 
 
 class TestCreateDiffusionForm:
+    """
+    General test for the create_diffusion_form method of the festim.Theta class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     my_mesh = festim.Mesh(mesh)
     my_temp = festim.Temperature(value=100)
@@ -41,6 +50,7 @@ class TestCreateDiffusionForm:
     V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
 
     def test_sieverts(self):
+        """test with the Sievert solubility law"""
         # build
         mat1 = festim.Material(1, D_0=1, E_D=1, S_0=2, E_S=3, solubility_law="sievert")
         Index._globalcount = 8
@@ -72,6 +82,7 @@ class TestCreateDiffusionForm:
         assert my_theta.F.equals(expected_form)
 
     def test_henry(self):
+        """test with the Henry solubility law"""
         # build
         mat2 = festim.Material(2, D_0=2, E_D=2, S_0=3, E_S=4, solubility_law="henry")
 
@@ -105,6 +116,10 @@ class TestCreateDiffusionForm:
 
 
 def test_get_concentration_for_a_given_material():
+    """
+    Test that the get_concentration_for_a_given_material
+    method works correctly
+    """
     # build
     S_0 = 2
     E_S = 0.5

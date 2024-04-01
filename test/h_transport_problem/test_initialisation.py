@@ -2,9 +2,18 @@ import festim
 import pytest
 import fenics
 from pathlib import Path
+import os
 
 
 def test_initialisation_from_xdmf(tmpdir):
+    """
+    Test that initialise_solutions interpolates correctly
+    from an XDMF-file
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
+    """
+
     mesh = fenics.UnitSquareMesh(5, 5)
     V = fenics.VectorFunctionSpace(mesh, "P", 1, 2)
     u = fenics.Function(V)
@@ -19,7 +28,6 @@ def test_initialisation_from_xdmf(tmpdir):
     d = tmpdir.mkdir("Initial solutions")
     file1 = d.join("u_1out.xdmf")
     file2 = d.join("u_2out.xdmf")
-    print(Path(file1))
     with fenics.XDMFFile(str(Path(file1))) as f:
         f.write_checkpoint(
             u.sub(0), "1", 2, fenics.XDMFFile.Encoding.HDF5, append=False

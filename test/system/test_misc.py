@@ -4,7 +4,13 @@ import pytest
 import os
 
 
-def test_convective_flux():
+def test_convective_flux(tmpdir):
+    """
+    Tests that convective boundary condition works correctly
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
+    """
     sim = F.Simulation()
 
     sim.mesh = F.MeshFromVertices(np.linspace(0, 1, num=50))
@@ -19,7 +25,13 @@ def test_convective_flux():
 
     sim.materials = F.Materials([F.Material(1, D_0=1, E_D=0, thermal_cond=2)])
 
-    sim.exports = F.Exports([F.XDMFExport("T", checkpoint=False)])
+    sim.exports = F.Exports(
+        [
+            F.XDMFExport(
+                "T", checkpoint=False, filename="{}/temperature.xdmf".format(tmpdir)
+            )
+        ]
+    )
 
     sim.settings = F.Settings(1e-10, 1e-10, transient=False)
 
@@ -186,6 +198,9 @@ def test_txt_export_desired_times(tmp_path, final_time, stepsize, export_times):
 def test_txt_export_all_times(tmp_path):
     """
     Tests that TXTExport can be exported at all timesteps
+
+    Args:
+        tmp_path (os.PathLike): path to a temporary folder
     """
     my_model = F.Simulation()
 
@@ -214,6 +229,9 @@ def test_txt_export_all_times(tmp_path):
 def test_txt_export_steady_state(tmp_path):
     """
     Tests that TXTExport can be exported in steady state
+
+    Args:
+        tmp_path (os.PathLike): path to a temporary folder
     """
     my_model = F.Simulation()
 
