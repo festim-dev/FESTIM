@@ -670,8 +670,11 @@ class HydrogenTransportProblem:
                     * self.dx(reaction.volume.id)
                 )
             # product
+            
             if isinstance(reaction.product, list):
                 products = reaction.product
+            elif not reaction.product: 
+                products = []
             else:
                 products = [reaction.product]
             for product in products:
