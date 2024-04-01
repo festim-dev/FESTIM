@@ -67,10 +67,12 @@ class Reaction:
 
     @reactant.setter
     def reactant(self, value):
-        if not isinstance(value, list): 
+        if not isinstance(value, list):
             value = [value]
-        if len(value) == 0: 
-            raise ValueError(f"reactant must be an entry of one or more species objects, not zero.")
+        if len(value) == 0:
+            raise ValueError(
+                f"reactant must be an entry of one or more species objects, not zero."
+            )
         for i in value:
             if not isinstance(i, (F.Species, F.ImplicitSpecies)):
                 raise TypeError(
@@ -83,7 +85,7 @@ class Reaction:
             reactants = " + ".join([str(reactant) for reactant in self.reactant])
         else:
             reactants = self.reactant
-        
+
         if isinstance(self.product, list):
             products = " + ".join([str(product) for product in self.product])
         else:
@@ -112,7 +114,7 @@ class Reaction:
 
         if isinstance(self.reactant, list):
             reactants = self.reactant
-        elif not self.reactant: 
+        elif not self.reactant:
             reactants = []
         else:
             reactants = [self.reactant]
@@ -120,10 +122,10 @@ class Reaction:
         product_of_reactants = reactants[0].solution
         for reactant in reactants:
             product_of_reactants *= reactant.solution
-        
+
         if isinstance(self.product, list):
             products = self.product
-        elif not self.product: 
+        elif not self.product:
             products = []
         else:
             products = [self.product]
@@ -132,7 +134,7 @@ class Reaction:
             product_of_products = products[0].solution
             for product in products:
                 product_of_products *= product.solution
-        else: 
-            product_of_products = 0 
-            
+        else:
+            product_of_products = 0
+
         return k * product_of_reactants - p * product_of_products

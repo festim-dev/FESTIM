@@ -145,6 +145,7 @@ def test_reaction_str_2_products():
     expected_str = "A + B <--> C + D"
     assert str(reaction) == expected_str
 
+
 def test_reaction_str_no_products():
     """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
 
@@ -165,6 +166,7 @@ def test_reaction_str_no_products():
     # check that the __str__ method returns the expected string
     expected_str = "A <--> None"
     assert str(reaction) == expected_str
+
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
