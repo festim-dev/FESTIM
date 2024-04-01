@@ -19,7 +19,7 @@ def test_reaction_init():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
     )
 
     # check that the attributes are set correctly
@@ -145,7 +145,6 @@ def test_reaction_str_2_products():
     expected_str = "A + B <--> C + D"
     assert str(reaction) == expected_str
 
-
 def test_reaction_str_no_products():
     """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
 
@@ -166,7 +165,6 @@ def test_reaction_str_no_products():
     # check that the __str__ method returns the expected string
     expected_str = "A <--> None"
     assert str(reaction) == expected_str
-
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
