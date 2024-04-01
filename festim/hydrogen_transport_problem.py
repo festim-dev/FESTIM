@@ -461,9 +461,11 @@ class HydrogenTransportProblem:
                 ).collapse()
 
         for idx, spe in enumerate(self.species):
+            print(idx, spe)
             spe.solution = sub_solutions[idx]
             spe.prev_solution = sub_prev_solution[idx]
             spe.test_function = sub_test_functions[idx]
+            print("tf", spe.test_function)
 
     def define_meshtags_and_measures(self):
         """Defines the facet and volume meshtags of the model which are used
@@ -661,11 +663,12 @@ class HydrogenTransportProblem:
             else:
                 reactants = [reaction.reactant]
             for reactant in reactants:
-                self.formulation += (
-                    reaction.reaction_term(self.temperature_fenics)
-                    * reactant.test_function
-                    * self.dx(reaction.volume.id)
-                )
+                if isinstance(reactant, F.Species):
+                    self.formulation += (
+                        reaction.reaction_term(self.temperature_fenics)
+                        * reactant.test_function
+                        * self.dx(reaction.volume.id)
+                    )
 
             # product
 
