@@ -1,5 +1,5 @@
 import festim as F
-from typing import Union
+from typing import Union, Optional
 
 from ufl import exp
 
@@ -10,7 +10,7 @@ class Reaction:
     Arguments:
         reactant1 (Union[F.Species, F.ImplicitSpecies]): The first reactant.
         reactant2 (Union[F.Species, F.ImplicitSpecies]): The second reactant.
-        product (F.Species): The product.
+        product (Optional[F.Species]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
@@ -20,7 +20,7 @@ class Reaction:
     Attributes:
         reactant1 (Union[F.Species, F.ImplicitSpecies]): The first reactant.
         reactant2 (Union[F.Species, F.ImplicitSpecies]): The second reactant.
-        product (F.Species): The product.
+        product (Optional[F.Species]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
@@ -50,7 +50,7 @@ class Reaction:
         self,
         reactant1: Union[F.Species, F.ImplicitSpecies],
         reactant2: Union[F.Species, F.ImplicitSpecies],
-        product: F.Species,
+        product: Optional[F.Species],
         k_0: float,
         E_k: float,
         p_0: float,
