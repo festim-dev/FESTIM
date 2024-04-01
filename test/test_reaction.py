@@ -78,6 +78,27 @@ def test_reaction_repr_2_products():
     assert repr(reaction) == expected_repr
 
 
+def test_reaction_repr_2_products():
+    """Test that the Reaction __repr__ method returns the expected string"""
+
+    # create two species
+    species1 = F.Species("A")
+
+    # create a reaction between the two species
+    reaction = F.Reaction(
+        species1,
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
+    )
+
+    # check that the __repr__ method returns the expected string
+    expected_repr = "Reaction(A <--> None, 1.0, 0.2, 0.1, 0.3)"
+    assert repr(reaction) == expected_repr
+
+
 def test_reaction_str():
     """Test that the Reaction __str__ method returns the expected string"""
 
@@ -124,6 +145,26 @@ def test_reaction_str_2_products():
     expected_str = "A + B <--> C + D"
     assert str(reaction) == expected_str
 
+def test_reaction_str_no_products():
+    """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
+
+    # create two species
+    species1 = F.Species("A")
+
+    # create a reaction between the two species
+    reaction = F.Reaction(
+        species1,
+        None,
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
+    )
+
+    # check that the __str__ method returns the expected string
+    expected_str = "A <--> None"
+    assert str(reaction) == expected_str
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
