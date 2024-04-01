@@ -1,5 +1,5 @@
 import festim as F
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 from ufl import exp
 
@@ -8,9 +8,8 @@ class Reaction:
     """A reaction between two species, with a forward and backward rate.
 
     Arguments:
-        reactant1 (Union[F.Species, F.ImplicitSpecies]): The first reactant.
-        reactant2 (Union[F.Species, F.ImplicitSpecies]): The second reactant.
-        product (Optional[F.Species]): The product.
+        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species, F.ImplicitSpecies]]): The reactant.
+        product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
@@ -18,9 +17,8 @@ class Reaction:
         volume (F.VolumeSubdomain1D): The volume subdomain where the reaction takes place.
 
     Attributes:
-        reactant1 (Union[F.Species, F.ImplicitSpecies]): The first reactant.
-        reactant2 (Union[F.Species, F.ImplicitSpecies]): The second reactant.
-        product (Optional[F.Species]): The product.
+        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species, F.ImplicitSpecies]]): The reactant.
+        product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
@@ -29,14 +27,13 @@ class Reaction:
 
     Usage:
         >>> # create two species
-        >>> species1 = F.Species("A")
-        >>> species2 = F.Species("B")
+        >>> reactant = [F.Species("A"), F.Species("B")]
 
         >>> # create a product species
         >>> product = F.Species("C")
 
         >>> # create a reaction between the two species
-        >>> reaction = Reaction(species1, species2, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3)
+        >>> reaction = Reaction(reactant, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3)
         >>> print(reaction)
         A + B <--> C
 
