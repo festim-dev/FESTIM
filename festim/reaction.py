@@ -48,8 +48,7 @@ class Reaction:
 
     def __init__(
         self,
-        reactant1: Union[F.Species, F.ImplicitSpecies],
-        reactant2: Union[F.Species, F.ImplicitSpecies],
+        reactant: Union[F.Species, F.ImplicitSpecies],
         product: Optional[F.Species],
         k_0: float,
         E_k: float,
@@ -57,8 +56,7 @@ class Reaction:
         E_p: float,
         volume: F.VolumeSubdomain1D,
     ) -> None:
-        self.reactant1 = reactant1
-        self.reactant2 = reactant2
+        self.reactant = reactant
         self.product = product
         self.k_0 = k_0
         self.E_k = E_k
@@ -67,42 +65,42 @@ class Reaction:
         self.volume = volume
 
     @property
-    def reactant1(self):
-        return self._reactant1
+    def reactant(self):
+        return self._reactant
 
-    @reactant1.setter
-    def reactant1(self, value):
-        if not isinstance(value, (F.Species, F.ImplicitSpecies)):
-            raise TypeError(
-                f"reactant1 must be an F.Species or F.ImplicitSpecies, not {type(value)}"
-            )
-        self._reactant1 = value
-
-    @property
-    def reactant2(self):
-        return self._reactant2
-
-    @reactant2.setter
-    def reactant2(self, value):
-        if not isinstance(value, (F.Species, F.ImplicitSpecies)):
-            raise TypeError(
-                f"reactant2 must be an F.Species or F.ImplicitSpecies, not {type(value)}"
-            )
-        self._reactant2 = value
+    @reactant.setter
+    def reactant(self, value):
+        if not isinstance(value, list): 
+            value = [value]
+        for i in value:
+            if not isinstance(i, (F.Species, F.ImplicitSpecies)):
+                raise TypeError(
+                    f"reactant must be an F.Species or F.ImplicitSpecies, not {type(i)}"
+                )
+        self._reactant = value
 
     def __repr__(self) -> str:
+        if isinstance(self.reactant, list):
+            reactants = " + ".join([str(reactant) for reactant in self.reactant])
+        else:
+            reactants = self.reactant
+        
         if isinstance(self.product, list):
             products = " + ".join([str(product) for product in self.product])
         else:
             products = self.product
-        return f"Reaction({self.reactant1} + {self.reactant2} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
+        return f"Reaction({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
 
     def __str__(self) -> str:
+        if isinstance(self.reactant, list):
+            reactants = " + ".join([str(reactant) for reactant in self.reactant])
+        else:
+            reactants = self.reactant
         if isinstance(self.product, list):
             products = " + ".join([str(product) for product in self.product])
         else:
             products = self.product
-        return f"{self.reactant1} + {self.reactant2} <--> {products}"
+        return f"{reactants} <--> {products}"
 
     def reaction_term(self, temperature):
         """Compute the reaction term at a given temperature.
@@ -113,8 +111,16 @@ class Reaction:
         k = self.k_0 * exp(-self.E_k / (F.k_B * temperature))
         p = self.p_0 * exp(-self.E_p / (F.k_B * temperature))
 
-        c_A = self.reactant1.concentration
-        c_B = self.reactant2.concentration
+        if isinstance(self.reactant, list):
+            reactants = self.reactant
+        elif not self.reactant: 
+            reactants = []
+        else:
+            reactants = [self.reactant]
+
+        product_of_reactants = reactants[0].solution
+        for reactant in reactants:
+            product_of_reactants *= reactant.solution
         
         if isinstance(self.product, list):
             products = self.product
@@ -124,10 +130,10 @@ class Reaction:
             products = [self.product]
 
         if len(products) > 0:
-            products_of_product = products[0].solution
+            product_of_products = products[0].solution
             for product in products:
-                products_of_product *= product.solution
+                product_of_products *= product.solution
         else: 
-            products_of_product = 0 
+            product_of_products = 0 
             
-        return k * c_A * c_B - p * products_of_product
+        return k * product_of_reactants - p * product_of_products
