@@ -196,7 +196,7 @@ def test_reaction_reaction_term(temperature):
     p = arrhenius(reaction.p_0, reaction.E_p, temperature)
 
     expected_reaction_term = (
-        k * species1.solution * species2.solution - p * product.solution
+        k * (species1.solution * species2.solution) - p * product.solution
     )
 
     assert reaction.reaction_term(temperature) == expected_reaction_term
@@ -241,7 +241,7 @@ def test_reaction_reaction_term_2_products(temperature):
 
     product_of_products = product1.solution * product2.solution
     expected_reaction_term = (
-        k * species1.solution * species2.solution - p * product_of_products
+        k * (species1.solution * species2.solution) - p * product_of_products
     )
     assert reaction.reaction_term(temperature) == expected_reaction_term
 
