@@ -7,8 +7,16 @@ import numpy as np
 
 
 def compute_error(exact, computed, t, norm):
-    exact_sol = fenics.Expression(sp.printing.ccode(exact), degree=4, t=t)
+    """
+    An auxiliary method to compute the error
 
+    Args:
+        exact (sympy.Expr): exact solution
+        computed (fenics.Function): computed solution
+        t (float): simulation time
+        norm (str): type of norm (maximum absolute error or L2 norm)
+    """
+    exact_sol = fenics.Expression(sp.printing.ccode(exact), degree=4, t=t)
     if norm == "error_max":
         mesh = computed.function_space().mesh()
         vertex_values_u = computed.compute_vertex_values(mesh)
@@ -24,6 +32,9 @@ def test_run_MMS_chemical_pot(tmpdir):
     """
     Test function run() with conservation of chemical potential henry
     (1 material)
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + sp.sin(2 * fenics.pi * festim.x) * festim.t + festim.t
