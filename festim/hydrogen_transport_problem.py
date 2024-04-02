@@ -81,7 +81,7 @@ class HydrogenTransportProblem:
         >>> my_model.subdomains = [F.Subdomain(...)]
         >>> my_model.species = [F.Species(name="H"), F.Species(name="Trap")]
         >>> my_model.temperature = 500
-        >>> my_model.sources = [F.Source(...)]
+        >>> my_model.sources = [F.ParticleSource(...)]
         >>> my_model.boundary_conditions = [F.BoundaryCondition(...)]
         >>> my_model.initialise()
 
@@ -580,8 +580,8 @@ class HydrogenTransportProblem:
     def create_source_values_fenics(self):
         """For each source create the value_fenics"""
         for source in self.sources:
-            # create value_fenics for all F.Source objects
-            if isinstance(source, F.Source):
+            # create value_fenics for all F.ParticleSource objects
+            if isinstance(source, F.ParticleSource):
                 function_space_value = None
                 if callable(source.value):
                     # if bc.value is a callable then need to provide a functionspace

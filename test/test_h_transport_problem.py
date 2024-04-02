@@ -504,7 +504,7 @@ def test_update_time_dependent_values_source(source_value, expected_values):
     my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
     dt = fem.Constant(test_mesh.mesh, 1.0)
 
-    my_source = F.Source(value=source_value, volume=my_vol, species=H)
+    my_source = F.ParticleSource(value=source_value, volume=my_vol, species=H)
     my_model.sources = [my_source]
 
     my_model.define_function_spaces()
@@ -560,7 +560,7 @@ def test_update_sources_with_time_dependent_temperature(
     dt = fem.Constant(test_mesh.mesh, 1.0)
 
     my_model.sources = [
-        F.Source(value=source_value, volume=volume_subdomain, species=H)
+        F.ParticleSource(value=source_value, volume=volume_subdomain, species=H)
     ]
 
     my_model.define_temperature()
@@ -596,8 +596,8 @@ def test_create_source_values_fenics_multispecies():
     )
     my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
 
-    my_source_1 = F.Source(value=lambda t: t + 1, volume=my_vol, species=H)
-    my_source_2 = F.Source(value=lambda t: 2 * t + 3, volume=my_vol, species=D)
+    my_source_1 = F.ParticleSource(value=lambda t: t + 1, volume=my_vol, species=H)
+    my_source_2 = F.ParticleSource(value=lambda t: 2 * t + 3, volume=my_vol, species=D)
     my_model.sources = [my_source_1, my_source_2]
 
     my_model.define_function_spaces()

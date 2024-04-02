@@ -180,13 +180,6 @@ class ParticleSource(SourceBase):
                 self.value_fenics.interpolate(self.source_expr)
 
 
-# create a class Source that is an alias for ParticleSource
-# to avoid breaking the API
-class Source(ParticleSource):
-    def __init__(self, value, volume, species):
-        super().__init__(value, volume, species)
-
-
 class HeatSource(SourceBase):
     def __init__(self, value, volume):
         super().__init__(value, volume)
