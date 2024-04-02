@@ -87,4 +87,5 @@ class TestExtrinsicTrap:
         self.my_trap.relative_tolerance = 1
         self.my_trap.maximum_iterations = 1
         self.my_trap.linear_solver = "mumps"
-        self.my_trap.preconditioner = 'icc'
+        self.my_trap.preconditioner = "icc"
+        self.my_trap.newton_solver = f.NewtonSolver()

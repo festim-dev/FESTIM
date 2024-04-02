@@ -40,7 +40,7 @@ class ExtrinsicTrapBase(Trap):
                 Defaults to None.
             preconditioner (str, optional): preconditioning method for the newton solver,
                 options can be veiwed by print(list_krylov_solver_preconditioners()).
-                Defaults to None.
+                Defaults to "default".
         """
         super().__init__(k_0, E_k, p_0, E_p, materials, density=None, id=id)
         self.absolute_tolerance = absolute_tolerance
@@ -48,8 +48,8 @@ class ExtrinsicTrapBase(Trap):
         self.maximum_iterations = maximum_iterations
         self.linear_solver = linear_solver
         self.preconditioner = preconditioner
-        self.newton_solver = None
 
+        self.newton_solver = None
         for name, val in kwargs.items():
             setattr(self, name, as_constant_or_expression(val))
         self.density_previous_solution = None

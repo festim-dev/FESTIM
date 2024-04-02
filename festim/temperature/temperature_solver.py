@@ -23,7 +23,7 @@ class HeatTransferProblem(festim.Temperature):
             Defaults to None.
         preconditioner (str, optional): preconditioning method for the newton solver,
             options can be veiwed by print(list_krylov_solver_preconditioners()).
-            Defaults to None.
+            Defaults to "default".
 
     Attributes:
         F (fenics.Form): the variational form of the heat transfer problem
@@ -45,7 +45,7 @@ class HeatTransferProblem(festim.Temperature):
         relative_tolerance=1e-10,
         maximum_iterations=30,
         linear_solver=None,
-        preconditioner=None,
+        preconditioner="default",
     ) -> None:
         super().__init__()
         self.transient = transient
@@ -97,7 +97,9 @@ class HeatTransferProblem(festim.Temperature):
 
         self.define_variational_problem(materials, mesh, dt)
         self.create_dirichlet_bcs(mesh.surface_markers)
-        self.define_newton_solver_temperature()
+
+        if not self.newton_solver:
+            self.define_newton_solver()
 
         if not self.transient:
             print("Solving stationary heat equation")
@@ -183,7 +185,7 @@ class HeatTransferProblem(festim.Temperature):
                 for surf in bc.surfaces:
                     self.F += -bc.form * self.v_T * mesh.ds(surf)
 
-    def define_newton_solver_temperature(self):
+    def define_newton_solver(self):
         """Creates the Newton solver and sets its parameters"""
         self.newton_solver = f.NewtonSolver(f.MPI.comm_world)
         self.newton_solver.parameters["error_on_nonconvergence"] = False

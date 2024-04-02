@@ -147,7 +147,7 @@ class TestNeutronInducedTrapSolverParameters:
         relative_tolerance=1.2e-10,
         maximum_iterations=13,
         linear_solver="gmres",
-        preconditioner="icc"
+        preconditioner="icc",
     )
 
     def test_attributes_from_instanciation(self):

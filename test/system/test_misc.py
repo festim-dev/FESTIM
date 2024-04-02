@@ -1,4 +1,5 @@
 import festim as F
+import fenics as f
 import numpy as np
 import pytest
 import os
@@ -330,3 +331,46 @@ def test_materials_setter():
     test_materials = F.Materials([])
     my_model.materials = test_materials
     assert my_model.materials is test_materials
+
+
+class TestFestimProblem:
+    """Tests the methods of the festim.Problem class"""
+
+    # define the FESTIM problem
+    mesh = f.UnitIntervalMesh(8)
+    V = f.FunctionSpace(mesh, "CG", 1)
+    u = f.Function(V)
+    v = f.TestFunction(V)
+    s = u * v * f.dx + v * f.dx
+    J = f.derivative(s, u)
+    problem = F.Problem(J, s, [])
+
+    # define the fenics assembler used in festim.Problem
+    assembler = f.SystemAssembler(J, s, [])
+    x = f.PETScVector()
+
+    def test_F(self):
+        """
+        Creates two epty matrices and checks
+        that the festim.Problem.J properly assembles the RHS of Ax=b
+        """
+        b1 = f.PETScVector()
+        b2 = f.PETScVector()
+
+        self.problem.F(b1, self.x)
+        self.assembler.assemble(b2, self.x)
+
+        assert (b1 == b2).all()
+
+    def test_J(self):
+        """
+        Creates two epty matrices and checks
+        that the festim.Problem.J properly assembles the LHS of Ax=b
+        """
+        A1 = f.PETScMatrix()
+        A2 = f.PETScMatrix()
+
+        self.problem.J(A1, self.x)
+        self.assembler.assemble(A2)
+
+        assert (A1.array() == A2.array()).all()

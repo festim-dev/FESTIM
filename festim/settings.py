@@ -27,7 +27,7 @@ class Settings:
             Defaults to None, for the newton solver this is: "umfpack".
         preconditioner (str, optional): preconditioning method for the newton solver,
             options can be veiwed by print(list_krylov_solver_preconditioners()).
-            Defaults to None.
+            Defaults to "default".
 
     Attributes:
         transient (bool): transient or steady state sim

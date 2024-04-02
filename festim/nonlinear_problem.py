@@ -17,7 +17,9 @@ class Problem(f.NonlinearProblem):
         self.jacobian_form = J
         self.residual_form = F
         self.bcs = bcs
-        self.assembler = f.SystemAssembler(self.jacobian_form, self.residual_form, self.bcs)
+        self.assembler = f.SystemAssembler(
+            self.jacobian_form, self.residual_form, self.bcs
+        )
         f.NonlinearProblem.__init__(self)
 
     def F(self, b, x):
