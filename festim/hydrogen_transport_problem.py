@@ -232,6 +232,7 @@ class HydrogenTransportProblem:
             raise TypeError(f"value must be of type dolfinx.mesh.MeshTags")
 
     def initialise(self):
+
         self.create_species_from_traps()
         self.define_function_spaces()
         self.define_meshtags_and_measures()
@@ -324,8 +325,9 @@ class HydrogenTransportProblem:
     def initialise_exports(self):
         """Defines the export writers of the model, if field is given as
         a string, find species object in self.species"""
-
         for export in self.exports:
+            export.t = []
+            export.data = []
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
