@@ -78,7 +78,7 @@ def test_reaction_repr_2_products():
     assert repr(reaction) == expected_repr
 
 
-def test_reaction_repr_2_products():
+def test_reaction_repr_0_products():
     """Test that the Reaction __repr__ method returns the expected string"""
 
     # create two species
@@ -87,6 +87,7 @@ def test_reaction_repr_2_products():
     # create a reaction between the two species
     reaction = F.Reaction(
         species1,
+        None,
         k_0=1.0,
         E_k=0.2,
         p_0=0.1,
@@ -146,7 +147,7 @@ def test_reaction_str_2_products():
     assert str(reaction) == expected_str
 
 
-def test_reaction_str_no_products():
+def test_reaction_str_0_products():
     """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
 
     # create two species
