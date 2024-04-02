@@ -1,5 +1,6 @@
 import festim
 import fenics as f
+import pytest
 
 
 def test_default_dt_min_value():
@@ -26,6 +27,7 @@ def test_default_dt_min_value():
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -49,6 +51,7 @@ def test_solve_once_jacobian_is_none():
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -76,6 +79,7 @@ def test_solve_once_returns_false():
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -91,8 +95,15 @@ def test_solve_once_returns_false():
     assert not converged
 
 
-def test_solve_once_linear_solver_mumps():
-    """Checks that solve_once() works when an alternative linear solver is used rather than the default"""
+@pytest.mark.parametrize("preconditioner",["default", "icc"])
+def test_solve_once_linear_solver_gmres(preconditioner):
+    """
+    Checks that solve_once() works when an alternative linear solver is used 
+    with/without a preconditioner rather than the default
+    
+    Args:
+        preconditioner (str): the preconditioning method
+    """
     # build
     mesh = f.UnitIntervalMesh(8)
     V = f.FunctionSpace(mesh, "CG", 1)
@@ -101,11 +112,13 @@ def test_solve_once_linear_solver_mumps():
         absolute_tolerance=1e-10,
         relative_tolerance=1e-10,
         maximum_iterations=50,
-        linear_solver="mumps",
+        linear_solver="gmres",
+        preconditioner=preconditioner,
     )
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -119,3 +132,6 @@ def test_solve_once_linear_solver_mumps():
 
     # test
     assert converged
+
+    #def test_solve_once_with_custom_solver():
+        

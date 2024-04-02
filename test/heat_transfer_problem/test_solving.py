@@ -3,9 +3,15 @@ import pytest
 import fenics as f
 
 
-def test_create_functions_linear_solver_mumps():
-    """Checks that the function created by create_functions() has the expected value when an
-    alternative linear solver is used rather than the default"""
+@pytest.mark.parametrize("preconditioner",["default", "icc"])
+def test_create_functions_linear_solver_gmres(preconditioner):
+    """
+    Checks that the function created by create_functions() has the expected value when an
+    alternative linear solver is used with/without a preconditioner rather than the default
+    
+    Args:
+        preconditioner (str): the preconditioning method
+    """
 
     mesh = festim.MeshFromRefinements(10, size=0.1)
 
@@ -21,7 +27,8 @@ def test_create_functions_linear_solver_mumps():
         absolute_tolerance=1e-03,
         relative_tolerance=1e-10,
         maximum_iterations=30,
-        linear_solver="mumps",
+        linear_solver="gmres",
+        preconditioner=preconditioner,
     )
     my_problem.boundary_conditions = bcs
 

@@ -208,7 +208,7 @@ class HTransportProblem:
 
     def define_newton_solver(self):
         """Creates the Newton solver and sets its parameters"""
-        self.newton_solver = NewtonSolver()
+        self.newton_solver = NewtonSolver(MPI.comm_world)
         self.newton_solver.parameters["error_on_nonconvergence"] = False
         self.newton_solver.parameters[
             "absolute_tolerance"
