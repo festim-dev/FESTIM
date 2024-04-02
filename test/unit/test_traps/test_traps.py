@@ -21,6 +21,10 @@ def add_functions(trap, V, id=1):
 
 
 class TestCreateTrappingForms:
+    """
+    General test for the create_forms method of the festim.Traps class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = festim.Mobile()
@@ -45,6 +49,7 @@ class TestCreateTrappingForms:
     add_functions(trap2, V, id=2)
 
     def test_one_trap_steady_state(self):
+        """Tests the case of one trap in steady-state"""
         my_traps = festim.Traps([self.trap1])
 
         my_traps.create_forms(self.my_mobile, self.my_mats, self.my_temp, self.dx)
@@ -53,6 +58,7 @@ class TestCreateTrappingForms:
             assert trap.F is not None
 
     def test_one_trap_transient(self):
+        """Tests the case of one trap in transient"""
         my_traps = festim.Traps([self.trap1])
 
         my_traps.create_forms(
@@ -63,6 +69,7 @@ class TestCreateTrappingForms:
             assert trap.F is not None
 
     def test_two_traps_transient(self):
+        """Tests the case of two traps in transient"""
         my_traps = festim.Traps([self.trap1, self.trap2])
 
         my_traps.create_forms(
@@ -74,6 +81,10 @@ class TestCreateTrappingForms:
 
 
 class TestGetTrap:
+    """
+    General test for the get_trap method of the festim.Traps class
+    """
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
     my_mobile = festim.Mobile()

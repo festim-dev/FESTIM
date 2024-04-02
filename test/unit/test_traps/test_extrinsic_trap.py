@@ -3,6 +3,10 @@ import fenics as f
 
 
 class TestExtrinsicTrap:
+    """
+    General test for the ExtrinsicTrap class
+    """
+
     my_trap = festim.ExtrinsicTrap(
         1,
         1,
@@ -28,6 +32,9 @@ class TestExtrinsicTrap:
     dt = festim.Stepsize(initial_value=1)
 
     def test_that_form_parameters_are_expressions(self):
+        """
+        Checks that the attributes are of correct types
+        """
         prms = [
             self.my_trap.phi_0,
             self.my_trap.n_amax,
@@ -41,6 +48,10 @@ class TestExtrinsicTrap:
             assert isinstance(prm, (f.Expression, f.Constant))
 
     def test_create_form_density(self):
+        """
+        Checks that the forumlation produced by the create_form_density
+        function produces the expected formulation
+        """
         density = self.my_trap.density[0]
         T = self.my_temp
         expected_form = (

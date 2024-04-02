@@ -7,6 +7,15 @@ from pathlib import Path
 
 
 def compute_error(exact, computed, t, norm):
+    """
+    An auxiliary method to compute the error
+
+    Args:
+        exact (sympy.Expr): exact solution
+        computed (fenics.Function): computed solution
+        t (float): simulation time
+        norm (str): type of norm (maximum absolute error or L2 norm)
+    """
     exact_sol = fenics.Expression(sp.printing.ccode(exact), degree=4, t=t)
 
     if norm == "error_max":
@@ -26,6 +35,9 @@ def compute_error(exact, computed, t, norm):
 def test_run_temperature_stationary(tmpdir):
     """
     Check that the temperature module works well in 1D stationary
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + 2 * festim.x**2
@@ -82,6 +94,9 @@ def test_run_temperature_stationary(tmpdir):
 def test_run_temperature_transient(tmpdir):
     """
     Check that the temperature module works well in 1D transient
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + 2 * festim.x**2 + festim.t
@@ -128,8 +143,7 @@ def test_run_temperature_transient(tmpdir):
     my_dt = festim.Stepsize(
         initial_value=0.5,
         stepsize_change_ratio=1,
-        t_stop=40,
-        stepsize_stop_max=0.5,
+        max_stepsize=lambda t: None if t < 40 else 0.5,
         dt_min=1e-5,
     )
 
@@ -161,6 +175,9 @@ def test_run_temperature_transient(tmpdir):
 def test_run_MMS(tmpdir):
     """
     Test function run() for several refinements
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + sp.sin(2 * fenics.pi * festim.x) * festim.t
@@ -283,6 +300,9 @@ def test_run_MMS(tmpdir):
 def test_run_MMS_chemical_pot(tmpdir):
     """
     Test function run() with conservation of chemical potential (1 material)
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + sp.sin(2 * fenics.pi * festim.x) * festim.t + festim.t
@@ -409,6 +429,9 @@ def test_run_chemical_pot_mass_balance(tmpdir):
     increases.
     Creates a model with a constant concentration of mobile (c_m(t=0)=1,
     non-flux conditions at surfaces) with a varying temperature
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     my_materials = festim.Materials(
@@ -465,6 +488,9 @@ def test_run_chemical_pot_mass_balance(tmpdir):
 def test_run_MMS_soret(tmpdir):
     """
     MMS test with soret effect
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + festim.x**2 + festim.t
@@ -557,6 +583,9 @@ def test_run_MMS_soret(tmpdir):
 def test_run_MMS_steady_state(tmpdir):
     """
     MMS test with one trap at steady state
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     u = 1 + festim.x
@@ -681,6 +710,9 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
     type solve_stationary for temperature
 
     adapted to catch bug described in issue #310
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     my_materials = festim.Materials(
@@ -732,6 +764,9 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
 def test_export_particle_flux_with_chemical_pot(tmpdir):
     """Checks that surface particle fluxes can be computed with conservation
     of chemical potential
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     d = tmpdir.mkdir("Solution_Test")
     my_materials = festim.Materials(

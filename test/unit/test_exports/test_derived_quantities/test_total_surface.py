@@ -1,23 +1,27 @@
 from this import s
 from festim import TotalSurface
 import fenics as f
+import pytest
 
 
-def test_title_H():
-    surface = 1
-    field = "solute"
-    my_total = TotalSurface(field, surface)
-    assert my_total.title == "Total {} surface {}".format(field, surface)
+@pytest.mark.parametrize("field,surface", [("solute", 1), ("T", 2)])
+def test_title(field, surface):
+    """
+    A simple test to check that the title is set
+    correctly in festim.TotalSurface
 
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+    """
 
-def test_title_T():
-    surface = 2
-    field = "T"
     my_total = TotalSurface(field, surface)
     assert my_total.title == "Total {} surface {}".format(field, surface)
 
 
 class TestCompute:
+    """Test that the total surface export computes the correct value"""
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
 

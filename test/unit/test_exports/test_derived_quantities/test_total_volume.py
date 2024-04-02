@@ -1,22 +1,26 @@
 from festim import TotalVolume
 import fenics as f
+import pytest
 
 
-def test_title_H():
-    volume = 1
-    field = "solute"
-    my_total = TotalVolume(field, volume)
-    assert my_total.title == "Total {} volume {}".format(field, volume)
+@pytest.mark.parametrize("field,volume", [("solute", 1), ("T", 2)])
+def test_title(field, volume):
+    """
+    A simple test to check that the title is set
+    correctly in festim.TotalVolume
 
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+    """
 
-def test_title_T():
-    volume = 2
-    field = "T"
     my_total = TotalVolume(field, volume)
     assert my_total.title == "Total {} volume {}".format(field, volume)
 
 
 class TestCompute:
+    """Test that the total volume export computes the correct value"""
+
     mesh = f.UnitIntervalMesh(10)
     V = f.FunctionSpace(mesh, "P", 1)
 

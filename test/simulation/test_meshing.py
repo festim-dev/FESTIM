@@ -6,6 +6,9 @@ from pathlib import Path
 def test_define_markers(tmpdir):
     """Checks that markers can be defined from XDMF files and that the mesh
     functions have the correct values.
+
+    Args:
+        tmpdir (os.PathLike): path to the pytest temporary folder
     """
     # build
     mesh = fenics.UnitSquareMesh(16, 16)
