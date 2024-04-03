@@ -248,7 +248,6 @@ def test_reaction_reaction_term_2_products(temperature):
     )
     assert reaction.reaction_term(temperature) == expected_reaction_term
 
-
 def test_reactant_setter_raises_error_with_zero_length_list():
     """Test a value error is raised when the first reactant is given a wrong type."""
     with pytest.raises(
@@ -264,7 +263,6 @@ def test_reactant_setter_raises_error_with_zero_length_list():
             E_p=0.2,
             volume=my_vol,
         )
-
 
 def test_reactant_setter_raises_error_with_wrong_type():
     """Test a type error is raised when the first reactant is given a wrong type."""
@@ -282,12 +280,11 @@ def test_reactant_setter_raises_error_with_wrong_type():
             volume=my_vol,
         )
 
-
 def test_product_setter_raise_error_p_0_no_product():
     with pytest.raises(
-        ValueError,
-        match="E_p must be 0, not 2 when no products are present.",
-    ):
+    ValueError,
+    match="p_0 must be 0, not 2 when no products are present.",
+):
         F.Reaction(
             reactant=[F.Species("A")],
             product=None,
@@ -298,12 +295,11 @@ def test_product_setter_raise_error_p_0_no_product():
             volume=my_vol,
         )
 
-
 def test_product_setter_raise_error_E_p_no_product():
     with pytest.raises(
-        ValueError,
-        match="E_p must be 0, not 2 when no products are present.",
-    ):
+    ValueError,
+    match="E_p must be 0, not 2 when no products are present.",
+):
         F.Reaction(
             reactant=[F.Species("A")],
             product=None,
