@@ -55,12 +55,12 @@ class Reaction:
         E_p: float,
         volume: F.VolumeSubdomain1D,
     ) -> None:
-        self.reactant = reactant
-        self.product = product or []
         self.k_0 = k_0
         self.E_k = E_k
-        self.p_0 = p_0
-        self.E_p = E_p
+        self.p_0 = p_0 or 0.0
+        self.E_p = E_p or 0.0
+        self.reactant = reactant
+        self.product = product or []
         self.volume = volume
 
     @property
@@ -81,6 +81,23 @@ class Reaction:
                     f"reactant must be an F.Species or F.ImplicitSpecies, not {type(i)}"
                 )
         self._reactant = value
+
+    @property
+    def product(self):
+        return self._product
+
+    @product.setter
+    def product(self, value):
+        if value == []:
+            if self.p_0 != 0.0:
+                raise ValueError(
+                    f"p_0 must be 0, not {self.p_0} when no products are present."
+                )
+            elif self.E_p != 0.0:
+                raise ValueError(
+                    f"E_p must be 0, not {self.E_p} when no products are present."
+                )
+        self._product = value
 
     def __repr__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])

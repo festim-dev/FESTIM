@@ -281,3 +281,35 @@ def test_reactant_setter_raises_error_with_wrong_type():
             E_p=0.2,
             volume=my_vol,
         )
+
+
+def test_product_setter_raise_error_p_0_no_product():
+    with pytest.raises(
+        ValueError,
+        match="E_p must be 0, not 2 when no products are present.",
+    ):
+        F.Reaction(
+            reactant=[F.Species("A")],
+            product=None,
+            k_0=1,
+            E_k=0.1,
+            p_0=2,
+            E_p=0,
+            volume=my_vol,
+        )
+
+
+def test_product_setter_raise_error_E_p_no_product():
+    with pytest.raises(
+        ValueError,
+        match="E_p must be 0, not 2 when no products are present.",
+    ):
+        F.Reaction(
+            reactant=[F.Species("A")],
+            product=None,
+            k_0=1,
+            E_k=0.1,
+            p_0=0,
+            E_p=2,
+            volume=my_vol,
+        )
