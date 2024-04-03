@@ -114,13 +114,6 @@ class Reaction:
         k = self.k_0 * exp(-self.E_k / (F.k_B * temperature))
         p = self.p_0 * exp(-self.E_p / (F.k_B * temperature))
 
-        if isinstance(self.reactant, list):
-            reactants = self.reactant
-        elif not self.reactant:
-            reactants = []
-        else:
-            reactants = [self.reactant]
-
         product_of_reactants = reactants[0].concentration
         for reactant in reactants[1:]:
             product_of_reactants *= reactant.concentration
