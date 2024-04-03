@@ -83,10 +83,7 @@ class Reaction:
         self._reactant = value
 
     def __repr__(self) -> str:
-        if isinstance(self.reactant, list):
-            reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        else:
-            reactants = self.reactant
+        reactants = " + ".join([str(reactant) for reactant in self.reactant])
 
         if isinstance(self.product, list):
             products = " + ".join([str(product) for product in self.product])
