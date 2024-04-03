@@ -56,7 +56,7 @@ class Reaction:
         volume: F.VolumeSubdomain1D,
     ) -> None:
         self.reactant = reactant
-        self.product = product
+        self.product = product or []
         self.k_0 = k_0
         self.E_k = E_k
         self.p_0 = p_0

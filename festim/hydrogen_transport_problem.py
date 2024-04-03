@@ -669,11 +669,8 @@ class HydrogenTransportProblem:
                     )
 
             # product
-
             if isinstance(reaction.product, list):
                 products = reaction.product
-            elif not reaction.product:
-                products = []
             else:
                 products = [reaction.product]
             for product in products:
