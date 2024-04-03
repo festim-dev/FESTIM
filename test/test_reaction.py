@@ -90,8 +90,8 @@ def test_reaction_repr_0_products():
         None,
         k_0=1.0,
         E_k=0.2,
-        p_0=0.1,
-        E_p=0.3,
+        p_0=0,
+        E_p=0,
         volume=my_vol,
     )
 
@@ -159,8 +159,8 @@ def test_reaction_str_0_products():
         None,
         k_0=1.0,
         E_k=0.2,
-        p_0=0.1,
-        E_p=0.3,
+        p_0=0,
+        E_p=0,
         volume=my_vol,
     )
 
