@@ -117,7 +117,7 @@ class Trap(Species):
         ct = F.Species("trapped")
         trap_sites = F.ImplicitSpecies(n=1, others=[ct])
         trap_reaction = F.Reaction(
-            reactant=[cm,trap_sites],
+            reactant=[cm, trap_sites],
             product=ct,
             k_0=1,
             E_k=1,
