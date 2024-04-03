@@ -86,7 +86,7 @@ my_model.reactions = [
         E_k=0.39,
         p_0=1e13,
         E_p=1.2,
-        reactant1=[mobile_D, trapped_D1],
+        reactant=[mobile_D, trapped_D1],
         product=trapped_D2,
     ),
     F.Reaction(
