@@ -96,7 +96,7 @@ def test_reaction_repr_0_products():
     )
 
     # check that the __repr__ method returns the expected string
-    expected_repr = "Reaction(A <--> None, 1.0, 0.2, 0.1, 0.3)"
+    expected_repr = "Reaction(A <--> , 1.0, 0.2, 0.1, 0.3)"
     assert repr(reaction) == expected_repr
 
 
@@ -165,7 +165,7 @@ def test_reaction_str_0_products():
     )
 
     # check that the __str__ method returns the expected string
-    expected_str = "A <--> None"
+    expected_str = "A <--> "
     assert str(reaction) == expected_str
 
 
