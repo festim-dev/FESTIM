@@ -120,8 +120,6 @@ class Reaction:
 
         if isinstance(self.product, list):
             products = self.product
-        elif not self.product:
-            products = []
         else:
             products = [self.product]
 
