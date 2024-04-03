@@ -461,7 +461,6 @@ class HydrogenTransportProblem:
                 ).collapse()
 
         for idx, spe in enumerate(self.species):
-            print(idx, spe)
             spe.solution = sub_solutions[idx]
             spe.prev_solution = sub_prev_solution[idx]
             spe.test_function = sub_test_functions[idx]
