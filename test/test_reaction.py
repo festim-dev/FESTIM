@@ -96,7 +96,7 @@ def test_reaction_repr_0_products():
     )
 
     # check that the __repr__ method returns the expected string
-    expected_repr = "Reaction(A <--> , 1.0, 0.2, 0.1, 0.3)"
+    expected_repr = "Reaction(A <--> None, 1.0, 0.2, 0.1, 0.3)"
     assert repr(reaction) == expected_repr
 
 
@@ -165,7 +165,7 @@ def test_reaction_str_0_products():
     )
 
     # check that the __str__ method returns the expected string
-    expected_str = "A <--> "
+    expected_str = "A <--> None"
     assert str(reaction) == expected_str
 
 
@@ -247,6 +247,23 @@ def test_reaction_reaction_term_2_products(temperature):
         k * (species1.solution * species2.solution) - p * product_of_products
     )
     assert reaction.reaction_term(temperature) == expected_reaction_term
+
+
+def test_reactant_setter_raises_error_with_zero_length_list():
+    """Test a value error is raised when the first reactant is given a wrong type."""
+    with pytest.raises(
+        ValueError,
+        match="reactant must be an entry of one or more species objects, not an empty list.",
+    ):
+        F.Reaction(
+            reactant=[],
+            product=None,
+            k_0=1,
+            E_k=0.1,
+            p_0=2,
+            E_p=0.2,
+            volume=my_vol,
+        )
 
 
 def test_reactant_setter_raises_error_with_wrong_type():

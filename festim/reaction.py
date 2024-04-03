@@ -73,7 +73,7 @@ class Reaction:
             value = [value]
         if len(value) == 0:
             raise ValueError(
-                f"reactant must be an entry of one or more species objects, not zero."
+                f"reactant must be an entry of one or more species objects, not an empty list."
             )
         for i in value:
             if not isinstance(i, (F.Species, F.ImplicitSpecies)):
@@ -92,10 +92,7 @@ class Reaction:
         return f"Reaction({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
 
     def __str__(self) -> str:
-        if isinstance(self.reactant, list):
-            reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        else:
-            reactants = self.reactant
+        reactants = " + ".join([str(reactant) for reactant in self.reactant])
         if isinstance(self.product, list):
             products = " + ".join([str(product) for product in self.product])
         else:
@@ -111,6 +108,7 @@ class Reaction:
         k = self.k_0 * exp(-self.E_k / (F.k_B * temperature))
         p = self.p_0 * exp(-self.E_p / (F.k_B * temperature))
 
+        reactants = self.reactant
         product_of_reactants = reactants[0].concentration
         for reactant in reactants[1:]:
             product_of_reactants *= reactant.concentration
@@ -126,5 +124,4 @@ class Reaction:
                 product_of_products *= product.solution
         else:
             product_of_products = 0
-
         return k * product_of_reactants - p * product_of_products
