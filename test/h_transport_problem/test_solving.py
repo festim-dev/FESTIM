@@ -176,15 +176,15 @@ class Test_solve_once_with_custom_solver:
         # solve with the custom solver
         problem_2 = self.sim()
         problem_2.newton_solver = f.NewtonSolver()
-        problem_2.newton_solver.parameters[
-            "absolute_tolerance"
-        ] = problem_1.settings.absolute_tolerance
-        problem_2.newton_solver.parameters[
-            "relative_tolerance"
-        ] = problem_1.settings.relative_tolerance
-        problem_2.newton_solver.parameters[
-            "maximum_iterations"
-        ] = problem_1.settings.maximum_iterations
+        problem_2.newton_solver.parameters["absolute_tolerance"] = (
+            problem_1.settings.absolute_tolerance
+        )
+        problem_2.newton_solver.parameters["relative_tolerance"] = (
+            problem_1.settings.relative_tolerance
+        )
+        problem_2.newton_solver.parameters["maximum_iterations"] = (
+            problem_1.settings.maximum_iterations
+        )
         problem_2.solve_once()
 
         assert (problem_1.u.vector() == problem_2.u.vector()).all()

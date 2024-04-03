@@ -210,15 +210,15 @@ class HTransportProblem:
         """Creates the Newton solver and sets its parameters"""
         self.newton_solver = NewtonSolver(MPI.comm_world)
         self.newton_solver.parameters["error_on_nonconvergence"] = False
-        self.newton_solver.parameters[
-            "absolute_tolerance"
-        ] = self.settings.absolute_tolerance
-        self.newton_solver.parameters[
-            "relative_tolerance"
-        ] = self.settings.relative_tolerance
-        self.newton_solver.parameters[
-            "maximum_iterations"
-        ] = self.settings.maximum_iterations
+        self.newton_solver.parameters["absolute_tolerance"] = (
+            self.settings.absolute_tolerance
+        )
+        self.newton_solver.parameters["relative_tolerance"] = (
+            self.settings.relative_tolerance
+        )
+        self.newton_solver.parameters["maximum_iterations"] = (
+            self.settings.maximum_iterations
+        )
         self.newton_solver.parameters["linear_solver"] = self.settings.linear_solver
         self.newton_solver.parameters["preconditioner"] = self.settings.preconditioner
 

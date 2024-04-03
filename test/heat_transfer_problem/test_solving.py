@@ -73,15 +73,15 @@ class Test_solve_once_with_custom_solver:
         # solve with the custom solver
         problem_2 = self.sim()
         problem_2.newton_solver = f.NewtonSolver()
-        problem_2.newton_solver.parameters[
-            "absolute_tolerance"
-        ] = problem_1.absolute_tolerance
-        problem_2.newton_solver.parameters[
-            "relative_tolerance"
-        ] = problem_1.relative_tolerance
-        problem_2.newton_solver.parameters[
-            "maximum_iterations"
-        ] = problem_1.maximum_iterations
+        problem_2.newton_solver.parameters["absolute_tolerance"] = (
+            problem_1.absolute_tolerance
+        )
+        problem_2.newton_solver.parameters["relative_tolerance"] = (
+            problem_1.relative_tolerance
+        )
+        problem_2.newton_solver.parameters["maximum_iterations"] = (
+            problem_1.maximum_iterations
+        )
         problem_2.create_functions(materials=materials, mesh=mesh)
 
         assert (problem_1.T.vector() == problem_2.T.vector()).all()
