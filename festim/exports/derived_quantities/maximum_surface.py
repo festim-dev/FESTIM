@@ -14,6 +14,7 @@ class MaximumSurface(DerivedQuantity):
     def __init__(self, field, surface) -> None:
         super().__init__(field)
         self.surface = surface
+
         self.title = "Maximum {} surface {}".format(self.field, self.surface)
 
     def compute(self, surface_markers):
