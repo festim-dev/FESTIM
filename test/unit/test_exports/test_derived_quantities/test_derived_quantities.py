@@ -10,6 +10,8 @@ from festim import (
     MaximumSurface,
     AverageSurface,
     PointValue,
+    SurfaceFluxCylindrical,
+    SurfaceFluxSpherical,
     Materials,
 )
 import fenics as f
@@ -38,6 +40,10 @@ class TestMakeHeader:
     avg_surface_2 = AverageSurface("T", 6)
     point_1 = PointValue(field="retention", x=2)
     point_2 = PointValue(field="T", x=9)
+    cyl_surface_flux_1 = SurfaceFluxCylindrical("solute", 2)
+    cyl_surface_flux_2 = SurfaceFluxCylindrical("T", 3)
+    sph_surface_flux_1 = SurfaceFluxSpherical("solute", 5)
+    sph_surface_flux_2 = SurfaceFluxSpherical("T", 6)
 
     def test_simple(self):
         """
@@ -108,6 +114,10 @@ class TestMakeHeader:
                 self.avg_surface_2,
                 self.point_1,
                 self.point_2,
+                self.cyl_surface_flux_1,
+                self.cyl_surface_flux_2,
+                self.sph_surface_flux_1,
+                self.sph_surface_flux_2,
             ],
             show_units=True,
         )
@@ -127,6 +137,10 @@ class TestMakeHeader:
             "Average T surface 6 (K)",
             "retention value at [2] (H m-3)",
             "T value at [9] (K)",
+            "Cylindrical flux surface 2: solute (H s-1)",
+            "Cylindrical flux surface 3: T (W)",
+            "Spherical flux surface 5: solute (H s-1)",
+            "Spherical flux surface 6: T (W)",
         ]
         assert header == expected_header
 
