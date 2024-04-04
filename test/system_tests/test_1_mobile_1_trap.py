@@ -97,8 +97,8 @@ def test_1_mobile_1_trap_MMS_steady_state():
     ]
 
     my_model.sources = [
-        F.Source(value=f, volume=vol, species=mobile),
-        F.Source(value=g, volume=vol, species=trapped),
+        F.ParticleSource(value=f, volume=vol, species=mobile),
+        F.ParticleSource(value=g, volume=vol, species=trapped),
     ]
 
     my_model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
@@ -168,7 +168,7 @@ def test_1_mobile_1_trap_MMS_transient():
     my_model.initial_conditions = [F.InitialCondition(value=init_value, species=H)]
 
     f = lambda x, t: 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x_1d, t)))
-    my_model.sources = [F.Source(value=f, volume=vol, species=H)]
+    my_model.sources = [F.ParticleSource(value=f, volume=vol, species=H)]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=final_time)
     my_model.settings.stepsize = final_time / 50
@@ -294,8 +294,8 @@ def test_1_mobile_1_trap_MMS_2D():
     ]
 
     my_model.sources = [
-        F.Source(value=f, volume=vol, species=mobile),
-        F.Source(value=g, volume=vol, species=trapped),
+        F.ParticleSource(value=f, volume=vol, species=mobile),
+        F.ParticleSource(value=g, volume=vol, species=trapped),
     ]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
@@ -424,8 +424,8 @@ def test_1_mobile_1_trap_MMS_3D():
     ]
 
     my_model.sources = [
-        F.Source(value=f, volume=vol, species=mobile),
-        F.Source(value=g, volume=vol, species=trapped),
+        F.ParticleSource(value=f, volume=vol, species=mobile),
+        F.ParticleSource(value=g, volume=vol, species=trapped),
     ]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)

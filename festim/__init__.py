@@ -40,7 +40,7 @@ from .initial_condition import InitialCondition, InitialTemperature
 
 from .settings import Settings
 
-from .source import Source, ParticleSource, HeatSource
+from .source import ParticleSource, HeatSource, SourceBase
 
 from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
