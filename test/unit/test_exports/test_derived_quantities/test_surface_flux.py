@@ -307,7 +307,7 @@ def test_spherical_flux_title_no_units_solute():
     """A simple test to check that the title is set correctly in
     festim.SphericalSurfaceFlux with a solute field without units"""
 
-    my_h_flux = SurfaceFluxCylindrical("solute", 3)
+    my_h_flux = SurfaceFluxSpherical("solute", 3)
     assert my_h_flux.title == "solute flux surface 3"
 
 
@@ -315,5 +315,5 @@ def test_spherical_flux_title_no_units_temperature():
     """A simple test to check that the title is set correctly in
     festim.CSphericalSurfaceFlux with a T field without units"""
 
-    my_heat_flux = SurfaceFluxCylindrical("T", 5)
+    my_heat_flux = SurfaceFluxSpherical("T", 5)
     assert my_heat_flux.title == "Heat flux surface 5"
