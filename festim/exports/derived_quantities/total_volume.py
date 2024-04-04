@@ -14,6 +14,7 @@ class TotalVolume(VolumeQuantity):
     Attribtutes
         field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
+        export_unit (str): the unit of the derived quantity for exporting
         title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
@@ -30,25 +31,29 @@ class TotalVolume(VolumeQuantity):
         super().__init__(field=field, volume=volume)
 
     @property
+    def export_unit(self):
+        # obtain domain dimension
+        dim = self.function.function_space().mesh().topology().dim()
+        if self.field == "T":
+            if dim == 1:
+                return "K m"
+            if dim == 2:
+                return "K m2"
+            if dim == 3:
+                return "K m3"
+        else:
+            if dim == 1:
+                return "H m-2"
+            if dim == 2:
+                return "H m-1"
+            if dim == 3:
+                return "H"
+
+    @property
     def title(self):
         quantity_title = f"Total {self.field} volume {self.volume}"
         if self.show_units:
-            # obtain domain dimension
-            dim = self.function.function_space().mesh().topology().dim()
-            if self.field == "T":
-                if dim == 1:
-                    return quantity_title + " (K m)"
-                elif dim == 2:
-                    return quantity_title + " (K m2)"
-                elif dim == 3:
-                    return quantity_title + " (K m3)"
-            else:
-                if dim == 1:
-                    return quantity_title + " (H m-2)"
-                elif dim == 2:
-                    return quantity_title + " (H m-1)"
-                elif dim == 3:
-                    return quantity_title + " (H)"
+            return quantity_title + f" ({self.export_unit})"
         else:
             return quantity_title
 
