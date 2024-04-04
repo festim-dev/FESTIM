@@ -5,10 +5,12 @@ import fenics as f
 class AverageSurface(SurfaceQuantity):
     """
     Computes the average value of a field on a given surface
-    int( f dx) / int (1 * dx)
+    int( f ds) / int (1 * ds)
+
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
+
     Attributes:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
@@ -16,8 +18,10 @@ class AverageSurface(SurfaceQuantity):
             file
         function (dolfin.function.function.Function): the solution function of
             the field
+
     Notes:
         Units are in H/m3 for hydrogen concentration and K for temperature
+
     """
 
     def __init__(self, field, surface) -> None:

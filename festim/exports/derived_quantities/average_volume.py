@@ -5,9 +5,12 @@ import fenics as f
 class AverageVolume(VolumeQuantity):
     """
     Computes the average value of a field in a given volume
+    int( f ds) / int (1 * ds)
+
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
+
     Attributes:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
@@ -15,6 +18,7 @@ class AverageVolume(VolumeQuantity):
             file
         function (dolfin.function.function.Function): the solution function of
             the field
+
     Notes:
         Units are in H/m3 for hydrogen concentration and K for temperature
     """

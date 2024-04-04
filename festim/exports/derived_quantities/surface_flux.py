@@ -5,7 +5,7 @@ import numpy as np
 
 class SurfaceFlux(SurfaceQuantity):
     """
-    Computes the surface flux of a field at a given surface
+    Computes the surface flux of a field at a given surface in cartesian coordinates
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
@@ -18,7 +18,7 @@ class SurfaceFlux(SurfaceQuantity):
             file
         title (str): the title of the derived quantity
         function (dolfin.function.function.Function): the solution function of
-            the hydrogen solute field
+            the field
 
     Notes:
         Object to compute the flux J of a field u through a surface

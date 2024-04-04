@@ -24,18 +24,3 @@ class HydrogenFlux(SurfaceFlux):
 
     def __init__(self, surface) -> None:
         super().__init__(field="solute", surface=surface)
-
-    @property
-    def title(self):
-        quantity_title = f"Flux surface {self.surface}: {self.field}"
-        if self.show_units:
-            # obtain domain dimension
-            dim = self.function.function_space().mesh().topology().dim()
-            if dim == 1:
-                return quantity_title + " (H m-2 s-1)"
-            if dim == 2:
-                return quantity_title + " (H m-1 s-1)"
-            if dim == 3:
-                return quantity_title + " (H s-1)"
-        else:
-            return quantity_title

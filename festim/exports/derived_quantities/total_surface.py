@@ -5,6 +5,7 @@ import fenics as f
 class TotalSurface(SurfaceQuantity):
     """
     Computes the total value of a field on a given surface
+    int(f ds)
 
     Args:
         field (str, int): the field

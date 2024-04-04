@@ -24,18 +24,3 @@ class ThermalFlux(SurfaceFlux):
 
     def __init__(self, surface) -> None:
         super().__init__(field="T", surface=surface)
-
-    @property
-    def title(self):
-        quantity_title = f"Flux surface {self.surface}: {self.field}"
-        if self.show_units:
-            # obtain domain dimension
-            dim = self.function.function_space().mesh().topology().dim()
-            if dim == 1:
-                return quantity_title + " (W m-2)"
-            if dim == 2:
-                return quantity_title + " (W m-1)"
-            if dim == 3:
-                return quantity_title + " (W)"
-        else:
-            return quantity_title

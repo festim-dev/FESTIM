@@ -5,6 +5,7 @@ import fenics as f
 class TotalVolume(VolumeQuantity):
     """
     Computes the total value of a field in a given volume
+    int(f dx)
 
     Args:
         field (str, int): the field
