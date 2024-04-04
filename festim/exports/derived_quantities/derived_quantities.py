@@ -113,6 +113,11 @@ class DerivedQuantities(list):
         header = ["t(s)"]
         for quantity in self:
             quantity.show_units = self.show_units
+            if self.show_units is False:
+                warnings.warn(
+                    "The derived_quantities ti will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
+                    DeprecationWarning,
+                )
             header.append(quantity.title)
         return header
 
