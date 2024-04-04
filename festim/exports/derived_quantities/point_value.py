@@ -12,6 +12,7 @@ class PointValue(DerivedQuantity):
     Attributes:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         x (int, float, tuple, list): the point coordinates
+        title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
         function (dolfin.function.function.Function): the solution function of

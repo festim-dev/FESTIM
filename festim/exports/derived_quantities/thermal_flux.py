@@ -11,9 +11,9 @@ class ThermalFlux(SurfaceFlux):
     Attribtutes
         surface (int): the surface id
         field (str): the temperature field
+        title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
-        title (str): the title of the derived quantity
         function (dolfin.function.function.Function): the solution function of
             the temperature field
 

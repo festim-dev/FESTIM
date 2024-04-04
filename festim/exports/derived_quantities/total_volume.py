@@ -14,9 +14,9 @@ class TotalVolume(VolumeQuantity):
     Attribtutes
         field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
+        title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
-        title (str): the title of the derived quantity
         function (dolfin.function.function.Function): the solution function of
             the hydrogen solute field
 

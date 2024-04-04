@@ -14,6 +14,7 @@ class MinimumVolume(VolumeQuantity):
     Attributes:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
+        title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
         function (dolfin.function.function.Function): the solution function for
