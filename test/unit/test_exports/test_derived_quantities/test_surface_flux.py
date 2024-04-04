@@ -287,7 +287,7 @@ def test_title_with_units(function, field, expected_title):
     assert my_flux.title == expected_title
 
 
-def test_cyldrical_flux_title_no_units_solute():
+def test_cylindrical_flux_title_no_units_solute():
     """A simple test to check that the title is set correctly in
     festim.CylindricalSurfaceFlux with a solute field without units"""
 
@@ -295,9 +295,25 @@ def test_cyldrical_flux_title_no_units_solute():
     assert my_h_flux.title == "solute flux surface 2"
 
 
-def test_cyldrical_flux_title_no_units_temperature():
+def test_cylindrical_flux_title_no_units_temperature():
     """A simple test to check that the title is set correctly in
-    festim.CylindricalSurfaceFlux with a solute field without units"""
+    festim.CylindricalSurfaceFlux with a T field without units"""
 
     my_heat_flux = SurfaceFluxCylindrical("T", 4)
     assert my_heat_flux.title == "Heat flux surface 4"
+
+
+def test_spherical_flux_title_no_units_solute():
+    """A simple test to check that the title is set correctly in
+    festim.SphericalSurfaceFlux with a solute field without units"""
+
+    my_h_flux = SurfaceFluxCylindrical("solute", 3)
+    assert my_h_flux.title == "solute flux surface 3"
+
+
+def test_spherical_flux_title_no_units_temperature():
+    """A simple test to check that the title is set correctly in
+    festim.CSphericalSurfaceFlux with a T field without units"""
+
+    my_heat_flux = SurfaceFluxCylindrical("T", 5)
+    assert my_heat_flux.title == "Heat flux surface 5"
