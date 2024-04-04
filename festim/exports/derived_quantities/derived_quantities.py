@@ -115,7 +115,7 @@ class DerivedQuantities(list):
             quantity.show_units = self.show_units
             if self.show_units is False:
                 warnings.warn(
-                    "The derived_quantities ti will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
+                    "The current derived_quantities title style will be deprecated in a future release, please use show_units=True instead",
                     DeprecationWarning,
                 )
             header.append(quantity.title)
