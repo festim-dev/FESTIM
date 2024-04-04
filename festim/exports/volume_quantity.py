@@ -51,7 +51,7 @@ class VolumeQuantity:
     def volume(self, value):
         if not isinstance(value, (int, F.VolumeSubdomain)) or isinstance(value, bool):
             raise TypeError("volume should be an int or F.VolumeSubdomain")
-        self._surface = value
+        self._volume = value
 
     @property
     def field(self):
