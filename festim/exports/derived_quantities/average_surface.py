@@ -5,7 +5,7 @@ import fenics as f
 class AverageSurface(SurfaceQuantity):
     """
     Computes the average value of a field on a given surface
-    int( f ds) / int (1 * ds)
+    int(f ds) / int (1 * ds)
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
