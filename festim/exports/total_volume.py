@@ -12,7 +12,11 @@ class TotalVolume(F.VolumeQuantity):
         filename (str, optional): name of the file to which the total volume is exported
 
     Attributes:
-        see `festim.VolumeQuantity`
+        field (festim.Species): species for which the volume quantity is computed
+        volume (festim.VolumeSubdomain): volume subdomain
+        filename (str): name of the file to which the volume quantity is exported
+        t (list): list of time values
+        data (list): list of values of the volume quantity
     """
 
     def __init__(
