@@ -939,3 +939,143 @@ def test_error_raised_when_custom_fenics_mesh_wrong_volume_meshtags_type():
     # TEST
     with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
         my_model.volume_meshtags = [0, 1]
+
+
+@pytest.mark.parametrize(
+    "bc_value, expected_values",
+    [
+        (lambda t: t, [1.0, 2.0, 3.0]),
+        (lambda t: 1.0 + t, [2.0, 3.0, 4.0]),
+        (lambda x, t: 1.0 + x[0] + t, [6.0, 7.0, 8.0]),
+        (lambda T, t: T + 2 * t, [12.0, 14.0, 16.0]),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.5), 100.0 + x[0], 0.0),
+            [104.0, 0.0, 0.0],
+        ),
+    ],
+)
+def test_update_time_dependent_values_flux(bc_value, expected_values):
+    """Test that time dependent fluxes are updated at each time step,
+    and match an expected value"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    surface = F.SurfaceSubdomain1D(id=2, x=0)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh, temperature=10, subdomains=[my_vol, surface], species=[H]
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    dt = fem.Constant(test_mesh.mesh, 1.0)
+
+    my_bc = F.FluxBC(subdomain=surface, value=bc_value, species=H)
+    my_model.boundary_conditions = [my_bc]
+
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+    my_model.create_flux_values_fenics()
+
+    for i in range(3):
+        # RUN
+        my_model.t.value += dt.value
+        my_model.update_time_dependent_values()
+
+        # TEST
+        if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.boundary_conditions[0].value_fenics)
+        else:
+            computed_value = my_model.boundary_conditions[0].value_fenics.vector.array[
+                -1
+            ]
+        assert np.isclose(computed_value, expected_values[i])
+
+
+@pytest.mark.parametrize(
+    "temperature_value, bc_value, expected_values",
+    [
+        (5, 1.0, [1.0, 1.0, 1.0]),
+        (lambda t: t + 1, lambda T: T, [2.0, 3.0, 4.0]),
+        (lambda x: 1 + x[0], lambda T: 2 * T, [10.0, 10.0, 10.0]),
+        (lambda x, t: t + x[0], lambda T: 0.5 * T, [2.5, 3.0, 3.5]),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 2), 3 + x[0], 0.0),
+            lambda T: T,
+            [7.0, 0.0, 0.0],
+        ),
+    ],
+)
+def test_update_fluxes_with_time_dependent_temperature(
+    temperature_value, bc_value, expected_values
+):
+    """Test that temperature dependent flux terms are updated at each time step
+    when the temperature is time dependent, and match an expected value"""
+
+    # BUILD
+    H = F.Species("H")
+    volume_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    surface_subdomain = F.SurfaceSubdomain1D(id=1, x=4)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        species=[H],
+        subdomains=[volume_subdomain, surface_subdomain],
+        temperature=temperature_value,
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    dt = fem.Constant(test_mesh.mesh, 1.0)
+
+    my_model.boundary_conditions = [
+        F.FluxBC(subdomain=surface_subdomain, value=bc_value, species=H)
+    ]
+
+    my_model.define_temperature()
+    my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    my_model.define_meshtags_and_measures()
+    my_model.create_flux_values_fenics()
+
+    for i in range(3):
+        # RUN
+        my_model.t.value += dt.value
+        my_model.update_time_dependent_values()
+
+        # TEST
+        if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.boundary_conditions[0].value_fenics)
+        else:
+            computed_value = my_model.boundary_conditions[0].value_fenics.vector.array[
+                -1
+            ]
+        assert np.isclose(computed_value, expected_values[i])
+
+
+def test_create_source_values_fenics_multispecies():
+    """Test that the create_flux_values_fenics method correctly sets the value_fenics
+    attribute in a multispecies case"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    surface = F.SurfaceSubdomain1D(id=2, x=0)
+    H, D = F.Species("H"), F.Species("D")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol, surface],
+        species=[H, D],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
+
+    my_bc_1 = F.FluxBC(subdomain=surface, value=lambda t: t + 1, species=H)
+    my_bc_2 = F.FluxBC(subdomain=surface, value=lambda t: 2 * t + 3, species=D)
+    my_model.boundary_conditions = [my_bc_1, my_bc_2]
+
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+
+    # RUN
+    my_model.create_flux_values_fenics()
+
+    # TEST
+    assert np.isclose(my_model.boundary_conditions[0].value_fenics.value, 5)
+    assert np.isclose(my_model.boundary_conditions[1].value_fenics.value, 11)
