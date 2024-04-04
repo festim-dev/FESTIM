@@ -26,6 +26,7 @@ from .boundary_conditions.dirichlet_bc import (
 )
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .boundary_conditions.henrys_bc import HenrysBC
+from .boundary_conditions.flux_bc import FluxBC
 
 from .material import Material
 

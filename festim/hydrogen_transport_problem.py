@@ -248,6 +248,7 @@ class HydrogenTransportProblem:
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
+        self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
@@ -597,6 +598,26 @@ class HydrogenTransportProblem:
                     t=self.t,
                 )
 
+    def create_flux_values_fenics(self):
+        """For each source create the value_fenics"""
+        for bc in self.boundary_conditions:
+            # create value_fenics for all F.Source objects
+            if isinstance(bc, F.FluxBC):
+                function_space_value = None
+                if callable(bc.value):
+                    # if bc.value is a callable then need to provide a functionspace
+                    if not self.multispecies:
+                        function_space_value = bc.species.sub_function_space
+                    else:
+                        function_space_value = bc.species.collapsed_function_space
+
+                bc.create_value_fenics(
+                    mesh=self.mesh.mesh,
+                    temperature=self.temperature_fenics,
+                    function_space=function_space_value,
+                    t=self.t,
+                )
+
     def create_initial_conditions(self):
         """For each initial condition, create the value_fenics and assign it to
         the previous solution of the condition's species"""
@@ -689,11 +710,13 @@ class HydrogenTransportProblem:
             )
 
         # add fluxes
-        # TODO implement this
-        # for bc in self.boundary_conditions:
-        #     pass
-        #     if bc.species == spe and bc.type != "dirichlet":
-        #         formulation += bc * v * self.ds
+        for bc in self.boundary_conditions:
+            if isinstance(bc, F.FluxBC):
+                self.formulation -= (
+                    bc.value_fenics
+                    * bc.species.test_function
+                    * self.ds(bc.subdomain.id)
+                )
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
