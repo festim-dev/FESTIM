@@ -3,6 +3,8 @@ from festim import Export
 
 class DerivedQuantity(Export):
     """
+    Parent class of all derived quantities
+
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
     """
@@ -18,16 +20,19 @@ class DerivedQuantity(Export):
         self.Q = None
         self.data = []
         self.t = []
+        self.show_units = False
 
 
 class VolumeQuantity(DerivedQuantity):
-    def __init__(self, field: str or int, volume: int) -> None:
-        """DerivedQuantity relative to a volume
+    """DerivedQuantity relative to a volume
 
-        Args:
-            field (str, int): the field ("solute", 0, 1, "T", "retention")
-            volume (int): the volume id
-        """
+    Args:
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
+        volume (int): the volume id
+
+    """
+
+    def __init__(self, field: str or int, volume: int) -> None:
         super().__init__(field)
         self.volume = volume
 
@@ -44,13 +49,16 @@ class VolumeQuantity(DerivedQuantity):
 
 
 class SurfaceQuantity(DerivedQuantity):
-    def __init__(self, field: str or int, surface: int) -> None:
-        """DerivedQuantity relative to a surface
+    """DerivedQuantity relative to a surface
 
-        Args:
-            field (str, int):  the field ("solute", 0, 1, "T", "retention")
-            surface (int): the surface id
-        """
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+
+    """
+
+    def __init__(self, field: str or int, surface: int) -> None:
+
         super().__init__(field)
         self.surface = surface
 

@@ -1,20 +1,42 @@
-from festim import DerivedQuantity
+from festim import SurfaceQuantity
 import fenics as f
 import numpy as np
 
 
-class MaximumSurface(DerivedQuantity):
+class MaximumSurface(SurfaceQuantity):
     """
+    Computes the maximum value of a field on a given surface
+
     Args:
-        field (str): the field from which the maximum
-            is computed (ex: "solute", "retention", "T"...)
-        surface (int): the surface id where the maximum is computed
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+
+    Attributes:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+        show_units (bool): show the units in the title in the derived quantities
+            file
+        function (dolfin.function.function.Function): the solution function of
+            the field
+
+    Notes:
+        Units are in H/m3 for hydrogen concentration and K for temperature
+
     """
 
     def __init__(self, field, surface) -> None:
-        super().__init__(field)
-        self.surface = surface
-        self.title = "Maximum {} surface {}".format(self.field, self.surface)
+        super().__init__(field=field, surface=surface)
+
+    @property
+    def title(self):
+        quantity_title = f"Maximum {self.field} surface {self.surface}"
+        if self.show_units:
+            if self.field == "T":
+                return quantity_title + " (K)"
+            else:
+                return quantity_title + " (H m-3)"
+        else:
+            return quantity_title
 
     def compute(self, surface_markers):
         """Maximum of f over subdomains facets marked with self.surface"""

@@ -3,6 +3,8 @@ import fenics as f
 import math
 import numpy as np
 import pytest
+from festim import SurfaceFlux, k_B
+from .tools import c_1D, c_2D, c_3D
 
 
 @pytest.mark.parametrize("field,surface", [("solute", 1), ("T", 2)])
@@ -264,3 +266,22 @@ def test_soret_raises_error_spherical():
     my_flux = SurfaceFluxSpherical("T", 1)
     with pytest.raises(NotImplementedError):
         my_flux.compute(soret=True)
+
+
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "Flux surface 3: solute (H m-2 s-1)"),
+        (c_1D, "T", "Flux surface 3: T (W m-2)"),
+        (c_2D, "solute", "Flux surface 3: solute (H m-1 s-1)"),
+        (c_2D, "T", "Flux surface 3: T (W m-1)"),
+        (c_3D, "solute", "Flux surface 3: solute (H s-1)"),
+        (c_3D, "T", "Flux surface 3: T (W)"),
+    ],
+)
+def test_title_with_units(function, field, expected_title):
+    my_flux = SurfaceFlux(field=field, surface=3)
+    my_flux.function = function
+    my_flux.show_units = True
+
+    assert my_flux.title == expected_title

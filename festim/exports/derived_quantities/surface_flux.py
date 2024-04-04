@@ -4,24 +4,59 @@ import numpy as np
 
 
 class SurfaceFlux(SurfaceQuantity):
-    def __init__(self, field, surface) -> None:
-        """
+    """
+    Computes the surface flux of a field at a given surface
+
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+
+    Attribtutes
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+        show_units (bool): show the units in the title in the derived quantities
+            file
+        title (str): the title of the derived quantity
+        function (dolfin.function.function.Function): the solution function of
+            the hydrogen solute field
+
+    Notes:
         Object to compute the flux J of a field u through a surface
         J = integral(-prop * grad(u) . n ds)
         where prop is the property of the field (D, thermal conductivity, etc)
         u is the field
         n is the normal vector of the surface
         ds is the surface measure.
+        units are in H/m2/s in 1D, H/m/s in 2D and H/s in 3D domains for hydrogen
+        concentration and W/m2 in 1D, W/m in 2D and W in 3D domains for temperature
 
-        Note: this will probably won't work correctly for axisymmetric meshes.
-        Use only with cartesian coordinates.
+    """
 
-        Args:
-            field (str, int):  the field ("solute", 0, 1, "T", "retention")
-            surface (int): the surface id
-        """
+    def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
-        self.title = "Flux surface {}: {}".format(self.surface, self.field)
+
+    @property
+    def title(self):
+        quantity_title = f"Flux surface {self.surface}: {self.field}"
+        if self.show_units:
+            # obtain domain dimension
+            dim = self.function.function_space().mesh().topology().dim()
+            if self.field == "T":
+                if dim == 1:
+                    return quantity_title + " (W m-2)"
+                if dim == 2:
+                    return quantity_title + " (W m-1)"
+                if dim == 3:
+                    return quantity_title + " (W)"
+            else:
+                if dim == 1:
+                    return quantity_title + " (H m-2 s-1)"
+                if dim == 2:
+                    return quantity_title + " (H m-1 s-1)"
+                if dim == 3:
+                    return quantity_title + " (H s-1)"
+        else:
+            return quantity_title
 
     @property
     def prop(self):
@@ -69,9 +104,20 @@ class SurfaceFluxCylindrical(SurfaceFlux):
     """
 
     def __init__(self, field, surface, azimuth_range=(0, 2 * np.pi)) -> None:
-        super().__init__(field, surface)
+        super().__init__(field=field, surface=surface)
         self.r = None
         self.azimuth_range = azimuth_range
+
+    @property
+    def title(self):
+        quantity_title = f"Cylindrical flux surface {self.surface}: {self.field}"
+        if self.show_units:
+            if self.field == "T":
+                return quantity_title + " (W)"
+            else:
+                return quantity_title + " (H s-1)"
+        else:
+            return quantity_title
 
     @property
     def azimuth_range(self):
@@ -134,10 +180,21 @@ class SurfaceFluxSpherical(SurfaceFlux):
     def __init__(
         self, field, surface, azimuth_range=(0, np.pi), polar_range=(-np.pi, np.pi)
     ) -> None:
-        super().__init__(field, surface)
+        super().__init__(field=field, surface=surface)
         self.r = None
         self.polar_range = polar_range
         self.azimuth_range = azimuth_range
+
+    @property
+    def title(self):
+        quantity_title = f"Spherical flux surface {self.surface}: {self.field}"
+        if self.show_units:
+            if self.field == "T":
+                return quantity_title + " (W)"
+            else:
+                return quantity_title + " (H s-1)"
+        else:
+            return quantity_title
 
     @property
     def polar_range(self):
