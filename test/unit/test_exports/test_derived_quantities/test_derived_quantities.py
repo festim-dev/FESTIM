@@ -279,6 +279,10 @@ class TestCompute:
 
         my_derv_quant.data = []
         my_derv_quant.compute(t)
+
+        # title created in compute() method and appended to data
+        # so test line 2 for first data entry
+
         assert my_derv_quant.data[1] == expected_data
 
     def test_two_quantities(self):
@@ -299,6 +303,9 @@ class TestCompute:
 
         my_derv_quant.data = []
         my_derv_quant.compute(t)
+
+        # title created in compute() method and appended to data
+        # so test line 2 for first data entry
 
         assert my_derv_quant.data[1] == expected_data
 
@@ -329,6 +336,9 @@ class TestCompute:
 
         my_derv_quant.data = []
         my_derv_quant.compute(t)
+
+        # title created in compute() method and appended to data
+        # so test line 2 for first data entry
 
         assert my_derv_quant.data[1] == expected_data
 
