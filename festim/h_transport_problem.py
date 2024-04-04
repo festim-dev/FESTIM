@@ -289,9 +289,12 @@ class HTransportProblem:
             J = derivative(self.F, self.u, du)
         else:
             J = self.J
-
         problem = festim.Problem(J, self.F, self.bcs)
+
+        begin("Solving nonlinear variational problem.")  # Add message to fenics logs
         nb_it, converged = self.newton_solver.solve(problem, self.u.vector())
+        end()
+
         return nb_it, converged
 
     def update_previous_solutions(self):

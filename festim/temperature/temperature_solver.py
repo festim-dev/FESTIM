@@ -106,7 +106,13 @@ class HeatTransferProblem(festim.Temperature):
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)
             problem = festim.Problem(JT, self.F, self.dirichlet_bcs)
+
+            f.begin(
+                "Solving nonlinear variational problem."
+            )  # Add message to fenics logs
             self.newton_solver.solve(problem, self.T.vector())
+            f.end()
+
             self.T_n.assign(self.T)
 
     def define_variational_problem(self, materials, mesh, dt=None):
@@ -227,7 +233,13 @@ class HeatTransferProblem(festim.Temperature):
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)  # Define the Jacobian
             problem = festim.Problem(JT, self.F, self.dirichlet_bcs)
+
+            f.begin(
+                "Solving nonlinear variational problem."
+            )  # Add message to fenics logs
             self.newton_solver.solve(problem, self.T.vector())
+            f.end()
+
             self.T_n.assign(self.T)
 
     def is_steady_state(self):

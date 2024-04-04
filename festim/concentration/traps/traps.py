@@ -120,7 +120,12 @@ class Traps(list):
                 du_t = f.TrialFunction(trap.density[0].function_space())
                 J_t = f.derivative(trap.form_density, trap.density[0], du_t)
                 problem = festim.Problem(J_t, trap.form_density, [])
+
+                f.begin(
+                    "Solving nonlinear variational problem."
+                )  # Add message to fenics logs
                 trap.newton_solver.solve(problem, trap.density[0].vector())
+                f.end()
 
     def update_extrinsic_traps_density(self):
         for trap in self:
