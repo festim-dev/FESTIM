@@ -9,7 +9,7 @@ class HydrogenFlux(SurfaceFlux):
         surface (int): the surface id
 
     Attribtutes
-        field (str, int): the hydrogen solute field
+        field (str): the hydrogen solute field
         surface (int): the surface id
         show_units (bool): show the units in the title in the derived quantities
             file
