@@ -8,11 +8,11 @@ class TotalVolume(VolumeQuantity):
     int(f dx)
 
     Args:
-        field (str, int): the field
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
 
     Attribtutes
-        field (str, int): the field
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
         show_units (bool): show the units in the title in the derived quantities
             file

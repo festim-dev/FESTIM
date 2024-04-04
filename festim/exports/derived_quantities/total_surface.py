@@ -8,11 +8,11 @@ class TotalSurface(SurfaceQuantity):
     int(f ds)
 
     Args:
-        field (str, int): the field
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
 
     Attribtutes
-        field (str, int): the field
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
         show_units (bool): show the units in the title in the derived quantities
             file
