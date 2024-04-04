@@ -16,9 +16,9 @@ def test_field_is_solute():
 @pytest.mark.parametrize(
     "function, expected_title",
     [
-        (c_1D, "Flux surface 3: solute (H m-2 s-1)"),
-        (c_2D, "Flux surface 3: solute (H m-1 s-1)"),
-        (c_3D, "Flux surface 3: solute (H s-1)"),
+        (c_1D, "solute flux surface 3 (H m-2 s-1)"),
+        (c_2D, "solute flux surface 3 (H m-1 s-1)"),
+        (c_3D, "solute flux surface 3 (H s-1)"),
     ],
 )
 def test_title_with_units(function, expected_title):

@@ -15,9 +15,9 @@ def test_field_is_T():
 @pytest.mark.parametrize(
     "function, expected_title",
     [
-        (c_1D, "Flux surface 5: T (W m-2)"),
-        (c_2D, "Flux surface 5: T (W m-1)"),
-        (c_3D, "Flux surface 5: T (W)"),
+        (c_1D, "Heat flux surface 5 (W m-2)"),
+        (c_2D, "Heat flux surface 5 (W m-1)"),
+        (c_3D, "Heat flux surface 5 (W)"),
     ],
 )
 def test_title_with_units(function, expected_title):

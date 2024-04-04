@@ -41,7 +41,10 @@ class SurfaceFlux(SurfaceQuantity):
         if self.show_units:
             # obtain domain dimension
             dim = self.function.function_space().mesh().topology().dim()
+            # new title but only with show_units to not introduce breaking change
+            quantity_title = f"{self.field} flux surface {self.surface}"
             if self.field == "T":
+                quantity_title = f"Heat flux surface {self.surface}"
                 if dim == 1:
                     return quantity_title + " (W m-2)"
                 if dim == 2:
@@ -110,7 +113,11 @@ class SurfaceFluxCylindrical(SurfaceFlux):
 
     @property
     def title(self):
-        quantity_title = f"Cylindrical flux surface {self.surface}: {self.field}"
+        if self.field == "T":
+            quantity_title = f"Heat flux surface {self.surface}"
+        else:
+            quantity_title = f"{self.field} flux surface {self.surface}"
+
         if self.show_units:
             if self.field == "T":
                 return quantity_title + " (W)"
@@ -187,7 +194,11 @@ class SurfaceFluxSpherical(SurfaceFlux):
 
     @property
     def title(self):
-        quantity_title = f"Spherical flux surface {self.surface}: {self.field}"
+        if self.field == "T":
+            quantity_title = f"Heat flux surface {self.surface}"
+        else:
+            quantity_title = f"{self.field} flux surface {self.surface}"
+
         if self.show_units:
             if self.field == "T":
                 return quantity_title + " (W)"

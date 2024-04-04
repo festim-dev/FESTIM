@@ -137,10 +137,10 @@ class TestMakeHeader:
             "Average T surface 6 (K)",
             "retention value at [2] (H m-3)",
             "T value at [9] (K)",
-            "Cylindrical flux surface 2: solute (H s-1)",
-            "Cylindrical flux surface 3: T (W)",
-            "Spherical flux surface 5: solute (H s-1)",
-            "Spherical flux surface 6: T (W)",
+            "solute flux surface 2 (H s-1)",
+            "Heat flux surface 3 (W)",
+            "solute flux surface 5 (H s-1)",
+            "Heat flux surface 6 (W)",
         ]
         assert header == expected_header
 
