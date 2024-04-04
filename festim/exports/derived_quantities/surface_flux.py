@@ -14,6 +14,7 @@ class SurfaceFlux(SurfaceQuantity):
     Attribtutes
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
+        export_unit (str): the unit of the derived quantity in the export file
         title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
@@ -22,7 +23,7 @@ class SurfaceFlux(SurfaceQuantity):
 
     Notes:
         Object to compute the flux J of a field u through a surface
-        J = integral(-prop * grad(u) . n ds)
+        J = integral(+prop * grad(u) . n ds)
         where prop is the property of the field (D, thermal conductivity, etc)
         u is the field
         n is the normal vector of the surface
@@ -36,28 +37,35 @@ class SurfaceFlux(SurfaceQuantity):
         super().__init__(field=field, surface=surface)
 
     @property
+    def export_unit(self):
+        # obtain domain dimension
+        dim = self.function.function_space().mesh().topology().dim()
+        if self.field == "T":
+            if dim == 1:
+                return "W m-2"
+            if dim == 2:
+                return "W m-1"
+            if dim == 3:
+                return "W"
+        else:
+            if dim == 1:
+                return "H m-2 s-1"
+            if dim == 2:
+                return "H m-1 s-1"
+            if dim == 3:
+                return "H s-1"
+
+    @property
     def title(self):
         quantity_title = f"Flux surface {self.surface}: {self.field}"
         if self.show_units:
-            # obtain domain dimension
-            dim = self.function.function_space().mesh().topology().dim()
-            # new title but only with show_units to not introduce breaking change
-            quantity_title = f"{self.field} flux surface {self.surface}"
             if self.field == "T":
                 quantity_title = f"Heat flux surface {self.surface}"
-                if dim == 1:
-                    return quantity_title + " (W m-2)"
-                if dim == 2:
-                    return quantity_title + " (W m-1)"
-                if dim == 3:
-                    return quantity_title + " (W)"
             else:
-                if dim == 1:
-                    return quantity_title + " (H m-2 s-1)"
-                if dim == 2:
-                    return quantity_title + " (H m-1 s-1)"
-                if dim == 3:
-                    return quantity_title + " (H s-1)"
+                quantity_title = f"{self.field} flux surface {self.surface}"
+
+            return quantity_title + f" ({self.export_unit})"
+
         else:
             return quantity_title
 
