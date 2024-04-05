@@ -63,6 +63,6 @@ def test_title_generation(tmp_path, value):
     my_export.write(0)
     title = np.genfromtxt(my_export.filename, delimiter=",", max_rows=1, dtype=str)
 
-    expected_title = "Total volume 35: TEST"
+    expected_title = "Total TEST volume 35"
 
     assert title[1] == expected_title
