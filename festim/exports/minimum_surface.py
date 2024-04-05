@@ -1,33 +1,35 @@
-from dolfinx import fem
 import festim as F
-import csv
 import numpy as np
 
 
 class MinimumSurface(F.SurfaceQuantity):
-    """
+    """Computes the minimum value of a field on a given surface
+
     Args:
-        field (str): the field from which the minimum is computed (ex: "solute", "retention", "T"...)
-        surface (festim.SurfaceSubdomain1D): the surface id where the minimum is computed
-        filename (str, optional) : name of the file to which the minimum of the surface is exported
+        field (festim.Species): species for which the minimum surface is computed
+        surface (festim.SurfaceSubdomain): surface subdomain
+        filename (str, optional): name of the file to which the minimum surface is exported
+
+    Attributes:
+        see `festim.SurfaceQuantity`
     """
 
-    def __init__(self, field, surface, function, filename: str = None) -> None:
-        super().__init__(field, surface, filename)
-        self.function = function
-        # self.title = "Minimum {} surface {}".format(self.field, self.surface)
-
+    def __init__(
+        self,
+        field: F.Species,
+        surface: F.SurfaceSubdomain,
+        filename: str = None,
+    ) -> None:
+        super().__init__(field=field, surface=surface, filename=filename)
+    
     @property
-    def function(self):
-        return self._function
-
-    @function.setter
-    def function(self, funct):
-        if not isinstance(funct, (dolfinx.fem.function.Function)):
-            raise TypeError("function must be of type dolfinx.fem.function.Function")
-
-        self._function = funct
+    def title(self):
+        return f"Minimum {self.field.name} surface {self.surface.id}"
 
     def compute(self):
-        """Compute the minimum value of function on the surface"""
-        return np.min(function.x.array)
+        """
+        Computes the minimum value of the field on the defined surface
+        subdomain, and appends it to the data list
+        """
+        self.value = np.min(self.field.solution.x.array[self.surface.indices])
+        self.data.append(self.value)

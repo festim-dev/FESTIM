@@ -1,32 +1,35 @@
-from dolfinx import fem
 import festim as F
-import csv
 import numpy as np
 
 
 class AverageSurface(F.SurfaceQuantity):
-    """
+    """Computes the average value of a field on a given surface
+
     Args:
-        field (str): the field from which the average value is computed
-        surface (festim.SurfaceSubdomain1D): the surface id where the average value is computed
-        filename (str, optional): name of the file to which the total value is computed
+        field (festim.Species): species for which the average surface is computed
+        surface (festim.SurfaceSubdomain): surface subdomain
+        filename (str, optional): name of the file to which the average surface is exported
+
+    Attributes:
+        see `festim.SurfaceQuantity`
     """
 
-    def __init__(self, field, surface, filename: str = None) -> None:
-        super().__init__(field, surface, filename)
-        self.function = function
-
+    def __init__(
+        self,
+        field: F.Species,
+        surface: F.SurfaceSubdomain,
+        filename: str = None,
+    ) -> None:
+        super().__init__(field=field, surface=surface, filename=filename)
+    
     @property
-    def function(self):
-        return self.function
-
-    @function.setter
-    def function(self, funct):
-        if not isinstance(funct, (dolfinx.fem.function.Function)):
-            raise TypeError("function must be of type dolfinx.fem.function.Function")
-
-        self._function = funct
+    def title(self):
+        return f"Average {self.field.name} surface {self.surface.id}"
 
     def compute(self):
-        """Compute the total value of the function on the surface"""
-        # placeholder for the coming function
+        """
+        Computes the average value of the field on the defined surface
+        subdomain, and appends it to the data list
+        """
+        self.value = np.mean(self.field.solution.x.array[self.surface.indices])
+        self.data.append(self.value)

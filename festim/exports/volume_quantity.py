@@ -17,7 +17,6 @@ class VolumeQuantity:
         filename (str): name of the file to which the volume quantity is exported
         t (list): list of time values
         data (list): list of values of the volume quantity
-        title (str): name of the file in which the quantity is exported
     """
 
     def __init__(self, field, volume, filename: str = None) -> None:
@@ -27,7 +26,11 @@ class VolumeQuantity:
 
         self.t = []
         self.data = []
-        self.title = None
+        self._first_time_export = True
+    
+    @property
+    def title(self):
+        return f"{self.field.name} volume {self.volume.id}"
 
     @property
     def filename(self):
@@ -42,16 +45,6 @@ class VolumeQuantity:
         elif not value.endswith(".csv") and not value.endswith(".txt"):
             raise ValueError("filename must end with .csv or .txt")
         self._filename = value
-
-    @property
-    def volume(self):
-        return self._volume
-
-    @volume.setter
-    def volume(self, value):
-        if not isinstance(value, (int, F.VolumeSubdomain)) or isinstance(value, bool):
-            raise TypeError("volume should be an int or F.VolumeSubdomain")
-        self._volume = value
 
     @property
     def field(self):
@@ -70,16 +63,14 @@ class VolumeQuantity:
         then append the time and value to the file"""
 
         if not os.path.isfile(self.filename):
-            if self.title == None:
-                self.title = "Total volume {}: {}".format(
-                    self.volume.id, self.field.name
-                )
-            header = ["t(s)", f"{self.title}"]
-            if self.filename is not None:
-                with open(self.filename, mode="w", newline="") as file:
-                    writer = csv.writer(file)
-                    writer.writerow(header)
 
-        with open(self.filename, mode="a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([t, self.value])
+            if self.filename is not None:
+                if self._first_time_export:
+                    header = ["t(s)", f"{self.title}"]
+                    with open(self.filename, mode="w+", newline="") as file:
+                        writer = csv.writer(file)
+                        writer.writerow(header)
+                    self._first_time_export = False
+                with open(self.filename, mode="a", newline="") as file:
+                    writer = csv.writer(file)
+                    writer.writerow([t, self.value])

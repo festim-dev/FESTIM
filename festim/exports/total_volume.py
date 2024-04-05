@@ -4,19 +4,15 @@ import ufl
 
 
 class TotalVolume(F.VolumeQuantity):
-    """Export TotalVolume
+    """Computes the total value of a field in a given volume
 
     Args:
-        field (`festim.Species`): species for which the total volume is computed
-        volume (`festim.VolumeSubdomain`): volume subdomain
+        field (festim.Species): species for which the total volume is computed
+        volume (festim.VolumeSubdomain): volume subdomain
         filename (str, optional): name of the file to which the total volume is exported
 
     Attributes:
-        field (festim.Species): species for which the volume quantity is computed
-        volume (festim.VolumeSubdomain): volume subdomain
-        filename (str): name of the file to which the volume quantity is exported
-        t (list): list of time values
-        data (list): list of values of the volume quantity
+        see `festim.VolumeQuantity`
     """
 
     def __init__(
@@ -25,7 +21,11 @@ class TotalVolume(F.VolumeQuantity):
         volume: F.VolumeSubdomain,
         filename: str = None,
     ) -> None:
-        super().__init__(field, volume, filename)
+        super().__init__(field=field, volume=volume, filename=filename)
+    
+    @property
+    def title(self):
+        return f"Total {self.field.name} volume {self.volume.id}"
 
     def compute(self, dx: ufl.Measure):
         """
