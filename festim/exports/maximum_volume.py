@@ -12,7 +12,7 @@ class MaximumVolume(F.VolumeQuantity):
 
     Attributes:
         see `festim.VolumeQuantity`
-        
+
     """
 
     def __init__(
@@ -22,7 +22,7 @@ class MaximumVolume(F.VolumeQuantity):
         filename: str = None,
     ) -> None:
         super().__init__(field=field, volume=volume, filename=filename)
-    
+
     @property
     def title(self):
         return f"Maximum {self.field.name} volume {self.volume.id}"

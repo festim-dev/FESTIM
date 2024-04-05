@@ -27,7 +27,7 @@ class VolumeQuantity:
         self.t = []
         self.data = []
         self._first_time_export = True
-    
+
     @property
     def title(self):
         return f"{self.field.name} volume {self.volume.id}"

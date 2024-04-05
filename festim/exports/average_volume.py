@@ -21,7 +21,7 @@ class AverageVolume(F.VolumeQuantity):
         filename: str = None,
     ) -> None:
         super().__init__(field=field, volume=volume, filename=filename)
-    
+
     @property
     def title(self):
         return f"Average {self.field.name} volume {self.volume.id}"

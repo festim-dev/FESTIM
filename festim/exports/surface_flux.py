@@ -22,7 +22,7 @@ class SurfaceFlux(F.SurfaceQuantity):
         filename: str = None,
     ) -> None:
         super().__init__(field, surface, filename)
-    
+
     @property
     def title(self):
         return f"{self.field.name} flux surface {self.surface.id}"

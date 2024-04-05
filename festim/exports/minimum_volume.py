@@ -4,7 +4,7 @@ import numpy as np
 
 class MinimumVolume(F.VolumeQuantity):
     """Computes the minmum value of a field in a given volume
-    
+
     Args:
         field (festim.Species): species for which the minmum volume is computed
         volume (festim.VolumeSubdomain): volume subdomain
@@ -21,7 +21,7 @@ class MinimumVolume(F.VolumeQuantity):
         filename: str = None,
     ) -> None:
         super().__init__(field, volume, filename)
-    
+
     @property
     def title(self):
         return f"Minimum {self.field.name} volume {self.volume.id}"

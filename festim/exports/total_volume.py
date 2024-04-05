@@ -22,7 +22,7 @@ class TotalVolume(F.VolumeQuantity):
         filename: str = None,
     ) -> None:
         super().__init__(field=field, volume=volume, filename=filename)
-    
+
     @property
     def title(self):
         return f"Total {self.field.name} volume {self.volume.id}"
