@@ -5,7 +5,7 @@ import fenics as f
 class AverageVolume(VolumeQuantity):
     """
     Computes the average value of a field in a given volume
-    int(f ds) / int (1 * ds)
+    int(f dx) / int (1 * dx)
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")

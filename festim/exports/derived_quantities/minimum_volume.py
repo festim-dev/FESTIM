@@ -5,7 +5,7 @@ import numpy as np
 
 class MinimumVolume(VolumeQuantity):
     """
-    Computes the minimum value in a field in a given volume
+    Computes the minimum value of a field in a given volume
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")

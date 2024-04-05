@@ -5,7 +5,7 @@ import numpy as np
 
 class MaximumVolume(VolumeQuantity):
     """
-    Computes the maximum value in a field in a given volume
+    Computes the maximum value of a field in a given volume
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
