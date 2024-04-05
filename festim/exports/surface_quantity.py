@@ -51,9 +51,7 @@ class SurfaceQuantity:
 
     @surface.setter
     def surface(self, value):
-        if not isinstance(value, (int, F.SurfaceSubdomain)) or isinstance(
-            value, bool
-        ):
+        if not isinstance(value, (int, F.SurfaceSubdomain)) or isinstance(value, bool):
             raise TypeError("surface should be an int or F.SurfaceSubdomain")
         self._surface = value
 
