@@ -197,17 +197,9 @@ class HeatTransferProblem:
         for bc in self.boundary_conditions:
             # create value_fenics for all F.HeatFluxBC objects
             if isinstance(bc, F.HeatFluxBC):
-                function_space_value = None
-                if callable(bc.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = bc.species.sub_function_space
-                    else:
-                        function_space_value = bc.species.collapsed_function_space
-
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
-                    function_space=function_space_value,
+                    function_space=self.function_space,
                     t=self.t,
                 )
 
@@ -271,9 +263,7 @@ class HeatTransferProblem:
         for bc in self.boundary_conditions:
             if isinstance(bc, F.HeatFluxBC):
                 self.formulation -= (
-                    bc.value_fenics
-                    * bc.species.test_function
-                    * self.ds(bc.subdomain.id)
+                    bc.value_fenics * self.test_function * self.ds(bc.subdomain.id)
                 )
 
     def create_solver(self):
