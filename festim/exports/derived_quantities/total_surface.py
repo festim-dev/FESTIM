@@ -35,19 +35,9 @@ class TotalSurface(SurfaceQuantity):
         # obtain domain dimension
         dim = self.function.function_space().mesh().topology().dim()
         if self.field == "T":
-            if dim == 1:
-                return "K"
-            if dim == 2:
-                return "K m"
-            if dim == 3:
-                return "K m2"
+            return f"K m{dim-1}".replace(" m0", "")
         else:
-            if dim == 1:
-                return "H m-2"
-            if dim == 2:
-                return "H m-1"
-            if dim == 3:
-                return "H"
+            return f"H m{dim-3}".replace(" m0", "")
 
     @property
     def title(self):

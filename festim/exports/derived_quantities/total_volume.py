@@ -35,19 +35,9 @@ class TotalVolume(VolumeQuantity):
         # obtain domain dimension
         dim = self.function.function_space().mesh().topology().dim()
         if self.field == "T":
-            if dim == 1:
-                return "K m"
-            if dim == 2:
-                return "K m2"
-            if dim == 3:
-                return "K m3"
+            return f"K m{dim}".replace("1", "")
         else:
-            if dim == 1:
-                return "H m-2"
-            if dim == 2:
-                return "H m-1"
-            if dim == 3:
-                return "H"
+            return f"H m{dim-3}".replace(" m0", "")
 
     @property
     def title(self):

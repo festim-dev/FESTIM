@@ -41,19 +41,9 @@ class SurfaceFlux(SurfaceQuantity):
         # obtain domain dimension
         dim = self.function.function_space().mesh().topology().dim()
         if self.field == "T":
-            if dim == 1:
-                return "W m-2"
-            if dim == 2:
-                return "W m-1"
-            if dim == 3:
-                return "W"
+            return f"W m{dim-3}".replace(" m0", "")
         else:
-            if dim == 1:
-                return "H m-2 s-1"
-            if dim == 2:
-                return "H m-1 s-1"
-            if dim == 3:
-                return "H s-1"
+            return f"H m{dim-3} s-1".replace(" m0", "")
 
     @property
     def title(self):
