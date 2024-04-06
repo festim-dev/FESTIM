@@ -42,7 +42,7 @@ def test_flux_bc_1_mobile_MMS_steady_state():
 
     my_model.boundary_conditions = [
         F.DirichletBC(subdomain=left, value=u_exact, species=H),
-        F.FluxBC(subdomain=right, value=4 * D, species=H),
+        F.ParticleFluxBC(subdomain=right, value=4 * D, species=H),
     ]
 
     f = -ufl.div(D * ufl.grad(u_exact(x_1d)))
