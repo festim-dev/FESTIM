@@ -27,7 +27,7 @@ class FluxBCBase:
 
     """
 
-    def __init__(self, subdomain, value) -> None:
+    def __init__(self, subdomain, value):
         self.subdomain = subdomain
         self.value = value
 
@@ -52,7 +52,7 @@ class FluxBCBase:
     @property
     def time_dependent(self):
         if self.value is None:
-            return False
+            raise TypeError("Value must be given to determine if its time dependent")
         if isinstance(self.value, fem.Constant):
             return False
         if callable(self.value):
@@ -62,7 +62,7 @@ class FluxBCBase:
             return False
 
     def update(self, t):
-        """Updates the source value
+        """Updates the flux bc value
 
         Args:
             t (float): the time
@@ -80,19 +80,19 @@ class ParticleFluxBC(FluxBCBase):
     Particle flux boundary condition class
 
     Args:
-        subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
-        species (festim.Species): the species to which the condition is applied
+        subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
+            is applied
+        value (float or fem.Constant): the value of the particle flux
+        species (festim.Species): the species to which the flux is applied
 
     Attributes:
-        subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
-        species (festim.Species): the species to which the condition is applied
-        value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
+        subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
+            is applied
+        value (float or fem.Constant): the value of the particle flux
+        species (festim.Species): the species to which the flux is applied
+        value_fenics (fem.Function or fem.Constant): the value of the particle flux in
             fenics format
-        bc_expr (fem.Expression): the expression of the boundary condition that is used to
+        bc_expr (fem.Expression): the expression of the particle flux that is used to
             update the value_fenics
 
 
@@ -105,7 +105,7 @@ class ParticleFluxBC(FluxBCBase):
         >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
     """
 
-    def __init__(self, subdomain, value, species) -> None:
+    def __init__(self, subdomain, value, species):
         super().__init__(subdomain=subdomain, value=value)
         self.species = species
 
@@ -181,17 +181,17 @@ class HeatFluxBC(FluxBCBase):
     Heat flux boundary condition class
 
     Args:
-        subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
+        subdomain (festim.SurfaceSubdomain): the surface subdomain where the heat flux
+            is applied
+        value (float or fem.Constant): the value of the heat flux
 
     Attributes:
-        subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
-        value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
+        subdomain (festim.SurfaceSubdomain): the surface subdomain where the heat flux
+            is applied
+        value (float or fem.Constant): the value of the heat flux
+        value_fenics (fem.Function or fem.Constant): the value of the heat flux in
             fenics format
-        bc_expr (fem.Expression): the expression of the boundary condition that is used to
+        bc_expr (fem.Expression): the expression of the heat flux that is used to
             update the value_fenics
 
 
@@ -203,7 +203,7 @@ class HeatFluxBC(FluxBCBase):
         >>> HeatFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t)
     """
 
-    def __init__(self, subdomain, value) -> None:
+    def __init__(self, subdomain, value):
         super().__init__(subdomain=subdomain, value=value)
 
         self.value_fenics = None
