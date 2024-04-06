@@ -34,6 +34,7 @@ class TotalVolume(VolumeQuantity):
     def export_unit(self):
         # obtain domain dimension
         dim = self.function.function_space().mesh().topology().dim()
+        # return unit depending on field and dimension of domain
         if self.field == "T":
             return f"K m{dim}".replace("1", "")
         else:
