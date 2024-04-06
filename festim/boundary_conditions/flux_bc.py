@@ -15,32 +15,21 @@ class FluxBCBase:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
-        species (festim.Species): the species to which the condition is applied
 
     Attributes:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
-        species (festim.Species): the species to which the condition is applied
         value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
             fenics format
         bc_expr (fem.Expression): the expression of the boundary condition that is used to
             update the value_fenics
 
-
-    Usage:
-        >>> from festim import FluxBC
-        >>> FluxBC(subdomain=my_subdomain, value=1, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
     """
 
-    def __init__(self, subdomain, value, species) -> None:
+    def __init__(self, subdomain, value) -> None:
         self.subdomain = subdomain
         self.value = value
-        self.species = species
 
         self.value_fenics = None
         self.bc_expr = None
@@ -108,17 +97,16 @@ class ParticleFluxBC(FluxBCBase):
 
 
     Usage:
-        >>> from festim import FluxBC
-        >>> FluxBC(subdomain=my_subdomain, value=1, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+        >>> from festim import ParticleFluxBC
+        >>> ParticleFluxBC(subdomain=my_subdomain, value=1, species="H")
+        >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
+        >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
+        >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
+        >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
     """
 
     def __init__(self, subdomain, value, species) -> None:
-        self.subdomain = subdomain
-        self.value = value
+        super().__init__(subdomain=subdomain, value=value)
         self.species = species
 
         self.value_fenics = None
@@ -196,13 +184,11 @@ class HeatFluxBC(FluxBCBase):
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
-        species (festim.Species): the species to which the condition is applied
 
     Attributes:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
-        species (festim.Species): the species to which the condition is applied
         value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
             fenics format
         bc_expr (fem.Expression): the expression of the boundary condition that is used to
@@ -210,18 +196,15 @@ class HeatFluxBC(FluxBCBase):
 
 
     Usage:
-        >>> from festim import FluxBC
-        >>> FluxBC(subdomain=my_subdomain, value=1, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-        >>> FluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+        >>> from festim import HeatFluxBC
+        >>> HeatFluxBC(subdomain=my_subdomain, value=1)
+        >>> HeatFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0])
+        >>> HeatFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t)
+        >>> HeatFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t)
     """
 
-    def __init__(self, subdomain, value, species) -> None:
-        self.subdomain = subdomain
-        self.value = value
-        self.species = species
+    def __init__(self, subdomain, value) -> None:
+        super().__init__(subdomain=subdomain, value=value)
 
         self.value_fenics = None
         self.bc_expr = None
