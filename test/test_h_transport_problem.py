@@ -967,7 +967,7 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
     my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
     dt = fem.Constant(test_mesh.mesh, 1.0)
 
-    my_bc = F.FluxBC(subdomain=surface, value=bc_value, species=H)
+    my_bc = F.ParticleFluxBC(subdomain=surface, value=bc_value, species=H)
     my_model.boundary_conditions = [my_bc]
 
     my_model.define_function_spaces()
@@ -1025,7 +1025,7 @@ def test_update_fluxes_with_time_dependent_temperature(
     dt = fem.Constant(test_mesh.mesh, 1.0)
 
     my_model.boundary_conditions = [
-        F.FluxBC(subdomain=surface_subdomain, value=bc_value, species=H)
+        F.ParticleFluxBC(subdomain=surface_subdomain, value=bc_value, species=H)
     ]
 
     my_model.define_temperature()
@@ -1064,8 +1064,8 @@ def test_create_source_values_fenics_multispecies():
     )
     my_model.t = fem.Constant(my_model.mesh.mesh, 4.0)
 
-    my_bc_1 = F.FluxBC(subdomain=surface, value=lambda t: t + 1, species=H)
-    my_bc_2 = F.FluxBC(subdomain=surface, value=lambda t: 2 * t + 3, species=D)
+    my_bc_1 = F.ParticleFluxBC(subdomain=surface, value=lambda t: t + 1, species=H)
+    my_bc_2 = F.ParticleFluxBC(subdomain=surface, value=lambda t: 2 * t + 3, species=D)
     my_model.boundary_conditions = [my_bc_1, my_bc_2]
 
     my_model.define_function_spaces()

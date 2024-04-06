@@ -599,10 +599,10 @@ class HydrogenTransportProblem:
                 )
 
     def create_flux_values_fenics(self):
-        """For each source create the value_fenics"""
+        """For each particle flux create the value_fenics"""
         for bc in self.boundary_conditions:
-            # create value_fenics for all F.Source objects
-            if isinstance(bc, F.FluxBC):
+            # create value_fenics for all F.ParticleFluxBC objects
+            if isinstance(bc, F.ParticleFluxBC):
                 function_space_value = None
                 if callable(bc.value):
                     # if bc.value is a callable then need to provide a functionspace
@@ -711,7 +711,7 @@ class HydrogenTransportProblem:
 
         # add fluxes
         for bc in self.boundary_conditions:
-            if isinstance(bc, F.FluxBC):
+            if isinstance(bc, F.ParticleFluxBC):
                 self.formulation -= (
                     bc.value_fenics
                     * bc.species.test_function

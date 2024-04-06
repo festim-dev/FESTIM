@@ -17,7 +17,7 @@ def test_init():
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     value = 1.0
     species = "test"
-    bc = F.FluxBC(subdomain, value, species)
+    bc = F.ParticleFluxBC(subdomain, value, species)
 
     # check that the attributes are set correctly
     assert bc.subdomain == subdomain
@@ -51,7 +51,7 @@ def test_create_value_fenics_type(value, expected_type):
     my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     T = F.as_fenics_constant(1, mesh)
     t = F.as_fenics_constant(0, mesh)
-    bc = F.FluxBC(subdomain=left, value=value, species=my_species)
+    bc = F.ParticleFluxBC(subdomain=left, value=value, species=my_species)
 
     # RUN
     bc.create_value_fenics(mesh, my_func_space, T, t)
@@ -85,7 +85,7 @@ def test_create_value_fenics_value(value, expected_value):
     my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     T = F.as_fenics_constant(1, mesh)
     t = F.as_fenics_constant(0, mesh)
-    bc = F.FluxBC(subdomain=left, value=value, species=my_species)
+    bc = F.ParticleFluxBC(subdomain=left, value=value, species=my_species)
 
     # RUN
     bc.create_value_fenics(mesh, my_func_space, T, t)
@@ -102,7 +102,7 @@ def test_create_value_fenics_value(value, expected_value):
 def test_value_fenics_setter_error():
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
-    bc = F.FluxBC(subdomain=left, value=1.0, species=my_species)
+    bc = F.ParticleFluxBC(subdomain=left, value=1.0, species=my_species)
 
     with pytest.raises(
         TypeError,
@@ -121,7 +121,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     def my_value(t):
         return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
 
-    bc = F.FluxBC(subdomain=surface, value=my_value, species=species)
+    bc = F.ParticleFluxBC(subdomain=surface, value=my_value, species=species)
 
     my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
     T = fem.Constant(mesh, 550.0)
@@ -152,7 +152,7 @@ def test_bc_time_dependent_attribute(input, expected_value):
     """Test that the time_dependent attribute is correctly set"""
     surface = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     my_species = F.Species("test")
-    my_bc = F.FluxBC(subdomain=surface, value=input, species=my_species)
+    my_bc = F.ParticleFluxBC(subdomain=surface, value=input, species=my_species)
 
     assert my_bc.time_dependent is expected_value
 
@@ -174,6 +174,6 @@ def test_bc_temperature_dependent_attribute(input, expected_value):
     """Test that the temperature_dependent attribute is correctly set"""
     surface = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     my_species = F.Species("test")
-    my_bc = F.FluxBC(subdomain=surface, value=input, species=my_species)
+    my_bc = F.ParticleFluxBC(subdomain=surface, value=input, species=my_species)
 
     assert my_bc.temperature_dependent is expected_value
