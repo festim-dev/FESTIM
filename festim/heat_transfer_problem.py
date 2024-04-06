@@ -53,7 +53,9 @@ class HeatTransferProblem:
 
     @boundary_conditions.setter
     def boundary_conditions(self, value):
-        if not all(isinstance(bc, F.FixedTemperatureBC) for bc in value):
+        if not all(
+            isinstance(bc, (F.FixedTemperatureBC, F.HeatFluxBC)) for bc in value
+        ):
             raise TypeError(
                 "boundary_conditions must be a list of festim.FixedTemperatureBC objects"
             )
