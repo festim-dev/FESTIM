@@ -57,7 +57,7 @@ class HeatTransferProblem:
             isinstance(bc, (F.FixedTemperatureBC, F.HeatFluxBC)) for bc in value
         ):
             raise TypeError(
-                "boundary_conditions must be a list of festim.FixedTemperatureBC objects"
+                "boundary_conditions must be a list of festim.FixedTemperatureBC or festim.HeatFluxBC objects"
             )
         self._boundary_conditions = value
 
@@ -202,6 +202,7 @@ class HeatTransferProblem:
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     function_space=self.function_space,
+                    temperature=self.u,
                     t=self.t,
                 )
 
