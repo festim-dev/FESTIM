@@ -225,9 +225,10 @@ def test_create_value_fenics_type_HeatFluxBC(value, expected_type):
     my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     t = F.as_fenics_constant(0, mesh)
     bc = F.HeatFluxBC(subdomain=left, value=value)
+    temperature = F.as_fenics_constant(1, mesh)
 
     # RUN
-    bc.create_value_fenics(mesh, my_func_space, t)
+    bc.create_value_fenics(mesh, my_func_space, temperature, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
@@ -256,9 +257,10 @@ def test_create_value_fenics_value(value, expected_value):
     my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     t = F.as_fenics_constant(0, mesh)
     bc = F.HeatFluxBC(subdomain=left, value=value)
+    temperature = F.as_fenics_constant(1, mesh)
 
     # RUN
-    bc.create_value_fenics(mesh, my_func_space, t)
+    bc.create_value_fenics(mesh, my_func_space, temperature, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
@@ -267,24 +269,3 @@ def test_create_value_fenics_value(value, expected_value):
 
     if isinstance(bc.value_fenics, fem.Function):
         assert np.isclose(bc.value_fenics.x.array[-1], expected_value)
-
-
-def test_ValueError_raised_when_callable_returns_wrong_type_HeatFluxBC():
-    """The create_value_fenics method should raise a ValueError when the callable
-    returns an object which is not a float or int"""
-
-    surface = F.SurfaceSubdomain(id=1)
-
-    def my_value(t):
-        return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
-
-    bc = F.HeatFluxBC(subdomain=surface, value=my_value)
-
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
-    t = fem.Constant(mesh, 0.0)
-
-    with pytest.raises(
-        ValueError,
-        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
-    ):
-        bc.create_value_fenics(mesh, my_function_space, t)
