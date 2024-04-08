@@ -6,6 +6,12 @@ from festim import (
     TotalVolume,
     MaximumVolume,
     MinimumVolume,
+    MinimumSurface,
+    MaximumSurface,
+    AverageSurface,
+    PointValue,
+    SurfaceFluxCylindrical,
+    SurfaceFluxSpherical,
     Materials,
 )
 import fenics as f
@@ -23,7 +29,21 @@ class TestMakeHeader:
     tot_surf_2 = TotalSurface("trap1", 7)
     tot_vol_1 = TotalVolume("trap2", 5)
     min_vol_1 = MinimumVolume("retention", 2)
+    min_vol_2 = MinimumVolume("T", 2)
     max_vol_1 = MaximumVolume("T", 2)
+    max_vol_2 = MaximumVolume("trap2", 2)
+    min_surface_1 = MinimumSurface("solute", 1)
+    min_surface_2 = MinimumSurface("T", 2)
+    max_surface_1 = MaximumSurface("solute", 8)
+    max_surface_2 = MaximumSurface("T", 9)
+    avg_surface_1 = AverageSurface("solute", 4)
+    avg_surface_2 = AverageSurface("T", 6)
+    point_1 = PointValue(field="retention", x=2)
+    point_2 = PointValue(field="T", x=9)
+    cyl_surface_flux_1 = SurfaceFluxCylindrical("solute", 2)
+    cyl_surface_flux_2 = SurfaceFluxCylindrical("T", 3)
+    sph_surface_flux_1 = SurfaceFluxSpherical("solute", 5)
+    sph_surface_flux_2 = SurfaceFluxSpherical("T", 6)
 
     def test_simple(self):
         """
@@ -73,6 +93,54 @@ class TestMakeHeader:
             self.tot_vol_1.title,
             self.min_vol_1.title,
             self.max_vol_1.title,
+        ]
+        assert header == expected_header
+
+    def test_with_units_simple(self):
+        """Test with quantities that don't require mesh dimension for unit"""
+        my_derv_quant = DerivedQuantities(
+            [
+                self.average_vol_1,
+                self.average_vol_2,
+                self.min_vol_1,
+                self.min_vol_2,
+                self.max_vol_1,
+                self.max_vol_2,
+                self.min_surface_1,
+                self.min_surface_2,
+                self.max_surface_1,
+                self.max_surface_2,
+                self.avg_surface_1,
+                self.avg_surface_2,
+                self.point_1,
+                self.point_2,
+                self.cyl_surface_flux_1,
+                self.cyl_surface_flux_2,
+                self.sph_surface_flux_1,
+                self.sph_surface_flux_2,
+            ],
+            show_units=True,
+        )
+        header = my_derv_quant.make_header()
+        expected_header = ["t(s)"] + [
+            "Average solute volume 3 (H m-3)",
+            "Average T volume 4 (K)",
+            "Minimum retention volume 2 (H m-3)",
+            "Minimum T volume 2 (K)",
+            "Maximum T volume 2 (K)",
+            "Maximum trap2 volume 2 (H m-3)",
+            "Minimum solute surface 1 (H m-3)",
+            "Minimum T surface 2 (K)",
+            "Maximum solute surface 8 (H m-3)",
+            "Maximum T surface 9 (K)",
+            "Average solute surface 4 (H m-3)",
+            "Average T surface 6 (K)",
+            "retention value at [2] (H m-3)",
+            "T value at [9] (K)",
+            "solute flux surface 2 (H s-1)",
+            "Heat flux surface 3 (W)",
+            "solute flux surface 5 (H s-1)",
+            "Heat flux surface 6 (W)",
         ]
         assert header == expected_header
 
@@ -211,7 +279,11 @@ class TestCompute:
 
         my_derv_quant.data = []
         my_derv_quant.compute(t)
-        assert my_derv_quant.data[0] == expected_data
+
+        # title created in compute() method and appended to data
+        # so test line 2 for first data entry
+
+        assert my_derv_quant.data[1] == expected_data
 
     def test_two_quantities(self):
         """Check for the case of two festim.DerivedQuantity objects"""
@@ -232,7 +304,10 @@ class TestCompute:
         my_derv_quant.data = []
         my_derv_quant.compute(t)
 
-        assert my_derv_quant.data[0] == expected_data
+        # title created in compute() method and appended to data
+        # so test line 2 for first data entry
+
+        assert my_derv_quant.data[1] == expected_data
 
     def test_all_quantities(self):
         """Check for the case of many festim.DerivedQuantity objects"""
@@ -262,7 +337,10 @@ class TestCompute:
         my_derv_quant.data = []
         my_derv_quant.compute(t)
 
-        assert my_derv_quant.data[0] == expected_data
+        # title created in compute() method and appended to data
+        # so test line 2 for first data entry
+
+        assert my_derv_quant.data[1] == expected_data
 
 
 class TestWrite:

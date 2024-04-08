@@ -23,6 +23,8 @@ class DerivedQuantities(list):
         nb_iterations_between_exports (int, optional): number of
             iterations between each export. If None, the file will be
             exported at the last timestep. Defaults to None.
+        show_units (bool, optional): will show the units of each
+            derived quantity in the title in export
     """
 
     def __init__(
@@ -31,6 +33,7 @@ class DerivedQuantities(list):
         filename: str = None,
         nb_iterations_between_compute: int = 1,
         nb_iterations_between_exports: int = None,
+        show_units=False,
     ) -> None:
         # checks that input is list
         if len(args) == 0:
@@ -43,8 +46,9 @@ class DerivedQuantities(list):
         self.filename = filename
         self.nb_iterations_between_compute = nb_iterations_between_compute
         self.nb_iterations_between_exports = nb_iterations_between_exports
+        self.show_units = show_units
 
-        self.data = [self.make_header()]
+        self.data = []
         self.t = []
 
     @property
@@ -108,6 +112,12 @@ class DerivedQuantities(list):
     def make_header(self):
         header = ["t(s)"]
         for quantity in self:
+            quantity.show_units = self.show_units
+            if self.show_units is False:
+                warnings.warn(
+                    "The current derived_quantities title style will be deprecated in a future release, please use show_units=True instead",
+                    DeprecationWarning,
+                )
             header.append(quantity.title)
         return header
 
@@ -139,6 +149,11 @@ class DerivedQuantities(list):
                 value = quantity.compute(self.volume_markers)
             else:
                 value = quantity.compute()
+
+            # check if first time writing data
+            if len(self.data) == 0:
+                self.data = [self.make_header()]
+
             quantity.data.append(value)
             quantity.t.append(t)
             row.append(value)

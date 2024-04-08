@@ -1,6 +1,8 @@
 from festim import TotalVolume
 import fenics as f
 import pytest
+from .tools import c_1D, c_2D, c_3D
+import pytest
 
 
 @pytest.mark.parametrize("field,volume", [("solute", 1), ("T", 2)])
@@ -42,3 +44,22 @@ class TestCompute:
 
         produced = self.my_total.compute()
         assert produced == expected
+
+
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "Total solute volume 2 (H m-2)"),
+        (c_1D, "T", "Total T volume 2 (K m)"),
+        (c_2D, "solute", "Total solute volume 2 (H m-1)"),
+        (c_2D, "T", "Total T volume 2 (K m2)"),
+        (c_3D, "solute", "Total solute volume 2 (H)"),
+        (c_3D, "T", "Total T volume 2 (K m3)"),
+    ],
+)
+def test_title_with_units(function, field, expected_title):
+    my_export = TotalVolume(volume=2, field=field)
+    my_export.function = function
+    my_export.show_units = True
+
+    assert my_export.title == expected_title
