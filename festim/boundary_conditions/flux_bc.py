@@ -8,8 +8,10 @@ class FluxBCBase:
     """
     Flux boundary condition class
 
-    Ensuring the gradient of the solution:
-    -D * grad(c) * n = f
+    Ensuring the gradient of the solution u at a boundary:
+    -A * grad(u) * n = f
+    where A is some material property (diffusivity for particle flux and thermal conductivity for heat flux), n is the outwards normal vector of the boundary, f is a function of space and time.
+
 
     Args:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
@@ -141,6 +143,9 @@ class FluxBCBase:
 class ParticleFluxBC(FluxBCBase):
     """
     Particle flux boundary condition class
+    Ensuring the gradient of the solution c at a boundary:
+    -D * grad(c) * n = f
+    where D is the material diffusivity, n is the outwards normal vector of the boundary, f is a function of space and time.
 
     Args:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
@@ -176,6 +181,9 @@ class ParticleFluxBC(FluxBCBase):
 class HeatFluxBC(FluxBCBase):
     """
     Heat flux boundary condition class
+    Ensuring the gradient of the solution T at a boundary:
+    -lambda * grad(T) * n = f
+    where lambda is the thermal conductivity , n is the outwards normal vector of the boundary, f is a function of space and time.
 
     Args:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the heat flux
