@@ -16,12 +16,12 @@ class FluxBCBase:
     Args:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
             condition is applied
-        value (float or fem.Constant): the value of the boundary condition
+        value (float, fem.Constant, callable): the value of the boundary condition
 
     Attributes:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
             condition is applied
-        value (float or fem.Constant): the value of the boundary condition
+        value (float, fem.Constant, callable): the value of the boundary condition
         value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
             fenics format
         bc_expr (fem.Expression): the expression of the boundary condition that is used to
@@ -150,7 +150,7 @@ class ParticleFluxBC(FluxBCBase):
     Args:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
             is applied
-        value (float or fem.Constant): the value of the particle flux
+        value (float, fem.Constant, callable): the value of the particle flux
         species (festim.Species): the species to which the flux is applied
 
     Attributes:
@@ -188,12 +188,12 @@ class HeatFluxBC(FluxBCBase):
     Args:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the heat flux
             is applied
-        value (float or fem.Constant): the value of the heat flux
+        value (float, callable, fem.Constant): the value of the heat flux
 
     Attributes:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the heat flux
             is applied
-        value (float or fem.Constant): the value of the heat flux
+        value (float, callable, fem.Constant): the value of the heat flux
         value_fenics (fem.Function or fem.Constant): the value of the heat flux in
             fenics format
         bc_expr (fem.Expression): the expression of the heat flux that is used to
