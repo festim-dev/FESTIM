@@ -1,7 +1,7 @@
 import festim as F
 import ufl
 import dolfinx
-from dolfinx import fem, mesh
+from dolfinx import fem
 import numpy as np
 
 
