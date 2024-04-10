@@ -82,8 +82,7 @@ class FluxBCBase:
         self.value_fenics.
         If the value is a constant, it is converted to a fenics.Constant.
         If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a fenics.Function and the
-        expression of the function is stored in self.bc_expr.
+        Otherwise, it is converted to a ufl Expression
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
