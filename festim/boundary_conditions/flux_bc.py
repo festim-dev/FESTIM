@@ -45,7 +45,9 @@ class FluxBCBase:
         if value is None:
             self._value_fenics = value
             return
-        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
+        if not isinstance(
+            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
+        ):
             raise TypeError(
                 f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
             )
@@ -109,7 +111,6 @@ class FluxBCBase:
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:
-                self.value_fenics = fem.Function(function_space)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = t
@@ -118,13 +119,7 @@ class FluxBCBase:
                 if "T" in arguments:
                     kwargs["T"] = temperature
 
-                # store the expression of the boundary condition
-                # to update the value_fenics later
-                self.bc_expr = fem.Expression(
-                    self.value(**kwargs),
-                    function_space.element.interpolation_points(),
-                )
-                self.value_fenics.interpolate(self.bc_expr)
+                self.value_fenics = self.value(**kwargs)
 
     def update(self, t):
         """Updates the flux bc value
@@ -136,8 +131,6 @@ class FluxBCBase:
             arguments = self.value.__code__.co_varnames
             if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
                 self.value_fenics.value = self.value(t=t)
-            else:
-                self.value_fenics.interpolate(self.bc_expr)
 
 
 class ParticleFluxBC(FluxBCBase):
