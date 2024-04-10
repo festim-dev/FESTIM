@@ -77,9 +77,7 @@ class FluxBCBase:
         else:
             return False
 
-    def create_value_fenics(
-        self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
-    ):
+    def create_value_fenics(self, mesh, temperature, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.
         If the value is a constant, it is converted to a fenics.Constant.
@@ -89,7 +87,6 @@ class FluxBCBase:
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
-            function_space (dolfinx.fem.FunctionSpace): the function space
             temperature (float): the temperature
             t (dolfinx.fem.Constant): the time
         """

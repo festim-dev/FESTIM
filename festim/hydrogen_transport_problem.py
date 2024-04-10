@@ -583,18 +583,10 @@ class HydrogenTransportProblem:
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, F.ParticleSource):
-                function_space_value = None
-                if callable(source.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = source.species.sub_function_space
-                    else:
-                        function_space_value = source.species.collapsed_function_space
 
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
-                    function_space=function_space_value,
                     t=self.t,
                 )
 
@@ -603,18 +595,10 @@ class HydrogenTransportProblem:
         for bc in self.boundary_conditions:
             # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, F.ParticleFluxBC):
-                function_space_value = None
-                if callable(bc.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = bc.species.sub_function_space
-                    else:
-                        function_space_value = bc.species.collapsed_function_space
 
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
-                    function_space=function_space_value,
                     t=self.t,
                 )
 
