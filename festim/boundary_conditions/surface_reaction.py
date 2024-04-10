@@ -1,5 +1,5 @@
 import festim as F
-import fenics as f
+import ufl
 
 
 class SurfaceReactionBC(F.ParticleFluxBC):
@@ -27,8 +27,8 @@ class SurfaceReactionBC(F.ParticleFluxBC):
         super().__init__(subdomain, value, species)
 
     def reaction_rate(self, T):
-        kr = self.k_r0 * f.exp(-self.E_kr / (F.k_B * T))
-        kd = self.k_d0 * f.exp(-self.E_kd / (F.k_B * T))
+        kr = self.k_r0 * ufl.exp(-self.E_kr / (F.k_B * T))
+        kd = self.k_d0 * ufl.exp(-self.E_kd / (F.k_B * T))
         if callable(
             self.gas_pressure
         ):  # need to check if gas_pressure is a function of time only
