@@ -512,15 +512,13 @@ class HydrogenTransportProblem:
 
     def define_boundary_conditions(self):
         """Defines the dirichlet boundary conditions of the model"""
+        all_bcs = self.boundary_conditions.copy()
         for bc in self.boundary_conditions:
             if isinstance(bc, F.SurfaceReactionBC):
-                for flux_bc in bc.flux_bcs:
-                    flux_bc.create_value_fenics(
-                        mesh=self.mesh.mesh,
-                        temperature=self.temperature_fenics,
-                        t=self.t,
-                    )
-                continue
+                all_bcs += bc.flux_bcs
+                all_bcs.remove(bc)
+
+        for bc in all_bcs:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
