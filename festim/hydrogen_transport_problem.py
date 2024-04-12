@@ -701,6 +701,13 @@ class HydrogenTransportProblem:
                     * bc.species.test_function
                     * self.ds(bc.subdomain.id)
                 )
+            if isinstance(bc, F.SurfaceReactionBC):
+                for flux_bc in bc.flux_bcs:
+                    self.formulation -= (
+                        flux_bc.value_fenics
+                        * flux_bc.species.test_function
+                        * self.ds(flux_bc.subdomain.id)
+                    )
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
