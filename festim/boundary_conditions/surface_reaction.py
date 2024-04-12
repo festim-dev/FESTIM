@@ -1,9 +1,9 @@
 import festim as F
+from dolfinx import fem
 import ufl
 
 
-# TODO instead of inheriting from ParticleFluxBC, it should be composed of several ParticleFluxBCs
-class SurfaceReactionBC(F.ParticleFluxBC):
+class SurfaceReactionFlux(F.ParticleFluxBC):
     def __init__(
         self,
         reactant,
@@ -15,6 +15,42 @@ class SurfaceReactionBC(F.ParticleFluxBC):
         subdomain,
         species,
     ):
+        self.reactant = reactant
+        self.gas_pressure = gas_pressure
+        self.k_r0 = k_r0
+        self.E_kr = E_kr
+        self.k_d0 = k_d0
+        self.E_kd = E_kd
+        super().__init__(subdomain=subdomain, value=None, species=species)
+
+    def reaction_rate(self, temperature, t: fem.Constant):
+        kr = self.k_r0 * ufl.exp(-self.E_kr / (F.k_B * temperature))
+        kd = self.k_d0 * ufl.exp(-self.E_kd / (F.k_B * temperature))
+        if callable(self.gas_pressure):
+            gas_pressure = self.gas_pressure(t=t)
+        else:
+            gas_pressure = self.gas_pressure
+        product_of_reactants = self.reactant[0].concentration
+        for reactant in self.reactant[1:]:
+            product_of_reactants *= reactant.concentration
+
+        return kd * gas_pressure - kr * product_of_reactants
+
+    def create_value_fenics(self, mesh, temperature, t: fem.Constant):
+        self.value_fenics = self.reaction_rate(temperature, t)
+
+
+class SurfaceReactionBC:
+    def __init__(
+        self,
+        reactant,
+        gas_pressure,
+        k_r0,
+        E_kr,
+        k_d0,
+        E_kd,
+        subdomain,
+    ):
 
         self.reactant = reactant
         self.gas_pressure = gas_pressure
@@ -22,28 +58,25 @@ class SurfaceReactionBC(F.ParticleFluxBC):
         self.E_kr = E_kr
         self.k_d0 = k_d0
         self.E_kd = E_kd
-        name_to_species = {f"c{i}": species for i, species in enumerate(self.reactant)}
+        self.subdomain = subdomain
 
-        value = self.create_value()
+        self.flux_bcs = self.create_flux_bcs()
 
-        super().__init__(
-            subdomain, value, species, species_dependent_value=name_to_species
-        )
+    @property
+    def time_dependent(self):
+        return False  # no need to update if only using ufl.conditional objects
 
-    def create_value(self):
-        kwargs = {f"c{i}": None for i, _ in enumerate(self.reactant)}
-        kwargs["T"] = None
-        if callable(self.gas_pressure):
-            kwargs["t"] = None
-
-        def value(**kwargs):
-            T = kwargs["T"]
-            kr = self.k_r0 * ufl.exp(-self.E_kr / (F.k_B * T))
-            kd = self.k_d0 * ufl.exp(-self.E_kd / (F.k_B * T))
-            if callable(self.gas_pressure):
-                gas_pressure = self.gas_pressure(t=kwargs["t"])
-            else:
-                gas_pressure = self.gas_pressure
-            return kd * gas_pressure - kr * self.reactant
-
-        return value
+    def create_flux_bcs(self):
+        return [
+            SurfaceReactionFlux(
+                reactant=self.reactant,
+                gas_pressure=self.gas_pressure,
+                k_r0=self.k_r0,
+                E_kr=self.E_kr,
+                k_d0=self.k_d0,
+                E_kd=self.E_kd,
+                subdomain=self.subdomain,
+                species=species,
+            )
+            for species in self.reactant
+        ]
