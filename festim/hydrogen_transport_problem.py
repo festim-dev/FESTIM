@@ -511,7 +511,11 @@ class HydrogenTransportProblem:
         )
 
     def define_boundary_conditions(self):
-        """Defines the dirichlet boundary conditions of the model"""
+        """Create forms for DirichletBC and value_fenics for ParticleFluxBC"""
+        # @jhdark this all_bcs could be a property
+        # I just don't want to modify self.boundary_conditions
+
+        # create all_bcs which includes all flux bcs from SurfaceReactionBC
         all_bcs = self.boundary_conditions.copy()
         for bc in self.boundary_conditions:
             if isinstance(bc, F.SurfaceReactionBC):
