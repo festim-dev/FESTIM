@@ -38,4 +38,4 @@ class SurfaceSubdomain1D(F.SurfaceSubdomain):
         indices = dolfinx.mesh.locate_entities_boundary(
             mesh, fdim, lambda x: np.isclose(x[0], self.x)
         )
-        return indices[0]
+        return indices
