@@ -474,7 +474,11 @@ class HydrogenTransportProblem:
             self.facet_meshtags = self.mesh.define_surface_meshtags()
             self.volume_meshtags = self.mesh.define_volume_meshtags()
 
-        elif isinstance(self.mesh, F.Mesh):
+        elif (
+            isinstance(self.mesh, F.Mesh)
+            and self.facet_meshtags is None
+            and self.volume_meshtags is None
+        ):
             self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
                 surface_subdomains=self.surface_subdomains,
                 volume_subdomains=self.volume_subdomains,
