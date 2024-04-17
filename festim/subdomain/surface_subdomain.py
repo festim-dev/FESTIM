@@ -29,7 +29,7 @@ class SurfaceSubdomain:
         indices = dolfinx.mesh.locate_entities_boundary(
             mesh, fdim, lambda x: np.full(x.shape[1], True, dtype=bool)
         )
-        return indices[0]
+        return indices
 
 
 def find_surface_from_id(id: int, surfaces: list):
