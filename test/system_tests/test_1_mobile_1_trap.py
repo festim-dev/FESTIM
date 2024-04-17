@@ -183,8 +183,8 @@ def test_1_mobile_1_trap_MMS_transient():
     assert L2_error < 5e-4
 
 
-def test_1_mobile_1_trap_MMS_2D():
-    """Tests that a steady simulation can be run in a 2D domain with
+def test_1_mobile_1_trap_MMS_3D():
+    """Tests that a steady simulation can be run in a 3D domain with
     1 mobile and 1 trapped species"""
 
     def u_exact(mod):
@@ -313,8 +313,8 @@ def test_1_mobile_1_trap_MMS_2D():
     assert L2_error_trapped < 9e-03
 
 
-def test_1_mobile_1_trap_MMS_3D():
-    """Tests that a steady simulation can be run in a 3D domain with
+def test_1_mobile_1_trap_MMS_2D():
+    """Tests that a steady simulation can be run in a 2D domain with
     1 mobile and 1 trapped species"""
 
     def u_exact(mod):
