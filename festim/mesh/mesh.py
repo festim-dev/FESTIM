@@ -72,17 +72,17 @@ class Mesh:
         tags_volumes = np.full(num_cells, 0, dtype=np.int32)
 
         # find all facets in domain and mark them as 0
-        mesh_facet_indices = dolfinx.mesh.exterior_facet_indices(self.mesh.topology)
-        tags_facets = np.full_like(mesh_facet_indices, 0, dtype=np.int32)
+        num_facets = self.mesh.topology.index_map(self.fdim).size_local
+        mesh_facet_indices = np.arange(num_facets, dtype=np.int32)
+        tags_facets = np.full(num_facets, 0, dtype=np.int32)
 
         for surf in surface_subdomains:
+            # find all facets in subdomain and mark them as surf.id
             entities = surf.locate_boundary_facet_indices(self.mesh, self.fdim)
+            tags_facets[entities] = surf.id
 
-            # in tags_facets, where the value is in entities, set the value to surf.id
-            mask = np.isin(mesh_facet_indices, entities)
-            tags_facets[mask] = surf.id
         for vol in volume_subdomains:
-            # find all cells in subdomain and mark them as sub_dom.id
+            # find all cells in subdomain and mark them as vol.id
             entities = vol.locate_subdomain_entities(self.mesh, self.vdim)
             tags_volumes[entities] = vol.id
 
