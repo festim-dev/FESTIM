@@ -964,7 +964,7 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
     my_model.define_meshtags_and_measures()
     my_model.assign_functions_to_species()
     my_model.define_temperature()
-    my_model.create_flux_values_fenics()
+    my_model.define_boundary_conditions()
 
     for i in range(3):
         # RUN
@@ -1018,7 +1018,7 @@ def test_update_fluxes_with_time_dependent_temperature(
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
-    my_model.create_flux_values_fenics()
+    my_model.define_boundary_conditions()
 
     for i in range(3):
         # RUN
@@ -1031,8 +1031,8 @@ def test_update_fluxes_with_time_dependent_temperature(
             assert np.isclose(computed_value, expected_values[i])
 
 
-def test_create_source_values_fenics_multispecies():
-    """Test that the create_flux_values_fenics method correctly sets the value_fenics
+def test_define_boundary_conditions_multispecies():
+    """Test that the define_boundary_conditions method correctly sets the value_fenics
     attribute in a multispecies case"""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
@@ -1056,7 +1056,7 @@ def test_create_source_values_fenics_multispecies():
     my_model.define_temperature()
 
     # RUN
-    my_model.create_flux_values_fenics()
+    my_model.define_boundary_conditions()
 
     # TEST
     assert np.isclose(my_model.boundary_conditions[0].value_fenics.value, 5)
