@@ -760,6 +760,7 @@ class HydrogenTransportProblem:
             )
             while self.t.value < self.settings.final_time:
                 self.iterate()
+            self.progress.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
             self.solver.solve(self.u)
