@@ -4,24 +4,61 @@ import numpy as np
 
 
 class SurfaceFlux(SurfaceQuantity):
-    def __init__(self, field, surface) -> None:
-        """
+    """
+    Computes the surface flux of a field at a given surface in cartesian coordinates
+
+    Args:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+
+    Attribtutes
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
+        export_unit (str): the unit of the derived quantity in the export file
+        title (str): the title of the derived quantity
+        show_units (bool): show the units in the title in the derived quantities
+            file
+        function (dolfin.function.function.Function): the solution function of
+            the field
+
+    Notes:
         Object to compute the flux J of a field u through a surface
-        J = integral(-prop * grad(u) . n ds)
+        J = integral(+prop * grad(u) . n ds)
         where prop is the property of the field (D, thermal conductivity, etc)
         u is the field
         n is the normal vector of the surface
         ds is the surface measure.
+        units are in H/m2/s in 1D, H/m/s in 2D and H/s in 3D domains for hydrogen
+        concentration and W/m2 in 1D, W/m in 2D and W in 3D domains for temperature
 
-        Note: this will probably won't work correctly for axisymmetric meshes.
-        Use only with cartesian coordinates.
+    """
 
-        Args:
-            field (str, int):  the field ("solute", 0, 1, "T", "retention")
-            surface (int): the surface id
-        """
+    def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
-        self.title = "Flux surface {}: {}".format(self.surface, self.field)
+
+    @property
+    def export_unit(self):
+        # obtain domain dimension
+        dim = self.function.function_space().mesh().topology().dim()
+        # return unit depending on field and dimension of domain
+        if self.field == "T":
+            return f"W m{dim-3}".replace(" m0", "")
+        else:
+            return f"H m{dim-3} s-1".replace(" m0", "")
+
+    @property
+    def title(self):
+        quantity_title = f"Flux surface {self.surface}: {self.field}"
+        if self.show_units:
+            if self.field == "T":
+                quantity_title = f"Heat flux surface {self.surface}"
+            else:
+                quantity_title = f"{self.field} flux surface {self.surface}"
+
+            return quantity_title + f" ({self.export_unit})"
+
+        else:
+            return quantity_title
 
     @property
     def prop(self):
@@ -69,9 +106,24 @@ class SurfaceFluxCylindrical(SurfaceFlux):
     """
 
     def __init__(self, field, surface, azimuth_range=(0, 2 * np.pi)) -> None:
-        super().__init__(field, surface)
+        super().__init__(field=field, surface=surface)
         self.r = None
         self.azimuth_range = azimuth_range
+
+    @property
+    def title(self):
+        if self.field == "T":
+            quantity_title = f"Heat flux surface {self.surface}"
+        else:
+            quantity_title = f"{self.field} flux surface {self.surface}"
+
+        if self.show_units:
+            if self.field == "T":
+                return quantity_title + " (W)"
+            else:
+                return quantity_title + " (H s-1)"
+        else:
+            return quantity_title
 
     @property
     def azimuth_range(self):
@@ -134,10 +186,25 @@ class SurfaceFluxSpherical(SurfaceFlux):
     def __init__(
         self, field, surface, azimuth_range=(0, np.pi), polar_range=(-np.pi, np.pi)
     ) -> None:
-        super().__init__(field, surface)
+        super().__init__(field=field, surface=surface)
         self.r = None
         self.polar_range = polar_range
         self.azimuth_range = azimuth_range
+
+    @property
+    def title(self):
+        if self.field == "T":
+            quantity_title = f"Heat flux surface {self.surface}"
+        else:
+            quantity_title = f"{self.field} flux surface {self.surface}"
+
+        if self.show_units:
+            if self.field == "T":
+                return quantity_title + " (W)"
+            else:
+                return quantity_title + " (H s-1)"
+        else:
+            return quantity_title
 
     @property
     def polar_range(self):

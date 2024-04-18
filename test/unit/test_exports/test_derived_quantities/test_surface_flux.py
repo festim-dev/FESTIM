@@ -3,6 +3,8 @@ import fenics as f
 import math
 import numpy as np
 import pytest
+from festim import SurfaceFlux, k_B
+from .tools import c_1D, c_2D, c_3D
 
 
 @pytest.mark.parametrize("field,surface", [("solute", 1), ("T", 2)])
@@ -264,3 +266,54 @@ def test_soret_raises_error_spherical():
     my_flux = SurfaceFluxSpherical("T", 1)
     with pytest.raises(NotImplementedError):
         my_flux.compute(soret=True)
+
+
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "solute flux surface 3 (H m-2 s-1)"),
+        (c_1D, "T", "Heat flux surface 3 (W m-2)"),
+        (c_2D, "solute", "solute flux surface 3 (H m-1 s-1)"),
+        (c_2D, "T", "Heat flux surface 3 (W m-1)"),
+        (c_3D, "solute", "solute flux surface 3 (H s-1)"),
+        (c_3D, "T", "Heat flux surface 3 (W)"),
+    ],
+)
+def test_title_with_units(function, field, expected_title):
+    my_flux = SurfaceFlux(field=field, surface=3)
+    my_flux.function = function
+    my_flux.show_units = True
+
+    assert my_flux.title == expected_title
+
+
+def test_cylindrical_flux_title_no_units_solute():
+    """A simple test to check that the title is set correctly in
+    festim.CylindricalSurfaceFlux with a solute field without units"""
+
+    my_h_flux = SurfaceFluxCylindrical("solute", 2)
+    assert my_h_flux.title == "solute flux surface 2"
+
+
+def test_cylindrical_flux_title_no_units_temperature():
+    """A simple test to check that the title is set correctly in
+    festim.CylindricalSurfaceFlux with a T field without units"""
+
+    my_heat_flux = SurfaceFluxCylindrical("T", 4)
+    assert my_heat_flux.title == "Heat flux surface 4"
+
+
+def test_spherical_flux_title_no_units_solute():
+    """A simple test to check that the title is set correctly in
+    festim.SphericalSurfaceFlux with a solute field without units"""
+
+    my_h_flux = SurfaceFluxSpherical("solute", 3)
+    assert my_h_flux.title == "solute flux surface 3"
+
+
+def test_spherical_flux_title_no_units_temperature():
+    """A simple test to check that the title is set correctly in
+    festim.CSphericalSurfaceFlux with a T field without units"""
+
+    my_heat_flux = SurfaceFluxSpherical("T", 5)
+    assert my_heat_flux.title == "Heat flux surface 5"

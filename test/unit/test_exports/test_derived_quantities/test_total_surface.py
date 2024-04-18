@@ -2,6 +2,8 @@ from this import s
 from festim import TotalSurface
 import fenics as f
 import pytest
+from .tools import c_1D, c_2D, c_3D
+import pytest
 
 
 @pytest.mark.parametrize("field,surface", [("solute", 1), ("T", 2)])
@@ -43,3 +45,22 @@ class TestCompute:
 
         produced = self.my_total.compute()
         assert produced == expected
+
+
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "Total solute surface 8 (H m-2)"),
+        (c_1D, "T", "Total T surface 8 (K)"),
+        (c_2D, "solute", "Total solute surface 8 (H m-1)"),
+        (c_2D, "T", "Total T surface 8 (K m)"),
+        (c_3D, "solute", "Total solute surface 8 (H)"),
+        (c_3D, "T", "Total T surface 8 (K m2)"),
+    ],
+)
+def test_title_with_units(function, field, expected_title):
+    my_export = TotalSurface(surface=8, field=field)
+    my_export.function = function
+    my_export.show_units = True
+
+    assert my_export.title == expected_title
