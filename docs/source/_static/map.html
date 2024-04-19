@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_2782644de9f2f807af36d14fb084fe4a {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+        
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.1.0/MarkerCluster.Default.css"/>
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_2782644de9f2f807af36d14fb084fe4a" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_2782644de9f2f807af36d14fb084fe4a = L.map(
+                "map_2782644de9f2f807af36d14fb084fe4a",
+                {
+                    center: [42.0, -71.0],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 5,
+                    zoomControl: true,
+                    preferCanvas: false,
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_0e14ce9d9292319e5d1746e2749855d0 = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e", "detectRetina": false, "maxNativeZoom": 20, "maxZoom": 20, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abcd", "tms": false}
+            );
+        
+    
+            tile_layer_0e14ce9d9292319e5d1746e2749855d0.addTo(map_2782644de9f2f807af36d14fb084fe4a);
+        
+    
+            var marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f = L.markerClusterGroup(
+                {}
+            );
+        
+    
+            var marker_3a60a3c1982064c9c68204ff3ab0e3ad = L.marker(
+                [43.7254, 5.7843],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_a4a8e76fd50751055b730615039acdc1 = L.icon({"iconSize": [80, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/LOGO_CEA_ORIGINAL.svg/768px-LOGO_CEA_ORIGINAL.svg.png"});
+        marker_3a60a3c1982064c9c68204ff3ab0e3ad.setIcon(custom_icon_a4a8e76fd50751055b730615039acdc1);
+        
+    
+            var marker_bb629e3aad0f89f7aa2c208db579bef5 = L.marker(
+                [48.9583, 2.3458],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_88802a4ee235d6cf16baf348499d786c = L.icon({"iconSize": [80, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/CNRS.svg/316px-CNRS.svg.png"});
+        marker_bb629e3aad0f89f7aa2c208db579bef5.setIcon(custom_icon_88802a4ee235d6cf16baf348499d786c);
+        
+    
+            var marker_c2b88cc4d7d0d50994c87ce85d230697 = L.marker(
+                [42.3601, -71.0921],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_87f943ec3c75406b7b933833c4b6c4dc = L.icon({"iconSize": [154, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/MIT_logo.svg/321px-MIT_logo.svg.png"});
+        marker_c2b88cc4d7d0d50994c87ce85d230697.setIcon(custom_icon_87f943ec3c75406b7b933833c4b6c4dc);
+        
+    
+            var marker_45191b1364bdeb6680cb4bc7845d8a5b = L.marker(
+                [40.35006468849364, -74.6596903],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_9aeee2012bc4d863db3133da661aa239 = L.icon({"iconSize": [152, 80], "iconUrl": "https://media.licdn.com/dms/image/sync/D4E27AQEtSPdhh29Xiw/articleshare-shrink_800/0/1711995007077?e=1714071600\u0026v=beta\u0026t=l2mnifsctT8XWseYQSfPIyzRpwsAYVgq5j-FOWejeyY"});
+        marker_45191b1364bdeb6680cb4bc7845d8a5b.setIcon(custom_icon_9aeee2012bc4d863db3133da661aa239);
+        
+    
+            var marker_dc307614c2b99fba6238f1e709ccd7d3 = L.marker(
+                [42.5406, -71.6152],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_882083ce9dbc5f13076189248fd9a24e = L.icon({"iconSize": [78, 80], "iconUrl": "https://api-kla-prod.2ambh.com/v1/images/10348/thumb/w950"});
+        marker_dc307614c2b99fba6238f1e709ccd7d3.setIcon(custom_icon_882083ce9dbc5f13076189248fd9a24e);
+        
+    
+            var marker_a7717147ea6f6765ed8583faa6889163 = L.marker(
+                [43.0761, -89.4012],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_ff89fe85024a2fdc30c0233e65fedf9f = L.icon({"iconSize": [120, 80], "iconUrl": "https://brand.wisc.edu/content/uploads/2023/09/vert-w-crest-logo-web-digital-color.png"});
+        marker_a7717147ea6f6765ed8583faa6889163.setIcon(custom_icon_ff89fe85024a2fdc30c0233e65fedf9f);
+        
+    
+            var marker_735885610f0eaf0583c93b5d4ae5f4d6 = L.marker(
+                [37.77479335835942, -122.41135340346865],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_6d56625b115faf9ca058851afc2b4282 = L.icon({"iconSize": [80, 80], "iconUrl": "https://media.licdn.com/dms/image/D560BAQFyuUtXrkDBGg/company-logo_200_200/0/1707489994810/marathon_fusion_logo?e=1721865600\u0026v=beta\u0026t=HoM15_eB3GxED9wJ_21j057IVLQaFfU--iGjbBOpK4U"});
+        marker_735885610f0eaf0583c93b5d4ae5f4d6.setIcon(custom_icon_6d56625b115faf9ca058851afc2b4282);
+        
+    
+            var marker_7ab9d449df2b8b152f3b35ef7f4a72ba = L.marker(
+                [32.7157, -117.1611],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_c2b575f4893a42a59300592c80b1b335 = L.icon({"iconSize": [80, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Seal_of_the_University_of_California%2C_San_Diego.svg/1920px-Seal_of_the_University_of_California%2C_San_Diego.svg.png"});
+        marker_7ab9d449df2b8b152f3b35ef7f4a72ba.setIcon(custom_icon_c2b575f4893a42a59300592c80b1b335);
+        
+    
+            var marker_d49820c4ac3d0b687592d26e5e9d7d09 = L.marker(
+                [55.826, 37.5314],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_fa6136fe75ebc3fffe5095c9e060b19f = L.icon({"iconSize": [116, 80], "iconUrl": "https://cdn.freelogovectors.net/wp-content/uploads/2021/04/national-research-nuclear-university-logo-freelogovectors.net_.png"});
+        marker_d49820c4ac3d0b687592d26e5e9d7d09.setIcon(custom_icon_fa6136fe75ebc3fffe5095c9e060b19f);
+        
+    
+            var marker_c26cc248afed5fc0bb251fcb57b0db2f = L.marker(
+                [43.5455, 5.0266],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_6b9512df439eb507d5db11eaaee8658a = L.icon({"iconSize": [168, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/ITER_Logo_NoonYellow.svg/500px-ITER_Logo_NoonYellow.svg.png"});
+        marker_c26cc248afed5fc0bb251fcb57b0db2f.setIcon(custom_icon_6b9512df439eb507d5db11eaaee8658a);
+        
+    
+            var marker_ffeff18e5299a7be7967203f72add12b = L.marker(
+                [51.65868576158049, -1.229138717146069],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_dca6999141335c14a258794c592a2e4f = L.icon({"iconSize": [80, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/en/thumb/9/95/UK_Atomic_Energy_Authority_logo.svg/1920px-UK_Atomic_Energy_Authority_logo.png"});
+        marker_ffeff18e5299a7be7967203f72add12b.setIcon(custom_icon_dca6999141335c14a258794c592a2e4f);
+        
+    
+            var marker_7ca2b3bd60ae6c4b8e278202b4bd01c3 = L.marker(
+                [50.719235968686455, -3.530686738097156],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_46ab19821e0bd301d5509dc2da9053c8 = L.icon({"iconSize": [80, 80], "iconUrl": "https://creativedestructionlab.com/wp-content/uploads/2023/05/digilab-logo.png"});
+        marker_7ca2b3bd60ae6c4b8e278202b4bd01c3.setIcon(custom_icon_46ab19821e0bd301d5509dc2da9053c8);
+        
+    
+            var marker_25532315ccf1bbfe6e1506079ac4c021 = L.marker(
+                [52.072, -0.4269],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_7d963a8f3012423565e3623da88e0066 = L.icon({"iconSize": [80, 80], "iconUrl": "https://resiliencefirst.org/sites/default/files/2022-02/cranfield-university-vector-logo-small.png"});
+        marker_25532315ccf1bbfe6e1506079ac4c021.setIcon(custom_icon_7d963a8f3012423565e3623da88e0066);
+        
+    
+            var marker_cb4fb3d6582714058bc8866a8101ed87 = L.marker(
+                [45.0703, 7.6818],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_b439a460668ba894dffbe494f0cac0b7 = L.icon({"iconSize": [181, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/it/thumb/4/47/Logo_PoliTo_dal_2021_blu.png/2880px-Logo_PoliTo_dal_2021_blu.png"});
+        marker_cb4fb3d6582714058bc8866a8101ed87.setIcon(custom_icon_b439a460668ba894dffbe494f0cac0b7);
+        
+    
+            var marker_b1d07aaa86075b1579e868a5ccf6ca2f = L.marker(
+                [39.9923, 116.3056],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_12b6b8fc15e80779f3a541ccc19f4901 = L.icon({"iconSize": [80, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Beihang_University_logo.svg/1920px-Beihang_University_logo.svg.png"});
+        marker_b1d07aaa86075b1579e868a5ccf6ca2f.setIcon(custom_icon_12b6b8fc15e80779f3a541ccc19f4901);
+        
+    
+            var marker_fe32eae77411ce9b28f9919bf9e779e4 = L.marker(
+                [31.8669, 117.2703],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_4887fd53286eebad62ea38fb1a6ac7f5 = L.icon({"iconSize": [80, 80], "iconUrl": "https://media.licdn.com/dms/image/C510BAQFbUnIQqa62aA/company-logo_200_200/0/1630599485875/caships_logo?e=1721865600\u0026v=beta\u0026t=wKPCqctsafbewtZpD0Mk1snTab681zYrQaRoSTSZzBI"});
+        marker_fe32eae77411ce9b28f9919bf9e779e4.setIcon(custom_icon_4887fd53286eebad62ea38fb1a6ac7f5);
+        
+    
+            var marker_b00b6abf97cf8d403a0ab98fcec1959e = L.marker(
+                [46.043586411058726, 14.487728061376515],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_0667f4450ab331487e173b90c3ac4b59 = L.icon({"iconSize": [80, 80], "iconUrl": "https://www.concordia-h2020.eu/wp-content/uploads/2019/02/IJS_logo.jpg"});
+        marker_b00b6abf97cf8d403a0ab98fcec1959e.setIcon(custom_icon_0667f4450ab331487e173b90c3ac4b59);
+        
+    
+            var marker_63a4aa93c145cf3b2f650dbcd2bd6b37 = L.marker(
+                [35.68673663876397, 139.76446527724698],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_1be47753f8524d1d571554edc7b6807c = L.icon({"iconSize": [80, 80], "iconUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEBUXW9DSGrDVhY80Fr6--hOywnBUnAwsb4ZTc9_2liw\u0026s"});
+        marker_63a4aa93c145cf3b2f650dbcd2bd6b37.setIcon(custom_icon_1be47753f8524d1d571554edc7b6807c);
+        
+    
+            var marker_a3b00e997b49f41d4267e28d947cc145 = L.marker(
+                [41.818823289415484, 12.455144726473035],
+                {}
+            ).addTo(marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f);
+        
+    
+        var custom_icon_c319ce2ae74b7a66751f1a575a0108eb = L.icon({"iconSize": [222, 80], "iconUrl": "https://upload.wikimedia.org/wikipedia/en/thumb/b/b2/Eni_new_logo.svg/320px-Eni_new_logo.svg.png"});
+        marker_a3b00e997b49f41d4267e28d947cc145.setIcon(custom_icon_c319ce2ae74b7a66751f1a575a0108eb);
+        
+    
+            marker_cluster_90036e1f2351c04aa7e0dc4d8d6aaa8f.addTo(map_2782644de9f2f807af36d14fb084fe4a);
+        
+</script>
+</html>

@@ -23,6 +23,10 @@ For more information, feel free to ask questions on the `FESTIM Discourse Page <
    "`FESTIM: An open-source code for hydrogen transport simulations.
    International Journal of Hydrogen Energy 63 (2024): 786-802. <https://doi.org/10.1016/j.ijhydene.2024.03.184>`_",
 
+
+.. raw:: html
+   :file: _static/map.html
+
 --------
 Contents
 --------
