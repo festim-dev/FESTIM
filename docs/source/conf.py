@@ -85,6 +85,13 @@ html_theme_options = {
     "use_edit_page_button": True,
     "repository_branch": "main",
     "path_to_docs": "./docs/source",
+    "icon_links": [
+        {
+            "name": "Community Forum",
+            "url": "https://festim.discourse.group/",
+            "icon": "fa-brands fa-discourse",
+        },
+    ],
 }
 
 html_title = "FESTIM Documentation"
