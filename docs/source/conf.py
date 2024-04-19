@@ -14,6 +14,24 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 
+
+# Generate the map
+
+# Add the directory containing your Python script to the Python path
+sys.path.insert(0, os.path.abspath("."))
+
+import map
+
+m = map.generate_map()
+current_dir = os.path.dirname(__file__)
+html_path = os.path.join(current_dir, "_static", "map.html")
+
+# create _static directory if it doesn't exist
+if not os.path.exists(os.path.dirname(html_path)):
+    os.makedirs(os.path.dirname(html_path))
+
+m.save(html_path)
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -88,20 +106,3 @@ html_theme_options = {
 }
 
 html_title = "FESTIM Documentation"
-
-
-# Generate the map
-
-import os
-import sys
-
-# Add the directory containing your Python script to the Python path
-sys.path.insert(0, os.path.abspath("."))
-
-import map
-
-m = map.generate_map()
-current_dir = os.path.dirname(__file__)
-html_path = os.path.join(current_dir, "_static", "map.html")
-print(html_path)
-m.save(html_path)
