@@ -27,8 +27,7 @@ current_dir = os.path.dirname(__file__)
 html_path = os.path.join(current_dir, "_static", "map.html")
 
 # create _static directory if it doesn't exist
-if not os.path.exists(os.path.dirname(html_path)):
-    os.makedirs(os.path.dirname(html_path))
+os.makedirs(os.path.dirname(html_path), exist_ok=True)
 
 m.save(html_path)
 
