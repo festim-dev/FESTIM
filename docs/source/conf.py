@@ -88,3 +88,17 @@ html_theme_options = {
 }
 
 html_title = "FESTIM Documentation"
+
+
+# Generate the map
+
+import os
+import sys
+
+# Add the directory containing your Python script to the Python path
+sys.path.insert(0, os.path.abspath("."))
+
+import map
+
+m = map.generate_map()
+m.save("_static/map.html")
