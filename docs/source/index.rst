@@ -34,3 +34,19 @@ Map of FESTIM users
 .. admonition:: Add your institution
 
    If you would like your institution to be added to this map, please `open an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_.
+
+
+--------
+Contents
+--------
+
+.. toctree::
+   :maxdepth: 1
+
+   installation
+   examples
+   theory
+   userguide/index
+   devguide/index
+   api/festim
+   publications
