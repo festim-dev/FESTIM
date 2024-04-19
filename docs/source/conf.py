@@ -102,4 +102,6 @@ import map
 
 m = map.generate_map()
 current_dir = os.path.dirname(__file__)
-m.save(os.path.join(current_dir, "_static", "map.html"))
+html_path = os.path.join(current_dir, "_static", "map.html")
+print(html_path)
+m.save(html_path)
