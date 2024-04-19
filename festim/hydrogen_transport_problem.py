@@ -826,10 +826,7 @@ class HydrogenTransportProblem:
         for export in self.exports:
             # TODO if export type derived quantity
             if isinstance(export, F.SurfaceQuantity):
-                export.compute(
-                    self.mesh.n,
-                    self.ds,
-                )
+                export.compute(self.ds)
                 # update export data
                 export.t.append(float(self.t))
 
