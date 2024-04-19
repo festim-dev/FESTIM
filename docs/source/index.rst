@@ -23,24 +23,14 @@ For more information, feel free to ask questions on the `FESTIM Discourse Page <
    "`FESTIM: An open-source code for hydrogen transport simulations.
    International Journal of Hydrogen Energy 63 (2024): 786-802. <https://doi.org/10.1016/j.ijhydene.2024.03.184>`_",
 
+Map of FESTIM users
+-------------------
 
 .. raw:: html
 
    <iframe src="_static/map.html" width="800" height="600"></iframe>
 
 
---------
-Contents
---------
+.. admonition:: Add your institution
 
-.. toctree::
-   :maxdepth: 1
-
-   installation
-   examples
-   theory
-   userguide/index
-   devguide/index
-   api/festim
-   publications
-
+   If you would like your institution to be added to this map, please `open an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_.
