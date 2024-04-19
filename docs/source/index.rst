@@ -25,7 +25,9 @@ For more information, feel free to ask questions on the `FESTIM Discourse Page <
 
 
 .. raw:: html
-   :file: _static/map.html
+
+   <iframe src="_static/map.html" width="800" height="600"></iframe>
+
 
 --------
 Contents
