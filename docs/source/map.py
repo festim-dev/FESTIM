@@ -39,7 +39,12 @@ def generate_map():
         data = json.load(f)
 
     # Create a map centered on a specific location
-    m = folium.Map(location=[42, -71], zoom_start=5, tiles="cartodbpositron")
+    m = folium.Map(
+        location=[42.256349987281666, -37.61204625889672],
+        zoom_start=3,
+        tiles="cartodbpositron",
+    )
+
     marker_cluster = MarkerCluster().add_to(m)
     # Iterate over features in the GeoJSON data
     for feature in data["features"]:
