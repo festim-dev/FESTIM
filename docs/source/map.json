@@ -266,6 +266,20 @@
                 "name": "ENI",
                 "url": "https://upload.wikimedia.org/wikipedia/en/thumb/b/b2/Eni_new_logo.svg/320px-Eni_new_logo.svg.png"
             }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    12.670768074076161,
+                    41.83511773016589
+                ]
+            },
+            "properties": {
+                "name": "ENEA",
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ENEA_logo.svg/358px-ENEA_logo.svg.png"
+            }
         }
     ]
 }
