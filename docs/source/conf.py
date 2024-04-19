@@ -101,4 +101,5 @@ sys.path.insert(0, os.path.abspath("."))
 import map
 
 m = map.generate_map()
-m.save("_static/map.html")
+current_dir = os.path.dirname(__file__)
+m.save(os.path.join(current_dir, "_static", "map.html"))
