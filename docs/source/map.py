@@ -19,8 +19,12 @@ def get_image_dimensions_from_url(image_url):
     Returns:
         tuple: the dimensions of the image
     """
+    headers = {
+        "User-Agent": "FESTIM (https://github.com/festim-dev/festim; remidm@mit.edu)"
+    }
+
     try:
-        response = requests.get(image_url)
+        response = requests.get(image_url, headers=headers)
         response.raise_for_status()  # Raise an exception for HTTP errors
         img = Image.open(BytesIO(response.content))
         return img.size
