@@ -6,7 +6,7 @@ import basix.ufl
 import ufl
 from mpi4py import MPI
 import numpy as np
-import tqdm.autonotebook
+import tqdm.auto as tqdm
 import festim as F
 
 from dolfinx.mesh import meshtags
@@ -753,13 +753,14 @@ class HydrogenTransportProblem:
 
         if self.settings.transient:
             # Solve transient
-            self.progress = tqdm.autonotebook.tqdm(
+            self.progress = tqdm.tqdm(
                 desc="Solving H transport problem",
                 total=self.settings.final_time,
                 unit_scale=True,
             )
             while self.t.value < self.settings.final_time:
                 self.iterate()
+            self.progress.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
             self.solver.solve(self.u)
