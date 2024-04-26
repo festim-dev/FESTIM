@@ -25,7 +25,7 @@ def test_1_mobile_MMS_steady_state():
     H_analytical_ufl = u_exact(ufl)
     H_analytical_np = u_exact(np)
 
-    V = fem.functionspace(test_mesh_3d, ("CG", 1))
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
     T = fem.Function(V)
 
     D_0 = 1
@@ -85,7 +85,7 @@ def test_1_mobile_MMS_transient():
     H_analytical_ufl = u_exact(ufl)
     H_analytical_np = u_exact_alt(np)
 
-    V = fem.functionspace(test_mesh_3d, ("CG", 1))
+    V = fem.functionspace(test_mesh_1d.mesh, ("CG", 1))
     T = fem.Function(V)
 
     D_0 = 1
@@ -144,7 +144,7 @@ def test_1_mobile_MMS_2D():
     H_analytical_ufl = u_exact(ufl)
     H_analytical_np = u_exact(np)
 
-    V = fem.functionspace(test_mesh_3d, ("CG", 1))
+    V = fem.functionspace(test_mesh_2d, ("CG", 1))
     T = fem.Function(V)
 
     D_0 = 1
