@@ -82,6 +82,9 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
         facet_tag = np.full(len(facet_indices[i]), idx + 1, dtype=np.int32)
         facet_tags.append(facet_tag)
 
+    facet_tags = np.array(facet_tags).flatten()
+    facet_indices = np.array(facet_indices).flatten()
+
     facet_meshtags = fenics_mesh.meshtags(mesh, fdim, facet_indices, facet_tags)
 
     # create volume meshtags

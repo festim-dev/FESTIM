@@ -48,7 +48,7 @@ def test_create_value_fenics_type(value, expected_type):
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
+    my_func_space = fem.functionspace(mesh, ("P", 1))
     T = F.as_fenics_constant(1, mesh)
     t = F.as_fenics_constant(0, mesh)
     bc = F.ParticleFluxBC(subdomain=left, value=value, species=my_species)
@@ -82,7 +82,7 @@ def test_create_value_fenics_value(value, expected_value):
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
+    my_func_space = fem.functionspace(mesh, ("P", 1))
     T = F.as_fenics_constant(1, mesh)
     t = F.as_fenics_constant(0, mesh)
     bc = F.ParticleFluxBC(subdomain=left, value=value, species=my_species)
@@ -123,7 +123,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     bc = F.ParticleFluxBC(subdomain=surface, value=my_value, species=species)
 
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
+    my_function_space = fem.functionspace(mesh, ("CG", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
@@ -222,7 +222,7 @@ def test_create_value_fenics_type_HeatFluxBC(value, expected_type):
     """Test that"""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
+    my_func_space = fem.functionspace(mesh, ("P", 1))
     t = F.as_fenics_constant(0, mesh)
     bc = F.HeatFluxBC(subdomain=left, value=value)
     temperature = F.as_fenics_constant(1, mesh)
@@ -254,7 +254,7 @@ def test_create_value_fenics_value(value, expected_value):
     """Test that"""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
+    my_func_space = fem.functionspace(mesh, ("P", 1))
     t = F.as_fenics_constant(0, mesh)
     bc = F.HeatFluxBC(subdomain=left, value=value)
     temperature = F.as_fenics_constant(1, mesh)

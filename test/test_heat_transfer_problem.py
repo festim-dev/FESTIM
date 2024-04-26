@@ -34,10 +34,10 @@ def source_from_exact_solution(
 
 def error_L2(u_computed, u_exact, degree_raise=3):
     # Create higher order function space
-    degree = u_computed.function_space.ufl_element().degree()
-    family = u_computed.function_space.ufl_element().family()
+    degree = u_computed.function_space.ufl_element().degree
+    family = u_computed.function_space.ufl_element().family_name
     mesh = u_computed.function_space.mesh
-    W = fem.FunctionSpace(mesh, (family, degree + degree_raise))
+    W = fem.functionspace(mesh, (family, degree + degree_raise))
     # Interpolate approximate solution
     u_W = fem.Function(W)
     u_W.interpolate(u_computed)
@@ -387,6 +387,9 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
         # add tags for each boundary
         facet_tag = np.full(len(facet_indices[i]), idx + 1, dtype=np.int32)
         facet_tags.append(facet_tag)
+
+    facet_tags = np.array(facet_tags).flatten()
+    facet_indices = np.array(facet_indices).flatten()
 
     facet_meshtags = dolfinx.mesh.meshtags(mesh, fdim, facet_indices, facet_tags)
 

@@ -163,7 +163,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
 
     source = F.HeatSource(volume=vol_subdomain, value=my_value)
 
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
+    my_function_space = fem.functionspace(mesh, ("CG", 1))
     t = fem.Constant(mesh, 0.0)
 
     with pytest.raises(
