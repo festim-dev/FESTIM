@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import ufl
 from ufl.conditional import Conditional
+import ufl.core
 from dolfinx import fem
 import dolfinx.mesh
 from mpi4py import MPI
@@ -33,12 +34,12 @@ def test_init():
         (1.0, fem.Constant),
         (lambda t: t, fem.Constant),
         (lambda t: 1.0 + t, fem.Constant),
-        (lambda x: 1.0 + x[0], fem.Function),
-        (lambda x, t: 1.0 + x[0] + t, fem.Function),
-        (lambda x, t, T: 1.0 + x[0] + t + T, fem.Function),
+        (lambda x: 1.0 + x[0], ufl.core.expr.Expr),
+        (lambda x, t: 1.0 + x[0] + t, ufl.core.expr.Expr),
+        (lambda x, t, T: 1.0 + x[0] + t + T, ufl.core.expr.Expr),
         (
             lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
-            fem.Function,
+            ufl.core.expr.Expr,
         ),
         (lambda t: 100.0 if t < 1 else 0.0, fem.Constant),
     ],
@@ -48,13 +49,12 @@ def test_create_value_fenics_type(value, expected_type):
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     T = F.as_fenics_constant(1, mesh)
     t = F.as_fenics_constant(0, mesh)
     bc = F.ParticleFluxBC(subdomain=left, value=value, species=my_species)
 
     # RUN
-    bc.create_value_fenics(mesh, my_func_space, T, t)
+    bc.create_value_fenics(mesh, T, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
@@ -67,13 +67,6 @@ def test_create_value_fenics_type(value, expected_type):
         (1.0, 1.0),
         (lambda t: t, 0.0),
         (lambda t: 4.0 + t, 4.0),
-        (lambda x: 1.0 + x[0], 2.0),
-        (lambda x, t: 3.0 + x[0] + t, 4.0),
-        (lambda x, t, T: 2.0 + x[0] + t + T, 4.0),
-        (
-            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 50.0 + x[0], 0.0),
-            51,
-        ),
         (lambda t: 50.0 if t < 1 else 0.0, 50),
     ],
 )
@@ -82,21 +75,17 @@ def test_create_value_fenics_value(value, expected_value):
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     T = F.as_fenics_constant(1, mesh)
     t = F.as_fenics_constant(0, mesh)
     bc = F.ParticleFluxBC(subdomain=left, value=value, species=my_species)
 
     # RUN
-    bc.create_value_fenics(mesh, my_func_space, T, t)
+    bc.create_value_fenics(mesh, T, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
     if isinstance(bc.value_fenics, fem.Constant):
         assert np.isclose(bc.value_fenics.value, expected_value)
-
-    if isinstance(bc.value_fenics, fem.Function):
-        assert np.isclose(bc.value_fenics.x.array[-1], expected_value)
 
 
 def test_value_fenics_setter_error():
@@ -106,7 +95,7 @@ def test_value_fenics_setter_error():
 
     with pytest.raises(
         TypeError,
-        match="Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not <class 'str'>",
+        match="Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not <class 'str'>",
     ):
         bc.value_fenics = "coucou"
 
@@ -123,7 +112,6 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     bc = F.ParticleFluxBC(subdomain=surface, value=my_value, species=species)
 
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
@@ -131,7 +119,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        bc.create_value_fenics(mesh, my_function_space, T, t)
+        bc.create_value_fenics(mesh, T, t)
 
 
 @pytest.mark.parametrize(
@@ -209,11 +197,11 @@ def test_HeatFluxBC_init():
         (1.0, fem.Constant),
         (lambda t: t, fem.Constant),
         (lambda t: 1.0 + t, fem.Constant),
-        (lambda x: 1.0 + x[0], fem.Function),
-        (lambda x, t: 1.0 + x[0] + t, fem.Function),
+        (lambda x: 1.0 + x[0], ufl.core.expr.Expr),
+        (lambda x, t: 1.0 + x[0] + t, ufl.core.expr.Expr),
         (
             lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
-            fem.Function,
+            ufl.core.expr.Expr,
         ),
         (lambda t: 100.0 if t < 1 else 0.0, fem.Constant),
     ],
@@ -222,13 +210,12 @@ def test_create_value_fenics_type_HeatFluxBC(value, expected_type):
     """Test that"""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     t = F.as_fenics_constant(0, mesh)
     bc = F.HeatFluxBC(subdomain=left, value=value)
     temperature = F.as_fenics_constant(1, mesh)
 
     # RUN
-    bc.create_value_fenics(mesh, my_func_space, temperature, t)
+    bc.create_value_fenics(mesh, temperature, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
@@ -254,13 +241,12 @@ def test_create_value_fenics_value(value, expected_value):
     """Test that"""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
-    my_func_space = fem.FunctionSpace(mesh, ("P", 1))
     t = F.as_fenics_constant(0, mesh)
     bc = F.HeatFluxBC(subdomain=left, value=value)
     temperature = F.as_fenics_constant(1, mesh)
 
     # RUN
-    bc.create_value_fenics(mesh, my_func_space, temperature, t)
+    bc.create_value_fenics(mesh, temperature, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
