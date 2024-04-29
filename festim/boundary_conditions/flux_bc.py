@@ -141,6 +141,8 @@ class ParticleFluxBC(FluxBCBase):
             is applied
         value (float, fem.Constant, callable): the value of the particle flux
         species (festim.Species): the species to which the flux is applied
+        species_dependent_value (dict): a dictionary containing the species that the value. Example: {"name": species}
+            where "name" is the variable name in the callable value and species is a festim.Species object.
 
     Attributes:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
@@ -151,6 +153,8 @@ class ParticleFluxBC(FluxBCBase):
             fenics format
         bc_expr (fem.Expression): the expression of the particle flux that is used to
             update the value_fenics
+        species_dependent_value (dict): a dictionary containing the species that the value. Example: {"name": species}
+            where "name" is the variable name in the callable value and species is a festim.Species object.
 
 
     Usage:
@@ -160,6 +164,7 @@ class ParticleFluxBC(FluxBCBase):
         >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
         >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
         >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+        >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2, species="H", species_dependent_value={"c1": species1})
     """
 
     def __init__(self, subdomain, value, species, species_dependent_value={}):
