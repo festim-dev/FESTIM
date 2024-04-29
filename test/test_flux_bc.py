@@ -95,7 +95,7 @@ def test_value_fenics_setter_error():
 
     with pytest.raises(
         TypeError,
-        match="Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not <class 'str'>",
+        match="Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not <class 'str'>",
     ):
         bc.value_fenics = "coucou"
 
