@@ -49,7 +49,7 @@ class FluxBCBase:
             value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
         ):
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not {type(value)}"
             )
         self._value_fenics = value
 
