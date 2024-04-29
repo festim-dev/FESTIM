@@ -237,7 +237,7 @@ def test_create_value_fenics_type_HeatFluxBC(value, expected_type):
         (lambda t: 50.0 if t < 1 else 0.0, 50),
     ],
 )
-def test_create_value_fenics_value(value, expected_value):
+def test_create_value_fenics_value_HeatFluxBC(value, expected_value):
     """Test that"""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
