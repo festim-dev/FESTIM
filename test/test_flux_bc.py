@@ -88,6 +88,29 @@ def test_create_value_fenics_value(value, expected_value):
         assert np.isclose(bc.value_fenics.value, expected_value)
 
 
+def test_create_value_fenics_dependent_conc():
+    """Test that the value_fenics of ParticleFluxBC is set correctly when the value is dependent on the concentration"""
+    # BUILD
+    left = F.SurfaceSubdomain1D(1, x=0)
+    my_species = F.Species("test")
+    my_species.solution = F.as_fenics_constant(12, mesh)
+    T = F.as_fenics_constant(1, mesh)
+    t = F.as_fenics_constant(0, mesh)
+    bc = F.ParticleFluxBC(
+        subdomain=left,
+        value=lambda c: 1.0 + c,
+        species=my_species,
+        species_dependent_value={"c": my_species},
+    )
+
+    # RUN
+    bc.create_value_fenics(mesh, T, t)
+
+    # TEST
+    assert isinstance(bc.value_fenics, ufl.core.expr.Expr)
+    assert bc.value_fenics == 1.0 + my_species.solution
+
+
 def test_value_fenics_setter_error():
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
