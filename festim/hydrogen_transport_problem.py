@@ -6,7 +6,7 @@ import basix.ufl
 import ufl
 from mpi4py import MPI
 import numpy as np
-import tqdm.autonotebook
+import tqdm.auto as tqdm
 import festim as F
 
 from dolfinx.mesh import meshtags
@@ -583,18 +583,10 @@ class HydrogenTransportProblem:
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, F.ParticleSource):
-                function_space_value = None
-                if callable(source.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = source.species.sub_function_space
-                    else:
-                        function_space_value = source.species.collapsed_function_space
 
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
-                    function_space=function_space_value,
                     t=self.t,
                 )
 
@@ -603,18 +595,10 @@ class HydrogenTransportProblem:
         for bc in self.boundary_conditions:
             # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, F.ParticleFluxBC):
-                function_space_value = None
-                if callable(bc.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = bc.species.sub_function_space
-                    else:
-                        function_space_value = bc.species.collapsed_function_space
 
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
-                    function_space=function_space_value,
                     t=self.t,
                 )
 
@@ -753,13 +737,14 @@ class HydrogenTransportProblem:
 
         if self.settings.transient:
             # Solve transient
-            self.progress = tqdm.autonotebook.tqdm(
+            self.progress = tqdm.tqdm(
                 desc="Solving H transport problem",
                 total=self.settings.final_time,
                 unit_scale=True,
             )
             while self.t.value < self.settings.final_time:
                 self.iterate()
+            self.progress.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
             self.solver.solve(self.u)
@@ -826,10 +811,7 @@ class HydrogenTransportProblem:
         for export in self.exports:
             # TODO if export type derived quantity
             if isinstance(export, F.SurfaceQuantity):
-                export.compute(
-                    self.mesh.n,
-                    self.ds,
-                )
+                export.compute(self.ds)
                 # update export data
                 export.t.append(float(self.t))
 

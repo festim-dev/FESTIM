@@ -609,8 +609,4 @@ def test_update_time_dependent_values_HeatFluxBC(bc_value, expected_values):
         # TEST
         if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
             computed_value = float(my_model.boundary_conditions[0].value_fenics)
-        else:
-            computed_value = my_model.boundary_conditions[
-                0
-            ].value_fenics.x.petsc_vec.array[-1]
-        assert np.isclose(computed_value, expected_values[i])
+            assert np.isclose(computed_value, expected_values[i])

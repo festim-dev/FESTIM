@@ -1,7 +1,7 @@
 import festim as F
 import ufl
 import dolfinx
-from dolfinx import fem, mesh
+from dolfinx import fem
 import numpy as np
 
 
@@ -92,8 +92,6 @@ class SourceBase:
             arguments = self.value.__code__.co_varnames
             if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
                 self.value_fenics.value = self.value(t=t)
-            else:
-                self.value_fenics.interpolate(self.source_expr)
 
 
 class ParticleSource(SourceBase):
@@ -125,19 +123,15 @@ class ParticleSource(SourceBase):
         else:
             return False
 
-    def create_value_fenics(
-        self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
-    ):
+    def create_value_fenics(self, mesh, temperature, t: fem.Constant):
         """Creates the value of the source as a fenics object and sets it to
         self.value_fenics.
         If the value is a constant, it is converted to a fenics.Constant.
         If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a fenics.Function and the
-        expression of the function is stored in self.bc_expr.
+        Otherwise, it is converted to a ufl Expression
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
-            function_space (dolfinx.fem.FunctionSpace): the function space
             temperature (float): the temperature
             t (dolfinx.fem.Constant): the time
         """
@@ -162,7 +156,6 @@ class ParticleSource(SourceBase):
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:
-                self.value_fenics = fem.Function(function_space)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = t
@@ -171,13 +164,7 @@ class ParticleSource(SourceBase):
                 if "T" in arguments:
                     kwargs["T"] = temperature
 
-                # store the expression of the source
-                # to update the value_fenics later
-                self.source_expr = fem.Expression(
-                    self.value(**kwargs),
-                    function_space.element.interpolation_points(),
-                )
-                self.value_fenics.interpolate(self.source_expr)
+                self.value_fenics = self.value(**kwargs)
 
 
 class HeatSource(SourceBase):
@@ -187,19 +174,16 @@ class HeatSource(SourceBase):
     def create_value_fenics(
         self,
         mesh: dolfinx.mesh.Mesh,
-        function_space: fem.FunctionSpace,
         t: fem.Constant,
     ):
         """Creates the value of the source as a fenics object and sets it to
         self.value_fenics.
         If the value is a constant, it is converted to a fenics.Constant.
         If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a fenics.Function and the
-        expression of the function is stored in self.bc_expr.
+        Otherwise, it is converted to a ufl.Expression
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
-            function_space (dolfinx.fem.FunctionSpace): the function space
             t (dolfinx.fem.Constant): the time
         """
         x = ufl.SpatialCoordinate(mesh)
@@ -223,17 +207,11 @@ class HeatSource(SourceBase):
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:
-                self.value_fenics = fem.Function(function_space)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = t
                 if "x" in arguments:
                     kwargs["x"] = x
+                # TODO could the source be dependend on T? why not?
 
-                # store the expression of the source
-                # to update the value_fenics later
-                self.source_expr = fem.Expression(
-                    self.value(**kwargs),
-                    function_space.element.interpolation_points(),
-                )
-                self.value_fenics.interpolate(self.source_expr)
+                self.value_fenics = self.value(**kwargs)

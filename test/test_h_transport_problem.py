@@ -203,9 +203,7 @@ def test_update_time_dependent_values_temperature(T_function, expected_values):
         # TEST
         if isinstance(my_model.temperature_fenics, fem.Constant):
             computed_value = float(my_model.temperature_fenics)
-        else:
-            computed_value = my_model.temperature_fenics.x.petsc_vec.array[-1]
-        assert np.isclose(computed_value, expected_values[i])
+            assert np.isclose(computed_value, expected_values[i])
 
 
 def test_initialise_exports_find_species_with_one_field():
@@ -472,11 +470,7 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
         # TEST
         if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
             computed_value = float(my_model.boundary_conditions[0].value_fenics)
-        else:
-            computed_value = my_model.boundary_conditions[
-                0
-            ].value_fenics.x.petsc_vec.array[-1]
-        assert np.isclose(computed_value, expected_values[i])
+            assert np.isclose(computed_value, expected_values[i])
 
 
 @pytest.mark.parametrize(
@@ -521,9 +515,7 @@ def test_update_time_dependent_values_source(source_value, expected_values):
         # TEST
         if isinstance(my_model.sources[0].value_fenics, fem.Constant):
             computed_value = float(my_model.sources[0].value_fenics)
-        else:
-            computed_value = my_model.sources[0].value_fenics.x.petsc_vec.array[-1]
-        assert np.isclose(computed_value, expected_values[i])
+            assert np.isclose(computed_value, expected_values[i])
 
 
 @pytest.mark.parametrize(
@@ -577,9 +569,7 @@ def test_update_sources_with_time_dependent_temperature(
         # TEST
         if isinstance(my_model.sources[0].value_fenics, fem.Constant):
             computed_value = float(my_model.sources[0].value_fenics)
-        else:
-            computed_value = my_model.sources[0].value_fenics.x.petsc_vec.array[-1]
-        assert np.isclose(computed_value, expected_values[i])
+            assert np.isclose(computed_value, expected_values[i])
 
 
 def test_create_source_values_fenics_multispecies():
@@ -984,11 +974,7 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
         # TEST
         if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
             computed_value = float(my_model.boundary_conditions[0].value_fenics)
-        else:
-            computed_value = my_model.boundary_conditions[
-                0
-            ].value_fenics.x.petsc_vec.array[-1]
-        assert np.isclose(computed_value, expected_values[i])
+            assert np.isclose(computed_value, expected_values[i])
 
 
 @pytest.mark.parametrize(
@@ -1042,11 +1028,7 @@ def test_update_fluxes_with_time_dependent_temperature(
         # TEST
         if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
             computed_value = float(my_model.boundary_conditions[0].value_fenics)
-        else:
-            computed_value = my_model.boundary_conditions[
-                0
-            ].value_fenics.x.petsc_vec.array[-1]
-        assert np.isclose(computed_value, expected_values[i])
+            assert np.isclose(computed_value, expected_values[i])
 
 
 def test_create_source_values_fenics_multispecies():
