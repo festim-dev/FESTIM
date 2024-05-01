@@ -15,7 +15,7 @@ def test_flux_bc_1_mobile_MMS_steady_state():
 
     u_exact = lambda x: 1 + 2 * x[0] ** 2
 
-    V = fem.functionspace(test_mesh_1d.mesh, ("CG", 1))
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
     T = fem.Function(V)
 
     D_0 = 1

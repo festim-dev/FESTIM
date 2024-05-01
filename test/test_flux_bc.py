@@ -123,7 +123,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     bc = F.ParticleFluxBC(subdomain=surface, value=my_value, species=species)
 
-    my_function_space = fem.functionspace(mesh, ("CG", 1))
+    my_function_space = fem.functionspace(mesh, ("Lagrange", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 

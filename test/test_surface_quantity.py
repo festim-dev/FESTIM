@@ -29,7 +29,7 @@ def test_surface_flux_export_compute():
     ds = ufl.Measure("ds", domain=my_mesh.mesh, subdomain_data=facet_meshtags)
 
     # give function to species
-    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: 2 * x[0] ** 2 + 1)
 
