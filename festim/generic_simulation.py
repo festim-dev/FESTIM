@@ -80,6 +80,7 @@ class Simulation:
         sources=[],
         boundary_conditions=[],
         traps=None,
+        surface_concentrations=None,
         dt=None,
         settings=None,
         temperature=None,
@@ -94,6 +95,8 @@ class Simulation:
 
         self.traps = traps
         self.materials = materials
+
+        self.surface_concentrations = surface_concentrations
 
         self.boundary_conditions = boundary_conditions
         self.initial_conditions = initial_conditions
@@ -162,6 +165,25 @@ class Simulation:
         else:
             raise TypeError(
                 "accepted types for exports are list, festim.Export or festim.Exports"
+            )
+
+    @property
+    def surface_concentrations(self):
+        return self._surface_concentrations
+
+    @surface_concentrations.setter
+    def surface_concentrations(self, value):
+        if value is None:
+            self._surface_concentrations = festim.SurfaceConcentrations([])
+        elif isinstance(value, festim.SurfaceConcentrations):
+            self._surface_concentrations = value
+        elif isinstance(value, list):
+            self._surface_concentrations = festim.SurfaceConcentrations(value)
+        elif isinstance(value, festim.Trap):
+            self._surface_concentrations = festim.SurfaceConcentrations([value])
+        else:
+            raise TypeError(
+                "Accepted types for surface_concentrations are list, festim.SurfaceConcentrations or festim.SurfaceConcentration"
             )
 
     def attribute_source_terms(self):
@@ -257,9 +279,13 @@ class Simulation:
         # initialise dt
         if self.settings.transient:
             self.dt.initialise_value()
-
         self.h_transport_problem = HTransportProblem(
-            self.mobile, self.traps, self.T, self.settings, self.initial_conditions
+            self.mobile,
+            self.traps,
+            self.T,
+            self.settings,
+            self.initial_conditions,
+            self.surface_concentrations,
         )
         self.attribute_source_terms()
         self.attribute_boundary_conditions()

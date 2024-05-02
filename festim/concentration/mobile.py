@@ -21,7 +21,9 @@ class Mobile(Concentration):
         self.sources = []
         self.boundary_conditions = []
 
-    def create_form(self, materials, mesh, T, dt=None, traps=None, soret=False):
+    def create_form(
+        self, materials, mesh, T, dt=None, traps=None, soret=False, surface_species=None
+    ):
         """Creates the variational formulation.
 
         Args:
@@ -38,7 +40,7 @@ class Mobile(Concentration):
         self.F = 0
         self.create_diffusion_form(materials, mesh, T, dt=dt, traps=traps, soret=soret)
         self.create_source_form(mesh.dx)
-        self.create_fluxes_form(T, mesh.ds)
+        self.create_fluxes_form(T, mesh.ds, dt=dt, surface_species=surface_species)
 
     def create_diffusion_form(
         self, materials, mesh, T, dt=None, traps=None, soret=False
@@ -171,7 +173,7 @@ class Mobile(Concentration):
         self.F += F_source
         self.sub_expressions += expressions_source
 
-    def create_fluxes_form(self, T, ds):
+    def create_fluxes_form(self, T, ds, surface_species=None, dt=None):
         """Modifies the formulation and adds fluxes based
         on parameters in self.boundary_conditions
         """
@@ -179,7 +181,8 @@ class Mobile(Concentration):
         expressions_fluxes = []
         F = 0
 
-        solute = self.mobile_concentration()
+        solute = self.solution
+        solute_prev = self.previous_solution
 
         for bc in self.boundary_conditions:
             if bc.field != "T":
@@ -190,6 +193,40 @@ class Mobile(Concentration):
 
                     for surf in bc.surfaces:
                         F += -self.test_function * bc.form * ds(surf)
+
+        if surface_species:
+            for surf_conc in surface_species:
+                k_sb = surf_conc.k_sb
+                E_sb = surf_conc.E_sb
+                k_bs = surf_conc.k_bs
+                E_bs = surf_conc.E_bs
+                l_abs = surf_conc.l_abs
+                N_s = surf_conc.N_s
+                N_b = surf_conc.N_b
+
+                if callable(E_sb):
+                    E_sb = E_sb(surf_conc.solution, solute)
+                if callable(E_bs):
+                    E_bs = E_bs(surf_conc.solution, solute)
+
+                J_sb = (
+                    k_sb
+                    * surf_conc.solution
+                    * (1 - solute / N_b)
+                    * exp(-E_sb / k_B / T.T)
+                )
+                J_bs = (
+                    k_bs
+                    * (solute * l_abs)
+                    * (1 - surf_conc.solution / N_s)
+                    * exp(-E_bs / k_B / T.T)
+                )
+
+                surf_form = -l_abs * (solute - solute_prev) / dt.value + (J_bs - J_sb)
+
+                for surf in surf_conc.surfaces:
+                    F += self.test_function * surf_form * ds(surf)
+
         self.F_fluxes = F
         self.F += F
         self.sub_expressions += expressions_fluxes

@@ -57,6 +57,7 @@ from .boundary_conditions.fluxes.convective_flux import ConvectiveFlux
 from .boundary_conditions.fluxes.flux_custom import CustomFlux
 from .boundary_conditions.fluxes.mass_flux import MassFlux
 
+
 from .exports.exports import Exports
 from .exports.export import Export
 from .exports.xdmf_export import XDMFExport
@@ -103,6 +104,9 @@ from .concentration.concentration import Concentration
 from .initial_condition import InitialCondition
 from .concentration.mobile import Mobile
 from .concentration.theta import Theta
+
+from .concentration.surface_species.surface_concentration import SurfaceConcentration
+from .concentration.surface_species.surface_concentrations import SurfaceConcentrations
 
 from .concentration.traps.trap import Trap
 from .concentration.traps.traps import Traps

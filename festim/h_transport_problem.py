@@ -25,9 +25,12 @@ class HTransportProblem:
         bcs (list): list of fenics.DirichletBC for H transport
     """
 
-    def __init__(self, mobile, traps, T, settings, initial_conditions) -> None:
+    def __init__(
+        self, mobile, traps, T, settings, initial_conditions, surface_species
+    ) -> None:
         self.mobile = mobile
         self.traps = traps
+        self.surface_species = surface_species
         self.T = T
         self.settings = settings
         self.initial_conditions = initial_conditions
@@ -89,18 +92,28 @@ class HTransportProblem:
 
         # function space for H concentrations
         nb_traps = len(self.traps)
-        if nb_traps == 0:
+        nb_adsorbed = len(self.surface_species)
+
+        if nb_traps == 0 and nb_adsorbed == 0:
             V = FunctionSpace(mesh.mesh, element_solute, order_solute)
+        elif nb_traps == 0 and nb_adsorbed != 0:
+            solute = FiniteElement(element_solute, mesh.mesh.ufl_cell(), order_solute)
+            adsorbed = FiniteElement("R", mesh.mesh.ufl_cell(), 0)
+            element = [solute] + [adsorbed] * nb_adsorbed
+            V = FunctionSpace(mesh.mesh, MixedElement(element))
         else:
             solute = FiniteElement(element_solute, mesh.mesh.ufl_cell(), order_solute)
             traps = FiniteElement(
                 self.settings.traps_element_type, mesh.mesh.ufl_cell(), order_trap
             )
-            element = [solute] + [traps] * nb_traps
+            adsorbed = FiniteElement("R", mesh.mesh.ufl_cell(), 0)
+            element = [solute] + [traps] * nb_traps + [adsorbed] * nb_adsorbed
             V = FunctionSpace(mesh.mesh, MixedElement(element))
+
         self.V = V
         self.V_CG1 = FunctionSpace(mesh.mesh, "CG", 1)
         self.V_DG1 = FunctionSpace(mesh.mesh, "DG", 1)
+        self.V_R = FunctionSpace(mesh.mesh, "R", 0)
 
     def initialise_concentrations(self):
         """Creates the main fenics.Function (holding all the concentrations),
@@ -120,7 +133,13 @@ class HTransportProblem:
             self.mobile.previous_solution = self.u_n
             self.mobile.test_function = self.v
         else:
-            for i, concentration in enumerate([self.mobile, *self.traps]):
+            conc_list = [self.mobile]
+            if self.traps:
+                conc_list += [*self.traps]
+            if self.surface_species:
+                conc_list += [*self.surface_species]
+
+            for i, concentration in enumerate(conc_list):
                 concentration.solution = self.u.sub(i)
                 # concentration.solution = list(split(self.u))[i]
                 concentration.previous_solution = self.u_n.sub(i)
@@ -168,7 +187,7 @@ class HTransportProblem:
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
-            for i, concentration in enumerate([self.mobile, *self.traps]):
+            for i, concentration in enumerate(conc_list):
                 concentration.previous_solution = list(split(self.u_n))[i]
                 concentration.solution = list(split(self.u))[i]
 
@@ -189,7 +208,13 @@ class HTransportProblem:
         # diffusion + transient terms
 
         self.mobile.create_form(
-            materials, mesh, self.T, dt, traps=self.traps, soret=self.settings.soret
+            materials,
+            mesh,
+            self.T,
+            dt,
+            traps=self.traps,
+            soret=self.settings.soret,
+            surface_species=self.surface_species,
         )
         F += self.mobile.F
         expressions += self.mobile.sub_expressions
@@ -198,6 +223,12 @@ class HTransportProblem:
         self.traps.create_forms(self.mobile, materials, self.T, mesh.dx, dt)
         F += self.traps.F
         expressions += self.traps.sub_expressions
+
+        # Add surface species
+        self.surface_species.create_forms(self.mobile, self.T, mesh.ds, dt)
+        F += self.surface_species.F
+        expressions += self.surface_species.sub_expressions
+
         self.F = F
         self.expressions = expressions
 

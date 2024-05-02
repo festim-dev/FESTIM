@@ -21,6 +21,9 @@ class TestPostProcessing:
         trap_1 = festim.Trap(1, 1, 1, 1, mat1, 1)
         my_sim.traps = festim.Traps([trap_1])
 
+        surf_conc1 = festim.SurfaceConcentration(1, 1, 1, 1, 1, 1, 1, 0, 1)
+        my_sim.surface_species = festim.SurfaceConcentrations([surf_conc1])
+
         my_sim.mesh.define_measures(my_sim.materials)
 
         my_sim.V_DG1 = f.FunctionSpace(my_sim.mesh.mesh, "DG", 1)
@@ -33,6 +36,7 @@ class TestPostProcessing:
             my_sim.T,
             my_sim.settings,
             my_sim.initial_conditions,
+            my_sim.surface_species,
         )
         my_sim.h_transport_problem.define_function_space(my_sim.mesh)
         my_sim.h_transport_problem.initialise_concentrations()

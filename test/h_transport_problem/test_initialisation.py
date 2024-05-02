@@ -54,6 +54,7 @@ def test_initialisation_from_xdmf(tmpdir):
         festim.Temperature(300),
         festim.Settings(1e10, 1e-10),
         initial_conditions,
+        None,
     )
 
     my_problem.V = V
@@ -92,6 +93,7 @@ def test_initialisation_with_expression():
         festim.Temperature(300),
         festim.Settings(1e10, 1e-10),
         initial_conditions,
+        None,
     )
 
     my_problem.V = V
@@ -138,6 +140,7 @@ def test_initialisation_with_expression_chemical_pot():
         festim.Temperature(300),
         festim.Settings(1e10, 1e-10),
         initial_conditions,
+        None,
     )
 
     my_problem.V = V
@@ -165,6 +168,7 @@ def test_initialisation_default():
         festim.Temperature(300),
         festim.Settings(1e10, 1e-10),
         initial_conditions,
+        None,
     )
 
     my_problem.V = V
@@ -196,6 +200,7 @@ def test_initialisation_solute_only():
         festim.Temperature(300),
         festim.Settings(1e10, 1e-10),
         initial_conditions,
+        None,
     )
 
     my_problem.V = V
@@ -228,6 +233,7 @@ def test_initialisation_no_component():
         festim.Temperature(300),
         festim.Settings(1e10, 1e-10),
         initial_conditions,
+        None,
     )
 
     my_problem.V = V
