@@ -48,19 +48,19 @@ class Reaction:
         reactant: Union[
             F.Species, F.ImplicitSpecies, List[Union[F.Species, F.ImplicitSpecies]]
         ],
-        product: Optional[Union[F.Species, List[F.Species]]],
         k_0: float,
         E_k: float,
-        p_0: float,
-        E_p: float,
         volume: F.VolumeSubdomain1D,
+        product: Optional[Union[F.Species, List[F.Species]]] = [],
+        p_0: float = None,
+        E_p: float = None,
     ) -> None:
         self.k_0 = k_0
         self.E_k = E_k
-        self.p_0 = p_0 or 0.0
-        self.E_p = E_p or 0.0
+        self.p_0 = p_0
+        self.E_p = E_p
         self.reactant = reactant
-        self.product = product or []
+        self.product = product
         self.volume = volume
 
     @property
@@ -81,23 +81,6 @@ class Reaction:
                     f"reactant must be an F.Species or F.ImplicitSpecies, not {type(i)}"
                 )
         self._reactant = value
-
-    @property
-    def product(self):
-        return self._product
-
-    @product.setter
-    def product(self, value):
-        if value == []:
-            if self.p_0 != 0.0:
-                raise ValueError(
-                    f"p_0 must be 0, not {self.p_0} when no products are present."
-                )
-            elif self.E_p != 0.0:
-                raise ValueError(
-                    f"E_p must be 0, not {self.E_p} when no products are present."
-                )
-        self._product = value
 
     def __repr__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])
@@ -122,8 +105,25 @@ class Reaction:
         Arguments:
             temperature (): The temperature at which the reaction term is computed.
         """
+
+        if self.product == []:
+            if self.p_0 is not None:
+                raise ValueError(
+                    f"p_0 must be None, not {self.p_0} when no products are present."
+                )
+            if self.E_p is not None:
+                raise ValueError(
+                    f"E_p must be None, not {self.E_p} when no products are present."
+                )
+
         k = self.k_0 * exp(-self.E_k / (F.k_B * temperature))
-        p = self.p_0 * exp(-self.E_p / (F.k_B * temperature))
+
+        if self.p_0 and self.E_p:
+            p = self.p_0 * exp(-self.E_p / (F.k_B * temperature))
+        elif self.p_0:
+            p = self.p_0
+        else:
+            p = 0
 
         reactants = self.reactant
         product_of_reactants = reactants[0].concentration
@@ -141,4 +141,4 @@ class Reaction:
                 product_of_products *= product.solution
         else:
             product_of_products = 0
-        return k * product_of_reactants - p * product_of_products
+        return k * product_of_reactants - (p * product_of_products)

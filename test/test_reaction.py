@@ -19,7 +19,13 @@ def test_reaction_init():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        reactant=[species1, species2],
+        product=product,
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
     )
 
     # check that the attributes are set correctly
@@ -43,7 +49,13 @@ def test_reaction_repr():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        reactant=[species1, species2],
+        product=product,
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
     )
 
     # check that the __repr__ method returns the expected string
@@ -64,8 +76,8 @@ def test_reaction_repr_2_products():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species2],
-        [product1, product2],
+        reactant=[species1, species2],
+        product=[product1, product2],
         k_0=1.0,
         E_k=0.2,
         p_0=0.1,
@@ -86,17 +98,14 @@ def test_reaction_repr_0_products():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1,
-        None,
+        reactant=species1,
         k_0=1.0,
         E_k=0.2,
-        p_0=0,
-        E_p=0,
         volume=my_vol,
     )
 
     # check that the __repr__ method returns the expected string
-    expected_repr = "Reaction(A <--> , 1.0, 0.2, 0.0, 0.0)"
+    expected_repr = "Reaction(A <--> , 1.0, 0.2, None, None)"
     assert repr(reaction) == expected_repr
 
 
@@ -112,7 +121,13 @@ def test_reaction_str():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        reactant=[species1, species2],
+        product=product,
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
     )
 
     # check that the __str__ method returns the expected string
@@ -133,8 +148,8 @@ def test_reaction_str_2_products():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species2],
-        [product1, product2],
+        reactant=[species1, species2],
+        product=[product1, product2],
         k_0=1.0,
         E_k=0.2,
         p_0=0.1,
@@ -147,7 +162,7 @@ def test_reaction_str_2_products():
     assert str(reaction) == expected_str
 
 
-def test_reaction_str_0_products():
+def test_reaction_str_no_products():
     """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
 
     # create two species
@@ -155,12 +170,9 @@ def test_reaction_str_0_products():
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        species1,
-        None,
+        reactant=species1,
         k_0=1.0,
         E_k=0.2,
-        p_0=0,
-        E_p=0,
         volume=my_vol,
     )
 
@@ -188,7 +200,13 @@ def test_reaction_reaction_term(temperature):
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species2], product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol
+        reactant=[species1, species2],
+        product=product,
+        k_0=1.0,
+        E_k=0.2,
+        p_0=0.1,
+        E_p=0.3,
+        volume=my_vol,
     )
 
     # test the reaction term at a given temperature
@@ -201,6 +219,36 @@ def test_reaction_reaction_term(temperature):
     expected_reaction_term = (
         k * (species1.solution * species2.solution) - p * product.solution
     )
+
+    assert reaction.reaction_term(temperature) == expected_reaction_term
+
+
+@pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
+def test_reaction_reaction_term_no_products(temperature):
+    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+    V = functionspace(mesh, ("Lagrange", 1))
+
+    # create two species
+    species1 = F.Species("A")
+    species2 = F.Species("B")
+    species1.solution = Function(V)
+    species2.solution = Function(V)
+
+    # create a reaction between the two species
+    reaction = F.Reaction(
+        reactant=[species1, species2],
+        k_0=1.0,
+        E_k=0.2,
+        volume=my_vol,
+    )
+
+    # test the reaction term at a given temperature
+    def arrhenius(pre, act, T):
+        return pre * exp(-act / (F.k_B * T))
+
+    k = arrhenius(reaction.k_0, reaction.E_k, temperature)
+
+    expected_reaction_term = k * (species1.solution * species2.solution)
 
     assert reaction.reaction_term(temperature) == expected_reaction_term
 
@@ -226,8 +274,8 @@ def test_reaction_reaction_term_2_products(temperature):
 
     # create a reaction between the two species
     reaction = F.Reaction(
-        [species1, species2],
-        [product1, product2],
+        reactant=[species1, species2],
+        product=[product1, product2],
         k_0=1.0,
         E_k=0.2,
         p_0=0.1,
@@ -257,7 +305,6 @@ def test_reactant_setter_raises_error_with_zero_length_list():
     ):
         F.Reaction(
             reactant=[],
-            product=None,
             k_0=1,
             E_k=0.1,
             p_0=2,
@@ -286,30 +333,28 @@ def test_reactant_setter_raises_error_with_wrong_type():
 def test_product_setter_raise_error_p_0_no_product():
     with pytest.raises(
         ValueError,
-        match="p_0 must be 0, not 2 when no products are present.",
+        match="p_0 must be None, not 2 when no products are present.",
     ):
-        F.Reaction(
+        reaction = F.Reaction(
             reactant=[F.Species("A")],
-            product=None,
             k_0=1,
             E_k=0.1,
             p_0=2,
-            E_p=0,
             volume=my_vol,
         )
+        reaction.reaction_term(temperature=500)
 
 
 def test_product_setter_raise_error_E_p_no_product():
     with pytest.raises(
         ValueError,
-        match="E_p must be 0, not 2 when no products are present.",
+        match="E_p must be None, not 2 when no products are present.",
     ):
-        F.Reaction(
+        reaction = F.Reaction(
             reactant=[F.Species("A")],
-            product=None,
             k_0=1,
             E_k=0.1,
-            p_0=0,
             E_p=2,
             volume=my_vol,
         )
+        reaction.reaction_term(temperature=500)
