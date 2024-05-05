@@ -655,7 +655,7 @@ class HydrogenTransportProblem:
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
         for reaction in self.reactions:
-            for reactant in reactants:
+            for reactant in reaction.reactant:
                 if isinstance(reactant, F.Species):
                     self.formulation += (
                         reaction.reaction_term(self.temperature_fenics)
