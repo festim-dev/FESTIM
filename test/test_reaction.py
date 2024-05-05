@@ -345,6 +345,38 @@ def test_product_setter_raise_error_p_0_no_product():
         reaction.reaction_term(temperature=500)
 
 
+def test_no_E_p_with_product():
+    with pytest.raises(
+        ValueError,
+        match="E_p cannot be None when reaction products are present.",
+    ):
+        reaction = F.Reaction(
+            reactant=[F.Species("A")],
+            product=[F.Species("C")],
+            k_0=1,
+            E_k=0.1,
+            p_0=0.1,
+            volume=my_vol,
+        )
+        reaction.reaction_term(temperature=500)
+
+
+def test_no_p_0_with_product():
+    with pytest.raises(
+        ValueError,
+        match="p_0 cannot be None when reaction products are present.",
+    ):
+        reaction = F.Reaction(
+            reactant=[F.Species("A")],
+            product=[F.Species("C")],
+            k_0=1,
+            E_k=0.1,
+            E_p=1,
+            volume=my_vol,
+        )
+        reaction.reaction_term(temperature=500)
+
+
 def test_product_setter_raise_error_E_p_no_product():
     with pytest.raises(
         ValueError,

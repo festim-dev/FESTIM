@@ -115,6 +115,15 @@ class Reaction:
                 raise ValueError(
                     f"E_p must be None, not {self.E_p} when no products are present."
                 )
+        else:
+            if self.p_0 == None:
+                raise ValueError(
+                    f"p_0 cannot be None when reaction products are present."
+                )
+            elif self.E_p == None:
+                raise ValueError(
+                    f"E_p cannot be None when reaction products are present."
+                )
 
         k = self.k_0 * exp(-self.E_k / (F.k_B * temperature))
 
