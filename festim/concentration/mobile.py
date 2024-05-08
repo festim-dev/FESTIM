@@ -22,7 +22,14 @@ class Mobile(Concentration):
         self.boundary_conditions = []
 
     def create_form(
-        self, materials, mesh, T, dt=None, traps=None, soret=False, surface_species=None
+        self,
+        materials,
+        mesh,
+        T,
+        dt=None,
+        traps=None,
+        soret=False,
+        surface_concentrations=None,
     ):
         """Creates the variational formulation.
 
@@ -40,7 +47,9 @@ class Mobile(Concentration):
         self.F = 0
         self.create_diffusion_form(materials, mesh, T, dt=dt, traps=traps, soret=soret)
         self.create_source_form(mesh.dx)
-        self.create_fluxes_form(T, mesh.ds, dt=dt, surface_species=surface_species)
+        self.create_fluxes_form(
+            T, mesh.ds, dt=dt, surface_concentrations=surface_concentrations
+        )
 
     def create_diffusion_form(
         self, materials, mesh, T, dt=None, traps=None, soret=False
@@ -173,7 +182,7 @@ class Mobile(Concentration):
         self.F += F_source
         self.sub_expressions += expressions_source
 
-    def create_fluxes_form(self, T, ds, surface_species=None, dt=None):
+    def create_fluxes_form(self, T, ds, surface_concentrations=None, dt=None):
         """Modifies the formulation and adds fluxes based
         on parameters in self.boundary_conditions
         """
@@ -194,8 +203,8 @@ class Mobile(Concentration):
                     for surf in bc.surfaces:
                         F += -self.test_function * bc.form * ds(surf)
 
-        if surface_species:
-            for surf_conc in surface_species:
+        if surface_concentrations:
+            for surf_conc in surface_concentrations:
                 k_sb = surf_conc.k_sb
                 E_sb = surf_conc.E_sb
                 k_bs = surf_conc.k_bs
@@ -205,9 +214,9 @@ class Mobile(Concentration):
                 N_b = surf_conc.N_b
 
                 if callable(E_sb):
-                    E_sb = E_sb(surf_conc.solution, solute)
+                    E_sb = E_sb(surf_conc.solution)
                 if callable(E_bs):
-                    E_bs = E_bs(surf_conc.solution, solute)
+                    E_bs = E_bs(surf_conc.solution)
 
                 J_sb = (
                     k_sb

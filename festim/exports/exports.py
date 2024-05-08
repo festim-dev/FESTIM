@@ -93,7 +93,12 @@ class Exports(list):
                                 label_to_function[quantity.field] = f.project(
                                     label_to_function[quantity.field], self.V_DG1
                                 )
-                        quantity.function = label_to_function[quantity.field]
+                        if isinstance(quantity, festim.AdsorbedHydrogen):
+                            for surf_funcs in label_to_function[quantity.field]:
+                                if quantity.surface in surf_funcs[1]:
+                                    quantity.function = surf_funcs[0]
+                        else:
+                            quantity.function = label_to_function[quantity.field]
                     export.compute(self.t)
                 # export derived quantities
                 if export.is_export(self.t, self.final_time, self.nb_iterations):

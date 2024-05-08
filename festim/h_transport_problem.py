@@ -26,11 +26,11 @@ class HTransportProblem:
     """
 
     def __init__(
-        self, mobile, traps, T, settings, initial_conditions, surface_species
+        self, mobile, traps, T, settings, initial_conditions, surface_concentrations
     ) -> None:
         self.mobile = mobile
         self.traps = traps
-        self.surface_species = surface_species
+        self.surface_concentrations = surface_concentrations
         self.T = T
         self.settings = settings
         self.initial_conditions = initial_conditions
@@ -92,7 +92,7 @@ class HTransportProblem:
 
         # function space for H concentrations
         nb_traps = len(self.traps)
-        nb_adsorbed = len(self.surface_species)
+        nb_adsorbed = len(self.surface_concentrations)
 
         if nb_traps == 0 and nb_adsorbed == 0:
             V = FunctionSpace(mesh.mesh, element_solute, order_solute)
@@ -136,8 +136,8 @@ class HTransportProblem:
             conc_list = [self.mobile]
             if self.traps:
                 conc_list += [*self.traps]
-            if self.surface_species:
-                conc_list += [*self.surface_species]
+            if self.surface_concentrations:
+                conc_list += [*self.surface_concentrations]
 
             for i, concentration in enumerate(conc_list):
                 concentration.solution = self.u.sub(i)
@@ -172,6 +172,19 @@ class HTransportProblem:
                 trap = self.traps.get_trap(component)
                 trap.initialise(
                     functionspace, value, label=ini.label, time_step=ini.time_step
+                )
+
+        if self.surface_concentrations:
+            for i, surf_conc in enumerate(
+                self.surface_concentrations, len(self.traps) + 1
+            ):
+                functionspace = self.V.sub(i).collapse()
+                initial_condition = surf_conc.initial_condition
+                surf_conc.initialise(
+                    functionspace,
+                    value=initial_condition.value,
+                    label=initial_condition.label,
+                    time_step=initial_condition.time_step,
                 )
 
         # initial guess needs to be non zero if chemical pot
@@ -214,7 +227,7 @@ class HTransportProblem:
             dt,
             traps=self.traps,
             soret=self.settings.soret,
-            surface_species=self.surface_species,
+            surface_concentrations=self.surface_concentrations,
         )
         F += self.mobile.F
         expressions += self.mobile.sub_expressions
@@ -225,9 +238,9 @@ class HTransportProblem:
         expressions += self.traps.sub_expressions
 
         # Add surface species
-        self.surface_species.create_forms(self.mobile, self.T, mesh.ds, dt)
-        F += self.surface_species.F
-        expressions += self.surface_species.sub_expressions
+        self.surface_concentrations.create_forms(self.mobile, self.T, mesh.ds, dt)
+        F += self.surface_concentrations.F
+        expressions += self.surface_concentrations.sub_expressions
 
         self.F = F
         self.expressions = expressions
@@ -332,6 +345,9 @@ class HTransportProblem:
 
         for i, trap in enumerate(self.traps, 1):
             trap.post_processing_solution = res[i]
+
+        for i, surf_conc in enumerate(self.surface_concentrations, len(self.traps) + 1):
+            surf_conc.post_processing_solution = res[i]
 
         if self.settings.chemical_pot:
             self.mobile.post_processing_solution_to_concentration()

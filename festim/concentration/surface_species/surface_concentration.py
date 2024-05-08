@@ -6,7 +6,20 @@ import sympy as sp
 class SurfaceConcentration(Concentration):
     """ """
 
-    def __init__(self, k_sb, E_sb, k_bs, E_bs, l_abs, N_s, N_b, J_vs, surfaces, **prms):
+    def __init__(
+        self,
+        k_sb,
+        E_sb,
+        k_bs,
+        E_bs,
+        l_abs,
+        N_s,
+        N_b,
+        J_vs,
+        surfaces,
+        initial_condition,
+        **prms
+    ):
         super().__init__()
         self.k_sb = k_sb
         self.E_sb = E_sb
@@ -20,6 +33,7 @@ class SurfaceConcentration(Concentration):
             surfaces = [surfaces]
         self.J_vs = J_vs
         self.surfaces = surfaces
+        self.initial_condition = initial_condition
         self.prms = prms
         self.convert_prms()
 
@@ -42,9 +56,9 @@ class SurfaceConcentration(Concentration):
         if callable(J_vs):
             J_vs = J_vs(solution, T.T, **self.prms)
         if callable(E_sb):
-            E_sb = E_sb(solution, solute)
+            E_sb = E_sb(solution)
         if callable(E_bs):
-            E_bs = E_bs(solution, solute)
+            E_bs = E_bs(solution)
 
         J_sb = k_sb * solution * (1 - solute / N_b) * exp(-E_sb / k_B / T.T)
         J_bs = k_bs * (solute * l_abs) * (1 - solution / N_s) * exp(-E_bs / k_B / T.T)

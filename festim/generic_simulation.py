@@ -257,6 +257,15 @@ class Simulation:
                     raise ValueError(
                         f"A DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_bc.field}"
                     )
+            # checks that surface_concentration is not set with another bc for solute on the same surface
+            for surf_conc in self.surface_concentrations:
+                if bc.field != "T":
+                    if not set(bc.surfaces).isdisjoint(surf_conc.surfaces):
+                        # convert lists of surfaces to sets and obtain their intersection
+                        intersection = set(bc.surfaces) & set(surf_conc.surfaces)
+                        raise ValueError(
+                            f"SurfaceConcentration is simultaneously set with another boundary condition on surfaces {intersection}"
+                        )
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
@@ -481,6 +490,10 @@ class Simulation:
             "solute": self.mobile.post_processing_solution,
             "0": self.mobile.post_processing_solution,
             0: self.mobile.post_processing_solution,
+            "adsorbed": [
+                (surf_conc.post_processing_solution, surf_conc.surfaces)
+                for surf_conc in self.surface_concentrations
+            ],
             "T": self.T.T,
             "retention": sum(
                 [self.mobile.post_processing_solution]

@@ -84,6 +84,7 @@ from .exports.derived_quantities.total_surface import TotalSurface
 from .exports.derived_quantities.total_volume import TotalVolume
 from .exports.derived_quantities.average_surface import AverageSurface
 from .exports.derived_quantities.point_value import PointValue
+from .exports.derived_quantities.adsorbed_hydrogen import AdsorbedHydrogen
 
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
