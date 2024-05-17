@@ -30,8 +30,7 @@ my_model.reactions = [
         E_p=1.2,
         k_0=3.8e-17,
         E_k=0.2,
-        reactant1=mobile_H,
-        reactant2=empty_trap,
+        reactant=[mobile_H, empty_trap],
         product=trapped_H,
     )
 ]
