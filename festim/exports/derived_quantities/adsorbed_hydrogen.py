@@ -4,7 +4,7 @@ import fenics as f
 
 class AdsorbedHydrogen(SurfaceQuantity):
     """
-    Computes the hydrogen surface concentration on surface
+    Computes the hydrogen surface concentration on a surface
 
     Args:
         surface (int): the surface id
@@ -16,7 +16,7 @@ class AdsorbedHydrogen(SurfaceQuantity):
         show_units (bool): show the units in the title in the derived quantities
             file
         function (dolfin.function.function.Function): the solution function of
-            the field
+            the hydrogen adsorbed field
 
     """
 

@@ -13,6 +13,7 @@ class HTransportProblem:
         settings (festim.Settings): the problem settings
         initial_conditions (list of festim.initial_conditions): the
             initial conditions of the h transport problem
+        surface_concentrations (festim.SurfaceConcentrations): the surface species
 
     Attributes:
         expressions (list): contains time-dependent fenics.Expressions

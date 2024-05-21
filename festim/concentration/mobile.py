@@ -31,7 +31,8 @@ class Mobile(Concentration):
         soret=False,
         surface_concentrations=None,
     ):
-        """Creates the variational formulation.
+        """
+        Creates the variational formulation.
 
         Args:
             materials (festim.Materials): the materials
@@ -43,6 +44,8 @@ class Mobile(Concentration):
                 potential is assumed. Defaults to False.
             soret (bool, optional): If True, Soret effect is assumed. Defaults
                 to False.
+            surface_concentrations (festim.SurfaceConcentrations, optional): the surface species. 
+                Defaults to None.
         """
         self.F = 0
         self.create_diffusion_form(materials, mesh, T, dt=dt, traps=traps, soret=soret)
@@ -184,7 +187,7 @@ class Mobile(Concentration):
 
     def create_fluxes_form(self, T, ds, surface_concentrations=None, dt=None):
         """Modifies the formulation and adds fluxes based
-        on parameters in self.boundary_conditions
+        on parameters in self.boundary_conditions and self.surface_concentrations
         """
 
         expressions_fluxes = []

@@ -21,6 +21,9 @@ class Simulation:
             concentration). Defaults to None.
         traps (festim.Traps or list or festim.Trap, optional): The model's traps. Defaults
             to None.
+        surface_concentrations (festim.SurfaceConcentrations or 
+            list or festim.SurfaceConcentration, optional): The model's surface species. 
+            Defaults to None.
         dt (festim.Stepsize, optional): The model's stepsize. Defaults to
             None.
         settings (festim.Settings, optional): The model's settings.
@@ -56,6 +59,8 @@ class Simulation:
         settings (festim.Settings): The model's settings.
         dt (festim.Stepsize): The model's stepsize.
         traps (festim.Traps): The model's traps.
+        surface_concentrations (festim.SurfaceConcentrations): 
+            The model's surface species.
         materials (festim.Materials): The model materials.
         boundary_conditions (list of festim.BoundaryCondition):
             The model's boundary conditions (temperature of H

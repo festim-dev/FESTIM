@@ -4,7 +4,45 @@ import sympy as sp
 
 
 class SurfaceConcentration(Concentration):
-    """ """
+    """
+    The concetration of adsorbed H species
+
+    Args:
+        k_sb (float): pre-exponential factor for surface-to-subsurface transition (m-2 s-1)
+        E_sb (float, callable): activation energy for surface-to-subsurface transition (eV)
+        k_bs (float): pre-exponential factor for subsurface-to-surface transition (m-2 s-1)
+        E_bs (float, callable): activation energy for subsurface-to-surface transition (eV)
+        l_abs (float): characteristic distance between surface and subsurface sites (m)
+        N_s (float): surface concentration of adsorption sites (m-2)
+        N_b (float): bulk concentration of interstitial sites (m-3)
+        J_vs (float, callable): the net adsorption flux from vacuum to surface (m-2 s-1),
+            can accept additional parameters (see example)
+        surfaces (int, list): the surfaces for which surface processes are considered
+        
+    Example::
+
+        def E_sb(surf_conc):
+            return 2 * (1 - surf_conc / 5)
+
+        def E_bs(surf_conc):
+            return 2 * (1 - surf_conc / 5)
+
+        def J_vs(surf_conc, T, prm1):
+            return (1-surf_conc / 5) ** 2 * fenics.exp(-2 / T) + prm1
+
+        my_SurfConc = festim.SurfaceConcentration(
+            k_sb = 1e13,
+            E_sb = E_sb,
+            k_bs = 1e13,
+            E_bs = E_bs,
+            l_abs = 110e-12,
+            N_s = 2e19,
+            N_b = 6e28,
+            J_vs = J_vs,
+            surfaces=[1, 2],
+            prm1=2e16
+        )
+    """
 
     def __init__(
         self,
@@ -40,6 +78,16 @@ class SurfaceConcentration(Concentration):
         self.F = 0
 
     def create_form(self, mobile, T, ds, dt):
+        """Creates the general form associated with the surface species
+        d c_s/ dt = K_bs c_m (1 - c_s/N_s) - K_sb c_s (1 - c_b/N_b) + J_vs
+
+        Args:
+            mobile (festim.Mobile): the mobile concentration of the simulation
+            T (festim.Temperature): the temperature of the simulation
+            ds (fenics.Measure): the ds measure of the sim
+            dt (festim.Stepsize): the step-size
+        """
+
         solution = self.solution
         prev_solution = self.previous_solution
         test_function = self.test_function
