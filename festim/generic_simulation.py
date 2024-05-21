@@ -184,7 +184,7 @@ class Simulation:
             self._surface_concentrations = value
         elif isinstance(value, list):
             self._surface_concentrations = festim.SurfaceConcentrations(value)
-        elif isinstance(value, festim.Trap):
+        elif isinstance(value, festim.SurfaceConcentration):
             self._surface_concentrations = festim.SurfaceConcentrations([value])
         else:
             raise TypeError(
