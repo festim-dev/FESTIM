@@ -9,8 +9,6 @@ import numpy as np
 import tqdm.auto as tqdm
 import festim as F
 
-from dolfinx.mesh import meshtags
-
 
 class HydrogenTransportProblem:
     """
