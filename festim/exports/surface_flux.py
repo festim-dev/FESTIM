@@ -25,13 +25,21 @@ class SurfaceFlux(F.SurfaceQuantity):
     ) -> None:
         super().__init__(field, surface, filename)
 
-    def compute(self, n, ds):
+    def compute(self, ds):
         """Computes the value of the surface flux at the surface
 
         Args:
-            n (ufl.geometry.FacetNormal): normal vector to the surface
             ds (ufl.Measure): surface measure of the model
         """
+
+        # obtain mesh normal from field
+        # if case multispecies, solution is an index, use sub_function_space
+        if isinstance(self.field.solution, ufl.indexed.Indexed):
+            mesh = self.field.sub_function_space.mesh
+        else:
+            mesh = self.field.solution.function_space.mesh
+        n = ufl.FacetNormal(mesh)
+
         self.value = fem.assemble_scalar(
             fem.form(
                 -self.D

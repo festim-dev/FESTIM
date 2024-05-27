@@ -56,10 +56,13 @@ def test_value_fenics():
         (1, fem.Constant),
         (lambda t: t, fem.Constant),
         (lambda t: 1.0 + t, fem.Constant),
-        (lambda x: 1.0 + x[0], fem.Function),
-        (lambda x, t: 1.0 + x[0] + t, fem.Function),
-        (lambda x, t, T: 1.0 + x[0] + t + T, fem.Function),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), fem.Function),
+        (lambda x: 1.0 + x[0], ufl.core.expr.Expr),
+        (lambda x, t: 1.0 + x[0] + t, ufl.core.expr.Expr),
+        (lambda x, t, T: 1.0 + x[0] + t + T, ufl.core.expr.Expr),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            ufl.core.expr.Expr,
+        ),
     ],
 )
 def test_create_value_fenics(value, expected_type):
@@ -72,12 +75,11 @@ def test_create_value_fenics(value, expected_type):
 
     source = F.ParticleSource(volume=vol_subdomain, value=value, species=species)
 
-    my_function_space = fem.functionspace(mesh, ("Lagrange", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
     # RUN
-    source.create_value_fenics(mesh, my_function_space, T, t)
+    source.create_value_fenics(mesh, T, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
@@ -141,7 +143,6 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     source = F.ParticleSource(volume=vol_subdomain, value=my_value, species=species)
 
-    my_function_space = fem.functionspace(mesh, ("Lagrange", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
@@ -149,7 +150,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        source.create_value_fenics(mesh, my_function_space, T, t)
+        source.create_value_fenics(mesh, T, t)
 
 
 def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
@@ -163,14 +164,13 @@ def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
 
     source = F.HeatSource(volume=vol_subdomain, value=my_value)
 
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
     t = fem.Constant(mesh, 0.0)
 
     with pytest.raises(
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        source.create_value_fenics(mesh, my_function_space, t)
+        source.create_value_fenics(mesh, t)
 
 
 @pytest.mark.parametrize(

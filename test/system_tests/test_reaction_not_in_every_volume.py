@@ -19,8 +19,7 @@ def test_sim_reaction_not_in_every_volume():
     trap = F.ImplicitSpecies(n=8.19e25, others=[ct])
     my_model.reactions = [
         F.Reaction(
-            reactant1=cm,
-            reactant2=trap,
+            reactant=[cm, trap],
             product=ct,
             k_0=8.9e-17,
             E_k=0.39,

@@ -179,7 +179,6 @@ class HeatTransferProblem:
             # create value_fenics for all source objects
             source.create_value_fenics(
                 mesh=self.mesh.mesh,
-                function_space=self.function_space,
                 t=self.t,
             )
 
@@ -190,7 +189,6 @@ class HeatTransferProblem:
             if isinstance(bc, F.HeatFluxBC):
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
-                    function_space=self.function_space,
                     temperature=self.u,
                     t=self.t,
                 )

@@ -45,9 +45,11 @@ class FluxBCBase:
         if value is None:
             self._value_fenics = value
             return
-        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
+        if not isinstance(
+            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
+        ):
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not {type(value)}"
             )
         self._value_fenics = value
 
@@ -75,19 +77,15 @@ class FluxBCBase:
         else:
             return False
 
-    def create_value_fenics(
-        self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
-    ):
+    def create_value_fenics(self, mesh, temperature, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.
         If the value is a constant, it is converted to a fenics.Constant.
         If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a fenics.Function and the
-        expression of the function is stored in self.bc_expr.
+        Otherwise, it is converted to a ufl Expression
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
-            function_space (dolfinx.fem.FunctionSpace): the function space
             temperature (float): the temperature
             t (dolfinx.fem.Constant): the time
         """
@@ -109,7 +107,6 @@ class FluxBCBase:
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:
-                self.value_fenics = fem.Function(function_space)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = t
@@ -118,13 +115,7 @@ class FluxBCBase:
                 if "T" in arguments:
                     kwargs["T"] = temperature
 
-                # store the expression of the boundary condition
-                # to update the value_fenics later
-                self.bc_expr = fem.Expression(
-                    self.value(**kwargs),
-                    function_space.element.interpolation_points(),
-                )
-                self.value_fenics.interpolate(self.bc_expr)
+                self.value_fenics = self.value(**kwargs)
 
     def update(self, t):
         """Updates the flux bc value
@@ -136,8 +127,6 @@ class FluxBCBase:
             arguments = self.value.__code__.co_varnames
             if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
                 self.value_fenics.value = self.value(t=t)
-            else:
-                self.value_fenics.interpolate(self.bc_expr)
 
 
 class ParticleFluxBC(FluxBCBase):
@@ -152,6 +141,8 @@ class ParticleFluxBC(FluxBCBase):
             is applied
         value (float, fem.Constant, callable): the value of the particle flux
         species (festim.Species): the species to which the flux is applied
+        species_dependent_value (dict): a dictionary containing the species that the value. Example: {"name": species}
+            where "name" is the variable name in the callable value and species is a festim.Species object.
 
     Attributes:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
@@ -162,6 +153,8 @@ class ParticleFluxBC(FluxBCBase):
             fenics format
         bc_expr (fem.Expression): the expression of the particle flux that is used to
             update the value_fenics
+        species_dependent_value (dict): a dictionary containing the species that the value. Example: {"name": species}
+            where "name" is the variable name in the callable value and species is a festim.Species object.
 
 
     Usage:
@@ -171,11 +164,56 @@ class ParticleFluxBC(FluxBCBase):
         >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
         >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
         >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+        >>> ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2, species="H", species_dependent_value={"c1": species1})
     """
 
-    def __init__(self, subdomain, value, species):
+    def __init__(self, subdomain, value, species, species_dependent_value={}):
         super().__init__(subdomain=subdomain, value=value)
         self.species = species
+        self.species_dependent_value = species_dependent_value
+
+    def create_value_fenics(self, mesh, temperature, t: fem.Constant):
+        """Creates the value of the boundary condition as a fenics object and sets it to
+        self.value_fenics.
+        If the value is a constant, it is converted to a fenics.Constant.
+        If the value is a function of t, it is converted to a fenics.Constant.
+        Otherwise, it is converted to a ufl Expression
+
+        Args:
+            mesh (dolfinx.mesh.Mesh) : the mesh
+            temperature (float): the temperature
+            t (dolfinx.fem.Constant): the time
+        """
+        x = ufl.SpatialCoordinate(mesh)
+
+        if isinstance(self.value, (int, float)):
+            self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
+
+        elif callable(self.value):
+            arguments = self.value.__code__.co_varnames
+
+            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                # only t is an argument
+                if not isinstance(self.value(t=float(t)), (float, int)):
+                    raise ValueError(
+                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "
+                    )
+                self.value_fenics = F.as_fenics_constant(
+                    mesh=mesh, value=self.value(t=float(t))
+                )
+            else:
+                kwargs = {}
+                if "t" in arguments:
+                    kwargs["t"] = t
+                if "x" in arguments:
+                    kwargs["x"] = x
+                if "T" in arguments:
+                    kwargs["T"] = temperature
+
+                for name, species in self.species_dependent_value.items():
+                    kwargs[name] = species.concentration
+
+                self.value_fenics = self.value(**kwargs)
 
 
 class HeatFluxBC(FluxBCBase):

@@ -76,8 +76,7 @@ def test_1_mobile_1_trap_MMS_steady_state():
 
     my_model.reactions = [
         F.Reaction(
-            reactant1=mobile,
-            reactant2=traps,
+            reactant=[mobile, traps],
             product=trapped,
             k_0=k_0,
             E_k=E_k,
@@ -256,8 +255,7 @@ def test_1_mobile_1_trap_MMS_3D():
 
     my_model.reactions = [
         F.Reaction(
-            reactant1=mobile,
-            reactant2=traps,
+            reactant=[mobile, traps],
             product=trapped,
             k_0=k_0,
             E_k=E_k,
@@ -368,8 +366,7 @@ def test_1_mobile_1_trap_MMS_2D():
 
     my_model.reactions = [
         F.Reaction(
-            reactant1=mobile,
-            reactant2=traps,
+            reactant=[mobile, traps],
             product=trapped,
             k_0=k_0,
             E_k=E_k,
