@@ -47,7 +47,7 @@ surface_reaction_hd = F.SurfaceReactionBC(
 surface_reaction_hh = F.SurfaceReactionBC(
     reactant=[H, H],
     gas_pressure=0,
-    k_r0=0.01,
+    k_r0=0.02,
     E_kr=0,
     k_d0=0,
     E_kd=0,
@@ -112,32 +112,45 @@ plt.stackplot(
     labels=["H_out", "D_out"],
 )
 plt.legend()
-
+plt.xlabel("Time (s)")
+plt.ylabel("Flux (atom/m^2/s)")
 plt.figure()
 plt.stackplot(
     HD_flux.t,
-    np.abs(HD_flux.data),
     np.abs(HH_flux.data),
+    np.abs(HD_flux.data),
     np.abs(DD_flux.data),
-    labels=["HD", "HH", "DD"],
+    labels=["HH", "HD", "DD"],
 )
-plt.legend()
+plt.legend(reverse=True)
+plt.xlabel("Time (s)")
+plt.ylabel("Flux (molecule/m^2/s)")
 
 
 plt.figure()
-plt.plot(H_flux_right.t, np.abs(H_flux_right.data))
+plt.plot(H_flux_right.t, -np.array(H_flux_right.data), label="from gradient (H)")
 plt.plot(
-    H_flux_right.t, 2 * np.abs(HH_flux.data) + np.abs(HD_flux.data), linestyle="--"
+    H_flux_right.t,
+    2 * np.array(HH_flux.data) + np.array(HD_flux.data),
+    linestyle="--",
+    label="from reaction rates (H)",
 )
 
-plt.plot(D_flux_right.t, np.abs(D_flux_right.data))
+plt.plot(D_flux_right.t, -np.array(D_flux_right.data), label="from gradient (D)")
 plt.plot(
-    D_flux_right.t, 2 * np.abs(DD_flux.data) + np.abs(HD_flux.data), linestyle="--"
+    D_flux_right.t,
+    2 * np.array(DD_flux.data) + np.array(HD_flux.data),
+    linestyle="--",
+    label="from reaction rates (D)",
 )
+plt.xlabel("Time (s)")
+plt.ylabel("Flux (atom/m^2/s)")
+plt.legend()
+plt.show()
 
 # check that H_flux_right == 2*HH_flux + HD_flux
-H_flux_from_gradient = np.abs(H_flux_right.data)
-H_flux_from_reac = 2 * np.abs(HH_flux.data) + np.abs(HD_flux.data)
+H_flux_from_gradient = -np.array(H_flux_right.data)
+H_flux_from_reac = 2 * np.array(HH_flux.data) + np.array(HD_flux.data)
 assert np.allclose(
     H_flux_from_gradient,
     H_flux_from_reac,
@@ -145,12 +158,11 @@ assert np.allclose(
     atol=0.005,
 )
 # check that D_flux_right == 2*DD_flux + HD_flux
-D_flux_from_gradient = np.abs(D_flux_right.data)
-D_flux_from_reac = 2 * np.abs(DD_flux.data) + np.abs(HD_flux.data)
+D_flux_from_gradient = -np.array(D_flux_right.data)
+D_flux_from_reac = 2 * np.array(DD_flux.data) + np.array(HD_flux.data)
 assert np.allclose(
     D_flux_from_gradient,
     D_flux_from_reac,
     rtol=0.5e-2,
     atol=0.005,
 )
-plt.show()
