@@ -48,13 +48,23 @@ surface_reaction_dd = F.SurfaceReactionBC(
 
 my_model.boundary_conditions = [
     F.DirichletBC(subdomain=left, value=5, species=H),
-    F.DirichletBC(subdomain=left, value=5, species=D),
+    F.DirichletBC(subdomain=left, value=2, species=D),
     surface_reaction_hd,
     surface_reaction_hh,
     surface_reaction_dd,
 ]
 
-my_model.exports = [F.XDMFExport("test.xdmf", H)]
+H_flux_right = F.SurfaceFlux(H, right)
+H_flux_left = F.SurfaceFlux(H, left)
+D_flux_right = F.SurfaceFlux(D, right)
+D_flux_left = F.SurfaceFlux(D, left)
+my_model.exports = [
+    F.XDMFExport("test.xdmf", H),
+    H_flux_left,
+    H_flux_right,
+    D_flux_left,
+    D_flux_right,
+]
 
 my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=10, transient=True)
 
@@ -62,3 +72,20 @@ my_model.settings.stepsize = 0.1
 
 my_model.initialise()
 my_model.run()
+
+import matplotlib.pyplot as plt
+
+plt.stackplot(
+    H_flux_left.t,
+    np.abs(H_flux_left.data),
+    np.abs(D_flux_left.data),
+    labels=["H_in", "D_in"],
+)
+plt.stackplot(
+    H_flux_right.t,
+    -np.abs(H_flux_right.data),
+    -np.abs(D_flux_right.data),
+    labels=["H_out", "D_out"],
+)
+plt.legend()
+plt.show()
