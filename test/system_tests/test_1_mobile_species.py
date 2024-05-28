@@ -160,12 +160,14 @@ def test_1_mobile_MMS_2D():
     my_model.mesh = F.Mesh(mesh=test_mesh_2d)
 
     class LefSurface(F.SurfaceSubdomain):
-        def locate_boundary_facet_indices(self, mesh, fdim):
+        def locate_boundary_facet_indices(self, mesh):
+            fdim = mesh.topology.dim - 1
             indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[0], 0))
             return indices
 
     class RightSurface(F.SurfaceSubdomain):
-        def locate_boundary_facet_indices(self, mesh, fdim):
+        def locate_boundary_facet_indices(self, mesh):
+            fdim = mesh.topology.dim - 1
             indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[0], 1))
             return indices
 
@@ -224,12 +226,14 @@ def test_1_mobile_MMS_3D():
     my_model.mesh = F.Mesh(mesh=test_mesh_3d)
 
     class LefSurface(F.SurfaceSubdomain):
-        def locate_boundary_facet_indices(self, mesh, fdim):
+        def locate_boundary_facet_indices(self, mesh):
+            fdim = mesh.topology.dim - 1
             indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[0], 0))
             return indices
 
     class RightSurface(F.SurfaceSubdomain):
-        def locate_boundary_facet_indices(self, mesh, fdim):
+        def locate_boundary_facet_indices(self, mesh):
+            fdim = mesh.topology.dim - 1
             indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[0], 1))
             return indices
 

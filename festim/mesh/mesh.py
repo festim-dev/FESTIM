@@ -78,7 +78,7 @@ class Mesh:
 
         for surf in surface_subdomains:
             # find all facets in subdomain and mark them as surf.id
-            entities = surf.locate_boundary_facet_indices(self.mesh, self.fdim)
+            entities = surf.locate_boundary_facet_indices(self.mesh)
             tags_facets[entities] = surf.id
 
         for vol in volume_subdomains:

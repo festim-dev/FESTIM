@@ -199,6 +199,5 @@ def test_surface_subdomain_default(mesh, number_facets):
     """
     my_subdomain = F.SurfaceSubdomain(id=1)
 
-    fdim = mesh.topology.dim - 1
-    indices = my_subdomain.locate_boundary_facet_indices(mesh, fdim=fdim)
+    indices = my_subdomain.locate_boundary_facet_indices(mesh)
     assert len(indices) == number_facets
