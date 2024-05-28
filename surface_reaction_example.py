@@ -1,6 +1,24 @@
 import festim as F
 import numpy as np
 
+import dolfinx.fem as fem
+
+
+class FluxFromSurfaceReaction(F.SurfaceFlux):
+    def __init__(self, reaction: F.SurfaceReactionBC):
+        super().__init__(
+            F.Species(),  # just a dummy species here
+            reaction.subdomain,
+        )
+        self.reaction = reaction.flux_bcs[0]
+
+    def compute(self, ds):
+        self.value = fem.assemble_scalar(
+            fem.form(self.reaction.value_fenics * ds(self.surface.id))
+        )
+        self.data.append(self.value)
+
+
 my_model = F.HydrogenTransportProblem()
 my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 1000))
 my_mat = F.Material(name="mat", D_0=1, E_D=0)
@@ -47,7 +65,7 @@ surface_reaction_dd = F.SurfaceReactionBC(
 )
 
 my_model.boundary_conditions = [
-    F.DirichletBC(subdomain=left, value=5, species=H),
+    F.DirichletBC(subdomain=left, value=2, species=H),
     F.DirichletBC(subdomain=left, value=2, species=D),
     surface_reaction_hd,
     surface_reaction_hh,
@@ -58,15 +76,21 @@ H_flux_right = F.SurfaceFlux(H, right)
 H_flux_left = F.SurfaceFlux(H, left)
 D_flux_right = F.SurfaceFlux(D, right)
 D_flux_left = F.SurfaceFlux(D, left)
+HD_flux = FluxFromSurfaceReaction(surface_reaction_hd)
+HH_flux = FluxFromSurfaceReaction(surface_reaction_hh)
+DD_flux = FluxFromSurfaceReaction(surface_reaction_dd)
 my_model.exports = [
     F.XDMFExport("test.xdmf", H),
     H_flux_left,
     H_flux_right,
     D_flux_left,
     D_flux_right,
+    HD_flux,
+    HH_flux,
+    DD_flux,
 ]
 
-my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=10, transient=True)
+my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=5, transient=True)
 
 my_model.settings.stepsize = 0.1
 
@@ -88,4 +112,45 @@ plt.stackplot(
     labels=["H_out", "D_out"],
 )
 plt.legend()
+
+plt.figure()
+plt.stackplot(
+    HD_flux.t,
+    np.abs(HD_flux.data),
+    np.abs(HH_flux.data),
+    np.abs(DD_flux.data),
+    labels=["HD", "HH", "DD"],
+)
+plt.legend()
+
+
+plt.figure()
+plt.plot(H_flux_right.t, np.abs(H_flux_right.data))
+plt.plot(
+    H_flux_right.t, 2 * np.abs(HH_flux.data) + np.abs(HD_flux.data), linestyle="--"
+)
+
+plt.plot(D_flux_right.t, np.abs(D_flux_right.data))
+plt.plot(
+    D_flux_right.t, 2 * np.abs(DD_flux.data) + np.abs(HD_flux.data), linestyle="--"
+)
+
+# check that H_flux_right == 2*HH_flux + HD_flux
+H_flux_from_gradient = np.abs(H_flux_right.data)
+H_flux_from_reac = 2 * np.abs(HH_flux.data) + np.abs(HD_flux.data)
+assert np.allclose(
+    H_flux_from_gradient,
+    H_flux_from_reac,
+    rtol=0.5e-2,
+    atol=0.005,
+)
+# check that D_flux_right == 2*DD_flux + HD_flux
+D_flux_from_gradient = np.abs(D_flux_right.data)
+D_flux_from_reac = 2 * np.abs(DD_flux.data) + np.abs(HD_flux.data)
+assert np.allclose(
+    D_flux_from_gradient,
+    D_flux_from_reac,
+    rtol=0.5e-2,
+    atol=0.005,
+)
 plt.show()
