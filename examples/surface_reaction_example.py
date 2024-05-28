@@ -2,6 +2,7 @@ import festim as F
 import numpy as np
 
 import dolfinx.fem as fem
+import ufl
 
 
 class FluxFromSurfaceReaction(F.SurfaceFlux):
@@ -46,10 +47,10 @@ surface_reaction_hd = F.SurfaceReactionBC(
 
 surface_reaction_hh = F.SurfaceReactionBC(
     reactant=[H, H],
-    gas_pressure=0,
+    gas_pressure=lambda t: ufl.conditional(ufl.gt(t, 1), 2, 0),
     k_r0=0.02,
     E_kr=0,
-    k_d0=0,
+    k_d0=0.03,
     E_kd=0,
     subdomain=right,
 )
