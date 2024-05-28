@@ -1,7 +1,5 @@
 import festim as F
 import numpy as np
-import ufl
-
 
 my_model = F.HydrogenTransportProblem()
 my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 1000))
@@ -18,7 +16,7 @@ my_model.species = [H, D]
 
 my_model.temperature = 500
 
-surface_reaction = F.SurfaceReactionBC(
+surface_reaction_hd = F.SurfaceReactionBC(
     reactant=[H, D],
     gas_pressure=0,
     k_r0=0.01,
@@ -28,18 +26,32 @@ surface_reaction = F.SurfaceReactionBC(
     subdomain=right,
 )
 
-surface_reaction_manual = F.ParticleFluxBC(
+surface_reaction_hh = F.SurfaceReactionBC(
+    reactant=[H, H],
+    gas_pressure=0,
+    k_r0=0.01,
+    E_kr=0,
+    k_d0=0,
+    E_kd=0,
     subdomain=right,
-    value=lambda c1, T: -2 * 0.01 * ufl.exp(-0 / F.k_B / T) * c1**2,
-    species=H,
-    species_dependent_value={"c1": H},
+)
+
+surface_reaction_dd = F.SurfaceReactionBC(
+    reactant=[D, D],
+    gas_pressure=0,
+    k_r0=0.01,
+    E_kr=0,
+    k_d0=0,
+    E_kd=0,
+    subdomain=right,
 )
 
 my_model.boundary_conditions = [
     F.DirichletBC(subdomain=left, value=5, species=H),
     F.DirichletBC(subdomain=left, value=5, species=D),
-    surface_reaction,
-    # surface_reaction_manual,
+    surface_reaction_hd,
+    surface_reaction_hh,
+    surface_reaction_dd,
 ]
 
 my_model.exports = [F.XDMFExport("test.xdmf", H)]
