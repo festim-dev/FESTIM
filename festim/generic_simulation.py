@@ -311,6 +311,7 @@ class Simulation:
                 festim.SurfaceFlux,
                 festim.AverageSurface,
                 festim.AverageVolume,
+                festim.TotalVolume,
             ]
             + all_types_quantities,
             "cylindrical": [festim.SurfaceFluxCylindrical] + all_types_quantities,
