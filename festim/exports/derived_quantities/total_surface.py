@@ -33,7 +33,10 @@ class TotalSurface(SurfaceQuantity):
     @property
     def export_unit(self):
         # obtain domain dimension
-        dim = self.function.function_space().mesh().topology().dim()
+        try:
+            dim = self.function.function_space().mesh().topology().dim()
+        except AttributeError:
+            dim = self.dx._domain._topological_dimension
         # return unit depending on field and dimension of domain
         if self.field == "T":
             return f"K m{dim-1}".replace(" m0", "").replace(" m1", " m")
