@@ -37,6 +37,7 @@ class TotalVolume(VolumeQuantity):
             dim = self.function.function_space().mesh().topology().dim()
         except AttributeError:
             dim = self.dx._domain._topological_dimension
+            # TODO we could simply do that all the time
         # return unit depending on field and dimension of domain
         if self.field == "T":
             return f"K m{dim}".replace("1", "")
