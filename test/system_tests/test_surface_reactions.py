@@ -1,6 +1,7 @@
 import festim as F
 import numpy as np
 
+import ufl
 import dolfinx.fem as fem
 
 
@@ -271,4 +272,65 @@ def test_2_isotopes_with_pressure():
         D_flux_from_reac,
         rtol=0.5e-2,
         atol=0.005,
+    )
+
+
+def test_pressure_varies_in_time():
+    """
+    Runs a problem with a surface reaction and a time-dependent pressure
+    on the right boundary.
+
+    Then checks that the flux is consistent with the surface reaction
+    """
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 1000))
+    my_mat = F.Material(name="mat", D_0=1, E_D=0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+
+    my_model.subdomains = [vol, left, right]
+
+    H = F.Species("H")
+    my_model.species = [H]
+
+    my_model.temperature = 500
+
+    t_pressure = 2
+    pressure = 2
+    k_d = 2
+
+    surface_reaction_hh = F.SurfaceReactionBC(
+        reactant=[H, H],
+        gas_pressure=lambda t: ufl.conditional(ufl.gt(t, t_pressure), pressure, 0),
+        k_r0=0,
+        E_kr=0,
+        k_d0=k_d,
+        E_kd=0,
+        subdomain=right,
+    )
+
+    my_model.boundary_conditions = [surface_reaction_hh]
+
+    H_flux_right = F.SurfaceFlux(H, right)
+    my_model.exports = [H_flux_right]
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=5, transient=True)
+
+    my_model.settings.stepsize = 0.1
+
+    my_model.initialise()
+    my_model.run()
+
+    flux_as_array = np.array(H_flux_right.data)
+    time_as_array = np.array(H_flux_right.t)
+
+    expected_flux_before_pressure = 0
+    computed_flux_before_pressure = flux_as_array[time_as_array <= t_pressure]
+    assert np.allclose(computed_flux_before_pressure, expected_flux_before_pressure)
+
+    expected_flux_after_pressure = -2 * k_d * pressure
+    computed_flux_after_pressure = flux_as_array[time_as_array > t_pressure]
+    assert np.allclose(
+        computed_flux_after_pressure, expected_flux_after_pressure, rtol=1e-2
     )
