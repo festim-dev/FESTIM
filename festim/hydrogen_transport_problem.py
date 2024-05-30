@@ -6,7 +6,7 @@ import basix.ufl
 import ufl
 from mpi4py import MPI
 import numpy as np
-import tqdm.autonotebook
+import tqdm.auto as tqdm
 import festim as F
 
 from dolfinx.mesh import meshtags
@@ -81,7 +81,7 @@ class HydrogenTransportProblem:
         >>> my_model.subdomains = [F.Subdomain(...)]
         >>> my_model.species = [F.Species(name="H"), F.Species(name="Trap")]
         >>> my_model.temperature = 500
-        >>> my_model.sources = [F.Source(...)]
+        >>> my_model.sources = [F.ParticleSource(...)]
         >>> my_model.boundary_conditions = [F.BoundaryCondition(...)]
         >>> my_model.initialise()
 
@@ -248,6 +248,7 @@ class HydrogenTransportProblem:
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
+        self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
@@ -580,20 +581,24 @@ class HydrogenTransportProblem:
     def create_source_values_fenics(self):
         """For each source create the value_fenics"""
         for source in self.sources:
-            # create value_fenics for all F.Source objects
-            if isinstance(source, F.Source):
-                function_space_value = None
-                if callable(source.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = source.species.sub_function_space
-                    else:
-                        function_space_value = source.species.collapsed_function_space
+            # create value_fenics for all F.ParticleSource objects
+            if isinstance(source, F.ParticleSource):
 
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
-                    function_space=function_space_value,
+                    t=self.t,
+                )
+
+    def create_flux_values_fenics(self):
+        """For each particle flux create the value_fenics"""
+        for bc in self.boundary_conditions:
+            # create value_fenics for all F.ParticleFluxBC objects
+            if isinstance(bc, F.ParticleFluxBC):
+
+                bc.create_value_fenics(
+                    mesh=self.mesh.mesh,
+                    temperature=self.temperature_fenics,
                     t=self.t,
                 )
 
@@ -655,20 +660,14 @@ class HydrogenTransportProblem:
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
         for reaction in self.reactions:
-            # reactant 1
-            if isinstance(reaction.reactant1, F.Species):
-                self.formulation += (
-                    reaction.reaction_term(self.temperature_fenics)
-                    * reaction.reactant1.test_function
-                    * self.dx(reaction.volume.id)
-                )
-            # reactant 2
-            if isinstance(reaction.reactant2, F.Species):
-                self.formulation += (
-                    reaction.reaction_term(self.temperature_fenics)
-                    * reaction.reactant2.test_function
-                    * self.dx(reaction.volume.id)
-                )
+            for reactant in reaction.reactant:
+                if isinstance(reactant, F.Species):
+                    self.formulation += (
+                        reaction.reaction_term(self.temperature_fenics)
+                        * reactant.test_function
+                        * self.dx(reaction.volume.id)
+                    )
+
             # product
             if isinstance(reaction.product, list):
                 products = reaction.product
@@ -689,11 +688,13 @@ class HydrogenTransportProblem:
             )
 
         # add fluxes
-        # TODO implement this
-        # for bc in self.boundary_conditions:
-        #     pass
-        #     if bc.species == spe and bc.type != "dirichlet":
-        #         formulation += bc * v * self.ds
+        for bc in self.boundary_conditions:
+            if isinstance(bc, F.ParticleFluxBC):
+                self.formulation -= (
+                    bc.value_fenics
+                    * bc.species.test_function
+                    * self.ds(bc.subdomain.id)
+                )
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
@@ -730,13 +731,14 @@ class HydrogenTransportProblem:
 
         if self.settings.transient:
             # Solve transient
-            self.progress = tqdm.autonotebook.tqdm(
+            self.progress = tqdm.tqdm(
                 desc="Solving H transport problem",
                 total=self.settings.final_time,
                 unit_scale=True,
             )
             while self.t.value < self.settings.final_time:
                 self.iterate()
+            self.progress.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
             self.solver.solve(self.u)

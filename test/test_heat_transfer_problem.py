@@ -560,3 +560,50 @@ def test_adaptive_timestepping_shrinks():
         assert my_model.dt.value < previous_value
 
         previous_value = float(my_model.dt)
+
+
+@pytest.mark.parametrize(
+    "bc_value, expected_values",
+    [
+        (lambda t: t, [1.0, 2.0, 3.0]),
+        (lambda t: 1.0 + t, [2.0, 3.0, 4.0]),
+        (lambda x, t: 1.0 + x[0] + t, [6.0, 7.0, 8.0]),
+        (lambda T, t: T + 2 * t, [12.0, 14.0, 16.0]),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.5), 100.0 + x[0], 0.0),
+            [104.0, 0.0, 0.0],
+        ),
+    ],
+)
+def test_update_time_dependent_values_HeatFluxBC(bc_value, expected_values):
+    """Test that time dependent fluxes are updated at each time step,
+    and match an expected value"""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    surface = F.SurfaceSubdomain1D(id=2, x=0)
+
+    my_model = F.HeatTransferProblem(mesh=test_mesh, subdomains=[my_vol, surface])
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    dt = fem.Constant(test_mesh.mesh, 1.0)
+
+    my_bc = F.HeatFluxBC(subdomain=surface, value=bc_value)
+    my_model.boundary_conditions = [my_bc]
+
+    my_model.define_function_space()
+
+    # dummy contant value to test temperature depedence
+    my_model.u = F.as_fenics_constant(value=10, mesh=test_mesh.mesh)
+
+    my_model.define_meshtags_and_measures()
+    my_model.create_initial_conditions()
+    my_model.create_flux_values_fenics()
+
+    for i in range(3):
+        # RUN
+        my_model.t.value += dt.value
+        my_model.update_time_dependent_values()
+
+        # TEST
+        if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.boundary_conditions[0].value_fenics)
+            assert np.isclose(computed_value, expected_values[i])

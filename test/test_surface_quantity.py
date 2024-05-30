@@ -43,7 +43,7 @@ def test_surface_flux_export_compute():
     my_export.D = D
 
     # RUN
-    my_export.compute(n=my_mesh.n, ds=ds)
+    my_export.compute(ds=ds)
 
     # TEST
     # flux = -D grad(c)_ \cdot n = -D dc/dx = -D * 4 * x

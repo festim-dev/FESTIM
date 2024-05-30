@@ -26,6 +26,7 @@ from .boundary_conditions.dirichlet_bc import (
 )
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .boundary_conditions.henrys_bc import HenrysBC
+from .boundary_conditions.flux_bc import FluxBCBase, ParticleFluxBC, HeatFluxBC
 
 from .material import Material
 
@@ -40,7 +41,7 @@ from .initial_condition import InitialCondition, InitialTemperature
 
 from .settings import Settings
 
-from .source import Source, ParticleSource, HeatSource
+from .source import ParticleSource, HeatSource, SourceBase
 
 from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
