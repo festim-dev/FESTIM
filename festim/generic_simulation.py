@@ -253,6 +253,8 @@ class Simulation:
             raise AttributeError("dt must be None in steady state simulations")
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
+        if not self.T:
+            raise AttributeError("Temperature is not defined")
 
         # initialise dt
         if self.settings.transient:
