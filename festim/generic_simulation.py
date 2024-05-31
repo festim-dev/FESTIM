@@ -25,7 +25,7 @@ class Simulation:
             None.
         settings (festim.Settings, optional): The model's settings.
             Defaults to None.
-        temperature (festim.Temperature, optional): The model's
+        temperature (int, float, festim.Temperature, optional): The model's
             temperature. Can be an expression or a heat transfer model.
             Defaults to None.
         initial_conditions (list of festim.InitialCondition, optional):
