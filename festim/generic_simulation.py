@@ -251,6 +251,10 @@ class Simulation:
         # check that dt attribute is None if the sim is steady state
         if not self.settings.transient and self.dt is not None:
             raise AttributeError("dt must be None in steady state simulations")
+        if self.settings.transient and self.settings.final_time is None:
+            raise AttributeError(
+                "final_time argument must be provided to settings in transient simulations"
+            )
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
 
