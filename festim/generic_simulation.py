@@ -257,6 +257,8 @@ class Simulation:
             )
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
+        if not self.T:
+            raise AttributeError("Temperature is not defined")
 
         # initialise dt
         if self.settings.transient:
@@ -315,6 +317,7 @@ class Simulation:
                 festim.SurfaceFlux,
                 festim.AverageSurface,
                 festim.AverageVolume,
+                festim.TotalVolume,
             ]
             + all_types_quantities,
             "cylindrical": [festim.SurfaceFluxCylindrical] + all_types_quantities,

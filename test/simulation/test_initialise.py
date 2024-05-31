@@ -147,3 +147,24 @@ def test_cartesian_and_surface_flux_warning(quantity, sys):
     # test
     with pytest.warns(UserWarning, match=f"may not work as intended for {sys} meshes"):
         my_model.initialise()
+
+
+def test_error_is_raised_when_no_temp():
+    """
+    Creates a Simulation object and checks that an AttributeError is raised
+    when .initialise() is called without a Temperature object defined
+    """
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices([0, 1, 2, 3])
+
+    my_model.materials = F.Material(D_0=1, E_D=0, id=1)
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+
+    with pytest.raises(AttributeError, match="Temperature is not defined"):
+        my_model.initialise()
