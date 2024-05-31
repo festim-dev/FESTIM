@@ -63,7 +63,6 @@ class VolumeQuantity:
         then append the time and value to the file"""
 
         if not os.path.isfile(self.filename):
-
             if self.filename is not None:
                 if self._first_time_export:
                     header = ["t(s)", f"{self.title}"]
