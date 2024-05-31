@@ -164,6 +164,19 @@ class Simulation:
                 "accepted types for exports are list, festim.Export or festim.Exports"
             )
 
+    @property
+    def T(self):
+        return self._T
+
+    @T.setter
+    def T(self, value):
+        if isinstance(value, festim.Temperature):
+            self._T = value
+        elif value is None:
+            self._T = value
+        elif isinstance(value, (int, float)):
+            self._T = festim.Temperature(value)
+
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
         (self.mobile, self.T, or traps)
@@ -253,6 +266,7 @@ class Simulation:
             raise AttributeError("dt must be None in steady state simulations")
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
+        print(self.T)
         if not self.T:
             raise AttributeError("Temperature is not defined")
 
