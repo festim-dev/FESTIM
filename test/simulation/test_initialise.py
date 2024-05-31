@@ -149,6 +149,29 @@ def test_cartesian_and_surface_flux_warning(quantity, sys):
         my_model.initialise()
 
 
+@pytest.mark.parametrize("value", [100, 0, 100.0])
+def test_initialise_temp_as_number(value):
+    """
+    Creates a Simulation object and checks that the T attribute
+    can be given as an int or float
+    """
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3])
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = value
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False
+    )
+
+    # run
+    my_model.initialise()
+
+    # test
+    assert isinstance(my_model.T, F.Temperature)
+    assert my_model.T.value == value
+
+
 def test_error_is_raised_when_no_temp():
     """
     Creates a Simulation object and checks that an AttributeError is raised
