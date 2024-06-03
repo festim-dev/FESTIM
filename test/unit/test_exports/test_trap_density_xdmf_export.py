@@ -133,6 +133,7 @@ def test_trap_density_xdmf_export_traps_materials_mixed(tmpdir):
         trap=trap_1,
         label="density1",
         filename=str(Path(density_file)),
+        checkpoint=False,
     )
     my_exports = festim.Exports([my_export])
     my_model.exports = my_exports
