@@ -189,7 +189,7 @@ The data can be accessed in three different ways:
 
     print(flux_surf_3.t)
     print(flux_surf_3.data)
-    print(my_derived_quantities.derived_quantities[2].data)
+    print(my_derived_quantities[2].data)
 
 - export and read from a .csv file:
 
