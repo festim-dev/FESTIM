@@ -96,6 +96,12 @@ html_theme_options = {
             "url": "https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g",
             "icon": "fa-brands fa-slack",
         },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/FESTIM/",
+            "icon": "https://img.shields.io/pypi/dw/festim",
+            "type": "url",
+        },
     ],
 }
 
