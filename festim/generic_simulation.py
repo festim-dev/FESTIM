@@ -322,7 +322,7 @@ class Simulation:
 
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
-                for q in export.derived_quantities:
+                for q in export:
                     if not isinstance(q, tuple(allowed_quantities[self.mesh.type])):
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"
