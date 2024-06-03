@@ -4,13 +4,11 @@ import fenics as f
 
 class Temperature:
     """
-    Description of Temperature
+    Class for Temperature in FESTIM
 
     Args:
         value (sp.Add, int, float, optional): The value of the temperature.
-            Only needed if type is not "expression". Defaults to None.
-        initial_value (sp.Add, int, float, optional): The initial value.
-            Only needed if type is not "expression". Defaults to None.
+            Defaults to None.
 
     Attributes:
         T (fenics.Function): the function attributed with temperature
@@ -18,10 +16,14 @@ class Temperature:
         value (sp.Add, int, float): the expression of temperature
         expression (fenics.Expression): the expression of temperature as a
             fenics object
+
+    Usage:
+        >>> import festim as F
+        >>> my_model = F.Simulation(...)
+        >>> my_model.T = F.Temperature(300 + 10 * F.x + F.t)
     """
 
     def __init__(self, value=None) -> None:
-        # self.type = type
         self.T = None
         self.T_n = None
         self.value = value
