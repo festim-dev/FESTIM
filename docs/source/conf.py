@@ -87,9 +87,14 @@ html_theme_options = {
     "path_to_docs": "./docs/source",
     "icon_links": [
         {
-            "name": "Community Forum",
+            "name": "Support Forum",
             "url": "https://festim.discourse.group/",
             "icon": "fa-brands fa-discourse",
+        },
+        {
+            "name": "Slack",
+            "url": "https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g",
+            "icon": "fa-brands fa-slack",
         },
     ],
 }
