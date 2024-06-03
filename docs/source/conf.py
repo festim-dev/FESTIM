@@ -87,6 +87,12 @@ html_theme_options = {
     "path_to_docs": "./docs/source",
     "icon_links": [
         {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/FESTIM/",
+            "icon": "https://img.shields.io/pypi/dw/festim",
+            "type": "url",
+        },
+        {
             "name": "Support Forum",
             "url": "https://festim.discourse.group/",
             "icon": "fa-brands fa-discourse",
@@ -95,12 +101,6 @@ html_theme_options = {
             "name": "Slack",
             "url": "https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g",
             "icon": "fa-brands fa-slack",
-        },
-        {
-            "name": "PyPI",
-            "url": "https://pypi.org/project/FESTIM/",
-            "icon": "https://img.shields.io/pypi/dw/festim",
-            "type": "url",
         },
     ],
 }
