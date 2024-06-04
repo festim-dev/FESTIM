@@ -1,6 +1,7 @@
 import festim as F
 from pathlib import Path
 import pytest
+import sympy as sp
 
 
 def test_initialise_changes_nb_of_sources():
@@ -149,11 +150,24 @@ def test_cartesian_and_surface_flux_warning(quantity, sys):
         my_model.initialise()
 
 
-@pytest.mark.parametrize("value", [100, 0, 100.0])
-def test_initialise_temp_as_number(value):
+@pytest.mark.parametrize(
+    "value",
+    [
+        100,
+        0,
+        100.0,
+        0.0,
+        100 + 1 * F.x,
+        0 + 1 * F.x,
+        F.x,
+        F.t,
+        sp.Piecewise((400, F.t < 10), (300, True)),
+    ],
+)
+def test_initialise_temp_as_number_or_sympy(value):
     """
     Creates a Simulation object and checks that the T attribute
-    can be given as an int or float
+    can be given as an int, a float or a sympy Expr
     """
     # build
     my_model = F.Simulation()

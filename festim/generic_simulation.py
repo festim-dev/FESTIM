@@ -2,6 +2,7 @@ import festim
 from festim.h_transport_problem import HTransportProblem
 from fenics import *
 import numpy as np
+import sympy as sp
 import warnings
 
 
@@ -25,7 +26,7 @@ class Simulation:
             None.
         settings (festim.Settings, optional): The model's settings.
             Defaults to None.
-        temperature (int, float, festim.Temperature, optional): The model's
+        temperature (int, float, sympy.Expr, festim.Temperature, optional): The model's
             temperature. Can be an expression or a heat transfer model.
             Defaults to None.
         initial_conditions (list of festim.InitialCondition, optional):
@@ -174,7 +175,7 @@ class Simulation:
             self._T = value
         elif value is None:
             self._T = value
-        elif isinstance(value, (int, float)):
+        elif isinstance(value, (int, float, sp.Expr)):
             self._T = festim.Temperature(value)
 
     def attribute_source_terms(self):
