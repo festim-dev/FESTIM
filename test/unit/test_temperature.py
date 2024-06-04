@@ -69,9 +69,7 @@ def test_formulation_heat_transfer():
     bc1 = festim.DirichletBC(surfaces=[1], value=u, field="T")
     bc2 = festim.FluxBC(surfaces=[2], value=2, field="T")
 
-    my_temp = festim.HeatTransferProblem(
-        transient=True, initial_condition=festim.InitialCondition(field="T", value=0)
-    )
+    my_temp = festim.HeatTransferProblem(transient=True, initial_condition=0)
     my_temp.boundary_conditions = [bc1, bc2]
     my_temp.sources = [festim.Source(-4, volume=[1], field="T")]
     my_temp.create_functions(my_mats, my_mesh, dt=dt)
