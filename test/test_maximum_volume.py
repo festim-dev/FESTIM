@@ -34,7 +34,7 @@ def test_maximum_volume_compute():
     my_export = F.MaximumVolume(field=my_species, volume=dummy_volume)
 
     # RUN
-    my_export.compute(dx=dx)
+    my_export.compute()
 
     # TEST
     expected_value = 27

@@ -1,9 +1,11 @@
 import festim as F
 import numpy as np
+import ufl
+from dolfinx.mesh import meshtags
 from dolfinx import fem
 
 
-def test_total_surface_compmute():
+def test_total_surface_compute():
     """Test that the total surface export computes the correct value"""
 
     # BUILD
@@ -11,6 +13,18 @@ def test_total_surface_compmute():
     D = 1.5
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=6)
+
+    # define mesh ds measure
+    facet_indices = np.array(
+        dummy_surface.locate_boundary_facet_indices(my_mesh.mesh, 0),
+        dtype=np.int32,
+    )
+    tags_facets = np.array(
+        [1],
+        dtype=np.int32,
+    )
+    facet_meshtags = meshtags(my_mesh.mesh, 0, facet_indices, tags_facets)
+    ds = ufl.Measure("ds", domain=my_mesh.mesh, subdomain_data=facet_meshtags)
 
     # give function to species
     V = fem.functionspace(my_mesh.mesh, ("CG", 1))
@@ -24,7 +38,7 @@ def test_total_surface_compmute():
     my_export.D = D
 
     # RUN
-    my_export.compute()
+    my_export.compute(ds)
 
     # TEST
     expected_value = 15
