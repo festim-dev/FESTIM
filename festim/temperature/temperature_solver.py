@@ -8,7 +8,7 @@ class HeatTransferProblem(festim.Temperature):
     Args:
         transient (bool, optional): If True, a transient simulation will
             be run. Defaults to True.
-        initial_condition (festim.InitialCondition, optional): The initial condition.
+        initial_condition (int, float, sp.Expr, festim.InitialCondition, optional): The initial condition.
             Only needed if transient is True.
         absolute_tolerance (float, optional): the absolute tolerance of the newton
             solver. Defaults to 1e-03
@@ -55,6 +55,17 @@ class HeatTransferProblem(festim.Temperature):
         self.sources = []
         self.boundary_conditions = []
         self.sub_expressions = []
+
+    @property
+    def initial_condition(self):
+        return self._initial_condition
+
+    @initial_condition.setter
+    def initial_condition(self, value):
+        if isinstance(value, (int, float, sp.Expr)):
+            self._initial_condition = festim.InitialCondition(field="T", value=value)
+        else:
+            self._initial_condition = value
 
     # TODO rename initialise?
     def create_functions(self, materials, mesh, dt=None):
