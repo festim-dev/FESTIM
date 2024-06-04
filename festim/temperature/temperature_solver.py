@@ -73,7 +73,10 @@ class HeatTransferProblem(festim.Temperature):
         self.T = f.Function(V, name="T")
         self.T_n = f.Function(V, name="T_n")
         self.v_T = f.TestFunction(V)
-
+        if self.transient and self.initial_condition is None:
+            raise AttributeError(
+                "Initial condition is required for transient simulation"
+            )
         if self.transient and self.initial_condition:
             if isinstance(self.initial_condition.value, str):
                 if self.initial_condition.value.endswith(".xdmf"):
