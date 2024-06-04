@@ -168,3 +168,29 @@ def test_error_is_raised_when_no_temp():
 
     with pytest.raises(AttributeError, match="Temperature is not defined"):
         my_model.initialise()
+
+
+def test_error_raised_when_no_final_time():
+    """
+    Creates a Simulation object and checks that a AttributeError is raised
+    when .initialise() is called without a final_time argument
+    """
+
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices([0, 1, 2, 3])
+
+    my_model.materials = F.Material(D_0=1, E_D=0, id=1)
+
+    my_model.T = F.Temperature(500)
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=True,
+    )
+
+    my_model.dt = F.Stepsize(1)
+
+    with pytest.raises(AttributeError, match="final_time argument must be provided"):
+        my_model.initialise()
