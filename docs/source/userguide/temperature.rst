@@ -68,6 +68,17 @@ For a steady-state problem:
 
 :ref:`Boundary conditions<boundary conditions>` and :ref:`heat sources<sources>` can then be applied to this heat transfer problem.
 
+For transient problems, an initial condition is required:
+
+.. code-block:: python
+
+    model.T = HeatTransferProblem(
+        transient=True,
+        initial_condition=300,
+    )
+
+Initial conditions can be given as float, sympy expressions or a :class:`festim.InitialCondition` instance in order to read from a XDMF file (see :ref:`Initial Conditions<Initial Conditions>` for more details).
+
 ----------------
 From a XDMF file
 ----------------
