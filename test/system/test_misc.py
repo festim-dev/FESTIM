@@ -77,6 +77,7 @@ def test_error_transient_without_stepsize():
         transient=True,
         absolute_tolerance=1e-10,
         relative_tolerance=1e-10,
+        final_time=10,
     )
 
     my_model.dt = None

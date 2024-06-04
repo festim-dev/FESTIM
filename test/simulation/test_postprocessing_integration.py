@@ -174,6 +174,7 @@ class TestPostProcessing:
         assert np.isclose(data[1][3], -1 * grad_T * lambda_x_0)
         assert np.isclose(data[1][4], -1 * grad_T * lambda_x_1 * -1)
 
+    @pytest.mark.filterwarnings("ignore:in 1D")
     def test_performance_xdmf_export_every_N_iterations(self, my_sim, tmpdir):
         """Runs run_post_processing several times with different export.mode
         values and checks that the xdmf
@@ -215,6 +216,7 @@ class TestPostProcessing:
                 for t_expected, t in zip(expected_times, times):
                     assert t_expected == pytest.approx(float(t))
 
+    @pytest.mark.filterwarnings("ignore:in 1D")
     def test_xdmf_export_only_last_timestep(self, my_sim, tmpdir):
         """Runs run_post_processing with mode="last":
         - when the time is not the final time and checks that nothing has been
