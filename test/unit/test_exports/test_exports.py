@@ -1,5 +1,6 @@
 import festim
 import pytest
+import numpy as np
 
 
 class TestExportsMethods:
@@ -139,3 +140,39 @@ def test_instanciate_with_no_elements():
     """
     # define exports
     festim.Exports()
+
+
+def test_show_units_true_with_retention():
+    """Test to catch the bug in issue #765"""
+    my_model = festim.Simulation()
+    my_model.mesh = festim.MeshFromVertices(np.linspace(0, 1, num=200))
+
+    my_model.materials = festim.Material(id=1, D_0=1, E_D=0)
+
+    my_model.traps = festim.Trap(
+        k_0=1,
+        E_k=0,
+        p_0=1,
+        E_p=0,
+        density=1.3e-3,
+        materials=my_model.materials[0],
+    )
+
+    my_model.T = festim.Temperature(500)
+
+    my_model.settings = festim.Settings(
+        absolute_tolerance=1e10, relative_tolerance=1e-09, transient=False
+    )
+
+    my_model.exports = [
+        festim.DerivedQuantities(
+            [
+                festim.TotalVolume("retention", volume=1),
+                festim.TotalSurface("retention", surface=1),
+            ],
+            show_units=True,
+        )
+    ]
+
+    my_model.initialise()
+    my_model.run()
