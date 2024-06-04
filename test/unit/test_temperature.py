@@ -131,6 +131,30 @@ def test_heat_transfer_create_functions_transient(tmpdir):
     assert error_L2 < 1e-9
 
 
+def test_temperature_with_expr():
+    """
+    Test for the InitialCondition.create_functions() with a sympy expression
+    and checks that the error norm between the expected and computed
+    functions is below a certain threshold.
+    """
+    # create function to be comapared
+    mesh = fenics.UnitSquareMesh(10, 10)
+    # TempFromXDMF needs a festim mesh
+    my_mesh = festim.Mesh()
+    my_mesh.dx = fenics.dx
+    my_mesh.ds = fenics.ds
+    my_mesh.mesh = mesh
+    my_mats = festim.Materials(
+        [festim.Material(id=1, D_0=1, E_D=0, thermal_cond=1, heat_capacity=1, rho=1)]
+    )
+    my_T = festim.HeatTransferProblem(transient=True, initial_condition=300 + festim.x)
+    my_T.create_functions(mesh=my_mesh, materials=my_mats, dt=festim.Stepsize(2))
+
+    expected_expr = fenics.Expression("300 + x[0]", degree=2)
+    error_L2 = fenics.errornorm(expected_expr, my_T.T_n, "L2")
+    assert error_L2 < 1e-9
+
+
 def test_temperature_from_xdmf_create_functions(tmpdir):
     """Test for the TemperatureFromXDMF.create_functions().
     Creates a function, writes it to an XDMF file, then a TemperatureFromXDMF
