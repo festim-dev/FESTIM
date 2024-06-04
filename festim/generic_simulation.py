@@ -269,6 +269,10 @@ class Simulation:
         # check that dt attribute is None if the sim is steady state
         if not self.settings.transient and self.dt is not None:
             raise AttributeError("dt must be None in steady state simulations")
+        if self.settings.transient and self.settings.final_time is None:
+            raise AttributeError(
+                "final_time argument must be provided to settings in transient simulations"
+            )
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
         if not self.T:
@@ -340,7 +344,7 @@ class Simulation:
 
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
-                for q in export.derived_quantities:
+                for q in export:
                     if not isinstance(q, tuple(allowed_quantities[self.mesh.type])):
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"
