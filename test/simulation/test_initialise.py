@@ -205,3 +205,18 @@ def test_error_is_raised_when_no_temp():
 
     with pytest.raises(AttributeError, match="Temperature is not defined"):
         my_model.initialise()
+
+
+@pytest.mark.parametrize("value", ["coucou", [0, 0]])
+def test_wrong_type_temperature(value):
+    """
+    Creates a Simulation object and checks that a TypeError is raised
+    when the T attribute is given a value of the wrong type
+    """
+    my_model = F.Simulation()
+
+    with pytest.raises(
+        TypeError,
+        match="accepted types for T attribute are int, float, sympy.Expr or festim.Temperature",
+    ):
+        my_model.T = value

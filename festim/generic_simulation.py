@@ -177,6 +177,10 @@ class Simulation:
             self._T = value
         elif isinstance(value, (int, float, sp.Expr)):
             self._T = festim.Temperature(value)
+        else:
+            raise TypeError(
+                "accepted types for T attribute are int, float, sympy.Expr or festim.Temperature"
+            )
 
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
