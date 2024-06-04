@@ -331,3 +331,23 @@ def test_materials_setter():
     test_materials = F.Materials([])
     my_model.materials = test_materials
     assert my_model.materials is test_materials
+
+
+def test_error_raised_when_no_IC_heat_transfer():
+    """
+    Checks that an error is raised when no initial condition is provided for
+    transient heat transfer simulations
+    """
+    my_model = F.Simulation()
+
+    my_model.T = F.HeatTransferProblem(transient=True, initial_condition=None)
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1, 10))
+    my_model.materials = F.Material(1, 1, 0.1)
+    my_model.settings = F.Settings(1e-10, 1e-10, final_time=1e-7)
+    my_model.dt = F.Stepsize(1e-9)
+
+    with pytest.raises(
+        AttributeError,
+        match="Initial condition is required for transient heat transfer simulations",
+    ):
+        my_model.initialise()
