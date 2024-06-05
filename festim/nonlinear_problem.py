@@ -3,7 +3,7 @@ import fenics as f
 
 class Problem(f.NonlinearProblem):
     """
-    Class to set up the nonlinear variational problem (F(u, v)=0) to solve
+    Class to set up a nonlinear variational problem (F(u, v)=0) to solve
     by the Newton method based on the form of the variational problem, the Jacobian
     form of the variational problem, and the boundary conditions
 

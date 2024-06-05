@@ -1,5 +1,6 @@
 from fenics import *
 import festim
+import warnings
 
 
 class HTransportProblem:
@@ -44,6 +45,23 @@ class HTransportProblem:
         self.V = None
         self.V_CG1 = None
         self.expressions = []
+
+    @property
+    def newton_solver(self):
+        return self._newton_solver
+
+    @newton_solver.setter
+    def newton_solver(self, value):
+        if value is None:
+            self._newton_solver = value
+        elif isinstance(value, NewtonSolver):
+            if self._newton_solver:
+                warnings.warn(
+                    "Settings for the Newton solver will be overwritten", UserWarning
+                )
+            self._newton_solver = value
+        else:
+            raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
 
     def initialise(self, mesh, materials, dt=None):
         """Assigns BCs, create suitable function space, initialise

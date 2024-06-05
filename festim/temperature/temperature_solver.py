@@ -1,6 +1,7 @@
 import festim
 import fenics as f
 import sympy as sp
+import warnings
 
 
 class HeatTransferProblem(festim.Temperature):
@@ -62,6 +63,23 @@ class HeatTransferProblem(festim.Temperature):
         self.boundary_conditions = []
         self.sub_expressions = []
         self.newton_solver = None
+
+    @property
+    def newton_solver(self):
+        return self._newton_solver
+
+    @newton_solver.setter
+    def newton_solver(self, value):
+        if value is None:
+            self._newton_solver = value
+        elif isinstance(value, f.NewtonSolver):
+            if self._newton_solver:
+                warnings.warn(
+                    "Settings for the Newton solver will be overwritten", UserWarning
+                )
+            self._newton_solver = value
+        else:
+            raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
 
     # TODO rename initialise?
     def create_functions(self, materials, mesh, dt=None):

@@ -1,5 +1,6 @@
 from festim import Trap, as_constant_or_expression
 from fenics import NewtonSolver, MPI
+import warnings
 
 
 class ExtrinsicTrapBase(Trap):
@@ -54,6 +55,23 @@ class ExtrinsicTrapBase(Trap):
             setattr(self, name, as_constant_or_expression(val))
         self.density_previous_solution = None
         self.density_test_function = None
+
+    @property
+    def newton_solver(self):
+        return self._newton_solver
+
+    @newton_solver.setter
+    def newton_solver(self, value):
+        if value is None:
+            self._newton_solver = value
+        elif isinstance(value, NewtonSolver):
+            if self._newton_solver:
+                warnings.warn(
+                    "Settings for the Newton solver will be overwritten", UserWarning
+                )
+            self._newton_solver = value
+        else:
+            raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
 
     def define_newton_solver(self):
         """Creates the Newton solver and sets its parameters"""
