@@ -102,6 +102,7 @@ from .materials.materials import Materials
 from .concentration.concentration import Concentration
 from .initial_condition import InitialCondition
 from .concentration.mobile import Mobile
+from .nonlinear_problem import Problem
 from .concentration.theta import Theta
 
 from .concentration.traps.trap import Trap

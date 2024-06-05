@@ -1,4 +1,5 @@
 import festim as F
+import fenics as f
 import numpy as np
 import pytest
 import os
@@ -331,6 +332,173 @@ def test_materials_setter():
     test_materials = F.Materials([])
     my_model.materials = test_materials
     assert my_model.materials is test_materials
+
+
+class TestFestimProblem:
+    """Tests the methods of the festim.Problem class"""
+
+    # define the FESTIM problem
+    mesh = f.UnitIntervalMesh(8)
+    V = f.FunctionSpace(mesh, "CG", 1)
+    u = f.Function(V)
+    v = f.TestFunction(V)
+    s = u * v * f.dx + v * f.dx
+    J = f.derivative(s, u)
+    problem = F.Problem(J, s, [])
+
+    # define the fenics assembler used in festim.Problem
+    assembler = f.SystemAssembler(J, s, [])
+    x = f.PETScVector()
+
+    def test_F(self):
+        """
+        Creates two epty matrices and checks
+        that the festim.Problem.J properly assembles the RHS of Ax=b
+        """
+        b1 = f.PETScVector()
+        b2 = f.PETScVector()
+
+        self.problem.F(b1, self.x)
+        self.assembler.assemble(b2, self.x)
+
+        assert (b1 == b2).all()
+
+    def test_J(self):
+        """
+        Creates two epty matrices and checks
+        that the festim.Problem.J properly assembles the LHS of Ax=b
+        """
+        A1 = f.PETScMatrix()
+        A2 = f.PETScMatrix()
+
+        self.problem.J(A1, self.x)
+        self.assembler.assemble(A2)
+
+        assert (A1.array() == A2.array()).all()
+
+
+class TestWarningsCustomSolver:
+    """
+    Creates a simulation object and checks that a TypeError (UserWarning) is raised
+    when the newton_solver attribute is given a value of the wrong type (solver is overwritten)
+    """
+
+    def sim(self):
+        """Defines a model"""
+        my_sim = F.Simulation()
+        my_sim.mesh = F.MeshFromVertices([1, 2, 3])
+        my_mat = F.Materials(
+            [F.Material(id=1, D_0=1, E_D=0, thermal_cond=1, heat_capacity=1, rho=1)]
+        )
+        my_sim.materials = my_mat
+        my_sim.T = F.HeatTransferProblem(
+            transient=True, initial_condition=F.InitialCondition(field="T", value=1)
+        )
+        my_sim.traps = F.ExtrinsicTrap(
+            1,
+            1,
+            1,
+            1,
+            my_mat,
+            phi_0=1,
+            n_amax=2,
+            n_bmax=2,
+            eta_a=3,
+            eta_b=4,
+            f_a=5,
+            f_b=6,
+        )
+        # add source to the HeatTransferProblem
+        my_sim.settings = F.Settings(
+            transient=True,
+            absolute_tolerance=1e-10,
+            relative_tolerance=1e-10,
+            final_time=1,
+        )
+        my_sim.dt = F.Stepsize(1)
+        return my_sim
+
+    @pytest.mark.parametrize("value", ["coucou", [0, 0], -1.0])
+    def test_wrong_type_solver_h_transport(self, value):
+        """
+        Checks that a TypeError is raised when the newton_solver attribute
+        of the HTransportProblem class is given a value of the wrong type
+        """
+        problem = self.sim()
+        problem.initialise()
+
+        with pytest.raises(
+            TypeError,
+            match="accepted type for newton_solver is fenics.NewtonSolver",
+        ):
+            problem.h_transport_problem.newton_solver = value
+
+    @pytest.mark.parametrize("value", ["coucou", [0, 0], -1.0])
+    def test_wrong_type_solver_heat_transport(self, value):
+        """
+        Checks that a TypeError is raised when the newton_solver attribute
+        of the HeatTransferProblem class is given a value of the wrong type
+        """
+        problem = self.sim()
+
+        with pytest.raises(
+            TypeError,
+            match="accepted type for newton_solver is fenics.NewtonSolver",
+        ):
+            problem.T.newton_solver = value
+
+    @pytest.mark.parametrize("value", ["coucou", [0, 0], -1.0])
+    def test_wrong_type_solver_ex_trap(self, value):
+        """
+        Checks that a TypeError is raised when the newton_solver attribute
+        of the ExtrinsicTrap class is given a value of the wrong type
+        """
+        problem = self.sim()
+
+        with pytest.raises(
+            TypeError,
+            match="accepted type for newton_solver is fenics.NewtonSolver",
+        ):
+            problem.traps[0].newton_solver = value
+
+    def test_warn_solver_h_transport(self, capsys):
+        """
+        Checks that a warning is raised when the newton_solver attribute
+        of the HTransportProblem class is overwritten
+        """
+        problem = self.sim()
+        problem.initialise()
+        problem.h_transport_problem.newton_solver = f.NewtonSolver()
+        assert (
+            "Settings for the Newton solver will be overwritten"
+            in capsys.readouterr().out
+        )
+
+    def test_warn_solver_heat_transport(self, capsys):
+        """
+        Checks that a warning is raised when the newton_solver attribute
+        of the HeatTransferProblem class is overwritten
+        """
+        problem = self.sim()
+        problem.initialise()
+        problem.T.newton_solver = f.NewtonSolver()
+        assert (
+            "Settings for the Newton solver will be overwritten"
+            in capsys.readouterr().out
+        )
+
+    def test_warn_solver_ex_trap(self, capsys):
+        """
+        Checks that a warning is raised when the newton_solver attribute
+        of the ExtrinsicTrap class is overwritten
+        """
+        problem = self.sim()
+        problem.initialise()
+        problem.traps[0].newton_solver = f.NewtonSolver()
+        assert (
+            "Settings for the Newton solver will be overwritten"
+            in capsys.readouterr().out
+        )
 
 
 def test_error_raised_when_no_IC_heat_transfer():
