@@ -9,7 +9,7 @@ class HeatTransferProblem(festim.Temperature):
     Args:
         transient (bool, optional): If True, a transient simulation will
             be run. Defaults to True.
-        initial_condition (festim.InitialCondition, optional): The initial condition.
+        initial_condition (int, float, sp.Expr, festim.InitialCondition, optional): The initial condition.
             Only needed if transient is True.
         absolute_tolerance (float, optional): the absolute tolerance of the newton
             solver. Defaults to 1e-03
@@ -81,6 +81,17 @@ class HeatTransferProblem(festim.Temperature):
         else:
             raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
 
+    @property
+    def initial_condition(self):
+        return self._initial_condition
+
+    @initial_condition.setter
+    def initial_condition(self, value):
+        if isinstance(value, (int, float, sp.Expr)):
+            self._initial_condition = festim.InitialCondition(field="T", value=value)
+        else:
+            self._initial_condition = value
+
     # TODO rename initialise?
     def create_functions(self, materials, mesh, dt=None):
         """Creates functions self.T, self.T_n and test function self.v_T.
@@ -98,7 +109,10 @@ class HeatTransferProblem(festim.Temperature):
         self.T = f.Function(V, name="T")
         self.T_n = f.Function(V, name="T_n")
         self.v_T = f.TestFunction(V)
-
+        if self.transient and self.initial_condition is None:
+            raise AttributeError(
+                "Initial condition is required for transient heat transfer simulations"
+            )
         if self.transient and self.initial_condition:
             if isinstance(self.initial_condition.value, str):
                 if self.initial_condition.value.endswith(".xdmf"):

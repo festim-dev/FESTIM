@@ -3,7 +3,8 @@ Temperature
 ===========
 
 Definition of a temperature field or problem is essential for hydrogen transport 
-and FESTIM as a whole. 
+and FESTIM as a whole.
+Regardless of how you define the temperature of the problem, it is passed to the :code:`T` attribute of the :class:`festim.Simulation` object.
 
 ----------------------
 Analytical expressions
@@ -13,7 +14,7 @@ The temperature can be defined as a constant value in Kelvin (K):
 
 .. code-block:: python
 
-    my_temperature = Temperature(value=300)
+    my_temperature = 300
 
 
 Temperature can also be defined as an expression of time and/or space.
@@ -29,7 +30,7 @@ would be passed to FESTIM as:
 
     from festim import x, t
 
-    my_temp = Temperature(300+2*x+3*t)
+    my_temp = 300 + 2*x + 3*t
 
 More complex expressions can be expressed with sympy:
 
@@ -44,9 +45,16 @@ would be passed to FESTIM as:
     from festim import x, t
     import sympy as sp
 
-    my_temp = Temperature(sp.exp(x)*sp.sin(t))
+    my_temp = sp.exp(x) * sp.sin(t)
 
-For more details, see :class:`festim.Temperature`.
+Conditional expressions are also possible:
+
+.. code-block:: python
+
+    from festim import x, t
+    import sympy as sp
+
+    my_temp = sp.Piecewise((400, F.t < 10), (300, True))
 
 ---------------------------
 From a heat transfer solver
@@ -67,6 +75,17 @@ For a steady-state problem:
     my_temp = HeatTransferProblem(transient=False)
 
 :ref:`Boundary conditions<boundary conditions>` and :ref:`heat sources<sources>` can then be applied to this heat transfer problem.
+
+For transient problems, an initial condition is required:
+
+.. code-block:: python
+
+    model.T = HeatTransferProblem(
+        transient=True,
+        initial_condition=300,
+    )
+
+Initial conditions can be given as float, sympy expressions or a :class:`festim.InitialCondition` instance in order to read from a XDMF file (see :ref:`Initial Conditions<Initial Conditions>` for more details).
 
 ----------------
 From a XDMF file
