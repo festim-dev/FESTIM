@@ -503,7 +503,7 @@ class TestWarningsCustomSolver:
         ):
             problem.traps[0].newton_solver = f.NewtonSolver()
 
-            
+
 def test_error_raised_when_no_IC_heat_transfer():
     """
     Checks that an error is raised when no initial condition is provided for
