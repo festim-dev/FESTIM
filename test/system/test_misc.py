@@ -461,47 +461,44 @@ class TestWarningsCustomSolver:
         ):
             problem.traps[0].newton_solver = value
 
-    def test_warn_solver_h_transport(self):
+    def test_warn_solver_h_transport(self, capsys):
         """
         Checks that a warning is raised when the newton_solver attribute
         of the HTransportProblem class is overwritten
         """
         problem = self.sim()
         problem.initialise()
+        problem.h_transport_problem.newton_solver = f.NewtonSolver()
+        assert (
+            "Settings for the Newton solver will be overwritten"
+            in capsys.readouterr().out
+        )
 
-        with pytest.warns(
-            UserWarning,
-            match="Settings for the Newton solver will be overwritten",
-        ):
-            problem.h_transport_problem.newton_solver = f.NewtonSolver()
-
-    def test_warn_solver_heat_transport(self):
+    def test_warn_solver_heat_transport(self, capsys):
         """
         Checks that a warning is raised when the newton_solver attribute
         of the HeatTransferProblem class is overwritten
         """
         problem = self.sim()
         problem.initialise()
+        problem.T.newton_solver = f.NewtonSolver()
+        assert (
+            "Settings for the Newton solver will be overwritten"
+            in capsys.readouterr().out
+        )
 
-        with pytest.warns(
-            UserWarning,
-            match="Settings for the Newton solver will be overwritten",
-        ):
-            problem.T.newton_solver = f.NewtonSolver()
-
-    def test_warn_solver_ex_trap(self):
+    def test_warn_solver_ex_trap(self, capsys):
         """
         Checks that a warning is raised when the newton_solver attribute
         of the ExtrinsicTrap class is overwritten
         """
         problem = self.sim()
         problem.initialise()
-
-        with pytest.warns(
-            UserWarning,
-            match="Settings for the Newton solver will be overwritten",
-        ):
-            problem.traps[0].newton_solver = f.NewtonSolver()
+        problem.traps[0].newton_solver = f.NewtonSolver()
+        assert (
+            "Settings for the Newton solver will be overwritten"
+            in capsys.readouterr().out
+        )
 
 
 def test_error_raised_when_no_IC_heat_transfer():

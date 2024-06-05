@@ -56,9 +56,7 @@ class HTransportProblem:
             self._newton_solver = value
         elif isinstance(value, NewtonSolver):
             if self._newton_solver:
-                warnings.warn(
-                    "Settings for the Newton solver will be overwritten", UserWarning
-                )
+                print("Settings for the Newton solver will be overwritten")
             self._newton_solver = value
         else:
             raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
