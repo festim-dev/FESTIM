@@ -8,8 +8,8 @@ class Problem(f.NonlinearProblem):
     form of the variational problem, and the boundary conditions
 
     Args:
-        jacobian_form (ufl.Form): the Jacobian form of the variational problem
-        residual_form (ufl.Form): the form of the variational problem
+        J (ufl.Form): the Jacobian form of the variational problem
+        F (ufl.Form): the form of the variational problem
         bcs (list): list of fenics.DirichletBC
     """
 
