@@ -55,6 +55,147 @@ GMSH example
 
 The DOLFINx tutorial gives an `example <https://jorgensd.github.io/dolfinx-tutorial/chapter1/membrane_code.html#creating-the-mesh>`_ of mesh generation with gmsh.
 
+SALOME example
+--------------
+
+This is a step-by-step guide to meshing with `SALOME 9.12.0 <https://www.salome-platform.org/>`_.
+
+1. Open SALOME and create a new study.
+2. Activate the Geometry module
+
+.. image:: ../images/salome_guide_1.png
+
+3. Create a first square by clicking "Create rectangular face". Keep the default parameters. Click "Apply and Close"
+
+.. image:: ../images/salome_guide_2.png
+
+4. Repeat the operation to create a second square
+
+5. Translate the second square by clicking "Operations/Transformation/Translation"
+
+.. image:: ../images/salome_guide_3.png
+
+6. Make sure Face 2 is selected. Enter 100 for the Dx value. Click "Apply and Close"
+
+.. image:: ../images/salome_guide_4.png
+
+7. Create a compound by clicking "New Entity/Build/Compound" make sure Face_1 and Translation_1 are selected then click "Apply and Close".
+
+.. image:: ../images/salome_guide_5.png
+
+8. Create a group "New Entity/Group/Create group". In Shape Type, select the 2D surface. Name the group "left_volume". Make sure Compound_1 is selected.
+Click on the left square and click "Add" (2 should appear in the white window). Click "Apply and Close".
+
+.. image:: ../images/salome_guide_6.png
+
+9. Repeat the operation to create a group "right_volume" with the right square (12 should appear in the white window).
+
+10. Create another group "left_boundary" but this time in Shape Type select the 1D curve. Click on the left edge of the left square and click "Add". Click "Apply and Close".
+
+.. image:: ../images/salome_guide_7.png
+
+11. Repeat the operation to create a group "right_boundary" with the right edge of the right square. Your study should look like:
+
+.. image:: ../images/salome_guide_8.png
+
+12. Click on "Mesh" to activate the mesh module.
+
+.. image:: ../images/salome_guide_9.png
+
+13. Create a mesh by clicking "Mesh/Create Mesh".
+
+14. Make sure Compound_1 is selected in "Geometry". Under the 2D tab, select "NETGEN 1D-2D" as algorithm.
+
+.. image:: ../images/salome_guide_10.png
+
+15. Next to "Hypothesis" click on the gear symbol. Select "NETGEN 2D Simple Parameters". Click Ok. Click "Apply and Close".
+
+.. image:: ../images/salome_guide_11.png
+
+    In the Objet Browser, under Mesh_1 you should see Groups of Edges and Groups of Faces, containing left_boundary, right_boundary, left_volume and right_volume.
+
+16. Export the mesh to MED by right clicking on Mesh_1 in the Object Browser, then Export/MED file. Choose a location where you want to write your MED file and click Save.
+
+.. image:: ../images/salome_guide_12.png
+
+17. Convert mesh with meshio
+
+.. code-block:: bash
+
+    python convert_mesh.py
+
+The script `convert_mesh.py` is:
+
+.. code-block:: python
+
+    import meshio
+
+    def convert_med_to_xdmf(
+        med_file,
+        cell_file="mesh_domains.xdmf",
+        facet_file="mesh_boundaries.xdmf",
+        cell_type="tetra",
+        facet_type="triangle",
+    ):
+        """Converts a MED mesh to XDMF
+        Args:
+            med_file (str): the name of the MED file
+            cell_file (str, optional): the name of the file containing the
+                volume markers. Defaults to "mesh_domains.xdmf".
+            facet_file (str, optional): the name of the file containing the
+                surface markers.. Defaults to "mesh_boundaries.xdmf".
+            cell_type (str, optional): The topology of the cells. Defaults to "tetra".
+            facet_type (str, optional): The topology of the facets. Defaults to "triangle".
+        Returns:
+            dict, dict: the correspondance dict, the cell types
+        """
+        msh = meshio.read(med_file)
+
+        correspondance_dict = msh.cell_tags
+
+        cell_data_types = msh.cell_data_dict["cell_tags"].keys()
+
+        for mesh_block in msh.cells:
+            if mesh_block.type == cell_type:
+
+                meshio.write_points_cells(
+                    cell_file,
+                    msh.points,
+                    [mesh_block],
+                    cell_data={"f": [-1 * msh.cell_data_dict["cell_tags"][cell_type]]},
+                )
+            elif mesh_block.type == facet_type:
+                meshio.write_points_cells(
+                    facet_file,
+                    msh.points,
+                    [mesh_block],
+                    cell_data={"f": [-1 * msh.cell_data_dict["cell_tags"][facet_type]]},
+                )
+
+        return correspondance_dict, cell_data_types
+
+
+    if __name__ == "__main__":
+        filename = "Mesh_1.med"
+        correspondance_dict, cell_data_types = convert_med_to_xdmf(
+            filename, cell_type="triangle", facet_type="line")
+        print(correspondance_dict)
+
+Running this script produces mesh_domains.xdmf, mesh_boundaries.xdmf, mesh_domains.h5, mesh_boundaries.h5 and a dictionary of correspondance between the markers and the mesh entities:
+
+.. code-block:: bash
+
+    {-6: ['left_volume'], -7: ['right_volume'], -8: ['left_boundary'], -9: ['right_boundary']}
+
+The correspondance dictionary can be used to assign the correct markers to the mesh.
+Here, the left volume is tagged with ID 6, the right boundary is tagged with ID 9.
+
+18. Inspect the produced XDMF files with Paraview. The file mesh_domains.xdmf should look like:
+
+.. image:: ../images/salome_guide_13.png
+
+
+
 ------------------
 Meshes from FEniCS
 ------------------
