@@ -22,7 +22,7 @@ class TestPostProcessing:
         my_sim.traps = festim.Traps([trap_1])
 
         surf_conc1 = festim.SurfaceConcentration(
-            1, 1, 1, 1, 1, 1, 1, 0, 1, festim.InitialCondition("adsorbed", 0)
+            1, 1, 1, 1, 1, 0, 1, festim.InitialCondition("adsorbed", 0)
         )
         my_sim.surface_species = festim.SurfaceConcentrations([surf_conc1])
 

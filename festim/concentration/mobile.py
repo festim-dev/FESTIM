@@ -209,29 +209,25 @@ class Mobile(Concentration):
         if surface_concentrations:
             for surf_conc in surface_concentrations:
                 k_sb = surf_conc.k_sb
-                E_sb = surf_conc.E_sb
                 k_bs = surf_conc.k_bs
-                E_bs = surf_conc.E_bs
                 l_abs = surf_conc.l_abs
                 N_s = surf_conc.N_s
                 N_b = surf_conc.N_b
 
-                if callable(E_sb):
-                    E_sb = E_sb(surf_conc.solution)
-                if callable(E_bs):
-                    E_bs = E_bs(surf_conc.solution)
+                if callable(k_sb):
+                    k_sb = k_sb(surf_conc.solution, T.T, **surf_conc.prms)
+                if callable(k_bs):
+                    k_bs = k_bs(surf_conc.solution, T.T, **surf_conc.prms)
 
                 J_sb = (
                     k_sb
                     * surf_conc.solution
                     * (1 - solute / N_b)
-                    * exp(-E_sb / k_B / T.T)
                 )
                 J_bs = (
                     k_bs
                     * (solute * l_abs)
                     * (1 - surf_conc.solution / N_s)
-                    * exp(-E_bs / k_B / T.T)
                 )
 
                 surf_form = -l_abs * (solute - solute_prev) / dt.value + (J_bs - J_sb)

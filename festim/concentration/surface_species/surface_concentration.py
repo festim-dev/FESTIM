@@ -8,10 +8,8 @@ class SurfaceConcentration(Concentration):
     The concetration of adsorbed H species
 
     Args:
-        k_sb (float): pre-exponential factor for surface-to-subsurface transition (m-2 s-1)
-        E_sb (float, callable): activation energy for surface-to-subsurface transition (eV)
-        k_bs (float): pre-exponential factor for subsurface-to-surface transition (m-2 s-1)
-        E_bs (float, callable): activation energy for subsurface-to-surface transition (eV)
+        k_sb (float, callable): attempt frequency for surface-to-subsurface transition (s-1)
+        k_bs (float, callable): attempt frequency for subsurface-to-surface transition (s-1)
         l_abs (float): characteristic distance between surface and subsurface sites (m)
         N_s (float): surface concentration of adsorption sites (m-2)
         N_b (float): bulk concentration of interstitial sites (m-3)
@@ -21,20 +19,18 @@ class SurfaceConcentration(Concentration):
         
     Example::
 
-        def E_sb(surf_conc):
-            return 2 * (1 - surf_conc / 5)
+        def K_sb(surf_conc, T, prm1):
+            return 1e13 * f.exp(-2.0/F.k_B/T)
 
-        def E_bs(surf_conc):
-            return 2 * (1 - surf_conc / 5)
+        def K_bs(surf_conc, T, prm1):
+            return 1e13 * f.exp(-0.2/F.k_B/T)
 
         def J_vs(surf_conc, T, prm1):
             return (1-surf_conc / 5) ** 2 * fenics.exp(-2 / T) + prm1
 
         my_SurfConc = festim.SurfaceConcentration(
-            k_sb = 1e13,
-            E_sb = E_sb,
-            k_bs = 1e13,
-            E_bs = E_bs,
+            k_sb = K_sb,
+            k_bs = K_bs,
             l_abs = 110e-12,
             N_s = 2e19,
             N_b = 6e28,
@@ -47,9 +43,7 @@ class SurfaceConcentration(Concentration):
     def __init__(
         self,
         k_sb,
-        E_sb,
         k_bs,
-        E_bs,
         l_abs,
         N_s,
         N_b,
@@ -60,9 +54,7 @@ class SurfaceConcentration(Concentration):
     ):
         super().__init__()
         self.k_sb = k_sb
-        self.E_sb = E_sb
         self.k_bs = k_bs
-        self.E_bs = E_bs
         self.J_vs = J_vs
         self.l_abs = l_abs
         self.N_s = N_s
@@ -79,7 +71,7 @@ class SurfaceConcentration(Concentration):
 
     def create_form(self, mobile, T, ds, dt):
         """Creates the general form associated with the surface species
-        d c_s/ dt = K_bs c_m (1 - c_s/N_s) - K_sb c_s (1 - c_b/N_b) + J_vs
+        d c_s/ dt = k_bs l_abs c_m (1 - c_s/N_s) - k_sb c_s (1 - c_b/N_b) + J_vs
 
         Args:
             mobile (festim.Mobile): the mobile concentration of the simulation
@@ -94,22 +86,20 @@ class SurfaceConcentration(Concentration):
         solute = mobile.solution
 
         k_sb = self.k_sb
-        E_sb = self.E_sb
         k_bs = self.k_bs
-        E_bs = self.E_bs
         l_abs = self.l_abs
         N_s = self.N_s
         N_b = self.N_b
         J_vs = self.J_vs
         if callable(J_vs):
             J_vs = J_vs(solution, T.T, **self.prms)
-        if callable(E_sb):
-            E_sb = E_sb(solution)
-        if callable(E_bs):
-            E_bs = E_bs(solution)
+        if callable(k_sb):
+            k_sb = k_sb(solution, T.T, **self.prms)
+        if callable(k_bs):
+            k_bs = k_bs(solution, T.T, **self.prms)
 
-        J_sb = k_sb * solution * (1 - solute / N_b) * exp(-E_sb / k_B / T.T)
-        J_bs = k_bs * (solute * l_abs) * (1 - solution / N_s) * exp(-E_bs / k_B / T.T)
+        J_sb = k_sb * solution * (1 - solute / N_b)
+        J_bs = k_bs * (solute * l_abs) * (1 - solution / N_s)
 
         surf_form = (solution - prev_solution) / dt.value - (
             J_vs + J_bs - J_sb
