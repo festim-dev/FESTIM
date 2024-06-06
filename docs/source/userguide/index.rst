@@ -17,5 +17,6 @@ User's Guide
    traps
    settings
    stepsize
+   newton_solver
    export_post_processing
    troubleshooting
