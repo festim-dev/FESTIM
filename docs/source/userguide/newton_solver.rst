@@ -2,16 +2,16 @@
 Newton solver
 =============
 
-For advanced simulations, the parameters of the Newton solver can be adopted depending on a specific problem. 
+For advanced simulations, the parameters of the Newton solver can be adapted depending on a specific problem. 
 
 -----------------
 Built-in options
 -----------------
 A limited set of the solver parameters can be accessed via the built-in attributes of classes. 
 
-The parameters of the Newton solver for :class:`festim.HTransportProblem` can be chosen in :class:`festim.Settings` (see :ref:`settings_ug` for an example). Absolute and relative tolerances of the Newton solver
+The parameters of the Newton solver for :class:`festim.HTransportProblem` can be chosen in :class:`festim.Settings` (see :ref:`settings_ug`). Absolute and relative tolerances of the Newton solver
 are defined with ``absolute_tolerance`` and ``relative_tolerance`` attributes, respectively. The maximum number of the solver iterations can be set using 
-the ``maximum_iterations`` parameter. Additionally, there is an option to choose linear solver and preconditioning methods that suit better for a particular problem.
+the ``maximum_iterations`` parameter. Additionally, there is an option to choose linear solver and preconditioning methods that may be more suitable for particular problems.
 
 The linear solver method can be set with the ``linear_solver`` attribute. The list of available linear solvers can be viewed with: ``print(fenics.list_linear_solver_methods())``.
 
@@ -44,7 +44,7 @@ The preconditioner can be set with the ``preconditioner`` attribute. The list of
     * "sor" - Successive over-relaxation
 
 Similarly, the Newton solver parameters of :class:`festim.HeatTransferProblem`, :class:`festim.ExtrinsicTrap`, or :class:`festim.NeutronInducedTrap` 
-can be defined upon the need. Here is an example for the heat transfer problem:
+can be defined if needed. Here is an example for the heat transfer problem:
 
 .. code-block:: python
 
@@ -62,16 +62,17 @@ can be defined upon the need. Here is an example for the heat transfer problem:
 Custom solver
 --------------
 
-For a more flexible control, the built-in Newton solver can be overwritten by a custom solver based on the ``fenics.NewtonSolver`` class. 
-A user-defined Newton solver can be provided after :class:`festim.Simulation.initialise()`:
+For a finer control, the built-in Newton solver can be overwritten with a custom solver based on the ``fenics.NewtonSolver`` class.
+
+.. warning::
+    
+    Defining a custom Newton solver will override the solver parameters given with the built-in settings.
+
+A user-defined Newton solver can be provided after :class:`festim.Simulation.initialise()`. Here is a simple example for the H transport problem:
 
 .. code-block:: python
 
-    class CustomSolver(f.NewtonSolver):
-        def __init__(self):
-            super().__init__()
-
-    custom_solver = CustomSolver()
+    custom_solver = fenics.NewtonSolver()
     custom_solver.parameters["error_on_nonconvergence"] = False
     custom_solver.parameters["absolute_tolerance"] = 1e10
     custom_solver.parameters["relative_tolerance"] = 1e-10
@@ -88,3 +89,20 @@ A user-defined Newton solver can be provided after :class:`festim.Simulation.ini
 .. warning::
     
     For a stationary heat transfer problem, a custom Newton solver has to be provided before the simulation initialisation! 
+
+To extend the functionality, the `NewtonSolver <https://bitbucket.org/fenics-project/dolfin/src/master/dolfin/nls/NewtonSolver.cpp>`_ class 
+can be overwritten: 
+
+.. code-block:: python
+
+    class CustomSolver(f.NewtonSolver):
+        def __init__(self):
+            super().__init__()
+
+        def converged(self, r, problem, iteration):
+            if iteration == 0:
+                self.r0 = r.norm("l2")
+            print(f"Iteration {iteration}, relative residual {r.norm('l2')/self.r0}")
+            return super().converged(r, problem, iteration)
+
+In this example, the relative residual will be printed after each Newton solver iteration.
