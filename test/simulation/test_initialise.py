@@ -1,6 +1,7 @@
 import festim as F
 from pathlib import Path
 import pytest
+import sympy as sp
 
 
 def test_initialise_changes_nb_of_sources():
@@ -149,6 +150,42 @@ def test_cartesian_and_surface_flux_warning(quantity, sys):
         my_model.initialise()
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        100,
+        0,
+        100.0,
+        0.0,
+        100 + 1 * F.x,
+        0 + 1 * F.x,
+        F.x,
+        F.t,
+        sp.Piecewise((400, F.t < 10), (300, True)),
+    ],
+)
+def test_initialise_temp_as_number_or_sympy(value):
+    """
+    Creates a Simulation object and checks that the T attribute
+    can be given as an int, a float or a sympy Expr
+    """
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3])
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = value
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False
+    )
+
+    # run
+    my_model.initialise()
+
+    # test
+    assert isinstance(my_model.T, F.Temperature)
+    assert my_model.T.value == value
+
+
 def test_error_is_raised_when_no_temp():
     """
     Creates a Simulation object and checks that an AttributeError is raised
@@ -167,4 +204,45 @@ def test_error_is_raised_when_no_temp():
     )
 
     with pytest.raises(AttributeError, match="Temperature is not defined"):
+        my_model.initialise()
+
+
+@pytest.mark.parametrize("value", ["coucou", [0, 0]])
+def test_wrong_type_temperature(value):
+    """
+    Creates a Simulation object and checks that a TypeError is raised
+    when the T attribute is given a value of the wrong type
+    """
+    my_model = F.Simulation()
+
+    with pytest.raises(
+        TypeError,
+        match="accepted types for T attribute are int, float, sympy.Expr or festim.Temperature",
+    ):
+        my_model.T = value
+
+
+def test_error_raised_when_no_final_time():
+    """
+    Creates a Simulation object and checks that a AttributeError is raised
+    when .initialise() is called without a final_time argument
+    """
+
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices([0, 1, 2, 3])
+
+    my_model.materials = F.Material(D_0=1, E_D=0, id=1)
+
+    my_model.T = F.Temperature(500)
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=True,
+    )
+
+    my_model.dt = F.Stepsize(1)
+
+    with pytest.raises(AttributeError, match="final_time argument must be provided"):
         my_model.initialise()

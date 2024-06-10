@@ -1,5 +1,6 @@
 from fenics import *
 import festim
+import warnings
 
 
 class HTransportProblem:
@@ -22,6 +23,7 @@ class HTransportProblem:
             ct2, ...)
         v (fenics.TestFunction): the test function
         u_n (fenics.Function): the "previous" function
+        newton_solver (fenics.NewtonSolver): Newton solver for solving the nonlinear problem
         bcs (list): list of fenics.DirichletBC for H transport
     """
 
@@ -36,12 +38,28 @@ class HTransportProblem:
         self.u = None
         self.v = None
         self.u_n = None
+        self.newton_solver = None
 
         self.boundary_conditions = []
         self.bcs = None
         self.V = None
         self.V_CG1 = None
         self.expressions = []
+
+    @property
+    def newton_solver(self):
+        return self._newton_solver
+
+    @newton_solver.setter
+    def newton_solver(self, value):
+        if value is None:
+            self._newton_solver = value
+        elif isinstance(value, NewtonSolver):
+            if self._newton_solver:
+                print("Settings for the Newton solver will be overwritten")
+            self._newton_solver = value
+        else:
+            raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
 
     def initialise(self, mesh, materials, dt=None):
         """Assigns BCs, create suitable function space, initialise
@@ -59,6 +77,7 @@ class HTransportProblem:
             self.mobile.volume_markers = mesh.volume_markers
             self.mobile.T = self.T
         self.attribute_flux_boundary_conditions()
+
         # Define functions
         self.define_function_space(mesh)
         self.initialise_concentrations()
@@ -71,12 +90,14 @@ class HTransportProblem:
             self.mobile.create_form_post_processing(self.V_DG1, materials, mesh.dx)
 
         self.define_variational_problem(materials, mesh, dt)
+        self.define_newton_solver()
 
         # Boundary conditions
         print("Defining boundary conditions")
         self.create_dirichlet_bcs(materials, mesh)
         if self.settings.transient:
             self.traps.define_variational_problem_extrinsic_traps(mesh.dx, dt, self.T)
+            self.traps.define_newton_solver_extrinsic_traps()
 
     def define_function_space(self, mesh):
         """Creates a suitable function space for H transport problem
@@ -201,6 +222,22 @@ class HTransportProblem:
         self.F = F
         self.expressions = expressions
 
+    def define_newton_solver(self):
+        """Creates the Newton solver and sets its parameters"""
+        self.newton_solver = NewtonSolver(MPI.comm_world)
+        self.newton_solver.parameters["error_on_nonconvergence"] = False
+        self.newton_solver.parameters["absolute_tolerance"] = (
+            self.settings.absolute_tolerance
+        )
+        self.newton_solver.parameters["relative_tolerance"] = (
+            self.settings.relative_tolerance
+        )
+        self.newton_solver.parameters["maximum_iterations"] = (
+            self.settings.maximum_iterations
+        )
+        self.newton_solver.parameters["linear_solver"] = self.settings.linear_solver
+        self.newton_solver.parameters["preconditioner"] = self.settings.preconditioner
+
     def attribute_flux_boundary_conditions(self):
         """Iterates through self.boundary_conditions, checks if it's a FluxBC
         and its field is 0, and assign fluxes to self.mobile
@@ -239,7 +276,6 @@ class HTransportProblem:
             t (float): the current time (s)
             dt (festim.Stepsize): the stepsize
         """
-
         festim.update_expressions(self.expressions, t)
 
         converged = False
@@ -264,28 +300,16 @@ class HTransportProblem:
             int, bool: number of iterations for reaching convergence, True if
                 converged else False
         """
-
         if self.J is None:  # Define the Jacobian
             du = TrialFunction(self.u.function_space())
             J = derivative(self.F, self.u, du)
         else:
             J = self.J
-        problem = NonlinearVariationalProblem(self.F, self.u, self.bcs, J)
-        solver = NonlinearVariationalSolver(problem)
-        solver.parameters["newton_solver"]["error_on_nonconvergence"] = False
-        solver.parameters["newton_solver"][
-            "absolute_tolerance"
-        ] = self.settings.absolute_tolerance
-        solver.parameters["newton_solver"][
-            "relative_tolerance"
-        ] = self.settings.relative_tolerance
-        solver.parameters["newton_solver"][
-            "maximum_iterations"
-        ] = self.settings.maximum_iterations
-        solver.parameters["newton_solver"][
-            "linear_solver"
-        ] = self.settings.linear_solver
-        nb_it, converged = solver.solve()
+        problem = festim.Problem(J, self.F, self.bcs)
+
+        begin("Solving nonlinear variational problem.")  # Add message to fenics logs
+        nb_it, converged = self.newton_solver.solve(problem, self.u.vector())
+        end()
 
         return nb_it, converged
 

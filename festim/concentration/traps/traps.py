@@ -109,26 +109,23 @@ class Traps(list):
                 self.extrinsic_formulations.append(trap.form_density)
         self.sub_expressions.extend(expressions_extrinsic)
 
+    def define_newton_solver_extrinsic_traps(self):
+        for trap in self:
+            if isinstance(trap, festim.ExtrinsicTrapBase):
+                trap.define_newton_solver()
+
     def solve_extrinsic_traps(self):
         for trap in self:
             if isinstance(trap, festim.ExtrinsicTrapBase):
                 du_t = f.TrialFunction(trap.density[0].function_space())
                 J_t = f.derivative(trap.form_density, trap.density[0], du_t)
-                problem = f.NonlinearVariationalProblem(
-                    trap.form_density, trap.density[0], [], J_t
-                )
-                solver = f.NonlinearVariationalSolver(problem)
-                solver.parameters["newton_solver"][
-                    "absolute_tolerance"
-                ] = trap.absolute_tolerance
-                solver.parameters["newton_solver"][
-                    "relative_tolerance"
-                ] = trap.relative_tolerance
-                solver.parameters["newton_solver"][
-                    "maximum_iterations"
-                ] = trap.maximum_iterations
-                solver.parameters["newton_solver"]["linear_solver"] = trap.linear_solver
-                solver.solve()
+                problem = festim.Problem(J_t, trap.form_density, [])
+
+                f.begin(
+                    "Solving nonlinear variational problem."
+                )  # Add message to fenics logs
+                trap.newton_solver.solve(problem, trap.density[0].vector())
+                f.end()
 
     def update_extrinsic_traps_density(self):
         for trap in self:

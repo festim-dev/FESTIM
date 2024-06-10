@@ -3,6 +3,7 @@ from fenics import *
 import sympy as sp
 from pathlib import Path
 import numpy as np
+import pytest
 
 
 def test_trap_density_xdmf_export_intergration_with_simultion(tmpdir):
@@ -96,6 +97,7 @@ def test_trap_density_xdmf_export_write(tmpdir):
     assert error_L2 < 1e-10
 
 
+@pytest.mark.filterwarnings("ignore:in 1D")
 def test_trap_density_xdmf_export_traps_materials_mixed(tmpdir):
     """Integration test for TrapDensityXDMF.write() with a trap material given
     as a string. Creates a festim simulation and exports the trap density as an

@@ -1,6 +1,7 @@
 import festim
 import fenics as f
 import sympy as sp
+import warnings
 
 
 class HeatTransferProblem(festim.Temperature):
@@ -8,7 +9,7 @@ class HeatTransferProblem(festim.Temperature):
     Args:
         transient (bool, optional): If True, a transient simulation will
             be run. Defaults to True.
-        initial_condition (festim.InitialCondition, optional): The initial condition.
+        initial_condition (int, float, sp.Expr, festim.InitialCondition, optional): The initial condition.
             Only needed if transient is True.
         absolute_tolerance (float, optional): the absolute tolerance of the newton
             solver. Defaults to 1e-03
@@ -21,10 +22,14 @@ class HeatTransferProblem(festim.Temperature):
             If None, the default fenics linear solver will be used ("umfpack").
             More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
             Defaults to None.
+        preconditioner (str, optional): preconditioning method for the newton solver,
+            options can be veiwed by print(list_krylov_solver_preconditioners()).
+            Defaults to "default".
 
     Attributes:
         F (fenics.Form): the variational form of the heat transfer problem
         v_T (fenics.TestFunction): the test function
+        newton_solver (fenics.NewtonSolver): Newton solver for solving the nonlinear problem
         initial_condition (festim.InitialCondition): the initial condition
         sub_expressions (list): contains time dependent fenics.Expression to
             be updated
@@ -41,6 +46,7 @@ class HeatTransferProblem(festim.Temperature):
         relative_tolerance=1e-10,
         maximum_iterations=30,
         linear_solver=None,
+        preconditioner="default",
     ) -> None:
         super().__init__()
         self.transient = transient
@@ -49,12 +55,40 @@ class HeatTransferProblem(festim.Temperature):
         self.relative_tolerance = relative_tolerance
         self.maximum_iterations = maximum_iterations
         self.linear_solver = linear_solver
+        self.preconditioner = preconditioner
 
         self.F = 0
         self.v_T = None
         self.sources = []
         self.boundary_conditions = []
         self.sub_expressions = []
+        self.newton_solver = None
+
+    @property
+    def newton_solver(self):
+        return self._newton_solver
+
+    @newton_solver.setter
+    def newton_solver(self, value):
+        if value is None:
+            self._newton_solver = value
+        elif isinstance(value, f.NewtonSolver):
+            if self._newton_solver:
+                print("Settings for the Newton solver will be overwritten")
+            self._newton_solver = value
+        else:
+            raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
+
+    @property
+    def initial_condition(self):
+        return self._initial_condition
+
+    @initial_condition.setter
+    def initial_condition(self, value):
+        if isinstance(value, (int, float, sp.Expr)):
+            self._initial_condition = festim.InitialCondition(field="T", value=value)
+        else:
+            self._initial_condition = value
 
     # TODO rename initialise?
     def create_functions(self, materials, mesh, dt=None):
@@ -73,7 +107,10 @@ class HeatTransferProblem(festim.Temperature):
         self.T = f.Function(V, name="T")
         self.T_n = f.Function(V, name="T_n")
         self.v_T = f.TestFunction(V)
-
+        if self.transient and self.initial_condition is None:
+            raise AttributeError(
+                "Initial condition is required for transient heat transfer simulations"
+            )
         if self.transient and self.initial_condition:
             if isinstance(self.initial_condition.value, str):
                 if self.initial_condition.value.endswith(".xdmf"):
@@ -91,20 +128,21 @@ class HeatTransferProblem(festim.Temperature):
         self.define_variational_problem(materials, mesh, dt)
         self.create_dirichlet_bcs(mesh.surface_markers)
 
+        if not self.newton_solver:
+            self.define_newton_solver()
+
         if not self.transient:
             print("Solving stationary heat equation")
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)
-            problem = f.NonlinearVariationalProblem(
-                self.F, self.T, self.dirichlet_bcs, JT
-            )
-            solver = f.NonlinearVariationalSolver(problem)
-            newton_solver_prm = solver.parameters["newton_solver"]
-            newton_solver_prm["absolute_tolerance"] = self.absolute_tolerance
-            newton_solver_prm["relative_tolerance"] = self.relative_tolerance
-            newton_solver_prm["maximum_iterations"] = self.maximum_iterations
-            newton_solver_prm["linear_solver"] = self.linear_solver
-            solver.solve()
+            problem = festim.Problem(JT, self.F, self.dirichlet_bcs)
+
+            f.begin(
+                "Solving nonlinear variational problem."
+            )  # Add message to fenics logs
+            self.newton_solver.solve(problem, self.T.vector())
+            f.end()
+
             self.T_n.assign(self.T)
 
     def define_variational_problem(self, materials, mesh, dt=None):
@@ -183,6 +221,16 @@ class HeatTransferProblem(festim.Temperature):
                 for surf in bc.surfaces:
                     self.F += -bc.form * self.v_T * mesh.ds(surf)
 
+    def define_newton_solver(self):
+        """Creates the Newton solver and sets its parameters"""
+        self.newton_solver = f.NewtonSolver(f.MPI.comm_world)
+        self.newton_solver.parameters["error_on_nonconvergence"] = False
+        self.newton_solver.parameters["absolute_tolerance"] = self.absolute_tolerance
+        self.newton_solver.parameters["relative_tolerance"] = self.relative_tolerance
+        self.newton_solver.parameters["maximum_iterations"] = self.maximum_iterations
+        self.newton_solver.parameters["linear_solver"] = self.linear_solver
+        self.newton_solver.parameters["preconditioner"] = self.preconditioner
+
     def create_dirichlet_bcs(self, surface_markers):
         """Creates a list of fenics.DirichletBC and add time dependent
         expressions to .sub_expressions
@@ -214,16 +262,14 @@ class HeatTransferProblem(festim.Temperature):
             # Solve heat transfers
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)  # Define the Jacobian
-            problem = f.NonlinearVariationalProblem(
-                self.F, self.T, self.dirichlet_bcs, JT
-            )
-            solver = f.NonlinearVariationalSolver(problem)
-            newton_solver_prm = solver.parameters["newton_solver"]
-            newton_solver_prm["absolute_tolerance"] = self.absolute_tolerance
-            newton_solver_prm["relative_tolerance"] = self.relative_tolerance
-            newton_solver_prm["maximum_iterations"] = self.maximum_iterations
-            newton_solver_prm["linear_solver"] = self.linear_solver
-            solver.solve()
+            problem = festim.Problem(JT, self.F, self.dirichlet_bcs)
+
+            f.begin(
+                "Solving nonlinear variational problem."
+            )  # Add message to fenics logs
+            self.newton_solver.solve(problem, self.T.vector())
+            f.end()
+
             self.T_n.assign(self.T)
 
     def is_steady_state(self):

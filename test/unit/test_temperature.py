@@ -69,9 +69,7 @@ def test_formulation_heat_transfer():
     bc1 = festim.DirichletBC(surfaces=[1], value=u, field="T")
     bc2 = festim.FluxBC(surfaces=[2], value=2, field="T")
 
-    my_temp = festim.HeatTransferProblem(
-        transient=True, initial_condition=festim.InitialCondition(field="T", value=0)
-    )
+    my_temp = festim.HeatTransferProblem(transient=True, initial_condition=0)
     my_temp.boundary_conditions = [bc1, bc2]
     my_temp.sources = [festim.Source(-4, volume=[1], field="T")]
     my_temp.create_functions(my_mats, my_mesh, dt=dt)
@@ -130,6 +128,30 @@ def test_heat_transfer_create_functions_transient(tmpdir):
     my_temp.create_functions(my_mats, my_mesh, dt=festim.Stepsize(initial_value=2))
     # evaluate error between original and read function
     error_L2 = fenics.errornorm(T, my_temp.T_n, "L2")
+    assert error_L2 < 1e-9
+
+
+def test_temperature_with_expr():
+    """
+    Test for the InitialCondition.create_functions() with a sympy expression
+    and checks that the error norm between the expected and computed
+    functions is below a certain threshold.
+    """
+    # create function to be comapared
+    mesh = fenics.UnitSquareMesh(10, 10)
+    # TempFromXDMF needs a festim mesh
+    my_mesh = festim.Mesh()
+    my_mesh.dx = fenics.dx
+    my_mesh.ds = fenics.ds
+    my_mesh.mesh = mesh
+    my_mats = festim.Materials(
+        [festim.Material(id=1, D_0=1, E_D=0, thermal_cond=1, heat_capacity=1, rho=1)]
+    )
+    my_T = festim.HeatTransferProblem(transient=True, initial_condition=300 + festim.x)
+    my_T.create_functions(mesh=my_mesh, materials=my_mats, dt=festim.Stepsize(2))
+
+    expected_expr = fenics.Expression("300 + x[0]", degree=2)
+    error_L2 = fenics.errornorm(expected_expr, my_T.T_n, "L2")
     assert error_L2 < 1e-9
 
 

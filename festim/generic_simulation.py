@@ -2,6 +2,7 @@ import festim
 from festim.h_transport_problem import HTransportProblem
 from fenics import *
 import numpy as np
+import sympy as sp
 import warnings
 
 
@@ -25,7 +26,7 @@ class Simulation:
             None.
         settings (festim.Settings, optional): The model's settings.
             Defaults to None.
-        temperature (festim.Temperature, optional): The model's
+        temperature (int, float, sympy.Expr, festim.Temperature, optional): The model's
             temperature. Can be an expression or a heat transfer model.
             Defaults to None.
         initial_conditions (list of festim.InitialCondition, optional):
@@ -164,6 +165,23 @@ class Simulation:
                 "accepted types for exports are list, festim.Export or festim.Exports"
             )
 
+    @property
+    def T(self):
+        return self._T
+
+    @T.setter
+    def T(self, value):
+        if isinstance(value, festim.Temperature):
+            self._T = value
+        elif value is None:
+            self._T = value
+        elif isinstance(value, (int, float, sp.Expr)):
+            self._T = festim.Temperature(value)
+        else:
+            raise TypeError(
+                "accepted types for T attribute are int, float, sympy.Expr or festim.Temperature"
+            )
+
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
         (self.mobile, self.T, or traps)
@@ -251,6 +269,10 @@ class Simulation:
         # check that dt attribute is None if the sim is steady state
         if not self.settings.transient and self.dt is not None:
             raise AttributeError("dt must be None in steady state simulations")
+        if self.settings.transient and self.settings.final_time is None:
+            raise AttributeError(
+                "final_time argument must be provided to settings in transient simulations"
+            )
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
         if not self.T:
@@ -322,7 +344,7 @@ class Simulation:
 
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
-                for q in export.derived_quantities:
+                for q in export:
                     if not isinstance(q, tuple(allowed_quantities[self.mesh.type])):
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"

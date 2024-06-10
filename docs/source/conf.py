@@ -102,6 +102,24 @@ html_theme_options = {
     "use_edit_page_button": True,
     "repository_branch": "main",
     "path_to_docs": "./docs/source",
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/FESTIM/",
+            "icon": "https://img.shields.io/pypi/dw/festim",
+            "type": "url",
+        },
+        {
+            "name": "Support Forum",
+            "url": "https://festim.discourse.group/",
+            "icon": "fa-brands fa-discourse",
+        },
+        {
+            "name": "Slack",
+            "url": "https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g",
+            "icon": "fa-brands fa-slack",
+        },
+    ],
 }
 
 html_title = "FESTIM Documentation"
