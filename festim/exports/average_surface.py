@@ -1,4 +1,5 @@
 import festim as F
+from dolfinx import fem
 import numpy as np
 
 
@@ -26,10 +27,13 @@ class AverageSurface(F.SurfaceQuantity):
     def title(self):
         return f"Average {self.field.name} surface {self.surface.id}"
 
-    def compute(self):
+    def compute(self, ds):
         """
         Computes the average value of the field on the defined surface
         subdomain, and appends it to the data list
         """
-        self.value = np.mean(self.field.solution.x.array[self.surface.indices])
+
+        self.value = fem.assemble_scalar(
+            fem.form(self.field.solution * ds(self.surface.id))
+        ) / fem.assemble_scalar(fem.form(1 * ds(self.surface.id)))
         self.data.append(self.value)

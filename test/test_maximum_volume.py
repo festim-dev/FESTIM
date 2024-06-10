@@ -5,7 +5,7 @@ import ufl
 from dolfinx import fem
 
 
-def test_maximum_volume_compute():
+def test_maximum_volume_compute_1D():
     """Test that the maximum volume export computes the right value"""
 
     # BUILD
@@ -13,6 +13,7 @@ def test_maximum_volume_compute():
     dummy_material = F.Material(D_0=1.5, E_D=1, name="dummy")
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_material)
+    dummy_volume.locate_subdomain_entities(mesh=my_mesh.mesh, vdim=0)
 
     # define mesh dx measure
     num_cells = my_mesh.mesh.topology.index_map(my_mesh.vdim).size_local

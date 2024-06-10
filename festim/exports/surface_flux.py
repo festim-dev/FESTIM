@@ -28,7 +28,7 @@ class SurfaceFlux(F.SurfaceQuantity):
         return f"{self.field.name} flux surface {self.surface.id}"
 
     def compute(self, n, ds):
-        """Computes the value of the surface flux at the surface
+        """Computes the value of the flux at the surface
 
         Args:
             ds (ufl.Measure): surface measure of the model

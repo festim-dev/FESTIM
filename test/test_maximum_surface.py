@@ -3,7 +3,7 @@ import numpy as np
 from dolfinx import fem
 
 
-def test_maximum_surface():
+def test_maximum_surface_compute_1D():
     """Test that the maximum surface export computes the correct value"""
 
     # BUILD
@@ -11,6 +11,7 @@ def test_maximum_surface():
     D = 1.5
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=4)
+    dummy_surface.locate_boundary_facet_indices(mesh=my_mesh.mesh, fdim=0)
 
     # give function to species
     V = fem.functionspace(my_mesh.mesh, ("CG", 1))
@@ -27,7 +28,7 @@ def test_maximum_surface():
     my_export.compute()
 
     # TEST
-    expected_value = 9
+    expected_value = 1.0
     computed_value = my_export.value
 
     assert np.isclose(computed_value, expected_value, rtol=1e-2)

@@ -1,4 +1,5 @@
 import festim as F
+from dolfinx import fem
 import numpy as np
 
 
@@ -26,10 +27,12 @@ class AverageVolume(F.VolumeQuantity):
     def title(self):
         return f"Average {self.field.name} volume {self.volume.id}"
 
-    def compute(self):
+    def compute(self, ds):
         """
         Computes the average value of solution function within the defined volume
         subdomain, and appends it to the data list
         """
-        self.value = np.mean(self.field.solution.x.array[self.volume.entities])
+        self.value = fem.assemble_scalar(
+            fem.form(self.field.solution * ds(self.surface.id))
+        ) / fem.assemble_scalar(fem.form(1 * ds(self.surface.id)))
         self.data.append(self.value)

@@ -7,7 +7,7 @@ import pytest
 import os
 
 
-def test_minimum_surface_export_compute():
+def test_minimum_surface_export_compute_1D():
     """Test that the minimum surface export computes the correct value"""
 
     # BUILD
@@ -15,6 +15,7 @@ def test_minimum_surface_export_compute():
     D = 1.5
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=4)
+    dummy_surface.locate_boundary_facet_indices(mesh=my_mesh.mesh, fdim=my_mesh.fdim)
 
     # give function to species
     V = fem.functionspace(my_mesh.mesh, ("CG", 1))
@@ -31,7 +32,7 @@ def test_minimum_surface_export_compute():
     my_export.compute()
 
     # TEST
-    expected_value = 0
+    expected_value = 4.0
     computed_value = my_export.value
 
     assert np.isclose(computed_value, expected_value, rtol=1e-2)

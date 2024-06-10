@@ -35,7 +35,7 @@ class SurfaceSubdomain1D(F.SurfaceSubdomain):
             index (np.array): the first value in the list of surface facet
                 indices of the subdomain
         """
-        indices = dolfinx.mesh.locate_entities_boundary(
+        self.indices = dolfinx.mesh.locate_entities_boundary(
             mesh, fdim, lambda x: np.isclose(x[0], self.x)
         )
-        return indices[0]
+        return self.indices[0]

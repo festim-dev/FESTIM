@@ -5,7 +5,7 @@ from dolfinx.mesh import meshtags
 from dolfinx import fem
 
 
-def test_total_surface_compute():
+def test_total_surface_compute_1D():
     """Test that the total surface export computes the correct value"""
 
     # BUILD
@@ -41,7 +41,7 @@ def test_total_surface_compute():
     my_export.compute(ds)
 
     # TEST
-    expected_value = 15
+    expected_value = 4.0
     computed_value = my_export.value
 
     assert np.isclose(computed_value, expected_value, rtol=1e-2)
