@@ -13,8 +13,8 @@ jobs:
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v2
       with:
-          activate-environment: festim-docs
-          environment-file: docs/example-environment.yml
+        activate-environment: festim-docs
+        environment-file: docs/example-environment.yml
 
       - name: Doc Tests
         shell: bash -l {0}
