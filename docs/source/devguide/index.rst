@@ -60,19 +60,18 @@ All the tests can be found in the `test folder <https://github.com/festim-dev/FE
 
 .. note::
 
-   If you have installed the FEniCS Anaconda python package, make sure to install pytest to run the test suite locally:
+   Make sure to install ``pytest`` to run the test suite locally:
+
+   .. code-block:: bash
 
       pip install pytest
 
    And then run the tests using:
 
+   .. code-block:: bash
+
       pytest test/
    
-   Although if you are running the Docker image, pytest packages are prebuilt, thus use the command:
-
-      pytest-3 test/
-
-
 Whenever contributors open a PR, **the tests must pass** in order for the PR to be merged in.
 
 In some cases, new tests need to be written to account for more use cases or to catch bugs that weren't previously caught.
@@ -107,9 +106,11 @@ Implementing a new feature
    | 
    | It is also beneficial to discuss with the community on how this new feature would be used.
 
-#. :ref:`Make your changes<contributing to the code>`
+#. :ref:`Make your changes<contributing to the code>`. Don't forget to :ref:`adapt the documentation <Documentation guide>` if necessary.
 
 #. Write a test to test your feature
+
+#. Open a PR
 
 
 -------------------
