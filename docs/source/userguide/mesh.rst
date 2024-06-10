@@ -2,6 +2,10 @@
 Mesh
 ====
 
+.. testsetup::
+    
+    from festim import MeshFromVertices, MeshFromXDMF
+
 Meshes are required to discretise the geometrical domain of the simulation.
 As FESTIM is not a meshing tool, the meshing capabilities are limited to simple 1D meshes.
 
@@ -11,13 +15,13 @@ As FESTIM is not a meshing tool, the meshing capabilities are limited to simple 
 
 The easiest way to define a 1D mesh in FESTIM is to define it from a list of vertices (see :class:`festim.MeshFromVertices`):
 
-.. code-block:: python
+.. testcode::
 
     mesh = MeshFromVertices([0, 1, 2, 4, 5, 10])
 
 For bigger meshes, use the numpy library to generate an array of vertices.
 
-.. code-block:: python
+.. testcode::
 
     import numpy as np
 
@@ -25,7 +29,7 @@ For bigger meshes, use the numpy library to generate an array of vertices.
 
 Numpy arrays can be combined to have local refinements:
 
-.. code-block:: python
+.. testcode::
 
     import numpy as np
 
@@ -44,9 +48,25 @@ Meshes from XDMF
 
 More complex meshes can be read from XDMF files (see :class:`festim.MeshFromXDMF`):
 
-.. code-block:: python
+.. testsetup::
+
+    import fenics as f
+
+    mesh = f.UnitSquareMesh(10, 10)
+
+    volume_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim(), 1)
+    surface_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim() - 1, 1)
+
+    f.XDMFFile("volume_file.xdmf").write(volume_markers)
+    f.XDMFFile("boundary_file.xdmf").write(surface_markers)
+
+.. testcode::
 
     mesh = MeshFromXDMF(volume_file="volume_file.xdmf", boundary_file="boundary_file.xdmf")
+
+.. testoutput::
+
+    Succesfully load mesh with 200 cells
 
 The recommended workflow is to mesh your geometry with your favourite meshing software (`SALOME <https://www.salome-platform.org/?lang=fr>`_, `gmsh <https://gmsh.info/>`_...) and convert the produced mesh with `meshio <https://github.com/nschloe/meshio>`_.
 

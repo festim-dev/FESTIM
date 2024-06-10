@@ -46,7 +46,9 @@ The preconditioner can be set with the ``preconditioner`` attribute. The list of
 Similarly, the Newton solver parameters of :class:`festim.HeatTransferProblem`, :class:`festim.ExtrinsicTrap`, or :class:`festim.NeutronInducedTrap` 
 can be defined if needed. Here is an example for the heat transfer problem:
 
-.. code-block:: python
+.. testcode::
+
+    from festim import HeatTransferProblem
 
     model.T = HeatTransferProblem(
         transient=True,
@@ -70,7 +72,9 @@ For a finer control, the built-in Newton solver can be overwritten with a custom
 
 A user-defined Newton solver can be provided after :class:`festim.Simulation.initialise()`. Here is a simple example for the H transport problem:
 
-.. code-block:: python
+.. testcode::
+
+    import fenics
 
     custom_solver = fenics.NewtonSolver()
     custom_solver.parameters["error_on_nonconvergence"] = False
@@ -93,9 +97,11 @@ A user-defined Newton solver can be provided after :class:`festim.Simulation.ini
 To extend the functionality, the `NewtonSolver <https://bitbucket.org/fenics-project/dolfin/src/master/dolfin/nls/NewtonSolver.cpp>`_ class 
 can be overwritten: 
 
-.. code-block:: python
+.. testcode::
 
-    class CustomSolver(f.NewtonSolver):
+    import fenics
+
+    class CustomSolver(fenics.NewtonSolver):
         def __init__(self):
             super().__init__()
 
