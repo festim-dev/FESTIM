@@ -46,6 +46,21 @@ The preconditioner can be set with the ``preconditioner`` attribute. The list of
 Similarly, the Newton solver parameters of :class:`festim.HeatTransferProblem`, :class:`festim.ExtrinsicTrap`, or :class:`festim.NeutronInducedTrap` 
 can be defined if needed. Here is an example for the heat transfer problem:
 
+.. testsetup::
+
+    import fenics
+    import festim as F
+
+    model = F.Simulation()
+    model.mesh = F.MeshFromVertices([1, 2, 3, 4, 5])
+    model.materials = F.Material(id=1, D_0=1, E_D=0, thermal_cond=10, rho=2, heat_capacity=3)
+    model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        final_time=1,
+    )
+    model.dt = F.Stepsize(1)
+
 .. testcode::
 
     from festim import HeatTransferProblem
@@ -57,7 +72,9 @@ can be defined if needed. Here is an example for the heat transfer problem:
         relative_tolerance=1e-10,
         maximum_iterations=50,
         linear_solver="gmres",
-        preconditioner="icc")
+        preconditioner="icc",
+        )
+
 
 
 --------------
@@ -72,7 +89,22 @@ For a finer control, the built-in Newton solver can be overwritten with a custom
 
 A user-defined Newton solver can be provided after :class:`festim.Simulation.initialise()`. Here is a simple example for the H transport problem:
 
-.. testcode::
+.. testsetup:: custom_solver_simple
+
+    import fenics
+    import festim as F
+
+    model = F.Simulation()
+    model.T = 500
+    model.mesh = F.MeshFromVertices([1, 2, 3, 4, 5])
+    model.materials = F.Material(id=1, D_0=1, E_D=0)
+    model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+
+.. testcode:: custom_solver_simple
 
     import fenics
 
@@ -89,6 +121,12 @@ A user-defined Newton solver can be provided after :class:`festim.Simulation.ini
     model.h_transport_problem.newton_solver = custom_solver
 
     model.run()
+
+.. testoutput:: custom_solver_simple
+   :options: +ELLIPSIS
+   :hide:
+
+   ...
 
 .. warning::
     
