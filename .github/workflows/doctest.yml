@@ -16,6 +16,6 @@ jobs:
         activate-environment: festim-docs
         environment-file: docs/example-environment.yml
 
-      - name: Doc Tests
-        shell: bash -l {0}
-        run: sphinx-build -b doctest -d build/doctrees docs build/doctest
+    - name: Doc Tests
+      shell: bash -l {0}
+      run: sphinx-build -b doctest -d build/doctrees docs build/doctest
