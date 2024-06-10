@@ -133,6 +133,11 @@ To build the documentation locally, you can use the following command:
 
 This will generate the documentation in the `docs/source/_build/html` folder.
 You can then open the `index.html` file in your browser to see the documentation.
+To remove everything and start from scratch, you can use the following command:
+
+.. code-block:: bash
+
+   make clean
 
 Alternatively, you can use the following command to build the documentation in one line:
 
