@@ -18,4 +18,4 @@ jobs:
 
     - name: Doc Tests
       shell: bash -l {0}
-      run: sphinx-build -b doctest -d build/doctrees docs build/doctest
+      run: sphinx-build -b doctest docs/source docs/_build/doctest
