@@ -110,3 +110,60 @@ Implementing a new feature
 #. :ref:`Make your changes<contributing to the code>`
 
 #. Write a test to test your feature
+
+
+-------------------
+Documentation guide
+-------------------
+
+The documentation is a crucial part of the project. It is the first thing users will see when they want to use FESTIM.
+It is important to keep it up to date and clear.
+
+The documentation is written in `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_ and is located in the `docs folder <https://github.com/festim-dev/FESTIM/tree/main/docs>`_ at the root of the FESTIM repository.
+
+The documentation is built using `Sphinx <https://www.sphinx-doc.org/en/master/>`_.
+
+To build the documentation locally, you can use the following command:
+
+.. code-block:: bash
+
+   cd docs/source
+   make html
+
+This will generate the documentation in the `docs/source/_build/html` folder.
+You can then open the `index.html` file in your browser to see the documentation.
+
+Alternatively, you can use the following command to build the documentation in one line:
+
+.. code-block:: bash
+
+   cd docs
+   sphinx-build -b html source build
+
+.. note::
+
+   Make sure to have the right dependencies installed. You can create a new conda environment with the following command:
+
+   .. code-block:: bash
+      
+      conda env create -f docs/environment.yml
+   
+   This will create a new environment called `festim-docs` with all the necessary dependencies.
+   Activate it using:
+
+   .. code-block:: bash
+
+      conda activate festim-docs
+
+The documentation is hosted on `Read the Docs <https://readthedocs.org/>`_ and is automatically updated when a new commit is pushed to the repository or to a Pull Request.
+
+.. note::
+
+   The documentation is built using the `sphinx_book_theme <https://sphinx-book-theme.readthedocs.io/en/latest/>`_ theme.
+
+When contributing to the documentation, make sure to:
+
+#. Write clear and concise documentation
+#. Use the right syntax
+#. Update the documentation when new features are added
+

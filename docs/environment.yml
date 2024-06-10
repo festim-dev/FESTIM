@@ -1,4 +1,4 @@
-name: fenics
+name: festim-docs
 channels:
   - conda-forge
   - defaults
