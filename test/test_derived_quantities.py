@@ -21,6 +21,7 @@ max_surface = F.MaximumSurface(mobile_H, surface=surf_2, filename=results)
 avg_surface = F.AverageSurface(mobile_D, surface=surf_1, filename=results)
 avg_vol = F.AverageVolume(mobile_H, volume=vol_2, filename=results)
 surf_quant = F.SurfaceQuantity(mobile_H, surface=surf_1, filename=results)
+vol_quant = F.VolumeQuantity(mobile_H, volume=vol_1, filename=results)
 
 
 @pytest.mark.parametrize(
@@ -36,7 +37,8 @@ surf_quant = F.SurfaceQuantity(mobile_H, surface=surf_1, filename=results)
         (max_surface, "Maximum H surface 2"),
         (avg_surface, "Average D surface 1"),
         (avg_vol, "Average H volume 2"),
-        (surf_quant, "H surface 1")
+        (surf_quant, "H surface 1"),
+        (vol_quant, "H volume 1")
     ],
 )
 def test_title(quantity, expected_title, tmp_path):

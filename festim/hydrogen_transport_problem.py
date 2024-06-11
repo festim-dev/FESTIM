@@ -583,7 +583,6 @@ class HydrogenTransportProblem:
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, F.ParticleSource):
-
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
@@ -595,7 +594,6 @@ class HydrogenTransportProblem:
         for bc in self.boundary_conditions:
             # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, F.ParticleFluxBC):
-
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,

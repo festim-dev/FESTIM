@@ -14,7 +14,7 @@ def test_minimum_volume_compute_1D():
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_material)
     dummy_volume.locate_subdomain_entities(mesh=my_mesh.mesh, vdim=0)
-    
+
     # give function to species
     V = fem.functionspace(my_mesh.mesh, ("CG", 1))
     c = fem.Function(V)
