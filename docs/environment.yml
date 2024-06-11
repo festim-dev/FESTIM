@@ -1,4 +1,4 @@
-name: fenics
+name: festim-docs
 channels:
   - conda-forge
   - defaults
@@ -10,7 +10,7 @@ dependencies:
   - folium
   - pip:
     - sympy
-    - sphinx_book_theme==1.1.0rc1
+    - sphinx_book_theme==1.1.2
     - sphinx-design==0.5.0
     - sphinxcontrib-bibtex
     - sphinx-copybutton
