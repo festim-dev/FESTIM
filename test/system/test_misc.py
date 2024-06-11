@@ -334,6 +334,33 @@ def test_materials_setter():
     assert my_model.materials is test_materials
 
 
+def test_derived_quantities_data_is_reset():
+    """
+    Checks that the data of a derived quantity is reset at each timestep
+    """
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices([0, 1, 2, 3, 4])
+
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = F.Temperature(400)
+
+    left_flux = F.SurfaceFlux(field="solute", surface=1)
+
+    my_model.exports = [F.DerivedQuantities([left_flux])]
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-15,
+        relative_tolerance=1e-15,
+        transient=False,
+    )
+
+    for i in range(3):
+        my_model.initialise()
+        assert len(left_flux.data) == 0
+        my_model.run()
+
+
 class TestFestimProblem:
     """Tests the methods of the festim.Problem class"""
 

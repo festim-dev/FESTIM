@@ -136,6 +136,11 @@ class Exports(list):
         """
         for export in self:
             if isinstance(export, festim.DerivedQuantities):
+                # reset the data of the derived quantities
                 export.data = []
+                export.t = []
+                for quantity in export:
+                    quantity.t = []
+                    quantity.data = []
                 export.assign_measures_to_quantities(dx, ds)
                 export.assign_properties_to_quantities(materials)
