@@ -142,7 +142,7 @@ Click on the left square and click "Add" (2 should appear in the white window). 
     :width: 400
     :align: center
 
-17. Convert mesh with meshio
+17. Convert mesh with meshio (at the time or writing we are using meshio 5.3)
 
 .. code-block:: bash
 
@@ -217,6 +217,45 @@ Here, the left volume is tagged with ID 6, the right boundary is tagged with ID 
 18. Inspect the produced XDMF files with Paraview. The file mesh_domains.xdmf should look like:
 
 .. thumbnail:: ../images/salome_guide_13.png
+    :width: 400
+    :align: center
+
+
+19. Test the mesh in FESTIM by running:
+
+.. code-block:: python
+
+    import festim as F
+
+    model = F.Simulation()
+
+    model.mesh = F.MeshFromXDMF(
+        volume_file="mesh_domains.xdmf", boundary_file="mesh_boundaries.xdmf"
+    )
+
+    model.materials = [F.Material(D_0=1, E_D=0, id=6), F.Material(D_0=5, E_D=0, id=7)]
+
+    model.boundary_conditions = [
+        F.DirichletBC(field="solute", value=1, surfaces=[8]),
+        F.DirichletBC(field="solute", value=0, surfaces=[9]),
+    ]
+
+    model.T = F.Temperature(823)
+
+    model.exports = [F.XDMFExport("solute")]
+
+    model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+
+    model.initialise()
+    model.run()
+
+20. The simulation should run without errors. The solute field can be visualised with Paraview.
+
+.. thumbnail:: ../images/salome_guide_14.png
     :width: 400
     :align: center
 
