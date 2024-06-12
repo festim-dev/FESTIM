@@ -259,6 +259,31 @@ Here, the left volume is tagged with ID 6, the right boundary is tagged with ID 
     :width: 400
     :align: center
 
+From CAD
+^^^^^^^^
+
+If you have a CAD model, you can export it to a mesh with SALOME.
+
+1. Create a new study
+2. Activate the Geometry module
+3. Import STEP file by clicking "File/Import/STEP"
+
+.. thumbnail:: ../images/salome_guide_cad_1.png
+    :width: 400
+    :align: center
+
+4. By clicking "Fit to selection" you can see the imported geometry:
+
+.. thumbnail:: ../images/salome_guide_cad_2.png
+    :width: 400
+    :align: center
+
+5. Create a partition just like in the previous example
+6. Create groups of volumes and faces
+7. Mesh the geometry
+8. Export the mesh to MED
+9. Convert the mesh to XDMF (don't forget to change the cell and facet types in the script)
+
 ------------------
 Meshes from FEniCS
 ------------------
