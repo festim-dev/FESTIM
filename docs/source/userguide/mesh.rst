@@ -217,7 +217,7 @@ Running this script produces mesh_domains.xdmf, mesh_boundaries.xdmf, mesh_domai
 The correspondance dictionary can be used to assign the correct markers to the mesh.
 Here, the left volume is tagged with ID 6, the right boundary is tagged with ID 9.
 
-18. Inspect the produced XDMF files with Paraview. The file mesh_domains.xdmf should look like:
+18. Inspect the produced XDMF files with Paraview using the XDMF3 S reader. The file mesh_domains.xdmf should look like:
 
 .. thumbnail:: ../images/salome_guide_13.png
     :width: 400
