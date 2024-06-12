@@ -60,6 +60,9 @@ SALOME example
 
 This is a step-by-step guide to meshing with `SALOME 9.12.0 <https://www.salome-platform.org/>`_.
 
+Building the geometry in SALOME 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 1. Open SALOME and create a new study.
 2. Activate the Geometry module
 
@@ -259,8 +262,8 @@ Here, the left volume is tagged with ID 6, the right boundary is tagged with ID 
     :width: 400
     :align: center
 
-From CAD
-^^^^^^^^
+Meshing CAD files in SALOME
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you have a CAD model, you can export it to a mesh with SALOME.
 
