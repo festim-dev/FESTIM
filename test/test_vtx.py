@@ -46,7 +46,7 @@ def test_vtx_export_two_functions(tmpdir):
 
 
 H = F.Species("H")
-implicit = F.ImplicitSpecies("empty", others=[H])
+implicit = F.ImplicitSpecies(name="empty", others=[H], n=20)
 
 
 @pytest.mark.parametrize("species_to_export", [H, implicit])
@@ -60,6 +60,15 @@ def test_vtx_integration_with_h_transport_problem(tmpdir, species_to_export):
         F.SurfaceSubdomain1D(2, x=4.0),
     ]
     my_model.species = [H]
+    my_model.reactions = [
+        F.Reaction(
+            reactant=[H, implicit],
+            product=[],
+            k_0=1,
+            E_k=0,
+            volume=my_model.subdomains[0],
+        )
+    ]
     my_model.temperature = 500
 
     filename = str(tmpdir.join("my_export.bp"))
