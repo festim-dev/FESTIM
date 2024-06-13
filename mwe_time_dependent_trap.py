@@ -1,5 +1,5 @@
 import festim as F
-
+import ufl
 import numpy as np
 
 my_model = F.HydrogenTransportProblem()
@@ -16,7 +16,7 @@ volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=mat)
 H = F.Species(name="H")
 trapped_H = F.Species(name="H_t", mobile=False)
 
-time_dependent_density = lambda x, t: 4 - 2 * x[0] + t
+time_dependent_density = lambda x: ufl.conditional(ufl.lt(x[0], 0.5), 10, 0)
 empty_traps = F.ImplicitSpecies(n=time_dependent_density, others=[trapped_H])
 
 my_model.species = [H, trapped_H]
@@ -46,7 +46,6 @@ my_model.boundary_conditions = [
 my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=100)
 my_model.settings.stepsize = F.Stepsize(0.2)
 
-my_model.exports = [F.VTXExport("results.bp", field=[trapped_H])]
-
+my_model.exports = [F.VTXExport("results.bp", field=empty_traps)]
 my_model.initialise()
 my_model.run()
