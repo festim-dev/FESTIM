@@ -4,7 +4,7 @@ on: [pull_request, push]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    container: dolfinx/dolfinx:stable
+    container: dolfinx/dolfinx:0.8
 
     steps:
     - name: Checkout code
