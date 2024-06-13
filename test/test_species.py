@@ -3,7 +3,7 @@ import dolfinx
 import ufl
 import numpy as np
 import pytest
-from dolfinx.fem import functionspace, Function
+from dolfinx.fem import functionspace, Function, Constant
 from dolfinx.mesh import create_unit_cube
 from mpi4py import MPI
 
@@ -88,8 +88,10 @@ def test_implicit_species_concentration():
     species1.solution = Function(V)
     species2.solution = Function(V)
 
+    implicit_species.convert_n_to_dolfinx(function_space=V, t=Constant(mesh, 0.0))
+
     # test the concentration of the implicit species
-    expected_concentration = implicit_species.n - (
+    expected_concentration = implicit_species.n_as_dolfinx - (
         species1.solution + species2.solution
     )
     assert implicit_species.concentration == expected_concentration
