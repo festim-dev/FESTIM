@@ -16,7 +16,7 @@ volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=mat)
 H = F.Species(name="H")
 trapped_H = F.Species(name="H_t", mobile=False)
 
-time_dependent_density = lambda x, t: 2 * x[0] + t
+time_dependent_density = lambda x, t: 4 - 2 * x[0] + t
 empty_traps = F.ImplicitSpecies(n=time_dependent_density, others=[trapped_H])
 
 my_model.species = [H, trapped_H]
@@ -27,7 +27,7 @@ my_model.reactions = [
         product=[trapped_H],
         k_0=0.1,
         E_k=0,
-        p_0=1,
+        p_0=0,
         E_p=0,
         volume=volume,
     ),
@@ -39,11 +39,14 @@ my_model.subdomains = [left_subdomain, right_subdomain, volume]
 my_model.temperature = 500
 
 my_model.boundary_conditions = [
-    F.FixedConcentrationBC(subdomain=left_subdomain, value=1, species=H),
+    F.FixedConcentrationBC(subdomain=left_subdomain, value=10, species=H),
     F.FixedConcentrationBC(subdomain=right_subdomain, value=0, species=H),
 ]
 
 my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=100)
 my_model.settings.stepsize = F.Stepsize(0.2)
 
+my_model.exports = [F.VTXExport("results.bp", field=[trapped_H])]
+
 my_model.initialise()
+my_model.run()

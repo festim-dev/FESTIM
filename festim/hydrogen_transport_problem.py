@@ -245,6 +245,12 @@ class HydrogenTransportProblem:
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
+        # convert implicit species n to dolfinx
+        for reaction in self.reactions:
+            for reactant in reaction.reactant:
+                if isinstance(reactant, F.ImplicitSpecies):
+                    reactant.convert_n_to_dolfinx(function_space=self.V_DG_1, t=self.t)
+
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
@@ -787,6 +793,11 @@ class HydrogenTransportProblem:
                 source.update(t=t)
             elif self.temperature_time_dependent and source.temperature_dependent:
                 source.update(t=t)
+
+        for reaction in self.reactions:
+            for reactant in reaction.reactant:
+                if isinstance(reactant, F.ImplicitSpecies):
+                    reactant.update(t=t)
 
     def post_processing(self):
         """Post processes the model"""
