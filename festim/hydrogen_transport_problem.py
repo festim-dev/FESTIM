@@ -517,7 +517,7 @@ class HydrogenTransportProblem:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
-            if isinstance(bc, F.DirichletBC):
+            if isinstance(bc, F.DirichletBCBase):
                 form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
 
