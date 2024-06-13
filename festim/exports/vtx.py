@@ -52,7 +52,7 @@ class VTXExport(VTXExportBase):
     Attributes:
         filename (str): the name of the output file
         writer (dolfinx.io.VTXWriter): the VTX writer
-        field (festim.Species, list of festim.Species): the field index to export
+        field (list of festim.Species): the field index to export
 
     Usage:
         >>> u = dolfinx.fem.Function(V)
