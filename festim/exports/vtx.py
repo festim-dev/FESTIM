@@ -39,6 +39,9 @@ class VTXExportBase:
         Args:
             t (float): the time of export
         """
+        for field in self.field:
+            if isinstance(field, F.ImplicitSpecies):
+                field.post_processing_solution.interpolate(field.concentration_expr)
         self.writer.write(t)
 
 

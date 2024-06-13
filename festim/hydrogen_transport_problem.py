@@ -466,6 +466,12 @@ class HydrogenTransportProblem:
                 spe.collapsed_function_space, _ = self.function_space.sub(
                     idx
                 ).collapse()
+        for reaction in self.reactions:
+            for reactant in reaction.reactant:
+                if isinstance(reactant, F.ImplicitSpecies):
+                    reactant.post_processing_solution = fem.Function(self.V_DG_1)
+                    if reactant.name:
+                        reactant.post_processing_solution.name = reactant.name
 
         for idx, spe in enumerate(self.species):
             spe.solution = sub_solutions[idx]

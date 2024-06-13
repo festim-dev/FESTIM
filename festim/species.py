@@ -184,6 +184,10 @@ class ImplicitSpecies:
             species as a dolfinx object
         n_expr (dolfinx.fem.Expression): the expression of the total
             concentration of the species
+        concentration_expr (dolfinx.fem.Expression): the expression of the
+            concentration of the species (c = n - others)
+        post_processing_solution (dolfinx.fem.Function): the solution for post
+            processing
 
     """
 
@@ -200,6 +204,8 @@ class ImplicitSpecies:
         self.n_as_dolfinx = None
         self.n_expr = None
 
+        self._concentration_expr = None
+
     def __repr__(self) -> str:
         return f"ImplicitSpecies({self.name}, {self.n}, {self.others})"
 
@@ -215,6 +221,15 @@ class ImplicitSpecies:
                         f"Cannot compute concentration of {self.name} because {other.name} has no solution"
                     )
         return self.n_as_dolfinx - sum([other.solution for other in self.others])
+
+    @property
+    def concentration_expr(self):
+        if self._concentration_expr is None:
+            self._concentration_expr = fem.Expression(
+                self.concentration,
+                self.post_processing_solution.function_space.element.interpolation_points(),
+            )
+        return self._concentration_expr
 
     def convert_n_to_dolfinx(
         self, function_space: fem.FunctionSpaceBase, t: fem.Constant
