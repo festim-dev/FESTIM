@@ -59,6 +59,7 @@ extensions = [
     "sphinx_design",
     "sphinxcontrib.bibtex",
     "matplotlib.sphinxext.plot_directive",
+    "sphinxcontrib.images",
 ]
 
 napoleon_use_ivar = True  # needed to correctly format class attributes
