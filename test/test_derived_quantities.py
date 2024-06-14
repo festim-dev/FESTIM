@@ -37,8 +37,6 @@ vol_quant = F.VolumeQuantity(mobile_H, volume=vol_1, filename=results)
         (max_surface, "Maximum H surface 2"),
         (avg_surface, "Average D surface 1"),
         (avg_vol, "Average H volume 2"),
-        (surf_quant, "H surface 1"),
-        (vol_quant, "H volume 1"),
     ],
 )
 def test_title(quantity, expected_title, tmp_path):

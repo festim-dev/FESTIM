@@ -805,7 +805,6 @@ class HydrogenTransportProblem:
             if isinstance(export, F.SurfaceQuantity):
                 if isinstance(export, F.SurfaceFlux):
                     export.compute(
-                        self.mesh.n,
                         self.ds,
                     )
                 else:

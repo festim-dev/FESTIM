@@ -15,19 +15,11 @@ class SurfaceFlux(F.SurfaceQuantity):
         see `festim.SurfaceQuantity`
     """
 
-    def __init__(
-        self,
-        field: F.Species,
-        surface: F.SurfaceSubdomain1D,
-        filename: str = None,
-    ) -> None:
-        super().__init__(field, surface, filename)
-
     @property
     def title(self):
         return f"{self.field.name} flux surface {self.surface.id}"
 
-    def compute(self, n, ds):
+    def compute(self, ds):
         """Computes the value of the flux at the surface
 
         Args:

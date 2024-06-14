@@ -15,15 +15,6 @@ def test_maximum_volume_compute_1D():
     dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_material)
     dummy_volume.locate_subdomain_entities(mesh=my_mesh.mesh, vdim=0)
 
-    # define mesh dx measure
-    num_cells = my_mesh.mesh.topology.index_map(my_mesh.vdim).size_local
-    mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-    tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-    cell_meshtags = meshtags(
-        my_mesh.mesh, my_mesh.vdim, mesh_cell_indices, tags_volumes
-    )
-    dx = ufl.Measure("dx", domain=my_mesh.mesh, subdomain_data=cell_meshtags)
-
     # give function to species
     V = fem.functionspace(my_mesh.mesh, ("CG", 1))
     c = fem.Function(V)

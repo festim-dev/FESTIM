@@ -15,14 +15,6 @@ class TotalSurface(F.SurfaceQuantity):
         see `festim.SurfaceQuantity`
     """
 
-    def __init__(
-        self,
-        field: F.Species,
-        surface: F.SurfaceSubdomain,
-        filename: str = None,
-    ) -> None:
-        super().__init__(field=field, surface=surface, filename=filename)
-
     @property
     def title(self):
         return f"Total {self.field.name} surface {self.surface.id}"

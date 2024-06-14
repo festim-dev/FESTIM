@@ -7,7 +7,7 @@ import pytest
 import os
 
 
-def test_surface_flux_export_compute(tmp_path):
+def test_surface_flux_export_compute():
     """Test that the surface flux export computes the correct value"""
 
     # BUILD
@@ -43,7 +43,7 @@ def test_surface_flux_export_compute(tmp_path):
     my_export.D = D
 
     # RUN
-    my_export.compute(n=c, ds=ds)
+    my_export.compute(ds=ds)
 
     # TEST
     # flux = -D grad(c)_ \cdot n = -D dc/dx = -D * 4 * x

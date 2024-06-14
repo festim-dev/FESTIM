@@ -14,18 +14,12 @@ def test_average_surface_compute_1D():
     D = 1.5
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=6)
-    dummy_surface.locate_boundary_facet_indices(mesh=my_mesh.mesh, fdim=my_mesh.fdim)
-
-    # define mesh ds measure
-    facet_indices = np.array(
-        dummy_surface.locate_boundary_facet_indices(my_mesh.mesh, 0),
-        dtype=np.int32,
+    dummy_volume = F.VolumeSubdomain1D(
+        id=1, borders=[0, L], material=F.Material(D_0=1, E_D=1, name="dummy")
     )
-    tags_facets = np.array(
-        [1],
-        dtype=np.int32,
+    facet_meshtags, temp = my_mesh.define_meshtags(
+        surface_subdomains=[dummy_surface], volume_subdomains=[dummy_volume]
     )
-    facet_meshtags = meshtags(my_mesh.mesh, 0, facet_indices, tags_facets)
     ds = ufl.Measure("ds", domain=my_mesh.mesh, subdomain_data=facet_meshtags)
 
     # give function to species

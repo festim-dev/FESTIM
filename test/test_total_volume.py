@@ -16,13 +16,8 @@ def test_total_volume_export_compute():
     L = 4.0
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_mat)
-
-    # define mesh dx measure
-    num_cells = my_mesh.mesh.topology.index_map(my_mesh.vdim).size_local
-    mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-    tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-    cell_meshtags = meshtags(
-        my_mesh.mesh, my_mesh.vdim, mesh_cell_indices, tags_volumes
+    temp, cell_meshtags = my_mesh.define_meshtags(
+        surface_subdomains=[], volume_subdomains=[dummy_volume]
     )
     dx = ufl.Measure("dx", domain=my_mesh.mesh, subdomain_data=cell_meshtags)
 

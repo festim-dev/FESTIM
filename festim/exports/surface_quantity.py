@@ -28,10 +28,6 @@ class SurfaceQuantity:
         self._first_time_export = True
 
     @property
-    def title(self):
-        return f"{self.field.name} surface {self.surface.id}"
-
-    @property
     def filename(self):
         return self._filename
 

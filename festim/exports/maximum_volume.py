@@ -15,14 +15,6 @@ class MaximumVolume(F.VolumeQuantity):
 
     """
 
-    def __init__(
-        self,
-        field: F.Species,
-        volume: F.VolumeSubdomain,
-        filename: str = None,
-    ) -> None:
-        super().__init__(field=field, volume=volume, filename=filename)
-
     @property
     def title(self):
         return f"Maximum {self.field.name} volume {self.volume.id}"
