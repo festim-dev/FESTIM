@@ -12,7 +12,7 @@ class SurfaceQuantity:
 
     Attributes:
         field (festim.Species): species for which the surface flux is computed
-        surface (festim.SurfaceSubdomain1D): surface subdomain
+        surface (festim.SurfaceSubdomain): surface subdomain
         filename (str): name of the file to which the surface flux is exported
         t (list): list of time values
         data (list): list of values of the surface quantity
@@ -47,10 +47,8 @@ class SurfaceQuantity:
 
     @surface.setter
     def surface(self, value):
-        if not isinstance(value, (int, F.SurfaceSubdomain1D)) or isinstance(
-            value, bool
-        ):
-            raise TypeError("surface should be an int or F.SurfaceSubdomain1D")
+        if not isinstance(value, (int, F.SurfaceSubdomain)) or isinstance(value, bool):
+            raise TypeError("surface should be an int or F.SurfaceSubdomain")
         self._surface = value
 
     @property
