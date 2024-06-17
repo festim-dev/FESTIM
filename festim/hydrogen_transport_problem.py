@@ -246,7 +246,6 @@ class HydrogenTransportProblem:
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
-        self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
@@ -496,14 +495,30 @@ class HydrogenTransportProblem:
         )
 
     def define_boundary_conditions(self):
-        """Defines the dirichlet boundary conditions of the model"""
+        """Create forms for DirichletBC and value_fenics for ParticleFluxBC"""
+        # @jhdark this all_bcs could be a property
+        # I just don't want to modify self.boundary_conditions
+
+        # create all_bcs which includes all flux bcs from SurfaceReactionBC
+        all_bcs = self.boundary_conditions.copy()
         for bc in self.boundary_conditions:
+            if isinstance(bc, F.SurfaceReactionBC):
+                all_bcs += bc.flux_bcs
+                all_bcs.remove(bc)
+
+        for bc in all_bcs:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
             if isinstance(bc, F.DirichletBC):
                 form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
+            if isinstance(bc, F.ParticleFluxBC):
+                bc.create_value_fenics(
+                    mesh=self.mesh.mesh,
+                    temperature=self.temperature_fenics,
+                    t=self.t,
+                )
 
     def create_dirichletbc_form(self, bc):
         """Creates a dirichlet boundary condition form
@@ -569,18 +584,6 @@ class HydrogenTransportProblem:
             if isinstance(source, F.ParticleSource):
 
                 source.create_value_fenics(
-                    mesh=self.mesh.mesh,
-                    temperature=self.temperature_fenics,
-                    t=self.t,
-                )
-
-    def create_flux_values_fenics(self):
-        """For each particle flux create the value_fenics"""
-        for bc in self.boundary_conditions:
-            # create value_fenics for all F.ParticleFluxBC objects
-            if isinstance(bc, F.ParticleFluxBC):
-
-                bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
                     t=self.t,
@@ -679,6 +682,13 @@ class HydrogenTransportProblem:
                     * bc.species.test_function
                     * self.ds(bc.subdomain.id)
                 )
+            if isinstance(bc, F.SurfaceReactionBC):
+                for flux_bc in bc.flux_bcs:
+                    self.formulation -= (
+                        flux_bc.value_fenics
+                        * flux_bc.species.test_function
+                        * self.ds(flux_bc.subdomain.id)
+                    )
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
