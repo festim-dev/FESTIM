@@ -54,7 +54,7 @@
             },
             "properties": {
                 "name": "Thea Energy USA",
-                "url": "https://media.licdn.com/dms/image/sync/D4E27AQEtSPdhh29Xiw/articleshare-shrink_800/0/1711995007077?e=1714071600&v=beta&t=l2mnifsctT8XWseYQSfPIyzRpwsAYVgq5j-FOWejeyY"
+                "url": "https://thea.energy/wp-content/uploads/2023/03/logo.svg"
             }
         },
         {
@@ -264,7 +264,7 @@
             },
             "properties": {
                 "name": "ENI",
-                "url": "https://upload.wikimedia.org/wikipedia/en/thumb/b/b2/Eni_new_logo.svg/320px-Eni_new_logo.svg.png"
+                "url": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Eni_logo_2023.svg"
             }
         },
         {
@@ -279,6 +279,48 @@
             "properties": {
                 "name": "ENEA",
                 "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ENEA_logo.svg/358px-ENEA_logo.svg.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -122.2637636728507,
+                    47.94311816450899
+                ]
+            },
+            "properties": {
+                "name": "Zap Energy",
+                "url": "https://media.licdn.com/dms/image/D560BAQE_5zg3TLdwog/company-logo_100_100/0/1717518748719/zap_energy_logo?e=1726704000&v=beta&t=yY1E-I2l8Hc5nRBIKli4QtBCXn6f_P1UrEHP9_wnK5Q"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.3409612613765139,
+                    51.305321198230246
+                ]
+            },
+            "properties": {
+                "name": "Frazer Nash",
+                "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNsqJ50aMZ340ixHtKTjQ11ez8ylmVQM2sGA&s"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.5894234846558715,
+                    51.243827970913635
+                ]
+            },
+            "properties": {
+                "name": "University of Surrey",
+                "url": "https://www.studyacrossthepond.com/sites/default/files/University%20of%20Surrey%20logo%202107x780px.png"
             }
         }
     ]
