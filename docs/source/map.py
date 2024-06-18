@@ -6,7 +6,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 
-LOGO_HEIGHT = 80
+LOGO_HEIGHT = 60
 
 
 def get_image_dimensions_from_url(image_url):
@@ -33,7 +33,7 @@ def get_image_dimensions_from_url(image_url):
         return None
 
 
-def generate_map():
+def generate_map(clustered=True, draggable=False):
     # Load GeoJSON data
     with open("map.json") as f:
         data = json.load(f)
@@ -44,11 +44,12 @@ def generate_map():
         zoom_start=3,
         tiles="cartodbpositron",
     )
-
-    marker_cluster = MarkerCluster().add_to(m)
+    if clustered:
+        marker_cluster = MarkerCluster().add_to(m)
     # Iterate over features in the GeoJSON data
     for feature in data["features"]:
         name = feature["properties"]["name"]
+        print(name)
         url = feature["properties"]["url"]
         if url == "URL_PLACEHOLDER":
             url = "https://upload.wikimedia.org/wikipedia/commons/9/92/LOGO_CEA_ORIGINAL.svg"
@@ -58,16 +59,27 @@ def generate_map():
         image_dimensions = get_image_dimensions_from_url(url)
         if image_dimensions:
             height_to_width_ratio = image_dimensions[1] / image_dimensions[0]
-            image_dimensions = (int(LOGO_HEIGHT / height_to_width_ratio), LOGO_HEIGHT)
+            image_dimensions = (LOGO_HEIGHT, int(LOGO_HEIGHT * height_to_width_ratio))
         else:
             image_dimensions = (LOGO_HEIGHT, LOGO_HEIGHT)
         # Create a marker with a custom icon and popup
         if coordinates != [0, 0]:
             icon = folium.CustomIcon(url, icon_size=image_dimensions)
-            folium.Marker(
+            marker = folium.Marker(
                 location=[coordinates[1], coordinates[0]],
                 icon=icon,
-            ).add_to(marker_cluster)
+                draggable=draggable,
+            )
+            if clustered:
+                marker.add_to(marker_cluster)
+            else:
+                marker.add_to(m)
         else:
             print("no coordinates for", name)
     return m
+
+
+if __name__ == "__main__":
+    m = generate_map(clustered=False, draggable=True)
+    m.save("map.html")
+    print("Map saved to map.html")
