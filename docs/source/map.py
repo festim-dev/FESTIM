@@ -6,7 +6,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 
-LOGO_HEIGHT = 70
+LOGO_HEIGHT = 60
 
 
 def get_image_dimensions_from_url(image_url):
@@ -59,7 +59,7 @@ def generate_map(clustered=True, draggable=False):
         image_dimensions = get_image_dimensions_from_url(url)
         if image_dimensions:
             height_to_width_ratio = image_dimensions[1] / image_dimensions[0]
-            image_dimensions = (int(LOGO_HEIGHT / height_to_width_ratio), LOGO_HEIGHT)
+            image_dimensions = (LOGO_HEIGHT, int(LOGO_HEIGHT * height_to_width_ratio))
         else:
             image_dimensions = (LOGO_HEIGHT, LOGO_HEIGHT)
         # Create a marker with a custom icon and popup
@@ -80,6 +80,6 @@ def generate_map(clustered=True, draggable=False):
 
 
 if __name__ == "__main__":
-    m = generate_map(clustered=True, draggable=True)
+    m = generate_map(clustered=False, draggable=True)
     m.save("map.html")
     print("Map saved to map.html")
