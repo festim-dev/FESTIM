@@ -39,6 +39,9 @@ class VTXExportBase:
         Args:
             t (float): the time of export
         """
+        for field in self.field:
+            if isinstance(field, F.ImplicitSpecies):
+                field.post_processing_solution.interpolate(field.concentration_expr)
         self.writer.write(t)
 
 
@@ -52,7 +55,7 @@ class VTXExport(VTXExportBase):
     Attributes:
         filename (str): the name of the output file
         writer (dolfinx.io.VTXWriter): the VTX writer
-        field (festim.Species, list of festim.Species): the field index to export
+        field (list of festim.Species): the field index to export
 
     Usage:
         >>> u = dolfinx.fem.Function(V)
@@ -74,16 +77,17 @@ class VTXExport(VTXExportBase):
     @field.setter
     def field(self, value):
         # check that field is festim.Species or list of festim.Species
-        if not isinstance(value, (F.Species, str)) and not isinstance(value, list):
+        accepted_types = (F.Species, str, F.ImplicitSpecies)
+        if not isinstance(value, accepted_types) and not isinstance(value, list):
             raise TypeError(
-                "field must be of type festim.Species or str or a list of festim.Species or str"
+                f"field must be of type {accepted_types} or a list of {accepted_types}, not {type(value)}"
             )
         # check that all elements of list are festim.Species
         if isinstance(value, list):
             for element in value:
-                if not isinstance(element, (F.Species, str)):
+                if not isinstance(element, accepted_types):
                     raise TypeError(
-                        "field must be of type festim.Species or str or a list of festim.Species or str"
+                        f"field must be of type {accepted_types} or a list of {accepted_types}, not {type(element)}"
                     )
         # if field is festim.Species, convert to list
         if not isinstance(value, list):

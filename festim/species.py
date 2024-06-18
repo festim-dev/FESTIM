@@ -1,5 +1,7 @@
 from typing import List
 import festim as F
+import dolfinx.fem as fem
+import ufl
 
 
 class Species:
@@ -178,6 +180,14 @@ class ImplicitSpecies:
         others (List[Species]): the list of species from which the implicit
             species concentration is computed (c = n - others)
         concentration (form): the concentration of the species
+        n_as_dolfinx (dolfinx.fem.Constant): the total concentration of the
+            species as a dolfinx object
+        n_expr (dolfinx.fem.Expression): the expression of the total
+            concentration of the species
+        concentration_expr (dolfinx.fem.Expression): the expression of the
+            concentration of the species (c = n - others)
+        post_processing_solution (dolfinx.fem.Function): the solution for post
+            processing
 
     """
 
@@ -190,6 +200,11 @@ class ImplicitSpecies:
         self.name = name
         self.n = n
         self.others = others
+
+        self.n_as_dolfinx = None
+        self.n_expr = None
+
+        self._concentration_expr = None
 
     def __repr__(self) -> str:
         return f"ImplicitSpecies({self.name}, {self.n}, {self.others})"
@@ -205,7 +220,76 @@ class ImplicitSpecies:
                     raise ValueError(
                         f"Cannot compute concentration of {self.name} because {other.name} has no solution"
                     )
-        return self.n - sum([other.solution for other in self.others])
+        return self.n_as_dolfinx - sum([other.solution for other in self.others])
+
+    @property
+    def concentration_expr(self):
+        if self._concentration_expr is None:
+            self._concentration_expr = fem.Expression(
+                self.concentration,
+                self.post_processing_solution.function_space.element.interpolation_points(),
+            )
+        return self._concentration_expr
+
+    def convert_n_to_dolfinx(
+        self, function_space: fem.FunctionSpaceBase, t: fem.Constant
+    ):
+        """Converts the total concentration of the species to a dolfinx object
+
+        Args:
+            function_space (dolfinx.fem.FunctionSpaceBase): the function space
+            t (dolfinx.fem.Constant): the time
+        """
+        mesh = function_space.mesh
+        x = ufl.SpatialCoordinate(mesh)
+
+        if isinstance(self.n, (int, float)):
+            n_as_dolfinx = F.as_fenics_constant(mesh=mesh, value=self.n)
+
+        elif callable(self.n):
+            arguments = self.n.__code__.co_varnames
+
+            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                # only t is an argument
+                if not isinstance(self.n(t=float(t)), (float, int)):
+                    raise ValueError(
+                        f"self.n should return a float or an int, not {type(self.n(t=float(t)))} "
+                    )
+                n_as_dolfinx = F.as_fenics_constant(mesh=mesh, value=self.n(t=float(t)))
+            else:
+                n_as_dolfinx = fem.Function(function_space)
+                kwargs = {}
+                if "t" in arguments:
+                    kwargs["t"] = t
+                if "x" in arguments:
+                    kwargs["x"] = x
+                if "T" in arguments:
+                    raise NotImplementedError(
+                        "Temperature dependent implicit species not implemented"
+                    )
+
+                # store the expression of the boundary condition
+                # to update the n later
+                self.n_expr = fem.Expression(
+                    self.n(**kwargs),
+                    function_space.element.interpolation_points(),
+                )
+                n_as_dolfinx.interpolate(self.n_expr)
+
+        self.n_as_dolfinx = n_as_dolfinx
+
+    def update(self, t):
+        """Updates the total concentration of the species
+
+        Args:
+            t (float): the time
+        """
+        if callable(self.n):
+            arguments = self.n.__code__.co_varnames
+            if isinstance(self.n_as_dolfinx, fem.Constant) and "t" in arguments:
+                self.n_as_dolfinx.value = self.value(t=t)
+            else:
+                self.n_as_dolfinx.interpolate(self.n_expr)
 
 
 def find_species_from_name(name: str, species: list):

@@ -45,7 +45,12 @@ def test_vtx_export_two_functions(tmpdir):
         my_export.write(t)
 
 
-def test_vtx_integration_with_h_transport_problem(tmpdir):
+H = F.Species("H")
+implicit = F.ImplicitSpecies(name="empty", others=[H], n=20)
+
+
+@pytest.mark.parametrize("species_to_export", [H, implicit])
+def test_vtx_integration_with_h_transport_problem(tmpdir, species_to_export):
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     my_mat = F.Material(D_0=1, E_D=0, name="mat")
@@ -54,11 +59,20 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
         F.SurfaceSubdomain1D(1, x=0.0),
         F.SurfaceSubdomain1D(2, x=4.0),
     ]
-    my_model.species = [F.Species("H")]
+    my_model.species = [H]
+    my_model.reactions = [
+        F.Reaction(
+            reactant=[H, implicit],
+            product=[],
+            k_0=1,
+            E_k=0,
+            volume=my_model.subdomains[0],
+        )
+    ]
     my_model.temperature = 500
 
     filename = str(tmpdir.join("my_export.bp"))
-    my_export = F.VTXExport(filename, field=my_model.species[0])
+    my_export = F.VTXExport(filename, field=species_to_export)
     my_model.exports = [my_export]
     my_model.settings = F.Settings(atol=1, rtol=0.1)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
