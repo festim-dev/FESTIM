@@ -690,7 +690,7 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
     my_model.initialise()
 
     assert np.isclose(
-        my_model.species[0].prev_solution.vector.array[-1],
+        my_model.species[0].prev_solution.x.petsc_vec.array[-1],
         expected_value,
     )
 

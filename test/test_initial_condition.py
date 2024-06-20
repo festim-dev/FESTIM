@@ -78,7 +78,7 @@ def test_warning_raised_when_giving_time_as_arg_initial_temperature():
     """Test that a warning is raised if the value is given with t in its arguments"""
 
     # give function to species
-    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     my_species = F.Species("test")
     my_species.prev_solution = fem.Function(V)
 
@@ -107,7 +107,7 @@ def test_create_value_fenics_initial_temperature(input_value, expected_type):
     # BUILD
 
     # give function to species
-    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
 
     my_species = F.Species("test")

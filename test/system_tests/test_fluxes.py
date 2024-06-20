@@ -15,8 +15,7 @@ def test_flux_bc_1_mobile_MMS_steady_state():
 
     u_exact = lambda x: 1 + 2 * x[0] ** 2
 
-    elements = ufl.FiniteElement("CG", test_mesh_1d.mesh.ufl_cell(), 1)
-    V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
     T = fem.Function(V)
 
     D_0 = 1
@@ -64,10 +63,6 @@ def test_flux_bc_heat_transfer_steady_state():
     """
 
     u_exact = lambda x: 1 + 2 * x[0] ** 2
-
-    elements = ufl.FiniteElement("CG", test_mesh_1d.mesh.ufl_cell(), 1)
-    V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
-    T = fem.Function(V)
 
     thermal_cond = 2.3
 

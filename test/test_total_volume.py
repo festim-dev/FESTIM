@@ -28,7 +28,7 @@ def test_total_volume_export_compute():
     dx = ufl.Measure("dx", domain=my_mesh.mesh, subdomain_data=cell_meshtags)
 
     # give function to species
-    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: 2 * x[0] ** 2 + 1)
 
