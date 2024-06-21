@@ -2,6 +2,10 @@
 Temperature
 ===========
 
+.. testsetup::
+
+    from festim import HeatTransferProblem, TemperatureFromXDMF
+
 Definition of a temperature field or problem is essential for hydrogen transport 
 and FESTIM as a whole.
 Regardless of how you define the temperature of the problem, it is passed to the :code:`T` attribute of the :class:`festim.Simulation` object.
@@ -12,7 +16,7 @@ Analytical expressions
 
 The temperature can be defined as a constant value in Kelvin (K):
 
-.. code-block:: python
+.. testcode::
 
     my_temperature = 300
 
@@ -40,7 +44,7 @@ More complex expressions can be expressed with sympy:
 
 would be passed to FESTIM as:
 
-.. code-block:: python
+.. testcode::
 
     from festim import x, t
     import sympy as sp
@@ -49,12 +53,12 @@ would be passed to FESTIM as:
 
 Conditional expressions are also possible:
 
-.. code-block:: python
+.. testcode::
 
     from festim import x, t
     import sympy as sp
 
-    my_temp = sp.Piecewise((400, F.t < 10), (300, True))
+    my_temp = sp.Piecewise((400, t < 10), (300, True))
 
 ---------------------------
 From a heat transfer solver
@@ -64,7 +68,7 @@ Temperature can also be obtained by solving the heat equation.
 Users can define heat transfer problems using :class:`festim.HeatTransferProblem`.
 
 
-.. code-block:: python
+.. testcode::
 
     my_temp = HeatTransferProblem()
 

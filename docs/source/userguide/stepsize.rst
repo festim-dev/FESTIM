@@ -7,14 +7,14 @@ For transient problems, a :class:`festim.Stepsize` is required.
 It represents the time discretisation of the problem.
 Here is an example creating a stepsize of 1.2 seconds:
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
     my_stepsize = F.Stepsize(initial_value=1.2)
 
 To use the adaptive time stepping implemented in FESTIM, the arguments ``stepsize_change_ratio`` needs to be set to a value above 1.
 
-.. code-block:: python
+.. testcode::
 
     my_stepsize = F.Stepsize(initial_value=1.2, stepsize_change_ratio=1.5)
 
@@ -25,7 +25,7 @@ Moreover, if the solver doesn't converge, the stepsize will be reduced and the s
 Setting the ``dt_min`` argument will prevent the stepsize from becoming too small and will stop the simulation when this happens.
 To cap the stepsize after some time, the parameters ``t_stop`` and ``stepsize_stop_max`` can be used.
 
-.. code-block:: python
+.. testcode::
 
     my_stepsize = F.Stepsize(
         initial_value=1.2, 
@@ -41,7 +41,7 @@ To cap the stepsize after some time, the parameters ``t_stop`` and ``stepsize_st
 Another option for controlling the stepsize is to use the ``max_stepsize`` parameter. This parameter defines the maximal value of the stepsize during simulations, 
 and it can be set as a constant or a callable function of time:
    
-.. code-block:: python
+.. testcode::
 
     def max_stepsize(t):
         if t <= 5:
@@ -60,7 +60,7 @@ and it can be set as a constant or a callable function of time:
 The ``milestones`` argument can be used to make sure the simulation passes through specific times.
 This will modify the stepsize as needed.
 
-.. code-block:: python
+.. testcode::
 
     my_stepsize = F.Stepsize(
         initial_value=1.2,

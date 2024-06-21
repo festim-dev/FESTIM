@@ -16,7 +16,7 @@ A trap in FESTIM is defined by:
 * its density
 * the materials where it is located
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -26,7 +26,7 @@ A trap in FESTIM is defined by:
 
 If the trap is located in several materials, instead of creating another :class:`festim.Trap` object, simply use a list of materials:
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -37,7 +37,7 @@ If the trap is located in several materials, instead of creating another :class:
 
 The trap density can be a function of space and time. For example:
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -52,7 +52,7 @@ The trap density can be a function of space and time. For example:
 
 Boolean expressions can also be used to restrict the trap to certain regions:
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -76,7 +76,7 @@ Extrinsic traps
 An extrinsic trap is defined as a trap with a density evolving over time.
 If the temporal evolution of the trap's density is known `a priori`, then a "normal" trap can be used with a time dependent expression as density (see above).
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -94,7 +94,7 @@ Let's imagine a case where you have two subdomains. Trap 1 is defined only in th
 It would be possible to define one trap in each subdomain.
 Grouping traps together helps save computational time by reducing the number of degrees of freedom.
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
