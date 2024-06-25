@@ -23,19 +23,20 @@ class SurfaceSubdomain1D(F.SurfaceSubdomain):
         super().__init__(id)
         self.x = x
 
-    def locate_boundary_facet_indices(self, mesh, fdim):
+    def locate_boundary_facet_indices(self, mesh):
         """Locates the dof of the surface subdomain within the function space
         and return the index of the dof
 
         Args:
             mesh (dolfinx.mesh.Mesh): the mesh of the simulation
-            fdim (int): the dimension of the model facets
 
         Returns:
             index (np.array): the first value in the list of surface facet
                 indices of the subdomain
         """
-        self.indices = dolfinx.mesh.locate_entities_boundary(
+        assert mesh.geometry.dim == 1, "This method is only for 1D meshes"
+        fdim = 0
+        indices = dolfinx.mesh.locate_entities_boundary(
             mesh, fdim, lambda x: np.isclose(x[0], self.x)
         )
-        return self.indices[0]
+        return indices

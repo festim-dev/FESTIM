@@ -9,8 +9,6 @@ import numpy as np
 import tqdm.auto as tqdm
 import festim as F
 
-from dolfinx.mesh import meshtags
-
 
 class HydrogenTransportProblem:
     """
@@ -474,29 +472,15 @@ class HydrogenTransportProblem:
             self.facet_meshtags = self.mesh.define_surface_meshtags()
             self.volume_meshtags = self.mesh.define_volume_meshtags()
 
-        elif isinstance(self.mesh, F.Mesh1D):
+        elif (
+            isinstance(self.mesh, F.Mesh)
+            and self.facet_meshtags is None
+            and self.volume_meshtags is None
+        ):
             self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
                 surface_subdomains=self.surface_subdomains,
                 volume_subdomains=self.volume_subdomains,
             )
-
-        elif isinstance(self.mesh, F.Mesh):
-            if not self.facet_meshtags:
-                # create empty facet_meshtags
-                facet_indices = np.array([], dtype=np.int32)
-                facet_tags = np.array([], dtype=np.int32)
-                self.facet_meshtags = meshtags(
-                    self.mesh.mesh, self.mesh.fdim, facet_indices, facet_tags
-                )
-
-            if not self.volume_meshtags:
-                # create meshtags with all cells tagged as 1
-                num_cells = self.mesh.mesh.topology.index_map(self.mesh.vdim).size_local
-                mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-                tags_volumes = np.full(num_cells, 1, dtype=np.int32)
-                self.volume_meshtags = meshtags(
-                    self.mesh.mesh, self.mesh.vdim, mesh_cell_indices, tags_volumes
-                )
 
         # check volume ids are unique
         vol_ids = [vol.id for vol in self.volume_subdomains]

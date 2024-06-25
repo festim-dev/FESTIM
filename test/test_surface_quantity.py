@@ -18,7 +18,7 @@ def test_surface_flux_export_compute():
 
     # define mesh ds measure
     facet_indices = np.array(
-        dummy_surface.locate_boundary_facet_indices(my_mesh.mesh, 0),
+        dummy_surface.locate_boundary_facet_indices(my_mesh.mesh),
         dtype=np.int32,
     )
     tags_facets = np.array(
