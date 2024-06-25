@@ -15,7 +15,7 @@ def test_minimum_surface_export_compute_1D():
     D = 1.5
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=4)
-    dummy_surface.locate_boundary_facet_indices(mesh=my_mesh.mesh, fdim=my_mesh.fdim)
+    dummy_surface.locate_boundary_facet_indices(mesh=my_mesh.mesh)
 
     # give function to species
     V = fem.functionspace(my_mesh.mesh, ("CG", 1))
