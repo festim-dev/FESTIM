@@ -4,386 +4,463 @@
   <Domain>
     <Grid Name="TimeSeries_retention" GridType="Collection" CollectionType="Temporal">
       <Grid Name="mesh" GridType="Uniform">
-        <Topology NumberOfElements="3198" TopologyType="PolyLine" NodesPerElement="2">
-          <DataItem Dimensions="3198 2" NumberType="UInt" Format="HDF">ret.h5:/Mesh/0/mesh/topology</DataItem>
+        <Topology NumberOfElements="848" TopologyType="PolyLine" NodesPerElement="2">
+          <DataItem Dimensions="848 2" NumberType="UInt" Format="HDF">ret.h5:/Mesh/0/mesh/topology</DataItem>
         </Topology>
         <Geometry GeometryType="XY">
-          <DataItem Dimensions="3199 2" Format="HDF">ret.h5:/Mesh/0/mesh/geometry</DataItem>
+          <DataItem Dimensions="849 2" Format="HDF">ret.h5:/Mesh/0/mesh/geometry</DataItem>
         </Geometry>
         <Time Value="9.9999999999999995e-08" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/0</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/0</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="1.7099511718750002e-05" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/1</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/1</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="0.00099737701902389512" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/2</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/2</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="0.057525117769865221" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/3</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/3</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="3.3171994962820044" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/4</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/4</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="191.28644986421494" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/5</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/5</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="9853.6937431866063" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/6</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/6</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="34853.69374318661" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/7</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/7</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="59853.69374318661" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/8</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/8</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="84853.69374318661" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/9</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/9</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="109853.69374318661" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/10</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/10</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="134853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/11</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/11</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="159853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/12</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/12</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="184853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/13</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/13</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="209853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/14</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/14</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="234853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/15</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/15</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="259853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/16</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/16</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="284853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/17</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/17</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="309853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/18</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/18</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="334853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/19</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/19</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="359853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/20</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/20</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="384853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/21</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/21</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="409853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/22</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/22</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="434853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/23</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/23</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="459853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/24</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/24</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="484853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/25</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/25</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
         <Time Value="509853.6937431866" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/26</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/26</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="521577.77777777781" />
+        <Time Value="519133.33333333331" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/27</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/27</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="531577.77777777775" />
+        <Time Value="524133.33333333331" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/28</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/28</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="541577.77777777775" />
+        <Time Value="529133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/29</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/29</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="551577.77777777775" />
+        <Time Value="534133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/30</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/30</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="561577.77777777775" />
+        <Time Value="539133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/31</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/31</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="571577.77777777775" />
+        <Time Value="544133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/32</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/32</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="581577.77777777775" />
+        <Time Value="549133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/33</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/33</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="591577.77777777775" />
+        <Time Value="554133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/34</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/34</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="601577.77777777775" />
+        <Time Value="559133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/35</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/35</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="603533.33333333337" />
+        <Time Value="564133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/36</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/36</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="604033.33333333337" />
+        <Time Value="569133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/37</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/37</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="604533.33333333337" />
+        <Time Value="574133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/38</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/38</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="605033.33333333337" />
+        <Time Value="579133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/39</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/39</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="605533.33333333337" />
+        <Time Value="584133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/40</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/40</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="606033.33333333337" />
+        <Time Value="589133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/41</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/41</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="606533.33333333337" />
+        <Time Value="594133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/42</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/42</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="607033.33333333337" />
+        <Time Value="599133.33333333326" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/43</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/43</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="607533.33333333337" />
+        <Time Value="602400.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/44</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/44</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="608033.33333333337" />
+        <Time Value="602900.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/45</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/45</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="608533.33333333337" />
+        <Time Value="603400.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/46</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/46</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="609033.33333333337" />
+        <Time Value="603900.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/47</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/47</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="609533.33333333337" />
+        <Time Value="604400.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/48</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/48</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="610033.33333333337" />
+        <Time Value="604900.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/49</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/49</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="610533.33333333337" />
+        <Time Value="605400.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/50</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/50</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="611033.33333333337" />
+        <Time Value="605900.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/51</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/51</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="611533.33333333337" />
+        <Time Value="606400.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/52</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/52</DataItem>
         </Attribute>
       </Grid>
       <Grid>
         <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
-        <Time Value="612033.33333333337" />
+        <Time Value="606900.00000000012" />
         <Attribute Name="retention" AttributeType="Scalar" Center="Node">
-          <DataItem Dimensions="3199 1" Format="HDF">ret.h5:/VisualisationVector/53</DataItem>
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/53</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="607400.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/54</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="607900.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/55</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="608400.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/56</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="608900.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/57</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="609400.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/58</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="609900.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/59</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="610400.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/60</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="610900.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/61</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="611400.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/62</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="611900.00000000012" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/63</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries_retention&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="612400" />
+        <Attribute Name="retention" AttributeType="Scalar" Center="Node">
+          <DataItem Dimensions="849 1" Format="HDF">ret.h5:/VisualisationVector/64</DataItem>
         </Attribute>
       </Grid>
     </Grid>
