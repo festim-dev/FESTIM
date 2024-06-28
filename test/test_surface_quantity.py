@@ -65,7 +65,7 @@ def test_title_generation(tmp_path, value):
     my_export.write(0)
     title = np.genfromtxt(my_export.filename, delimiter=",", max_rows=1, dtype=str)
 
-    expected_title = "Flux surface 35: TEST"
+    expected_title = "TEST flux surface 35"
 
     assert title[1] == expected_title
 

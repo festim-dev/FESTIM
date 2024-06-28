@@ -55,6 +55,13 @@ from .stepsize import Stepsize
 from .exports.surface_quantity import SurfaceQuantity
 from .exports.volume_quantity import VolumeQuantity
 from .exports.total_volume import TotalVolume
+from .exports.average_volume import AverageVolume
+from .exports.maximum_volume import MaximumVolume
+from .exports.minimum_volume import MinimumVolume
+from .exports.total_surface import TotalSurface
+from .exports.maximum_surface import MaximumSurface
+from .exports.minimum_surface import MinimumSurface
+from .exports.average_surface import AverageSurface
 from .exports.surface_flux import SurfaceFlux
 from .exports.vtx import VTXExport, VTXExportForTemperature
 from .exports.xdmf import XDMFExport

@@ -37,9 +37,9 @@ class VolumeSubdomain1D(F.VolumeSubdomain):
         Returns:
             entities (np.array): the entities of the subdomain
         """
-        entities = locate_entities(
+        self.entities = locate_entities(
             mesh,
             vdim,
             lambda x: np.logical_and(x[0] >= self.borders[0], x[0] <= self.borders[1]),
         )
-        return entities
+        return self.entities

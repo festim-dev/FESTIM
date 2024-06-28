@@ -36,7 +36,7 @@ class SurfaceSubdomain1D(F.SurfaceSubdomain):
         """
         assert mesh.geometry.dim == 1, "This method is only for 1D meshes"
         fdim = 0
-        indices = dolfinx.mesh.locate_entities_boundary(
+        self.indices = dolfinx.mesh.locate_entities_boundary(
             mesh, fdim, lambda x: np.isclose(x[0], self.x)
         )
-        return indices
+        return self.indices
