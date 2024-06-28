@@ -42,6 +42,5 @@ vol_quant = F.VolumeQuantity(mobile_H, volume=vol_1, filename=results)
 def test_title(quantity, expected_title, tmp_path):
     quantity.filename = os.path.join(tmp_path, "test.csv")
     quantity.value = 1
-    quantity.write(t=1)
 
     assert quantity.title == expected_title
