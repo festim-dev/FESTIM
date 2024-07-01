@@ -56,6 +56,7 @@ from .boundary_conditions.fluxes.dissociation_flux import DissociationFlux
 from .boundary_conditions.fluxes.convective_flux import ConvectiveFlux
 from .boundary_conditions.fluxes.flux_custom import CustomFlux
 from .boundary_conditions.fluxes.mass_flux import MassFlux
+from .boundary_conditions.fluxes.surface_kinetics import SurfaceKinetics
 
 from .exports.exports import Exports
 from .exports.export import Export
@@ -83,6 +84,7 @@ from .exports.derived_quantities.total_surface import TotalSurface
 from .exports.derived_quantities.total_volume import TotalVolume
 from .exports.derived_quantities.average_surface import AverageSurface
 from .exports.derived_quantities.point_value import PointValue
+from .exports.derived_quantities.adsorbed_hydrogen import AdsorbedHydrogen
 
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
