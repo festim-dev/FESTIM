@@ -485,6 +485,12 @@ class Simulation:
                 [self.mobile.post_processing_solution]
                 + [trap.post_processing_solution for trap in self.traps]
             ),
+            # add tuples (pp_solutions, surfaces) for each SurfaceKinetics boundary condition
+            "adsorbed": [
+                (bc.post_processing_solutions, bc.surfaces)
+                for bc in self.boundary_conditions
+                if isinstance(bc, festim.SurfaceKinetics)
+            ],
         }
         for trap in self.traps:
             label_to_function[trap.id] = trap.post_processing_solution
