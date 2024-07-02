@@ -95,9 +95,11 @@ class Exports(list):
                                 )
                         if isinstance(quantity, festim.AdsorbedHydrogen):
                             for surf_funcs in label_to_function[quantity.field]:
-                                if quantity.surface in surf_funcs[1]:
-                                    ind = surf_funcs[1].index(quantity.surface)
-                                    quantity.function = surf_funcs[0][ind]
+                                if quantity.surface in surf_funcs["surfaces"]:
+                                    ind = surf_funcs["surfaces"].index(quantity.surface)
+                                    quantity.function = surf_funcs[
+                                        "post_processing_solutions"
+                                    ][ind]
                         else:
                             quantity.function = label_to_function[quantity.field]
                     export.compute(self.t)

@@ -4,19 +4,23 @@ import fenics as f
 
 class AdsorbedHydrogen(SurfaceQuantity):
     """
-    Computes the hydrogen surface concentration on a surface
+    Object to compute the value of the adsorbed H concentration,
+    defined with the SurfaceKinetics boundary condition on a given surface.
+
+    .. warning::
+
+        The AdsorbedHydrogen export can be used only if the SurfaceBoundary
+        condition is defined on the same surface.
 
     Args:
         surface (int): the surface id
 
-    Attribtutes
+    Attributes:
         surface (int): the surface id
         export_unit (str): the unit of the derived quantity in the export file
         title (str): the title of the derived quantity
-        show_units (bool): show the units in the title in the derived quantities
-            file
-        function (dolfin.function.function.Function): the solution function of
-            the hydrogen adsorbed field
+        show_units (bool): show the units in the title in the derived quantities file
+        function (dolfin.function.function.Function): the solution function of the hydrogen adsorbed field
 
     """
 
@@ -29,7 +33,7 @@ class AdsorbedHydrogen(SurfaceQuantity):
 
     @property
     def title(self):
-        quantity_title = f"Concentration of adsorbed H on surface {self.surface}"
+        quantity_title = f"Adsorbed H on surface {self.surface}"
         if self.show_units:
             return quantity_title + f" ({self.export_unit})"
         else:

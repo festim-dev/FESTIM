@@ -3,6 +3,7 @@ import fenics as f
 import numpy as np
 import pytest
 import os
+import re
 
 
 def test_convective_flux(tmpdir):
@@ -153,12 +154,58 @@ def test_error_DirichletBC_on_same_surface(field, surfaces):
 
     sim.settings = F.Settings(1e-10, 1e-10, transient=False)
 
-    with pytest.raises(ValueError):
-        sim.boundary_conditions = [
-            F.FluxBC(value=1, field=field, surfaces=1),
-            F.DirichletBC(value=1, field=field, surfaces=2),
-            F.DirichletBC(value=1, field=field, surfaces=surfaces),
-        ]
+    test_bc = F.DirichletBC(value=1, field=field, surfaces=surfaces)
+    sim.boundary_conditions = [
+        F.FluxBC(value=1, field=field, surfaces=1),
+        F.DirichletBC(value=1, field=field, surfaces=2),
+        test_bc,
+    ]
+
+    for bc in reversed(sim.boundary_conditions):
+        if bc == test_bc or bc.field != test_bc.field:
+            continue
+        if not set(bc.surfaces).isdisjoint(test_bc.surfaces):
+            intersection = set(bc.surfaces) & set(test_bc.surfaces)
+            print(intersection)
+            message = re.escape(
+                f"DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {test_bc.field}"
+            )
+    with pytest.raises(ValueError, match=message):
+        sim.initialise()
+
+
+@pytest.mark.parametrize("surfaces", [1, 2, [1, 2]])
+def test_error_SurfaceKinetics_on_same_surface(surfaces):
+    """
+    Tests that an error is raised when a SurfaceKinetics is set on
+    a surface together with another boundary condition
+    """
+    sim = F.Simulation()
+
+    sim.mesh = F.MeshFromVertices(np.linspace(0, 1, num=10))
+
+    sim.T = F.Temperature(500)
+
+    sim.materials = F.Materials([F.Material(1, D_0=1, E_D=0)])
+
+    sim.settings = F.Settings(1e-10, 1e-10, transient=False)
+
+    test_bc = F.SurfaceKinetics(1, 1, 1, 1, 1, 1, surfaces, 1)
+    sim.boundary_conditions = [
+        F.FluxBC(value=1, field=0, surfaces=1),
+        F.DirichletBC(value=1, field=0, surfaces=2),
+        test_bc,
+    ]
+
+    for bc in reversed(sim.boundary_conditions):
+        if bc == test_bc or bc.field != test_bc.field:
+            continue
+        if not set(bc.surfaces).isdisjoint(test_bc.surfaces):
+            intersection = set(bc.surfaces) & set(test_bc.surfaces)
+            message = re.escape(
+                f"SurfaceKinetics is simultaneously set with another boundary condition on surfaces {intersection} for field {test_bc.field}"
+            )
+    with pytest.raises(ValueError, match=message):
         sim.initialise()
 
 
@@ -544,5 +591,69 @@ def test_error_raised_when_no_IC_heat_transfer():
     with pytest.raises(
         AttributeError,
         match="Initial condition is required for transient heat transfer simulations",
+    ):
+        my_model.initialise()
+
+
+@pytest.mark.parametrize("mesh", [f.UnitSquareMesh(2, 2), f.UnitCubeMesh(2, 2, 2)])
+def test_error_raised_when_surface_kinetics_not_1D(mesh):
+    """
+    Checks that an error is raised when the SurfaceKinetics bc is used
+    in non 1D simulations
+    """
+    volume_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim())
+
+    surface_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+
+    my_model = F.Simulation()
+
+    my_model.mesh = F.Mesh(
+        mesh, volume_markers=volume_markers, surface_markers=surface_markers
+    )
+
+    my_model.boundary_conditions = [F.SurfaceKinetics(1, 1, 1, 1, 1, 1, 1, 1)]
+
+    my_model.materials = F.Material(id=1, D_0=1, E_D=1)
+
+    my_model.T = 1
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+
+    with pytest.raises(
+        ValueError, match="SurfaceKinetics can only be used in 1D simulations"
+    ):
+        my_model.initialise()
+
+
+@pytest.mark.parametrize("surface", [1, 2])
+def test_error_raised_when_adsorbed_hydrogen_without_surface_kinetics(surface):
+    """
+    Checks that an error is raised when the AdsorbedHydrogen export is used
+    without a SurfaceKinetics bc
+    """
+    my_model = F.Simulation()
+
+    my_model.mesh = F.MeshFromVertices(np.linspace(1, 10))
+
+    my_model.materials = F.Material(id=1, D_0=1, E_D=1)
+
+    my_model.T = 1
+
+    my_model.exports = [F.DerivedQuantities([F.AdsorbedHydrogen(surface=surface)])]
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+
+    message = f"SurfaceKinetics boundary condition must be defined on surface {surface} to export data with festim.AdsorbedHydrogen"
+    with pytest.raises(
+        AttributeError,
+        match=message,
     ):
         my_model.initialise()

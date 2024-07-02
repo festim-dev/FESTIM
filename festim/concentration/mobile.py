@@ -194,8 +194,6 @@ class Mobile(Concentration):
                             dt,
                         )
                         F += bc.F
-                        expressions_fluxes += bc.sub_expressions
-
                     else:
                         bc.create_form(T.T, solute)
                         for surf in bc.surfaces:

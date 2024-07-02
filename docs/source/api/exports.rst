@@ -35,6 +35,10 @@ Exports
     :members:
     :show-inheritance:
 
+.. autoclass:: AdsorbedHydrogen
+    :members:
+    :show-inheritance:
+
 .. autoclass:: AverageSurface
     :members:
     :show-inheritance:
