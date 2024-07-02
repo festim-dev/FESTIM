@@ -391,7 +391,7 @@ class HTransportProblem:
             if isinstance(bc, festim.SurfaceKinetics)
         ]:
             for i in range(len(bc.post_processing_solutions)):
-                bc.post_processing_solutions[i] = res[index + i]
+                bc.post_processing_solutions[i] = res[index]
                 index += 1
 
         if self.settings.chemical_pot:
