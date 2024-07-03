@@ -219,7 +219,7 @@ class HTransportProblem:
             if isinstance(bc, festim.SurfaceKinetics)
         ]:
             for i in range(len(bc.previous_solutions)):
-                functionspace = self.V.sub(index + i).collapse()
+                functionspace = self.V.sub(index).collapse()
                 comp = interpolate(Constant(bc.initial_condition), functionspace)
                 assign(bc.previous_solutions[i], comp)
                 index += 1
