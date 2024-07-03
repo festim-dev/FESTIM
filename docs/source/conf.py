@@ -121,6 +121,18 @@ html_theme_options = {
             "icon": "fa-brands fa-slack",
         },
     ],
+    "article_header_end": [
+        "navbar-icon-links",
+        "article-header-buttons",
+    ],
+}
+
+html_sidebars = {
+    "**": [
+        "navbar-logo",
+        "search-button-field",
+        "sbt-sidebar-nav",
+    ],
 }
 
 html_title = "FESTIM Documentation"
