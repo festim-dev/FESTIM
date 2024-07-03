@@ -551,7 +551,7 @@ def test_error_raised_when_no_IC_heat_transfer():
 def test_catch_bug_738(tmpdir):
     """
     Test to catch bug #738
-    Set up a simple simulation with and XDMFExport in write mode "last"
+    Set up a simple simulation with an XDMFExport in write mode "last"
     The stepsize is such that the first timestep is almost the final time (ie. dt = t_final - epsilon)
     The simulation should detect that this is the last timestep and export the data.
 
