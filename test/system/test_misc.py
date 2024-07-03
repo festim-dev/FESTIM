@@ -645,7 +645,7 @@ def test_error_raised_when_adsorbed_hydrogen_without_surface_kinetics(surface):
     ):
         my_model.initialise()
 
-        
+
 def test_catch_bug_738(tmpdir):
     """
     Test to catch bug #738
