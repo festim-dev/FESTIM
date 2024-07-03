@@ -579,9 +579,9 @@ def custom_fun(T, solute, param1):
             festim.SurfaceKinetics(
                 k_sb=1,
                 k_bs=1,
-                l_abs=1,
-                N_s=1,
-                N_b=1,
+                lambda_IS=1,
+                n_surf=1,
+                n_IS=1,
                 J_vs=1,
                 initial_condition=0,
                 surfaces=1,
@@ -615,7 +615,8 @@ def test_dissoc_flux():
 
 def test_create_form_surf_kinetics():
     """
-    Creates a SurfaceKinetics bc and checkscreate_form returns the correct form
+    Creates a SurfaceKinetics bc and checks that the create_form method
+    returns the correct form
     """
 
     # build
@@ -628,9 +629,9 @@ def test_create_form_surf_kinetics():
     def J_vs(cs, T, prm1, prm2):
         return 2 * T + 1
 
-    l_abs = 1
-    N_s = 1
-    N_b = 1
+    lambda_IS = 1
+    n_surf = 1
+    n_IS = 1
     prm1 = 1 + 2 * festim.t + festim.x
     prm2 = 2
 
@@ -658,9 +659,9 @@ def test_create_form_surf_kinetics():
         k_bs=k_bs,
         k_sb=k_sb,
         J_vs=J_vs,
-        l_abs=l_abs,
-        N_b=N_b,
-        N_s=N_s,
+        lambda_IS=lambda_IS,
+        n_IS=n_IS,
+        n_surf=n_surf,
         initial_condition=0,
         surfaces=1,
         prm1=prm1,
@@ -680,16 +681,16 @@ def test_create_form_surf_kinetics():
     K_sb = k_sb(T.T, adsorbed, p1, p2)
     K_bs = k_bs(T.T, adsorbed, p1, p2)
     j_vs = J_vs(T.T, adsorbed, p1, p2)
-    J_sb = K_sb * adsorbed * (1 - solute / N_b)
-    J_bs = K_bs * (solute * l_abs) * (1 - adsorbed / N_s)
+    J_sb = K_sb * adsorbed * (1 - solute / n_IS)
+    J_bs = K_bs * (solute * n_surf / n_IS) * (1 - adsorbed / n_surf)
 
     expected_form = (
         (adsorbed - adsorbed_prev) / dt.value * adsorbed_test_function * ds(1)
     )
     expected_form += (
-        -l_abs * (solute - solute_prev) / dt.value * solute_test_function * ds(1)
+        -lambda_IS * (solute - solute_prev) / dt.value * solute_test_function * ds(1)
     )
     expected_form += -(j_vs + J_bs - J_sb) * adsorbed_test_function * ds(1)
     expected_form += (J_bs - J_sb) * solute_test_function * ds(1)
 
-    assert my_bc.F.equals(expected_form)
+    assert my_bc.form.equals(expected_form)

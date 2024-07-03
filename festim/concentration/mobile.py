@@ -193,7 +193,7 @@ class Mobile(Concentration):
                             ds,
                             dt,
                         )
-                        F += bc.F
+                        F += bc.form
                     else:
                         bc.create_form(T.T, solute)
                         for surf in bc.surfaces:

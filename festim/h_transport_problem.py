@@ -60,6 +60,14 @@ class HTransportProblem:
         else:
             raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
 
+    @property
+    def _all_surf_kinetics(self):
+        return [
+            bc
+            for bc in self.boundary_conditions
+            if isinstance(bc, festim.SurfaceKinetics)
+        ]
+
     def initialise(self, mesh, materials, dt=None):
         """Assigns BCs, create suitable function space, initialise
         concentration fields, define variational problem
@@ -111,13 +119,7 @@ class HTransportProblem:
         nb_traps = len(self.traps)
 
         # the number of surfaces where SurfaceKinetics is used
-        nb_adsorbed = sum(
-            [
-                len(bc.surfaces)
-                for bc in self.boundary_conditions
-                if isinstance(bc, festim.SurfaceKinetics)
-            ]
-        )
+        nb_adsorbed = sum([len(bc.surfaces) for bc in self._all_surf_kinetics])
 
         if nb_traps == 0 and nb_adsorbed == 0:
             V = FunctionSpace(mesh.mesh, element_solute, order_solute)
@@ -155,15 +157,8 @@ class HTransportProblem:
             conc_list = [self.mobile]
             if self.traps:
                 conc_list += [*self.traps]
-            if any(
-                isinstance(bc, festim.SurfaceKinetics)
-                for bc in self.boundary_conditions
-            ):
-                conc_list += [
-                    bc
-                    for bc in self.boundary_conditions
-                    if isinstance(bc, festim.SurfaceKinetics)
-                ]
+            if len(self._all_surf_kinetics) > 0:
+                conc_list += self._all_surf_kinetics
 
             index = 0
             for concentration in conc_list:
@@ -176,7 +171,6 @@ class HTransportProblem:
                         index += 1
                 else:
                     concentration.solution = self.u.sub(index)
-                    # concentration.solution = list(split(self.u))[i]
                     concentration.previous_solution = self.u_n.sub(index)
                     concentration.test_function = list(split(self.v))[index]
                     index += 1
@@ -213,11 +207,7 @@ class HTransportProblem:
         # assign initial condition for SurfaceKinetics BC
         # iterate through each surface of each SurfaceKinetics
         index = len(self.traps) + 1
-        for bc in [
-            bc
-            for bc in self.boundary_conditions
-            if isinstance(bc, festim.SurfaceKinetics)
-        ]:
+        for bc in self._all_surf_kinetics:
             for i in range(len(bc.previous_solutions)):
                 functionspace = self.V.sub(index).collapse()
                 comp = interpolate(Constant(bc.initial_condition), functionspace)
@@ -385,11 +375,7 @@ class HTransportProblem:
             trap.post_processing_solution = res[i]
 
         index = len(self.traps) + 1
-        for bc in [
-            bc
-            for bc in self.boundary_conditions
-            if isinstance(bc, festim.SurfaceKinetics)
-        ]:
+        for bc in self._all_surf_kinetics:
             for i in range(len(bc.post_processing_solutions)):
                 bc.post_processing_solutions[i] = res[index]
                 index += 1

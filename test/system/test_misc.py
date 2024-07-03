@@ -154,23 +154,16 @@ def test_error_DirichletBC_on_same_surface(field, surfaces):
 
     sim.settings = F.Settings(1e-10, 1e-10, transient=False)
 
-    test_bc = F.DirichletBC(value=1, field=field, surfaces=surfaces)
     sim.boundary_conditions = [
         F.FluxBC(value=1, field=field, surfaces=1),
         F.DirichletBC(value=1, field=field, surfaces=2),
-        test_bc,
+        F.DirichletBC(value=1, field=field, surfaces=surfaces),
     ]
 
-    for bc in reversed(sim.boundary_conditions):
-        if bc == test_bc or bc.field != test_bc.field:
-            continue
-        if not set(bc.surfaces).isdisjoint(test_bc.surfaces):
-            intersection = set(bc.surfaces) & set(test_bc.surfaces)
-            print(intersection)
-            message = re.escape(
-                f"DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {test_bc.field}"
-            )
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(
+        ValueError,
+        match="DirichletBC is simultaneously set with another boundary condition",
+    ):
         sim.initialise()
 
 
@@ -190,22 +183,16 @@ def test_error_SurfaceKinetics_on_same_surface(surfaces):
 
     sim.settings = F.Settings(1e-10, 1e-10, transient=False)
 
-    test_bc = F.SurfaceKinetics(1, 1, 1, 1, 1, 1, surfaces, 1)
     sim.boundary_conditions = [
         F.FluxBC(value=1, field=0, surfaces=1),
         F.DirichletBC(value=1, field=0, surfaces=2),
-        test_bc,
+        F.SurfaceKinetics(1, 1, 1, 1, 1, 1, surfaces, 1),
     ]
 
-    for bc in reversed(sim.boundary_conditions):
-        if bc == test_bc or bc.field != test_bc.field:
-            continue
-        if not set(bc.surfaces).isdisjoint(test_bc.surfaces):
-            intersection = set(bc.surfaces) & set(test_bc.surfaces)
-            message = re.escape(
-                f"SurfaceKinetics is simultaneously set with another boundary condition on surfaces {intersection} for field {test_bc.field}"
-            )
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(
+        ValueError,
+        match="SurfaceKinetics is simultaneously set with another boundary condition",
+    ):
         sim.initialise()
 
 

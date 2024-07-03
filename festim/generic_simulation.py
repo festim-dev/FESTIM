@@ -215,11 +215,7 @@ class Simulation:
             else:
                 field_to_object[source.field].sources.append(source)
 
-    def attribute_boundary_conditions(self):
-        """Assigns boundary_conditions to mobile and T"""
-        self.T.boundary_conditions = []
-        self.h_transport_problem.boundary_conditions = []
-
+    def check_boundary_conditions(self):
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
             + [str(i + 1) for i, _ in enumerate(self.traps)]
@@ -236,16 +232,14 @@ class Simulation:
         for bc in self.boundary_conditions:
             if bc.field not in valid_fields:
                 raise ValueError(f"{bc.field} is not a valid field for BC")
+
             # check SurfaceKinetics in 1D simulations
             if (
                 isinstance(bc, festim.SurfaceKinetics)
                 and self.mesh.mesh.topology().dim() != 1
             ):
                 raise ValueError("SurfaceKinetics can only be used in 1D simulations")
-            if bc.field == "T":
-                self.T.boundary_conditions.append(bc)
-            else:
-                self.h_transport_problem.boundary_conditions.append(bc)
+
             # checks that DirichletBC or SurfaceKinetics is not set with another bc on the same surface
             # iterate through all BCs
             for dc_sk_bc in dc_sk_bcs:
@@ -259,17 +253,28 @@ class Simulation:
                 if not set(bc.surfaces).isdisjoint(dc_sk_bc.surfaces):
                     # convert lists of surfaces to sets and obtain their intersection
                     intersection = set(bc.surfaces) & set(dc_sk_bc.surfaces)
+
                     # check the bc type for the export message
                     bc_type = (
                         "DirichletBC"
                         if isinstance(dc_sk_bc, festim.DirichletBC)
                         else "SurfaceKinetics"
                     )
+                    msg = f"{bc_type} is simultaneously set with another boundary condition "
+                    msg += f"on surfaces {intersection} for field {dc_sk_bc.field}"
+                    raise ValueError(msg)
 
-                    raise ValueError(
-                        bc_type
-                        + f" is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_sk_bc.field}"
-                    )
+    def attribute_boundary_conditions(self):
+        """Assigns boundary_conditions to mobile and T"""
+        self.T.boundary_conditions = []
+        self.h_transport_problem.boundary_conditions = []
+        self.check_boundary_conditions()
+
+        for bc in self.boundary_conditions:
+            if bc.field == "T":
+                self.T.boundary_conditions.append(bc)
+            else:
+                self.h_transport_problem.boundary_conditions.append(bc)
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
@@ -366,14 +371,20 @@ class Simulation:
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"
                         )
-                    if isinstance(q, festim.AdsorbedHydrogen) and not any(
-                        q.surface in bc.surfaces
-                        for bc in self.boundary_conditions
-                        if isinstance(bc, festim.SurfaceKinetics)
-                    ):
-                        raise AttributeError(
-                            f"SurfaceKinetics boundary condition must be defined on surface {q.surface} to export data with festim.AdsorbedHydrogen"
+
+                    if isinstance(q, festim.AdsorbedHydrogen):
+                        # check that festim.AdsorbedHydrogen is defined together with
+                        # festim.SurfaceKinetics on the same surface
+                        surf_kin_present = any(
+                            q.surface in bc.surfaces
+                            for bc in self.boundary_conditions
+                            if isinstance(bc, festim.SurfaceKinetics)
                         )
+
+                        if not surf_kin_present:
+                            raise AttributeError(
+                                f"SurfaceKinetics boundary condition must be defined on surface {q.surface} to export data with festim.AdsorbedHydrogen"
+                            )
 
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials

@@ -10,7 +10,7 @@ class AdsorbedHydrogen(SurfaceQuantity):
     .. warning::
 
         The AdsorbedHydrogen export can be used only if the SurfaceBoundary
-        condition is defined on the same surface.
+        condition is defined on the same surface!
 
     Args:
         surface (int): the surface id

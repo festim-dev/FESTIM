@@ -5,26 +5,46 @@ import sympy as sp
 
 class SurfaceKinetics(FluxBC):
     """
-    FluxBC subclass allowing to include surface processes on in 1D H transport simulations.
+    FluxBC subclass allowing to include surface processes in 1D H transport simulations
 
-    d c_s / dt = k_bs l_abs c_m (1 - c_s/N_s) - k_sb c_s (1 - c_b/N_b) + J_vs
+    .. math::
 
-    -D * grad(c) * n = -l_abs * d c / dt - k_bs l_abs c_m (1 - c_s/N_s) + k_sb c_s (1 - c_b/N_b)
+        \dfrac{d c_{\mathrm{s}}}{dt} = k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} (1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}})
+        - k_{\mathrm{sb}} c_{\mathrm{s}} (1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}) + J_{\mathrm{vs}};
+
+        -D \dfrac{\partial c_{\mathrm{m}}}{\partial x} = -\lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t}
+        - k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} (1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}})
+        + k_{\mathrm{sb}} c_{\mathrm{s}} (1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}),
+
+    where :math:`c_{\mathrm{m}}` is the concentration of solute hydrogen, :math:`c_{\mathrm{s}}` is the surface concentration of hydrogen
+    adsorbed on a surface, :math:`\lambda_{\mathrm{abs}}=n_{\mathrm{surf}}/n_{\mathrm{IS}}`
+
+    Reference: E.A. Hodille et al 2017 Nucl. Fusion 57 056002
 
     .. warning::
 
-        The SurfaceKinetics boundary condition can be used only in 1D simulations
+        The SurfaceKinetics boundary condition can be used only in 1D simulations!
 
     Args:
-        k_sb (float, callable): attempt frequency for surface-to-subsurface transition (s-1)
-        k_bs (float, callable): attempt frequency for subsurface-to-surface transition (s-1)
-        l_abs (float): characteristic distance between surface and subsurface sites (m)
-        N_s (float): surface concentration of adsorption sites (m-2)
-        N_b (float): bulk concentration of interstitial sites (m-3)
-        J_vs (float, callable): the net adsorption flux from vacuum to surface (m-2 s-1),
+        k_sb (float or callable): rate constant for the surface-to-subsurface transition (:math:`\mathrm{s}^{-1}`),
+            can accept additional parameters (see example)
+        k_bs (float or callable): rate constant for the subsurface-to-surface transition (:math:`\mathrm{s}^{-1}`),
+            can accept additional parameters (see example)
+        lambda_IS (float): characteristic distance between two iterstitial sites (:math:`\mathrm{m}`)
+        n_surf (float): surface concentration of adsorption sites (:math:`\mathrm{m}^{-2}`)
+        n_IS (float): bulk concentration of interstitial sites (:math:`\mathrm{m}^{-3}`)
+        J_vs (float or callable): the net adsorption flux from vacuum to surface (:math:`\mathrm{m}^{-2}\mathrm{s}^{-1}`),
             can accept additional parameters (see example)
         surfaces (int, list): the surfaces for which surface processes are considered
-        initial_condition (int, float): the initial value of the H surface concentration (m-2)
+        initial_condition (int, float): the initial value of the H surface concentration (:math:`\mathrm{m}^{-2}`)
+
+    Attributes:
+        previous_solutions (list): list containing solutions (fenics.Function or ufl.Indexed)
+            on each surface for "previous" timestep
+        test_functions (list): list containing test functions (fenics.TestFunction or ufl.Indexed)
+            for each surface
+        post_processing_solutions (list): list containing solutions (fenics.Function or ufl.Indexed)
+            on each surface used for post-processing
 
     Example::
 
@@ -37,29 +57,38 @@ class SurfaceKinetics(FluxBC):
         def J_vs(T, surf_conc, prm1):
             return (1-surf_conc / 5) ** 2 * fenics.exp(-2 / T) + prm1
 
-        my_SurfConc = SurfaceKinetics(
-            k_sb = K_sb,
-            k_bs = K_bs,
-            l_abs = 110e-12,
-            N_s = 2e19,
-            N_b = 6e28,
-            J_vs = J_vs,
-            surfaces = [1, 2],
-            initial_condition = 0,
+        my_surf_model = SurfaceKinetics(
+            k_sb=K_sb,
+            k_bs=K_bs,
+            lambda_IS=110e-12,
+            n_surf=2e19,
+            n_IS=6e28,
+            J_vs=J_vs,
+            surfaces=[1, 2],
+            initial_condition=0,
             prm1=2e16
         )
     """
 
     def __init__(
-        self, k_sb, k_bs, l_abs, N_s, N_b, J_vs, surfaces, initial_condition, **prms
-    ):
+        self,
+        k_sb,
+        k_bs,
+        lambda_IS,
+        n_surf,
+        n_IS,
+        J_vs,
+        surfaces,
+        initial_condition,
+        **prms
+    ) -> None:
         super().__init__(surfaces=surfaces, field=0)
         self.k_sb = k_sb
         self.k_bs = k_bs
         self.J_vs = J_vs
-        self.l_abs = l_abs
-        self.N_s = N_s
-        self.N_b = N_b
+        self.lambda_IS = lambda_IS
+        self.n_surf = n_surf
+        self.n_IS = n_IS
         self.J_vs = J_vs
         self.initial_condition = initial_condition
         self.prms = prms
@@ -75,20 +104,23 @@ class SurfaceKinetics(FluxBC):
         Creates the general form associated with the surface species
 
         Args:
-            solution (fenics.Function or ufl.Indexed): mobile solution for "current"
+            solute (fenics.Function or ufl.Indexed): mobile solution for "current"
                 timestep
-            previous_solution (fenics.Function or ufl.Indexed): mobile solution for
+            solute_prev (fenics.Function or ufl.Indexed): mobile solution for
                 "previous" timestep
-            test_function (fenics.TestFunction or ufl.Indexed): mobile test function
+            solute_test_function (fenics.TestFunction or ufl.Indexed): mobile test function
             T (festim.Temperature): the temperature of the simulation
             ds (fenics.Measure): the ds measure of the sim
             dt (festim.Stepsize): the step-size
         """
 
-        l_abs = self.l_abs
-        N_s = self.N_s
-        N_b = self.N_b
-        self.F = 0
+        lambda_IS = self.lambda_IS
+        n_surf = self.n_surf
+        n_IS = self.n_IS
+        lambda_abs = (
+            n_surf / n_IS
+        )  # characteristic distance between surface and subsurface sites
+        self.form = 0
 
         for i, surf in enumerate(self.surfaces):
 
@@ -102,28 +134,28 @@ class SurfaceKinetics(FluxBC):
             if callable(k_bs):
                 k_bs = k_bs(T.T, self.solutions[i], **self.prms)
 
-            J_sb = k_sb * self.solutions[i] * (1 - solute / N_b)
-            J_bs = k_bs * (solute * l_abs) * (1 - self.solutions[i] / N_s)
+            J_sb = k_sb * self.solutions[i] * (1 - solute / n_IS)
+            J_bs = k_bs * (solute * lambda_abs) * (1 - self.solutions[i] / n_surf)
 
             if dt is not None:
                 # Surface concentration form
-                self.F += (
+                self.form += (
                     (self.solutions[i] - self.previous_solutions[i])
                     / dt.value
                     * self.test_functions[i]
                     * ds(surf)
                 )
                 # Flux to solute species
-                self.F += (
-                    -l_abs
+                self.form += (
+                    -lambda_IS
                     * (solute - solute_prev)
                     / dt.value
                     * solute_test_function
                     * ds(surf)
                 )
 
-            self.F += -(J_vs + J_bs - J_sb) * self.test_functions[i] * ds(surf)
-            self.F += (J_bs - J_sb) * solute_test_function * ds(surf)
+            self.form += -(J_vs + J_bs - J_sb) * self.test_functions[i] * ds(surf)
+            self.form += (J_bs - J_sb) * solute_test_function * ds(surf)
 
         self.sub_expressions += [expression for expression in self.prms.values()]
 
