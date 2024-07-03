@@ -25,6 +25,18 @@ class DerivedQuantities(list):
             exported at the last timestep. Defaults to None.
         show_units (bool, optional): will show the units of each
             derived quantity in the title in export
+
+    Attributes:
+        filename (str): the filename.
+        nb_iterations_between_compute (int): number of
+            iterations between each derived quantities computation.
+        nb_iterations_between_exports (int): number of
+            iterations between each export. If None, the file will be
+            exported at the last timestep.
+        show_units (bool): will show the units of each
+            derived quantity in the title in export
+        data (list): the data to be exported
+        t (list): the time steps
     """
 
     def __init__(

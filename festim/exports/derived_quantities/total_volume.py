@@ -11,7 +11,7 @@ class TotalVolume(VolumeQuantity):
         field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
 
-    Attribtutes
+    Attributes:
         field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
         export_unit (str): the unit of the derived quantity for exporting
