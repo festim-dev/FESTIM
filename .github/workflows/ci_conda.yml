@@ -14,13 +14,13 @@ jobs:
       with:
         activate-environment: myenv
         miniforge-version: latest
-        use-mamba: true
+        # use-mamba: true
         channels: conda-forge
 
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
-        mamba install -c conda-forge fenics-dolfinx=0.7.2
+        conda install -c conda-forge fenics-dolfinx=0.8.0
 
     - name: Install local package and dependencies
       shell: bash -l {0}

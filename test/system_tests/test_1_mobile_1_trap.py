@@ -31,8 +31,7 @@ def test_1_mobile_1_trap_MMS_steady_state():
     trapped_analytical_ufl = v_exact(ufl)
     trapped_analytical_np = v_exact(np)
 
-    elements = ufl.FiniteElement("P", test_mesh_1d.mesh.ufl_cell(), 1)
-    V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
     T = fem.Function(V)
     f = fem.Function(V)
     g = fem.Function(V)
@@ -132,8 +131,7 @@ def test_1_mobile_1_trap_MMS_transient():
     H_analytical_ufl = u_exact(ufl)
     H_analytical_np = u_exact_alt(np)
 
-    elements = ufl.FiniteElement("P", test_mesh_1d.mesh.ufl_cell(), 1)
-    V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
     T = fem.Function(V)
 
     D_0 = 1
@@ -197,8 +195,7 @@ def test_1_mobile_1_trap_MMS_3D():
     trapped_analytical_ufl = v_exact(ufl)
     trapped_analytical_np = v_exact(np)
 
-    elements = ufl.FiniteElement("P", test_mesh_3d.ufl_cell(), 1)
-    V = fem.FunctionSpace(test_mesh_3d, elements)
+    V = fem.functionspace(test_mesh_3d, ("Lagrange", 1))
     T = fem.Function(V)
     f = fem.Function(V)
     g = fem.Function(V)
@@ -311,8 +308,7 @@ def test_1_mobile_1_trap_MMS_2D():
     trapped_analytical_ufl = v_exact(ufl)
     trapped_analytical_np = v_exact(np)
 
-    elements = ufl.FiniteElement("P", test_mesh_2d.ufl_cell(), 1)
-    V = fem.FunctionSpace(test_mesh_2d, elements)
+    V = fem.functionspace(test_mesh_2d, ("Lagrange", 1))
     T = fem.Function(V)
     f = fem.Function(V)
     g = fem.Function(V)
