@@ -546,3 +546,56 @@ def test_error_raised_when_no_IC_heat_transfer():
         match="Initial condition is required for transient heat transfer simulations",
     ):
         my_model.initialise()
+
+
+def test_catch_bug_738(tmpdir):
+    """
+    Test to catch bug #738
+    Set up a simple simulation with an XDMFExport in write mode "last"
+    The stepsize is such that the first timestep is almost the final time (ie. dt = t_final - epsilon)
+    The simulation should detect that this is the last timestep and export the data.
+
+    We then check that the files are created
+    """
+    filename = str(tmpdir.join("mobile_re.xdmf"))
+    my_model = F.Simulation(log_level=40)
+
+    my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 1, num=10))
+
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+
+    my_model.T = F.Temperature(value=1500)
+
+    my_model.dt = F.Stepsize(
+        initial_value=1e-10 - 1e-15,
+    )
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e10,
+        relative_tolerance=1e-10,
+        final_time=1e-10,
+        maximum_iterations=100,
+    )
+
+    my_model.exports = [
+        F.XDMFExport(
+            field="solute",
+            filename=filename,
+            checkpoint=False,  # needed in 1D
+            mode="last",
+        )
+    ]
+
+    # remove old xdmf file
+    if os.path.exists(filename):
+        os.remove(filename)
+        os.remove(str(tmpdir.join("mobile_re.h5")))
+
+    my_model.initialise()
+
+    my_model.run()
+
+    # check that xdmf file exists
+
+    assert os.path.exists(filename)
+    assert os.path.exists(str(tmpdir.join("mobile_re.h5")))
