@@ -8,7 +8,7 @@ class ThermalFlux(SurfaceFlux):
     Args:
         surface (int): the surface id
 
-    Attribtutes
+    Attributes:
         surface (int): the surface id
         field (str): the temperature field
         title (str): the title of the derived quantity

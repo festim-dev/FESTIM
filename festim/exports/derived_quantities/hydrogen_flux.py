@@ -8,7 +8,7 @@ class HydrogenFlux(SurfaceFlux):
     Args:
         surface (int): the surface id
 
-    Attribtutes
+    Attributes:
         field (str): the hydrogen solute field
         surface (int): the surface id
         title (str): the title of the derived quantity

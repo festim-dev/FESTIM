@@ -11,7 +11,7 @@ class SurfaceFlux(SurfaceQuantity):
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
 
-    Attribtutes
+    Attributes:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
         export_unit (str): the unit of the derived quantity in the export file
