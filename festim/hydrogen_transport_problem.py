@@ -787,10 +787,8 @@ class HydrogenTransportProblem:
         for export in self.exports:
             # TODO if export type derived quantity
             if isinstance(export, F.SurfaceQuantity):
-                if (
-                    isinstance(export, F.SurfaceFlux)
-                    or isinstance(export, F.TotalSurface)
-                    or isinstance(export, F.AverageSurface)
+                if isinstance(
+                    export, (F.SurfaceFlux, F.TotalSurface, F.AverageSurface)
                 ):
                     export.compute(
                         self.ds,
@@ -804,9 +802,7 @@ class HydrogenTransportProblem:
                 if export.filename is not None:
                     export.write(t=float(self.t))
             elif isinstance(export, F.VolumeQuantity):
-                if isinstance(export, F.TotalVolume) or isinstance(
-                    export, F.AverageVolume
-                ):
+                if isinstance(export, (F.TotalVolume, F.AverageVolume)):
                     export.compute(self.dx)
                 else:
                     export.compute()
