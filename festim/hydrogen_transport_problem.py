@@ -567,7 +567,6 @@ class HydrogenTransportProblem:
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, F.ParticleSource):
-
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
@@ -579,7 +578,6 @@ class HydrogenTransportProblem:
         for bc in self.boundary_conditions:
             # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, F.ParticleFluxBC):
-
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
@@ -789,7 +787,14 @@ class HydrogenTransportProblem:
         for export in self.exports:
             # TODO if export type derived quantity
             if isinstance(export, F.SurfaceQuantity):
-                export.compute(self.ds)
+                if isinstance(
+                    export, (F.SurfaceFlux, F.TotalSurface, F.AverageSurface)
+                ):
+                    export.compute(
+                        self.ds,
+                    )
+                else:
+                    export.compute()
                 # update export data
                 export.t.append(float(self.t))
 
@@ -797,7 +802,10 @@ class HydrogenTransportProblem:
                 if export.filename is not None:
                     export.write(t=float(self.t))
             elif isinstance(export, F.VolumeQuantity):
-                export.compute(self.dx)
+                if isinstance(export, (F.TotalVolume, F.AverageVolume)):
+                    export.compute(self.dx)
+                else:
+                    export.compute()
                 # update export data
                 export.t.append(float(self.t))
 
