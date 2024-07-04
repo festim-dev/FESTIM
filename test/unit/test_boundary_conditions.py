@@ -575,6 +575,18 @@ def custom_fun(T, solute, param1):
         (festim.DirichletBC(surfaces=1, value=1, field=0)),
         (festim.HenrysBC(surfaces=1, H_0=1, E_H=0, pressure=1e3)),
         (festim.SievertsBC(surfaces=1, S_0=1, E_S=0, pressure=1e3)),
+        (
+            festim.SurfaceKinetics(
+                k_sb=1,
+                k_bs=1,
+                lambda_IS=1,
+                n_surf=1,
+                n_IS=1,
+                J_vs=1,
+                initial_condition=0,
+                surfaces=1,
+            )
+        ),
     ],
 )
 def test_flux_BC_initialise(bc):
@@ -599,3 +611,86 @@ def test_dissoc_flux():
 
     my_BC = festim.DissociationFlux(surfaces=[0], Kd_0=expr, E_Kd=expr, P=1)
     my_BC.create_form(T, None)
+
+
+def test_create_form_surf_kinetics():
+    """
+    Creates a SurfaceKinetics bc and checks that the create_form method
+    returns the correct form
+    """
+
+    # build
+    def k_sb(cs, T, prm1, prm2):
+        return 2 * T + cs**2 + prm1 - prm2
+
+    def k_bs(cs, T, prm1, prm2):
+        return 2 * T + 3 * cs + prm1 + prm2
+
+    def J_vs(cs, T, prm1, prm2):
+        return 2 * T + 1
+
+    lambda_IS = 1
+    n_surf = 1
+    n_IS = 1
+    prm1 = 1 + 2 * festim.t + festim.x
+    prm2 = 2
+
+    mesh = fenics.UnitIntervalMesh(10)
+    V1 = fenics.FunctionSpace(mesh, "R", 0)
+    V2 = fenics.FunctionSpace(mesh, "P", 1)
+
+    adsorbed = fenics.Function(V1)
+    adsorbed_prev = fenics.Function(V1)
+    adsorbed_test_function = fenics.TestFunction(V1)
+
+    solute = fenics.Function(V2)
+    solute_prev = fenics.Function(V2)
+    solute_test_function = fenics.TestFunction(V2)
+
+    ds = fenics.ds()
+
+    my_mesh = festim.Mesh(mesh)
+    my_mesh.ds = ds
+    T = festim.Temperature(value=100)
+    T.T = fenics.interpolate(fenics.Constant(100), V2)
+    dt = festim.Stepsize(1)
+
+    my_bc = festim.SurfaceKinetics(
+        k_bs=k_bs,
+        k_sb=k_sb,
+        J_vs=J_vs,
+        lambda_IS=lambda_IS,
+        n_IS=n_IS,
+        n_surf=n_surf,
+        initial_condition=0,
+        surfaces=1,
+        prm1=prm1,
+        prm2=prm2,
+    )
+
+    my_bc.solutions[0] = adsorbed
+    my_bc.previous_solutions[0] = adsorbed_prev
+    my_bc.test_functions[0] = adsorbed_test_function
+
+    # run
+    my_bc.create_form(solute, solute_prev, solute_test_function, T, ds, dt)
+
+    # test
+    p1 = my_bc.sub_expressions[0]
+    p2 = my_bc.sub_expressions[1]
+    K_sb = k_sb(T.T, adsorbed, p1, p2)
+    K_bs = k_bs(T.T, adsorbed, p1, p2)
+    j_vs = J_vs(T.T, adsorbed, p1, p2)
+    J_sb = K_sb * adsorbed * (1 - solute / n_IS)
+    J_bs = K_bs * (solute * n_surf / n_IS) * (1 - adsorbed / n_surf)
+
+    expected_form = (
+        (adsorbed - adsorbed_prev) / dt.value * adsorbed_test_function * ds(1)
+    )
+    expected_form += (
+        -lambda_IS * (solute - solute_prev) / dt.value * solute_test_function * ds(1)
+    )
+    expected_form += -(j_vs + J_bs - J_sb) * adsorbed_test_function * ds(1)
+    expected_form += (J_bs - J_sb) * solute_test_function * ds(1)
+
+    assert my_bc.form.equals(expected_form)

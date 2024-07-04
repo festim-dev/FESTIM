@@ -215,10 +215,8 @@ class Simulation:
             else:
                 field_to_object[source.field].sources.append(source)
 
-    def attribute_boundary_conditions(self):
-        """Assigns boundary_conditions to mobile and T"""
-        self.T.boundary_conditions = []
-        self.h_transport_problem.boundary_conditions = []
+    def check_boundary_conditions(self):
+        """Runs a series of checks on the BCs and raise errors accordingly"""
 
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
@@ -226,33 +224,59 @@ class Simulation:
             + [i + 1 for i, _ in enumerate(self.traps)]
         )
 
-        # collect all DirichletBCs
-        dc_bcs = [
-            bc for bc in self.boundary_conditions if isinstance(bc, festim.DirichletBC)
+        # collect all DirichletBCs and SurfaceKinetics objects
+        dc_sk_bcs = [
+            bc
+            for bc in self.boundary_conditions
+            if isinstance(bc, (festim.DirichletBC, festim.SurfaceKinetics))
         ]
 
         for bc in self.boundary_conditions:
             if bc.field not in valid_fields:
                 raise ValueError(f"{bc.field} is not a valid field for BC")
+
+            # check SurfaceKinetics in 1D simulations
+            if (
+                isinstance(bc, festim.SurfaceKinetics)
+                and self.mesh.mesh.topology().dim() != 1
+            ):
+                raise ValueError("SurfaceKinetics can only be used in 1D simulations")
+
+            # checks that DirichletBC or SurfaceKinetics is not set with another bc on the same surface
+            # iterate through all BCs
+            for dc_sk_bc in dc_sk_bcs:
+                if (
+                    bc == dc_sk_bc or bc.field != dc_sk_bc.field
+                ):  # skip if the same BC or different fields
+                    continue
+
+                # check if BCs share the same surfaces using the set().isdisjoint() method
+                # that returns True if the first set has no elements in common with other containers
+                if not set(bc.surfaces).isdisjoint(dc_sk_bc.surfaces):
+                    # convert lists of surfaces to sets and obtain their intersection
+                    intersection = set(bc.surfaces) & set(dc_sk_bc.surfaces)
+
+                    # check the bc type for the export message
+                    bc_type = (
+                        "DirichletBC"
+                        if isinstance(dc_sk_bc, festim.DirichletBC)
+                        else "SurfaceKinetics"
+                    )
+                    msg = f"{bc_type} is simultaneously set with another boundary condition "
+                    msg += f"on surfaces {intersection} for field {dc_sk_bc.field}"
+                    raise ValueError(msg)
+
+    def attribute_boundary_conditions(self):
+        """Assigns boundary_conditions to mobile and T"""
+        self.T.boundary_conditions = []
+        self.h_transport_problem.boundary_conditions = []
+        self.check_boundary_conditions()
+
+        for bc in self.boundary_conditions:
             if bc.field == "T":
                 self.T.boundary_conditions.append(bc)
             else:
                 self.h_transport_problem.boundary_conditions.append(bc)
-            # checks that DirichletBC is not set with another bc on the same surface
-            # iterate through all BCs
-            for dc_bc in dc_bcs:
-                if (
-                    bc == dc_bc or bc.field != dc_bc.field
-                ):  # skip if the same BC or different fields
-                    continue
-                # check if BCs share the same surfaces using the set().isdisjoint() method
-                # that returns True if the first set has no elements in common with other containers
-                if not set(bc.surfaces).isdisjoint(dc_bc.surfaces):
-                    # convert lists of surfaces to sets and obtain their intersection
-                    intersection = set(bc.surfaces) & set(dc_bc.surfaces)
-                    raise ValueError(
-                        f"A DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_bc.field}"
-                    )
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
@@ -349,6 +373,21 @@ class Simulation:
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"
                         )
+
+                    if isinstance(q, festim.AdsorbedHydrogen):
+                        # check that festim.AdsorbedHydrogen is defined together with
+                        # festim.SurfaceKinetics on the same surface
+                        surf_kin_present = any(
+                            q.surface in bc.surfaces
+                            for bc in self.boundary_conditions
+                            if isinstance(bc, festim.SurfaceKinetics)
+                        )
+
+                        if not surf_kin_present:
+                            raise AttributeError(
+                                f"SurfaceKinetics boundary condition must be defined on surface {q.surface} to export data with festim.AdsorbedHydrogen"
+                            )
+
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials
         )
@@ -485,6 +524,16 @@ class Simulation:
                 [self.mobile.post_processing_solution]
                 + [trap.post_processing_solution for trap in self.traps]
             ),
+            # dictionary {"post_processing_solutions": bc.post_processing_solutions, "surfaces": bc.surfaces}
+            # for each SurfaceKinetics boundary condition
+            "adsorbed": [
+                {
+                    "post_processing_solutions": bc.post_processing_solutions,
+                    "surfaces": bc.surfaces,
+                }
+                for bc in self.boundary_conditions
+                if isinstance(bc, festim.SurfaceKinetics)
+            ],
         }
         for trap in self.traps:
             label_to_function[trap.id] = trap.post_processing_solution
