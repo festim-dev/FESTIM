@@ -4,7 +4,7 @@ import sympy as sp
 
 
 class SurfaceKinetics(FluxBC):
-    """
+    r"""
     FluxBC subclass allowing to include surface processes in 1D H transport simulations:
 
     .. math::
@@ -13,7 +13,7 @@ class SurfaceKinetics(FluxBC):
 
     .. math::
 
-        -D \dfrac{\partial c_{\mathrm{m}}}{\partial x} = -\lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t}
+        -D \nabla c_\mathrm{m} \cdot \mathbf{n} = -\lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t}
         - J_{\mathrm{bs}} + J_{\mathrm{sb}},
 
     where :math:`c_{\mathrm{m}}` is the concentration of mobile hydrogen (:math:`\mathrm{H \ m}^{-3}`),
@@ -22,13 +22,13 @@ class SurfaceKinetics(FluxBC):
 
     .. math::
 
-         J_{\mathrm{bs}} = k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} (1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}}),
+         J_{\mathrm{bs}} = k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} \left(1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}}\right),
 
     the H flux from surface to subsurface :math:`J_{\mathrm{sb}}` (in :math:`\mathrm{m}^{-2} \ \mathrm{s}^{-1}`) is:
 
     .. math::
 
-         J_{\mathrm{sb}} = k_{\mathrm{sb}} c_{\mathrm{s}} (1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}),
+         J_{\mathrm{sb}} = k_{\mathrm{sb}} c_{\mathrm{s}} \left(1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}\right),
 
     :math:`\lambda_{\mathrm{abs}}=n_{\mathrm{surf}}/n_{\mathrm{IS}}` is the characteristic distance between surface and
     subsurface sites (:math:`\mathrm{m}`).
