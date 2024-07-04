@@ -54,3 +54,7 @@ Flux
 .. autoclass:: MassFlux
     :members:
     :show-inheritance:
+
+.. autoclass:: SurfaceKinetics
+    :members:
+    :show-inheritance:

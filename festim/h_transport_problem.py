@@ -1,6 +1,5 @@
 from fenics import *
 import festim
-import warnings
 
 
 class HTransportProblem:
@@ -61,6 +60,14 @@ class HTransportProblem:
         else:
             raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
 
+    @property
+    def _all_surf_kinetics(self):
+        return [
+            bc
+            for bc in self.boundary_conditions
+            if isinstance(bc, festim.SurfaceKinetics)
+        ]
+
     def initialise(self, mesh, materials, dt=None):
         """Assigns BCs, create suitable function space, initialise
         concentration fields, define variational problem
@@ -110,15 +117,21 @@ class HTransportProblem:
 
         # function space for H concentrations
         nb_traps = len(self.traps)
-        if nb_traps == 0:
+
+        # the number of surfaces where SurfaceKinetics is used
+        nb_adsorbed = sum([len(bc.surfaces) for bc in self._all_surf_kinetics])
+
+        if nb_traps == 0 and nb_adsorbed == 0:
             V = FunctionSpace(mesh.mesh, element_solute, order_solute)
         else:
             solute = FiniteElement(element_solute, mesh.mesh.ufl_cell(), order_solute)
             traps = FiniteElement(
                 self.settings.traps_element_type, mesh.mesh.ufl_cell(), order_trap
             )
-            element = [solute] + [traps] * nb_traps
+            adsorbed = FiniteElement("R", mesh.mesh.ufl_cell(), 0)
+            element = [solute] + [traps] * nb_traps + [adsorbed] * nb_adsorbed
             V = FunctionSpace(mesh.mesh, MixedElement(element))
+
         self.V = V
         self.V_CG1 = FunctionSpace(mesh.mesh, "CG", 1)
         self.V_DG1 = FunctionSpace(mesh.mesh, "DG", 1)
@@ -141,11 +154,26 @@ class HTransportProblem:
             self.mobile.previous_solution = self.u_n
             self.mobile.test_function = self.v
         else:
-            for i, concentration in enumerate([self.mobile, *self.traps]):
-                concentration.solution = self.u.sub(i)
-                # concentration.solution = list(split(self.u))[i]
-                concentration.previous_solution = self.u_n.sub(i)
-                concentration.test_function = list(split(self.v))[i]
+            conc_list = [self.mobile]
+            if self.traps:
+                conc_list += [*self.traps]
+            if len(self._all_surf_kinetics) > 0:
+                conc_list += self._all_surf_kinetics
+
+            index = 0
+            for concentration in conc_list:
+                if isinstance(concentration, festim.SurfaceKinetics):
+                    # iterate through each surface of each SurfaceKinetics
+                    for i in range(len(concentration.surfaces)):
+                        concentration.solutions[i] = self.u.sub(index)
+                        concentration.previous_solutions[i] = self.u_n.sub(index)
+                        concentration.test_functions[i] = list(split(self.v))[index]
+                        index += 1
+                else:
+                    concentration.solution = self.u.sub(index)
+                    concentration.previous_solution = self.u_n.sub(index)
+                    concentration.test_function = list(split(self.v))[index]
+                    index += 1
 
         print("Defining initial values")
         field_to_component = {
@@ -176,6 +204,16 @@ class HTransportProblem:
                     functionspace, value, label=ini.label, time_step=ini.time_step
                 )
 
+        # assign initial condition for SurfaceKinetics BC
+        # iterate through each surface of each SurfaceKinetics
+        index = len(self.traps) + 1
+        for bc in self._all_surf_kinetics:
+            for i in range(len(bc.previous_solutions)):
+                functionspace = self.V.sub(index).collapse()
+                comp = interpolate(Constant(bc.initial_condition), functionspace)
+                assign(bc.previous_solutions[i], comp)
+                index += 1
+
         # initial guess needs to be non zero if chemical pot
         if self.settings.chemical_pot:
             if self.V.num_sub_spaces() == 0:
@@ -189,9 +227,19 @@ class HTransportProblem:
         # this is needed to correctly create the formulation
         # TODO: write a test for this?
         if self.V.num_sub_spaces() != 0:
-            for i, concentration in enumerate([self.mobile, *self.traps]):
-                concentration.previous_solution = list(split(self.u_n))[i]
-                concentration.solution = list(split(self.u))[i]
+            index = 0
+            for concentration in conc_list:
+                if isinstance(concentration, festim.SurfaceKinetics):
+                    for i in range(len(concentration.surfaces)):
+                        concentration.solutions[i] = list(split(self.u))[index]
+                        concentration.previous_solutions[i] = list(split(self.u_n))[
+                            index
+                        ]
+                        index += 1
+                else:
+                    concentration.solution = list(split(self.u))[index]
+                    concentration.previous_solution = list(split(self.u_n))[index]
+                    index += 1
 
     def define_variational_problem(self, materials, mesh, dt=None):
         """Creates the variational problem for hydrogen transport (form,
@@ -325,6 +373,12 @@ class HTransportProblem:
 
         for i, trap in enumerate(self.traps, 1):
             trap.post_processing_solution = res[i]
+
+        index = len(self.traps) + 1
+        for bc in self._all_surf_kinetics:
+            for i in range(len(bc.post_processing_solutions)):
+                bc.post_processing_solutions[i] = res[index]
+                index += 1
 
         if self.settings.chemical_pot:
             self.mobile.post_processing_solution_to_concentration()

@@ -12,6 +12,7 @@ from festim import (
     PointValue,
     SurfaceFluxCylindrical,
     SurfaceFluxSpherical,
+    AdsorbedHydrogen,
     Materials,
 )
 import fenics as f
@@ -44,6 +45,7 @@ class TestMakeHeader:
     cyl_surface_flux_2 = SurfaceFluxCylindrical("T", 3)
     sph_surface_flux_1 = SurfaceFluxSpherical("solute", 5)
     sph_surface_flux_2 = SurfaceFluxSpherical("T", 6)
+    ads_h = AdsorbedHydrogen(1)
 
     def test_simple(self):
         """
@@ -83,6 +85,8 @@ class TestMakeHeader:
                 self.tot_vol_1,
                 self.min_vol_1,
                 self.max_vol_1,
+                self.point_1,
+                self.ads_h,
             ]
         )
         header = my_derv_quant.make_header()
@@ -93,6 +97,8 @@ class TestMakeHeader:
             self.tot_vol_1.title,
             self.min_vol_1.title,
             self.max_vol_1.title,
+            self.point_1.title,
+            self.ads_h.title,
         ]
         assert header == expected_header
 
@@ -118,6 +124,7 @@ class TestMakeHeader:
                 self.cyl_surface_flux_2,
                 self.sph_surface_flux_1,
                 self.sph_surface_flux_2,
+                self.ads_h,
             ],
             show_units=True,
         )
@@ -141,6 +148,7 @@ class TestMakeHeader:
             "Heat flux surface 3 (W)",
             "solute flux surface 5 (H s-1)",
             "Heat flux surface 6 (W)",
+            "Adsorbed H on surface 1 (H m-2)",
         ]
         assert header == expected_header
 
