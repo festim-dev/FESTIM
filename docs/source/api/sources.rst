@@ -1,3 +1,5 @@
+.. _sources_api:
+
 Sources
 =======
 

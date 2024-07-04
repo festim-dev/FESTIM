@@ -1,3 +1,6 @@
+.. _boundary_conditions_api:
+
+===================
 Boundary conditions
 ===================
 
