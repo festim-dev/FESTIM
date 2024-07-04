@@ -3,10 +3,6 @@ Boundary conditions
 
 .. currentmodule:: festim
 
-
-Dirichlet
----------
-
 .. autoclass:: DirichletBC
     :members:
     :show-inheritance:
@@ -26,10 +22,6 @@ Dirichlet
 .. autoclass:: SievertsBC
     :members:
     :show-inheritance:
-
-
-Flux
-----
 
 .. autoclass:: FluxBC
     :members:
