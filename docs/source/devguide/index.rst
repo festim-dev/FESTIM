@@ -20,8 +20,6 @@ And/or contribute to the source code by:
 * Fixing bugs
 * Implementing new features
 
-.. _contributing to the code:
-
 ------------------------
 Contributing to the code
 ------------------------

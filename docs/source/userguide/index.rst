@@ -3,7 +3,6 @@ User's Guide
 ============
 
 .. toctree::
-   :numbered:
    :maxdepth: 1
 
    beginners_guide

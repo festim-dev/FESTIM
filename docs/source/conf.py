@@ -62,6 +62,8 @@ extensions = [
     "sphinxcontrib.images",
 ]
 
+suppress_warnings = ["autosectionlabel.*"]
+
 napoleon_use_ivar = True  # needed to correctly format class attributes
 
 # Add any paths that contain templates here, relative to this directory.

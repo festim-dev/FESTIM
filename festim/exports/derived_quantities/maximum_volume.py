@@ -20,7 +20,7 @@ class MaximumVolume(VolumeQuantity):
         function (dolfin.function.function.Function): the solution function for
             the field
 
-    notes:
+    .. note::
         Units are in H/m3 for hydrogen concentration and K for temperature
 
     """

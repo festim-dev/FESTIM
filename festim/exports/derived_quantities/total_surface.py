@@ -21,7 +21,7 @@ class TotalSurface(SurfaceQuantity):
         function (dolfin.function.function.Function): the solution function of
             the hydrogen solute field
 
-    Notes:
+    .. note::
         units are in H/m2 in 1D, H/m in 2D and H in 3D domains for hydrogen
         concentration and K in 1D, K m in 2D and K m2 in 3D domains for temperature
 

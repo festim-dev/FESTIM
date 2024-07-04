@@ -21,7 +21,7 @@ class SurfaceFlux(SurfaceQuantity):
         function (dolfin.function.function.Function): the solution function of
             the field
 
-    Notes:
+    .. note::
         Object to compute the flux J of a field u through a surface
         J = integral(+prop * grad(u) . n ds)
         where prop is the property of the field (D, thermal conductivity, etc)
@@ -96,7 +96,8 @@ class SurfaceFluxCylindrical(SurfaceFlux):
     ds is the surface measure in cylindrical coordinates.
     ds = r dr dtheta or ds = r dz dtheta
 
-    Note: for particle fluxes J is given in H/s, for heat fluxes J is given in W
+    .. note::
+        For particle fluxes J is given in H/s, for heat fluxes J is given in W
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
@@ -172,7 +173,8 @@ class SurfaceFluxSpherical(SurfaceFlux):
     ds is the surface measure in spherical coordinates.
     ds = r^2 sin(theta) dtheta dphi
 
-    Note: for particle fluxes J is given in H/s, for heat fluxes J is given in W
+    .. note::
+        For particle fluxes J is given in H/s, for heat fluxes J is given in W
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")

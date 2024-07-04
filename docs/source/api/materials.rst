@@ -1,3 +1,5 @@
+.. _materials_api:
+
 Materials
 =========
 
