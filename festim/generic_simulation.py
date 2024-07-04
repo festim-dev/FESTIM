@@ -216,6 +216,8 @@ class Simulation:
                 field_to_object[source.field].sources.append(source)
 
     def check_boundary_conditions(self):
+        """Runs a series of checks on the BCs and raise errors accordingly"""
+
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
             + [str(i + 1) for i, _ in enumerate(self.traps)]

@@ -5,11 +5,11 @@ import fenics as f
 class AdsorbedHydrogen(SurfaceQuantity):
     """
     Object to compute the value of the adsorbed H concentration,
-    defined with the SurfaceKinetics boundary condition on a given surface.
+    defined with the ``SurfaceKinetics`` boundary condition on a given surface.
 
     .. warning::
 
-        The AdsorbedHydrogen export can be used only if the SurfaceBoundary
+        The ``AdsorbedHydrogen`` export can be used only if the ``SurfaceKinetics``
         condition is defined on the same surface!
 
     Args:

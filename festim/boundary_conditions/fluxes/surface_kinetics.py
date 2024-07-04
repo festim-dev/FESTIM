@@ -5,21 +5,36 @@ import sympy as sp
 
 class SurfaceKinetics(FluxBC):
     """
-    FluxBC subclass allowing to include surface processes in 1D H transport simulations
+    FluxBC subclass allowing to include surface processes in 1D H transport simulations:
 
     .. math::
 
-        \dfrac{d c_{\mathrm{s}}}{dt} = k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} (1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}})
-        - k_{\mathrm{sb}} c_{\mathrm{s}} (1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}) + J_{\mathrm{vs}};
+        \dfrac{d c_{\mathrm{s}}}{dt} = J_{\mathrm{bs}} - J_{\mathrm{sb}} + J_{\mathrm{vs}};
+
+    .. math::
 
         -D \dfrac{\partial c_{\mathrm{m}}}{\partial x} = -\lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t}
-        - k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} (1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}})
-        + k_{\mathrm{sb}} c_{\mathrm{s}} (1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}),
+        - J_{\mathrm{bs}} + J_{\mathrm{sb}},
 
-    where :math:`c_{\mathrm{m}}` is the concentration of solute hydrogen, :math:`c_{\mathrm{s}}` is the surface concentration of hydrogen
-    adsorbed on a surface, :math:`\lambda_{\mathrm{abs}}=n_{\mathrm{surf}}/n_{\mathrm{IS}}`
+    where :math:`c_{\mathrm{m}}` is the concentration of mobile hydrogen (:math:`\mathrm{H \ m}^{-3}`),
+    :math:`c_{\mathrm{s}}` is the surface concentration of adsorbed hydrogen (:math:`\mathrm{H \ m}^{-2}`),
+    the H flux from subsurface to surface :math:`J_{\mathrm{bs}}` (in :math:`\mathrm{m}^{-2} \ \mathrm{s}^{-1}`) is:
 
-    Reference: E.A. Hodille et al 2017 Nucl. Fusion 57 056002
+    .. math::
+
+         J_{\mathrm{bs}} = k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} (1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}}),
+
+    the H flux from surface to subsurface :math:`J_{\mathrm{sb}}` (in :math:`\mathrm{m}^{-2} \ \mathrm{s}^{-1}`) is:
+
+    .. math::
+
+         J_{\mathrm{sb}} = k_{\mathrm{sb}} c_{\mathrm{s}} (1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}),
+
+    :math:`\lambda_{\mathrm{abs}}=n_{\mathrm{surf}}/n_{\mathrm{IS}}` is the characteristic distance between surface and
+    subsurface sites (:math:`\mathrm{m}`).
+
+    For more details see:
+        E.A. Hodille et al 2017 Nucl. Fusion 57 056002; Y. Hamamoto et al 2020 Nucl. Mater. Energy 23 100751
 
     .. warning::
 
@@ -33,10 +48,10 @@ class SurfaceKinetics(FluxBC):
         lambda_IS (float): characteristic distance between two iterstitial sites (:math:`\mathrm{m}`)
         n_surf (float): surface concentration of adsorption sites (:math:`\mathrm{m}^{-2}`)
         n_IS (float): bulk concentration of interstitial sites (:math:`\mathrm{m}^{-3}`)
-        J_vs (float or callable): the net adsorption flux from vacuum to surface (:math:`\mathrm{m}^{-2}\mathrm{s}^{-1}`),
+        J_vs (float or callable): the net adsorption flux from vacuum to surface (:math:`\mathrm{m}^{-2} \ \mathrm{s}^{-1}`),
             can accept additional parameters (see example)
-        surfaces (int, list): the surfaces for which surface processes are considered
-        initial_condition (int, float): the initial value of the H surface concentration (:math:`\mathrm{m}^{-2}`)
+        surfaces (int or list): the surfaces for which surface processes are considered
+        initial_condition (int or float): the initial value of the H surface concentration (:math:`\mathrm{m}^{-2}`)
 
     Attributes:
         previous_solutions (list): list containing solutions (fenics.Function or ufl.Indexed)
@@ -48,14 +63,14 @@ class SurfaceKinetics(FluxBC):
 
     Example::
 
-        def K_sb(T, surf_conc, prm1):
+        def K_sb(T, surf_conc, prm1, prm2):
             return 1e13 * f.exp(-2.0/F.k_B/T)
 
-        def K_bs(T, surf_conc, prm1):
+        def K_bs(T, surf_conc, prm1, prm2):
             return 1e13 * f.exp(-0.2/F.k_B/T)
 
-        def J_vs(T, surf_conc, prm1):
-            return (1-surf_conc / 5) ** 2 * fenics.exp(-2 / T) + prm1
+        def J_vs(T, surf_conc, prm1, prm2):
+            return (1-surf_conc/5) ** 2 * fenics.exp(-2/F.k_B/T) + prm1 * prm2
 
         my_surf_model = SurfaceKinetics(
             k_sb=K_sb,
@@ -66,7 +81,8 @@ class SurfaceKinetics(FluxBC):
             J_vs=J_vs,
             surfaces=[1, 2],
             initial_condition=0,
-            prm1=2e16
+            prm1=2e16,
+            prm2=F.t
         )
     """
 

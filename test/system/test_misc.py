@@ -3,7 +3,6 @@ import fenics as f
 import numpy as np
 import pytest
 import os
-import re
 
 
 def test_convective_flux(tmpdir):
