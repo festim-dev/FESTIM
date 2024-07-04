@@ -140,7 +140,7 @@ class ExtrinsicTrap(ExtrinsicTrapBase):
             T (festim.Temperature): the temperature of the
                 simulation
 
-        Notes:
+        .. note::
             T is an argument, although is not used in the formulation of
             extrinsic traps, but potential for subclasses of extrinsic traps
         """

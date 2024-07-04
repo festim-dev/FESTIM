@@ -18,7 +18,7 @@ class PointValue(DerivedQuantity):
         function (dolfin.function.function.Function): the solution function of
             the field
 
-    Notes:
+    .. note::
         Units are in H/m3 for hydrogen concentration and K for temperature
 
     """
