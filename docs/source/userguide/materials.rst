@@ -8,7 +8,11 @@ Materials are vital components of hydrogen transport simulations. They hold diff
 
 To define a material, use the :class:`festim.Material` class:
 
-.. code-block:: python
+.. testsetup::
+
+    from festim import Material, Simulation
+
+.. testcode::
 
     mat1 = Material(id=1, D_0=2, E_D=0.1)
     mat2 = Material(id=2, D_0=3, E_D=0.4)
@@ -16,7 +20,7 @@ To define a material, use the :class:`festim.Material` class:
 
 Materials are then assigned to the model:
 
-.. code-block:: python
+.. testcode::
 
     my_model = Simulation(materials=[mat1, mat2])
 
