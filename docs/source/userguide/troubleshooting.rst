@@ -32,10 +32,9 @@ This will provide more information during the solving stage.
     my_model.log_level = 20
 
 From there, depending on the behaviour of the solver, you can try the following:
-- if the solver diverges, try reducing the time step and/or mesh refinement. It is often
- helpful to inspect the fields to see if there are any obvious issues (like lack of refinement).
-- If the solver converges to a value above the tolerance, try increasing the tolerance.
-Sometimes, the absolute tolerance is too low for the problem at hand, especially when dealing with large numbers.
+
+- if the solver diverges, try reducing the time step and/or mesh refinement. It is often helpful to inspect the fields to see if there are any obvious issues (like lack of refinement).
+- If the solver converges to a value above the tolerance, try increasing the tolerance. Sometimes, the absolute tolerance is too low for the problem at hand, especially when dealing with large numbers.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
