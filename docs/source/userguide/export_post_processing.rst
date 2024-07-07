@@ -63,7 +63,11 @@ The following example shows how to export the solution of a 1D problem:
 
 Running this should produce two files called ``mobile_conc.xdmf`` and `ˋmobile_conc.h5`` in the current directory.
 The file can then be opened in Paraview or any other software that can read XDMF files. Here are some tips for using Paraview:
+
 - Make sure to have the h5 file in the same directory as the XDMF file
+
+- Do not modify the name of the files after their creation by FESTIM. This would result in not being able to open the file in paraview because the XDMF points to the h5 file
+
 - Open the XDMF file then select the reader Xdmf3 Reader S
 
 .. thumbnail:: ../images/paraview_guide_1.png
