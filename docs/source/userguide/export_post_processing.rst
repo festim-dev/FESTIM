@@ -61,8 +61,26 @@ The following example shows how to export the solution of a 1D problem:
 
    ...
 
-Running this should produce a file called ``mobile_conc.xdmf`` in the current directory.
-The file can then be opened in Paraview or any other software that can read XDMF files.
+Running this should produce two files called ``mobile_conc.xdmf`` and `ˋmobile_conc.h5`` in the current directory.
+The file can then be opened in Paraview or any other software that can read XDMF files. Here are some tips for using Paraview:
+
+- Make sure to have the h5 file in the same directory as the XDMF file
+
+- Do not modify the name of the files after their creation by FESTIM. This would result in not being able to open the file in paraview because the XDMF points to the h5 file
+
+- Open the XDMF file then select the reader Xdmf3 Reader S
+
+.. thumbnail:: ../images/paraview_guide_1.png
+    :width: 400
+    :align: center
+
+- Edit the colour map and rescale the colourbar to present the proper view of results
+
+.. thumbnail:: ../images/paraview_guide_2.png
+    :width: 400
+    :align: center
+
+- Find out more information on `Paraview tutorials <https://www.paraview.org/tutorials/>`_
 
 For transient simulations, by default, :class:`festim.XDMFExport` will export the solution at each timestep.
 It is possible to change this behaviour to limit the number of times the file is written to.
