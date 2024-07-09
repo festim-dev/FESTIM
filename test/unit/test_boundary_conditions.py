@@ -688,7 +688,7 @@ def test_create_form_surf_kinetics():
         (adsorbed - adsorbed_prev) / dt.value * adsorbed_test_function * ds(1)
     )
     expected_form += (
-        -lambda_IS * (solute - solute_prev) / dt.value * solute_test_function * ds(1)
+        lambda_IS * (solute - solute_prev) / dt.value * solute_test_function * ds(1)
     )
     expected_form += -(j_vs + J_bs - J_sb) * adsorbed_test_function * ds(1)
     expected_form += (J_bs - J_sb) * solute_test_function * ds(1)
