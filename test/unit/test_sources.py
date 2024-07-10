@@ -1,4 +1,5 @@
 import festim
+import pytest
 import fenics as f
 import sympy as sp
 import numpy as np
@@ -91,3 +92,9 @@ def test_source_with_userexpression_value():
 
     source = festim.Source(CustomExpr(), volume=1, field="solute")
     assert isinstance(source.value, f.UserExpression)
+
+
+def test_error_if_used_Temperature_with_source():
+    """Check that an error is returned when using F.Temperature with source"""
+    with pytest.raises(ValueError, match="F.Temperature shouldn't be used with Source"):
+        festim.Source(value=festim.Temperature(value=300), volume=1, field="solute")

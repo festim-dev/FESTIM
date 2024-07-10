@@ -694,3 +694,12 @@ def test_create_form_surf_kinetics():
     expected_form += (J_bs - J_sb) * solute_test_function * ds(1)
 
     assert my_bc.form.equals(expected_form)
+
+
+def test_error_if_used_Temperature():
+    """Check that an error is returned when using F.Temperature with DirichletBC"""
+    with pytest.raises(
+        ValueError,
+        match="F.Temperature should not be used with DirichletBC or daughter class",
+    ):
+        festim.DirichletBC(surfaces=1, value=festim.Temperature(value=300), field=0)

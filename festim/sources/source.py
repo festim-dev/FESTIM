@@ -1,4 +1,5 @@
 from fenics import Constant, Expression, Function, UserExpression
+from festim import Temperature
 import sympy as sp
 
 
@@ -25,7 +26,9 @@ class Source:
         self.volume = volume
         self.field = field
 
-        if isinstance(value, (float, int)):
+        if isinstance(value, Temperature):
+            raise ValueError(f"F.Temperature shouldn't be used with Source")
+        elif isinstance(value, (float, int)):
             self.value = Constant(value)
         elif isinstance(value, sp.Expr):
             self.value = Expression(sp.printing.ccode(value), t=0, degree=2)

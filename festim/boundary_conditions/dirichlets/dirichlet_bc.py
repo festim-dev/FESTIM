@@ -1,4 +1,4 @@
-from festim import BoundaryCondition, k_B
+from festim import BoundaryCondition, k_B, Temperature
 import fenics as f
 import sympy as sp
 
@@ -17,7 +17,12 @@ class DirichletBC(BoundaryCondition):
 
     def __init__(self, surfaces, value, field) -> None:
         super().__init__(surfaces, field=field)
-        self.value = value
+        if isinstance(value, Temperature):
+            raise ValueError(
+                f"F.Temperature should not be used with DirichletBC or daughter class"
+            )
+        else:
+            self.value = value
         self.dirichlet_bc = []
 
     def create_expression(self, T):
