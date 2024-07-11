@@ -209,7 +209,7 @@ def test_run_MMS(tmpdir):
         my_materials = festim.Materials(
             [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
         )
-        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
+        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap, 1)])
 
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
@@ -335,7 +335,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         my_materials = festim.Materials(
             [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D, S_0=2, E_S=0.1)]
         )
-        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
+        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap, 1)])
 
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
@@ -616,7 +616,7 @@ def test_run_MMS_steady_state(tmpdir):
             [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
         )
 
-        my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap)
+        my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap, 1)
 
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
@@ -1158,7 +1158,7 @@ def test_MMS_decay_with_trap():
         [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
     )
 
-    my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap)
+    my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap, 1)
 
     size = 0.1
     my_mesh = festim.MeshFromVertices(np.linspace(0, size, 1600))

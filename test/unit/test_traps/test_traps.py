@@ -96,9 +96,13 @@ class TestGetTrap:
     dx = f.dx()
     dt = f.Constant(1)
 
-    trap1 = festim.Trap(k_0=1, E_k=2, p_0=1, E_p=2, materials="mat_name", density=1)
+    trap1 = festim.Trap(
+        k_0=1, E_k=2, p_0=1, E_p=2, materials="mat_name", density=1, id=1
+    )
     add_functions(trap1, V, id=1)
-    trap2 = festim.Trap(k_0=2, E_k=3, p_0=1, E_p=2, materials="mat_name", density=1)
+    trap2 = festim.Trap(
+        k_0=2, E_k=3, p_0=1, E_p=2, materials="mat_name", density=1, id=2
+    )
     add_functions(trap2, V, id=2)
     my_traps = festim.Traps([trap1, trap2])
 

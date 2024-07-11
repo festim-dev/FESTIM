@@ -18,7 +18,7 @@ class TestPostProcessing:
         my_sim.materials = festim.Materials([mat1])
 
         my_sim.mobile = festim.Mobile()
-        trap_1 = festim.Trap(1, 1, 1, 1, mat1, 1)
+        trap_1 = festim.Trap(1, 1, 1, 1, mat1, 1, 1)
         my_sim.traps = festim.Traps([trap_1])
 
         my_sim.mesh.define_measures(my_sim.materials)
