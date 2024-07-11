@@ -108,7 +108,7 @@ Where :math:`Kd` is the dissociation coefficient, :math:`P` is the partial press
 Kinetic surface model (1D)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Surface kinetic model can be included to account for the evolution of adsorbed hydrogen on a surface with the :class:`festim.SurfaceKinetics` class.
+Kinetic surface model can be included to account for the evolution of adsorbed hydrogen on a surface with the :class:`festim.SurfaceKinetics` class.
 Refer to the :ref:`theory` section for more details.
 
 .. testcode:: BCs
@@ -124,7 +124,7 @@ Refer to the :ref:`theory` section for more details.
 
     def J_vs(T, surf_conc, t):
 
-        J_des = 2e13*surf_conc**2*f.exp(-1.2/k_b/T)
+        J_des = 2e5*surf_conc**2*f.exp(-1.2/k_b/T)
         J_ads = 1e17*(1-surf_conc/1e17)**2*f.conditional(t<10, 1, 0)
 
         return J_ads - J_des
