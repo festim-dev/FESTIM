@@ -275,37 +275,69 @@ where :math:`h` is the heat transfer coefficient and :math:`T_{\mathrm{ext}}` is
 Kinetic surface model
 ^^^^^^^^^^^^^^^^^^^^^
 
-Modelling hydrogen retention or outgassing might require considering the kinetics of surface processes :cite:`Guterl2019`. 
-A representative example is the hydrogen uptake from a gas phase, when the energy of incident atoms/molecules is not high enough to
-to overcome the surface barrier for implantation. The general approach to accound for surface kinetics consists in 
-introducing hydrogen surface species :math:`c_\mathrm{s}`. Evolution of hydrogen surface concentration is governed by the atomic flux 
-balance at the surface, as sketched in diagram below:
+Modelling hydrogen retention or outgassing might require considering the kinetics of surface processes. 
+A representative example is the hydrogen uptake from a gas phase, when the energy of incident atoms/molecules is not high enough to 
+overcome the surface barrier for implantation. The general approach to account for surface kinetics :cite:`Pick1985, Hodille2017, Guterl2019, Schmid2021` consists in 
+introducing hydrogen surface species :math:`c_\mathrm{s}`. 
 
-.. math::
-    :label: eq_surf_conc
-    
-    \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}
-
-where :math:`J_\mathrm{bs}` is the flux of hydrogen atoms from the bulk onto the surface, :math:`J_\mathrm{sb}` is the flux of hydrogen atoms from the surface 
-into the bulk, and :math:`J_\mathrm{sv}` is the net flux of hydrogen atoms from the vacuum onto the surface.
+Evolution of hydrogen surface concentration is determined by the atomic flux balance at the surface, as sketched in the simplified energy diagram below.
 
 .. figure:: images/potential_diagram.png
     :align: center
     :width: 800
-    :alt: Potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
+    :alt: Idealised potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
 
     Potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
 
-
-The connection condition between surface and bulk domains represents the Robin boundary condition for the diffusion problem.
-
-The Robin boundary condition can be used to account for kinetic processes occurring on a surface . The general approach consists in considering
-a temporal evolution of hydrogen surface species (:math:`c_\mathrm{s}`):
+The governing equation for surface species is:
 
 .. math::
     :label: eq_surf_conc
     
     \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}
+
+where :math:`J_\mathrm{bs}` is the flux of hydrogen atoms from the subsurface (bulk region just beneath the surface) onto the surface, 
+:math:`J_\mathrm{sb}` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}` is the net flux of hydrogen 
+atoms from the vacuum onto the surface. The current model does not account for possible surface diffusion and, therefore, is limited to
+one-dimensional hydrogen transport simulations.
+
+The connection condition between surface and bulk domains represents the Robin boundary condition for the hydrogen transport problem.
+
+.. math::
+    :label: eq_subsurf_conc
+    
+    -D \nabla c_\mathrm{m} \cdot \mathbf{n} = \lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t} + J_{\mathrm{bs}} - J_{\mathrm{sb}}
+
+where :math:`\lambda_\mathrm{IS}` is the distance between two interstitial sites in the bulk. 
+
+.. note::
+
+    At steady state and :math:`x=0`, :eq:`eq_subsurf_conc` is reduced to :math:`D\frac{\partial c_\mathrm{m}}{\partial x}=J_\mathrm{bs}-J_\mathrm{sb}`
+    representing eq. (12) in the original work of M.A. Pick & K. Sonnenberg :cite:`Pick1985`.
+
+The fluxes for subsurface-to-surface and surface-to-subsurface transitions are defined as follows:
+
+.. math::
+    :label: eq_Jbs
+
+    J_\mathrm{bs} = k_\mathrm{bs} \lambda_\mathrm{abs} c_\mathrm{m} \left(1-\dfrac{c_\mathrm{s}}{n_\mathrm{surf}}\right)
+
+.. math::
+    :label: eq_Jsb
+
+    J_\mathrm{sb} = k_\mathrm{sb} c_\mathrm{s} \left(1-\dfrac{c_\mathrm{m}}{n_\mathrm{IS}}\right)
+
+where :math:`n_\mathrm{surf}` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}` is the bulk concentration of interstitial sites,
+:math:`\lambda_\mathrm{abs}=n_\mathrm{surf}/n_\mathrm{IS}` is the characteristic distance between surface and subsurface sites, :math:`k_\mathrm{bs}` 
+and :math:`k_\mathrm{sb}` are the rate constants for subsurface-to-surface and surface-to-subsurface transitions, respectively. 
+Usually, these rate constants are expressed in the Arrhenius form: :math:`k_i=k_{i,0}\exp(-E_i / kT)`. Both these processes are assumed to take place
+if there are available sites on the surface (in the subsurface). Possible surface/subsurface saturation is accounted for with terms in brackets.
+
+.. note::
+
+    In eq. :eq:`eq_Jsb`, the last term in brackets is usually omitted, since :math:`c_\mathrm{m} \ll n_\mathrm{IS}` is assumed. 
+    However, this term is included in some works (e.g. :cite:`Hamamoto2020`) to better reproduce the experimental results.   
+
 
 ------------
 References
