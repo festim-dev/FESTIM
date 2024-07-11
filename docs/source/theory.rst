@@ -287,7 +287,7 @@ Evolution of hydrogen surface concentration is determined by the atomic flux bal
     :width: 800
     :alt: Idealised potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
 
-    Potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
+    Idealised potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
 
 The governing equation for surface species is:
 

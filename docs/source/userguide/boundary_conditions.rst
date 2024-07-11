@@ -105,6 +105,31 @@ Where :math:`Kd` is the dissociation coefficient, :math:`P` is the partial press
 
     my_bc = DissociationFlux(surfaces=2, Kd_0=2, E_Kd=0.1, P=1e05)
 
+Kinetic surface model (1D)
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Surface kinetic model can be included to account for the evolution of adsorbed hydrogen on a surface with the :class:`festim.SurfaceKinetics` class.
+Refer to the :ref:`theory` section for more details.
+
+.. testcode:: BCs
+
+    from festim import t
+    import fenics as f
+
+    def k_bs(T, surf_conc, t):
+        return 1e13*f.exp(-0.2/k_b/T)
+
+    def k_sb(T, surf_conc, t):
+        return 1e13*f.exp(-1.0/k_b/T)
+
+    def J_vs(T, surf_conc, t):
+
+        J_des = 2e13*surf_conc**2*f.exp(-1.2/k_b/T)
+        J_ads = 1e17*(1-surf_conc/1e17)**2*f.conditional(t<10, 1, 0)
+
+        return J_ads - J_des
+
+    my_bc = SurfaceKinetics(k_bs=k_bs, k_sb=k_sb, lambda_IS=1.1e-10, n_surf=1e17, n_IS=6.3e28, J_vs=J_vs, surfaces=3, initial_condition=0, t=t)
 
 Sievert's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
