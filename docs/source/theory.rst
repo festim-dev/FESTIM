@@ -272,9 +272,44 @@ Finally, convective heat fluxes can be applied to boundaries:
 
 where :math:`h` is the heat transfer coefficient and :math:`T_{\mathrm{ext}}` is the external temperature.
 
----------------
+Kinetic surface model
+^^^^^^^^^^^^^^^^^^^^^
+
+Modelling hydrogen retention or outgassing might require considering the kinetics of surface processes :cite:`Guterl2019`. 
+A representative example is the hydrogen uptake from a gas phase, when the energy of incident atoms/molecules is not high enough to
+to overcome the surface barrier for implantation. The general approach to accound for surface kinetics consists in 
+introducing hydrogen surface species :math:`c_\mathrm{s}`. Evolution of hydrogen surface concentration is governed by the atomic flux 
+balance at the surface, as sketched in diagram below:
+
+.. math::
+    :label: eq_surf_conc
+    
+    \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}
+
+where :math:`J_\mathrm{bs}` is the flux of hydrogen atoms from the bulk onto the surface, :math:`J_\mathrm{sb}` is the flux of hydrogen atoms from the surface 
+into the bulk, and :math:`J_\mathrm{sv}` is the net flux of hydrogen atoms from the vacuum onto the surface.
+
+.. figure:: images/potential_diagram.png
+    :align: center
+    :width: 800
+    :alt: Potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
+
+    Potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
+
+
+The connection condition between surface and bulk domains represents the Robin boundary condition for the diffusion problem.
+
+The Robin boundary condition can be used to account for kinetic processes occurring on a surface . The general approach consists in considering
+a temporal evolution of hydrogen surface species (:math:`c_\mathrm{s}`):
+
+.. math::
+    :label: eq_surf_conc
+    
+    \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}
+
+------------
 References
----------------
+------------
 
 .. bibliography:: bibliography/references.bib
     :style: unsrt
