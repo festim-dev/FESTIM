@@ -159,11 +159,20 @@ def test_error_DirichletBC_on_same_surface(field, surfaces):
         F.DirichletBC(value=1, field=field, surfaces=surfaces),
     ]
 
-    with pytest.raises(
-        ValueError,
-        match="DirichletBC is simultaneously set with another boundary condition",
-    ):
-        sim.initialise()
+    if field == "solute":
+        with pytest.raises(
+            ValueError,
+            match="DirichletBC is simultaneously set with another boundary condition",
+        ):
+            sim.initialise()
+    elif (
+        field == "T"
+    ):  # with festim.Temperature already defined there is another error given
+        with pytest.raises(
+            ValueError,
+            match="cannot use boundary conditions with Temperature, use HeatTransferProblem instead.",
+        ):
+            sim.initialise()
 
 
 @pytest.mark.parametrize("surfaces", [1, 2, [1, 2]])

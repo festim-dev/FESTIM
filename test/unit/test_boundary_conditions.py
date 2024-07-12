@@ -551,7 +551,7 @@ def custom_fun(T, solute, param1):
     "bc",
     [
         (festim.DissociationFlux(surfaces=[1], Kd_0=1, E_Kd=0, P=1e4)),
-        (festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)),
+        # (festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)),
         (festim.FluxBC(surfaces=1, value=1, field=0)),
         (festim.MassFlux(h_coeff=1, c_ext=1, surfaces=1)),
         (festim.RecombinationFlux(Kr_0=1e-20, E_Kr=0, order=2, surfaces=1)),
@@ -603,6 +603,26 @@ def test_flux_BC_initialise(bc):
     sim.dt = None
     sim.exports = []
     sim.initialise()
+
+
+def test_flux_BC_initialise_special_case():
+    """Special case because of the new test if Temperature is used with BC on T"""
+    sim = festim.Simulation()
+    sim.mesh = festim.MeshFromVertices([0, 1, 2, 3])
+    sim.materials = festim.Material(id=1, D_0=1, E_D=0)
+    sim.T = festim.Temperature(value=500)
+    sim.boundary_conditions = [festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)]
+    sim.settings = festim.Settings(
+        transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
+    )
+    sim.sources = []
+    sim.dt = None
+    sim.exports = []
+    with pytest.raises(
+        ValueError,
+        match="cannot use boundary conditions with Temperature, use HeatTransferProblem instead.",
+    ):
+        sim.initialise()
 
 
 def test_dissoc_flux():

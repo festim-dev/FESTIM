@@ -242,6 +242,14 @@ class Simulation:
             ):
                 raise ValueError("SurfaceKinetics can only be used in 1D simulations")
 
+            # check that there is not a Temperature defined at the same time as a Dirichlet in T
+            if bc.field == "T" and not isinstance(
+                self.T, festim.temperature.temperature_solver.HeatTransferProblem
+            ):
+                raise ValueError(
+                    f"cannot use boundary conditions with Temperature, use HeatTransferProblem instead."
+                )
+
             # checks that DirichletBC or SurfaceKinetics is not set with another bc on the same surface
             # iterate through all BCs
             for dc_sk_bc in dc_sk_bcs:
