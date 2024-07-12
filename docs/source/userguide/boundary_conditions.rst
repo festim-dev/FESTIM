@@ -109,7 +109,7 @@ Kinetic surface model (1D)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Kinetic surface model can be included to account for the evolution of adsorbed hydrogen on a surface with the :class:`festim.SurfaceKinetics` class.
-Refer to the :ref:`theory` section for more details.
+The current class is supported for 1D simulations only. Refer to the :ref:`Kinetic surface model` theory section for more details.
 
 .. testcode:: BCs
 
@@ -129,7 +129,17 @@ Refer to the :ref:`theory` section for more details.
 
         return J_ads - J_des
 
-    my_bc = SurfaceKinetics(k_bs=k_bs, k_sb=k_sb, lambda_IS=1.1e-10, n_surf=1e17, n_IS=6.3e28, J_vs=J_vs, surfaces=3, initial_condition=0, t=t)
+    my_bc = SurfaceKinetics(
+        k_bs=k_bs,
+        k_sb=k_sb,
+        lambda_IS=1.1e-10,
+        n_surf=1e17,
+        n_IS=6.3e28,
+        J_vs=J_vs,
+        surfaces=3,
+        initial_condition=0,
+        t=t
+        )
 
 Sievert's law of solubility
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

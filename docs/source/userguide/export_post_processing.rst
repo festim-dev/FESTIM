@@ -167,7 +167,11 @@ Finally, you can add the :class:`festim.DerivedQuantities` object to the simulat
     my_model.exports = [my_derived_quantities]
 
 
-The complete list of derived quantities can be found at: :ref:`Exports`.
+The complete list of derived quantities can be found at: :ref:`Exports`. 
+
+.. note::
+
+    There is a specific derived quantity :class:`festim.AdsorbedHydrogen` which can be used only with :class:`festim.SurfaceKinetics`.
 
 The data can be accessed in three different ways:
 - directly from the :class:`festim.DerivedQuantities` (plural) object:

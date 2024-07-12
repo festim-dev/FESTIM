@@ -8,14 +8,17 @@ Bulk physics
 
 H transport
 ^^^^^^^^^^^
-The model developed by McNabb & Foster :cite:`McNabb1963` is used to model hydrogen transport in materials in FESTIM. The principle is to separate mobile hydrogen :math:`c_\mathrm{m}` and trapped hydrogen :math:`c_\mathrm{t}`. The diffusion of mobile particles is governed by Fick’s law of diffusion where the hydrogen flux is
+The model developed by McNabb & Foster :cite:`McNabb1963` is used to model hydrogen transport in materials in FESTIM. 
+The principle is to separate mobile hydrogen :math:`c_\mathrm{m}\,[\mathrm{m}^{-3}]` and trapped hydrogen :math:`c_\mathrm{t}\,[\mathrm{m}^{-3}]`. 
+The diffusion of mobile particles is governed by Fick’s law of diffusion where the hydrogen flux is
 
 .. math::
     :label: eq_difflux
     
     J = -D \nabla c_\mathrm{m}
 
-where :math:`D=D(T)` is the diffusivity. Each trap :math:`i` is associated with a trapping and a detrapping rate :math:`k_i` and :math:`p_i`, respectively, as well as a trap density :math:`n_i`.
+where :math:`D=D(T)\,[\mathrm{m}^{2}\,\mathrm{s}^{-1}]` is the diffusivity. 
+Each trap :math:`i` is associated with a trapping and a detrapping rate :math:`k_i\,[\mathrm{m}^{3}\,\mathrm{s}^{-1}]` and :math:`p_i\,[\mathrm{s}^{-1}]`, respectively, as well as a trap density :math:`n_i\,[\mathrm{m}^{-3}]`.
 
 The temporal evolution of :math:`c_\mathrm{m}` and :math:`c_{\mathrm{t}, i}` are then given by:
 
@@ -29,7 +32,7 @@ The temporal evolution of :math:`c_\mathrm{m}` and :math:`c_{\mathrm{t}, i}` are
 
     \frac {\partial c_{\mathrm{t}, i}} { \partial t} = k_i c_\mathrm{m} (n_i - c_{\mathrm{t},i}) - p_i c_{\mathrm{t},i}
 
-where :math:`S_j=S_j(x,y,z,t)` is a source :math:`j` of mobile hydrogen. In FESTIM, source terms can be space and time dependent. These are used to simulate plasma implantation in materials, tritium generation from neutron interactions, etc. 
+where :math:`S_j=S_j(x,y,z,t)\,[\mathrm{m}^{-3}\,\mathrm{s}^{-1}]` is a source :math:`j` of mobile hydrogen. In FESTIM, source terms can be space and time dependent. These are used to simulate plasma implantation in materials, tritium generation from neutron interactions, etc. 
 These equations can be solved in cartesian coordinates but also in cylindrical and spherical coordinates. This is useful, for instance, when simulating hydrogen transport in a pipe or in a pebble. FESTIM can solve steady-state hydrogen transport problems.
 
 Soret effect
@@ -41,18 +44,18 @@ FESTIM can include the Soret effect :cite:`Pendergrass1976,Longhurst1985` (also 
 
     J = -D \nabla c_\mathrm{m} - D\frac{Q^* c_\mathrm{m}}{k_B T^2} \nabla T
 
-where :math:`Q^*` is the Soret coefficient (also called heat of transport) and :math:`k_B` is the Boltzmann constant.
+where :math:`Q^*\,[\mathrm{eV}]` is the Soret coefficient (also called heat of transport) and :math:`k_B` is the Boltzmann constant.
 
 Conservation of chemical potential at interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Continuity of local partial pressure :math:`P` at interfaces between materials has to be ensured. In the case of a material behaving according to Sievert’s law of solubility (metals), the partial pressure is expressed as:
+Continuity of local partial pressure :math:`P\,[\mathrm{Pa}]` at interfaces between materials has to be ensured. In the case of a material behaving according to Sievert’s law of solubility (metals), the partial pressure is expressed as:
 
 .. math::
     :label: eq_Sievert   
 
     P = \left(\frac{c_\mathrm{m}}{K_S}\right)^2
 
-where :math:`K_S` is the material solubility (or Sivert's constant).
+where :math:`K_S\,[\mathrm{m}^{-3}\,\mathrm{Pa}^{-0.5}]` is the material solubility (or Sivert's constant).
 
 In the case of a material behaving according to Henry's law of solubility, the partial pressure is expressed as:
 
@@ -61,7 +64,7 @@ In the case of a material behaving according to Henry's law of solubility, the p
 
     P = \frac{c_\mathrm{m}}{K_H}
 
-where :math:`K_H` is the material solubility (or Henry's constant).
+where :math:`K_H\,[\mathrm{m}^{-3}\,\mathrm{Pa}^{-1}]` is the material solubility (or Henry's constant).
 
 Two different interface cases can then occur. At the interface between two Sievert or two Henry materials, the continuity of partial pressure yields:
 
@@ -85,7 +88,7 @@ At the interface between a Sievert and a Henry material:
 
 It appears from these equilibrium equations that a difference in solubilities introduces a concentration jump at interfaces.
 
-In FESTIM, the conservation of chemical potential is obtained by a change of variables :cite:`Delaporte-Mathurin2021`. The variable :math:`\theta` is introduced and:
+In FESTIM, the conservation of chemical potential is obtained by a change of variables :cite:`Delaporte-Mathurin2021`. The variable :math:`\theta\,[\mathrm{Pa}]` is introduced and:
 
 .. math::
     :label: eq_theta
@@ -111,7 +114,7 @@ According to the latter, the rate :math:`k(T)` of a thermally activated process 
 
     k(T) = k_0 \exp \left[-\frac{E_k}{k_B T} \right]
 
-where :math:`k_0` is the pre-exponential factor, :math:`E_k` is the process activation energy, and :math:`T` is the temperature. 
+where :math:`k_0` is the pre-exponential factor, :math:`E_k\,[\mathrm{eV}]` is the process activation energy, and :math:`T\,[\mathrm{K}]` is the temperature. 
 
 Heat transfer
 ^^^^^^^^^^^^^^
@@ -122,7 +125,8 @@ To properly account for the temperature-dependent parameters, an accurate repres
 
     \rho C_p \frac{\partial T}{\partial t} = \nabla \cdot (\lambda \nabla T) + \sum_i Q_i
 
-where :math:`T` is the temperature, :math:`C_p` is the specific heat capacity, :math:`\rho` is the material's density, :math:`\lambda` is the thermal conductivity and :math:`Q_i` is a volumetric heat source :math:`i`. As for the hydrogen transport problem, the heat equation can be solved in steady state. In FESTIM, the thermal properties of materials can be arbitrary functions of temperature.
+where :math:`T` is the temperature, :math:`C_p\,[\mathrm{J}\,\mathrm{kg}^{-1}\,\mathrm{K}^{-1}]` is the specific heat capacity, :math:`\rho\,[\mathrm{kg}\,\mathrm{m}^{-3}]` is the material's density, 
+:math:`\lambda\,[\mathrm{W}\,\mathrm{m}^{-1}\,\mathrm{K}^{-1}]` is the thermal conductivity and :math:`Q_i\,[\mathrm{W}\,\mathrm{m}^{-3}]` is a volumetric heat source :math:`i`. As for the hydrogen transport problem, the heat equation can be solved in steady state. In FESTIM, the thermal properties of materials can be arbitrary functions of temperature.
 
 ---------------
 Surface physics 
@@ -278,14 +282,13 @@ Kinetic surface model
 Modelling hydrogen retention or outgassing might require considering the kinetics of surface processes. 
 A representative example is the hydrogen uptake from a gas phase, when the energy of incident atoms/molecules is not high enough to 
 overcome the surface barrier for implantation. The general approach to account for surface kinetics :cite:`Pick1985, Hodille2017, Guterl2019, Schmid2021` consists in 
-introducing hydrogen surface species :math:`c_\mathrm{s}`. 
+introducing hydrogen surface species :math:`c_\mathrm{s}\,[\mathrm{m}^{-2}]`. 
 
 Evolution of hydrogen surface concentration is determined by the atomic flux balance at the surface, as sketched in the simplified energy diagram below.
 
-.. figure:: images/potential_diagram.png
+.. thumbnail:: images/potential_diagram.png
     :align: center
     :width: 800
-    :alt: Idealised potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
 
     Idealised potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
 
@@ -296,10 +299,9 @@ The governing equation for surface species is:
     
     \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}
 
-where :math:`J_\mathrm{bs}` is the flux of hydrogen atoms from the subsurface (bulk region just beneath the surface) onto the surface, 
-:math:`J_\mathrm{sb}` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}` is the net flux of hydrogen 
-atoms from the vacuum onto the surface. The current model does not account for possible surface diffusion and, therefore, is limited to
-one-dimensional hydrogen transport simulations.
+where :math:`J_\mathrm{bs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the subsurface (bulk region just beneath the surface) onto the surface, 
+:math:`J_\mathrm{sb}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the net flux of hydrogen 
+atoms from the vacuum onto the surface. It worth noticing that the current model does not account for possible surface diffusion and is available only for 1D hydrogen transport simulations.
 
 The connection condition between surface and bulk domains represents the Robin boundary condition for the hydrogen transport problem.
 
@@ -308,7 +310,7 @@ The connection condition between surface and bulk domains represents the Robin b
     
     -D \nabla c_\mathrm{m} \cdot \mathbf{n} = \lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t} + J_{\mathrm{bs}} - J_{\mathrm{sb}}
 
-where :math:`\lambda_\mathrm{IS}` is the distance between two interstitial sites in the bulk. 
+where :math:`\lambda_\mathrm{IS}\,[\mathrm{m}]` is the distance between two interstitial sites in the bulk. 
 
 .. note::
 
@@ -327,16 +329,17 @@ The fluxes for subsurface-to-surface and surface-to-subsurface transitions are d
 
     J_\mathrm{sb} = k_\mathrm{sb} c_\mathrm{s} \left(1-\dfrac{c_\mathrm{m}}{n_\mathrm{IS}}\right)
 
-where :math:`n_\mathrm{surf}` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}` is the bulk concentration of interstitial sites,
-:math:`\lambda_\mathrm{abs}=n_\mathrm{surf}/n_\mathrm{IS}` is the characteristic distance between surface and subsurface sites, :math:`k_\mathrm{bs}` 
-and :math:`k_\mathrm{sb}` are the rate constants for subsurface-to-surface and surface-to-subsurface transitions, respectively. 
+where :math:`n_\mathrm{surf}\,[\mathrm{m}^{-2}]` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}\,[\mathrm{m}^{-3}]` is the bulk concentration of interstitial sites,
+:math:`\lambda_\mathrm{abs}=n_\mathrm{surf}/n_\mathrm{IS}\,[\mathrm{m}]` is the characteristic distance between surface and subsurface sites, :math:`k_\mathrm{bs}\,[\mathrm{s}^{-1}]` 
+and :math:`k_\mathrm{sb}\,[\mathrm{s}^{-1}]` are the rate constants for subsurface-to-surface and surface-to-subsurface transitions, respectively. 
 Usually, these rate constants are expressed in the Arrhenius form: :math:`k_i=k_{i,0}\exp(-E_i / kT)`. Both these processes are assumed to take place
 if there are available sites on the surface (in the subsurface). Possible surface/subsurface saturation is accounted for with terms in brackets.
 
 .. note::
 
-    In eq. :eq:`eq_Jsb`, the last term in brackets is usually omitted, since :math:`c_\mathrm{m} \ll n_\mathrm{IS}` is assumed. 
-    However, this term is included in some works (e.g. :cite:`Hamamoto2020`) to better reproduce the experimental results.   
+    In eq. :eq:`eq_Jsb`, the last term in brackets is usually omitted :cite:`Guterl2019, Pick1985, Hodille2017, Schmid2021`, 
+    since :math:`c_\mathrm{m} \ll n_\mathrm{IS}` is assumed. However, this term is included in some works (e.g. :cite:`Hamamoto2020`) 
+    to better reproduce the experimental results.   
 
 
 ------------
