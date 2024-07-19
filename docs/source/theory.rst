@@ -297,7 +297,7 @@ The governing equation for surface species is:
 .. math::
     :label: eq_surf_conc
     
-    \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}
+    \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}~\text{on}~\delta\Omega
 
 where :math:`J_\mathrm{bs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the subsurface (bulk region just beneath the surface) onto the surface, 
 :math:`J_\mathrm{sb}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the net flux of hydrogen 
@@ -308,14 +308,14 @@ The connection condition between surface and bulk domains represents the Robin b
 .. math::
     :label: eq_subsurf_conc
     
-    -D \nabla c_\mathrm{m} \cdot \mathbf{n} = \lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t} + J_{\mathrm{bs}} - J_{\mathrm{sb}}
+    -D \nabla c_\mathrm{m} \cdot \mathbf{n} = \lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t} + J_{\mathrm{bs}} - J_{\mathrm{sb}}~\text{on}~\delta\Omega
 
 where :math:`\lambda_\mathrm{IS}\,[\mathrm{m}]` is the distance between two interstitial sites in the bulk. 
 
 .. note::
 
-    At steady state and :math:`x=0`, :eq:`eq_subsurf_conc` is reduced to :math:`D\frac{\partial c_\mathrm{m}}{\partial x}=J_\mathrm{bs}-J_\mathrm{sb}`
-    representing eq. (12) in the original work of M.A. Pick & K. Sonnenberg :cite:`Pick1985`.
+    At the left boundary, the normal vector :math:`\textbf{n}` is :math:`-\vec{x}`. The steady-state approximation of eq. :eq:`eq_subsurf_conc` at the left boundary 
+    is, therefore, :math:`D\frac{\partial c_\mathrm{m}}{\partial x}=J_\mathrm{bs}-J_\mathrm{sb}` representing eq. (12) in the original work of M.A. Pick & K. Sonnenberg :cite:`Pick1985`.
 
 The fluxes for subsurface-to-surface and surface-to-subsurface transitions are defined as follows:
 
@@ -332,7 +332,7 @@ The fluxes for subsurface-to-surface and surface-to-subsurface transitions are d
 where :math:`n_\mathrm{surf}\,[\mathrm{m}^{-2}]` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}\,[\mathrm{m}^{-3}]` is the bulk concentration of interstitial sites,
 :math:`\lambda_\mathrm{abs}=n_\mathrm{surf}/n_\mathrm{IS}\,[\mathrm{m}]` is the characteristic distance between surface and subsurface sites, :math:`k_\mathrm{bs}\,[\mathrm{s}^{-1}]` 
 and :math:`k_\mathrm{sb}\,[\mathrm{s}^{-1}]` are the rate constants for subsurface-to-surface and surface-to-subsurface transitions, respectively. 
-Usually, these rate constants are expressed in the Arrhenius form: :math:`k_i=k_{i,0}\exp(-E_i / kT)`. Both these processes are assumed to take place
+Usually, these rate constants are expressed in the Arrhenius form: :math:`k_i=k_{i,0}\exp(-E_{k,i} / kT)`. Both these processes are assumed to take place
 if there are available sites on the surface (in the subsurface). Possible surface/subsurface saturation is accounted for with terms in brackets.
 
 .. note::
