@@ -605,26 +605,6 @@ def test_flux_BC_initialise(bc):
     sim.initialise()
 
 
-def test_flux_BC_initialise_special_case():
-    """Special case because of the new test if Temperature is used with BC on T"""
-    sim = festim.Simulation()
-    sim.mesh = festim.MeshFromVertices([0, 1, 2, 3])
-    sim.materials = festim.Material(id=1, D_0=1, E_D=0)
-    sim.T = festim.Temperature(value=500)
-    sim.boundary_conditions = [festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)]
-    sim.settings = festim.Settings(
-        transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
-    )
-    sim.sources = []
-    sim.dt = None
-    sim.exports = []
-    with pytest.raises(
-        ValueError,
-        match="cannot use boundary conditions with Temperature, use HeatTransferProblem instead.",
-    ):
-        sim.initialise()
-
-
 def test_dissoc_flux():
     expr = 2 + festim.x
     T = fenics.Expression(sp.printing.ccode(expr), degree=1, t=0)

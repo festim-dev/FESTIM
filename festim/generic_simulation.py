@@ -206,6 +206,12 @@ class Simulation:
 
         # set sources
         for source in self.sources:
+            if source.field == "T" and not isinstance(
+                self.T, festim.temperature.temperature_solver.HeatTransferProblem
+            ):  # check that there is not a source defined in T as the same time as a festim.Temperature
+                raise ValueError(
+                    "Heat transfer sources can only be used with HeatTransferProblem"
+                )
             if isinstance(source, festim.RadioactiveDecay) and source.field == "all":
                 # assign source to each of the unique festim.Concentration
                 # objects in field_to_object
@@ -242,12 +248,12 @@ class Simulation:
             ):
                 raise ValueError("SurfaceKinetics can only be used in 1D simulations")
 
-            # check that there is not a Temperature defined at the same time as a Dirichlet in T
+            # check that there is not a Temperature defined at the same time as a boundary condition in T
             if bc.field == "T" and not isinstance(
                 self.T, festim.temperature.temperature_solver.HeatTransferProblem
             ):
                 raise ValueError(
-                    f"cannot use boundary conditions with Temperature, use HeatTransferProblem instead."
+                    "Heat transfer boundary conditions can only be used with HeatTransferProblem"
                 )
 
             # checks that DirichletBC or SurfaceKinetics is not set with another bc on the same surface
