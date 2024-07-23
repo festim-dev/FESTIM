@@ -124,7 +124,7 @@ Radioactive decay can be included in FESTIM. Neglecting other terms (diffusion, 
     \frac{\partial c}{ \partial t} = -\lambda c
 
 where :math:`\lambda\,[\mathrm{s}^{-1}]` is the decay constant.
-In FESTIM it is possible to include radioactive decay in the mobile hydrogen concentration and/or the trapped hydrogen concentrations.
+In FESTIM it is possible to include radioactive decay in the evolution of the mobile hydrogen concentration and/or the trapped hydrogen concentrations.
 
 Heat transfer
 ^^^^^^^^^^^^^^
