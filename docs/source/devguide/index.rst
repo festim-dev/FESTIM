@@ -36,12 +36,25 @@ By forking the repository, you create a copy where you can safely make changes.
 
 2) Make your changes
 3) `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
-4) Wait for a maintainer to review your PR
+4) Wait for a :ref:`maintainer<Maintainers>` to review your PR
 
 Before merging your changes, they have to be reviewed. We ensure the changes don't break anything during the review and eventually propose/request improvements.
 The time before the review will depend on the maintainers' availability.
 
 5) When everything is in order, the maintainers will merge your PR!
+
+-----------
+Maintainers
+-----------
+
+The maintainers are the people who have the right to merge PRs to the repository.
+They consist of the following individuals:
+
+- Remi Delaporte-Mathurin (`@RemDelaporteMathurin <https://github.com/RemDelaporteMathurin>`_)
+- James Dark (`@jhdark <https://github.com/jhdark>`_)
+- Vladimir Kulagin (`@KulaginVladimir <https://github.com/KulaginVladimir>`_)
+
+The project lead is Remi Delaporte-Mathurin.
 
 ----------
 Test suite
