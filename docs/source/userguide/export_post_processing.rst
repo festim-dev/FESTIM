@@ -234,7 +234,7 @@ The data can be accessed in three different ways:
    ...
 
 In the previous case, we created a variable ``flux_surf_3`` that is a :class:`festim.DerivedQuantity` object.
-If this is not possible, it is also possible to access the :class:`festim.DerivedQuantity` object with the :meth:`festim.DerivedQuantities.filter` method:
+If this is not possible, the :class:`festim.DerivedQuantity` object can be accessed with the :meth:`festim.DerivedQuantities.filter` method:
 
 .. testcode::
 
