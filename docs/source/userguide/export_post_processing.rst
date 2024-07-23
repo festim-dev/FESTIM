@@ -233,6 +233,35 @@ The data can be accessed in three different ways:
 
    ...
 
+In the previous case, we created a variable ``flux_surf_3`` that is a :class:`festim.DerivedQuantity` object.
+If this is not possible, it is also possible to access the :class:`festim.DerivedQuantity` object with the :meth:`festim.DerivedQuantities.filter` method:
+
+.. testcode::
+
+    my_derived_quantities = F.DerivedQuantities(
+        [
+            F.SurfaceFlux(field="solute", surface=3),
+            F.AverageVolume(field="T", volume=1),
+            F.AverageVolume(field="retention", volume=1),
+            F.TotalVolume(field="retention", volume=2),
+        ]
+    )
+
+    my_model.exports = [my_derived_quantities]
+
+    my_model.initialise()
+    my_model.run()
+
+    flux_surf_3 = my_derived_quantities.filter(field="solute", surface=3)
+    print(flux_surf_3.data)
+
+.. testoutput::
+    :options: +ELLIPSIS
+    :hide:
+    
+    ...
+
+
 - export and read from a .csv file:
 
 .. testcode::
