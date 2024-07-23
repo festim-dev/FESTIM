@@ -113,6 +113,19 @@ According to the latter, the rate :math:`k(T)` of a thermally activated process 
 
 where :math:`k_0` is the pre-exponential factor, :math:`E_k` is the process activation energy, and :math:`T` is the temperature. 
 
+Radioactive decay
+^^^^^^^^^^^^^^^^^
+
+Radioactive decay can be included in FESTIM. Neglecting other terms (diffusion, trapping...), the temporal evolution of the concentration of a species :math:`c` is governed by:
+
+.. math::
+    :label: eq_radioactive_decay
+
+    \frac{\partial c}{ \partial t} = -\lambda c
+
+where :math:`\lambda` is the decay constant.
+In FESTIM it is possible to include radioactive decay in the mobile hydrogen concentration and/or the trapped hydrogen concentrations.
+
 Heat transfer
 ^^^^^^^^^^^^^^
 To properly account for the temperature-dependent parameters, an accurate representation of the temperature field is often required. FESTIM can solve a heat transfer problem governed by the heat equation:
