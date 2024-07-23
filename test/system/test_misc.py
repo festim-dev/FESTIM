@@ -761,3 +761,36 @@ def test_catch_bug_738(tmpdir):
 
     assert os.path.exists(filename)
     assert os.path.exists(str(tmpdir.join("mobile_re.h5")))
+
+
+def test_catch_bug_804():
+    """
+    Test to catch bug #804
+    Set up a simple simulation with traps. Modify the list of traps, so the some
+    traps in the traps list have id = None. Initialise the simulation.
+
+    We then check that missing trap ids are assigned with values.
+    """
+    model = F.Simulation()
+    model.mesh = F.MeshFromVertices(np.linspace(0, 1, num=100))
+
+    model.materials = F.Material(1, 1, 0)
+
+    model.traps = [F.Trap(1, 1, 1, 1, model.materials[0], 1)]
+
+    model.traps.append(F.Trap(1, 1, 1, 1, model.materials[0], 1))
+    model.traps.extend([F.Trap(1, 1, 1, 1, model.materials[0], 1)])
+    model.traps.insert(2, F.Trap(1, 1, 1, 1, model.materials[0], 1))
+
+    model.T = 500
+
+    model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+
+    model.initialise()
+
+    for trap in model.traps:
+        assert trap.id is not None

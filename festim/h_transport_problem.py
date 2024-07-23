@@ -88,6 +88,7 @@ class HTransportProblem:
         # Define functions
         self.define_function_space(mesh)
         self.initialise_concentrations()
+        self.traps.assign_traps_ids()
         self.traps.make_traps_materials(materials)
         self.traps.initialise_extrinsic_traps(self.V_CG1)
 

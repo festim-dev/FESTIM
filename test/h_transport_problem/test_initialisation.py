@@ -46,7 +46,7 @@ def test_initialisation_from_xdmf(tmpdir):
             field=1, value=str(Path(file2)), label="2", time_step=0
         ),
     ]
-    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1, 1)
 
     my_problem = festim.HTransportProblem(
         festim.Mobile(),
@@ -84,7 +84,7 @@ def test_initialisation_with_expression():
         festim.InitialCondition(field=0, value=1 + festim.x + festim.y),
         festim.InitialCondition(field=1, value=1 + festim.x),
     ]
-    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1, 1)
 
     my_problem = festim.HTransportProblem(
         festim.Mobile(),
@@ -123,7 +123,7 @@ def test_initialisation_with_expression_chemical_pot():
         festim.InitialCondition(field=0, value=1 + festim.x + festim.y),
         festim.InitialCondition(field=1, value=1 + festim.x),
     ]
-    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1)
+    my_trap = festim.Trap(1, 1, 1, 1, ["mat_name"], 1, 1)
 
     my_theta = festim.Theta()
     my_theta.materials = festim.Materials([festim.Material(1, 1, 0, S_0=S, E_S=0)])

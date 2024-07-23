@@ -1,6 +1,20 @@
 {
     "type": "FeatureCollection",
     "features": [
+         {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -84.3101,
+                    35.9312
+                ]
+            },
+            "properties": {
+                "name": "Oak Ridge National Laboratory",
+                "url": "https://standards.ornl.gov/wp-content/themes/sparkling-child/img/ORNL%20Two-line_green.svg"
+            }
+        },
         {
             "type": "Feature",
             "geometry": {

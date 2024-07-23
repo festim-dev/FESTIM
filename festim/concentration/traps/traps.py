@@ -21,11 +21,6 @@ class Traps(list):
         self.extrinsic_formulations = []
         self.sub_expressions = []
 
-        # add ids if unspecified
-        for i, trap in enumerate(self, 1):
-            if trap.id is None:
-                trap.id = i
-
     @property
     def traps(self):
         warnings.warn(
@@ -70,6 +65,11 @@ class Traps(list):
     def make_traps_materials(self, materials):
         for trap in self:
             trap.make_materials(materials)
+
+    def assign_traps_ids(self):
+        for i, trap in enumerate(self, 1):
+            if trap.id is None:
+                trap.id = i
 
     def create_forms(self, mobile, materials, T, dx, dt=None):
         self.F = 0

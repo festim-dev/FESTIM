@@ -13,8 +13,8 @@ class SurfaceKinetics(FluxBC):
 
     .. math::
 
-        -D \nabla c_\mathrm{m} \cdot \mathbf{n} = -\lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t}
-        - J_{\mathrm{bs}} + J_{\mathrm{sb}},
+        -D \nabla c_\mathrm{m} \cdot \mathbf{n} = \lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t}
+        + J_{\mathrm{bs}} - J_{\mathrm{sb}},
 
     where :math:`c_{\mathrm{m}}` is the concentration of mobile hydrogen (:math:`\mathrm{H \ m}^{-3}`),
     :math:`c_{\mathrm{s}}` is the surface concentration of adsorbed hydrogen (:math:`\mathrm{H \ m}^{-2}`),
@@ -163,7 +163,7 @@ class SurfaceKinetics(FluxBC):
                 )
                 # Flux to solute species
                 self.form += (
-                    -lambda_IS
+                    lambda_IS
                     * (solute - solute_prev)
                     / dt.value
                     * solute_test_function
