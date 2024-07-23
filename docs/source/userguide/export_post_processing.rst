@@ -153,6 +153,7 @@ First, you want to create a :class:`festim.DerivedQuantities` object. This will 
 Then, you can add the derived quantities you want to compute to this object.
 Finally, you can add the :class:`festim.DerivedQuantities` object to the simulation object.
 
+
 .. testcode::
 
     my_derived_quantities = F.DerivedQuantities(
@@ -169,7 +170,12 @@ Finally, you can add the :class:`festim.DerivedQuantities` object to the simulat
 
 The complete list of derived quantities can be found at: :ref:`Exports`.
 
+^^^^^^^^^^^^^^^^^^
+Accessing the data
+^^^^^^^^^^^^^^^^^^
+
 The data can be accessed in three different ways:
+
 - directly from the :class:`festim.DerivedQuantities` (plural) object:
 
 .. testcode::
@@ -251,6 +257,10 @@ The data can be accessed in three different ways:
    :hide:
 
    ...
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Compute and export every N timesteps
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 By default, the derived quantities will be computed at each timestep and exported at the last timestep.
 This behaviour can be changed by setting the ``nb_iterations_between_compute`` and ``nb_iterations_between_exports`` attributes of the :class:`festim.DerivedQuantities` object.
