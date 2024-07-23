@@ -169,7 +169,7 @@ def test_error_DirichletBC_on_same_surface(field, surfaces):
         field == "T"
     ):  # with festim.Temperature already defined there is another error given
         with pytest.raises(
-            ValueError,
+            TypeError,
             match="Heat transfer boundary conditions can only be used with HeatTransferProblem",
         ):
             sim.initialise()
@@ -197,11 +197,8 @@ def test_BC_on_T_with_Temp(bc):
     sim.settings = F.Settings(
         transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
     )
-    sim.sources = []
-    sim.dt = None
-    sim.exports = []
     with pytest.raises(
-        ValueError,
+        TypeError,
         match="Heat transfer boundary conditions can only be used with HeatTransferProblem",
     ):
         sim.initialise()
@@ -222,10 +219,8 @@ def test_source_on_T_with_Temp():
         transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
     )
     sim.sources = [F.Source(value=1, volume=1, field="T")]
-    sim.dt = None
-    sim.exports = []
     with pytest.raises(
-        ValueError,
+        TypeError,
         match="Heat transfer sources can only be used with HeatTransferProblem",
     ):
         sim.initialise()
