@@ -252,8 +252,27 @@ If this is not possible, the :class:`festim.DerivedQuantity` object can be acces
     my_model.initialise()
     my_model.run()
 
-    flux_surf_3 = my_derived_quantities.filter(field="solute", surface=3)
+    flux_surf_3 = my_derived_quantities.filter(fields="solute", surfaces=3)
     print(flux_surf_3.data)
+
+.. testoutput::
+    :options: +ELLIPSIS
+    :hide:
+    
+    ...
+
+
+It is also possible to filter for several attributes values. For example:
+
+.. testcode::
+
+    total_vol = my_derived_quantities.filter(
+        fields="retention",
+        volumes=[1, 2],
+        instances=F.TotalVolume,
+        )
+    
+    print(total_vol.data)
 
 .. testoutput::
     :options: +ELLIPSIS
