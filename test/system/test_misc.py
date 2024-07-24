@@ -214,7 +214,6 @@ def test_source_on_T_with_Temp():
     sim.mesh = F.MeshFromVertices([0, 1, 2, 3])
     sim.materials = F.Material(id=1, D_0=1, E_D=0)
     sim.T = F.Temperature(value=500)
-    sim.boundary_conditions = []
     sim.settings = F.Settings(
         transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
     )
