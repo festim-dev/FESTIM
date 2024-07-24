@@ -551,7 +551,7 @@ def custom_fun(T, solute, param1):
     "bc",
     [
         (festim.DissociationFlux(surfaces=[1], Kd_0=1, E_Kd=0, P=1e4)),
-        (festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)),
+        # (festim.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1)),
         (festim.FluxBC(surfaces=1, value=1, field=0)),
         (festim.MassFlux(h_coeff=1, c_ext=1, surfaces=1)),
         (festim.RecombinationFlux(Kr_0=1e-20, E_Kr=0, order=2, surfaces=1)),

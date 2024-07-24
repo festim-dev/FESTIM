@@ -159,9 +159,68 @@ def test_error_DirichletBC_on_same_surface(field, surfaces):
         F.DirichletBC(value=1, field=field, surfaces=surfaces),
     ]
 
+    if field == "solute":
+        with pytest.raises(
+            ValueError,
+            match="DirichletBC is simultaneously set with another boundary condition",
+        ):
+            sim.initialise()
+    elif (
+        field == "T"
+    ):  # with festim.Temperature already defined there is another error given
+        with pytest.raises(
+            TypeError,
+            match="Heat transfer boundary conditions can only be used with HeatTransferProblem",
+        ):
+            sim.initialise()
+
+
+@pytest.mark.parametrize(
+    "bc",
+    [
+        F.FluxBC(value=1, field="T", surfaces=1),
+        F.ConvectiveFlux(h_coeff=1, T_ext=1, surfaces=1),
+        F.DirichletBC(value=1, surfaces=1, field="T"),
+    ],
+)
+def test_BC_on_T_with_Temp(bc):
+    """
+    Test that the code returns an error when a boundary condition is set
+    on the Temperature field when there is also a Festim.Temperature already set.
+    """
+
+    sim = F.Simulation()
+    sim.mesh = F.MeshFromVertices([0, 1, 2, 3])
+    sim.materials = F.Material(id=1, D_0=1, E_D=0)
+    sim.T = F.Temperature(value=500)
+    sim.boundary_conditions = [bc]
+    sim.settings = F.Settings(
+        transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
+    )
     with pytest.raises(
-        ValueError,
-        match="DirichletBC is simultaneously set with another boundary condition",
+        TypeError,
+        match="Heat transfer boundary conditions can only be used with HeatTransferProblem",
+    ):
+        sim.initialise()
+
+
+def test_source_on_T_with_Temp():
+    """
+    Test that the code returns an error when a source is set
+    on the Temperature field when there is also a Festim.Temperature already set.
+    """
+
+    sim = F.Simulation()
+    sim.mesh = F.MeshFromVertices([0, 1, 2, 3])
+    sim.materials = F.Material(id=1, D_0=1, E_D=0)
+    sim.T = F.Temperature(value=500)
+    sim.settings = F.Settings(
+        transient=False, absolute_tolerance=1e8, relative_tolerance=1e-8
+    )
+    sim.sources = [F.Source(value=1, volume=1, field="T")]
+    with pytest.raises(
+        TypeError,
+        match="Heat transfer sources can only be used with HeatTransferProblem",
     ):
         sim.initialise()
 
