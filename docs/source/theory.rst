@@ -300,8 +300,12 @@ The governing equation for surface species is:
     \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}~\text{on}~\delta\Omega
 
 where :math:`J_\mathrm{bs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the subsurface (bulk region just beneath the surface) onto the surface, 
-:math:`J_\mathrm{sb}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the net flux of hydrogen 
-atoms from the vacuum onto the surface. It worth noticing that the current model does not account for possible surface diffusion and is available only for 1D hydrogen transport simulations.
+:math:`J_\mathrm{sb}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` 
+is the net flux of hydrogen atoms from the vaccuum onto the surface. The latter is defined as :math:`J_\mathrm{vs}=J_\mathrm{in}-J_\mathrm{out}`, where :math:`J_\mathrm{in}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` 
+is the sum of all fluxes coming from the vacuum onto the surface and :math:`J_\mathrm{out}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the sum of all fluxes coming from the surface to the vacuum.
+:math:`J_\mathrm{in}` can be used to set up adsorption fluxes from different processes such as molecular dissociation, adsorption of low-energy atoms, etc. Similarly, 
+:math:`J_\mathrm{out}` can be used to define desorption fluxes from various processes such as Langmuir-Hinshelwood recombination, Eley-Rideal recombination, sputtering, etc.
+It worth noticing that the current model does not account for possible surface diffusion and is available only for 1D hydrogen transport simulations.
 
 The connection condition between surface and bulk domains represents the Robin boundary condition for the hydrogen transport problem.
 
