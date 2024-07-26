@@ -49,9 +49,9 @@ class AverageSurface(SurfaceQuantity):
 class AverageSurfaceCylindrical(AverageSurface):
     """
     Computes the average value of a field on a given surface
-    int(f dS) / int (1 * dS)
-    dS is the surface measure in cylindrical coordinates.
-    dS = r dr dtheta
+    int(f ds) / int (1 * ds)
+    ds is the surface measure in cylindrical coordinates.
+    ds = r dr dtheta
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
@@ -111,9 +111,9 @@ class AverageSurfaceCylindrical(AverageSurface):
 class AverageSurfaceSpherical(AverageSurface):
     """
     Computes the average value of a field in a given volume
-    int(f dS) / int (1 * dS)
-    dS is the volume measure in cylindrical coordinates.
-    dS = r dr dtheta
+    int(f ds) / int (1 * ds)
+    ds is the surface measure in cylindrical coordinates.
+    ds = r^2 sin(theta) dtheta dphi
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
@@ -124,16 +124,16 @@ class AverageSurfaceSpherical(AverageSurface):
         function (dolfin.function.function.Function): the solution function of
             the field
         azimuth_range (tuple, optional): Range of the azimuthal angle
-            (theta) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi)
+            (phi) needs to be between 0 and 2 pi. Defaults to (0, np.pi)
         polar_range (tuple, optional): Range of the polar angle
-            (phi) needs to be between - pi and pi. Defaults to (-np.pi, np.pi)
+            (theta) needs to be between - pi and pi. Defaults to (-np.pi, np.pi)
 
     Notes:
         Units are in H/m3 for hydrogen concentration and K for temperature
     """
 
     def __init__(
-        self, field, surface, azimuth_range=(0, 2 * np.pi), polar_range=(-np.pi, np.pi)
+        self, field, surface, azimuth_range=(0, np.pi), polar_range=(-np.pi, np.pi)
     ) -> None:
         super().__init__(field=field, surface=surface)
         self.r = None
