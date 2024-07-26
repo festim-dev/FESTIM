@@ -174,13 +174,13 @@ class AverageSurfaceSpherical(AverageSurface):
         # in both cases the expression with self.dx is the same
 
         values = (
-            f.assemble(self.function * self.r**2 * self.dx(self.volume))
+            f.assemble(self.function * self.r**2 * self.ds(self.surface))
             * (self.polar_range[1] - self.polar_range[0])
             * (-np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0]))
         )
 
         surface_area = (
-            f.assemble(1 * self.r**2 * self.dx(self.volume))
+            f.assemble(1 * self.r**2 * self.ds(self.surface))
             * (self.polar_range[1] - self.polar_range[0])
             * (-np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0]))
         )
