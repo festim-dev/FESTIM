@@ -112,3 +112,107 @@ def test_temperature_MMS():
     error_L2 = fenics.errornorm(expected_solution, produced_solution, "L2")
     print(error_L2)
     assert error_L2 < 1e-7
+
+
+def test_Soret_MMS():
+    """
+    Tests that festim produces the correct concentration field with the Soret flag
+    in cylindrical coordinates
+    """
+
+    def grad(u):
+        """Computes the gradient of a function u.
+
+        Args:
+            u (sympy.Expr): a sympy function
+
+        Returns:
+            sympy.Matrix: the gradient of u
+        """
+        return sp.Matrix([sp.diff(u, r), sp.diff(u, z)])
+
+    def div(u):
+        """Computes the divergence of a vector field u.
+
+        Args:
+            u (sympy.Matrix): a sympy vector field
+
+        Returns:
+            sympy.Expr: the divergence of u
+        """
+        return sp.simplify(sp.diff(r * u[0], r) / r + sp.diff(u[1], z))
+
+    # Create and mark the mesh
+    fenics_mesh = fenics.UnitSquareMesh(250, 250)
+
+    volume_markers = fenics.MeshFunction(
+        "size_t", fenics_mesh, fenics_mesh.topology().dim()
+    )
+    volume_markers.set_all(1)
+
+    other_surface = fenics.CompiledSubDomain(
+        "near(x[0], 1.0) || near(x[1],  0.0) || near(x[1], 1.0)"
+    )
+
+    surface_markers = fenics.MeshFunction(
+        "size_t", fenics_mesh, fenics_mesh.topology().dim() - 1
+    )
+
+    surface_markers.set_all(0)
+    other_surface.mark(surface_markers, 1)
+
+    # Create the FESTIM model
+    my_model = festim.Simulation()
+
+    my_model.mesh = festim.Mesh(
+        fenics_mesh,
+        volume_markers=volume_markers,
+        surface_markers=surface_markers,
+        type="cylindrical",
+    )
+
+    # Variational formulation
+    r = festim.x
+    z = festim.y
+    exact_solution = 1 + 7 * r**2 + 3 * z**2  # exact solution
+
+    T = 300 + 30 * r**2 + 40 * z
+
+    D = 2
+    Q = 4 * festim.k_B
+
+    mms_source = -div(D * grad(exact_solution)) - div(
+        D * Q * exact_solution / (festim.k_B * T**2) * grad(T)
+    )
+
+    my_model.sources = [
+        festim.Source(
+            mms_source,
+            volume=1,
+            field="solute",
+        ),
+    ]
+
+    my_model.boundary_conditions = [
+        festim.DirichletBC(surfaces=[1], value=exact_solution, field="solute"),
+    ]
+
+    my_model.materials = festim.Material(id=1, D_0=D, E_D=0, Q=Q)
+
+    my_model.T = festim.Temperature(T)
+
+    my_model.settings = festim.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False, soret=True
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+    expected_solution = fenics.Expression(sp.printing.ccode(exact_solution), degree=4)
+    expected_solution = fenics.project(
+        expected_solution, fenics.FunctionSpace(my_model.mesh.mesh, "CG", 1)
+    )
+
+    produced_solution = my_model.h_transport_problem.mobile.post_processing_solution
+    error_L2 = fenics.errornorm(expected_solution, produced_solution, "L2")
+    assert error_L2 < 5e-5
