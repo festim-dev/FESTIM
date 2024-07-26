@@ -61,27 +61,14 @@ class AverageSurfaceCylindrical(AverageSurface):
             file
         function (dolfin.function.function.Function): the solution function of
             the field
-        azimuth_range (tuple, optional): Range of the azimuthal angle
-            (theta) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi)
 
     Notes:
         Units are in H/m3 for hydrogen concentration and K for temperature
     """
 
-    def __init__(self, field, surface, azimuth_range=(0, 2 * np.pi)) -> None:
+    def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
         self.r = None
-        self.azimuth_range = azimuth_range
-
-    @property
-    def azimuth_range(self):
-        return self._azimuth_range
-
-    @azimuth_range.setter
-    def azimuth_range(self, value):
-        if value[0] < 0 or value[1] > 2 * np.pi:
-            raise ValueError("Azimuthal range must be between 0 and pi")
-        self._azimuth_range = value
 
     def compute(self):
 
@@ -96,14 +83,9 @@ class AverageSurfaceCylindrical(AverageSurface):
         # dS_r = r dz dtheta , assuming axisymmetry dS_r = theta r dz
         # in both cases the expression with self.dx is the same
 
-        values = f.assemble(self.function * self.r * self.ds(self.surface)) * (
-            self.azimuth_range[1] - self.azimuth_range[0]
-        )
-
-        surface_area = f.assemble(1 * self.r * self.ds(self.surface)) * (
-            self.azimuth_range[1] - self.azimuth_range[0]
-        )
-        avg_surf = values / surface_area
+        avg_surf = f.assemble(
+            self.function * self.r * self.ds(self.surface)
+        ) / f.assemble(1 * self.r * self.ds(self.surface))
 
         return avg_surf
 
@@ -123,42 +105,14 @@ class AverageSurfaceSpherical(AverageSurface):
             file
         function (dolfin.function.function.Function): the solution function of
             the field
-        azimuth_range (tuple, optional): Range of the azimuthal angle
-            (phi) needs to be between 0 and 2 pi. Defaults to (0, np.pi)
-        polar_range (tuple, optional): Range of the polar angle
-            (theta) needs to be between - pi and pi. Defaults to (-np.pi, np.pi)
 
     Notes:
         Units are in H/m3 for hydrogen concentration and K for temperature
     """
 
-    def __init__(
-        self, field, surface, azimuth_range=(0, np.pi), polar_range=(-np.pi, np.pi)
-    ) -> None:
+    def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
         self.r = None
-        self.azimuth_range = azimuth_range
-        self.polar_range = polar_range
-
-    @property
-    def azimuth_range(self):
-        return self._azimuth_range
-
-    @azimuth_range.setter
-    def azimuth_range(self, value):
-        if value[0] < 0 or value[1] > np.pi:
-            raise ValueError("Azimuthal range must be between 0 and pi")
-        self._azimuth_range = value
-
-    @property
-    def polar_range(self):
-        return self._polar_range
-
-    @polar_range.setter
-    def polar_range(self, value):
-        if value[0] < -np.pi or value[1] > np.pi:
-            raise ValueError("Polar range must be between - pi and pi")
-        self._polar_range = value
 
     def compute(self):
 
@@ -173,18 +127,8 @@ class AverageSurfaceSpherical(AverageSurface):
         # dV_r = r dz dtheta , assuming axisymmetry dV_r = theta r dz
         # in both cases the expression with self.dx is the same
 
-        values = (
-            f.assemble(self.function * self.r**2 * self.ds(self.surface))
-            * (self.polar_range[1] - self.polar_range[0])
-            * (-np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0]))
-        )
-
-        surface_area = (
-            f.assemble(1 * self.r**2 * self.ds(self.surface))
-            * (self.polar_range[1] - self.polar_range[0])
-            * (-np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0]))
-        )
-
-        avg_surf = values / surface_area
+        avg_surf = f.assemble(
+            self.function * self.r**2 * self.ds(self.surface)
+        ) / f.assemble(1 * self.r**2 * self.ds(self.surface))
 
         return avg_surf
