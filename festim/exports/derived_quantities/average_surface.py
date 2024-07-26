@@ -96,11 +96,14 @@ class AverageSurfaceCylindrical(AverageSurface):
         # dS_r = r dz dtheta , assuming axisymmetry dS_r = theta r dz
         # in both cases the expression with self.dx is the same
 
-        avg_surf = f.assemble(
-            self.function * self.r * self.ds(self.surface)
-        ) / f.assemble(1 * self.r * self.ds(self.surface))
+        values = f.assemble(self.function * self.r * self.ds(self.surface)) * (
+            self.azimuth_range[1] - self.azimuth_range[0]
+        )
 
-        avg_surf *= self.azimuth_range[1] - self.azimuth_range[0]
+        surface_area = f.assemble(1 * self.r * self.ds(self.surface)) * (
+            self.azimuth_range[1] - self.azimuth_range[0]
+        )
+        avg_surf = values / surface_area
 
         return avg_surf
 
@@ -170,12 +173,18 @@ class AverageSurfaceSpherical(AverageSurface):
         # dV_r = r dz dtheta , assuming axisymmetry dV_r = theta r dz
         # in both cases the expression with self.dx is the same
 
-        avg_vol = f.assemble(
-            self.function * self.r**2 * self.dx(self.volume)
-        ) / f.assemble(1 * self.r**2 * self.dx(self.volume))
-
-        avg_vol *= (self.polar_range[1] - self.polar_range[0]) * (
-            -np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0])
+        values = (
+            f.assemble(self.function * self.r**2 * self.dx(self.volume))
+            * (self.polar_range[1] - self.polar_range[0])
+            * (-np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0]))
         )
 
-        return avg_vol
+        surface_area = (
+            f.assemble(1 * self.r**2 * self.dx(self.volume))
+            * (self.polar_range[1] - self.polar_range[0])
+            * (-np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0]))
+        )
+
+        avg_surf = values / surface_area
+
+        return avg_surf
