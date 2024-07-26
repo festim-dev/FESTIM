@@ -146,7 +146,7 @@ class AverageSurfaceSpherical(AverageSurface):
 
     @azimuth_range.setter
     def azimuth_range(self, value):
-        if value[0] < 0 or value[1] > 2 * np.pi:
+        if value[0] < 0 or value[1] > np.pi:
             raise ValueError("Azimuthal range must be between 0 and pi")
         self._azimuth_range = value
 
