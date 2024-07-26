@@ -111,9 +111,9 @@ class AverageSurfaceCylindrical(AverageSurface):
 class AverageSurfaceSpherical(AverageSurface):
     """
     Computes the average value of a field in a given volume
-    int(f dx) / int (1 * dx)
-    dx is the volume measure in cylindrical coordinates.
-    dx = r dr dtheta
+    int(f dS) / int (1 * dS)
+    dS is the volume measure in cylindrical coordinates.
+    dS = r dr dtheta
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
