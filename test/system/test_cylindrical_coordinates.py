@@ -179,10 +179,10 @@ def test_Soret_MMS():
     T = 300 + 30 * r**2 + 40 * z
 
     D = 2
-    Q = 4 * festim.k_B
+    Q = lambda T: 4 * festim.k_B * T
 
     mms_source = -div(D * grad(exact_solution)) - div(
-        D * Q * exact_solution / (festim.k_B * T**2) * grad(T)
+        D * Q(T) * exact_solution / (festim.k_B * T**2) * grad(T)
     )
 
     my_model.sources = [
