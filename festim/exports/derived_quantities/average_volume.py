@@ -95,15 +95,11 @@ class AverageVolumeCylindrical(AverageVolume):
             self.azimuth_range[1] - self.azimuth_range[0]
         )
 
-        # volume = f.assemble(1 * self.r * self.z * self.dx(self.volume)) * (
-        #     self.azimuth_range[1] - self.azimuth_range[0]
-        # )
         volume = f.assemble(1 * self.r * self.z * self.dx(self.volume)) * (
             self.azimuth_range[1] - self.azimuth_range[0]
         )
 
         avg_vol = values / volume
-        avg_vol *= self.azimuth_range[1] - self.azimuth_range[0]
 
         return avg_vol
 
