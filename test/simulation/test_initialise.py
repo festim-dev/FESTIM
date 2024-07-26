@@ -246,3 +246,40 @@ def test_error_raised_when_no_final_time():
 
     with pytest.raises(AttributeError, match="final_time argument must be provided"):
         my_model.initialise()
+
+
+def test_initial_concentration_traps():
+    """test to catch #821"""
+    model = F.Simulation()
+
+    model.mesh = F.MeshFromVertices([0, 1, 2, 3])
+
+    model.materials = F.Material(id=1, D_0=1, E_D=0)
+
+    trap = F.Trap(
+        k_0=2,
+        E_k=0,
+        p_0=1,
+        E_p=0,
+        density=3,
+        materials=model.materials[0],
+    )
+    model.traps = F.Traps([trap])
+
+    model.initial_conditions = [
+        F.InitialCondition(field="1", value=2),
+    ]
+
+    model.T = F.Temperature(300)
+
+    model.dt = F.Stepsize(
+        initial_value=1,
+    )
+
+    model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        final_time=10,
+    )
+
+    model.initialise()
