@@ -137,10 +137,6 @@ class SurfaceFluxCylindrical(SurfaceFlux):
         self._azimuth_range = value
 
     def compute(self, soret=False):
-        if soret:
-            raise NotImplementedError(
-                "Soret effect not implemented for cylindrical coordinates"
-            )
 
         if self.r is None:
             mesh = (
@@ -159,6 +155,16 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
+        if soret and self.field in [0, "0", "solute"]:
+            flux += f.assemble(
+                self.prop
+                * self.r
+                * self.function
+                * self.Q
+                / (k_B * self.T**2)
+                * f.dot(f.grad(self.T), self.n)
+                * self.ds(self.surface)
+            )
         flux *= self.azimuth_range[1] - self.azimuth_range[0]
         return flux
 
@@ -229,10 +235,6 @@ class SurfaceFluxSpherical(SurfaceFlux):
         self._azimuth_range = value
 
     def compute(self, soret=False):
-        if soret:
-            raise NotImplementedError(
-                "Soret effect not implemented for spherical coordinates"
-            )
 
         if self.r is None:
             mesh = (
@@ -250,6 +252,16 @@ class SurfaceFluxSpherical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
+        if soret and self.field in [0, "0", "solute"]:
+            flux += f.assemble(
+                self.prop
+                * self.r**2
+                * self.function
+                * self.Q
+                / (k_B * self.T**2)
+                * f.dot(f.grad(self.T), self.n)
+                * self.ds(self.surface)
+            )
         flux *= (self.polar_range[1] - self.polar_range[0]) * (
             -np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0])
         )

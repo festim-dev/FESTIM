@@ -112,10 +112,10 @@ def test_MMS_temperature():
     assert error_L2 < 1e-7
 
 
-def test_MMS_Soret():
+def test_MMS_Soret_spherical():
     """
     Tests that festim produces the correct concentration field with the Soret flag
-    in spherical coordinates
+    in spherical coordinates with DirichletBC on the left surface and FluxBC on the right surface
     """
 
     def grad(u):
@@ -143,7 +143,7 @@ def test_MMS_Soret():
     # Create the FESTIM model
     my_model = festim.Simulation()
 
-    my_model.mesh = festim.MeshFromVertices(np.linspace(0, 1, 1000), type="spherical")
+    my_model.mesh = festim.MeshFromVertices(np.linspace(1, 2, 100), type="spherical")
 
     # Variational formulation
     r = festim.x
@@ -155,9 +155,10 @@ def test_MMS_Soret():
     D = 2
     Q = lambda T: 4 * festim.k_B * T
 
-    mms_source = -div(D * grad(exact_solution)) - div(
-        D * Q(T) * exact_solution / (festim.k_B * T**2) * grad(T)
+    flux = -D * (
+        grad(exact_solution) + Q(T) * exact_solution / (festim.k_B * T**2) * grad(T)
     )
+    mms_source = div(flux)
 
     my_model.sources = [
         festim.Source(
@@ -168,7 +169,8 @@ def test_MMS_Soret():
     ]
 
     my_model.boundary_conditions = [
-        festim.DirichletBC(surfaces=[2], value=exact_solution, field="solute"),
+        festim.DirichletBC(surfaces=1, value=exact_solution, field=0),
+        festim.FluxBC(surfaces=2, value=-flux, field=0),
     ]
 
     my_model.materials = festim.Material(id=1, D_0=D, E_D=0, Q=Q)
@@ -189,4 +191,4 @@ def test_MMS_Soret():
 
     produced_solution = my_model.h_transport_problem.mobile.post_processing_solution
     error_L2 = fenics.errornorm(expected_solution, produced_solution, "L2")
-    assert error_L2 < 5e-6
+    assert error_L2 < 1e-4

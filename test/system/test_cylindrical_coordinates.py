@@ -114,10 +114,10 @@ def test_temperature_MMS():
     assert error_L2 < 1e-7
 
 
-def test_Soret_MMS():
+def test_MMS_Soret_cylindrical():
     """
     Tests that festim produces the correct concentration field with the Soret flag
-    in cylindrical coordinates
+    in cylindrical coordinates with FluxBC on the right surface and DirichletBC on others
     """
 
     def grad(u):
@@ -143,13 +143,14 @@ def test_Soret_MMS():
         return sp.simplify(sp.diff(r * u[0], r) / r + sp.diff(u[1], z))
 
     # Create and mark the mesh
-    fenics_mesh = fenics.UnitSquareMesh(250, 250)
+    fenics_mesh = fenics.RectangleMesh(fenics.Point(1, 0), fenics.Point(2, 1), 100, 100)
 
     volume_markers = fenics.MeshFunction(
         "size_t", fenics_mesh, fenics_mesh.topology().dim()
     )
     volume_markers.set_all(1)
 
+    right_surface = fenics.CompiledSubDomain("near(x[0], 2.0)")
     other_surface = fenics.CompiledSubDomain(
         "near(x[0], 1.0) || near(x[1],  0.0) || near(x[1], 1.0)"
     )
@@ -159,7 +160,11 @@ def test_Soret_MMS():
     )
 
     surface_markers.set_all(0)
-    other_surface.mark(surface_markers, 1)
+    left_surface_id = 1
+    other_surface_id = 2
+
+    right_surface.mark(surface_markers, left_surface_id)
+    other_surface.mark(surface_markers, other_surface_id)
 
     # Create the FESTIM model
     my_model = festim.Simulation()
@@ -181,9 +186,10 @@ def test_Soret_MMS():
     D = 2
     Q = lambda T: 4 * festim.k_B * T
 
-    mms_source = -div(D * grad(exact_solution)) - div(
-        D * Q(T) * exact_solution / (festim.k_B * T**2) * grad(T)
+    flux = -D * (
+        grad(exact_solution) + Q(T) * exact_solution / (festim.k_B * T**2) * grad(T)
     )
+    mms_source = div(flux)
 
     my_model.sources = [
         festim.Source(
@@ -194,7 +200,8 @@ def test_Soret_MMS():
     ]
 
     my_model.boundary_conditions = [
-        festim.DirichletBC(surfaces=[1], value=exact_solution, field="solute"),
+        festim.FluxBC(surfaces=left_surface_id, value=-flux[0], field=0),
+        festim.DirichletBC(surfaces=other_surface_id, value=exact_solution, field=0),
     ]
 
     my_model.materials = festim.Material(id=1, D_0=D, E_D=0, Q=Q)
@@ -215,4 +222,4 @@ def test_Soret_MMS():
 
     produced_solution = my_model.h_transport_problem.mobile.post_processing_solution
     error_L2 = fenics.errornorm(expected_solution, produced_solution, "L2")
-    assert error_L2 < 5e-5
+    assert error_L2 < 2e-4
