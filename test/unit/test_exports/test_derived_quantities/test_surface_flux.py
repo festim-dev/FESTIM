@@ -96,8 +96,8 @@ class TestCompute:
 @pytest.mark.parametrize("height", [2, 3])
 @pytest.mark.parametrize("c_top", [2, 3])
 @pytest.mark.parametrize("c_bottom", [2, 3])
-@pytest.mark.parametrize("Soret", [False, True])
-def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, Soret):
+@pytest.mark.parametrize("soret", [False, True])
+def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, soret):
     """
     Test that SurfaceFluxCylindrical computes the flux correctly on a hollow cylinder
 
@@ -107,7 +107,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, Soret):
         height (float): cylinder height
         c_top (float): concentration top
         c_bottom (float): concentration bottom
-        Soret (bool): the Soret flag
+        soret (bool): if True, the Soret effect will be set
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
@@ -159,7 +159,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, Soret):
         * (0.5 * r1**2 - 0.5 * r0**2)
     )
 
-    if Soret:
+    if soret:
         my_flux.Q = f.Constant(2 * k_B)
         growth_rate = 7
         T = lambda z: 3 + growth_rate * z
@@ -177,7 +177,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, Soret):
             * (0.5 * r1**2 - 0.5 * r0**2)
         )
 
-    computed_value = my_flux.compute(soret=Soret)
+    computed_value = my_flux.compute(soret=soret)
 
     assert np.isclose(computed_value, expected_value)
 
@@ -186,8 +186,8 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, Soret):
 @pytest.mark.parametrize("radius", [1, 2])
 @pytest.mark.parametrize("c_left", [3, 4])
 @pytest.mark.parametrize("c_right", [1, 2])
-@pytest.mark.parametrize("Soret", [False, True])
-def test_compute_spherical(r0, radius, c_left, c_right, Soret):
+@pytest.mark.parametrize("soret", [False, True])
+def test_compute_spherical(r0, radius, c_left, c_right, soret):
     """
     Test that SurfaceFluxSpherical computes the flux correctly on a hollow sphere
 
@@ -196,6 +196,7 @@ def test_compute_spherical(r0, radius, c_left, c_right, Soret):
         radius (float): sphere radius
         c_left (float): concentration left
         c_right (float): concentration right
+        soret (bool): if True, the Soret effect will be set
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
@@ -240,7 +241,7 @@ def test_compute_spherical(r0, radius, c_left, c_right, Soret):
     flux_value = float(my_flux.D) * (c_left - c_right) / (r1 - r0)
     expected_value = -4 * math.pi * flux_value * r1**2
 
-    if Soret:
+    if soret:
         growth_rate = 3
         T = lambda r: 10 + growth_rate * r
         T_expr = f.Expression(ccode(T(x)), degree=1)
@@ -258,7 +259,7 @@ def test_compute_spherical(r0, radius, c_left, c_right, Soret):
             * r1**2
         )
 
-    computed_value = my_flux.compute(soret=Soret)
+    computed_value = my_flux.compute(soret=soret)
 
     assert np.isclose(computed_value, expected_value)
 
