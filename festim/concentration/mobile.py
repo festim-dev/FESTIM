@@ -56,9 +56,6 @@ class Mobile(Concentration):
             soret (bool, optional): If True, Soret effect is assumed. Defaults
                 to False.
         """
-        if soret and mesh.type in ["cylindrical", "spherical"]:
-            msg = "Soret effect not implemented in {} coordinates".format(mesh.type)
-            raise ValueError(msg)
 
         F = 0
         for material in materials:
@@ -96,6 +93,19 @@ class Mobile(Concentration):
                     r = SpatialCoordinate(mesh.mesh)[0]
                     F += r * dot(D * grad(c_0), grad(self.test_function / r)) * dx
 
+                    if soret:
+                        Q = material.Q
+                        if callable(Q):
+                            Q = Q(T.T)
+                        F += (
+                            r
+                            * dot(
+                                D * Q * c_0 / (k_B * T.T**2) * grad(T.T),
+                                grad(self.test_function / r),
+                            )
+                            * dx
+                        )
+
                 elif mesh.type == "spherical":
                     r = SpatialCoordinate(mesh.mesh)[0]
                     F += (
@@ -105,6 +115,21 @@ class Mobile(Concentration):
                         * dot(grad(c_0), grad(self.test_function / r / r))
                         * dx
                     )
+
+                    if soret:
+                        Q = material.Q
+                        if callable(Q):
+                            Q = Q(T.T)
+                        F += (
+                            D
+                            * r
+                            * r
+                            * dot(
+                                Q * c_0 / (k_B * T.T**2) * grad(T.T),
+                                grad(self.test_function / r / r),
+                            )
+                            * dx
+                        )
 
         # add the trapping terms
         F_trapping = 0

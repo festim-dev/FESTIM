@@ -3,8 +3,9 @@ import fenics as f
 import math
 import numpy as np
 import pytest
-from festim import SurfaceFlux, k_B
+from festim import SurfaceFlux, k_B, x, y
 from .tools import c_1D, c_2D, c_3D
+from sympy.printing import ccode
 
 
 @pytest.mark.parametrize("field,surface", [("solute", 1), ("T", 2)])
@@ -95,7 +96,8 @@ class TestCompute:
 @pytest.mark.parametrize("height", [2, 3])
 @pytest.mark.parametrize("c_top", [2, 3])
 @pytest.mark.parametrize("c_bottom", [2, 3])
-def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
+@pytest.mark.parametrize("soret", [False, True])
+def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, soret):
     """
     Test that SurfaceFluxCylindrical computes the flux correctly on a hollow cylinder
 
@@ -105,6 +107,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
         height (float): cylinder height
         c_top (float): concentration top
         c_bottom (float): concentration bottom
+        soret (bool): if True, the Soret effect will be set
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
@@ -137,8 +140,9 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
     my_flux = SurfaceFluxCylindrical("solute", top_id)
     my_flux.D = f.Constant(2)
     V = f.FunctionSpace(mesh_fenics, "P", 1)
+    c_fun = lambda z: c_bottom + (c_top - c_bottom) / (z1 - z0) * z
     expr = f.Expression(
-        f"{c_bottom} + {(c_top - c_bottom)/(z1-z0)} * x[1]",
+        ccode(c_fun(y)),
         degree=1,
     )
     my_flux.function = f.interpolate(expr, V)
@@ -146,7 +150,6 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
     my_flux.n = f.FacetNormal(mesh_fenics)
     my_flux.ds = ds
 
-    computed_value = my_flux.compute()
     expected_value = (
         -2
         * math.pi
@@ -155,6 +158,27 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
         / height
         * (0.5 * r1**2 - 0.5 * r0**2)
     )
+
+    if soret:
+        my_flux.Q = f.Constant(2 * k_B)
+        growth_rate = 7
+        T = lambda z: 3 + growth_rate * z
+        T_expr = f.Expression(ccode(T(y)), degree=1)
+        my_flux.T = f.interpolate(T_expr, V)
+        expected_value += (
+            2
+            * math.pi
+            * float(my_flux.D)
+            * float(my_flux.Q)
+            * c_fun(z1)
+            / k_B
+            / T(z1) ** 2
+            * growth_rate
+            * (0.5 * r1**2 - 0.5 * r0**2)
+        )
+
+    computed_value = my_flux.compute(soret=soret)
+
     assert np.isclose(computed_value, expected_value)
 
 
@@ -162,7 +186,8 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
 @pytest.mark.parametrize("radius", [1, 2])
 @pytest.mark.parametrize("c_left", [3, 4])
 @pytest.mark.parametrize("c_right", [1, 2])
-def test_compute_spherical(r0, radius, c_left, c_right):
+@pytest.mark.parametrize("soret", [False, True])
+def test_compute_spherical(r0, radius, c_left, c_right, soret):
     """
     Test that SurfaceFluxSpherical computes the flux correctly on a hollow sphere
 
@@ -171,6 +196,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
         radius (float): sphere radius
         c_left (float): concentration left
         c_right (float): concentration right
+        soret (bool): if True, the Soret effect will be set
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
@@ -201,8 +227,9 @@ def test_compute_spherical(r0, radius, c_left, c_right):
     my_flux = SurfaceFluxSpherical("solute", right_id)
     my_flux.D = f.Constant(2)
     V = f.FunctionSpace(mesh_fenics, "P", 1)
+    c_fun = lambda r: c_left + (c_right - c_left) / (r1 - r0) * r
     expr = f.Expression(
-        f"{c_left} + {(c_right - c_left)/(r1-r0)} * x[0]",
+        ccode(c_fun(x)),
         degree=1,
     )
     my_flux.function = f.interpolate(expr, V)
@@ -210,10 +237,30 @@ def test_compute_spherical(r0, radius, c_left, c_right):
     my_flux.n = f.FacetNormal(mesh_fenics)
     my_flux.ds = ds
 
-    computed_value = my_flux.compute()
     # expected value is the integral of the flux over the surface
     flux_value = float(my_flux.D) * (c_left - c_right) / (r1 - r0)
     expected_value = -4 * math.pi * flux_value * r1**2
+
+    if soret:
+        growth_rate = 3
+        T = lambda r: 10 + growth_rate * r
+        T_expr = f.Expression(ccode(T(x)), degree=1)
+        my_flux.Q = f.Constant(5 * k_B)
+        my_flux.T = f.interpolate(T_expr, V)
+        expected_value += (
+            4
+            * math.pi
+            * float(my_flux.D)
+            * float(my_flux.Q)
+            * c_fun(r1)
+            / k_B
+            / T(r1) ** 2
+            * growth_rate
+            * r1**2
+        )
+
+    computed_value = my_flux.compute(soret=soret)
+
     assert np.isclose(computed_value, expected_value)
 
 
@@ -226,15 +273,6 @@ def test_azimuthal_range_cylindrical(azimuth_range):
     """
     with pytest.raises(ValueError):
         SurfaceFluxCylindrical("solute", 1, azimuth_range=azimuth_range)
-
-
-def test_soret_raises_error():
-    """
-    Tests that an error is raised when the Soret effect is used with SurfaceFluxCylindrical
-    """
-    my_flux = SurfaceFluxCylindrical("T", 1)
-    with pytest.raises(NotImplementedError):
-        my_flux.compute(soret=True)
 
 
 @pytest.mark.parametrize(
@@ -257,15 +295,6 @@ def test_polar_range_spherical(polar_range):
     """
     with pytest.raises(ValueError):
         SurfaceFluxSpherical("solute", 1, polar_range=polar_range)
-
-
-def test_soret_raises_error_spherical():
-    """
-    Tests that an error is raised when the Soret effect is used with SurfaceFluxSpherical
-    """
-    my_flux = SurfaceFluxSpherical("T", 1)
-    with pytest.raises(NotImplementedError):
-        my_flux.compute(soret=True)
 
 
 @pytest.mark.parametrize(
