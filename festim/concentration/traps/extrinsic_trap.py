@@ -40,7 +40,7 @@ class ExtrinsicTrapBase(Trap):
                 More information can be found at: https://fenicsproject.org/pub/tutorial/html/._ftut1017.html.
                 Defaults to None.
             preconditioner (str, optional): preconditioning method for the newton solver,
-                options can be veiwed by print(list_krylov_solver_preconditioners()).
+                options can be viewed by print(list_krylov_solver_preconditioners()).
                 Defaults to "default".
         """
         super().__init__(k_0, E_k, p_0, E_p, materials, density=None, id=id)
