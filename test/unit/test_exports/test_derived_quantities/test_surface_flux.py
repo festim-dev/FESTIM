@@ -53,6 +53,7 @@ class TestCompute:
     my_h_flux.ds = ds
     my_h_flux.T = T
     my_h_flux.Q = Q
+    my_h_flux.soret = True
 
     my_heat_flux = SurfaceFlux("T", surface)
     my_heat_flux.D = D
@@ -87,7 +88,7 @@ class TestCompute:
             * f.dot(f.grad(self.T), self.n)
             * self.ds(self.surface)
         )
-        flux = self.my_h_flux.compute(soret=True)
+        flux = self.my_h_flux.compute()
         assert flux == expected_flux
 
 
@@ -149,6 +150,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, soret):
 
     my_flux.n = f.FacetNormal(mesh_fenics)
     my_flux.ds = ds
+    my_flux.soret = soret
 
     expected_value = (
         -2
@@ -177,7 +179,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom, soret):
             * (0.5 * r1**2 - 0.5 * r0**2)
         )
 
-    computed_value = my_flux.compute(soret=soret)
+    computed_value = my_flux.compute()
 
     assert np.isclose(computed_value, expected_value)
 
@@ -236,6 +238,7 @@ def test_compute_spherical(r0, radius, c_left, c_right, soret):
 
     my_flux.n = f.FacetNormal(mesh_fenics)
     my_flux.ds = ds
+    my_flux.soret = soret
 
     # expected value is the integral of the flux over the surface
     flux_value = float(my_flux.D) * (c_left - c_right) / (r1 - r0)
@@ -259,7 +262,7 @@ def test_compute_spherical(r0, radius, c_left, c_right, soret):
             * r1**2
         )
 
-    computed_value = my_flux.compute(soret=soret)
+    computed_value = my_flux.compute()
 
     assert np.isclose(computed_value, expected_value)
 

@@ -154,7 +154,6 @@ class DerivedQuantities(list):
             quantity.Q = materials.Q
 
     def compute(self, t):
-        # TODO need to support for soret flag in surface flux
         row = [t]
         for quantity in self:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):

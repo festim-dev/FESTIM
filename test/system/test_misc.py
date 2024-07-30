@@ -788,3 +788,65 @@ def test_catch_bug_804():
 
     for trap in model.traps:
         assert trap.id is not None
+
+
+@pytest.mark.parametrize(
+    "coordinates, surface_flux_class",
+    [
+        ("cartesian", F.SurfaceFlux),
+        ("cylindrical", F.SurfaceFluxCylindrical),
+        ("spherical", F.SurfaceFluxSpherical),
+    ],
+)
+def test_soret_surface_flux_mass_balance(coordinates, surface_flux_class):
+    """
+    Test to catch bug 830
+
+    1D steady state simulation with Soret on.
+    Compute the surface flux on both surfaces.
+    The surface fluxes should be equal in magnitude
+    but opposite in sign.
+
+    The case is made so that the concentration profile
+    is flat (ie. diffusive flux is zero) but there's a
+    high T gradient (ie. Soret flux is not zero).
+    """
+    my_model = F.Simulation()
+
+    # mesh doesn't start at zero for non-cartesian coordinates
+    my_model.mesh = F.MeshFromVertices(
+        vertices=np.linspace(0.01, 0.05, num=600), type=coordinates
+    )
+    Q = 2
+    D = 3
+    c = 2
+    my_model.materials = F.Material(id=1, D_0=D, E_D=0, Q=Q)
+    grad_T = 1000
+
+    T_val = lambda x: 700 + grad_T * x
+    my_model.T = F.Temperature(value=T_val(F.x))
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(surfaces=[1], value=c, field=0),
+        F.DirichletBC(surfaces=[2], value=c, field=0),
+    ]
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+        soret=True,
+    )
+
+    flux_left = surface_flux_class(field=0, surface=1)
+    flux_right = surface_flux_class(field=0, surface=2)
+    my_model.exports = [F.DerivedQuantities([flux_left, flux_right])]
+
+    my_model.initialise()
+    my_model.run()
+
+    # these two should be equal in steady state
+    print(flux_left.data[0])
+    print(flux_right.data[0])
+
+    assert not np.isclose(flux_left.data[0], 0)
+    assert np.isclose(np.abs(flux_left.data[0]), np.abs(flux_right.data[0]), rtol=1e-2)
