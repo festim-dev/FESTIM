@@ -22,6 +22,12 @@ class DerivedQuantity(Export):
         self.t = []
         self.show_units = False
 
+    @property
+    def allowed_meshes(self):
+        # by default, all meshes are allowed
+        # override this method if that's not the case
+        return ["cartesian", "cylindrical", "spherical"]
+
 
 class VolumeQuantity(DerivedQuantity):
     """DerivedQuantity relative to a volume

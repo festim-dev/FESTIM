@@ -359,29 +359,10 @@ class Simulation:
 
         # raise warning if the derived quantities don't match the type of mesh
         # eg. SurfaceFlux is used with cylindrical mesh
-        all_types_quantities = [
-            festim.MaximumSurface,
-            festim.MinimumSurface,
-            festim.MaximumVolume,
-            festim.MinimumVolume,
-            festim.PointValue,
-        ]  # these quantities can be used with any mesh
-        allowed_quantities = {
-            "cartesian": [
-                festim.SurfaceFlux,
-                festim.AverageSurface,
-                festim.AverageVolume,
-                festim.TotalVolume,
-            ]
-            + all_types_quantities,
-            "cylindrical": [festim.SurfaceFluxCylindrical] + all_types_quantities,
-            "spherical": [festim.SurfaceFluxSpherical] + all_types_quantities,
-        }
-
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
                 for q in export:
-                    if not isinstance(q, tuple(allowed_quantities[self.mesh.type])):
+                    if self.mesh.type not in q.allowed_meshes:
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"
                         )
