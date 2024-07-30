@@ -790,7 +790,15 @@ def test_catch_bug_804():
         assert trap.id is not None
 
 
-def test_soret_surface_flux_mass_balance():
+@pytest.mark.parametrize(
+    "coordinates, surface_flux_class",
+    [
+        ("cartesian", F.SurfaceFlux),
+        ("cylindrical", F.SurfaceFluxCylindrical),
+        ("spherical", F.SurfaceFluxSpherical),
+    ],
+)
+def test_soret_surface_flux_mass_balance(coordinates, surface_flux_class):
     """
     Test to catch bug 830
 
@@ -805,7 +813,10 @@ def test_soret_surface_flux_mass_balance():
     """
     my_model = F.Simulation()
 
-    my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 0.05, num=100))
+    # mesh doesn't start at zero for non-cartesian coordinates
+    my_model.mesh = F.MeshFromVertices(
+        vertices=np.linspace(0.01, 0.05, num=600), type=coordinates
+    )
     Q = 2
     D = 3
     c = 2
@@ -826,8 +837,8 @@ def test_soret_surface_flux_mass_balance():
         soret=True,
     )
 
-    flux_left = F.SurfaceFlux(field=0, surface=1)
-    flux_right = F.SurfaceFlux(field=0, surface=2)
+    flux_left = surface_flux_class(field=0, surface=1)
+    flux_right = surface_flux_class(field=0, surface=2)
     my_model.exports = [F.DerivedQuantities([flux_left, flux_right])]
 
     my_model.initialise()
