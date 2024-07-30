@@ -800,12 +800,17 @@ def test_soret_surface_flux_mass_balance():
     """
     my_model = F.Simulation()
     my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
-    my_model.materials = F.Material(id=1, D_0=1, E_D=0, Q=2)
-    my_model.T = F.Temperature(value=700 + 1000 * F.x)
+    Q = 2
+    D = 3
+    c = 2
+    my_model.materials = F.Material(id=1, D_0=D, E_D=0, Q=Q)
+    grad_T = 1000
+    T_val = lambda x: 700 + grad_T * x
+    my_model.T = F.Temperature(value=T_val(F.x))
 
     my_model.boundary_conditions = [
-        F.DirichletBC(surfaces=[1], value=10, field=0),
-        F.DirichletBC(surfaces=[2], value=1, field=0),
+        F.DirichletBC(surfaces=[1], value=c, field=0),
+        F.DirichletBC(surfaces=[2], value=c, field=0),
     ]
     my_model.settings = F.Settings(
         absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False, soret=True
@@ -821,5 +826,10 @@ def test_soret_surface_flux_mass_balance():
     # these two should be equal in steady state
     print(flux_left.data[0])
     print(flux_right.data[0])
+
+    expected_flux_left = -D * Q * c / (F.k_B * T_val(1) ** 2) * grad_T
+    expected_flux_right = -D * Q * c / (F.k_B * T_val(0) ** 2) * grad_T
+    print(expected_flux_left)
+    print(expected_flux_right)
 
     assert np.isclose(np.abs(flux_left.data[0]), np.abs(flux_right.data[0]))
