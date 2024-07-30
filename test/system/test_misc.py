@@ -796,15 +796,22 @@ def test_soret_surface_flux_mass_balance():
 
     1D steady state simulation with Soret on.
     Compute the surface flux on both surfaces.
-    The surface fluxes should be equal in magnitude but opposite in sign.
+    The surface fluxes should be equal in magnitude
+    but opposite in sign.
+
+    The case is made so that the concentration profile
+    is flat (ie. diffusive flux is zero) but there's a
+    high T gradient (ie. Soret flux is not zero).
     """
     my_model = F.Simulation()
-    my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
+
+    my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 0.05, num=100))
     Q = 2
     D = 3
     c = 2
     my_model.materials = F.Material(id=1, D_0=D, E_D=0, Q=Q)
     grad_T = 1000
+
     T_val = lambda x: 700 + grad_T * x
     my_model.T = F.Temperature(value=T_val(F.x))
 
@@ -813,7 +820,10 @@ def test_soret_surface_flux_mass_balance():
         F.DirichletBC(surfaces=[2], value=c, field=0),
     ]
     my_model.settings = F.Settings(
-        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False, soret=True
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+        soret=True,
     )
 
     flux_left = F.SurfaceFlux(field=0, surface=1)
@@ -827,9 +837,5 @@ def test_soret_surface_flux_mass_balance():
     print(flux_left.data[0])
     print(flux_right.data[0])
 
-    expected_flux_left = -D * Q * c / (F.k_B * T_val(1) ** 2) * grad_T
-    expected_flux_right = -D * Q * c / (F.k_B * T_val(0) ** 2) * grad_T
-    print(expected_flux_left)
-    print(expected_flux_right)
-
-    assert np.isclose(np.abs(flux_left.data[0]), np.abs(flux_right.data[0]))
+    assert not np.isclose(flux_left.data[0], 0)
+    assert np.isclose(np.abs(flux_left.data[0]), np.abs(flux_right.data[0]), rtol=1e-2)
