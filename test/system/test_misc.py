@@ -788,3 +788,38 @@ def test_catch_bug_804():
 
     for trap in model.traps:
         assert trap.id is not None
+
+
+def test_soret_surface_flux_mass_balance():
+    """
+    Test to catch bug 830
+
+    1D steady state simulation with Soret on.
+    Compute the surface flux on both surfaces.
+    The surface fluxes should be equal in magnitude but opposite in sign.
+    """
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0, Q=2)
+    my_model.T = F.Temperature(value=700 + 1000 * F.x)
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(surfaces=[1], value=10, field=0),
+        F.DirichletBC(surfaces=[2], value=1, field=0),
+    ]
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False, soret=True
+    )
+
+    flux_left = F.SurfaceFlux(field=0, surface=1)
+    flux_right = F.SurfaceFlux(field=0, surface=2)
+    my_model.exports = [F.DerivedQuantities([flux_left, flux_right])]
+
+    my_model.initialise()
+    my_model.run()
+
+    # these two should be equal in steady state
+    print(flux_left.data[0])
+    print(flux_right.data[0])
+
+    assert np.isclose(np.abs(flux_left.data[0]), np.abs(flux_right.data[0]))
