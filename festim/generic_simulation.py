@@ -418,6 +418,14 @@ class Simulation:
                         self.dt.milestones.append(time)
                 self.dt.milestones.sort()
 
+        # set Soret to True
+        for export in self.exports:
+            if isinstance(export, festim.DerivedQuantities):
+                for q in export:
+                    if isinstance(q, festim.SurfaceFlux):
+                        q.soret = self.settings.soret
+                        q.T = self.T.T
+
     def run(self, completion_tone=False):
         """Runs the model.
 

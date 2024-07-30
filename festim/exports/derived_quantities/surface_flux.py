@@ -35,6 +35,7 @@ class SurfaceFlux(SurfaceQuantity):
 
     def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
+        self.soret = None
 
     @property
     def export_unit(self):
@@ -70,11 +71,11 @@ class SurfaceFlux(SurfaceQuantity):
         }
         return field_to_prop[self.field]
 
-    def compute(self, soret=False):
+    def compute(self):
         flux = f.assemble(
             self.prop * f.dot(f.grad(self.function), self.n) * self.ds(self.surface)
         )
-        if soret and self.field in [0, "0", "solute"]:
+        if self.soret and self.field in [0, "0", "solute"]:
             flux += f.assemble(
                 self.prop
                 * self.function
@@ -136,7 +137,7 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             raise ValueError("Azimuthal range must be between 0 and pi")
         self._azimuth_range = value
 
-    def compute(self, soret=False):
+    def compute(self):
 
         if self.r is None:
             mesh = (
@@ -155,7 +156,7 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
-        if soret and self.field in [0, "0", "solute"]:
+        if self.soret and self.field in [0, "0", "solute"]:
             flux += f.assemble(
                 self.prop
                 * self.r
@@ -234,7 +235,7 @@ class SurfaceFluxSpherical(SurfaceFlux):
             raise ValueError("Azimuthal range must be between 0 and pi")
         self._azimuth_range = value
 
-    def compute(self, soret=False):
+    def compute(self):
 
         if self.r is None:
             mesh = (
@@ -252,7 +253,7 @@ class SurfaceFluxSpherical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
-        if soret and self.field in [0, "0", "solute"]:
+        if self.soret and self.field in [0, "0", "solute"]:
             flux += f.assemble(
                 self.prop
                 * self.r**2
