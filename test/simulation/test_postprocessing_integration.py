@@ -321,3 +321,27 @@ class TestPostProcessing:
         data = derived_quantities.data
         assert np.isclose(data[1][1], 1)
         assert np.isclose(data[1][2], 2)
+
+
+def test_data_is_not_empty():
+    """
+    Test to catch bug #833
+    """
+
+    my_model = festim.Simulation()
+    my_model.mesh = festim.MeshFromVertices(vertices=np.linspace(0, 1, num=100))
+    my_model.materials = festim.Material(id=1, D_0=1, E_D=0)
+    my_model.T = festim.Temperature(value=700)
+    my_model.settings = festim.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False
+    )
+
+    flux_left = festim.SurfaceFlux(field=0, surface=1)
+    flux_right = festim.SurfaceFlux(field=0, surface=2)
+    my_model.exports = festim.DerivedQuantities([flux_left, flux_right])
+
+    my_model.initialise()
+    my_model.run()
+
+    assert flux_left.data != []
+    assert flux_right.data != []
