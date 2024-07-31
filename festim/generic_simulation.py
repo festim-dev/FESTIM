@@ -162,7 +162,7 @@ class Simulation:
             self._exports = festim.Exports(value)
         else:
             raise TypeError(
-                "accepted types for exports are list, festim.Export or festim.Exports"
+                "accepted types for exports are list, festim.DerivedQuantities, festim.Export or festim.Exports"
             )
 
     @property
