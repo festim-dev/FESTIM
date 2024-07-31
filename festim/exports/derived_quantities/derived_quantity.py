@@ -7,6 +7,24 @@ class DerivedQuantity(Export):
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
+
+    Attributes:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        title (str): the title of the derived quantity
+        show_units (bool): show the units in the title in the derived quantities
+            file
+        function (fenics.Function): the solution function of
+            the field
+        dx (fenics.Measure): the measure of the volume
+        ds (fenics.Measure): the measure of the surface
+        n (fenics.Function): the normal vector
+        D (fenics.Function): the diffusion coefficient
+        S (fenics.Function): the source term
+        thermal_cond (fenics.Function): the thermal conductivity
+        Q (fenics.Function): the heat source term
+        data (list): the data of the derived quantity
+        t (list): the time values of the data
+        allowed_meshes (list): the allowed meshes for the derived quantity
     """
 
     def __init__(self, field) -> None:
@@ -18,9 +36,16 @@ class DerivedQuantity(Export):
         self.S = None
         self.thermal_cond = None
         self.Q = None
+        self.T = None
         self.data = []
         self.t = []
         self.show_units = False
+
+    @property
+    def allowed_meshes(self):
+        # by default, all meshes are allowed
+        # override this method if that's not the case
+        return ["cartesian", "cylindrical", "spherical"]
 
 
 class VolumeQuantity(DerivedQuantity):

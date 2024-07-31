@@ -38,6 +38,10 @@ class SurfaceFlux(SurfaceQuantity):
         self.soret = None
 
     @property
+    def allowed_meshes(self):
+        return ["cartesian"]
+
+    @property
     def export_unit(self):
         # obtain domain dimension
         dim = self.function.function_space().mesh().topology().dim()
@@ -111,6 +115,10 @@ class SurfaceFluxCylindrical(SurfaceFlux):
         super().__init__(field=field, surface=surface)
         self.r = None
         self.azimuth_range = azimuth_range
+
+    @property
+    def allowed_meshes(self):
+        return ["cylindrical"]
 
     @property
     def title(self):
@@ -199,6 +207,10 @@ class SurfaceFluxSpherical(SurfaceFlux):
         self.r = None
         self.polar_range = polar_range
         self.azimuth_range = azimuth_range
+
+    @property
+    def allowed_meshes(self):
+        return ["spherical"]
 
     @property
     def title(self):

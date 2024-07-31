@@ -31,6 +31,10 @@ class TotalVolume(VolumeQuantity):
         super().__init__(field=field, volume=volume)
 
     @property
+    def allowed_meshes(self):
+        return ["cartesian"]
+
+    @property
     def export_unit(self):
         # obtain domain dimension
         try:
