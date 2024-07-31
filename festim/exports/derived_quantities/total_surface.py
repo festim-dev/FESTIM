@@ -31,6 +31,10 @@ class TotalSurface(SurfaceQuantity):
         super().__init__(field=field, surface=surface)
 
     @property
+    def allowed_meshes(self):
+        return ["cartesian"]
+
+    @property
     def export_unit(self):
         # obtain domain dimension
         try:

@@ -38,6 +38,10 @@ class SurfaceFlux(SurfaceQuantity):
         self.soret = None
 
     @property
+    def allowed_meshes(self):
+        return ["cartesian"]
+
+    @property
     def export_unit(self):
         # obtain domain dimension
         dim = self.function.function_space().mesh().topology().dim()
@@ -121,6 +125,10 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             return f"W m{dim-2}".replace(" m0", "")
         else:
             return f"H m{dim-2} s-1".replace(" m0", "")
+
+    @property
+    def allowed_meshes(self):
+        return ["cylindrical"]
 
     @property
     def title(self):
@@ -213,6 +221,10 @@ class SurfaceFluxSpherical(SurfaceFlux):
             return f"W"
         else:
             return f"H s-1"
+
+    @property
+    def allowed_meshes(self):
+        return ["spherical"]
 
     @property
     def title(self):

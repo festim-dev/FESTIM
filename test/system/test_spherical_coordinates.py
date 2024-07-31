@@ -40,6 +40,10 @@ def test_run_MMS():
         transient=False,
     )
 
+    exports = [
+        festim.DerivedQuantities([festim.SurfaceFluxSpherical(field=0, surface=2)])
+    ]
+
     my_sim = festim.Simulation(
         mesh=my_mesh,
         materials=my_materials,
@@ -47,6 +51,7 @@ def test_run_MMS():
         temperature=my_temp,
         sources=my_sources,
         settings=my_settings,
+        exports=exports,
     )
 
     my_sim.initialise()

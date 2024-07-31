@@ -28,6 +28,10 @@ class AverageVolume(VolumeQuantity):
         super().__init__(field=field, volume=volume)
 
     @property
+    def allowed_meshes(self):
+        return ["cartesian"]
+
+    @property
     def title(self):
         quantity_title = f"Average {self.field} volume {self.volume}"
         if self.show_units:

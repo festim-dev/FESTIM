@@ -29,6 +29,10 @@ class AverageSurface(SurfaceQuantity):
         super().__init__(field=field, surface=surface)
 
     @property
+    def allowed_meshes(self):
+        return ["cartesian"]
+
+    @property
     def title(self):
         quantity_title = f"Average {self.field} surface {self.surface}"
         if self.show_units:
