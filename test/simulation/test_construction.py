@@ -62,6 +62,6 @@ class TestSettingTrapsMaterialsExprots:
 
         with pytest.raises(
             TypeError,
-            match="accepted types for exports are list, festim.Export or festim.Exports",
+            match="accepted types for exports are list, festim.DerivedQuantities, festim.Export or festim.Exports",
         ):
             self.my_sim.exports = exp
