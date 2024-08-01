@@ -10,7 +10,7 @@ def folder(tmpdir):
 
 
 def test_define_file_upon_construction(folder):
-    mesh = f.UnitIntervalMesh(10)
+    mesh = f.UnitSquareMesh(8, 8)
     filename = "{}/my_filename.xdmf".format(folder)
     my_xdmf = XDMFExport("solute", label="solute_label", filename=filename)
 
@@ -30,7 +30,7 @@ def test_default_filename():
 
 
 class TestDefineFile:
-    mesh = f.UnitIntervalMesh(10)
+    mesh = f.UnitSquareMesh(8, 8)
     my_xdmf = XDMFExport("solute", "my_label", filename="my_filename.xdmf")
 
     def test_file_exists(self, folder):
@@ -44,7 +44,7 @@ class TestDefineFile:
 
 
 class TestWrite:
-    mesh = f.UnitIntervalMesh(10)
+    mesh = f.UnitSquareMesh(8, 8)
     V = f.FunctionSpace(mesh, "P", 1)
     u = f.Function(V)
     label_to_function = {"solute": u}

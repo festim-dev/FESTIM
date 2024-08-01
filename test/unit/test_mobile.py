@@ -258,20 +258,6 @@ class TestCreateDiffusionForm:
         print(my_mobile.F)
         assert my_mobile.F.equals(expected_form)
 
-    def test_error_soret_cylindrical_spherical(self):
-        """Tests that the appropriate error is raised when trying to use Soret
-        with cylindrical or spherical system
-        """
-        my_mobile = festim.Mobile()
-
-        for system in ["cylindrical", "spherical"]:
-            mesh = festim.Mesh(type=system)
-            expected_error_msg = "not implemented " + "in {} coordinates".format(system)
-            with pytest.raises(ValueError, match=expected_error_msg):
-                my_mobile.create_diffusion_form(
-                    materials=None, mesh=mesh, T=None, soret=True
-                )
-
 
 class TestInitialise:
     """

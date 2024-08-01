@@ -146,7 +146,8 @@ class TestNeutronInducedTrapSolverParameters:
         absolute_tolerance=2.5,
         relative_tolerance=1.2e-10,
         maximum_iterations=13,
-        linear_solver="mumps",
+        linear_solver="gmres",
+        preconditioner="icc",
     )
 
     def test_attributes_from_instanciation(self):
@@ -158,7 +159,8 @@ class TestNeutronInducedTrapSolverParameters:
         assert self.my_trap.absolute_tolerance == 2.5
         assert self.my_trap.relative_tolerance == 1.2e-10
         assert self.my_trap.maximum_iterations == 13
-        assert self.my_trap.linear_solver == "mumps"
+        assert self.my_trap.linear_solver == "gmres"
+        assert self.my_trap.preconditioner == "icc"
 
     def test_attributes_change_since_instanciation(self):
         """

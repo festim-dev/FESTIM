@@ -6,7 +6,7 @@ The initial conditions are essential to transient FESTIM simulations. They descr
 By default, the initial conditions are set to zero.
 However, it is possible to set the initial conditions with the :class:`festim.InitialCondition` class.
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -14,7 +14,7 @@ However, it is possible to set the initial conditions with the :class:`festim.In
 
 The value can also be a function of space:
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
     from festim import x, y, z
@@ -23,14 +23,14 @@ The value can also be a function of space:
 
 Initial conditions can also be read from a previously written XDMF file. This is useful when restarting a simulation.
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
     my_ic = F.InitialCondition(
-        filename="ic_file.xdmf",
+        value="ic_file.xdmf",
         label="mobile",
-        timestep=-1,
+        time_step=-1,
         field=0
     )
 

@@ -1,5 +1,6 @@
 import festim
 import fenics as f
+import pytest
 
 
 def test_default_dt_min_value():
@@ -28,6 +29,7 @@ def test_default_dt_min_value():
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -52,6 +54,7 @@ def test_solve_once_jacobian_is_none():
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -79,6 +82,7 @@ def test_solve_once_returns_false():
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -94,8 +98,15 @@ def test_solve_once_returns_false():
     assert not converged
 
 
-def test_solve_once_linear_solver_mumps():
-    """Checks that solve_once() works when an alternative linear solver is used rather than the default"""
+@pytest.mark.parametrize("preconditioner", ["default", "icc"])
+def test_solve_once_linear_solver_gmres(preconditioner):
+    """
+    Checks that solve_once() works when an alternative linear solver is used
+    with/without a preconditioner rather than the default
+
+    Args:
+        preconditioner (str): the preconditioning method
+    """
     # build
     mesh = f.UnitIntervalMesh(8)
     V = f.FunctionSpace(mesh, "CG", 1)
@@ -104,11 +115,13 @@ def test_solve_once_linear_solver_mumps():
         absolute_tolerance=1e-10,
         relative_tolerance=1e-10,
         maximum_iterations=50,
-        linear_solver="mumps",
+        linear_solver="gmres",
+        preconditioner=preconditioner,
     )
     my_problem = festim.HTransportProblem(
         festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
     )
+    my_problem.define_newton_solver()
     my_problem.u = f.Function(V)
     my_problem.u_n = f.Function(V)
     my_problem.v = f.TestFunction(V)
@@ -122,3 +135,56 @@ def test_solve_once_linear_solver_mumps():
 
     # test
     assert converged
+
+
+class Test_solve_once_with_custom_solver:
+    """
+    Checks that a custom newton sovler can be used
+    """
+
+    def sim(self):
+        """Defines a model"""
+        mesh = f.UnitIntervalMesh(8)
+        V = f.FunctionSpace(mesh, "CG", 1)
+
+        my_settings = festim.Settings(
+            absolute_tolerance=1e-10,
+            relative_tolerance=1e-10,
+            maximum_iterations=50,
+        )
+        my_problem = festim.HTransportProblem(
+            festim.Mobile(), festim.Traps([]), festim.Temperature(200), my_settings, []
+        )
+        my_problem.define_newton_solver()
+        my_problem.u = f.Function(V)
+        my_problem.u_n = f.Function(V)
+        my_problem.v = f.TestFunction(V)
+        my_problem.F = (
+            (my_problem.u - my_problem.u_n) * my_problem.v * f.dx
+            + 1 * my_problem.v * f.dx
+            + f.dot(f.grad(my_problem.u), f.grad(my_problem.v)) * f.dx
+        )
+        return my_problem
+
+    def test_custom_solver(self):
+        """Solves the system using the built-in solver and using the f.NewtonSolver"""
+
+        # solve with the built-in solver
+        problem_1 = self.sim()
+        problem_1.solve_once()
+
+        # solve with the custom solver
+        problem_2 = self.sim()
+        problem_2.newton_solver = f.NewtonSolver()
+        problem_2.newton_solver.parameters["absolute_tolerance"] = (
+            problem_1.settings.absolute_tolerance
+        )
+        problem_2.newton_solver.parameters["relative_tolerance"] = (
+            problem_1.settings.relative_tolerance
+        )
+        problem_2.newton_solver.parameters["maximum_iterations"] = (
+            problem_1.settings.maximum_iterations
+        )
+        problem_2.solve_once()
+
+        assert (problem_1.u.vector() == problem_2.u.vector()).all()

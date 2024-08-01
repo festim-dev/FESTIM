@@ -1,4 +1,4 @@
-from festim import Concentration, FluxBC, k_B, RadioactiveDecay
+from festim import Concentration, FluxBC, k_B, RadioactiveDecay, SurfaceKinetics
 from fenics import *
 
 
@@ -38,7 +38,7 @@ class Mobile(Concentration):
         self.F = 0
         self.create_diffusion_form(materials, mesh, T, dt=dt, traps=traps, soret=soret)
         self.create_source_form(mesh.dx)
-        self.create_fluxes_form(T, mesh.ds)
+        self.create_fluxes_form(T, mesh.ds, dt)
 
     def create_diffusion_form(
         self, materials, mesh, T, dt=None, traps=None, soret=False
@@ -56,9 +56,6 @@ class Mobile(Concentration):
             soret (bool, optional): If True, Soret effect is assumed. Defaults
                 to False.
         """
-        if soret and mesh.type in ["cylindrical", "spherical"]:
-            msg = "Soret effect not implemented in {} coordinates".format(mesh.type)
-            raise ValueError(msg)
 
         F = 0
         for material in materials:
@@ -96,6 +93,19 @@ class Mobile(Concentration):
                     r = SpatialCoordinate(mesh.mesh)[0]
                     F += r * dot(D * grad(c_0), grad(self.test_function / r)) * dx
 
+                    if soret:
+                        Q = material.Q
+                        if callable(Q):
+                            Q = Q(T.T)
+                        F += (
+                            r
+                            * dot(
+                                D * Q * c_0 / (k_B * T.T**2) * grad(T.T),
+                                grad(self.test_function / r),
+                            )
+                            * dx
+                        )
+
                 elif mesh.type == "spherical":
                     r = SpatialCoordinate(mesh.mesh)[0]
                     F += (
@@ -105,6 +115,21 @@ class Mobile(Concentration):
                         * dot(grad(c_0), grad(self.test_function / r / r))
                         * dx
                     )
+
+                    if soret:
+                        Q = material.Q
+                        if callable(Q):
+                            Q = Q(T.T)
+                        F += (
+                            D
+                            * r
+                            * r
+                            * dot(
+                                Q * c_0 / (k_B * T.T**2) * grad(T.T),
+                                grad(self.test_function / r / r),
+                            )
+                            * dx
+                        )
 
         # add the trapping terms
         F_trapping = 0
@@ -171,7 +196,7 @@ class Mobile(Concentration):
         self.F += F_source
         self.sub_expressions += expressions_source
 
-    def create_fluxes_form(self, T, ds):
+    def create_fluxes_form(self, T, ds, dt=None):
         """Modifies the formulation and adds fluxes based
         on parameters in self.boundary_conditions
         """
@@ -184,12 +209,23 @@ class Mobile(Concentration):
         for bc in self.boundary_conditions:
             if bc.field != "T":
                 if isinstance(bc, FluxBC):
-                    bc.create_form(T.T, solute)
+                    if isinstance(bc, SurfaceKinetics):
+                        bc.create_form(
+                            solute,
+                            self.previous_solution,
+                            self.test_function,
+                            T,
+                            ds,
+                            dt,
+                        )
+                        F += bc.form
+                    else:
+                        bc.create_form(T.T, solute)
+                        for surf in bc.surfaces:
+                            F += -self.test_function * bc.form * ds(surf)
                     # TODO : one day we will get rid of this huge expressions list
                     expressions_fluxes += bc.sub_expressions
 
-                    for surf in bc.surfaces:
-                        F += -self.test_function * bc.form * ds(surf)
         self.F_fluxes = F
         self.F += F
         self.sub_expressions += expressions_fluxes

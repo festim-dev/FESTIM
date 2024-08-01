@@ -21,12 +21,16 @@ class AverageVolume(VolumeQuantity):
         function (dolfin.function.function.Function): the solution function of
             the field
 
-    Notes:
+    .. note::
         Units are in H/m3 for hydrogen concentration and K for temperature
     """
 
     def __init__(self, field, volume: int) -> None:
         super().__init__(field=field, volume=volume)
+
+    @property
+    def allowed_meshes(self):
+        return ["cartesian"]
 
     @property
     def title(self):

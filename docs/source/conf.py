@@ -14,6 +14,23 @@ import sys
 
 sys.path.insert(0, os.path.abspath("../.."))
 
+
+# Generate the map
+
+# Add the directory containing your Python script to the Python path
+sys.path.insert(0, os.path.abspath("."))
+
+import map
+
+m = map.generate_map()
+current_dir = os.path.dirname(__file__)
+html_path = os.path.join(current_dir, "_static", "map.html")
+
+# create _static directory if it doesn't exist
+os.makedirs(os.path.dirname(html_path), exist_ok=True)
+
+m.save(html_path)
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -42,7 +59,10 @@ extensions = [
     "sphinx_design",
     "sphinxcontrib.bibtex",
     "matplotlib.sphinxext.plot_directive",
+    "sphinxcontrib.images",
 ]
+
+suppress_warnings = ["autosectionlabel.*"]
 
 napoleon_use_ivar = True  # needed to correctly format class attributes
 
@@ -85,6 +105,36 @@ html_theme_options = {
     "use_edit_page_button": True,
     "repository_branch": "main",
     "path_to_docs": "./docs/source",
+    "icon_links": [
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/FESTIM/",
+            "icon": "https://img.shields.io/pypi/dw/festim",
+            "type": "url",
+        },
+        {
+            "name": "Support Forum",
+            "url": "https://festim.discourse.group/",
+            "icon": "fa-brands fa-discourse",
+        },
+        {
+            "name": "Slack",
+            "url": "https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g",
+            "icon": "fa-brands fa-slack",
+        },
+    ],
+    "article_header_end": [
+        "navbar-icon-links",
+        "article-header-buttons",
+    ],
+}
+
+html_sidebars = {
+    "**": [
+        "navbar-logo",
+        "search-button-field",
+        "sbt-sidebar-nav",
+    ],
 }
 
 html_title = "FESTIM Documentation"

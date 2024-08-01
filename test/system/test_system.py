@@ -209,7 +209,7 @@ def test_run_MMS(tmpdir):
         my_materials = festim.Materials(
             [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
         )
-        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
+        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap, 1)])
 
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
@@ -335,7 +335,7 @@ def test_run_MMS_chemical_pot(tmpdir):
         my_materials = festim.Materials(
             [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D, S_0=2, E_S=0.1)]
         )
-        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap)])
+        my_traps = festim.Traps([festim.Trap(k_0, E_k, p_0, E_p, "mat", n_trap, 1)])
 
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
@@ -616,7 +616,7 @@ def test_run_MMS_steady_state(tmpdir):
             [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
         )
 
-        my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap)
+        my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap, 1)
 
         my_initial_conditions = [
             festim.InitialCondition(field=0, value=u),
@@ -1158,7 +1158,7 @@ def test_MMS_decay_with_trap():
         [festim.Material(name="mat", id=1, D_0=D_0, E_D=E_D)]
     )
 
-    my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap)
+    my_trap = festim.Trap(k_0, E_k, p_0, E_p, ["mat"], n_trap, 1)
 
     size = 0.1
     my_mesh = festim.MeshFromVertices(np.linspace(0, size, 1600))
@@ -1220,3 +1220,98 @@ def test_MMS_decay_with_trap():
     )
     print(msg)
     assert error_max_u < tol_u and error_max_v < tol_v
+
+
+def test_MMS_surface_kinetics():
+    """
+    MMS test for SurfaceKinetics BC
+    """
+    exact_solution_cm = lambda x, t: 1 + 2 * x**2 + x + 2 * t
+    exact_solution_cs = (
+        lambda t: n_surf * (1 + 2 * t + 2 * lambda_IS - D) / (2 * n_IS - 1 - 2 * t)
+    )
+
+    n_IS = 20
+    n_surf = 5
+    D = 7
+    lambda_IS = 2
+    k_bs = n_IS / n_surf
+    k_sb = 2 * n_IS / n_surf
+
+    solute_source = 2 * (1 - 2 * D)
+
+    def J_vs(T, surf_conc, t):
+        return (
+            2 * n_surf * (2 * n_IS + 2 * lambda_IS - D) / (2 * n_IS - 1 - 2 * t) ** 2
+            + 2 * lambda_IS
+            - D
+        )
+
+    my_materials = festim.Material(id=1, D_0=D, E_D=0)
+
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, 1000))
+
+    my_sources = [festim.Source(solute_source, volume=1, field=0)]
+
+    my_temp = 300
+
+    my_bcs = [
+        festim.SurfaceKinetics(
+            k_sb=k_sb,
+            k_bs=k_bs,
+            lambda_IS=lambda_IS,
+            n_surf=n_surf,
+            n_IS=n_IS,
+            J_vs=J_vs,
+            surfaces=1,
+            initial_condition=exact_solution_cs(t=0),
+            t=festim.t,
+        ),
+        festim.DirichletBC(
+            surfaces=2, value=exact_solution_cm(x=1, t=festim.t), field=0
+        ),
+    ]
+
+    my_ics = [
+        festim.InitialCondition(
+            field=0, value=exact_solution_cm(x=festim.x, t=festim.t)
+        )
+    ]
+
+    my_settings = festim.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=True, final_time=5
+    )
+
+    my_dt = festim.Stepsize(0.005)
+
+    my_dq = festim.DerivedQuantities([festim.AdsorbedHydrogen(surface=1)])
+    my_exports = [my_dq]
+
+    my_sim = festim.Simulation(
+        mesh=my_mesh,
+        materials=my_materials,
+        boundary_conditions=my_bcs,
+        initial_conditions=my_ics,
+        sources=my_sources,
+        temperature=my_temp,
+        settings=my_settings,
+        dt=my_dt,
+        exports=my_exports,
+    )
+
+    my_sim.initialise()
+    my_sim.run()
+
+    t = my_dq.t
+    error_max_c = compute_error(
+        exact_solution_cm(x=festim.x, t=t[-1]),
+        computed=my_sim.mobile.post_processing_solution,
+        t=my_sim.t,
+        norm="error_max",
+    )
+
+    tol = 5e-5
+
+    error_max_cs = np.max(np.abs(my_dq[0].data - exact_solution_cs(np.array(t))))
+
+    assert error_max_c < tol and error_max_cs < tol

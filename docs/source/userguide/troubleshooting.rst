@@ -23,7 +23,7 @@ The first thing to check is the details of the Newton solver iterations.
 To do so, you must set the ``log_level`` to ``20`` (default is ``40``).
 This will provide more information during the solving stage.
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -32,10 +32,9 @@ This will provide more information during the solving stage.
     my_model.log_level = 20
 
 From there, depending on the behaviour of the solver, you can try the following:
-- if the solver diverges, try reducing the time step and/or mesh refinement. It is often
- helpful to inspect the fields to see if there are any obvious issues (like lack of refinement).
-- If the solver converges to a value above the tolerance, try increasing the tolerance.
-Sometimes, the absolute tolerance is too low for the problem at hand, especially when dealing with large numbers.
+
+- if the solver diverges, try reducing the time step and/or mesh refinement. It is often helpful to inspect the fields to see if there are any obvious issues (like lack of refinement).
+- If the solver converges to a value above the tolerance, try increasing the tolerance. Sometimes, the absolute tolerance is too low for the problem at hand, especially when dealing with large numbers.
 
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -47,7 +46,7 @@ This is often due to an excessively high absolute tolerance.
 The Newton solver then converges in zero iterations. In other words, nothing is solved.
 First, check that this is the case by setting the log level to 20:
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -57,9 +56,9 @@ First, check that this is the case by setting the log level to 20:
 
 Then increase the absolute tolerance of the solver:
 
-.. code-block:: python
+.. testcode::
 
     my_model.settings = F.Settings(
-        ...,
         absolute_tolerance=1e10,
+        relative_tolerance=1e-10,
     )

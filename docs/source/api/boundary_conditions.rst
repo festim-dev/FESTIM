@@ -1,11 +1,10 @@
+.. _boundary_conditions_api:
+
+===================
 Boundary conditions
 ===================
 
 .. currentmodule:: festim
-
-
-Dirichlet
----------
 
 .. autoclass:: DirichletBC
     :members:
@@ -26,10 +25,6 @@ Dirichlet
 .. autoclass:: SievertsBC
     :members:
     :show-inheritance:
-
-
-Flux
-----
 
 .. autoclass:: FluxBC
     :members:
@@ -52,5 +47,9 @@ Flux
     :show-inheritance:
 
 .. autoclass:: MassFlux
+    :members:
+    :show-inheritance:
+
+.. autoclass:: SurfaceKinetics
     :members:
     :show-inheritance:

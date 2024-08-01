@@ -8,7 +8,7 @@ class ThermalFlux(SurfaceFlux):
     Args:
         surface (int): the surface id
 
-    Attribtutes
+    Attributes:
         surface (int): the surface id
         field (str): the temperature field
         title (str): the title of the derived quantity
@@ -17,7 +17,7 @@ class ThermalFlux(SurfaceFlux):
         function (dolfin.function.function.Function): the solution function of
             the temperature field
 
-    Notes:
+    .. note::
         units are in W/m2 in 1D, W/m in 2D and W in 3D domains
 
     """
