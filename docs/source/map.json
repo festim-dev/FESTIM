@@ -336,6 +336,20 @@
                 "name": "University of Surrey",
                 "url": "https://www.studyacrossthepond.com/sites/default/files/University%20of%20Surrey%20logo%202107x780px.png"
             }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    36.11139,
+                    140.10389
+                ]
+            },
+            "properties": {
+                "name": "University of Tsukuba",
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Logo_of_University_of_Tsukuba.svg/220px-Logo_of_University_of_Tsukuba.svg.png"
+            }
         }
     ]
 }
