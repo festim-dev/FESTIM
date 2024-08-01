@@ -1,4 +1,4 @@
-from festim import SurfaceQuantity, k_B
+from festim import SurfaceQuantity
 import fenics as f
 
 

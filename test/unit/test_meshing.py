@@ -4,7 +4,6 @@ from festim import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, MeshFrom
 import fenics
 import pytest
 from pathlib import Path
-import numpy as np
 
 
 def test_mesh_and_refine_meets_refinement_conditions():

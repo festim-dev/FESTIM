@@ -1,4 +1,3 @@
-from this import s
 from festim import TotalSurface
 import fenics as f
 import pytest
