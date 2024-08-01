@@ -1,4 +1,4 @@
-from festim import FluxBC, k_B
+from festim import FluxBC
 import fenics as f
 import sympy as sp
 

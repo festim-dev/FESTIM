@@ -1,6 +1,5 @@
 from festim import Trap, as_constant_or_expression
 from fenics import NewtonSolver, MPI
-import warnings
 
 
 class ExtrinsicTrapBase(Trap):

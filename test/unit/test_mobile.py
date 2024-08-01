@@ -1,7 +1,6 @@
 import festim
 import fenics as f
 from ufl.core.multiindex import Index
-import pytest
 
 
 def test_mobile_create_diffusion_form():

@@ -1,7 +1,6 @@
 import festim
 import fenics as f
 import sympy as sp
-import warnings
 
 
 class HeatTransferProblem(festim.Temperature):

@@ -1,7 +1,6 @@
 from festim import Concentration, k_B, Material, Theta, RadioactiveDecay
 from fenics import *
 import sympy as sp
-import numpy as np
 
 
 class Trap(Concentration):
