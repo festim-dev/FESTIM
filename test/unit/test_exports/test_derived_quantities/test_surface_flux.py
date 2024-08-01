@@ -335,6 +335,23 @@ def test_cylindrical_flux_title_no_units_temperature():
     assert my_heat_flux.title == "Heat flux surface 4"
 
 
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "solute flux surface 3 (H m-1 s-1)"),
+        (c_1D, "T", "Heat flux surface 3 (W m-1)"),
+        (c_2D, "solute", "solute flux surface 3 (H s-1)"),
+        (c_2D, "T", "Heat flux surface 3 (W)"),
+    ],
+)
+def test_cylindrical_flux_with_units(function, field, expected_title):
+    my_flux = SurfaceFluxCylindrical(field=field, surface=3)
+    my_flux.function = function
+    my_flux.show_units = True
+
+    assert my_flux.title == expected_title
+
+
 def test_spherical_flux_title_no_units_solute():
     """A simple test to check that the title is set correctly in
     festim.SphericalSurfaceFlux with a solute field without units"""
@@ -349,3 +366,18 @@ def test_spherical_flux_title_no_units_temperature():
 
     my_heat_flux = SurfaceFluxSpherical("T", 5)
     assert my_heat_flux.title == "Heat flux surface 5"
+
+
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "solute flux surface 3 (H s-1)"),
+        (c_1D, "T", "Heat flux surface 3 (W)"),
+    ],
+)
+def test_spherical_flux_with_units(function, field, expected_title):
+    my_flux = SurfaceFluxSpherical(field=field, surface=3)
+    my_flux.function = function
+    my_flux.show_units = True
+
+    assert my_flux.title == expected_title
