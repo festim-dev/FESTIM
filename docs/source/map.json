@@ -12,7 +12,7 @@
             },
             "properties": {
                 "name": "Oak Ridge National Laboratory",
-                "path": "images/Oak_Ridge_National_Laboratory.png"
+                "path": "images/user_logos/Oak_Ridge_National_Laboratory.png"
             }
         },
         {
@@ -26,7 +26,7 @@
             },
             "properties": {
                 "name": "IRFM cadarache France",
-                "path": "images/IRFM_cadarache_France.png"
+                "path": "images/user_logos/IRFM_cadarache_France.png"
             }
         },
         {
@@ -40,7 +40,7 @@
             },
             "properties": {
                 "name": "LSPM Villetaneuse France",
-                "path": "images/LSPM_Villetaneuse_France.png"
+                "path": "images/user_logos/LSPM_Villetaneuse_France.png"
             }
         },
         {
@@ -54,7 +54,7 @@
             },
             "properties": {
                 "name": "MIT Cambridge, MA USA",
-                "path": "images/MIT_Cambridge_MA_USA.png"
+                "path": "images/user_logos/MIT_Cambridge_MA_USA.png"
             }
         },
         {
@@ -68,7 +68,7 @@
             },
             "properties": {
                 "name": "Thea Energy USA",
-                "path": "images/Thea_Energy_USA.png"
+                "path": "images/user_logos/Thea_Energy_USA.png"
             }
         },
         {
@@ -82,7 +82,7 @@
             },
             "properties": {
                 "name": "Commonwealth Fusion Systems Devens, MA USA",
-                "path": "images/Commonwealth_Fusion_Systems Devens_MA_USA.png"
+                "path": "images/user_logos/Commonwealth_Fusion_Systems Devens_MA_USA.png"
             }
         },
         {
@@ -96,7 +96,7 @@
             },
             "properties": {
                 "name": "University Wisconsin Madison USA",
-                "path": "images/University_Wisconsin_Madison_USA.png"
+                "path": "images/user_logos/University_Wisconsin_Madison_USA.png"
             }
         },
         {
@@ -110,7 +110,7 @@
             },
             "properties": {
                 "name": "Marathon Fusion USA",
-                "path": "images/Marathon_Fusion_USA.png"
+                "path": "images/user_logos/Marathon_Fusion_USA.png"
             }
         },
         {
@@ -124,7 +124,7 @@
             },
             "properties": {
                 "name": "University San Diego",
-                "path": "images/University_San_Diego.png"
+                "path": "images/user_logos/University_San_Diego.png"
             }
         },
         {
@@ -138,7 +138,7 @@
             },
             "properties": {
                 "name": "MEPhI moscow Russia",
-                "path": "images/MEPhI_moscow_Russia.png"
+                "path": "images/user_logos/MEPhI_moscow_Russia.png"
             }
         },
         {
@@ -152,7 +152,7 @@
             },
             "properties": {
                 "name": "ITER organization France",
-                "path": "images/ITER_organization_France.png"
+                "path": "images/user_logos/ITER_organization_France.png"
             }
         },
         {
@@ -166,7 +166,7 @@
             },
             "properties": {
                 "name": "UKAEA UK",
-                "path": "images/UKAEA_UK.png"
+                "path": "images/user_logos/UKAEA_UK.png"
             }
         },
         {
@@ -180,7 +180,7 @@
             },
             "properties": {
                 "name": "digiLab UK",
-                "path": "images/digiLab_UK.png"
+                "path": "images/user_logos/digiLab_UK.png"
             }
         },
         {
@@ -194,7 +194,7 @@
             },
             "properties": {
                 "name": "Cranfield University UK",
-                "path": "images/Cranfield_University_UK.png"
+                "path": "images/user_logos/Cranfield_University_UK.png"
             }
         },
         {
@@ -208,7 +208,7 @@
             },
             "properties": {
                 "name": "Politecnico di Torino",
-                "path": "images/Politecnico_di_Torino.png"
+                "path": "images/user_logos/Politecnico_di_Torino.png"
             }
         },
         {
@@ -222,7 +222,7 @@
             },
             "properties": {
                 "name": "Beihang University",
-                "path": "images/Beihang_University.png"
+                "path": "images/user_logos/Beihang_University.png"
             }
         },
         {
@@ -236,7 +236,7 @@
             },
             "properties": {
                 "name": "Institute of Plasma Physics, Chinese Academy of Sciences",
-                "path": "images/Institute_of_plasma_physics_Chinese_academy_of_sciences.png"
+                "path": "images/user_logos/Institute_of_plasma_physics_Chinese_academy_of_sciences.png"
             }
         },
         {
@@ -250,7 +250,7 @@
             },
             "properties": {
                 "name": "Institut Jožef Stefan",
-                "path": "images/Institut_Jožef_Stefan.png"
+                "path": "images/user_logos/Institut_Jožef_Stefan.png"
             }
         },
         {
@@ -264,7 +264,7 @@
             },
             "properties": {
                 "name": "Kyoto Fusioneering",
-                "path": "images/Kyoto_Fusioneering.png"
+                "path": "images/user_logos/Kyoto_Fusioneering.png"
             }
         },
         {
@@ -278,7 +278,7 @@
             },
             "properties": {
                 "name": "ENI",
-                "path": "images/ENI.png"
+                "path": "images/user_logos/ENI.png"
             }
         },
         {
@@ -292,7 +292,7 @@
             },
             "properties": {
                 "name": "ENEA",
-                "path": "images/ENEA.png"
+                "path": "images/user_logos/ENEA.png"
             }
         },
         {
@@ -306,7 +306,7 @@
             },
             "properties": {
                 "name": "Zap Energy",
-                "path": "images/Zap_Energy.png"
+                "path": "images/user_logos/Zap_Energy.png"
             }
         },
         {
@@ -320,7 +320,7 @@
             },
             "properties": {
                 "name": "Frazer Nash",
-                "path": "images/Frazer_Nash.png"
+                "path": "images/user_logos/Frazer_Nash.png"
             }
         },
         {
@@ -334,7 +334,7 @@
             },
             "properties": {
                 "name": "University of Surrey",
-                "path": "images/University_of_Surrey.png"
+                "path": "images/user_logos/University_of_Surrey.png"
             }
         }
     ]
