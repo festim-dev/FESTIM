@@ -53,6 +53,7 @@ class ProblemBase:
         to define the measures fo the model, dx and ds"""
 
         if isinstance(self.mesh, F.MeshFromXDMF):
+            # TODO: fix naming inconsistency between facet and surface meshtags
             self.facet_meshtags = self.mesh.define_surface_meshtags()
             self.volume_meshtags = self.mesh.define_volume_meshtags()
 
