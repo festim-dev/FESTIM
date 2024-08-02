@@ -8,31 +8,6 @@ from io import BytesIO
 
 LOGO_HEIGHT = 60
 
-
-def get_image_dimensions_from_url(image_url):
-    """Function to get the dimensions of an image from URL
-
-
-    Args:
-        image_url (str): the url
-
-    Returns:
-        tuple: the dimensions of the image
-    """
-    headers = {
-        "User-Agent": "FESTIM (https://github.com/festim-dev/festim; remidm@mit.edu)"
-    }
-
-    try:
-        response = requests.get(image_url, headers=headers)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        img = Image.open(BytesIO(response.content))
-        return img.size
-    except Exception as e:
-        print(f"Error fetching or processing image: {e}")
-        return None
-
-
 def generate_map(clustered=True, draggable=False):
     # Load GeoJSON data
     with open("map.json") as f:
@@ -55,8 +30,8 @@ def generate_map(clustered=True, draggable=False):
         # Get the dimensions of the image from local images
 
         if "path" in feature["properties"]:
-            url = feature["properties"]["path"]
-            image_dimensions = Image.open(url).size
+            path = feature["properties"]["path"]
+            image_dimensions = Image.open(path).size
 
         if image_dimensions:
             height_to_width_ratio = image_dimensions[1] / image_dimensions[0]
@@ -65,7 +40,7 @@ def generate_map(clustered=True, draggable=False):
             image_dimensions = (LOGO_HEIGHT, LOGO_HEIGHT)
         # Create a marker with a custom icon and popup
         if coordinates != [0, 0]:
-            icon = folium.CustomIcon(url, icon_size=image_dimensions)
+            icon = folium.CustomIcon(path, icon_size=image_dimensions)
             marker = folium.Marker(
                 location=[coordinates[1], coordinates[0]],
                 icon=icon,
