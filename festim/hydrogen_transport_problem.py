@@ -369,6 +369,7 @@ class HydrogenTransportProblem(ProblemBase):
         function u and u_n. Create global DG function spaces of degree 0 and 1
         for the global diffusion coefficient"""
 
+        # TODO: expose degree as a property to the user (element_degree ?) in ProblemBase
         degree = 1
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
