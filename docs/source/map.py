@@ -50,13 +50,14 @@ def generate_map(clustered=True, draggable=False):
     for feature in data["features"]:
         name = feature["properties"]["name"]
         print(name)
-        url = feature["properties"]["url"]
-        if url == "URL_PLACEHOLDER":
-            url = "https://upload.wikimedia.org/wikipedia/commons/9/92/LOGO_CEA_ORIGINAL.svg"
         coordinates = feature["geometry"]["coordinates"]
 
-        # Get the dimensions of the image from URL
-        image_dimensions = get_image_dimensions_from_url(url)
+        # Get the dimensions of the image from local images
+
+        if "path" in feature["properties"]:
+            url = feature["properties"]["path"]
+            image_dimensions = Image.open(url).size
+
         if image_dimensions:
             height_to_width_ratio = image_dimensions[1] / image_dimensions[0]
             image_dimensions = (LOGO_HEIGHT, int(LOGO_HEIGHT * height_to_width_ratio))
