@@ -13,6 +13,7 @@ class ProblemBase:
     """
     Base class for HeatTransferProblem and HTransportProblem.
     """
+
     def __init__(
         self,
         mesh=None,

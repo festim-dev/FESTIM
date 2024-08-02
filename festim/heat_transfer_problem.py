@@ -13,7 +13,12 @@ class HeatTransferProblem(ProblemBase):
         settings=None,
     ) -> None:
         super().__init__(
-            mesh, sources, exports, subdomains, boundary_conditions, settings
+            mesh=mesh,
+            sources=sources,
+            exports=exports,
+            subdomans=subdomains,
+            boundary_conditions=boundary_conditions,
+            settings=settings,
         )
 
         self.initial_condition = initial_condition
