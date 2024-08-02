@@ -9,7 +9,10 @@ import tqdm.autonotebook
 import festim as F
 
 
-class Problem:
+class ProblemBase:
+    """
+    Base class for HeatTransferProblem and HTransportProblem.
+    """
     def __init__(
         self,
         mesh=None,

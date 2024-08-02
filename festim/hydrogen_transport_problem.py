@@ -1,7 +1,7 @@
 from .problem import *
 
 
-class HydrogenTransportProblem(Problem):
+class HydrogenTransportProblem(ProblemBase):
     """
     Hydrogen Transport Problem.
 

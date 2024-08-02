@@ -1,7 +1,7 @@
 from .problem import *
 
 
-class HeatTransferProblem(Problem):
+class HeatTransferProblem(ProblemBase):
     def __init__(
         self,
         mesh=None,
