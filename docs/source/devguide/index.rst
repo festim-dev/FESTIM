@@ -30,18 +30,36 @@ Contributing to the code
 
    These issues are usually relatively easy to tackle and perfect for newcomers.
 
-1) `Fork the repository <https://github.com/festim-dev/FESTIM/fork>`_
+#. `Fork the repository <https://github.com/festim-dev/FESTIM/fork>`_
 
-By forking the repository, you create a copy where you can safely make changes.
+   By forking the repository, you create a copy where you can safely make changes.
 
-2) Make your changes
-3) `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
-4) Wait for a :ref:`maintainer<Maintainers>` to review your PR
+#. Clone your fork
 
-Before merging your changes, they have to be reviewed. We ensure the changes don't break anything during the review and eventually propose/request improvements.
-The time before the review will depend on the maintainers' availability.
+   .. code-block:: bash
 
-5) When everything is in order, the maintainers will merge your PR!
+      git clone https://github.com/[your_username]/FESTIM
+
+   Remember to replace ``[your_username]`` with your GitHub username.
+
+#. Make your changes
+
+   Commit your changes locally and push them to your fork.
+
+   .. code-block:: bash
+
+      git add [modified files]
+      git commit -m "Your commit message"
+      git push
+
+#. `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
+
+#. Wait for a :ref:`maintainer<Maintainers>` to review your PR
+
+   Before merging your changes, they have to be reviewed. We ensure the changes don't break anything during the review and eventually propose/request improvements.
+   The time before the review will depend on the maintainers' availability.
+
+#. When everything is in order, the maintainers will merge your PR!
 
 -----------
 Maintainers
