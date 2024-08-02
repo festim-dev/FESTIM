@@ -29,7 +29,7 @@ The value of solutions (concentration, temperature) can be imposed on boundaries
 
     Here, we set :code:`field=0` to specify that this BC applies to the mobile hydrogen concentration. :code:`1` would stand for the trap 1 concentration, and :code:`"T"` for temperature.
 
-The `value` argument can be space and time dependent by making use of the FESTIM variables ``x``, ``y``, ``z`` and ``t``:
+The ``value`` argument can be space and time dependent by making use of the FESTIM variables ``x``, ``y``, ``z`` and ``t``:
 
 .. testcode:: BCs
 
