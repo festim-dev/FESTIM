@@ -103,7 +103,7 @@ class HydrogenTransportProblem(ProblemBase):
             mesh=mesh,
             sources=sources,
             exports=exports,
-            subdomans=subdomains,
+            subdomains=subdomains,
             boundary_conditions=boundary_conditions,
             settings=settings,
         )

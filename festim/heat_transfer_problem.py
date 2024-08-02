@@ -16,7 +16,7 @@ class HeatTransferProblem(ProblemBase):
             mesh=mesh,
             sources=sources,
             exports=exports,
-            subdomans=subdomains,
+            subdomains=subdomains,
             boundary_conditions=boundary_conditions,
             settings=settings,
         )
@@ -67,7 +67,7 @@ class HeatTransferProblem(ProblemBase):
         self.create_solver()
         self.initialise_exports()
 
-    def define_function_spaces(self):
+    def define_function_space(self):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n. Create global DG function spaces of degree 0 and 1
