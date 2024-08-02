@@ -364,7 +364,18 @@ class HydrogenTransportProblem(ProblemBase):
         return D, D_expr
 
     def define_function_spaces(self):
-        element_CG = super().define_function_spaces()
+        """Creates the function space of the model, creates a mixed element if
+        model is multispecies. Creates the main solution and previous solution
+        function u and u_n. Create global DG function spaces of degree 0 and 1
+        for the global diffusion coefficient"""
+
+        degree = 1
+        element_CG = basix.ufl.element(
+            basix.ElementFamily.P,
+            self.mesh.mesh.basix_cell(),
+            degree,
+            basix.LagrangeVariant.equispaced,
+        )
 
         if not self.multispecies:
             element = element_CG

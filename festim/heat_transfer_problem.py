@@ -62,8 +62,19 @@ class HeatTransferProblem(ProblemBase):
         self.create_solver()
         self.initialise_exports()
 
-    def define_function_space(self):
-        element_CG = super().define_function_spaces()
+    def define_function_spaces(self):
+        """Creates the function space of the model, creates a mixed element if
+        model is multispecies. Creates the main solution and previous solution
+        function u and u_n. Create global DG function spaces of degree 0 and 1
+        for the global diffusion coefficient"""
+
+        degree = 1
+        element_CG = basix.ufl.element(
+            basix.ElementFamily.P,
+            self.mesh.mesh.basix_cell(),
+            degree,
+            basix.LagrangeVariant.equispaced,
+        )
 
         self.function_space = fem.functionspace(self.mesh.mesh, element_CG)
 

@@ -47,22 +47,6 @@ class ProblemBase:
     def surface_subdomains(self):
         return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
 
-    def define_function_spaces(self):
-        """Creates the function space of the model, creates a mixed element if
-        model is multispecies. Creates the main solution and previous solution
-        function u and u_n. Create global DG function spaces of degree 0 and 1
-        for the global diffusion coefficient"""
-
-        degree = 1
-        element_CG = basix.ufl.element(
-            basix.ElementFamily.P,
-            self.mesh.mesh.basix_cell(),
-            degree,
-            basix.LagrangeVariant.equispaced,
-        )
-
-        return element_CG
-
     def define_meshtags_and_measures(self):
         """Defines the facet and volume meshtags of the model which are used
         to define the measures fo the model, dx and ds"""
