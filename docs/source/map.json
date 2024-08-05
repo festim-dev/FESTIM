@@ -336,6 +336,20 @@
                 "name": "University of Surrey",
                 "path": "images/user_logos/University_of_Surrey.png"
             }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    140.10389,
+                    36.11139
+                ]
+            },
+            "properties": {
+                "name": "University of Tsukuba",
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Logo_of_University_of_Tsukuba.svg/220px-Logo_of_University_of_Tsukuba.svg.png"
+            }
         }
     ]
 }
