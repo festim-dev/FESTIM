@@ -60,11 +60,16 @@ class AverageSurfaceCylindrical(AverageSurface):
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
+
+    Attributes:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
         title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
         function (dolfin.function.function.Function): the solution function of
             the field
+        r (ufl.indexed.Indexed): the radius of the cylinder
 
     Notes:
         Units are in H/m3 for hydrogen concentration and K for temperature
@@ -82,6 +87,8 @@ class AverageSurfaceCylindrical(AverageSurface):
             )  # get the mesh from the function
             rthetaz = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
             self.r = rthetaz[0]  # only care about r here
+            print(type(self.r))
+            quit()
 
         # dS_z = r dr dtheta , assuming axisymmetry dS_z = theta r dr
         # dS_r = r dz dtheta , assuming axisymmetry dS_r = theta r dz
@@ -104,11 +111,16 @@ class AverageSurfaceSpherical(AverageSurface):
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
+
+    Attributes:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        surface (int): the surface id
         title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
         function (dolfin.function.function.Function): the solution function of
             the field
+        r (ufl.indexed.Indexed): the radius of the sphere
 
     Notes:
         Units are in H/m3 for hydrogen concentration and K for temperature

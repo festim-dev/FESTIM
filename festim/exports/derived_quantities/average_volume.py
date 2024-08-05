@@ -20,6 +20,7 @@ class AverageVolume(VolumeQuantity):
             file
         function (dolfin.function.function.Function): the solution function of
             the field
+        r (ufl.indexed.Indexed): the radius of the cylinder
 
     .. note::
         Units are in H/m3 for hydrogen concentration and K for temperature
@@ -61,11 +62,16 @@ class AverageVolumeCylindrical(AverageVolume):
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
+
+    Attributes:
+        field (str, int):  the field ("solute", 0, 1, "T", "retention")
+        volume (int): the volume id
         title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
         function (dolfin.function.function.Function): the solution function of
             the field
+        r (ufl.indexed.Indexed): the radius of the sphere
     """
 
     def __init__(self, field, volume) -> None:
