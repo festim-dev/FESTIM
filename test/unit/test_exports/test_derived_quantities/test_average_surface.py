@@ -155,7 +155,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
     assert np.isclose(computed_value, expected_value)
 
 
-def test_cylindrical_flux_title_no_units_solute():
+def test_average_surface_cylindrical_title_no_units_solute():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceCylindrical with a solute field without units"""
 
@@ -163,7 +163,7 @@ def test_cylindrical_flux_title_no_units_solute():
     assert my_h_flux.title == "Average solute surface 4"
 
 
-def test_cylindrical_flux_title_no_units_temperature():
+def test_average_surface_cylindrical_title_no_units_temperature():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceCylindrical with a T field without units"""
 
@@ -171,7 +171,7 @@ def test_cylindrical_flux_title_no_units_temperature():
     assert my_heat_flux.title == "Average T surface 5"
 
 
-def test_spherical_flux_title_no_units_solute():
+def test_average_surface_spherical_title_no_units_solute():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceSpherical with a solute field without units"""
 
@@ -179,7 +179,7 @@ def test_spherical_flux_title_no_units_solute():
     assert my_h_flux.title == "Average solute surface 6"
 
 
-def test_spherical_flux_title_no_units_temperature():
+def test_average_surface_spherical_title_no_units_temperature():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceSpherical with a T field without units"""
 
