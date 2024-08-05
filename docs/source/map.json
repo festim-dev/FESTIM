@@ -1,7 +1,7 @@
 {
     "type": "FeatureCollection",
     "features": [
-         {
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
@@ -12,7 +12,7 @@
             },
             "properties": {
                 "name": "Oak Ridge National Laboratory",
-                "url": "https://standards.ornl.gov/wp-content/themes/sparkling-child/img/ORNL%20Two-line_green.svg"
+                "path": "images/user_logos/Oak_Ridge_National_Laboratory.png"
             }
         },
         {
@@ -26,7 +26,7 @@
             },
             "properties": {
                 "name": "IRFM cadarache France",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/LOGO_CEA_ORIGINAL.svg/768px-LOGO_CEA_ORIGINAL.svg.png"
+                "path": "images/user_logos/IRFM_cadarache_France.png"
             }
         },
         {
@@ -40,7 +40,7 @@
             },
             "properties": {
                 "name": "LSPM Villetaneuse France",
-                "url": "https://upload.wikimedia.org/wikipedia/en/thumb/2/2c/CNRS.svg/316px-CNRS.svg.png"
+                "path": "images/user_logos/LSPM_Villetaneuse_France.png"
             }
         },
         {
@@ -54,7 +54,7 @@
             },
             "properties": {
                 "name": "MIT Cambridge, MA USA",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/MIT_logo.svg/321px-MIT_logo.svg.png"
+                "path": "images/user_logos/MIT_Cambridge_MA_USA.png"
             }
         },
         {
@@ -68,7 +68,7 @@
             },
             "properties": {
                 "name": "Thea Energy USA",
-                "url": "https://thea.energy/wp-content/uploads/2023/03/logo.svg"
+                "path": "images/user_logos/Thea_Energy_USA.png"
             }
         },
         {
@@ -82,7 +82,7 @@
             },
             "properties": {
                 "name": "Commonwealth Fusion Systems Devens, MA USA",
-                "url": "https://api-kla-prod.2ambh.com/v1/images/10348/thumb/w950"
+                "path": "images/user_logos/Commonwealth_Fusion_Systems Devens_MA_USA.png"
             }
         },
         {
@@ -96,7 +96,7 @@
             },
             "properties": {
                 "name": "University Wisconsin Madison USA",
-                "url": "https://brand.wisc.edu/content/uploads/2023/09/vert-w-crest-logo-web-digital-color.png"
+                "path": "images/user_logos/University_Wisconsin_Madison_USA.png"
             }
         },
         {
@@ -110,7 +110,7 @@
             },
             "properties": {
                 "name": "Marathon Fusion USA",
-                "url": "https://media.licdn.com/dms/image/D560BAQFyuUtXrkDBGg/company-logo_200_200/0/1707489994810/marathon_fusion_logo?e=1721865600&v=beta&t=HoM15_eB3GxED9wJ_21j057IVLQaFfU--iGjbBOpK4U"
+                "path": "images/user_logos/Marathon_Fusion_USA.png"
             }
         },
         {
@@ -124,7 +124,7 @@
             },
             "properties": {
                 "name": "University San Diego",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Seal_of_the_University_of_California%2C_San_Diego.svg/1920px-Seal_of_the_University_of_California%2C_San_Diego.svg.png"
+                "path": "images/user_logos/University_San_Diego.png"
             }
         },
         {
@@ -138,7 +138,7 @@
             },
             "properties": {
                 "name": "MEPhI moscow Russia",
-                "url": "https://cdn.freelogovectors.net/wp-content/uploads/2021/04/national-research-nuclear-university-logo-freelogovectors.net_.png"
+                "path": "images/user_logos/MEPhI_moscow_Russia.png"
             }
         },
         {
@@ -152,7 +152,7 @@
             },
             "properties": {
                 "name": "ITER organization France",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/ITER_Logo_NoonYellow.svg/500px-ITER_Logo_NoonYellow.svg.png"
+                "path": "images/user_logos/ITER_organization_France.png"
             }
         },
         {
@@ -166,7 +166,7 @@
             },
             "properties": {
                 "name": "UKAEA UK",
-                "url": "https://upload.wikimedia.org/wikipedia/en/thumb/9/95/UK_Atomic_Energy_Authority_logo.svg/1920px-UK_Atomic_Energy_Authority_logo.png"
+                "path": "images/user_logos/UKAEA_UK.png"
             }
         },
         {
@@ -180,7 +180,7 @@
             },
             "properties": {
                 "name": "digiLab UK",
-                "url": "https://creativedestructionlab.com/wp-content/uploads/2023/05/digilab-logo.png"
+                "path": "images/user_logos/digiLab_UK.png"
             }
         },
         {
@@ -193,8 +193,8 @@
                 ]
             },
             "properties": {
-                "name": "cranfield University UK",
-                "url": "https://resiliencefirst.org/sites/default/files/2022-02/cranfield-university-vector-logo-small.png"
+                "name": "Cranfield University UK",
+                "path": "images/user_logos/Cranfield_University_UK.png"
             }
         },
         {
@@ -208,7 +208,7 @@
             },
             "properties": {
                 "name": "Politecnico di Torino",
-                "url": "https://upload.wikimedia.org/wikipedia/it/thumb/4/47/Logo_PoliTo_dal_2021_blu.png/2880px-Logo_PoliTo_dal_2021_blu.png"
+                "path": "images/user_logos/Politecnico_di_Torino.png"
             }
         },
         {
@@ -221,8 +221,8 @@
                 ]
             },
             "properties": {
-                "name": "University of Beijing",
-                "url": "https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Beihang_University_logo.svg/1920px-Beihang_University_logo.svg.png"
+                "name": "Beihang University",
+                "path": "images/user_logos/Beihang_University.png"
             }
         },
         {
@@ -235,8 +235,8 @@
                 ]
             },
             "properties": {
-                "name": "University of Hefei China",
-                "url": "https://media.licdn.com/dms/image/C510BAQFbUnIQqa62aA/company-logo_200_200/0/1630599485875/caships_logo?e=1721865600&v=beta&t=wKPCqctsafbewtZpD0Mk1snTab681zYrQaRoSTSZzBI"
+                "name": "Institute of Plasma Physics, Chinese Academy of Sciences",
+                "path": "images/user_logos/Institute_of_plasma_physics_Chinese_academy_of_sciences.png"
             }
         },
         {
@@ -250,7 +250,7 @@
             },
             "properties": {
                 "name": "Institut Jožef Stefan",
-                "url": "https://www.concordia-h2020.eu/wp-content/uploads/2019/02/IJS_logo.jpg"
+                "path": "images/user_logos/Institut_Jožef_Stefan.png"
             }
         },
         {
@@ -264,7 +264,7 @@
             },
             "properties": {
                 "name": "Kyoto Fusioneering",
-                "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEBUXW9DSGrDVhY80Fr6--hOywnBUnAwsb4ZTc9_2liw&s"
+                "path": "images/user_logos/Kyoto_Fusioneering.png"
             }
         },
         {
@@ -278,7 +278,7 @@
             },
             "properties": {
                 "name": "ENI",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/b/b1/Eni_logo_2023.svg"
+                "path": "images/user_logos/ENI.png"
             }
         },
         {
@@ -292,7 +292,7 @@
             },
             "properties": {
                 "name": "ENEA",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ENEA_logo.svg/358px-ENEA_logo.svg.png"
+                "path": "images/user_logos/ENEA.png"
             }
         },
         {
@@ -306,7 +306,7 @@
             },
             "properties": {
                 "name": "Zap Energy",
-                "url": "https://media.licdn.com/dms/image/D560BAQE_5zg3TLdwog/company-logo_100_100/0/1717518748719/zap_energy_logo?e=1726704000&v=beta&t=yY1E-I2l8Hc5nRBIKli4QtBCXn6f_P1UrEHP9_wnK5Q"
+                "path": "images/user_logos/Zap_Energy.png"
             }
         },
         {
@@ -320,7 +320,7 @@
             },
             "properties": {
                 "name": "Frazer Nash",
-                "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNsqJ50aMZ340ixHtKTjQ11ez8ylmVQM2sGA&s"
+                "path": "images/user_logos/Frazer_Nash.png"
             }
         },
         {
@@ -334,7 +334,7 @@
             },
             "properties": {
                 "name": "University of Surrey",
-                "url": "https://www.studyacrossthepond.com/sites/default/files/University%20of%20Surrey%20logo%202107x780px.png"
+                "path": "images/user_logos/University_of_Surrey.png"
             }
         },
         {
@@ -348,7 +348,7 @@
             },
             "properties": {
                 "name": "University of Tsukuba",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Logo_of_University_of_Tsukuba.svg/220px-Logo_of_University_of_Tsukuba.svg.png"
+                "path": "images/user_logos/Logo_of_University_of_Tsukuba.png"
             }
         }
     ]
