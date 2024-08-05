@@ -24,24 +24,54 @@ And/or contribute to the source code by:
 Contributing to the code
 ------------------------
 
+For complete information on contributions with GitHub see this guide on `GitHub <https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project>`_.
+
 .. tip::
 
    If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/festim-dev/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
 
    These issues are usually relatively easy to tackle and perfect for newcomers.
 
-1) `Fork the repository <https://github.com/festim-dev/FESTIM/fork>`_
+#. `Fork the repository <https://github.com/festim-dev/FESTIM/fork>`_
 
-By forking the repository, you create a copy where you can safely make changes.
+   By forking the repository, you create a copy where you can safely make changes.
 
-2) Make your changes
-3) `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
-4) Wait for a :ref:`maintainer<Maintainers>` to review your PR
+#. Clone your fork
 
-Before merging your changes, they have to be reviewed. We ensure the changes don't break anything during the review and eventually propose/request improvements.
-The time before the review will depend on the maintainers' availability.
+   .. code-block:: bash
 
-5) When everything is in order, the maintainers will merge your PR!
+      git clone https://github.com/[your_username]/FESTIM
+
+   Remember to replace ``[your_username]`` with your GitHub username.
+
+#. Make your changes
+
+   Commit your changes locally and push them to your fork.
+
+   .. code-block:: bash
+
+      git add [modified files]
+      git commit -m "Your commit message"
+      git push
+
+#. Optional: Test your code
+
+   If you are adding new features or fixing bugs, it is important to test your code.
+   See :ref:`Test suite` for more information.
+
+#. Optional: Build the documentation
+
+   You may want to build the documentation to see if your changes are correctly reflected or if you are updating the docs.
+   See :ref:`Documentation guide` for more information.
+
+#. `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
+
+#. Wait for a :ref:`maintainer<Maintainers>` to review your PR
+
+   Before merging your changes, they have to be reviewed. We ensure the changes don't break anything during the review and eventually propose/request improvements.
+   The time before the review will depend on the maintainers' availability.
+
+#. When everything is in order, the maintainers will merge your PR!
 
 -----------
 Maintainers
@@ -68,6 +98,8 @@ It is also very useful to catch bugs that developers could have missed.
 Click `here <https://www.atlassian.com/continuous-delivery/continuous-integration>`_ for more information on CI.
 
 All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
+
+You need to have the right dependencies installed to test your code (see :ref:`installation<Installation>`).
 
 .. note::
 
