@@ -2,6 +2,7 @@ import festim
 from festim.h_transport_problem import HTransportProblem
 from fenics import *
 import numpy as np
+import sympy as sp
 import warnings
 
 
@@ -25,7 +26,7 @@ class Simulation:
             None.
         settings (festim.Settings, optional): The model's settings.
             Defaults to None.
-        temperature (festim.Temperature, optional): The model's
+        temperature (int, float, sympy.Expr, festim.Temperature, optional): The model's
             temperature. Can be an expression or a heat transfer model.
             Defaults to None.
         initial_conditions (list of festim.InitialCondition, optional):
@@ -153,15 +154,32 @@ class Simulation:
     def exports(self, value):
         if value is None:
             self._exports = festim.Exports([])
+        elif isinstance(value, (festim.Export, festim.DerivedQuantities)):
+            self._exports = festim.Exports([value])
         elif isinstance(value, festim.Exports):
             self._exports = value
         elif isinstance(value, list):
             self._exports = festim.Exports(value)
-        elif isinstance(value, festim.Export):
-            self._exports = festim.Exports([value])
         else:
             raise TypeError(
-                "accepted types for exports are list, festim.Export or festim.Exports"
+                "accepted types for exports are list, festim.DerivedQuantities, festim.Export or festim.Exports"
+            )
+
+    @property
+    def T(self):
+        return self._T
+
+    @T.setter
+    def T(self, value):
+        if isinstance(value, festim.Temperature):
+            self._T = value
+        elif value is None:
+            self._T = value
+        elif isinstance(value, (int, float, sp.Expr)):
+            self._T = festim.Temperature(value)
+        else:
+            raise TypeError(
+                "accepted types for T attribute are int, float, sympy.Expr or festim.Temperature"
             )
 
     def attribute_source_terms(self):
@@ -188,6 +206,12 @@ class Simulation:
 
         # set sources
         for source in self.sources:
+            if source.field == "T" and not isinstance(
+                self.T, festim.HeatTransferProblem
+            ):  # check that there is not a source defined in T as the same time as a festim.Temperature
+                raise TypeError(
+                    "Heat transfer sources can only be used with HeatTransferProblem"
+                )
             if isinstance(source, festim.RadioactiveDecay) and source.field == "all":
                 # assign source to each of the unique festim.Concentration
                 # objects in field_to_object
@@ -197,10 +221,8 @@ class Simulation:
             else:
                 field_to_object[source.field].sources.append(source)
 
-    def attribute_boundary_conditions(self):
-        """Assigns boundary_conditions to mobile and T"""
-        self.T.boundary_conditions = []
-        self.h_transport_problem.boundary_conditions = []
+    def check_boundary_conditions(self):
+        """Runs a series of checks on the BCs and raise errors accordingly"""
 
         valid_fields = (
             ["T", 0, "0"]  # temperature and mobile concentration
@@ -208,33 +230,65 @@ class Simulation:
             + [i + 1 for i, _ in enumerate(self.traps)]
         )
 
-        # collect all DirichletBCs
-        dc_bcs = [
-            bc for bc in self.boundary_conditions if isinstance(bc, festim.DirichletBC)
+        # collect all DirichletBCs and SurfaceKinetics objects
+        dc_sk_bcs = [
+            bc
+            for bc in self.boundary_conditions
+            if isinstance(bc, (festim.DirichletBC, festim.SurfaceKinetics))
         ]
 
         for bc in self.boundary_conditions:
             if bc.field not in valid_fields:
                 raise ValueError(f"{bc.field} is not a valid field for BC")
+
+            # check SurfaceKinetics in 1D simulations
+            if (
+                isinstance(bc, festim.SurfaceKinetics)
+                and self.mesh.mesh.topology().dim() != 1
+            ):
+                raise ValueError("SurfaceKinetics can only be used in 1D simulations")
+
+            # check that there is not a Temperature defined at the same time as a boundary condition in T
+            if bc.field == "T" and not isinstance(self.T, festim.HeatTransferProblem):
+                raise TypeError(
+                    "Heat transfer boundary conditions can only be used with HeatTransferProblem"
+                )
+
+            # checks that DirichletBC or SurfaceKinetics is not set with another bc on the same surface
+            # iterate through all BCs
+            for dc_sk_bc in dc_sk_bcs:
+                if (
+                    bc == dc_sk_bc or bc.field != dc_sk_bc.field
+                ):  # skip if the same BC or different fields
+                    continue
+
+                # check if BCs share the same surfaces using the set().isdisjoint() method
+                # that returns True if the first set has no elements in common with other containers
+                if not set(bc.surfaces).isdisjoint(dc_sk_bc.surfaces):
+                    # convert lists of surfaces to sets and obtain their intersection
+                    intersection = set(bc.surfaces) & set(dc_sk_bc.surfaces)
+
+                    # check the bc type for the export message
+                    bc_type = (
+                        "DirichletBC"
+                        if isinstance(dc_sk_bc, festim.DirichletBC)
+                        else "SurfaceKinetics"
+                    )
+                    msg = f"{bc_type} is simultaneously set with another boundary condition "
+                    msg += f"on surfaces {intersection} for field {dc_sk_bc.field}"
+                    raise ValueError(msg)
+
+    def attribute_boundary_conditions(self):
+        """Assigns boundary_conditions to mobile and T"""
+        self.T.boundary_conditions = []
+        self.h_transport_problem.boundary_conditions = []
+        self.check_boundary_conditions()
+
+        for bc in self.boundary_conditions:
             if bc.field == "T":
                 self.T.boundary_conditions.append(bc)
             else:
                 self.h_transport_problem.boundary_conditions.append(bc)
-            # checks that DirichletBC is not set with another bc on the same surface
-            # iterate through all BCs
-            for dc_bc in dc_bcs:
-                if (
-                    bc == dc_bc or bc.field != dc_bc.field
-                ):  # skip if the same BC or different fields
-                    continue
-                # check if BCs share the same surfaces using the set().isdisjoint() method
-                # that returns True if the first set has no elements in common with other containers
-                if not set(bc.surfaces).isdisjoint(dc_bc.surfaces):
-                    # convert lists of surfaces to sets and obtain their intersection
-                    intersection = set(bc.surfaces) & set(dc_bc.surfaces)
-                    raise ValueError(
-                        f"A DirichletBC is simultaneously set with another boundary condition on surfaces {intersection} for field {dc_bc.field}"
-                    )
 
     def initialise(self):
         """Initialise the model. Defines markers, create the suitable function
@@ -251,8 +305,14 @@ class Simulation:
         # check that dt attribute is None if the sim is steady state
         if not self.settings.transient and self.dt is not None:
             raise AttributeError("dt must be None in steady state simulations")
+        if self.settings.transient and self.settings.final_time is None:
+            raise AttributeError(
+                "final_time argument must be provided to settings in transient simulations"
+            )
         if self.settings.transient and self.dt is None:
             raise AttributeError("dt must be provided in transient simulations")
+        if not self.T:
+            raise AttributeError("Temperature is not defined")
 
         # initialise dt
         if self.settings.transient:
@@ -299,31 +359,28 @@ class Simulation:
 
         # raise warning if the derived quantities don't match the type of mesh
         # eg. SurfaceFlux is used with cylindrical mesh
-        all_types_quantities = [
-            festim.MaximumSurface,
-            festim.MinimumSurface,
-            festim.MaximumVolume,
-            festim.MinimumVolume,
-            festim.PointValue,
-        ]  # these quantities can be used with any mesh
-        allowed_quantities = {
-            "cartesian": [
-                festim.SurfaceFlux,
-                festim.AverageSurface,
-                festim.AverageVolume,
-            ]
-            + all_types_quantities,
-            "cylindrical": [festim.SurfaceFluxCylindrical] + all_types_quantities,
-            "spherical": [festim.SurfaceFluxSpherical] + all_types_quantities,
-        }
-
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
-                for q in export.derived_quantities:
-                    if not isinstance(q, tuple(allowed_quantities[self.mesh.type])):
+                for q in export:
+                    if self.mesh.type not in q.allowed_meshes:
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"
                         )
+
+                    if isinstance(q, festim.AdsorbedHydrogen):
+                        # check that festim.AdsorbedHydrogen is defined together with
+                        # festim.SurfaceKinetics on the same surface
+                        surf_kin_present = any(
+                            q.surface in bc.surfaces
+                            for bc in self.boundary_conditions
+                            if isinstance(bc, festim.SurfaceKinetics)
+                        )
+
+                        if not surf_kin_present:
+                            raise AttributeError(
+                                f"SurfaceKinetics boundary condition must be defined on surface {q.surface} to export data with festim.AdsorbedHydrogen"
+                            )
+
         self.exports.initialise_derived_quantities(
             self.mesh.dx, self.mesh.ds, self.materials
         )
@@ -341,6 +398,13 @@ class Simulation:
                         warnings.warn(msg)
                         self.dt.milestones.append(time)
                 self.dt.milestones.sort()
+
+            # set Soret to True for SurfaceFlux quantities
+            if isinstance(export, festim.DerivedQuantities):
+                for q in export:
+                    if isinstance(q, festim.SurfaceFlux):
+                        q.soret = self.settings.soret
+                        q.T = self.T.T
 
     def run(self, completion_tone=False):
         """Runs the model.
@@ -460,6 +524,16 @@ class Simulation:
                 [self.mobile.post_processing_solution]
                 + [trap.post_processing_solution for trap in self.traps]
             ),
+            # dictionary {"post_processing_solutions": bc.post_processing_solutions, "surfaces": bc.surfaces}
+            # for each SurfaceKinetics boundary condition
+            "adsorbed": [
+                {
+                    "post_processing_solutions": bc.post_processing_solutions,
+                    "surfaces": bc.surfaces,
+                }
+                for bc in self.boundary_conditions
+                if isinstance(bc, festim.SurfaceKinetics)
+            ],
         }
         for trap in self.traps:
             label_to_function[trap.id] = trap.post_processing_solution

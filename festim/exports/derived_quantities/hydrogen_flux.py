@@ -8,7 +8,7 @@ class HydrogenFlux(SurfaceFlux):
     Args:
         surface (int): the surface id
 
-    Attribtutes
+    Attributes:
         field (str): the hydrogen solute field
         surface (int): the surface id
         title (str): the title of the derived quantity
@@ -17,7 +17,7 @@ class HydrogenFlux(SurfaceFlux):
         function (dolfin.function.function.Function): the solution function of
             the hydrogen solute field
 
-    Notes:
+    .. note::
         units are in H/m2/s in 1D, H/m/s in 2D and H/s in 3D domains
 
     """

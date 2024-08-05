@@ -3,7 +3,6 @@ User's Guide
 ============
 
 .. toctree::
-   :numbered:
    :maxdepth: 1
 
    beginners_guide
@@ -17,5 +16,6 @@ User's Guide
    traps
    settings
    stepsize
+   newton_solver
    export_post_processing
    troubleshooting

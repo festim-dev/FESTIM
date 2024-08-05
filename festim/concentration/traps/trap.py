@@ -20,7 +20,7 @@ class Trap(Concentration):
     Raises:
         ValueError: if duplicates are found in materials
 
-    Notes:
+    .. note::
         Should multiple traps in muliple materials be used, to save on
         dof's, traps can be conglomerated and described in lists in the
         format::

@@ -11,7 +11,7 @@ class TotalVolume(VolumeQuantity):
         field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
 
-    Attribtutes
+    Attributes:
         field (str, int): the field ("solute", 0, 1, "T", "retention")
         volume (int): the volume id
         export_unit (str): the unit of the derived quantity for exporting
@@ -21,7 +21,7 @@ class TotalVolume(VolumeQuantity):
         function (dolfin.function.function.Function): the solution function of
             the hydrogen solute field
 
-    Notes:
+    .. note::
         units are in H/m2 in 1D, H/m in 2D and H in 3D domains for hydrogen
         concentration and K m in 1D, K m2 in 2D and K m3 in 3D domains for temperature
 
@@ -31,9 +31,17 @@ class TotalVolume(VolumeQuantity):
         super().__init__(field=field, volume=volume)
 
     @property
+    def allowed_meshes(self):
+        return ["cartesian"]
+
+    @property
     def export_unit(self):
         # obtain domain dimension
-        dim = self.function.function_space().mesh().topology().dim()
+        try:
+            dim = self.function.function_space().mesh().topology().dim()
+        except AttributeError:
+            dim = self.dx._domain._topological_dimension
+            # TODO we could simply do that all the time
         # return unit depending on field and dimension of domain
         if self.field == "T":
             return f"K m{dim}".replace("1", "")

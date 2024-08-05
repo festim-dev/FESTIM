@@ -21,13 +21,17 @@ class AverageSurface(SurfaceQuantity):
         function (dolfin.function.function.Function): the solution function of
             the field
 
-    Notes:
+    .. note::
         Units are in H/m3 for hydrogen concentration and K for temperature
 
     """
 
     def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
+
+    @property
+    def allowed_meshes(self):
+        return ["cartesian"]
 
     @property
     def title(self):

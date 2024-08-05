@@ -11,7 +11,7 @@ class SurfaceFlux(SurfaceQuantity):
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
 
-    Attribtutes
+    Attributes:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
         export_unit (str): the unit of the derived quantity in the export file
@@ -21,7 +21,7 @@ class SurfaceFlux(SurfaceQuantity):
         function (dolfin.function.function.Function): the solution function of
             the field
 
-    Notes:
+    .. note::
         Object to compute the flux J of a field u through a surface
         J = integral(+prop * grad(u) . n ds)
         where prop is the property of the field (D, thermal conductivity, etc)
@@ -35,6 +35,11 @@ class SurfaceFlux(SurfaceQuantity):
 
     def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
+        self.soret = None
+
+    @property
+    def allowed_meshes(self):
+        return ["cartesian"]
 
     @property
     def export_unit(self):
@@ -70,11 +75,11 @@ class SurfaceFlux(SurfaceQuantity):
         }
         return field_to_prop[self.field]
 
-    def compute(self, soret=False):
+    def compute(self):
         flux = f.assemble(
             self.prop * f.dot(f.grad(self.function), self.n) * self.ds(self.surface)
         )
-        if soret and self.field in [0, "0", "solute"]:
+        if self.soret and self.field in [0, "0", "solute"]:
             flux += f.assemble(
                 self.prop
                 * self.function
@@ -96,7 +101,8 @@ class SurfaceFluxCylindrical(SurfaceFlux):
     ds is the surface measure in cylindrical coordinates.
     ds = r dr dtheta or ds = r dz dtheta
 
-    Note: for particle fluxes J is given in H/s, for heat fluxes J is given in W
+    .. note::
+        For particle fluxes J is given in H/s, for heat fluxes J is given in W
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
@@ -109,6 +115,10 @@ class SurfaceFluxCylindrical(SurfaceFlux):
         super().__init__(field=field, surface=surface)
         self.r = None
         self.azimuth_range = azimuth_range
+
+    @property
+    def allowed_meshes(self):
+        return ["cylindrical"]
 
     @property
     def title(self):
@@ -135,11 +145,7 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             raise ValueError("Azimuthal range must be between 0 and pi")
         self._azimuth_range = value
 
-    def compute(self, soret=False):
-        if soret:
-            raise NotImplementedError(
-                "Soret effect not implemented for cylindrical coordinates"
-            )
+    def compute(self):
 
         if self.r is None:
             mesh = (
@@ -158,6 +164,16 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
+        if self.soret and self.field in [0, "0", "solute"]:
+            flux += f.assemble(
+                self.prop
+                * self.r
+                * self.function
+                * self.Q
+                / (k_B * self.T**2)
+                * f.dot(f.grad(self.T), self.n)
+                * self.ds(self.surface)
+            )
         flux *= self.azimuth_range[1] - self.azimuth_range[0]
         return flux
 
@@ -172,7 +188,8 @@ class SurfaceFluxSpherical(SurfaceFlux):
     ds is the surface measure in spherical coordinates.
     ds = r^2 sin(theta) dtheta dphi
 
-    Note: for particle fluxes J is given in H/s, for heat fluxes J is given in W
+    .. note::
+        For particle fluxes J is given in H/s, for heat fluxes J is given in W
 
     Args:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
@@ -190,6 +207,10 @@ class SurfaceFluxSpherical(SurfaceFlux):
         self.r = None
         self.polar_range = polar_range
         self.azimuth_range = azimuth_range
+
+    @property
+    def allowed_meshes(self):
+        return ["spherical"]
 
     @property
     def title(self):
@@ -226,11 +247,7 @@ class SurfaceFluxSpherical(SurfaceFlux):
             raise ValueError("Azimuthal range must be between 0 and pi")
         self._azimuth_range = value
 
-    def compute(self, soret=False):
-        if soret:
-            raise NotImplementedError(
-                "Soret effect not implemented for spherical coordinates"
-            )
+    def compute(self):
 
         if self.r is None:
             mesh = (
@@ -248,6 +265,16 @@ class SurfaceFluxSpherical(SurfaceFlux):
             * f.dot(f.grad(self.function), self.n)
             * self.ds(self.surface)
         )
+        if self.soret and self.field in [0, "0", "solute"]:
+            flux += f.assemble(
+                self.prop
+                * self.r**2
+                * self.function
+                * self.Q
+                / (k_B * self.T**2)
+                * f.dot(f.grad(self.T), self.n)
+                * self.ds(self.surface)
+            )
         flux *= (self.polar_range[1] - self.polar_range[0]) * (
             -np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0])
         )

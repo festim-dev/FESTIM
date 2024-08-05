@@ -56,6 +56,7 @@ from .boundary_conditions.fluxes.dissociation_flux import DissociationFlux
 from .boundary_conditions.fluxes.convective_flux import ConvectiveFlux
 from .boundary_conditions.fluxes.flux_custom import CustomFlux
 from .boundary_conditions.fluxes.mass_flux import MassFlux
+from .boundary_conditions.fluxes.surface_kinetics import SurfaceKinetics
 
 from .exports.exports import Exports
 from .exports.export import Export
@@ -91,6 +92,7 @@ from .exports.derived_quantities.average_surface import (
     AverageSurfaceSpherical,
 )
 from .exports.derived_quantities.point_value import PointValue
+from .exports.derived_quantities.adsorbed_hydrogen import AdsorbedHydrogen
 
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
@@ -110,6 +112,7 @@ from .materials.materials import Materials
 from .concentration.concentration import Concentration
 from .initial_condition import InitialCondition
 from .concentration.mobile import Mobile
+from .nonlinear_problem import Problem
 from .concentration.theta import Theta
 
 from .concentration.traps.trap import Trap

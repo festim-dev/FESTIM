@@ -1,4 +1,4 @@
-.. _sources:
+.. _sources_guide:
 
 =======
 Sources
@@ -10,7 +10,7 @@ Volumetric sources
 
 Volumetric sources can be set in a simulation by using the :class:`festim.Source` class.
 
-.. code:: python
+.. testcode::
 
     import festim as F
 
@@ -28,7 +28,7 @@ Implantation flux
 
 Hydrogen implanted in a material can be simulated by a Gaussian-shaped volumetric source with the :class:`festim.ImplantationFlux` class.
 
-.. code:: python
+.. testcode::
 
     import festim as F
 
@@ -51,7 +51,7 @@ Radioactive decay
 
 Radioactive decay can be simulated by a volumetric source with the :class:`festim.RadioactiveDecay` class.
 
-.. code:: python
+.. testcode::
 
     import festim as F
 
@@ -61,6 +61,6 @@ Radioactive decay can be simulated by a volumetric source with the :class:`festi
         F.RadioactiveDecay(
             decay_constant=1.78e-9,
             volume=1,
-            fields="all",
+            field="all",
             ),
         ]

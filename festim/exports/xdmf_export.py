@@ -1,6 +1,7 @@
 import warnings
 from festim import Export
 import fenics as f
+import numpy as np
 
 
 field_to_label = {
@@ -151,7 +152,7 @@ class XDMFExport(Export):
         Returns:
             bool: True if export should be exported, else False
         """
-        if self.mode == "last" and t >= final_time:
+        if self.mode == "last" and np.isclose(t, final_time, atol=0):
             return True
         elif isinstance(self.mode, int):
             if nb_iterations % self.mode == 0:
