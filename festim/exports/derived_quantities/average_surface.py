@@ -87,8 +87,6 @@ class AverageSurfaceCylindrical(AverageSurface):
             )  # get the mesh from the function
             rthetaz = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
             self.r = rthetaz[0]  # only care about r here
-            print(type(self.r))
-            quit()
 
         # dS_z = r dr dtheta , assuming axisymmetry dS_z = theta r dr
         # dS_r = r dz dtheta , assuming axisymmetry dS_r = theta r dz
