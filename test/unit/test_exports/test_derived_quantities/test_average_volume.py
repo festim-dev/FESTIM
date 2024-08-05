@@ -69,7 +69,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
     z0 = 0
     z1 = z0 + height
 
-    mesh_fenics = f.RectangleMesh(f.Point(r0, z0), f.Point(r1, z1), 50, 50)
+    mesh_fenics = f.RectangleMesh(f.Point(r0, z0), f.Point(r1, z1), 10, 10)
 
     volume_markers = f.MeshFunction("size_t", mesh_fenics, mesh_fenics.topology().dim())
     volume_markers.set_all(1)
