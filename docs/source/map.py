@@ -8,6 +8,7 @@ from io import BytesIO
 
 LOGO_HEIGHT = 60
 
+
 def generate_map(clustered=True, draggable=False):
     # Load GeoJSON data
     with open("map.json") as f:
