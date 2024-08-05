@@ -159,29 +159,29 @@ def test_average_surface_cylindrical_title_no_units_solute():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceCylindrical with a solute field without units"""
 
-    my_h_flux = AverageSurfaceCylindrical("solute", 4)
-    assert my_h_flux.title == "Average solute surface 4"
+    my_export = AverageSurfaceCylindrical("solute", 4)
+    assert my_export.title == "Average solute surface 4"
 
 
 def test_average_surface_cylindrical_title_no_units_temperature():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceCylindrical with a T field without units"""
 
-    my_heat_flux = AverageSurfaceCylindrical("T", 5)
-    assert my_heat_flux.title == "Average T surface 5"
+    my_export = AverageSurfaceCylindrical("T", 5)
+    assert my_export.title == "Average T surface 5"
 
 
 def test_average_surface_spherical_title_no_units_solute():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceSpherical with a solute field without units"""
 
-    my_h_flux = AverageSurfaceSpherical("solute", 6)
-    assert my_h_flux.title == "Average solute surface 6"
+    my_export = AverageSurfaceSpherical("solute", 6)
+    assert my_export.title == "Average solute surface 6"
 
 
 def test_average_surface_spherical_title_no_units_temperature():
     """A simple test to check that the title is set correctly in
     festim.AverageSurfaceSpherical with a T field without units"""
 
-    my_heat_flux = AverageSurfaceSpherical("T", 9)
-    assert my_heat_flux.title == "Average T surface 9"
+    my_export = AverageSurfaceSpherical("T", 9)
+    assert my_export.title == "Average T surface 9"
