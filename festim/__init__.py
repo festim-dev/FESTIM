@@ -17,6 +17,7 @@ R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 from .helpers import as_fenics_constant
+from .problem import ProblemBase
 
 from .boundary_conditions.dirichlet_bc import (
     DirichletBCBase,

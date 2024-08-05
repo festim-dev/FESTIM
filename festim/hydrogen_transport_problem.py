@@ -1,7 +1,13 @@
-from .problem import *
+import dolfinx
+from dolfinx import fem
+import basix
+import ufl
+from mpi4py import MPI
+import numpy as np
+import festim as F
 
 
-class HydrogenTransportProblem(ProblemBase):
+class HydrogenTransportProblem(F.ProblemBase):
     """
     Hydrogen Transport Problem.
 

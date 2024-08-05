@@ -1,7 +1,11 @@
-from .problem import *
+from dolfinx import fem
+from dolfinx.nls.petsc import NewtonSolver
+import basix
+import ufl
+from mpi4py import MPI
+import festim as F
 
-
-class HeatTransferProblem(ProblemBase):
+class HeatTransferProblem(F.ProblemBase):
     def __init__(
         self,
         mesh=None,

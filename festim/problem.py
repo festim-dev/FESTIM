@@ -1,7 +1,5 @@
-import dolfinx
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
-import basix
 import ufl
 from mpi4py import MPI
 import numpy as np
