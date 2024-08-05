@@ -24,6 +24,8 @@ And/or contribute to the source code by:
 Contributing to the code
 ------------------------
 
+For complete information on contributions with GitHub see this guide on `GitHub <https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project>`_.
+
 .. tip::
 
    If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/festim-dev/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
@@ -51,6 +53,16 @@ Contributing to the code
       git add [modified files]
       git commit -m "Your commit message"
       git push
+
+#. Optional: Test your code
+
+   If you are adding new features or fixing bugs, it is important to test your code.
+   See :ref:`Test suite` for more information.
+
+#. Optional: Build the documentation
+
+   You may want to build the documentation to see if your changes are correctly reflected or if you are updating the docs.
+   See :ref:`Documentation guide` for more information.
 
 #. `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
 
@@ -86,6 +98,8 @@ It is also very useful to catch bugs that developers could have missed.
 Click `here <https://www.atlassian.com/continuous-delivery/continuous-integration>`_ for more information on CI.
 
 All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
+
+You need to have the right dependencies installed to test your code (see :ref:`installation<Installation>`).
 
 .. note::
 
