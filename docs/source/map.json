@@ -1,7 +1,7 @@
 {
     "type": "FeatureCollection",
     "features": [
-         {
+        {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
@@ -348,7 +348,7 @@
             },
             "properties": {
                 "name": "University of Tsukuba",
-                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Logo_of_University_of_Tsukuba.svg/220px-Logo_of_University_of_Tsukuba.svg.png"
+                "path": "images/user_logos/Logo_of_University_of_Tsukuba.png"
             }
         }
     ]
