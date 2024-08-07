@@ -16,7 +16,7 @@ FESTIM is under version control with `git <https://git-scm.com/>`_. Even though 
 Where can I find help?
 ----------------------
 
-If you're having an issue, the best way to find help is to join the `FESTIM discourse <https://festim.discourse.group>`_. Engage in discussions, ask questions, and connect with other users. This collaborative space allows you to share your experiences and seek assistance.
+If you're having an issue, the best way to find help is to join the `FESTIM discourse <https://festim.discourse.group>`_. Engage in discussions, ask questions, and connect with other users. This collaborative space allows you to share your experiences and seek assistance. `Slack <https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g>`_ is also a good place to discuss.
 
 
 --------------
