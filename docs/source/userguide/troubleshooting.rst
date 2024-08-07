@@ -16,7 +16,7 @@ Although FESTIM is designed to be easy to use, users may encounter some common i
 We are simply solving a set of equations using the finite element method, and are, therefore, subject to the same issues that other FEM codes face.
 
 ^^^^^^^^^^^^^^^^^^^^^^^
-Solver doesn't converge
+Solver didn't converge
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The first thing to check is the details of the Newton solver iterations.
