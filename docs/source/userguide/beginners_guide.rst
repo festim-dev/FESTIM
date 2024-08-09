@@ -14,7 +14,7 @@ FESTIM is under version control with `git <https://git-scm.com/>`_. Even though 
 
 FESTIM can be run in parallel on N cores using the command: 
 
-.. testcode::
+.. code::
     
     mpirun -np N python3 your_FESTIM_script.py.
 
