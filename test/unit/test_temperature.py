@@ -262,3 +262,25 @@ def test_temperature_from_xdmf(tmpdir):
     temperature = festim.TemperatureFromXDMF(T_file, "T")
 
     assert temperature.is_steady_state()
+
+
+def test_heat_transfer_default_solver():
+    """
+    Tests that the default parameters for the Newton solver
+    of HeatTransferProblem are correct
+    """
+
+    heat_solver = festim.HeatTransferProblem()
+    heat_solver.define_newton_solver()
+
+    default_settings = {
+        "absolute_tolerance": 1e-3,
+        "relative_tolerance": 1e-10,
+        "maximum_iterations": 30,
+        "linear_solver": None,
+        "preconditioner": "default",
+        "error_on_nonconvergence": True,
+    }
+
+    for key in default_settings.keys():
+        assert default_settings[key] == heat_solver.newton_solver.parameters[key]
