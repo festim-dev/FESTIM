@@ -223,6 +223,7 @@ class HeatTransferProblem(festim.Temperature):
     def define_newton_solver(self):
         """Creates the Newton solver and sets its parameters"""
         self.newton_solver = f.NewtonSolver(f.MPI.comm_world)
+        self.newton_solver.parameters["error_on_nonconvergence"] = True
         self.newton_solver.parameters["absolute_tolerance"] = self.absolute_tolerance
         self.newton_solver.parameters["relative_tolerance"] = self.relative_tolerance
         self.newton_solver.parameters["maximum_iterations"] = self.maximum_iterations
