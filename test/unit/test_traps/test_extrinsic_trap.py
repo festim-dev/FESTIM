@@ -79,12 +79,31 @@ class TestExtrinsicTrap:
         print(self.my_trap.form_density)
         assert self.my_trap.form_density.equals(expected_form)
 
+    def test_default_solver_parameters(self):
+        """
+        A test to check that the default parameters for the Newton solver
+        of ExtrinsicTrap are correct
+        """
+        self.my_trap.define_newton_solver()
+
+        default_settings = {
+            "absolute_tolerance": 1e0,
+            "relative_tolerance": 1e-10,
+            "maximum_iterations": 30,
+            "linear_solver": None,
+            "preconditioner": "default",
+            "error_on_nonconvergence": True,
+        }
+
+        for key in default_settings.keys():
+            assert default_settings[key] == self.my_trap.newton_solver.parameters[key]
+
     def test_solver_parameters(self):
         """
         A test to ensure the extrinsic trap solver parameters can be accessed
         """
-        self.my_trap.absolute_tolerance = 1
-        self.my_trap.relative_tolerance = 1
+        self.my_trap.absolute_tolerance = 1.0
+        self.my_trap.relative_tolerance = 1.0
         self.my_trap.maximum_iterations = 1
         self.my_trap.linear_solver = "mumps"
         self.my_trap.preconditioner = "icc"
