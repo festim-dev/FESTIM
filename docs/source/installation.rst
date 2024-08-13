@@ -2,10 +2,12 @@
 Installation
 ============
 
+FESTIM is installed in two steps:
+    1. `Installing FEniCS`_ through Anaconda or Docker
+    2. `Installing FESTIM`_ through pip on the FEniCS environment
+
 Installing FEniCS
 -----------------
-
-FESTIM requires FEniCS to run.
 
 FEniCS can be installed with Anaconda on MacOs and Linux. 
 In order to use the Anaconda distribution on Windows, 
@@ -35,7 +37,7 @@ First `install Anaconda <https://docs.continuum.io/anaconda/install>`_,
 then run the following commands::
 
     conda create -n festim-env
-    conda activate festim-env
+    conda activate festim-env       
     conda install -c conda-forge fenics numpy=1.24
 
 Alternatively, It can be installed using `Docker <https://www.docker.com/>`_::
