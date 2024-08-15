@@ -95,11 +95,6 @@ for subdomain in list_of_subdomains:
         mesh, mt, subdomain.submesh, subdomain.v_map, subdomain.submesh_to_mesh
     )
 
-# this seems to be not needed
-# t_parent_to_facet = np.full(num_facets_local, -1)
-# t_parent_to_facet[t_facet_to_parent] = np.arange(
-#     len(t_facet_to_parent), dtype=np.int32
-# )
 
 # Hack, as we use one-sided restrictions, pad dS integral with the same entity from the same cell on both sides
 # TODO ask Jorgen what this is for
@@ -226,8 +221,6 @@ for interface in list_of_interfaces:
     F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface
     F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface
 
-    # F_0 += F_00
-    # F_1 += F_11
     subdomain_1.F += F_0
     subdomain_2.F += F_1
 
@@ -244,25 +237,6 @@ for subdomain1 in list_of_subdomains:
         )
     J.append(jac)
     forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
-
-
-# jac00 = ufl.derivative(F_0, u_0)
-
-# jac01 = ufl.derivative(F_0, u_1)
-
-# jac10 = ufl.derivative(F_1, u_0)
-# jac11 = ufl.derivative(F_1, u_1)
-
-# J00 = dolfinx.fem.form(jac00, entity_maps=entity_maps)
-# J01 = dolfinx.fem.form(jac01, entity_maps=entity_maps)
-# J10 = dolfinx.fem.form(jac10, entity_maps=entity_maps)
-# J11 = dolfinx.fem.form(jac11, entity_maps=entity_maps)
-# J = [[J00, J01], [J10, J11]]
-# F = [
-#     dolfinx.fem.form(F_0, entity_maps=entity_maps),
-#     dolfinx.fem.form(F_1, entity_maps=entity_maps),
-# ]
-
 
 # boundary conditions
 b_bc = dolfinx.fem.Function(bottom_domain.u.function_space)
@@ -305,20 +279,18 @@ solver = NewtonSolver(
     },
 )
 solver.solve(1e-5)
-exit()
-# bp = dolfinx.io.VTXWriter(mesh.comm, "u_b.bp", [u_0.sub(0).collapse()], engine="BP4")
-bp = dolfinx.io.VTXWriter(mesh.comm, "u_b_0.bp", [u_0.sub(0).collapse()], engine="BP4")
-bp.write(0)
-bp.close()
-bp = dolfinx.io.VTXWriter(mesh.comm, "u_t_0.bp", [u_1.sub(0).collapse()], engine="BP4")
-bp.write(0)
-bp.close()
-bp = dolfinx.io.VTXWriter(mesh.comm, "u_b_1.bp", [u_0.sub(1).collapse()], engine="BP4")
-bp.write(0)
-bp.close()
-bp = dolfinx.io.VTXWriter(mesh.comm, "u_t_1.bp", [u_1.sub(1).collapse()], engine="BP4")
-bp.write(0)
-bp.close()
+
+for subdomain in list_of_subdomains:
+    u_sub_0 = subdomain.u.sub(0).collapse()
+    u_sub_0.name = "u_sub_0"
+
+    u_sub_1 = subdomain.u.sub(1).collapse()
+    u_sub_1.name = "u_sub_1"
+    bp = dolfinx.io.VTXWriter(
+        mesh.comm, f"u_{subdomain.id}.bp", [u_sub_0, u_sub_1], engine="BP4"
+    )
+    bp.write(0)
+    bp.close()
 
 
 # derived quantities
@@ -327,17 +299,17 @@ T = dolfinx.fem.Function(V)
 T.interpolate(lambda x: 200 + x[1])
 
 
-T_b = dolfinx.fem.Function(u_0.sub(0).collapse().function_space)
+T_b = dolfinx.fem.Function(top_domain.u.sub(0).collapse().function_space)
 T_b.interpolate(T)
 
-ds_b = ufl.Measure("ds", domain=submesh_b)
-dx_b = ufl.Measure("dx", domain=submesh_b)
+ds_b = ufl.Measure("ds", domain=top_domain.submesh)
+dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
 dx = ufl.Measure("dx", domain=mesh)
 
-n_b = ufl.FacetNormal(submesh_b)
+n_b = ufl.FacetNormal(bottom_domain.submesh)
 
-form = dolfinx.fem.form(u_0.sub(0) * dx_b)
+form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b, entity_maps=entity_maps)
 print(dolfinx.fem.assemble_scalar(form))
 
-form = dolfinx.fem.form(T_b * ufl.dot(ufl.grad(u_0.sub(0)), n_b) * ds_b)
+form = dolfinx.fem.form(T_b * ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b, entity_maps=entity_maps)
 print(dolfinx.fem.assemble_scalar(form))
