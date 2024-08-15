@@ -147,48 +147,6 @@ def D(T):
     return 2 * ufl.exp(-0.1 / k_B / T)
 
 
-def define_interior_eq(mesh, degree, subdomain, value):
-    submesh = subdomain.submesh
-    submesh_to_mesh = subdomain.submesh_to_mesh
-
-    # TODO mesh_to_submesh isn't used anywhere
-    # Compute map from parent entity to submesh cell
-    codim = mesh.topology.dim - submesh.topology.dim
-    ptdim = mesh.topology.dim - codim
-    num_entities = (
-        mesh.topology.index_map(ptdim).size_local
-        + mesh.topology.index_map(ptdim).num_ghosts
-    )
-    mesh_to_submesh = np.full(num_entities, -1)
-    mesh_to_submesh[submesh_to_mesh] = np.arange(len(submesh_to_mesh), dtype=np.int32)
-
-    element_CG = basix.ufl.element(
-        basix.ElementFamily.P,
-        submesh.basix_cell(),
-        degree,
-        basix.LagrangeVariant.equispaced,
-    )
-    element = basix.ufl.mixed_element([element_CG, element_CG])
-    V = dolfinx.fem.functionspace(submesh, element)
-    u = dolfinx.fem.Function(V)
-    us = list(ufl.split(u))
-    vs = list(ufl.TestFunctions(V))
-    ct_r = dolfinx.mesh.meshtags(
-        mesh,
-        mesh.topology.dim,
-        submesh_to_mesh,
-        np.full_like(submesh_to_mesh, 1, dtype=np.int32),
-    )
-    val = dolfinx.fem.Constant(submesh, value)
-    dx_r = ufl.Measure("dx", domain=mesh, subdomain_data=ct_r, subdomain_id=1)
-    F = ufl.inner(ufl.grad(us[0]), ufl.grad(vs[0])) * dx_r - val * vs[0] * dx_r
-    k = 2
-    p = 0.1
-    n = 0.5
-    F += k * us[0] * (n - us[1]) * vs[1] * dx_r - p * us[1] * vs[1] * dx_r
-    return u, vs, F, mesh_to_submesh
-
-
 def define_function_spaces(subdomain: F.VolumeSubdomain):
     # get number of species defined in the subdomain
     all_species = [species for species in list_of_species if subdomain in species.subdomains]
@@ -229,9 +187,12 @@ def define_formulation(subdomain: F.VolumeSubdomain):
         D = dolfinx.fem.Constant(subdomain.submesh, 1.0)  # TODO change this
 
         if spe.mobile:
-            form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * dx
+            # I noticed that if we use dot here it doesn't work....
+            form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
 
     for reaction in list_of_reactions:
+        if reaction.volume != subdomain:
+            continue
         for species in reaction.reactant + reaction.product:
             if isinstance(species, F.Species):
                 # TODO remove
@@ -262,12 +223,7 @@ def define_formulation(subdomain: F.VolumeSubdomain):
     subdomain.F = form
 
 
-# for each subdomain, define the interior equation
 for subdomain in list_of_subdomains:
-    # degree = 1
-    # subdomain.u, subdomain.vs, subdomain.F, subdomain.m_to_s = define_interior_eq(
-    #     mesh, degree, subdomain, 0.0
-    # )
     define_function_spaces(subdomain)
     ct_r = dolfinx.mesh.meshtags(
         mesh,
