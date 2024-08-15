@@ -204,7 +204,7 @@ def define_formulation(subdomain: F.VolumeSubdomain):
             if isinstance(reactant, F.Species):
                 form += (
                     reaction.reaction_term(T)  # FIXME temperature is ignored for now
-                    * reactant.test_function
+                    * reactant.subdomain_to_test_function[subdomain]
                     * dx
                 )
 
