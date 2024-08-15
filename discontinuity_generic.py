@@ -73,6 +73,21 @@ top_surface = F.SurfaceSubdomain(id=1)
 bottom_surface = F.SurfaceSubdomain(id=2)
 
 H = F.Species("H", mobile=True)
+trapped_H = F.Species("H_trapped", mobile=False)
+empty_trap = F.ImplicitSpecies(n=0.5, others=[trapped_H])
+
+for species in [H, trapped_H]:
+    species.subdomains = [top_domain, bottom_domain]
+    species.subdomain_to_solution = {}
+    species.subdomain_to_prev_solution = {}
+    species.subdomain_to_test_function = {}
+
+list_of_species = [H, trapped_H]
+
+list_of_reactions = [
+    F.Reaction(reactant=[H, empty_trap], product=[trapped_H], k_0=2, E_k=0, p_0=0.1, E_p=0, volume=top_domain),
+    F.Reaction(reactant=[H, empty_trap], product=[trapped_H], k_0=2, E_k=0, p_0=0.1, E_p=0, volume=bottom_domain),
+    ]
 
 list_of_bcs = [
     F.DirichletBC(top_surface, value=0.05, species=H),
@@ -132,7 +147,11 @@ def D(T):
     return 2 * ufl.exp(-0.1 / k_B / T)
 
 
-def define_interior_eq(mesh, degree, submesh, submesh_to_mesh, value):
+def define_interior_eq(mesh, degree, subdomain, value):
+    submesh = subdomain.submesh
+    submesh_to_mesh = subdomain.submesh_to_mesh
+
+    # TODO mesh_to_submesh isn't used anywhere
     # Compute map from parent entity to submesh cell
     codim = mesh.topology.dim - submesh.topology.dim
     ptdim = mesh.topology.dim - codim
@@ -143,7 +162,6 @@ def define_interior_eq(mesh, degree, submesh, submesh_to_mesh, value):
     mesh_to_submesh = np.full(num_entities, -1)
     mesh_to_submesh[submesh_to_mesh] = np.arange(len(submesh_to_mesh), dtype=np.int32)
 
-    degree = 1
     element_CG = basix.ufl.element(
         basix.ElementFamily.P,
         submesh.basix_cell(),
@@ -171,14 +189,95 @@ def define_interior_eq(mesh, degree, submesh, submesh_to_mesh, value):
     return u, vs, F, mesh_to_submesh
 
 
+def define_function_spaces(subdomain: F.VolumeSubdomain):
+    # get number of species defined in the subdomain
+    all_species = [species for species in list_of_species if subdomain in species.subdomains]
+    unique_species = list(set(all_species))
+    nb_species = len(unique_species)
+
+    degree = 1
+    element_CG = basix.ufl.element(
+        basix.ElementFamily.P,
+        subdomain.submesh.basix_cell(),
+        degree,
+        basix.LagrangeVariant.equispaced,
+    )
+    element = basix.ufl.mixed_element([element_CG] * nb_species)
+    V = dolfinx.fem.functionspace(subdomain.submesh, element)
+    u = dolfinx.fem.Function(V)
+    u_n = dolfinx.fem.Function(V)
+
+    us = list(ufl.split(u))
+    u_ns = list(ufl.split(u_n))
+    vs = list(ufl.TestFunctions(V))
+    for i, species in enumerate(unique_species):
+        species.subdomain_to_solution[subdomain] = us[i]
+        species.subdomain_to_prev_solution[subdomain] = u_ns[i]
+        species.subdomain_to_test_function[subdomain] = vs[i]
+    subdomain.u = u
+
+def define_formulation(subdomain: F.VolumeSubdomain):
+    form = 0
+    T = dolfinx.fem.Constant(subdomain.submesh, 300.0)  # FIXME temperature is ignored for now
+    # add diffusion and time derivative for each species
+    for spe in list_of_species:
+        u = spe.subdomain_to_solution[subdomain]
+        u_n = spe.subdomain_to_prev_solution[subdomain]
+        v = spe.subdomain_to_test_function[subdomain]
+        dx = subdomain.dx
+
+        D = dolfinx.fem.Constant(subdomain.submesh, 1.0)  # TODO change this
+
+        if spe.mobile:
+            form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * dx
+
+    for reaction in list_of_reactions:
+        for species in reaction.reactant + reaction.product:
+            if isinstance(species, F.Species):
+                # TODO remove
+                # temporarily overide the solution and test function to the one of the subdomain
+                species.solution = species.subdomain_to_solution[subdomain]
+                species.test_function = species.subdomain_to_test_function[subdomain]
+
+        for reactant in reaction.reactant:
+            if isinstance(reactant, F.Species):
+                form += (
+                    reaction.reaction_term(T)  # FIXME temperature is ignored for now
+                    * reactant.test_function
+                    * dx
+                )
+
+        # product
+        if isinstance(reaction.product, list):
+            products = reaction.product
+        else:
+            products = [reaction.product]
+        for product in products:
+            form += (
+                -reaction.reaction_term(T)  # FIXME temperature is ignored for now
+                * product.subdomain_to_test_function[subdomain]
+                * dx
+            )
+
+    subdomain.F = form
+
+
 # for each subdomain, define the interior equation
 for subdomain in list_of_subdomains:
-    degree = 1
-    subdomain.u, subdomain.vs, subdomain.F, subdomain.m_to_s = define_interior_eq(
-        mesh, degree, subdomain.submesh, subdomain.submesh_to_mesh, 0.0
+    # degree = 1
+    # subdomain.u, subdomain.vs, subdomain.F, subdomain.m_to_s = define_interior_eq(
+    #     mesh, degree, subdomain, 0.0
+    # )
+    define_function_spaces(subdomain)
+    ct_r = dolfinx.mesh.meshtags(
+        mesh,
+        mesh.topology.dim,
+        subdomain.submesh_to_mesh,
+        np.full_like(subdomain.submesh_to_mesh, 1, dtype=np.int32),
     )
+    subdomain.dx = ufl.Measure("dx", domain=mesh, subdomain_data=ct_r, subdomain_id=1)
+    define_formulation(subdomain)
     subdomain.u.name = f"u_{subdomain.id}"
-
 
 # boundary conditions
 bcs = []
@@ -212,8 +311,10 @@ for interface in list_of_interfaces:
     b_res = "+"
     t_res = "-"
 
-    v_b = subdomain_1.vs[0](b_res)
-    v_t = subdomain_2.vs[0](t_res)
+    v_b = H.subdomain_to_test_function[subdomain_1](b_res)
+    v_t = H.subdomain_to_test_function[subdomain_2](t_res)
+    # v_b = subdomain_1.vs[0](b_res)
+    # v_t = subdomain_2.vs[0](t_res)
 
     u_bs = list(ufl.split(subdomain_1.u))
     u_ts = list(ufl.split(subdomain_2.u))
