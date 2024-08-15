@@ -179,6 +179,27 @@ for subdomain in list_of_subdomains:
     )
     subdomain.u.name = f"u_{subdomain.id}"
 
+
+# boundary conditions
+bcs = []
+for boundary_condition in list_of_bcs:
+    volume_subdomain = surface_to_volume[boundary_condition.subdomain]
+    bc = dolfinx.fem.Function(volume_subdomain.u.function_space)
+    bc.x.array[:] = boundary_condition.value
+    volume_subdomain.submesh.topology.create_connectivity(
+        volume_subdomain.submesh.topology.dim - 1,
+        volume_subdomain.submesh.topology.dim,
+    )
+    bc = dolfinx.fem.dirichletbc(
+        bc,
+        dolfinx.fem.locate_dofs_topological(
+            volume_subdomain.u.function_space.sub(0),
+            fdim,
+            volume_subdomain.ft.find(boundary_condition.subdomain.id),
+        ),
+    )
+    bcs.append(bc)
+
 # Add coupling term to the interface
 # Get interface markers on submesh b
 for interface in list_of_interfaces:
@@ -250,25 +271,7 @@ for subdomain1 in list_of_subdomains:
     J.append(jac)
     forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
 
-# boundary conditions
-bcs = []
-for boundary_condition in list_of_bcs:
-    volume_subdomain = surface_to_volume[boundary_condition.subdomain]
-    bc = dolfinx.fem.Function(volume_subdomain.u.function_space)
-    bc.x.array[:] = boundary_condition.value
-    volume_subdomain.submesh.topology.create_connectivity(
-        volume_subdomain.submesh.topology.dim - 1,
-        volume_subdomain.submesh.topology.dim,
-    )
-    bc = dolfinx.fem.dirichletbc(
-        bc,
-        dolfinx.fem.locate_dofs_topological(
-            volume_subdomain.u.function_space.sub(0),
-            fdim,
-            volume_subdomain.ft.find(boundary_condition.subdomain.id),
-        ),
-    )
-    bcs.append(bc)
+
 
 solver = NewtonSolver(
     forms,
