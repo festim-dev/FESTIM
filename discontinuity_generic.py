@@ -77,7 +77,7 @@ trapped_H = F.Species("H_trapped", mobile=False)
 empty_trap = F.ImplicitSpecies(n=0.5, others=[trapped_H])
 
 for species in [H, trapped_H]:
-    species.subdomains = [top_domain, bottom_domain]
+    species.subdomains = [bottom_domain, top_domain]
     species.subdomain_to_solution = {}
     species.subdomain_to_prev_solution = {}
     species.subdomain_to_test_function = {}
@@ -150,7 +150,12 @@ def D(T):
 def define_function_spaces(subdomain: F.VolumeSubdomain):
     # get number of species defined in the subdomain
     all_species = [species for species in list_of_species if subdomain in species.subdomains]
-    unique_species = list(set(all_species))
+
+    # instead of using the set function we use a list to keep the order
+    unique_species = []
+    for species in all_species:
+        if species not in unique_species:
+            unique_species.append(species)
     nb_species = len(unique_species)
 
     degree = 1
@@ -269,13 +274,9 @@ for interface in list_of_interfaces:
 
     v_b = H.subdomain_to_test_function[subdomain_1](b_res)
     v_t = H.subdomain_to_test_function[subdomain_2](t_res)
-    # v_b = subdomain_1.vs[0](b_res)
-    # v_t = subdomain_2.vs[0](t_res)
 
-    u_bs = list(ufl.split(subdomain_1.u))
-    u_ts = list(ufl.split(subdomain_2.u))
-    u_b = u_bs[0](b_res)
-    u_t = u_ts[0](t_res)
+    u_b = H.subdomain_to_solution[subdomain_1](b_res)
+    u_t = H.subdomain_to_solution[subdomain_2](t_res)
 
     def mixed_term(u, v, n):
         return ufl.dot(ufl.grad(u), n) * v
@@ -363,10 +364,10 @@ T = dolfinx.fem.Function(V)
 T.interpolate(lambda x: 200 + x[1])
 
 
-T_b = dolfinx.fem.Function(top_domain.u.sub(0).collapse().function_space)
+T_b = dolfinx.fem.Function(bottom_domain.u.sub(0).collapse().function_space)
 T_b.interpolate(T)
 
-ds_b = ufl.Measure("ds", domain=top_domain.submesh)
+ds_b = ufl.Measure("ds", domain=bottom_domain.submesh)
 dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
 dx = ufl.Measure("dx", domain=mesh)
 
@@ -375,5 +376,12 @@ n_b = ufl.FacetNormal(bottom_domain.submesh)
 form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b, entity_maps=entity_maps)
 print(dolfinx.fem.assemble_scalar(form))
 
-form = dolfinx.fem.form(T_b * ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b, entity_maps=entity_maps)
+form = dolfinx.fem.form(bottom_domain.u.sub(1) * dx_b, entity_maps=entity_maps)
 print(dolfinx.fem.assemble_scalar(form))
+
+id_interface = 5
+form = dolfinx.fem.form(ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b, entity_maps=entity_maps)
+print(dolfinx.fem.assemble_scalar(form))
+
+# form = dolfinx.fem.form(T * dx_b, entity_maps=entity_maps)
+# print(dolfinx.fem.assemble_scalar(form))
