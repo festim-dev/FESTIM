@@ -69,6 +69,18 @@ bottom_domain = F.VolumeSubdomain(3, material=None)
 list_of_subdomains = [bottom_domain, top_domain]
 list_of_interfaces = {5: [bottom_domain, top_domain]}
 
+top_surface = F.SurfaceSubdomain(id=1)
+bottom_surface = F.SurfaceSubdomain(id=2)
+
+H = F.Species("H", mobile=True)
+
+list_of_bcs = [
+    F.DirichletBC(top_surface, value=0.05, species=H),
+    F.DirichletBC(bottom_surface, value=0.2, species=H)
+    ]
+
+surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
+
 gdim = mesh.geometry.dim
 tdim = mesh.topology.dim
 fdim = tdim - 1
@@ -239,32 +251,24 @@ for subdomain1 in list_of_subdomains:
     forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
 
 # boundary conditions
-b_bc = dolfinx.fem.Function(bottom_domain.u.function_space)
-b_bc.x.array[:] = 0.2
-bottom_domain.submesh.topology.create_connectivity(
-    bottom_domain.submesh.topology.dim - 1, bottom_domain.submesh.topology.dim
-)
-bc_b = dolfinx.fem.dirichletbc(
-    b_bc,
-    dolfinx.fem.locate_dofs_topological(
-        bottom_domain.u.function_space.sub(0), fdim, bottom_domain.ft.find(2)
-    ),
-)
-
-
-t_bc = dolfinx.fem.Function(top_domain.u.function_space)
-t_bc.x.array[:] = 0.05
-top_domain.submesh.topology.create_connectivity(
-    top_domain.submesh.topology.dim - 1, top_domain.submesh.topology.dim
-)
-bc_t = dolfinx.fem.dirichletbc(
-    t_bc,
-    dolfinx.fem.locate_dofs_topological(
-        top_domain.u.function_space.sub(0), fdim, top_domain.ft.find(1)
-    ),
-)
-bcs = [bc_b, bc_t]
-
+bcs = []
+for boundary_condition in list_of_bcs:
+    volume_subdomain = surface_to_volume[boundary_condition.subdomain]
+    bc = dolfinx.fem.Function(volume_subdomain.u.function_space)
+    bc.x.array[:] = boundary_condition.value
+    volume_subdomain.submesh.topology.create_connectivity(
+        volume_subdomain.submesh.topology.dim - 1,
+        volume_subdomain.submesh.topology.dim,
+    )
+    bc = dolfinx.fem.dirichletbc(
+        bc,
+        dolfinx.fem.locate_dofs_topological(
+            volume_subdomain.u.function_space.sub(0),
+            fdim,
+            volume_subdomain.ft.find(boundary_condition.subdomain.id),
+        ),
+    )
+    bcs.append(bc)
 
 solver = NewtonSolver(
     forms,
