@@ -122,6 +122,16 @@ def D_fun(T):
     return 2 * ufl.exp(-0.1 / k_B / T)
 
 
+def K_1_fun(T):
+    k_B = 8.6173303e-5
+    return 4 * ufl.exp(-0.1 / k_B / T)
+
+
+def K_2_fun(T):
+    k_B = 8.6173303e-5
+    return 4 * ufl.exp(-0.1 / k_B / T)
+
+
 gdim = mesh.geometry.dim
 tdim = mesh.topology.dim
 fdim = tdim - 1
@@ -310,16 +320,8 @@ for interface in list_of_interfaces:
     h_t = 2 * cr(t_res)
     gamma = 400.0  # this needs to be "sufficiently large"
 
-    # fabricate K
-    W_0 = dolfinx.fem.functionspace(subdomain_1.submesh, ("DG", 0))
-    K_0 = dolfinx.fem.Function(W_0)
-    K_0.x.array[:] = 2
-    W_1 = dolfinx.fem.functionspace(subdomain_2.submesh, ("DG", 0))
-    K_1 = dolfinx.fem.Function(W_1)
-    K_1.x.array[:] = 4
-
-    K_b = K_0(b_res)
-    K_t = K_1(t_res)
+    K_b = K_1_fun(T(b_res))
+    K_t = K_2_fun(T(t_res))
 
     F_0 = (
         -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface
