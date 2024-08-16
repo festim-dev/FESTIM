@@ -112,6 +112,16 @@ list_of_bcs = [
 
 surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
 
+V = dolfinx.fem.functionspace(mesh, ("CG", 1))
+T = dolfinx.fem.Function(V)
+T.interpolate(lambda x: 300 + 10 * x[1])
+
+
+def D_fun(T):
+    k_B = 8.6173303e-5
+    return 2 * ufl.exp(-0.1 / k_B / T)
+
+
 gdim = mesh.geometry.dim
 tdim = mesh.topology.dim
 fdim = tdim - 1
@@ -157,11 +167,6 @@ entity_maps = {
 }
 
 
-def D(T):
-    k_B = 8.6173303e-5
-    return 2 * ufl.exp(-0.1 / k_B / T)
-
-
 def define_function_spaces(subdomain: F.VolumeSubdomain):
     # get number of species defined in the subdomain
     all_species = [
@@ -199,9 +204,6 @@ def define_function_spaces(subdomain: F.VolumeSubdomain):
 
 def define_formulation(subdomain: F.VolumeSubdomain):
     form = 0
-    T = dolfinx.fem.Constant(
-        subdomain.submesh, 300.0
-    )  # FIXME temperature is ignored for now
     # add diffusion and time derivative for each species
     for spe in list_of_species:
         u = spe.subdomain_to_solution[subdomain]
@@ -209,10 +211,9 @@ def define_formulation(subdomain: F.VolumeSubdomain):
         v = spe.subdomain_to_test_function[subdomain]
         dx = subdomain.dx
 
-        D = dolfinx.fem.Constant(subdomain.submesh, 1.0)  # TODO change this
+        D = D_fun(T)
 
         if spe.mobile:
-            # I noticed that if we use dot here it doesn't work....
             form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
 
     for reaction in list_of_reactions:
@@ -307,7 +308,7 @@ for interface in list_of_interfaces:
     cr = ufl.Circumradius(mesh)
     h_b = 2 * cr(b_res)
     h_t = 2 * cr(t_res)
-    gamma = 10.0
+    gamma = 400.0  # this needs to be "sufficiently large"
 
     # fabricate K
     W_0 = dolfinx.fem.functionspace(subdomain_1.submesh, ("DG", 0))
@@ -340,14 +341,17 @@ forms = []
 for subdomain1 in list_of_subdomains:
     jac = []
     form = subdomain1.F
+    # copy entity_maps
+    entity_maps_ = entity_maps.copy()
+    entity_maps_[mesh] = subdomain1.submesh_to_mesh
     for subdomain2 in list_of_subdomains:
         jac.append(
             dolfinx.fem.form(
-                ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
+                ufl.derivative(form, subdomain2.u), entity_maps=entity_maps_
             )
         )
     J.append(jac)
-    forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
+    forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps_))
 
 
 solver = NewtonSolver(
@@ -380,11 +384,6 @@ for subdomain in list_of_subdomains:
 # derived quantities
 entity_maps[mesh] = bottom_domain.submesh_to_mesh
 
-V = dolfinx.fem.functionspace(mesh, ("CG", 1))
-T = dolfinx.fem.Function(V)
-T.interpolate(lambda x: 200 + x[1])
-
-
 ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
 ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
 dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
@@ -404,12 +403,12 @@ print(dolfinx.fem.assemble_scalar(form))
 
 id_interface = 5
 form = dolfinx.fem.form(
-    T * ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b(id_interface),
+    ufl.dot(D_fun(T) * ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b(id_interface),
     entity_maps={mesh: bottom_domain.submesh_to_mesh},
 )
 print(dolfinx.fem.assemble_scalar(form))
 form = dolfinx.fem.form(
-    T * ufl.dot(ufl.grad(top_domain.u.sub(0)), n_t) * ds_t(id_interface),
+    ufl.dot(D_fun(T) * ufl.grad(top_domain.u.sub(0)), n_t) * ds_t(id_interface),
     entity_maps={mesh: top_domain.submesh_to_mesh},
 )
 print(dolfinx.fem.assemble_scalar(form))
