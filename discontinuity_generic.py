@@ -359,29 +359,32 @@ for subdomain in list_of_subdomains:
 
 
 # derived quantities
+entity_maps[mesh] = bottom_domain.submesh_to_mesh
+
 V = dolfinx.fem.functionspace(mesh, ("CG", 1))
 T = dolfinx.fem.Function(V)
 T.interpolate(lambda x: 200 + x[1])
 
 
-T_b = dolfinx.fem.Function(bottom_domain.u.sub(0).collapse().function_space)
-T_b.interpolate(T)
-
-ds_b = ufl.Measure("ds", domain=bottom_domain.submesh)
+ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
+ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
 dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
 dx = ufl.Measure("dx", domain=mesh)
 
 n_b = ufl.FacetNormal(bottom_domain.submesh)
+n_t = ufl.FacetNormal(top_domain.submesh)
 
-form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b, entity_maps=entity_maps)
+form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b)
 print(dolfinx.fem.assemble_scalar(form))
 
-form = dolfinx.fem.form(bottom_domain.u.sub(1) * dx_b, entity_maps=entity_maps)
+form = dolfinx.fem.form(bottom_domain.u.sub(1) * dx_b)
+print(dolfinx.fem.assemble_scalar(form))
+
+form = dolfinx.fem.form(T * dx_b, entity_maps={mesh: bottom_domain.submesh_to_mesh})
 print(dolfinx.fem.assemble_scalar(form))
 
 id_interface = 5
-form = dolfinx.fem.form(ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b, entity_maps=entity_maps)
+form = dolfinx.fem.form(T*ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b(id_interface), entity_maps={mesh: bottom_domain.submesh_to_mesh})
 print(dolfinx.fem.assemble_scalar(form))
-
-# form = dolfinx.fem.form(T * dx_b, entity_maps=entity_maps)
-# print(dolfinx.fem.assemble_scalar(form))
+form = dolfinx.fem.form(T*ufl.dot(ufl.grad(top_domain.u.sub(0)), n_t) * ds_t(id_interface), entity_maps={mesh: top_domain.submesh_to_mesh})
+print(dolfinx.fem.assemble_scalar(form))
