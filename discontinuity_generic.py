@@ -68,9 +68,9 @@ material_bottom = F.Material(D_0=2.0, E_D=0.1)
 material_top = F.Material(D_0=2.0, E_D=0.1)
 
 material_bottom.K_S_0 = 2.0
-material_bottom.E_K_S = 0.1
+material_bottom.E_K_S = 0 * 0.1
 material_top.K_S_0 = 4.0
-material_top.E_K_S = 0.12
+material_top.E_K_S = 0 * 0.12
 
 top_domain = F.VolumeSubdomain(4, material=material_top)
 bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
@@ -297,14 +297,28 @@ for boundary_condition in list_of_bcs:
 # Add coupling term to the interface
 # Get interface markers on submesh b
 for interface in list_of_interfaces:
-    subdomain_1 = list_of_interfaces[interface][0]
-    subdomain_2 = list_of_interfaces[interface][1]
 
     dInterface = ufl.Measure(
         "dS", domain=mesh, subdomain_data=mt, subdomain_id=interface
     )
     b_res = "+"
     t_res = "-"
+
+    # look at the first facet on interface
+    # and get the two cells that are connected to it
+    # and get the material properties of these cells
+    first_facet_interface = mt.find(interface)[0]
+    c_plus, c_minus = (
+        f_to_c.links(first_facet_interface)[0],
+        f_to_c.links(first_facet_interface)[1],
+    )
+    id_minus, id_plus = ct.values[c_minus], ct.values[c_plus]
+
+    for subdomain in list_of_interfaces[interface]:
+        if subdomain.id == id_plus:
+            subdomain_1 = subdomain
+        if subdomain.id == id_minus:
+            subdomain_2 = subdomain
 
     v_b = H.subdomain_to_test_function[subdomain_1](b_res)
     v_t = H.subdomain_to_test_function[subdomain_2](t_res)
@@ -323,7 +337,6 @@ for interface in list_of_interfaces:
     h_t = 2 * cr(t_res)
     gamma = 400.0  # this needs to be "sufficiently large"
 
-    # TODO how do we know if b_res corresponds to the bottom or top domain?
     K_b = K_S_fun(T(b_res), subdomain_1.material.K_S_0, subdomain_1.material.E_K_S)
     K_t = K_S_fun(T(t_res), subdomain_2.material.K_S_0, subdomain_2.material.E_K_S)
 
