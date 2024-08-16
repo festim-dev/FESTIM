@@ -124,7 +124,7 @@ def D_fun(T):
 
 def K_1_fun(T):
     k_B = 8.6173303e-5
-    return 4 * ufl.exp(-0.1 / k_B / T)
+    return 2 * ufl.exp(-0.1 / k_B / T)
 
 
 def K_2_fun(T):
