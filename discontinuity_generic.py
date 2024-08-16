@@ -85,14 +85,30 @@ for species in [H, trapped_H]:
 list_of_species = [H, trapped_H]
 
 list_of_reactions = [
-    F.Reaction(reactant=[H, empty_trap], product=[trapped_H], k_0=2, E_k=0, p_0=0.1, E_p=0, volume=top_domain),
-    F.Reaction(reactant=[H, empty_trap], product=[trapped_H], k_0=2, E_k=0, p_0=0.1, E_p=0, volume=bottom_domain),
-    ]
+    F.Reaction(
+        reactant=[H, empty_trap],
+        product=[trapped_H],
+        k_0=2,
+        E_k=0,
+        p_0=0.1,
+        E_p=0,
+        volume=top_domain,
+    ),
+    F.Reaction(
+        reactant=[H, empty_trap],
+        product=[trapped_H],
+        k_0=2,
+        E_k=0,
+        p_0=0.1,
+        E_p=0,
+        volume=bottom_domain,
+    ),
+]
 
 list_of_bcs = [
     F.DirichletBC(top_surface, value=0.05, species=H),
-    F.DirichletBC(bottom_surface, value=0.2, species=H)
-    ]
+    F.DirichletBC(bottom_surface, value=0.2, species=H),
+]
 
 surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
 
@@ -137,8 +153,7 @@ for interface in list_of_interfaces:
 
 # ._cpp_object needed on dolfinx 0.8.0
 entity_maps = {
-    subdomain.submesh: subdomain.parent_to_submesh
-    for subdomain in list_of_subdomains
+    subdomain.submesh: subdomain.parent_to_submesh for subdomain in list_of_subdomains
 }
 
 
@@ -149,7 +164,9 @@ def D(T):
 
 def define_function_spaces(subdomain: F.VolumeSubdomain):
     # get number of species defined in the subdomain
-    all_species = [species for species in list_of_species if subdomain in species.subdomains]
+    all_species = [
+        species for species in list_of_species if subdomain in species.subdomains
+    ]
 
     # instead of using the set function we use a list to keep the order
     unique_species = []
@@ -179,9 +196,12 @@ def define_function_spaces(subdomain: F.VolumeSubdomain):
         species.subdomain_to_test_function[subdomain] = vs[i]
     subdomain.u = u
 
+
 def define_formulation(subdomain: F.VolumeSubdomain):
     form = 0
-    T = dolfinx.fem.Constant(subdomain.submesh, 300.0)  # FIXME temperature is ignored for now
+    T = dolfinx.fem.Constant(
+        subdomain.submesh, 300.0
+    )  # FIXME temperature is ignored for now
     # add diffusion and time derivative for each species
     for spe in list_of_species:
         u = spe.subdomain_to_solution[subdomain]
@@ -330,7 +350,6 @@ for subdomain1 in list_of_subdomains:
     forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
 
 
-
 solver = NewtonSolver(
     forms,
     J,
@@ -384,7 +403,13 @@ form = dolfinx.fem.form(T * dx_b, entity_maps={mesh: bottom_domain.submesh_to_me
 print(dolfinx.fem.assemble_scalar(form))
 
 id_interface = 5
-form = dolfinx.fem.form(T*ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b(id_interface), entity_maps={mesh: bottom_domain.submesh_to_mesh})
+form = dolfinx.fem.form(
+    T * ufl.dot(ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b(id_interface),
+    entity_maps={mesh: bottom_domain.submesh_to_mesh},
+)
 print(dolfinx.fem.assemble_scalar(form))
-form = dolfinx.fem.form(T*ufl.dot(ufl.grad(top_domain.u.sub(0)), n_t) * ds_t(id_interface), entity_maps={mesh: top_domain.submesh_to_mesh})
+form = dolfinx.fem.form(
+    T * ufl.dot(ufl.grad(top_domain.u.sub(0)), n_t) * ds_t(id_interface),
+    entity_maps={mesh: top_domain.submesh_to_mesh},
+)
 print(dolfinx.fem.assemble_scalar(form))
