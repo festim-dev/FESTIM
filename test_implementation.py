@@ -7,13 +7,6 @@ import dolfinx.fem.petsc
 import numpy as np
 import festim as F
 import ufl
-from festim.helpers_discontinuity import NewtonSolver, transfer_meshtags_to_submesh
-import basix
-
-
-def K_S_fun(T, K_S_0, E_K_S):
-    k_B = 8.6173303e-5
-    return K_S_0 * ufl.exp(-E_K_S / k_B / T)
 
 
 # ---------------- Generate a mesh ----------------
@@ -158,44 +151,48 @@ for subdomain in list_of_subdomains:
     bp.close()
 
 
-# # derived quantities
-# entity_maps[mesh] = bottom_domain.submesh_to_mesh
+# derived quantities
+my_model.entity_maps[mesh] = bottom_domain.submesh_to_mesh
 
-# ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
-# ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
-# dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
-# dx = ufl.Measure("dx", domain=mesh)
+ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
+ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
+dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
+dx = ufl.Measure("dx", domain=mesh)
 
-# n_b = ufl.FacetNormal(bottom_domain.submesh)
-# n_t = ufl.FacetNormal(top_domain.submesh)
+n_b = ufl.FacetNormal(bottom_domain.submesh)
+n_t = ufl.FacetNormal(top_domain.submesh)
 
-# form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b)
-# print(dolfinx.fem.assemble_scalar(form))
+form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b)
+print(dolfinx.fem.assemble_scalar(form))
 
-# form = dolfinx.fem.form(bottom_domain.u.sub(1) * dx_b)
-# print(dolfinx.fem.assemble_scalar(form))
+form = dolfinx.fem.form(bottom_domain.u.sub(1) * dx_b)
+print(dolfinx.fem.assemble_scalar(form))
 
-# form = dolfinx.fem.form(T * dx_b, entity_maps={mesh: bottom_domain.submesh_to_mesh})
-# print(dolfinx.fem.assemble_scalar(form))
+form = dolfinx.fem.form(
+    my_model.temperature_fenics * dx_b,
+    entity_maps={mesh: bottom_domain.submesh_to_mesh},
+)
+print(dolfinx.fem.assemble_scalar(form))
 
-# id_interface = 5
-# form = dolfinx.fem.form(
-#     ufl.dot(
-#         D_fun(T, bottom_domain.material.D_0, bottom_domain.material.E_D)
-#         * ufl.grad(bottom_domain.u.sub(0)),
-#         n_b,
-#     )
-#     * ds_b(id_interface),
-#     entity_maps={mesh: bottom_domain.submesh_to_mesh},
-# )
-# print(dolfinx.fem.assemble_scalar(form))
-# form = dolfinx.fem.form(
-#     ufl.dot(
-#         D_fun(T, top_domain.material.D_0, top_domain.material.E_D)
-#         * ufl.grad(top_domain.u.sub(0)),
-#         n_t,
-#     )
-#     * ds_t(id_interface),
-#     entity_maps={mesh: top_domain.submesh_to_mesh},
-# )
-# print(dolfinx.fem.assemble_scalar(form))
+D = subdomain.material.get_diffusion_coefficient(
+    my_model.mesh.mesh, my_model.temperature_fenics, H
+)
+id_interface = 5
+form = dolfinx.fem.form(
+    ufl.dot(
+        D * ufl.grad(bottom_domain.u.sub(0)),
+        n_b,
+    )
+    * ds_b(id_interface),
+    entity_maps={mesh: bottom_domain.submesh_to_mesh},
+)
+print(dolfinx.fem.assemble_scalar(form))
+form = dolfinx.fem.form(
+    ufl.dot(
+        D * ufl.grad(top_domain.u.sub(0)),
+        n_t,
+    )
+    * ds_t(id_interface),
+    entity_maps={mesh: top_domain.submesh_to_mesh},
+)
+print(dolfinx.fem.assemble_scalar(form))
