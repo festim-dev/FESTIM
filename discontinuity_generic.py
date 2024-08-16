@@ -64,8 +64,16 @@ def generate_mesh():
 
 mesh, mt, ct = generate_mesh()
 
-top_domain = F.VolumeSubdomain(4, material=None)
-bottom_domain = F.VolumeSubdomain(3, material=None)
+material_bottom = F.Material(D_0=2.0, E_D=0.1)
+material_top = F.Material(D_0=2.0, E_D=0.1)
+
+material_bottom.K_S_0 = 2.0
+material_bottom.E_K_S = 0.1
+material_top.K_S_0 = 4.0
+material_top.E_K_S = 0.12
+
+top_domain = F.VolumeSubdomain(4, material=material_top)
+bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
 list_of_subdomains = [bottom_domain, top_domain]
 list_of_interfaces = {5: [bottom_domain, top_domain]}
 
@@ -117,19 +125,14 @@ T = dolfinx.fem.Function(V)
 T.interpolate(lambda x: 300 + 10 * x[1] + 100 * x[0])
 
 
-def D_fun(T):
+def D_fun(T, D_0, E_D):
     k_B = 8.6173303e-5
-    return 2 * ufl.exp(-0.1 / k_B / T)
+    return D_0 * ufl.exp(-E_D / k_B / T)
 
 
-def K_1_fun(T):
+def K_S_fun(T, K_S_0, E_K_S):
     k_B = 8.6173303e-5
-    return 2 * ufl.exp(-0.1 / k_B / T)
-
-
-def K_2_fun(T):
-    k_B = 8.6173303e-5
-    return 4 * ufl.exp(-0.12 / k_B / T)
+    return K_S_0 * ufl.exp(-E_K_S / k_B / T)
 
 
 gdim = mesh.geometry.dim
@@ -221,7 +224,7 @@ def define_formulation(subdomain: F.VolumeSubdomain):
         v = spe.subdomain_to_test_function[subdomain]
         dx = subdomain.dx
 
-        D = D_fun(T)
+        D = D_fun(T, subdomain.material.D_0, subdomain.material.E_D)
 
         if spe.mobile:
             form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
@@ -320,8 +323,9 @@ for interface in list_of_interfaces:
     h_t = 2 * cr(t_res)
     gamma = 400.0  # this needs to be "sufficiently large"
 
-    K_b = K_1_fun(T(b_res))
-    K_t = K_2_fun(T(t_res))
+    # TODO how do we know if b_res corresponds to the bottom or top domain?
+    K_b = K_S_fun(T(b_res), subdomain_1.material.K_S_0, subdomain_1.material.E_K_S)
+    K_t = K_S_fun(T(t_res), subdomain_2.material.K_S_0, subdomain_2.material.E_K_S)
 
     F_0 = (
         -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface
@@ -405,12 +409,22 @@ print(dolfinx.fem.assemble_scalar(form))
 
 id_interface = 5
 form = dolfinx.fem.form(
-    ufl.dot(D_fun(T) * ufl.grad(bottom_domain.u.sub(0)), n_b) * ds_b(id_interface),
+    ufl.dot(
+        D_fun(T, bottom_domain.material.D_0, bottom_domain.material.E_D)
+        * ufl.grad(bottom_domain.u.sub(0)),
+        n_b,
+    )
+    * ds_b(id_interface),
     entity_maps={mesh: bottom_domain.submesh_to_mesh},
 )
 print(dolfinx.fem.assemble_scalar(form))
 form = dolfinx.fem.form(
-    ufl.dot(D_fun(T) * ufl.grad(top_domain.u.sub(0)), n_t) * ds_t(id_interface),
+    ufl.dot(
+        D_fun(T, top_domain.material.D_0, top_domain.material.E_D)
+        * ufl.grad(top_domain.u.sub(0)),
+        n_t,
+    )
+    * ds_t(id_interface),
     entity_maps={mesh: top_domain.submesh_to_mesh},
 )
 print(dolfinx.fem.assemble_scalar(form))
