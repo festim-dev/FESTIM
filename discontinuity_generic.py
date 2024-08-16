@@ -114,7 +114,7 @@ surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
 
 V = dolfinx.fem.functionspace(mesh, ("CG", 1))
 T = dolfinx.fem.Function(V)
-T.interpolate(lambda x: 300 + 10 * x[1])
+T.interpolate(lambda x: 300 + 10 * x[1] + 100 * x[0])
 
 
 def D_fun(T):
@@ -129,7 +129,7 @@ def K_1_fun(T):
 
 def K_2_fun(T):
     k_B = 8.6173303e-5
-    return 4 * ufl.exp(-0.1 / k_B / T)
+    return 4 * ufl.exp(-0.12 / k_B / T)
 
 
 gdim = mesh.geometry.dim
@@ -239,7 +239,7 @@ def define_formulation(subdomain: F.VolumeSubdomain):
         for reactant in reaction.reactant:
             if isinstance(reactant, F.Species):
                 form += (
-                    reaction.reaction_term(T)  # FIXME temperature is ignored for now
+                    reaction.reaction_term(T)
                     * reactant.subdomain_to_test_function[subdomain]
                     * dx
                 )
@@ -251,7 +251,7 @@ def define_formulation(subdomain: F.VolumeSubdomain):
             products = [reaction.product]
         for product in products:
             form += (
-                -reaction.reaction_term(T)  # FIXME temperature is ignored for now
+                -reaction.reaction_term(T)
                 * product.subdomain_to_test_function[subdomain]
                 * dx
             )
