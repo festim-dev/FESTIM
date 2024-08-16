@@ -224,8 +224,7 @@ def define_formulation(subdomain: F.VolumeSubdomain):
         v = spe.subdomain_to_test_function[subdomain]
         dx = subdomain.dx
 
-        D = D_fun(T, subdomain.material.D_0, subdomain.material.E_D)
-
+        D = subdomain.material.get_diffusion_coefficient(mesh, T, spe)
         if spe.mobile:
             form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
 
@@ -360,17 +359,14 @@ forms = []
 for subdomain1 in list_of_subdomains:
     jac = []
     form = subdomain1.F
-    # copy entity_maps
-    entity_maps_ = entity_maps.copy()
-    entity_maps_[mesh] = subdomain1.submesh_to_mesh
     for subdomain2 in list_of_subdomains:
         jac.append(
             dolfinx.fem.form(
-                ufl.derivative(form, subdomain2.u), entity_maps=entity_maps_
+                ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
             )
         )
     J.append(jac)
-    forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps_))
+    forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
 
 
 solver = NewtonSolver(
