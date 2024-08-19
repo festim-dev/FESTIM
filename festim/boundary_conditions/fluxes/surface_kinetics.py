@@ -96,7 +96,7 @@ class SurfaceKinetics(FluxBC):
         J_vs,
         surfaces,
         initial_condition,
-        **prms
+        **prms,
     ) -> None:
         super().__init__(surfaces=surfaces, field=0)
         self.k_sb = k_sb
