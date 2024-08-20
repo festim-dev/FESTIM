@@ -80,13 +80,13 @@ material_top.E_K_S = 0 * 0.12
 top_domain = F.VolumeSubdomain(4, material=material_top)
 bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
 
-# we should be able to automate this
-my_model.interfaces = {5: [bottom_domain, top_domain]}
-
 top_surface = F.SurfaceSubdomain(id=1)
 bottom_surface = F.SurfaceSubdomain(id=2)
-
 my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+
+# we should be able to automate this
+my_model.interfaces = {5: [bottom_domain, top_domain]}
+my_model.surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
 
 H = F.Species("H", mobile=True)
 trapped_H = F.Species("H_trapped", mobile=False)
@@ -124,7 +124,6 @@ my_model.boundary_conditions = [
     F.DirichletBC(bottom_surface, value=0.2, species=H),
 ]
 
-my_model.surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
 
 my_model.temperature = lambda x: 300 + 10 * x[1] + 100 * x[0]
 
