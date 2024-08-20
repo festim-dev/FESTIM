@@ -81,13 +81,16 @@ my_model.run()
 
 
 for subdomain in my_model.volume_subdomains:
-    u_sub_0 = subdomain.u.sub(0).collapse()
-    u_sub_0.name = "u_sub_0"
+    us = []
+    for species in my_model.species:
+        if subdomain not in species.subdomains:
+            continue
+        u_sub_0 = species.subdomain_to_post_processing_solution[subdomain].collapse()
+        u_sub_0.name = species.name
+        us.append(u_sub_0)
 
-    u_sub_1 = subdomain.u.sub(1).collapse()
-    u_sub_1.name = "u_sub_1"
     bp = dolfinx.io.VTXWriter(
-        my_model.mesh.mesh.comm, f"u_{subdomain.id}.bp", [u_sub_0, u_sub_1], engine="BP4"
+        my_model.mesh.mesh.comm, f"u_{subdomain.id}.bp", us, engine="BP4"
     )
     bp.write(0)
     bp.close()
