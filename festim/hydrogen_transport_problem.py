@@ -812,7 +812,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def create_initial_conditions(self):
         if self.initial_conditions:
-            raise NotImplementedError("initial conditions not yet implemented for discontinuous")
+            raise NotImplementedError(
+                "initial conditions not yet implemented for discontinuous"
+            )
 
     def create_submeshes(self):
         mesh = self.mesh.mesh
