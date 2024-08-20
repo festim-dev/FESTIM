@@ -10,9 +10,9 @@ interface_2 = 0.7
 # for some reason if the mesh isn't fine enough then I have a random SEGV error
 vertices = np.concatenate(
     [
-        np.linspace(0, interface_1, num=100),
-        np.linspace(interface_1, interface_2, num=100),
-        np.linspace(interface_2, 1, num=100),
+        np.linspace(0, interface_1, num=1500),
+        np.linspace(interface_1, interface_2, num=1500),
+        np.linspace(interface_2, 1, num=1500),
     ]
 )
 
@@ -84,7 +84,7 @@ for subdomain in my_model.volume_subdomains:
     for species in my_model.species:
         if subdomain not in species.subdomains:
             continue
-        u_sub_0 = species.subdomain_to_post_processing_solution[subdomain].collapse()
+        u_sub_0 = species.subdomain_to_post_processing_solution[subdomain]
         u_sub_0.name = species.name
         us.append(u_sub_0)
 
