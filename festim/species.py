@@ -9,6 +9,9 @@ class Species:
     Args:
         name (str, optional): a name given to the species. Defaults to None.
         mobile (bool, optional): whether the species is mobile or not.
+            Defaults to True.
+        subdomain (F.VolumeSubdomain, optional): the volume subdomain where the
+            species is. Defaults to None.
 
     Attributes:
         name (str): a name given to the species.
@@ -26,6 +29,12 @@ class Species:
         post_processing_solution (dolfinx.fem.Function): the solution for post
             processing
         concentration (dolfinx.fem.Function): the concentration of the species
+        subdomains (F.VolumeSubdomain): the volume subdomains where the species is
+        subdomain_to_solution (dict): a dictionary mapping subdomains to solutions
+        subdomain_to_prev_solution (dict): a dictionary mapping subdomains to
+            previous solutions
+        subdomain_to_test_function (dict): a dictionary mapping subdomains to
+            test functions
 
     Usage:
         >>> from festim import Species, HTransportProblem
@@ -37,7 +46,9 @@ class Species:
 
     """
 
-    def __init__(self, name: str = None, mobile=True) -> None:
+    def __init__(
+        self, name: str = None, mobile=True, subdomains: F.VolumeSubdomain = None
+    ) -> None:
         self.name = name
         self.mobile = mobile
         self.solution = None
@@ -47,6 +58,7 @@ class Species:
         self.post_processing_solution = None
         self.collapsed_function_space = None
 
+        self.subdomains = subdomains
         self.subdomain_to_solution = {}
         self.subdomain_to_prev_solution = {}
         self.subdomain_to_test_function = {}

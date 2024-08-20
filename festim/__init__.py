@@ -43,12 +43,12 @@ from .settings import Settings
 
 from .source import ParticleSource, HeatSource, SourceBase
 
-from .species import Species, Trap, ImplicitSpecies, find_species_from_name
-
 from .subdomain.surface_subdomain import SurfaceSubdomain, find_surface_from_id
 from .subdomain.surface_subdomain_1d import SurfaceSubdomain1D
 from .subdomain.volume_subdomain import VolumeSubdomain, find_volume_from_id
 from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
+
+from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
 from .stepsize import Stepsize
 
