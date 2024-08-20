@@ -106,24 +106,14 @@ my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 
 my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
 
+my_model.exports = [
+    F.VTXExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+]
 
 my_model.initialise()
 my_model.run()
 
 # -------------------- post processing --------------------
-
-list_of_subdomains = my_model.volume_subdomains
-
-for subdomain in list_of_subdomains:
-    u_sub_0 = subdomain.u.sub(0).collapse()
-    u_sub_0.name = "u_sub_0"
-
-    bp = dolfinx.io.VTXWriter(
-        mesh.comm, f"u_{subdomain.id}.bp", [u_sub_0], engine="BP4"
-    )
-    bp.write(0)
-    bp.close()
-
 
 # derived quantities
 my_model.entity_maps[mesh] = bottom_domain.submesh_to_mesh
@@ -145,7 +135,7 @@ form = dolfinx.fem.form(
 )
 print(dolfinx.fem.assemble_scalar(form))
 
-D = subdomain.material.get_diffusion_coefficient(
+D = bottom_domain.material.get_diffusion_coefficient(
     my_model.mesh.mesh, my_model.temperature_fenics, H
 )
 id_interface = 5

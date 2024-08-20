@@ -72,9 +72,9 @@ material_bottom = F.Material(D_0=2.0, E_D=0.1)
 material_top = F.Material(D_0=2.0, E_D=0.1)
 
 material_bottom.K_S_0 = 2.0
-material_bottom.E_K_S = 0 * 0.1
+material_bottom.E_K_S = 0
 material_top.K_S_0 = 4.0
-material_top.E_K_S = 0 * 0.12
+material_top.E_K_S = 0
 
 top_domain = F.VolumeSubdomain(4, material=material_top)
 bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
@@ -93,7 +93,7 @@ empty_trap = F.ImplicitSpecies(n=0.5, others=[trapped_H])
 
 my_model.species = [H, trapped_H]
 
-for species in [H, trapped_H]:
+for species in my_model.species:
     species.subdomains = [bottom_domain, top_domain]
 
 
@@ -124,29 +124,20 @@ my_model.boundary_conditions = [
 ]
 
 
-my_model.temperature = lambda x: 300 + 10 * x[1] + 100 * x[0]
+my_model.temperature = lambda x: 400 + 10 * x[1] + 100 * x[0]
 
 my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
 
+my_model.exports = [
+    F.VTXExport(f"c_{subdomain.id}.bp", field=H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+] + [
+    F.VTXExport(f"c_t_{subdomain.id}.bp", field=trapped_H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+]
 
 my_model.initialise()
 my_model.run()
 
 # -------------------- post processing --------------------
-
-list_of_subdomains = my_model.volume_subdomains
-
-for subdomain in list_of_subdomains:
-    u_sub_0 = subdomain.u.sub(0).collapse()
-    u_sub_0.name = "u_sub_0"
-
-    u_sub_1 = subdomain.u.sub(1).collapse()
-    u_sub_1.name = "u_sub_1"
-    bp = dolfinx.io.VTXWriter(
-        mesh.comm, f"u_{subdomain.id}.bp", [u_sub_0, u_sub_1], engine="BP4"
-    )
-    bp.write(0)
-    bp.close()
 
 
 # derived quantities
@@ -172,7 +163,7 @@ form = dolfinx.fem.form(
 )
 print(dolfinx.fem.assemble_scalar(form))
 
-D = subdomain.material.get_diffusion_coefficient(
+D = bottom_domain.material.get_diffusion_coefficient(
     my_model.mesh.mesh, my_model.temperature_fenics, H
 )
 id_interface = 5

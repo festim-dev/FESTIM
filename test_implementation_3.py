@@ -7,11 +7,12 @@ interface_1 = 0.5
 interface_2 = 0.7
 
 # for some reason if the mesh isn't fine enough then I have a random SEGV error
+N = 1500
 vertices = np.concatenate(
     [
-        np.linspace(0, interface_1, num=1500),
-        np.linspace(interface_1, interface_2, num=1500),
-        np.linspace(interface_2, 1, num=1500),
+        np.linspace(0, interface_1, num=N),
+        np.linspace(interface_1, interface_2, num=N),
+        np.linspace(interface_2, 1, num=N),
     ]
 )
 
