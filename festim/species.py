@@ -63,6 +63,7 @@ class Species:
         self.subdomain_to_prev_solution = {}
         self.subdomain_to_test_function = {}
         self.subdomain_to_post_processing_solution = {}
+        self.subdomain_to_collapsed_function_space = {}
 
     def __repr__(self) -> str:
         return f"Species({self.name})"
