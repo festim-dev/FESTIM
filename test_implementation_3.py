@@ -1,14 +1,13 @@
-import festim as F
-
 import dolfinx
 import numpy as np
 import festim as F
 
 my_model = F.HTransportProblemDiscontinuous()
 
-interface_1 = 0.2
-interface_2 = 0.8
+interface_1 = 0.5
+interface_2 = 0.7
 
+# for some reason if the mesh isn't fine enough then I have a random SEGV error
 vertices = np.concatenate(
     [
         np.linspace(0, interface_1, num=100),
@@ -19,9 +18,9 @@ vertices = np.concatenate(
 
 my_model.mesh = F.Mesh1D(vertices)
 
-material_left = F.Material(D_0=2.0, E_D=0.1)
-material_mid = F.Material(D_0=2.0, E_D=0.1)
-material_right = F.Material(D_0=2.0, E_D=0.1)
+material_left = F.Material(D_0=2.0, E_D=0)
+material_mid = F.Material(D_0=2.0, E_D=0)
+material_right = F.Material(D_0=2.0, E_D=0)
 
 material_left.K_S_0 = 2.0
 material_left.E_K_S = 0
@@ -30,9 +29,9 @@ material_mid.E_K_S = 0
 material_right.K_S_0 = 6.0
 material_right.E_K_S = 0
 
-left_domain = F.VolumeSubdomain1D(3, borders=[0, interface_1], material=material_left)
+left_domain = F.VolumeSubdomain1D(3, borders=[vertices[0], interface_1], material=material_left)
 middle_domain = F.VolumeSubdomain1D(4, borders=[interface_1, interface_2], material=material_mid)
-right_domain = F.VolumeSubdomain1D(5, borders=[interface_2, 1], material=material_right)
+right_domain = F.VolumeSubdomain1D(5, borders=[interface_2, vertices[-1]], material=material_right)
 
 left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
@@ -48,8 +47,8 @@ empty_trap = F.ImplicitSpecies(n=0.5, others=[trapped_H])
 
 my_model.species = [H, trapped_H]
 
-for species in [H, trapped_H]:
-    species.subdomains = [left_domain, middle_domain, right_domain]
+for species in my_model.species:
+    species.subdomains = my_model.volume_subdomains
 
 
 my_model.reactions = [

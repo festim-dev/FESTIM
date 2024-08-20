@@ -900,11 +900,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         form = 0
         # add diffusion and time derivative for each species
         for spe in self.species:
+            if subdomain not in spe.subdomains:
+                continue
             u = spe.subdomain_to_solution[subdomain]
             u_n = spe.subdomain_to_prev_solution[subdomain]
             v = spe.subdomain_to_test_function[subdomain]
             dx = subdomain.dx
-            ds = self.ds
 
             D = subdomain.material.get_diffusion_coefficient(
                 self.mesh.mesh, self.temperature_fenics, spe
@@ -951,7 +952,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for bc in self.boundary_conditions:
             if isinstance(bc, F.ParticleFluxBC):
                 if subdomain == self.surface_to_volume[bc.subdomain]:
-                    form -= bc.value_fenics * v * ds(bc.subdomain.id)
+                    v = bc.species.subdomain_to_test_function[subdomain]
+                    form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
 
         subdomain.F = form
 
@@ -1090,4 +1092,4 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         else:
             # Solve steady-state
             self.solver.solve(1e-5)
-            self.post_processing()
+            # self.post_processing()
