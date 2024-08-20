@@ -55,12 +55,14 @@ class Mesh:
     def n(self):
         return ufl.FacetNormal(self.mesh)
 
-    def define_meshtags(self, surface_subdomains, volume_subdomains):
+    def define_meshtags(self, surface_subdomains, volume_subdomains, interfaces=None):
         """Defines the facet and volume meshtags of the mesh
 
         Args:
             surface_subdomains (list of festim.SufaceSubdomains): the surface subdomains of the model
             volume_subdomains (list of festim.VolumeSubdomains): the volume subdomains of the model
+            interfaces (dict, optional): the interfaces between volume
+                subdomains {int: [VolumeSubdomain, VolumeSubdomain]}. Defaults to None.
 
         Returns:
             dolfinx.mesh.MeshTags: the facet meshtags
@@ -86,10 +88,22 @@ class Mesh:
             entities = vol.locate_subdomain_entities(self.mesh, self.vdim)
             tags_volumes[entities] = vol.id
 
-        # define mesh tags
-        facet_meshtags = meshtags(self.mesh, self.fdim, mesh_facet_indices, tags_facets)
         volume_meshtags = meshtags(
             self.mesh, self.vdim, mesh_cell_indices, tags_volumes
         )
+
+        # tag interfaces
+        interfaces = interfaces or {}  # if interfaces is None, set it to empty dict
+        for interface_id, (domain_1, domain_2) in interfaces.items():
+            all_1_facets = dolfinx.mesh.compute_incident_entities(
+                self.mesh.topology, volume_meshtags.find(domain_1.id), self.vdim, self.fdim
+            )
+            all_2_facets = dolfinx.mesh.compute_incident_entities(
+                self.mesh.topology, volume_meshtags.find(domain_2.id), self.vdim, self.fdim
+            )
+            interface_entities = np.intersect1d(all_1_facets, all_2_facets)
+            tags_facets[interface_entities] = interface_id
+
+        facet_meshtags = meshtags(self.mesh, self.fdim, mesh_facet_indices, tags_facets)
 
         return facet_meshtags, volume_meshtags

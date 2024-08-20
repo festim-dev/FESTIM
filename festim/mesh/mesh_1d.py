@@ -72,7 +72,7 @@ class Mesh1D(F.Mesh):
         ):
             raise ValueError("borders dont match domain borders")
 
-    def define_meshtags(self, surface_subdomains, volume_subdomains):
+    def define_meshtags(self, surface_subdomains, volume_subdomains, interfaces=None):
         # check if all borders are defined
         self.check_borders(volume_subdomains)
-        return super().define_meshtags(surface_subdomains, volume_subdomains)
+        return super().define_meshtags(surface_subdomains, volume_subdomains, interfaces)
