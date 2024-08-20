@@ -4,6 +4,7 @@ import basix
 import ufl
 from mpi4py import MPI
 import numpy as np
+import tqdm.autonotebook
 import festim as F
 from festim.helpers_discontinuity import NewtonSolver, transfer_meshtags_to_submesh
 
@@ -759,7 +760,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
         if self.settings.transient:
-            raise NotImplementedError("Transient simulations not supported yet")
+            # TODO should raise error if no stepsize is provided
+            # TODO Should this be an attribute of festim.Stepsize?
+            self.dt = F.as_fenics_constant(
+                self.settings.stepsize.initial_value, self.mesh.mesh
+            )
         self.define_temperature()
 
         self.entity_maps = {
@@ -898,6 +903,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_collapsed_function_space[subdomain] = (V.sub(i).collapse())
             species.subdomain_to_post_processing_solution[subdomain].name = f"{species.name}_{subdomain.id}"
         subdomain.u = u
+        subdomain.u_n = u_n
 
     def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
         form = 0
@@ -914,7 +920,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.mesh.mesh, self.temperature_fenics, spe
             )
             if self.settings.transient:
-                raise NotImplementedError("Transient not implemented")
+                form += ((u - u_n) / self.dt) * v * dx
 
             if spe.mobile:
                 form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
@@ -925,11 +931,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             for species in reaction.reactant + reaction.product:
                 if isinstance(species, F.Species):
                     # TODO remove
-                    # temporarily overide the solution and test function to the one of the subdomain
+                    # temporarily overide the solution to the one of the subdomain
                     species.solution = species.subdomain_to_solution[subdomain]
-                    species.test_function = species.subdomain_to_test_function[
-                        subdomain
-                    ]
 
             for reactant in reaction.reactant:
                 if isinstance(reactant, F.Species):
@@ -1113,9 +1116,40 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             else:
                 raise NotImplementedError("Export type not implemented")
 
+    def iterate(self):
+        """Iterates the model for a given time step"""
+        self.progress.update(
+            min(self.dt.value, abs(self.settings.final_time - self.t.value))
+        )
+        self.t.value += self.dt.value
+
+        self.update_time_dependent_values()
+
+        # solve main problem
+        self.solver.solve(1e-5)
+
+        # post processing
+        self.post_processing()
+
+        # update previous solution
+        for subdomain in self.volume_subdomains:
+            subdomain.u_n.x.array[:] = subdomain.u.x.array[:]
+
+        # adapt stepsize
+        if self.settings.stepsize.adaptive:
+            raise NotImplementedError("Adaptive stepsize not implemented")
+
     def run(self):
         if self.settings.transient:
-            raise NotImplementedError("Transient not implemented")
+            # Solve transient
+            self.progress = tqdm.autonotebook.tqdm(
+                desc=f"Solving {self.__class__.__name__}",
+                total=self.settings.final_time,
+                unit_scale=True,
+            )
+            while self.t.value < self.settings.final_time:
+                self.iterate()
+            self.progress.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
             self.solver.solve(1e-5)
