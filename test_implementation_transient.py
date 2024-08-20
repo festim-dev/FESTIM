@@ -72,8 +72,8 @@ my_model.boundary_conditions = [
 
 my_model.temperature = lambda x: 300 + 100 * x[0]
 
-my_model.settings = F.Settings(atol=None, rtol=None, transient=True, final_time=5)
-my_model.settings.stepsize = 1e-2
+my_model.settings = F.Settings(atol=None, rtol=None, transient=True, final_time=100)
+my_model.settings.stepsize = 1
 
 my_model.exports = [
     F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
