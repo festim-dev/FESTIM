@@ -76,7 +76,7 @@ def test_callable_for_value():
     assert isinstance(bc.value_fenics, fem.Function)
 
     # check the initial value of the boundary condition
-    assert bc.value_fenics.vector.array[-1] == float(
+    assert bc.value_fenics.x.petsc_vec.array[-1] == float(
         value(x=np.array([subdomain.x]), t=0.0)
     )
 
@@ -85,7 +85,7 @@ def test_callable_for_value():
         t.value = i
         bc.update(float(t))
         expected_value = float(value(x=np.array([subdomain.x]), t=float(t)))
-        computed_value = bc.value_fenics.vector.array[-1]
+        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
         assert np.isclose(computed_value, expected_value)
 
 
@@ -115,7 +115,7 @@ def test_value_callable_x_t_T():
 
     # check the initial value of the boundary condition
     assert np.isclose(
-        bc.value_fenics.vector.array[-1],
+        bc.value_fenics.x.petsc_vec.array[-1],
         float(value(x=np.array([subdomain.x]), t=float(t), T=float(T))),
     )
 
@@ -126,7 +126,7 @@ def test_value_callable_x_t_T():
         bc.update(float(t))
 
         expected_value = float(value(x=np.array([subdomain.x]), t=float(t), T=float(T)))
-        computed_value = bc.value_fenics.vector.array[-1]
+        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
         assert np.isclose(computed_value, expected_value)
 
 
@@ -203,7 +203,7 @@ def test_callable_x_only():
 
     # check the initial value of the boundary condition
     assert np.isclose(
-        bc.value_fenics.vector.array[-1],
+        bc.value_fenics.x.petsc_vec.array[-1],
         float(value(x=np.array([subdomain.x]))),
     )
 
@@ -212,7 +212,7 @@ def test_callable_x_only():
         t.value = i
         bc.update(float(t))
         expected_value = float(value(x=np.array([subdomain.x])))
-        computed_value = bc.value_fenics.vector.array[-1]
+        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
         assert np.isclose(computed_value, expected_value)
 
 
@@ -265,13 +265,13 @@ def test_integration_with_HTransportProblem(value):
         arguments = value.__code__.co_varnames
         if "x" in arguments and "t" in arguments and "T" in arguments:
             expected_value = value(x=np.array([subdomain.x]), t=2.0, T=550.0)
-            computed_value = my_bc.value_fenics.vector.array[-1]
+            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments and "t" in arguments:
             expected_value = value(x=np.array([subdomain.x]), t=2.0)
-            computed_value = my_bc.value_fenics.vector.array[-1]
+            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments:
             expected_value = value(x=np.array([subdomain.x]))
-            computed_value = my_bc.value_fenics.vector.array[-1]
+            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
         elif "t" in arguments:
             expected_value = value(t=2.0)
             computed_value = float(my_bc.value_fenics)
@@ -387,13 +387,13 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
         arguments = value_B.__code__.co_varnames
         if "x" in arguments and "t" in arguments and "T" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0, T=550.0)
-            computed_value = my_bc_B.value_fenics.vector.array[-1]
+            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments and "t" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0)
-            computed_value = my_bc_B.value_fenics.vector.array[-1]
+            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]))
-            computed_value = my_bc_B.value_fenics.vector.array[-1]
+            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
         elif "t" in arguments:
             expected_value = value_B(t=2.0)
             computed_value = float(my_bc_B.value_fenics)
