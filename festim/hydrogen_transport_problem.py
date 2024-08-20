@@ -894,6 +894,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_solution[subdomain] = us[i]
             species.subdomain_to_prev_solution[subdomain] = u_ns[i]
             species.subdomain_to_test_function[subdomain] = vs[i]
+            species.subdomain_to_post_processing_solution[subdomain] = u.sub(i).collapse()
+            species.subdomain_to_collapsed_function_space[subdomain] = (V.sub(i).collapse())
         subdomain.u = u
 
     def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
@@ -1086,10 +1088,24 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "Exports not implemented for HTransportProblemDiscontinuous"
             )
 
+    def post_processing(self):
+        for subdomain in self.volume_subdomains:
+            for species in self.species:
+                if subdomain not in species.subdomains:
+                    continue
+                collapsed_function = species.subdomain_to_post_processing_solution[
+                    subdomain
+                ]
+                u = subdomain.u
+                v0_to_V = species.subdomain_to_collapsed_function_space[
+                    subdomain
+                ][1]
+                collapsed_function.x.array[:] = u.x.array[v0_to_V]
+
     def run(self):
         if self.settings.transient:
             raise NotImplementedError("Transient not implemented")
         else:
             # Solve steady-state
             self.solver.solve(1e-5)
-            # self.post_processing()
+            self.post_processing()
