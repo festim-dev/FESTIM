@@ -754,6 +754,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.surface_to_volume = surface_to_volume or {}
 
     def initialise(self):
+        self.define_meshtags_and_measures()
         self.create_submeshes()
         self.create_species_from_traps()
 
@@ -782,7 +783,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.dx = ufl.Measure(
                 "dx", domain=self.mesh.mesh, subdomain_data=ct_r, subdomain_id=1
             )
-            subdomain.ds = None
             self.create_subdomain_formulation(subdomain)
             subdomain.u.name = f"u_{subdomain.id}"
 
@@ -899,7 +899,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             u_n = spe.subdomain_to_prev_solution[subdomain]
             v = spe.subdomain_to_test_function[subdomain]
             dx = subdomain.dx
-            ds = subdomain.ds
+            ds = self.ds
 
             D = subdomain.material.get_diffusion_coefficient(
                 self.mesh.mesh, self.temperature_fenics, spe
@@ -945,7 +945,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         # add fluxes
         for bc in self.boundary_conditions:
             if isinstance(bc, F.ParticleFluxBC):
-                form -= bc.value_fenics * v * ds(bc.subdomain.id)
+                if subdomain == self.surface_to_volume[bc.subdomain]:
+                    form -= bc.value_fenics * v * ds(bc.subdomain.id)
 
         subdomain.F = form
 
@@ -997,11 +998,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
             n = ufl.FacetNormal(mesh)
             n_b = n(b_res)
-            n_t = n(t_res)
+            n_t = n(t_res)  # this doesn't seem to be used
             cr = ufl.Circumradius(mesh)
             h_b = 2 * cr(b_res)
             h_t = 2 * cr(t_res)
-            gamma = 400.0  # this needs to be "sufficiently large"
+            # TODO make this a user parameter
+            gamma = 10.0  # this needs to be "sufficiently large"
 
             K_b = K_S_fun(
                 self.temperature_fenics(b_res),

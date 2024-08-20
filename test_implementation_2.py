@@ -68,8 +68,8 @@ my_model.mesh = F.Mesh(mesh)
 my_model.volume_meshtags = ct
 my_model.facet_meshtags = mt
 
-material_bottom = F.Material(D_0=2.0, E_D=0.1)
-material_top = F.Material(D_0=2.0, E_D=0.1)
+material_bottom = F.Material(D_0=1, E_D=0 * 0.1)
+material_top = F.Material(D_0=1, E_D=0 * 0.1)
 
 material_bottom.K_S_0 = 2.0
 material_bottom.E_K_S = 0 * 0.1
@@ -97,12 +97,12 @@ for species in my_model.species:
 
 my_model.boundary_conditions = [
     F.DirichletBC(top_surface, value=0.05, species=H),
-    # F.DirichletBC(bottom_surface, value=0.2, species=H),
-    F.ParticleFluxBC(bottom_surface, value=1.0, species=H),
+    # F.DirichletBC(bottom_surface, value=1, species=H),
+    F.ParticleFluxBC(bottom_surface, value=lambda x: 1.0 + x[0], species=H),
 ]
 
 
-my_model.temperature = lambda x: 300 + 10 * x[1] + 100 * x[0]
+my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 
 my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
 
