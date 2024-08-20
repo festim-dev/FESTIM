@@ -851,12 +851,20 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     def initialise(self):
         self.create_submeshes()
         self.create_species_from_traps()
+
+        self.t = fem.Constant(self.mesh.mesh, 0.0)
+        if self.settings.transient:
+            raise NotImplementedError("Transient simulations not supported yet")
         self.define_temperature()
 
         self.entity_maps = {
             subdomain.submesh: subdomain.parent_to_submesh
             for subdomain in self.volume_subdomains
         }
+
+        self.create_source_values_fenics()
+        self.create_flux_values_fenics()
+        self.create_initial_conditions()
 
         for subdomain in self.volume_subdomains:
             self.define_function_spaces(subdomain)
@@ -869,24 +877,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.dx = ufl.Measure(
                 "dx", domain=self.mesh.mesh, subdomain_data=ct_r, subdomain_id=1
             )
+            subdomain.ds = None
             self.create_subdomain_formulation(subdomain)
             subdomain.u.name = f"u_{subdomain.id}"
 
-        self.define_meshtags_and_measures()
-        # self.assign_functions_to_species()
-
-        self.t = fem.Constant(self.mesh.mesh, 0.0)
-        if self.settings.transient:
-            # TODO should raise error if no stepsize is provided
-            # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = F.as_fenics_constant(
-                self.settings.stepsize.initial_value, self.mesh.mesh
-            )
-
         self.define_boundary_conditions()
-        self.create_source_values_fenics()
-        self.create_flux_values_fenics()
-        self.create_initial_conditions()
+
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
@@ -998,6 +994,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             u_n = spe.subdomain_to_prev_solution[subdomain]
             v = spe.subdomain_to_test_function[subdomain]
             dx = subdomain.dx
+            ds = subdomain.ds
 
             D = subdomain.material.get_diffusion_coefficient(
                 self.mesh.mesh, self.temperature_fenics, spe
@@ -1039,6 +1036,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     * product.subdomain_to_test_function[subdomain]
                     * dx
                 )
+
+        # add fluxes
+        for bc in self.boundary_conditions:
+            if isinstance(bc, F.ParticleFluxBC):
+                form -= bc.value_fenics * v * ds(bc.subdomain.id)
 
         subdomain.F = form
 
@@ -1151,6 +1153,18 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "pc_factor_mat_solver_type": "mumps",
             },
         )
+
+    def create_flux_values_fenics(self):
+        """For each particle flux create the value_fenics"""
+        for bc in self.boundary_conditions:
+            # create value_fenics for all F.ParticleFluxBC objects
+            if isinstance(bc, F.ParticleFluxBC):
+                volume_subdomain = self.surface_to_volume[bc.subdomain]
+                bc.create_value_fenics(
+                    mesh=volume_subdomain.submesh,
+                    temperature=self.temperature_fenics,
+                    t=self.t,
+                )
 
     def initialise_exports(self):
         if self.exports:
