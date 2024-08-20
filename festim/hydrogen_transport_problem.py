@@ -715,8 +715,7 @@ class HydrogenTransportProblem(F.ProblemBase):
 
 
 def K_S_fun(T, K_S_0, E_K_S):
-    k_B = 8.6173303e-5
-    return K_S_0 * ufl.exp(-E_K_S / k_B / T)
+    return K_S_0 * ufl.exp(-E_K_S / F.k_B / T)
 
 
 class HTransportProblemDiscontinuous(HydrogenTransportProblem):
