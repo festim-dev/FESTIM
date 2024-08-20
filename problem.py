@@ -14,6 +14,38 @@ def K_S_fun(T, K_S_0, E_K_S):
 
 class HTransportProblemDiscontinuous(F.HydrogenTransportProblem):
 
+    def __init__(
+        self,
+        mesh=None,
+        subdomains=None,
+        species=None,
+        reactions=None,
+        temperature=None,
+        sources=None,
+        initial_conditions=None,
+        boundary_conditions=None,
+        settings=None,
+        exports=None,
+        traps=None,
+        interfaces=None,
+        surface_to_volume=None,
+    ):
+        super().__init__(
+            mesh,
+            subdomains,
+            species,
+            reactions,
+            temperature,
+            sources,
+            initial_conditions,
+            boundary_conditions,
+            settings,
+            exports,
+            traps,
+        )
+        self.interfaces = interfaces or {}
+        self.surface_to_volume = surface_to_volume or {}
+
     def initialise(self):
         self.create_submeshes()
         self.create_species_from_traps()
@@ -317,6 +349,12 @@ class HTransportProblemDiscontinuous(F.HydrogenTransportProblem):
                 "pc_factor_mat_solver_type": "mumps",
             },
         )
+
+    def initialise_exports(self):
+        if self.exports:
+            raise NotImplementedError(
+                "Exports not implemented for HTransportProblemDiscontinuous"
+            )
 
     def run(self):
         if self.settings.transient:
