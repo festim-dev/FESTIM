@@ -26,6 +26,7 @@ class VolumeQuantity:
 
         self.t = []
         self.data = []
+        self._first_time_export = True
 
     @property
     def filename(self):
@@ -58,13 +59,13 @@ class VolumeQuantity:
         then append the time and value to the file"""
 
         if not os.path.isfile(self.filename):
-            title = "Total volume {}: {}".format(self.volume.id, self.field.name)
-
             if self.filename is not None:
-                with open(self.filename, mode="w", newline="") as file:
+                if self._first_time_export:
+                    header = ["t(s)", f"{self.title}"]
+                    with open(self.filename, mode="w+", newline="") as file:
+                        writer = csv.writer(file)
+                        writer.writerow(header)
+                    self._first_time_export = False
+                with open(self.filename, mode="a", newline="") as file:
                     writer = csv.writer(file)
-                    writer.writerow(["t(s)", f"{title}"])
-
-        with open(self.filename, mode="a", newline="") as file:
-            writer = csv.writer(file)
-            writer.writerow([t, self.value])
+                    writer.writerow([t, self.value])

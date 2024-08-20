@@ -1,17 +1,14 @@
 import dolfinx
 from dolfinx import fem
-from dolfinx.nls.petsc import NewtonSolver
 import basix
-import basix.ufl
 import ufl
 from mpi4py import MPI
 import numpy as np
-import tqdm.auto as tqdm
 import festim as F
 from festim.helpers_discontinuity import NewtonSolver, transfer_meshtags_to_submesh
 
 
-class HydrogenTransportProblem:
+class HydrogenTransportProblem(F.ProblemBase):
     """
     Hydrogen Transport Problem.
 
@@ -109,28 +106,20 @@ class HydrogenTransportProblem:
         exports=None,
         traps=None,
     ):
-        self.mesh = mesh
-        self.temperature = temperature
-        self.settings = settings
+        super().__init__(
+            mesh=mesh,
+            sources=sources,
+            exports=exports,
+            subdomains=subdomains,
+            boundary_conditions=boundary_conditions,
+            settings=settings,
+        )
 
-        # for arguments to initliase as empty list
-        # if arg not None, assign arg, else assign empty list
-        self.subdomains = subdomains or []
         self.species = species or []
+        self.temperature = temperature
         self.reactions = reactions or []
-        self.sources = sources or []
         self.initial_conditions = initial_conditions or []
-        self.boundary_conditions = boundary_conditions or []
-        self.exports = exports or []
         self.traps = traps or []
-
-        self.dx = None
-        self.ds = None
-        self.function_space = None
-        self.facet_meshtags = None
-        self.volume_meshtags = None
-        self.formulation = None
-        self.bc_forms = []
         self.temperature_fenics = None
 
     @property
@@ -181,14 +170,6 @@ class HydrogenTransportProblem:
     @property
     def multispecies(self):
         return len(self.species) > 1
-
-    @property
-    def volume_subdomains(self):
-        return [s for s in self.subdomains if isinstance(s, F.VolumeSubdomain)]
-
-    @property
-    def surface_subdomains(self):
-        return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
 
     @property
     def species(self):
@@ -400,6 +381,7 @@ class HydrogenTransportProblem:
         function u and u_n. Create global DG function spaces of degree 0 and 1
         for the global diffusion coefficient"""
 
+        # TODO: expose degree as a property to the user (element_degree ?) in ProblemBase
         degree = 1
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
@@ -407,6 +389,7 @@ class HydrogenTransportProblem:
             degree,
             basix.LagrangeVariant.equispaced,
         )
+
         if not self.multispecies:
             element = element_CG
         else:
@@ -465,46 +448,13 @@ class HydrogenTransportProblem:
             spe.prev_solution = sub_prev_solution[idx]
             spe.test_function = sub_test_functions[idx]
 
-    def define_meshtags_and_measures(self):
-        """Defines the facet and volume meshtags of the model which are used
-        to define the measures fo the model, dx and ds"""
-
-        if isinstance(self.mesh, F.MeshFromXDMF):
-            self.facet_meshtags = self.mesh.define_surface_meshtags()
-            self.volume_meshtags = self.mesh.define_volume_meshtags()
-
-        elif (
-            isinstance(self.mesh, F.Mesh)
-            and self.facet_meshtags is None
-            and self.volume_meshtags is None
-        ):
-            self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
-                surface_subdomains=self.surface_subdomains,
-                volume_subdomains=self.volume_subdomains,
-            )
-
-        # check volume ids are unique
-        vol_ids = [vol.id for vol in self.volume_subdomains]
-        if len(vol_ids) != len(np.unique(vol_ids)):
-            raise ValueError("Volume ids are not unique")
-
-        # define measures
-        self.ds = ufl.Measure(
-            "ds", domain=self.mesh.mesh, subdomain_data=self.facet_meshtags
-        )
-        self.dx = ufl.Measure(
-            "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
-        )
-
     def define_boundary_conditions(self):
-        """Defines the dirichlet boundary conditions of the model"""
         for bc in self.boundary_conditions:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
-            if isinstance(bc, F.DirichletBC):
-                form = self.create_dirichletbc_form(bc)
-                self.bc_forms.append(form)
+
+        super().define_boundary_conditions()
 
     def create_dirichletbc_form(self, bc):
         """Creates a dirichlet boundary condition form
@@ -568,7 +518,6 @@ class HydrogenTransportProblem:
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, F.ParticleSource):
-
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
@@ -580,7 +529,6 @@ class HydrogenTransportProblem:
         for bc in self.boundary_conditions:
             # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, F.ParticleFluxBC):
-
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
@@ -699,78 +647,25 @@ class HydrogenTransportProblem:
                             spe.solution * spe.test_function * self.dx(vol.id)
                         )
 
-    def create_solver(self):
-        """Creates the solver of the model"""
-        problem = fem.petsc.NonlinearProblem(
-            self.formulation,
-            self.u,
-            bcs=self.bc_forms,
-        )
-        self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
-        self.solver.atol = self.settings.atol
-        self.solver.rtol = self.settings.rtol
-        self.solver.max_it = self.settings.max_iterations
-
-    def run(self):
-        """Runs the model"""
-
-        if self.settings.transient:
-            # Solve transient
-            self.progress = tqdm.tqdm(
-                desc="Solving H transport problem",
-                total=self.settings.final_time,
-                unit_scale=True,
-            )
-            while self.t.value < self.settings.final_time:
-                self.iterate()
-            self.progress.refresh()  # refresh progress bar to show 100%
-        else:
-            # Solve steady-state
-            self.solver.solve(self.u)
-            self.post_processing()
-
-    def iterate(self):
-        """Iterates the model for a given time step"""
-        self.progress.update(
-            min(self.dt.value, abs(self.settings.final_time - self.t.value))
-        )
-        self.t.value += self.dt.value
-
-        self.update_time_dependent_values()
-
-        # solve main problem
-        nb_its, converged = self.solver.solve(self.u)
-
-        # post processing
-        self.post_processing()
-
-        # update previous solution
-        self.u_n.x.array[:] = self.u.x.array[:]
-
-        # adapt stepsize
-        if self.settings.stepsize.adaptive:
-            new_stepsize = self.settings.stepsize.modify_value(
-                value=self.dt.value, nb_iterations=nb_its, t=self.t.value
-            )
-            self.dt.value = new_stepsize
-
     def update_time_dependent_values(self):
+        super().update_time_dependent_values()
+
+        if not self.temperature_time_dependent:
+            return
+
         t = float(self.t)
-        if self.temperature_time_dependent:
-            if isinstance(self.temperature_fenics, fem.Constant):
-                self.temperature_fenics.value = self.temperature(t=t)
-            elif isinstance(self.temperature_fenics, fem.Function):
-                self.temperature_fenics.interpolate(self.temperature_expr)
+
+        if isinstance(self.temperature_fenics, fem.Constant):
+            self.temperature_fenics.value = self.temperature(t=t)
+        elif isinstance(self.temperature_fenics, fem.Function):
+            self.temperature_fenics.interpolate(self.temperature_expr)
+
         for bc in self.boundary_conditions:
-            if bc.time_dependent:
-                bc.update(t=t)
-            elif self.temperature_time_dependent and bc.temperature_dependent:
+            if bc.temperature_dependent:
                 bc.update(t=t)
 
         for source in self.sources:
-            if source.time_dependent:
-                source.update(t=t)
-            elif self.temperature_time_dependent and source.temperature_dependent:
+            if source.temperature_dependent:
                 source.update(t=t)
 
     def post_processing(self):
@@ -790,7 +685,14 @@ class HydrogenTransportProblem:
         for export in self.exports:
             # TODO if export type derived quantity
             if isinstance(export, F.SurfaceQuantity):
-                export.compute(self.ds)
+                if isinstance(
+                    export, (F.SurfaceFlux, F.TotalSurface, F.AverageSurface)
+                ):
+                    export.compute(
+                        self.ds,
+                    )
+                else:
+                    export.compute()
                 # update export data
                 export.t.append(float(self.t))
 
@@ -798,7 +700,10 @@ class HydrogenTransportProblem:
                 if export.filename is not None:
                     export.write(t=float(self.t))
             elif isinstance(export, F.VolumeQuantity):
-                export.compute(self.dx)
+                if isinstance(export, (F.TotalVolume, F.AverageVolume)):
+                    export.compute(self.dx)
+                else:
+                    export.compute()
                 # update export data
                 export.t.append(float(self.t))
 
