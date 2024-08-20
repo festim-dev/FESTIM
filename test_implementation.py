@@ -96,9 +96,7 @@ my_model.species = [H, trapped_H]
 
 for species in [H, trapped_H]:
     species.subdomains = [bottom_domain, top_domain]
-    species.subdomain_to_solution = {}
-    species.subdomain_to_prev_solution = {}
-    species.subdomain_to_test_function = {}
+
 
 my_model.reactions = [
     F.Reaction(
