@@ -63,8 +63,9 @@ class VTXExport(VTXExportBase):
         ...    my_export.write(t)
     """
 
-    def __init__(self, filename: str, field) -> None:
+    def __init__(self, filename: str, field, subdomain: F.VolumeSubdomain=None) -> None:
         self.field = field
+        self.subdomain = subdomain
         super().__init__(filename)
 
     @property

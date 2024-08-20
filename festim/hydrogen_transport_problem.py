@@ -896,6 +896,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_test_function[subdomain] = vs[i]
             species.subdomain_to_post_processing_solution[subdomain] = u.sub(i).collapse()
             species.subdomain_to_collapsed_function_space[subdomain] = (V.sub(i).collapse())
+            species.subdomain_to_post_processing_solution[subdomain].name = f"{species.name}_{subdomain.id}"
         subdomain.u = u
 
     def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
@@ -1083,10 +1084,14 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
 
     def initialise_exports(self):
-        if self.exports:
-            raise NotImplementedError(
-                "Exports not implemented for HTransportProblemDiscontinuous"
-            )
+        for export in self.exports:
+            if isinstance(export, F.VTXExport):
+                species = export.field[0]
+                # override post_processing_solution attribute of species
+                species.post_processing_solution = species.subdomain_to_post_processing_solution[export.subdomain]
+                export.define_writer(MPI.COMM_WORLD)
+            else:
+                raise NotImplementedError("Export type not implemented")
 
     def post_processing(self):
         for subdomain in self.volume_subdomains:
@@ -1101,6 +1106,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     subdomain
                 ][1]
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
+
+        for export in self.exports:
+            if isinstance(export, F.VTXExport):
+                export.write(float(self.t))
+            else:
+                raise NotImplementedError("Export type not implemented")
 
     def run(self):
         if self.settings.transient:
