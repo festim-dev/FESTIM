@@ -63,6 +63,8 @@ class ProblemBase:
             self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
                 surface_subdomains=self.surface_subdomains,
                 volume_subdomains=self.volume_subdomains,
+                # if self has attribute interfaces pass it
+                interfaces=getattr(self, "interfaces", None),
             )
 
         # check volume ids are unique
