@@ -1,5 +1,4 @@
 import festim as F
-from problem import HTransportProblemDiscontinuous
 
 from mpi4py import MPI
 import dolfinx
@@ -64,7 +63,7 @@ def generate_mesh():
 
 mesh, mt, ct = generate_mesh()
 
-my_model = HTransportProblemDiscontinuous()
+my_model = F.HTransportProblemDiscontinuous()
 my_model.mesh = F.Mesh(mesh)
 my_model.volume_meshtags = ct
 my_model.facet_meshtags = mt
@@ -132,6 +131,8 @@ my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
 
 my_model.initialise()
 my_model.run()
+
+# -------------------- post processing --------------------
 
 list_of_subdomains = my_model.volume_subdomains
 
