@@ -1,4 +1,3 @@
-import dolfinx
 import numpy as np
 import festim as F
 
@@ -74,22 +73,9 @@ my_model.temperature = lambda x: 300 + 100 * x[0]
 
 my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
 
+my_model.exports = [
+    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+]
 
 my_model.initialise()
 my_model.run()
-
-
-for subdomain in my_model.volume_subdomains:
-    us = []
-    for species in my_model.species:
-        if subdomain not in species.subdomains:
-            continue
-        u_sub_0 = species.subdomain_to_post_processing_solution[subdomain]
-        u_sub_0.name = species.name
-        us.append(u_sub_0)
-
-    bp = dolfinx.io.VTXWriter(
-        my_model.mesh.mesh.comm, f"u_{subdomain.id}.bp", us, engine="BP4"
-    )
-    bp.write(0)
-    bp.close()
