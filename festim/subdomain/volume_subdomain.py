@@ -1,3 +1,8 @@
+from dolfinx.mesh import locate_entities
+
+import numpy as np
+
+
 class VolumeSubdomain:
     """
     Volume subdomain class
@@ -9,6 +14,22 @@ class VolumeSubdomain:
     def __init__(self, id, material):
         self.id = id
         self.material = material
+
+    def locate_subdomain_entities(self, mesh, vdim):
+        """Locates all cells in subdomain borders within domain
+
+        Args:
+            mesh (dolfinx.mesh.Mesh): the mesh of the model
+            vdim (int): the dimension of the volumes of the mesh,
+                for 1D this is always 1
+
+        Returns:
+            entities (np.array): the entities of the subdomain
+        """
+        # By default, all entities are included
+        # return array like x full of True
+        entities = locate_entities(mesh, vdim, lambda x: np.full(x.shape[1], True))
+        return entities
 
 
 def find_volume_from_id(id: int, volumes: list):

@@ -4,7 +4,6 @@ import basix.ufl
 import ufl
 import numpy as np
 import festim as F
-from dolfinx.mesh import meshtags
 
 
 class Mesh1D(F.Mesh):
@@ -74,44 +73,6 @@ class Mesh1D(F.Mesh):
             raise ValueError("borders dont match domain borders")
 
     def define_meshtags(self, surface_subdomains, volume_subdomains):
-        """Defines the facet and volume meshtags of the mesh
-
-        Args:
-            surface_subdomains (list of festim.SufaceSubdomains): the surface subdomains of the model
-            volume_subdomains (list of festim.VolumeSubdomains): the volume subdomains of the model
-
-        Returns:
-            dolfinx.mesh.MeshTags: the facet meshtags
-            dolfinx.mesh.MeshTags: the volume meshtags
-        """
-        facet_indices, tags_facets = [], []
-
-        # find all cells in domain and mark them as 0
-        num_cells = self.mesh.topology.index_map(self.vdim).size_local
-        mesh_cell_indices = np.arange(num_cells, dtype=np.int32)
-        tags_volumes = np.full(num_cells, 0, dtype=np.int32)
-
-        for surf in surface_subdomains:
-            facet_index = surf.locate_boundary_facet_indices(self.mesh, self.fdim)
-            facet_indices.append(facet_index)
-            tags_facets.append(surf.id)
-
-        for vol in volume_subdomains:
-            # find all cells in subdomain and mark them as sub_dom.id
-            entities = vol.locate_subdomain_entities(self.mesh, self.vdim)
-            tags_volumes[entities] = vol.id
-
         # check if all borders are defined
         self.check_borders(volume_subdomains)
-
-        # dofs and tags need to be in np.in32 format for meshtags
-        facet_indices = np.array(facet_indices, dtype=np.int32)
-        tags_facets = np.array(tags_facets, dtype=np.int32)
-
-        # define mesh tags
-        facet_meshtags = meshtags(self.mesh, self.fdim, facet_indices, tags_facets)
-        volume_meshtags = meshtags(
-            self.mesh, self.vdim, mesh_cell_indices, tags_volumes
-        )
-
-        return facet_meshtags, volume_meshtags
+        return super().define_meshtags(surface_subdomains, volume_subdomains)
