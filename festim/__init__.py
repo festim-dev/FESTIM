@@ -34,8 +34,6 @@ from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
 
-from .hydrogen_transport_problem import HydrogenTransportProblem
-from .heat_transfer_problem import HeatTransferProblem
 
 from .initial_condition import InitialCondition, InitialTemperature
 
@@ -60,3 +58,9 @@ from .exports.vtx import VTXExport, VTXExportForTemperature
 from .exports.xdmf import XDMFExport
 
 from .reaction import Reaction
+
+from .hydrogen_transport_problem import (
+    HydrogenTransportProblem,
+    HTransportProblemDiscontinuous,
+)
+from .heat_transfer_problem import HeatTransferProblem
