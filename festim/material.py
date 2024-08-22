@@ -11,6 +11,10 @@ class Material:
             diffusion coefficient (m2/s)
         E_D (float or dict): the activation energy of the diffusion
             coeficient (eV)
+        K_S_0 (float or dict): the pre-exponential factor of the
+            solubility coefficient (H/m3/Pa0.5)
+        E_K_S (float or dict): the activation energy of the solubility
+            coeficient (eV)
         name (str): the name of the material
         thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
         density (float, callable): the density of the material (kg/m3)
@@ -20,6 +24,10 @@ class Material:
         D_0 (float or dict): the pre-exponential factor of the
             diffusion coefficient (m2/s)
         E_D (float or dict): the activation energy of the diffusion
+            coeficient (eV)
+        K_S_0 (float or dict): the pre-exponential factor of the
+            solubility coefficient (H/m3/Pa0.5)
+        E_K_S (float or dict): the activation energy of the solubility
             coeficient (eV)
         name (str): the name of the material
         thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
@@ -40,6 +48,8 @@ class Material:
         self,
         D_0,
         E_D,
+        K_S_0=None,
+        E_K_S=None,
         thermal_conductivity=None,
         density=None,
         heat_capacity=None,
@@ -47,6 +57,8 @@ class Material:
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
+        self.K_S_0 = K_S_0
+        self.E_K_S = E_K_S
 
         self.thermal_conductivity = thermal_conductivity
         self.density = density

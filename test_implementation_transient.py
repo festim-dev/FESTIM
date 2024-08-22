@@ -18,27 +18,35 @@ vertices = np.concatenate(
 
 my_model.mesh = F.Mesh1D(vertices)
 
-material_left = F.Material(D_0=2.0, E_D=0)
-material_mid = F.Material(D_0=2.0, E_D=0)
-material_right = F.Material(D_0=2.0, E_D=0)
+material_left = F.Material(D_0=2.0, E_D=0, K_S_0=2.0, E_K_S=0)
+material_mid = F.Material(D_0=2.0, E_D=0, K_S_0=4.0, E_K_S=0)
+material_right = F.Material(D_0=2.0, E_D=0, K_S_0=6.0, E_K_S=0)
 
-material_left.K_S_0 = 2.0
-material_left.E_K_S = 0
-material_mid.K_S_0 = 4.0
-material_mid.E_K_S = 0
-material_right.K_S_0 = 6.0
-material_right.E_K_S = 0
-
-left_domain = F.VolumeSubdomain1D(3, borders=[vertices[0], interface_1], material=material_left)
-middle_domain = F.VolumeSubdomain1D(4, borders=[interface_1, interface_2], material=material_mid)
-right_domain = F.VolumeSubdomain1D(5, borders=[interface_2, vertices[-1]], material=material_right)
+left_domain = F.VolumeSubdomain1D(
+    3, borders=[vertices[0], interface_1], material=material_left
+)
+middle_domain = F.VolumeSubdomain1D(
+    4, borders=[interface_1, interface_2], material=material_mid
+)
+right_domain = F.VolumeSubdomain1D(
+    5, borders=[interface_2, vertices[-1]], material=material_right
+)
 
 left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
 # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
-my_model.interfaces = {6: [left_domain, middle_domain], 7: [middle_domain, right_domain]}
-my_model.subdomains = [left_domain, middle_domain, right_domain, left_surface, right_surface]
+my_model.interfaces = {
+    6: [left_domain, middle_domain],
+    7: [middle_domain, right_domain],
+}
+my_model.subdomains = [
+    left_domain,
+    middle_domain,
+    right_domain,
+    left_surface,
+    right_surface,
+]
 my_model.surface_to_volume = {right_surface: right_domain, left_surface: left_domain}
 
 H = F.Species("H", mobile=True)
@@ -76,9 +84,11 @@ my_model.settings = F.Settings(atol=None, rtol=None, transient=True, final_time=
 my_model.settings.stepsize = 1
 
 my_model.exports = [
-    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+    for subdomain in my_model.volume_subdomains
 ] + [
-    F.VTXExport(filename=f"u_t_{subdomain.id}.bp", field=trapped_H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+    F.VTXExport(filename=f"u_t_{subdomain.id}.bp", field=trapped_H, subdomain=subdomain)
+    for subdomain in my_model.volume_subdomains
 ]
 
 my_model.initialise()
