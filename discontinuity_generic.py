@@ -1,372 +1,532 @@
 from mpi4py import MPI
+from petsc4py import PETSc
 import dolfinx
-import dolfinx.fem.petsc
+from dolfinx.cpp.fem import compute_integration_domains
+
 import ufl
 import numpy as np
-from petsc4py import PETSc
 import basix
-from festim.helpers_discontinuity import NewtonSolver, transfer_meshtags_to_submesh
-import festim as F
+import dolfinx.fem.petsc
+
+class NewtonSolver:
+    max_iterations: int
+    bcs: list[dolfinx.fem.DirichletBC]
+    A: PETSc.Mat
+    b: PETSc.Vec
+    J: dolfinx.fem.Form
+    b: dolfinx.fem.Form
+    dx: PETSc.Vec
+
+    def __init__(
+        self,
+        F: list[dolfinx.fem.form],
+        J: list[list[dolfinx.fem.form]],
+        w: list[dolfinx.fem.Function],
+        bcs: list[dolfinx.fem.DirichletBC] | None = None,
+        max_iterations: int = 5,
+        petsc_options: dict[str, str | float | int | None] = None,
+        problem_prefix="newton",
+    ):
+        self.max_iterations = max_iterations
+        self.bcs = [] if bcs is None else bcs
+        self.b = dolfinx.fem.petsc.create_vector_block(F)
+        self.F = F
+        self.J = J
+        self.A = dolfinx.fem.petsc.create_matrix_block(J)
+        self.dx = self.A.createVecLeft()
+        self.w = w
+        self.x = dolfinx.fem.petsc.create_vector_block(F)
+
+        # Set PETSc options
+        opts = PETSc.Options()
+        if petsc_options is not None:
+            for k, v in petsc_options.items():
+                opts[k] = v
+
+        # Define KSP solver
+        self._solver = PETSc.KSP().create(self.b.getComm().tompi4py())
+        self._solver.setOperators(self.A)
+        self._solver.setFromOptions()
+
+        # Set matrix and vector PETSc options
+        self.A.setFromOptions()
+        self.b.setFromOptions()
+
+    def solve(self, tol=1e-6, beta=1.0):
+        i = 0
+
+        while i < self.max_iterations:
+            dolfinx.cpp.la.petsc.scatter_local_vectors(
+                self.x,
+                [si.x.petsc_vec.array_r for si in self.w],
+                [
+                    (
+                        si.function_space.dofmap.index_map,
+                        si.function_space.dofmap.index_map_bs,
+                    )
+                    for si in self.w
+                ],
+            )
+            self.x.ghostUpdate(
+                addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+            )
+
+            # Assemble F(u_{i-1}) - J(u_D - u_{i-1}) and set du|_bc= u_D - u_{i-1}
+            with self.b.localForm() as b_local:
+                b_local.set(0.0)
+            
+            dolfinx.fem.petsc.assemble_vector_block(
+                self.b, self.F, self.J, bcs=self.bcs, x0=self.x, scale=-1.0
+            )
+            self.b.ghostUpdate(
+                PETSc.InsertMode.INSERT_VALUES, PETSc.ScatterMode.FORWARD
+            )
+
+            # Assemble Jacobian
+            self.A.zeroEntries()
+            dolfinx.fem.petsc.assemble_matrix_block(self.A, self.J, bcs=self.bcs)
+            self.A.assemble()
+
+            self._solver.solve(self.b, self.dx)
+            # self._solver.view()
+            assert (
+                self._solver.getConvergedReason() > 0
+            ), "Linear solver did not converge"
+            offset_start = 0
+            for s in self.w:
+                num_sub_dofs = (
+                    s.function_space.dofmap.index_map.size_local
+                    * s.function_space.dofmap.index_map_bs
+                )
+                s.x.petsc_vec.array_w[:num_sub_dofs] -= (
+                    beta * self.dx.array_r[offset_start : offset_start + num_sub_dofs]
+                )
+                s.x.petsc_vec.ghostUpdate(
+                    addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
+                )
+                offset_start += num_sub_dofs
+            # Compute norm of update
+
+            correction_norm = self.dx.norm(0)
+            print(f"Iteration {i}: Correction norm {correction_norm}")
+            if correction_norm < tol:
+                break
+            i += 1
+
+    def __del__(self):
+        self.A.destroy()
+        self.b.destroy()
+        self.dx.destroy()
+        self._solver.destroy()
+        self.x.destroy()
+
+
+def transfer_meshtags_to_submesh(
+    mesh, entity_tag, submesh, sub_vertex_to_parent, sub_cell_to_parent
+):
+    """
+    Transfer a meshtag from a parent mesh to a sub-mesh.
+    """
+
+    tdim = mesh.topology.dim
+    cell_imap = mesh.topology.index_map(tdim)
+    num_cells = cell_imap.size_local + cell_imap.num_ghosts
+    mesh_to_submesh = np.full(num_cells, -1)
+    mesh_to_submesh[sub_cell_to_parent] = np.arange(
+        len(sub_cell_to_parent), dtype=np.int32
+    )
+    sub_vertex_to_parent = np.asarray(sub_vertex_to_parent)
+
+    submesh.topology.create_connectivity(entity_tag.dim, 0)
+
+    num_child_entities = (
+        submesh.topology.index_map(entity_tag.dim).size_local
+        + submesh.topology.index_map(entity_tag.dim).num_ghosts
+    )
+    submesh.topology.create_connectivity(submesh.topology.dim, entity_tag.dim)
+
+    c_c_to_e = submesh.topology.connectivity(submesh.topology.dim, entity_tag.dim)
+    c_e_to_v = submesh.topology.connectivity(entity_tag.dim, 0)
+
+    child_markers = np.full(num_child_entities, 0, dtype=np.int32)
+
+    mesh.topology.create_connectivity(entity_tag.dim, 0)
+    mesh.topology.create_connectivity(entity_tag.dim, mesh.topology.dim)
+    p_f_to_v = mesh.topology.connectivity(entity_tag.dim, 0)
+    p_f_to_c = mesh.topology.connectivity(entity_tag.dim, mesh.topology.dim)
+    sub_to_parent_entity_map = np.full(num_child_entities, -1, dtype=np.int32)
+    for facet, value in zip(entity_tag.indices, entity_tag.values):
+        facet_found = False
+        for cell in p_f_to_c.links(facet):
+            if facet_found:
+                break
+            if (child_cell := mesh_to_submesh[cell]) != -1:
+                for child_facet in c_c_to_e.links(child_cell):
+                    child_vertices = c_e_to_v.links(child_facet)
+                    child_vertices_as_parent = sub_vertex_to_parent[child_vertices]
+                    is_facet = np.isin(
+                        child_vertices_as_parent, p_f_to_v.links(facet)
+                    ).all()
+                    if is_facet:
+                        child_markers[child_facet] = value
+                        facet_found = True
+                        sub_to_parent_entity_map[child_facet] = facet
+    tags = dolfinx.mesh.meshtags(
+        submesh,
+        entity_tag.dim,
+        np.arange(num_child_entities, dtype=np.int32),
+        child_markers,
+    )
+    tags.name = entity_tag.name
+    return tags, sub_to_parent_entity_map
 
 
 # ---------------- Generate a mesh ----------------
 def generate_mesh():
-    def bottom_boundary(x):
-        return np.isclose(x[1], 0.0)
+    def left_boundary(x):
+        return np.isclose(x[0], 0.0)
 
-    def top_boundary(x):
-        return np.isclose(x[1], 1.0)
+    def right_boundary(x):
+        return np.isclose(x[0], 1.0)
 
-    def half(x):
-        return x[1] <= 0.5 + 1e-14
+    def left_domain(x):
+        return x[0] <= 0.5 + 1e-14
+    
+    def right_domain(x):
+        return x[0] >= 0.7 - 1e-14
 
-    mesh = dolfinx.mesh.create_unit_square(
-        MPI.COMM_WORLD, 20, 20, dolfinx.mesh.CellType.triangle
+    interface_1 = 0.5
+    interface_2 = 0.7
+
+    # with N = 2000 I've never had the error but with N = 10 I had it
+    N = 3
+    vertices = np.concatenate(
+        [
+            np.linspace(0, interface_1, num=N),
+            np.linspace(interface_1, interface_2, num=N),
+            np.linspace(interface_2, 1, num=N),
+        ]
     )
 
+    vertices = np.sort(np.unique(vertices)).astype(float)
+    degree = 1
+    domain = ufl.Mesh(
+        basix.ufl.element(basix.ElementFamily.P, "interval", degree, shape=(1,))
+    )
+    mesh_points = np.reshape(vertices, (len(vertices), 1))
+    indexes = np.arange(vertices.shape[0])
+    cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
+
+    mesh = dolfinx.mesh.create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
+
     # Split domain in half and set an interface tag of 5
-    gdim = mesh.geometry.dim
     tdim = mesh.topology.dim
     fdim = tdim - 1
-    top_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, top_boundary)
-    bottom_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, bottom_boundary)
+    left_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, left_boundary)
+    right_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, right_boundary)
     num_facets_local = (
         mesh.topology.index_map(fdim).size_local
         + mesh.topology.index_map(fdim).num_ghosts
     )
     facets = np.arange(num_facets_local, dtype=np.int32)
     values = np.full_like(facets, 0, dtype=np.int32)
-    values[top_facets] = 1
-    values[bottom_facets] = 2
+    values[left_facets] = 1
+    values[right_facets] = 2
 
-    bottom_cells = dolfinx.mesh.locate_entities(mesh, tdim, half)
+    left_cells = dolfinx.mesh.locate_entities(mesh, tdim, left_domain)
+    right_cells = dolfinx.mesh.locate_entities(mesh, tdim, right_domain)
     num_cells_local = (
         mesh.topology.index_map(tdim).size_local
         + mesh.topology.index_map(tdim).num_ghosts
     )
     cells = np.full(num_cells_local, 4, dtype=np.int32)
-    cells[bottom_cells] = 3
+    cells[left_cells] = 3
+    cells[right_cells] = 5
     ct = dolfinx.mesh.meshtags(
         mesh, tdim, np.arange(num_cells_local, dtype=np.int32), cells
     )
-    all_b_facets = dolfinx.mesh.compute_incident_entities(
+    all_l_facets = dolfinx.mesh.compute_incident_entities(
         mesh.topology, ct.find(3), tdim, fdim
     )
-    all_t_facets = dolfinx.mesh.compute_incident_entities(
+    all_m_facets = dolfinx.mesh.compute_incident_entities(
         mesh.topology, ct.find(4), tdim, fdim
     )
-    interface = np.intersect1d(all_b_facets, all_t_facets)
-    values[interface] = 5
+    all_r_facets = dolfinx.mesh.compute_incident_entities(
+        mesh.topology, ct.find(5), tdim, fdim
+    )
+    interface1 = np.intersect1d(all_l_facets, all_m_facets)
+    interface2 = np.intersect1d(all_m_facets, all_r_facets)
+    values[interface1] = 5
+    values[interface2] = 6
 
     mt = dolfinx.mesh.meshtags(mesh, mesh.topology.dim - 1, facets, values)
     return mesh, mt, ct
 
 
+class VolumeSubdomain:
+    id: int
+    submesh: dolfinx.mesh.Mesh
+    submesh_to_mesh: np.ndarray
+    parent_mesh: dolfinx.mesh.Mesh
+    parent_to_submesh: np.ndarray
+    v_map: np.ndarray
+    facet_to_parent: np.ndarray
+    ft: dolfinx.mesh.MeshTags
+    padded:bool
+    def __init__(self, id):
+        self.id = id
+
+    def create_subdomain(self, mesh, marker):
+        assert marker.dim == mesh.topology.dim
+        self.parent_mesh = mesh
+        self.submesh, self.submesh_to_mesh, self.v_map = (
+            dolfinx.mesh.create_submesh(mesh, marker.dim, marker.find(self.id))[0:3]
+        )
+        num_cells_local = (
+            mesh.topology.index_map(marker.dim).size_local
+            + mesh.topology.index_map(marker.dim).num_ghosts
+        )
+        self.parent_to_submesh = np.full(num_cells_local, -1, dtype=np.int32)
+        self.parent_to_submesh[self.submesh_to_mesh] = np.arange(
+            len(self.submesh_to_mesh), dtype=np.int32
+        )
+        self.padded=False
+
+    def transfer_meshtag(self, tag):
+        # Transfer meshtags to submesh
+        assert self.submesh is not None, "Need to call create_subdomain first"
+        self.ft, self.facet_to_parent = transfer_meshtags_to_submesh(
+            mesh, tag, self.submesh, self.v_map, self.submesh_to_mesh
+        )
+
+class Interface():
+    id: int
+    subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
+    parent_mesh: dolfinx.mesh.Mesh
+    restriction: [str, str] = ("+", "-")
+    padded: bool
+    def __init__(self, parent_mesh, mt,  id, subdomains):
+        self.id = id
+        self.subdomains = tuple(subdomains)
+        self.mt = mt
+        self.parent_mesh = parent_mesh
+    def pad_parent_maps(self):
+        """Workaround to make sparsity-pattern work without skips
+        """ 
+
+        integration_data = compute_integration_domains(
+                dolfinx.fem.IntegralType.interior_facet, self.parent_mesh.topology, self.mt.find(self.id), self.mt.dim).reshape(-1, 4)
+        for i in range(2):
+            # We pad the parent to submesh map to make sure that sparsity pattern is correct
+            mapped_cell_0 = self.subdomains[i].parent_to_submesh[integration_data[:, 0]]
+            mapped_cell_1 = self.subdomains[i].parent_to_submesh[integration_data[:, 2]]
+            max_cells = np.maximum(mapped_cell_0, mapped_cell_1)
+            self.subdomains[i].parent_to_submesh[integration_data[:, 0]] = max_cells
+            self.subdomains[i].parent_to_submesh[integration_data[:, 2]] = max_cells
+            self.subdomains[i].padded = True
+
 mesh, mt, ct = generate_mesh()
 
-material_bottom = F.Material(D_0=2.0, E_D=0.1)
-material_top = F.Material(D_0=2.0, E_D=0.1)
-
-material_bottom.K_S_0 = 2.0
-material_bottom.E_K_S = 0 * 0.1
-material_top.K_S_0 = 4.0
-material_top.E_K_S = 0 * 0.12
-
-top_domain = F.VolumeSubdomain(4, material=material_top)
-bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
-list_of_subdomains = [bottom_domain, top_domain]
-list_of_interfaces = {5: [bottom_domain, top_domain]}
-
-top_surface = F.SurfaceSubdomain(id=1)
-bottom_surface = F.SurfaceSubdomain(id=2)
-
-H = F.Species("H", mobile=True)
-trapped_H = F.Species("H_trapped", mobile=False)
-empty_trap = F.ImplicitSpecies(n=0.5, others=[trapped_H])
-
-for species in [H, trapped_H]:
-    species.subdomains = [bottom_domain, top_domain]
-    species.subdomain_to_solution = {}
-    species.subdomain_to_prev_solution = {}
-    species.subdomain_to_test_function = {}
-
-list_of_species = [H, trapped_H]
-
-list_of_reactions = [
-    F.Reaction(
-        reactant=[H, empty_trap],
-        product=[trapped_H],
-        k_0=2,
-        E_k=0,
-        p_0=0.1,
-        E_p=0,
-        volume=top_domain,
-    ),
-    F.Reaction(
-        reactant=[H, empty_trap],
-        product=[trapped_H],
-        k_0=2,
-        E_k=0,
-        p_0=0.1,
-        E_p=0,
-        volume=bottom_domain,
-    ),
-]
-
-list_of_bcs = [
-    F.DirichletBC(top_surface, value=0.05, species=H),
-    F.DirichletBC(bottom_surface, value=0.2, species=H),
-]
-
-surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
-
-V = dolfinx.fem.functionspace(mesh, ("CG", 1))
-T = dolfinx.fem.Function(V)
-T.interpolate(lambda x: 300 + 10 * x[1] + 100 * x[0])
-
-
-def D_fun(T, D_0, E_D):
-    k_B = 8.6173303e-5
-    return D_0 * ufl.exp(-E_D / k_B / T)
-
-
-def K_S_fun(T, K_S_0, E_K_S):
-    k_B = 8.6173303e-5
-    return K_S_0 * ufl.exp(-E_K_S / k_B / T)
+left_domain = VolumeSubdomain(3)
+mid_domain = VolumeSubdomain(4)
+right_domain = VolumeSubdomain(5)
+list_of_subdomains = [left_domain, mid_domain, right_domain]
 
 
 gdim = mesh.geometry.dim
 tdim = mesh.topology.dim
 fdim = tdim - 1
-
-num_facets_local = (
-    mesh.topology.index_map(fdim).size_local + mesh.topology.index_map(fdim).num_ghosts
+num_cells_local = (
+    mesh.topology.index_map(tdim).size_local + mesh.topology.index_map(tdim).num_ghosts
 )
 
+
+
 for subdomain in list_of_subdomains:
-    subdomain.submesh, subdomain.submesh_to_mesh, subdomain.v_map = (
-        dolfinx.mesh.create_submesh(mesh, tdim, ct.find(subdomain.id))[0:3]
-    )
-
-    subdomain.parent_to_submesh = np.full(num_facets_local, -1, dtype=np.int32)
-    subdomain.parent_to_submesh[subdomain.submesh_to_mesh] = np.arange(
-        len(subdomain.submesh_to_mesh), dtype=np.int32
-    )
-
-    # We need to modify the cell maps, as for `dS` integrals of interfaces between submeshes, there is no entity to map to.
-    # We use the entity on the same side to fix this (as all restrictions are one-sided)
-
-    # Transfer meshtags to submesh
-    subdomain.ft, subdomain.facet_to_parent = transfer_meshtags_to_submesh(
-        mesh, mt, subdomain.submesh, subdomain.v_map, subdomain.submesh_to_mesh
-    )
+    subdomain.create_subdomain(mesh, ct)
+    subdomain.transfer_meshtag(mt)
 
 
-# Hack, as we use one-sided restrictions, pad dS integral with the same entity from the same cell on both sides
-# TODO ask Jorgen what this is for
-mesh.topology.create_connectivity(fdim, tdim)
-f_to_c = mesh.topology.connectivity(fdim, tdim)
-for interface in list_of_interfaces:
-    for facet in mt.find(interface):
-        cells = f_to_c.links(facet)
-        assert len(cells) == 2
-        for domain in list_of_interfaces[interface]:
-            map = domain.parent_to_submesh[cells]
-            domain.parent_to_submesh[cells] = max(map)
-
-# ._cpp_object needed on dolfinx 0.8.0
-entity_maps = {
-    subdomain.submesh: subdomain.parent_to_submesh for subdomain in list_of_subdomains
-}
 
 
-def define_function_spaces(subdomain: F.VolumeSubdomain):
-    # get number of species defined in the subdomain
-    all_species = [
-        species for species in list_of_species if subdomain in species.subdomains
-    ]
 
-    # instead of using the set function we use a list to keep the order
-    unique_species = []
-    for species in all_species:
-        if species not in unique_species:
-            unique_species.append(species)
-    nb_species = len(unique_species)
+i0 = Interface(mesh, mt, 5, (left_domain, mid_domain))
+i1 = Interface(mesh, mt, 6, (mid_domain, right_domain))
+interfaces = [i0, i1]
 
-    degree = 1
+def define_interior_eq(mesh, degree, submesh, submesh_to_mesh, value):
     element_CG = basix.ufl.element(
         basix.ElementFamily.P,
-        subdomain.submesh.basix_cell(),
+        submesh.basix_cell(),
         degree,
         basix.LagrangeVariant.equispaced,
     )
-    element = basix.ufl.mixed_element([element_CG] * nb_species)
-    V = dolfinx.fem.functionspace(subdomain.submesh, element)
-    u = dolfinx.fem.Function(V)
-    u_n = dolfinx.fem.Function(V)
-
+    element = basix.ufl.mixed_element([element_CG, element_CG])
+    V = dolfinx.fem.functionspace(submesh, element)
+    u = dolfinx.fem.Function(V, name=f"u_{value}")
     us = list(ufl.split(u))
-    u_ns = list(ufl.split(u_n))
     vs = list(ufl.TestFunctions(V))
-    for i, species in enumerate(unique_species):
-        species.subdomain_to_solution[subdomain] = us[i]
-        species.subdomain_to_prev_solution[subdomain] = u_ns[i]
-        species.subdomain_to_test_function[subdomain] = vs[i]
-    subdomain.u = u
-
-
-def define_formulation(subdomain: F.VolumeSubdomain):
-    form = 0
-    # add diffusion and time derivative for each species
-    for spe in list_of_species:
-        u = spe.subdomain_to_solution[subdomain]
-        u_n = spe.subdomain_to_prev_solution[subdomain]
-        v = spe.subdomain_to_test_function[subdomain]
-        dx = subdomain.dx
-
-        D = subdomain.material.get_diffusion_coefficient(mesh, T, spe)
-        if spe.mobile:
-            form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
-
-    for reaction in list_of_reactions:
-        if reaction.volume != subdomain:
-            continue
-        for species in reaction.reactant + reaction.product:
-            if isinstance(species, F.Species):
-                # TODO remove
-                # temporarily overide the solution and test function to the one of the subdomain
-                species.solution = species.subdomain_to_solution[subdomain]
-                species.test_function = species.subdomain_to_test_function[subdomain]
-
-        for reactant in reaction.reactant:
-            if isinstance(reactant, F.Species):
-                form += (
-                    reaction.reaction_term(T)
-                    * reactant.subdomain_to_test_function[subdomain]
-                    * dx
-                )
-
-        # product
-        if isinstance(reaction.product, list):
-            products = reaction.product
-        else:
-            products = [reaction.product]
-        for product in products:
-            form += (
-                -reaction.reaction_term(T)
-                * product.subdomain_to_test_function[subdomain]
-                * dx
-            )
-
-    subdomain.F = form
-
-
-for subdomain in list_of_subdomains:
-    define_function_spaces(subdomain)
     ct_r = dolfinx.mesh.meshtags(
         mesh,
         mesh.topology.dim,
-        subdomain.submesh_to_mesh,
-        np.full_like(subdomain.submesh_to_mesh, 1, dtype=np.int32),
+        submesh_to_mesh,
+        np.full_like(submesh_to_mesh, 1, dtype=np.int32),
     )
-    subdomain.dx = ufl.Measure("dx", domain=mesh, subdomain_data=ct_r, subdomain_id=1)
-    define_formulation(subdomain)
+    val = dolfinx.fem.Constant(submesh, value)
+    dx_r = ufl.Measure("dx", domain=mesh, subdomain_data=ct_r, subdomain_id=1)
+    F = ufl.inner(ufl.grad(us[0]), ufl.grad(vs[0])) * dx_r - val * vs[0] * dx_r
+    k = 2
+    p = 0.1
+    n = 0.5
+    F += k * us[0] * (n - us[1]) * vs[1] * dx_r - p * us[1] * vs[1] * dx_r
+    return u, vs, F
+
+
+# for each subdomain, define the interior equation
+for subdomain in list_of_subdomains:
+    degree = 1
+    subdomain.u, subdomain.vs, subdomain.F = define_interior_eq(
+        mesh, degree, subdomain.submesh, subdomain.submesh_to_mesh, 0.0
+    )
     subdomain.u.name = f"u_{subdomain.id}"
 
-# boundary conditions
-bcs = []
-for boundary_condition in list_of_bcs:
-    volume_subdomain = surface_to_volume[boundary_condition.subdomain]
-    bc = dolfinx.fem.Function(volume_subdomain.u.function_space)
-    bc.x.array[:] = boundary_condition.value
-    volume_subdomain.submesh.topology.create_connectivity(
-        volume_subdomain.submesh.topology.dim - 1,
-        volume_subdomain.submesh.topology.dim,
+
+def compute_mapped_interior_facet_data(interface: Interface):
+    """
+    Compute integration data for interface integrals.
+    We define the first domain on an interface as the "+" restriction,
+    meaning that we must sort all integration entities in this order
+    
+    Parameters
+        interface: Interface between two subdomains
+    Returns
+        integration_data: Integration data for interior facets
+    """
+    assert (not interface.subdomains[0].padded) and (not interface.subdomains[1].padded)
+    mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
+    integration_data = compute_integration_domains(
+        dolfinx.fem.IntegralType.interior_facet, mesh.topology, interface.mt.find(interface.id), interface.mt.dim)
+
+    ordered_integration_data = integration_data.reshape(-1, 4).copy()
+
+    mapped_cell_0 = interface.subdomains[0].parent_to_submesh[integration_data[0::4]]
+    mapped_cell_1 = interface.subdomains[0].parent_to_submesh[integration_data[2::4]]
+
+    switch = mapped_cell_1 > mapped_cell_0
+    # Order restriction on one side        
+    if True in switch:
+        ordered_integration_data[switch, [0, 1, 2, 3]] = ordered_integration_data[
+            switch, [2, 3, 0, 1]
+        ]
+    
+    # Check that other restriction lies in other interface
+    domain1_cell = interface.subdomains[1].parent_to_submesh[ordered_integration_data[:, 2]]
+    assert (domain1_cell >=0).all()
+
+    return (interface.id, ordered_integration_data.reshape(-1))
+
+
+
+integral_data = [compute_mapped_interior_facet_data(interface) for interface in interfaces]
+[interface.pad_parent_maps() for interface in interfaces]
+dInterface = ufl.Measure(
+        "dS", domain=mesh, subdomain_data=integral_data
     )
-    bc = dolfinx.fem.dirichletbc(
-        bc,
-        dolfinx.fem.locate_dofs_topological(
-            volume_subdomain.u.function_space.sub(0),
-            fdim,
-            volume_subdomain.ft.find(boundary_condition.subdomain.id),
-        ),
-    )
-    bcs.append(bc)
 
-# Add coupling term to the interface
-# Get interface markers on submesh b
-for interface in list_of_interfaces:
+def mixed_term(u, v, n):
+    return ufl.dot(ufl.grad(u), n) * v
 
-    dInterface = ufl.Measure(
-        "dS", domain=mesh, subdomain_data=mt, subdomain_id=interface
-    )
-    b_res = "+"
-    t_res = "-"
+n = ufl.FacetNormal(mesh)
+cr = ufl.Circumradius(mesh)
 
-    # look at the first facet on interface
-    # and get the two cells that are connected to it
-    # and get the material properties of these cells
-    first_facet_interface = mt.find(interface)[0]
-    c_plus, c_minus = (
-        f_to_c.links(first_facet_interface)[0],
-        f_to_c.links(first_facet_interface)[1],
-    )
-    id_minus, id_plus = ct.values[c_minus], ct.values[c_plus]
+gamma = 10.0
 
-    for subdomain in list_of_interfaces[interface]:
-        if subdomain.id == id_plus:
-            subdomain_1 = subdomain
-        if subdomain.id == id_minus:
-            subdomain_2 = subdomain
 
-    v_b = H.subdomain_to_test_function[subdomain_1](b_res)
-    v_t = H.subdomain_to_test_function[subdomain_2](t_res)
-
-    u_b = H.subdomain_to_solution[subdomain_1](b_res)
-    u_t = H.subdomain_to_solution[subdomain_2](t_res)
-
-    def mixed_term(u, v, n):
-        return ufl.dot(ufl.grad(u), n) * v
-
-    n = ufl.FacetNormal(mesh)
+entity_maps = {sd.submesh: sd.parent_to_submesh for sd in list_of_subdomains}
+for interface in interfaces:
+    subdomain_1, subdomain_2 = interface.subdomains
+    b_res, t_res = interface.restriction
     n_b = n(b_res)
     n_t = n(t_res)
-    cr = ufl.Circumradius(mesh)
     h_b = 2 * cr(b_res)
     h_t = 2 * cr(t_res)
-    gamma = 400.0  # this needs to be "sufficiently large"
 
-    K_b = K_S_fun(T(b_res), subdomain_1.material.K_S_0, subdomain_1.material.E_K_S)
-    K_t = K_S_fun(T(t_res), subdomain_2.material.K_S_0, subdomain_2.material.E_K_S)
+
+    v_b = subdomain_1.vs[0](b_res)
+    v_t = subdomain_2.vs[0](t_res)
+
+    u_bs = list(ufl.split(subdomain_1.u))
+    u_ts = list(ufl.split(subdomain_2.u))
+    u_b = u_bs[0](b_res)
+    u_t = u_ts[0](t_res)
+    # fabricate K
+    W_0 = dolfinx.fem.functionspace(subdomain_1.submesh, ("DG", 0))
+    K_0 = dolfinx.fem.Function(W_0, name=f"K_{subdomain_1.id}")
+    K_0.x.array[:] = 2
+    W_1 = dolfinx.fem.functionspace(subdomain_2.submesh, ("DG", 0))
+    K_1 = dolfinx.fem.Function(W_1, name=f"K_{subdomain_2.id}")
+    K_1.x.array[:] = 4
+
+    K_b = K_0(b_res)
+    K_t = K_1(t_res)
 
     F_0 = (
-        -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface
-        - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface
+        -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(interface.id)
+        - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
     )
 
     F_1 = (
-        +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface
-        - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface
+        +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(interface.id)
+        - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
     )
-    F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface
-    F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface
+    F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface(interface.id)
+    F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface(interface.id)
 
     subdomain_1.F += F_0
     subdomain_2.F += F_1
 
+
 J = []
 forms = []
-for subdomain1 in list_of_subdomains:
+for i,subdomain1 in enumerate(list_of_subdomains):
     jac = []
     form = subdomain1.F
-    for subdomain2 in list_of_subdomains:
+    for j, subdomain2 in enumerate(list_of_subdomains):
         jac.append(
             dolfinx.fem.form(
                 ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
             )
         )
+        sp = dolfinx.fem.create_sparsity_pattern(jac[-1])
+
     J.append(jac)
     forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
+
+# boundary conditions
+b_bc = dolfinx.fem.Function(left_domain.u.function_space)
+b_bc.x.array[:] = 0.2
+left_domain.submesh.topology.create_connectivity(
+    left_domain.submesh.topology.dim - 1, left_domain.submesh.topology.dim
+)
+bc_b = dolfinx.fem.dirichletbc(
+    b_bc,
+    dolfinx.fem.locate_dofs_topological(
+        left_domain.u.function_space.sub(0), fdim, left_domain.ft.find(1)
+    ),
+)
+
+t_bc = dolfinx.fem.Function(right_domain.u.function_space)
+t_bc.x.array[:] = 0.05
+right_domain.submesh.topology.create_connectivity(
+    right_domain.submesh.topology.dim - 1, right_domain.submesh.topology.dim
+)
+bc_t = dolfinx.fem.dirichletbc(
+    t_bc,
+    dolfinx.fem.locate_dofs_topological(
+        right_domain.u.function_space.sub(0), fdim, right_domain.ft.find(2)
+    ),
+)
+bcs = [bc_b, bc_t]
 
 
 solver = NewtonSolver(
@@ -397,43 +557,22 @@ for subdomain in list_of_subdomains:
 
 
 # derived quantities
-entity_maps[mesh] = bottom_domain.submesh_to_mesh
+V = dolfinx.fem.functionspace(mesh, ("CG", 1))
+T = dolfinx.fem.Function(V)
+T.interpolate(lambda x: 200 + x[1])
 
-ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
-ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
-dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
+
+T_b = dolfinx.fem.Function(right_domain.u.sub(0).collapse().function_space)
+T_b.interpolate(T)
+
+ds_b = ufl.Measure("ds", domain=right_domain.submesh)
+dx_b = ufl.Measure("dx", domain=right_domain.submesh)
 dx = ufl.Measure("dx", domain=mesh)
 
-n_b = ufl.FacetNormal(bottom_domain.submesh)
-n_t = ufl.FacetNormal(top_domain.submesh)
+n_b = ufl.FacetNormal(left_domain.submesh)
 
-form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b)
+form = dolfinx.fem.form(left_domain.u.sub(0) * dx_b, entity_maps=entity_maps)
 print(dolfinx.fem.assemble_scalar(form))
 
-form = dolfinx.fem.form(bottom_domain.u.sub(1) * dx_b)
-print(dolfinx.fem.assemble_scalar(form))
-
-form = dolfinx.fem.form(T * dx_b, entity_maps={mesh: bottom_domain.submesh_to_mesh})
-print(dolfinx.fem.assemble_scalar(form))
-
-id_interface = 5
-form = dolfinx.fem.form(
-    ufl.dot(
-        D_fun(T, bottom_domain.material.D_0, bottom_domain.material.E_D)
-        * ufl.grad(bottom_domain.u.sub(0)),
-        n_b,
-    )
-    * ds_b(id_interface),
-    entity_maps={mesh: bottom_domain.submesh_to_mesh},
-)
-print(dolfinx.fem.assemble_scalar(form))
-form = dolfinx.fem.form(
-    ufl.dot(
-        D_fun(T, top_domain.material.D_0, top_domain.material.E_D)
-        * ufl.grad(top_domain.u.sub(0)),
-        n_t,
-    )
-    * ds_t(id_interface),
-    entity_maps={mesh: top_domain.submesh_to_mesh},
-)
+form = dolfinx.fem.form(T_b * ufl.dot(ufl.grad(left_domain.u.sub(0)), n_b) * ds_b, entity_maps=entity_maps)
 print(dolfinx.fem.assemble_scalar(form))

@@ -7,7 +7,7 @@ interface_1 = 0.5
 interface_2 = 0.7
 
 # for some reason if the mesh isn't fine enough then I have a random SEGV error
-N = 1500
+N = 2000
 vertices = np.concatenate(
     [
         np.linspace(0, interface_1, num=N),
@@ -37,7 +37,10 @@ left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
 # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
-my_model.interfaces = {6: [left_domain, middle_domain], 7: [middle_domain, right_domain]}
+my_model.interfaces = [
+    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)),
+    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 7, (middle_domain, right_domain)),
+]
 my_model.subdomains = [left_domain, middle_domain, right_domain, left_surface, right_surface]
 my_model.surface_to_volume = {right_surface: right_domain, left_surface: left_domain}
 

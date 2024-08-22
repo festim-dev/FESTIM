@@ -822,50 +822,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
 
     def create_submeshes(self):
-        mesh = self.mesh.mesh
-        ct = self.volume_meshtags
-        mt = self.facet_meshtags
-
-        gdim = mesh.geometry.dim
-        tdim = mesh.topology.dim
-        fdim = tdim - 1
-
-        num_facets_local = (
-            mesh.topology.index_map(fdim).size_local
-            + mesh.topology.index_map(fdim).num_ghosts
-        )
 
         for subdomain in self.volume_subdomains:
-            subdomain.submesh, subdomain.submesh_to_mesh, subdomain.v_map = (
-                dolfinx.mesh.create_submesh(mesh, tdim, ct.find(subdomain.id))[0:3]
-            )
+            subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
+            subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
-            subdomain.parent_to_submesh = np.full(num_facets_local, -1, dtype=np.int32)
-            subdomain.parent_to_submesh[subdomain.submesh_to_mesh] = np.arange(
-                len(subdomain.submesh_to_mesh), dtype=np.int32
-            )
-
-            # We need to modify the cell maps, as for `dS` integrals of interfaces between submeshes, there is no entity to map to.
-            # We use the entity on the same side to fix this (as all restrictions are one-sided)
-
-            # Transfer meshtags to submesh
-            subdomain.ft, subdomain.facet_to_parent = transfer_meshtags_to_submesh(
-                mesh, mt, subdomain.submesh, subdomain.v_map, subdomain.submesh_to_mesh
-            )
-
-        # Hack, as we use one-sided restrictions, pad dS integral with the same entity from the same cell on both sides
-        # TODO ask Jorgen what this is for
-        mesh.topology.create_connectivity(fdim, tdim)
-        f_to_c = mesh.topology.connectivity(fdim, tdim)
-        for interface in self.interfaces:
-            for facet in mt.find(interface):
-                cells = f_to_c.links(facet)
-                assert len(cells) == 2
-                for domain in self.interfaces[interface]:
-                    map = domain.parent_to_submesh[cells]
-                    domain.parent_to_submesh[cells] = max(map)
-
-        self.f_to_c = f_to_c
 
     def define_function_spaces(self, subdomain: F.VolumeSubdomain):
         # get number of species defined in the subdomain
@@ -972,24 +933,42 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         f_to_c = mesh.topology.connectivity(mesh.topology.dim - 1, mesh.topology.dim)
 
         for interface in self.interfaces:
+            interface.mesh = mesh
+            interface.mt = mt
 
-            dInterface = ufl.Measure(
-                "dS", domain=mesh, subdomain_data=mt, subdomain_id=interface
+        integral_data = [interface.compute_mapped_interior_facet_data(mesh) for interface in self.interfaces]
+        [interface.pad_parent_maps() for interface in self.interfaces]
+        dInterface = ufl.Measure(
+                "dS", domain=mesh, subdomain_data=integral_data
             )
-            b_res = "+"
-            t_res = "-"
+        def mixed_term(u, v, n):
+            return ufl.dot(ufl.grad(u), n) * v
+        n = ufl.FacetNormal(mesh)
+        cr = ufl.Circumradius(mesh)
+
+        gamma = 10.0
+
+        entity_maps = {sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains}
+        for interface in self.interfaces:
+
+            subdomain_1, subdomain_2 = interface.subdomains
+            b_res, t_res = interface.restriction
+            n_b = n(b_res)
+            n_t = n(t_res)
+            h_b = 2 * cr(b_res)
+            h_t = 2 * cr(t_res)
 
             # look at the first facet on interface
             # and get the two cells that are connected to it
             # and get the material properties of these cells
-            first_facet_interface = mt.find(interface)[0]
+            first_facet_interface = mt.find(interface.id)[0]
             c_plus, c_minus = (
                 f_to_c.links(first_facet_interface)[0],
                 f_to_c.links(first_facet_interface)[1],
             )
             id_minus, id_plus = ct.values[c_minus], ct.values[c_plus]
 
-            for subdomain in self.interfaces[interface]:
+            for subdomain in interface.subdomains:
                 if subdomain.id == id_plus:
                     subdomain_1 = subdomain
                 if subdomain.id == id_minus:
@@ -1006,18 +985,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             u_b = H.subdomain_to_solution[subdomain_1](b_res)
             u_t = H.subdomain_to_solution[subdomain_2](t_res)
 
-            def mixed_term(u, v, n):
-                return ufl.dot(ufl.grad(u), n) * v
-
-            n = ufl.FacetNormal(mesh)
-            n_b = n(b_res)
-            n_t = n(t_res)  # this doesn't seem to be used
-            cr = ufl.Circumradius(mesh)
-            h_b = 2 * cr(b_res)
-            h_t = 2 * cr(t_res)
-            # TODO make this a user parameter
-            gamma = 10.0  # this needs to be "sufficiently large"
-
             K_b = K_S_fun(
                 self.temperature_fenics(b_res),
                 subdomain_1.material.K_S_0,
@@ -1030,33 +997,35 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
 
             F_0 = (
-                -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface
-                - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface
+                -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(interface.id)
+                - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
             )
 
             F_1 = (
-                +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface
-                - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface
+                +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(interface.id)
+                - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
             )
-            F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface
-            F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface
+            F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface(interface.id)
+            F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface(interface.id)
 
             subdomain_1.F += F_0
             subdomain_2.F += F_1
 
         J = []
         forms = []
-        for subdomain1 in self.volume_subdomains:
+        for i, subdomain1 in enumerate(self.volume_subdomains):
             jac = []
             form = subdomain1.F
-            for subdomain2 in self.volume_subdomains:
+            for j, subdomain2 in enumerate(self.volume_subdomains):
                 jac.append(
                     dolfinx.fem.form(
-                        ufl.derivative(form, subdomain2.u), entity_maps=self.entity_maps
+                        ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
                     )
                 )
+                sp = dolfinx.fem.create_sparsity_pattern(jac[-1])  # NOTE this variable isn't used anywhere
             J.append(jac)
-            forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=self.entity_maps))
+            forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
+        
         self.forms = forms
         self.J = J
 

@@ -36,10 +36,12 @@ left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
 # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
-my_model.interfaces = {
-    6: [left_domain, middle_domain],
-    7: [middle_domain, right_domain],
-}
+# TODO remove mesh and meshtags from these arguments
+my_model.interfaces = [
+    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)),
+    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 7, (middle_domain, right_domain)),
+]
+
 my_model.subdomains = [
     left_domain,
     middle_domain,

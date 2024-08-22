@@ -94,7 +94,8 @@ class Mesh:
 
         # tag interfaces
         interfaces = interfaces or {}  # if interfaces is None, set it to empty dict
-        for interface_id, (domain_1, domain_2) in interfaces.items():
+        for interface in interfaces:
+            (domain_1, domain_2) = interface.subdomains
             all_1_facets = dolfinx.mesh.compute_incident_entities(
                 self.mesh.topology, volume_meshtags.find(domain_1.id), self.vdim, self.fdim
             )
@@ -102,7 +103,7 @@ class Mesh:
                 self.mesh.topology, volume_meshtags.find(domain_2.id), self.vdim, self.fdim
             )
             interface_entities = np.intersect1d(all_1_facets, all_2_facets)
-            tags_facets[interface_entities] = interface_id
+            tags_facets[interface_entities] = interface.id
 
         facet_meshtags = meshtags(self.mesh, self.fdim, mesh_facet_indices, tags_facets)
 

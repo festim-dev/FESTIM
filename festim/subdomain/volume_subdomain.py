@@ -1,6 +1,7 @@
 from dolfinx.mesh import locate_entities
-
+import dolfinx
 import numpy as np
+from festim.helpers_discontinuity import transfer_meshtags_to_submesh
 
 
 class VolumeSubdomain:
@@ -10,6 +11,15 @@ class VolumeSubdomain:
     Args:
         id (int): the id of the volume subdomain
     """
+    id: int
+    submesh: dolfinx.mesh.Mesh
+    submesh_to_mesh: np.ndarray
+    parent_mesh: dolfinx.mesh.Mesh
+    parent_to_submesh: np.ndarray
+    v_map: np.ndarray
+    facet_to_parent: np.ndarray
+    ft: dolfinx.mesh.MeshTags
+    padded:bool
 
     def __init__(self, id, material):
         self.id = id
@@ -30,6 +40,29 @@ class VolumeSubdomain:
         # return array like x full of True
         entities = locate_entities(mesh, vdim, lambda x: np.full(x.shape[1], True))
         return entities
+
+    def create_subdomain(self, mesh, marker):
+        assert marker.dim == mesh.topology.dim
+        self.parent_mesh = mesh
+        self.submesh, self.submesh_to_mesh, self.v_map = (
+            dolfinx.mesh.create_submesh(mesh, marker.dim, marker.find(self.id))[0:3]
+        )
+        num_cells_local = (
+            mesh.topology.index_map(marker.dim).size_local
+            + mesh.topology.index_map(marker.dim).num_ghosts
+        )
+        self.parent_to_submesh = np.full(num_cells_local, -1, dtype=np.int32)
+        self.parent_to_submesh[self.submesh_to_mesh] = np.arange(
+            len(self.submesh_to_mesh), dtype=np.int32
+        )
+        self.padded=False
+
+    def transfer_meshtag(self, mesh, tag):
+        # Transfer meshtags to submesh
+        assert self.submesh is not None, "Need to call create_subdomain first"
+        self.ft, self.facet_to_parent = transfer_meshtags_to_submesh(
+            mesh, tag, self.submesh, self.v_map, self.submesh_to_mesh
+        )
 
 
 def find_volume_from_id(id: int, volumes: list):
