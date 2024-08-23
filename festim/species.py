@@ -35,6 +35,12 @@ class Species:
             previous solutions
         subdomain_to_test_function (dict): a dictionary mapping subdomains to
             test functions
+        subdomain_to_post_processing_solution (dict): a dictionary mapping
+            subdomains to post processing solutions
+        subdomain_to_collapsed_function_space (dict): a dictionary mapping
+            subdomains to collapsed function spaces
+        subdomain_to_function_space (dict): a dictionary mapping subdomains to
+            function spaces
 
     Usage:
         >>> from festim import Species, HTransportProblem
@@ -64,6 +70,7 @@ class Species:
         self.subdomain_to_test_function = {}
         self.subdomain_to_post_processing_solution = {}
         self.subdomain_to_collapsed_function_space = {}
+        self.subdomain_to_function_space = {}
 
     def __repr__(self) -> str:
         return f"Species({self.name})"

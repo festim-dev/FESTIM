@@ -763,6 +763,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
         self.define_temperature()
 
+        # TODO see if we can remove this
         self.entity_maps = {
             subdomain.submesh: subdomain.parent_to_submesh
             for subdomain in self.volume_subdomains
@@ -795,6 +796,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     def create_dirichletbc_form(self, bc):
         fdim = self.mesh.mesh.topology.dim - 1
         volume_subdomain = self.surface_to_volume[bc.subdomain]
+        # TODO check that we shouldn't use function_space.sub(i).collapse()
+        sub_function_space = bc.species.subdomain_to_function_space[volume_subdomain]
+
         bc_function = dolfinx.fem.Function(volume_subdomain.u.function_space)
         bc_function.x.array[:] = bc.value
         volume_subdomain.submesh.topology.create_connectivity(
@@ -804,7 +808,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         form = dolfinx.fem.dirichletbc(
             bc_function,
             dolfinx.fem.locate_dofs_topological(
-                volume_subdomain.u.function_space.sub(0),
+                sub_function_space,
                 fdim,
                 volume_subdomain.ft.find(bc.subdomain.id),
             ),
@@ -855,6 +859,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_solution[subdomain] = us[i]
             species.subdomain_to_prev_solution[subdomain] = u_ns[i]
             species.subdomain_to_test_function[subdomain] = vs[i]
+            species.subdomain_to_function_space[subdomain] = V.sub(i)
             species.subdomain_to_post_processing_solution[subdomain] = u.sub(
                 i
             ).collapse()
