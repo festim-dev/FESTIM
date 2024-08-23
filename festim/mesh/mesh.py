@@ -97,10 +97,16 @@ class Mesh:
         for interface in interfaces:
             (domain_1, domain_2) = interface.subdomains
             all_1_facets = dolfinx.mesh.compute_incident_entities(
-                self.mesh.topology, volume_meshtags.find(domain_1.id), self.vdim, self.fdim
+                self.mesh.topology,
+                volume_meshtags.find(domain_1.id),
+                self.vdim,
+                self.fdim,
             )
             all_2_facets = dolfinx.mesh.compute_incident_entities(
-                self.mesh.topology, volume_meshtags.find(domain_2.id), self.vdim, self.fdim
+                self.mesh.topology,
+                volume_meshtags.find(domain_2.id),
+                self.vdim,
+                self.fdim,
             )
             interface_entities = np.intersect1d(all_1_facets, all_2_facets)
             tags_facets[interface_entities] = interface.id

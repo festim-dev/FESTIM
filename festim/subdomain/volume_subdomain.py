@@ -11,6 +11,7 @@ class VolumeSubdomain:
     Args:
         id (int): the id of the volume subdomain
     """
+
     id: int
     submesh: dolfinx.mesh.Mesh
     submesh_to_mesh: np.ndarray
@@ -19,7 +20,7 @@ class VolumeSubdomain:
     v_map: np.ndarray
     facet_to_parent: np.ndarray
     ft: dolfinx.mesh.MeshTags
-    padded:bool
+    padded: bool
 
     def __init__(self, id, material):
         self.id = id
@@ -44,9 +45,9 @@ class VolumeSubdomain:
     def create_subdomain(self, mesh, marker):
         assert marker.dim == mesh.topology.dim
         self.parent_mesh = mesh
-        self.submesh, self.submesh_to_mesh, self.v_map = (
-            dolfinx.mesh.create_submesh(mesh, marker.dim, marker.find(self.id))[0:3]
-        )
+        self.submesh, self.submesh_to_mesh, self.v_map = dolfinx.mesh.create_submesh(
+            mesh, marker.dim, marker.find(self.id)
+        )[0:3]
         num_cells_local = (
             mesh.topology.index_map(marker.dim).size_local
             + mesh.topology.index_map(marker.dim).num_ghosts
@@ -55,7 +56,7 @@ class VolumeSubdomain:
         self.parent_to_submesh[self.submesh_to_mesh] = np.arange(
             len(self.submesh_to_mesh), dtype=np.int32
         )
-        self.padded=False
+        self.padded = False
 
     def transfer_meshtag(self, mesh, tag):
         # Transfer meshtags to submesh
