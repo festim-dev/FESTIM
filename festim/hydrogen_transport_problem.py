@@ -1013,16 +1013,15 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         J = []
         forms = []
-        for i, subdomain1 in enumerate(self.volume_subdomains):
+        for subdomain1 in self.volume_subdomains:
             jac = []
             form = subdomain1.F
-            for j, subdomain2 in enumerate(self.volume_subdomains):
+            for subdomain2 in self.volume_subdomains:
                 jac.append(
                     dolfinx.fem.form(
                         ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
                     )
                 )
-                sp = dolfinx.fem.create_sparsity_pattern(jac[-1])  # NOTE this variable isn't used anywhere
             J.append(jac)
             forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
         
