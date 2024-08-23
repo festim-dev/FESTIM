@@ -497,7 +497,6 @@ for i,subdomain1 in enumerate(list_of_subdomains):
                 ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
             )
         )
-        sp = dolfinx.fem.create_sparsity_pattern(jac[-1])
 
     J.append(jac)
     forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
