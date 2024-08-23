@@ -6,7 +6,7 @@ from mpi4py import MPI
 import numpy as np
 import tqdm.autonotebook
 import festim as F
-from festim.helpers_discontinuity import NewtonSolver, transfer_meshtags_to_submesh
+from festim.helpers_discontinuity import NewtonSolver
 
 
 class HydrogenTransportProblem(F.ProblemBase):
