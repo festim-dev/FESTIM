@@ -796,23 +796,21 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     def create_dirichletbc_form(self, bc):
         fdim = self.mesh.mesh.topology.dim - 1
         volume_subdomain = self.surface_to_volume[bc.subdomain]
-        # TODO check that we shouldn't use function_space.sub(i).collapse()
-        sub_function_space = bc.species.subdomain_to_function_space[volume_subdomain]
+        sub_V = bc.species.subdomain_to_function_space[volume_subdomain]
+        collapsed_V, _ = sub_V.collapse()
 
-        bc_function = dolfinx.fem.Function(volume_subdomain.u.function_space)
+        bc_function = dolfinx.fem.Function(collapsed_V)
         bc_function.x.array[:] = bc.value
         volume_subdomain.submesh.topology.create_connectivity(
             volume_subdomain.submesh.topology.dim - 1,
             volume_subdomain.submesh.topology.dim,
         )
-        form = dolfinx.fem.dirichletbc(
-            bc_function,
-            dolfinx.fem.locate_dofs_topological(
-                sub_function_space,
-                fdim,
-                volume_subdomain.ft.find(bc.subdomain.id),
-            ),
+        bc_dofs = dolfinx.fem.locate_dofs_topological(
+            (sub_V, collapsed_V),
+            fdim,
+            volume_subdomain.ft.find(bc.subdomain.id),
         )
+        form = dolfinx.fem.dirichletbc(bc_function, bc_dofs, sub_V)
         return form
 
     def create_initial_conditions(self):
