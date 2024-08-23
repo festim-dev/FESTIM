@@ -763,12 +763,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
         self.define_temperature()
 
-        # TODO see if we can remove this
-        self.entity_maps = {
-            subdomain.submesh: subdomain.parent_to_submesh
-            for subdomain in self.volume_subdomains
-        }
-
         self.create_source_values_fenics()
         self.create_flux_values_fenics()
         self.create_initial_conditions()

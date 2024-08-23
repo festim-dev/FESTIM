@@ -84,7 +84,11 @@ bottom_surface = F.SurfaceSubdomain(id=2)
 my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
 # we should be able to automate this
-my_model.interfaces = [F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 5, (bottom_domain, top_domain))]
+my_model.interfaces = [
+    F.Interface(
+        my_model.mesh.mesh, my_model.facet_meshtags, 5, (bottom_domain, top_domain)
+    )
+]
 my_model.surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
 
 H = F.Species("H", mobile=True)
@@ -107,7 +111,8 @@ my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
 
 my_model.exports = [
-    F.VTXExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+    F.VTXExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+    for subdomain in my_model.volume_subdomains
 ]
 
 my_model.initialise()
@@ -116,15 +121,32 @@ my_model.run()
 # -------------------- post processing --------------------
 
 # derived quantities
-my_model.entity_maps[mesh] = bottom_domain.submesh_to_mesh
+entity_maps = {sd.submesh: sd.parent_to_submesh for sd in my_model.volume_subdomains}
 
 ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
 ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
 dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
 dx = ufl.Measure("dx", domain=mesh)
+ds = ufl.Measure("ds", domain=mesh, subdomain_data=my_model.facet_meshtags)
 
+n = ufl.FacetNormal(mesh)
 n_b = ufl.FacetNormal(bottom_domain.submesh)
 n_t = ufl.FacetNormal(top_domain.submesh)
+
+D = bottom_domain.material.get_diffusion_coefficient(
+    my_model.mesh.mesh, my_model.temperature_fenics, H
+)
+form = dolfinx.fem.form(
+    ufl.dot(
+        D * ufl.grad(bottom_domain.u.sub(0)),
+        n,
+    )
+    * ds(1),
+    entity_maps=entity_maps,
+)
+print(dolfinx.fem.assemble_scalar(form))
+
+entity_maps[mesh] = bottom_domain.submesh_to_mesh
 
 form = dolfinx.fem.form(bottom_domain.u.sub(0) * dx_b)
 print(dolfinx.fem.assemble_scalar(form))
