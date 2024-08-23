@@ -715,10 +715,6 @@ class HydrogenTransportProblem(F.ProblemBase):
                 export.write(float(self.t))
 
 
-def K_S_fun(T, K_S_0, E_K_S):
-    return K_S_0 * ufl.exp(-E_K_S / F.k_B / T)
-
-
 class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def __init__(
@@ -827,7 +823,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
             subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
-
     def define_function_spaces(self, subdomain: F.VolumeSubdomain):
         # get number of species defined in the subdomain
         all_species = [
@@ -860,9 +855,15 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_solution[subdomain] = us[i]
             species.subdomain_to_prev_solution[subdomain] = u_ns[i]
             species.subdomain_to_test_function[subdomain] = vs[i]
-            species.subdomain_to_post_processing_solution[subdomain] = u.sub(i).collapse()
-            species.subdomain_to_collapsed_function_space[subdomain] = (V.sub(i).collapse())
-            species.subdomain_to_post_processing_solution[subdomain].name = f"{species.name}_{subdomain.id}"
+            species.subdomain_to_post_processing_solution[subdomain] = u.sub(
+                i
+            ).collapse()
+            species.subdomain_to_collapsed_function_space[subdomain] = V.sub(
+                i
+            ).collapse()
+            species.subdomain_to_post_processing_solution[subdomain].name = (
+                f"{species.name}_{subdomain.id}"
+            )
         subdomain.u = u
         subdomain.u_n = u_n
 
@@ -936,19 +937,24 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             interface.mesh = mesh
             interface.mt = mt
 
-        integral_data = [interface.compute_mapped_interior_facet_data(mesh) for interface in self.interfaces]
+        integral_data = [
+            interface.compute_mapped_interior_facet_data(mesh)
+            for interface in self.interfaces
+        ]
         [interface.pad_parent_maps() for interface in self.interfaces]
-        dInterface = ufl.Measure(
-                "dS", domain=mesh, subdomain_data=integral_data
-            )
+        dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
+
         def mixed_term(u, v, n):
             return ufl.dot(ufl.grad(u), n) * v
+
         n = ufl.FacetNormal(mesh)
         cr = ufl.Circumradius(mesh)
 
         gamma = 10.0
 
-        entity_maps = {sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains}
+        entity_maps = {
+            sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
+        }
         for interface in self.interfaces:
 
             subdomain_1, subdomain_2 = interface.subdomains
@@ -985,28 +991,40 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             u_b = H.subdomain_to_solution[subdomain_1](b_res)
             u_t = H.subdomain_to_solution[subdomain_2](t_res)
 
-            K_b = K_S_fun(
-                self.temperature_fenics(b_res),
-                subdomain_1.material.K_S_0,
-                subdomain_1.material.E_K_S,
+            K_b = subdomain_1.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(b_res), H
             )
-            K_t = K_S_fun(
-                self.temperature_fenics(t_res),
-                subdomain_2.material.K_S_0,
-                subdomain_2.material.E_K_S,
+            K_t = subdomain_2.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(t_res), H
             )
 
-            F_0 = (
-                -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(interface.id)
-                - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
+            F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(
+                interface.id
+            ) - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(
+                interface.id
             )
 
-            F_1 = (
-                +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(interface.id)
-                - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
+            F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(
+                interface.id
+            ) - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(
+                interface.id
             )
-            F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface(interface.id)
-            F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface(interface.id)
+            F_0 += (
+                2
+                * gamma
+                / (h_b + h_t)
+                * (u_b / K_b - u_t / K_t)
+                * v_b
+                * dInterface(interface.id)
+            )
+            F_1 += (
+                -2
+                * gamma
+                / (h_b + h_t)
+                * (u_b / K_b - u_t / K_t)
+                * v_t
+                * dInterface(interface.id)
+            )
 
             subdomain_1.F += F_0
             subdomain_2.F += F_1
@@ -1024,7 +1042,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
             J.append(jac)
             forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
-        
+
         self.forms = forms
         self.J = J
 
@@ -1059,7 +1077,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             if isinstance(export, F.VTXExport):
                 species = export.field[0]
                 # override post_processing_solution attribute of species
-                species.post_processing_solution = species.subdomain_to_post_processing_solution[export.subdomain]
+                species.post_processing_solution = (
+                    species.subdomain_to_post_processing_solution[export.subdomain]
+                )
                 export.define_writer(MPI.COMM_WORLD)
             else:
                 raise NotImplementedError("Export type not implemented")
@@ -1073,9 +1093,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     subdomain
                 ]
                 u = subdomain.u
-                v0_to_V = species.subdomain_to_collapsed_function_space[
-                    subdomain
-                ][1]
+                v0_to_V = species.subdomain_to_collapsed_function_space[subdomain][1]
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
 
         for export in self.exports:

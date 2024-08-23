@@ -168,3 +168,59 @@ class Material:
 
         else:
             raise ValueError("D_0 and E_D must be either floats or dicts")
+
+    def get_solubility_coefficient(self, mesh, temperature, species=None):
+        """Defines the diffusion coefficient
+        Args:
+
+            mesh (dolfinx.mesh.Mesh): the domain mesh
+            temperature (dolfinx.fem.Constant): the temperature
+            species (festim.Species, optional): the species we want the diffusion
+                coefficient of. Only needed if K_S_0 and E_K_S are dicts.
+        Returns:
+            ufl.algebra.Product: the solubility coefficient
+        """
+        # TODO use get_D_0 and get_E_D to refactore this method, something like:
+        # K_S_0 = self.get_K_S_0(species=species)
+        # E_K_S = self.get_E_K_S(species=species)
+
+        # K_S_0 = F.as_fenics_constant(K_S_0, mesh)
+        # E_K_S = F.as_fenics_constant(E_K_S, mesh)
+
+        # return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+
+        if isinstance(self.K_S_0, (float, int)) and isinstance(
+            self.E_K_S, (float, int)
+        ):
+            K_S_0 = F.as_fenics_constant(self.K_S_0, mesh)
+            E_K_S = F.as_fenics_constant(self.E_K_S, mesh)
+
+            return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+
+        elif isinstance(self.K_S_0, dict) and isinstance(self.E_K_S, dict):
+            # check D_0 and E_D have the same keys
+            # this check should go in a setter
+            if list(self.K_S_0.keys()) != list(self.E_K_S.keys()):
+                raise ValueError("K_S_0 and E_K_S have different keys")
+
+            if species is None:
+                raise ValueError(
+                    "species must be provided if K_S_0 and E_K_S are dicts"
+                )
+
+            if species in self.K_S_0:
+                K_S_0 = F.as_fenics_constant(self.K_S_0[species], mesh)
+            elif species.name in self.K_S_0:
+                K_S_0 = F.as_fenics_constant(self.K_S_0[species.name], mesh)
+            else:
+                raise ValueError(f"{species} is not in K_S_0 keys")
+
+            if species in self.E_K_S:
+                E_K_S = F.as_fenics_constant(self.E_K_S[species], mesh)
+            elif species.name in self.E_K_S:
+                E_K_S = F.as_fenics_constant(self.E_K_S[species.name], mesh)
+
+            return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+
+        else:
+            raise ValueError("K_S_0 and E_K_S must be either floats or dicts")
