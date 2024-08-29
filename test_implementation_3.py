@@ -29,19 +29,35 @@ material_mid.E_K_S = 0
 material_right.K_S_0 = 6.0
 material_right.E_K_S = 0
 
-left_domain = F.VolumeSubdomain1D(3, borders=[vertices[0], interface_1], material=material_left)
-middle_domain = F.VolumeSubdomain1D(4, borders=[interface_1, interface_2], material=material_mid)
-right_domain = F.VolumeSubdomain1D(5, borders=[interface_2, vertices[-1]], material=material_right)
+left_domain = F.VolumeSubdomain1D(
+    3, borders=[vertices[0], interface_1], material=material_left
+)
+middle_domain = F.VolumeSubdomain1D(
+    4, borders=[interface_1, interface_2], material=material_mid
+)
+right_domain = F.VolumeSubdomain1D(
+    5, borders=[interface_2, vertices[-1]], material=material_right
+)
 
 left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
 # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
 my_model.interfaces = [
-    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)),
-    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 7, (middle_domain, right_domain)),
+    F.Interface(
+        my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)
+    ),
+    F.Interface(
+        my_model.mesh.mesh, my_model.facet_meshtags, 7, (middle_domain, right_domain)
+    ),
 ]
-my_model.subdomains = [left_domain, middle_domain, right_domain, left_surface, right_surface]
+my_model.subdomains = [
+    left_domain,
+    middle_domain,
+    right_domain,
+    left_surface,
+    right_surface,
+]
 my_model.surface_to_volume = {right_surface: right_domain, left_surface: left_domain}
 
 H = F.Species("H", mobile=True)
@@ -75,10 +91,11 @@ my_model.boundary_conditions = [
 
 my_model.temperature = lambda x: 300 + 100 * x[0]
 
-my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
+my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
 
 my_model.exports = [
-    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain) for subdomain in my_model.volume_subdomains
+    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+    for subdomain in my_model.volume_subdomains
 ]
 
 my_model.initialise()

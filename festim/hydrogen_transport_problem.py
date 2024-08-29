@@ -1109,7 +1109,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.update_time_dependent_values()
 
         # solve main problem
-        self.solver.solve(1e-5)
+        self.solver.solve(self.settings.rtol)
 
         # post processing
         self.post_processing()
@@ -1137,5 +1137,5 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
-            self.solver.solve(1e-5)
+            self.solver.solve(self.settings.rtol)
             self.post_processing()

@@ -38,8 +38,12 @@ right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
 # TODO remove mesh and meshtags from these arguments
 my_model.interfaces = [
-    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)),
-    F.Interface(my_model.mesh.mesh, my_model.facet_meshtags, 7, (middle_domain, right_domain)),
+    F.Interface(
+        my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)
+    ),
+    F.Interface(
+        my_model.mesh.mesh, my_model.facet_meshtags, 7, (middle_domain, right_domain)
+    ),
 ]
 
 my_model.subdomains = [
@@ -82,7 +86,7 @@ my_model.boundary_conditions = [
 
 my_model.temperature = lambda x: 300 + 100 * x[0]
 
-my_model.settings = F.Settings(atol=None, rtol=None, transient=True, final_time=100)
+my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=True, final_time=100)
 my_model.settings.stepsize = 1
 
 my_model.exports = [

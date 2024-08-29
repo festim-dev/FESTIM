@@ -130,7 +130,7 @@ my_model.boundary_conditions = [
 
 my_model.temperature = lambda x: 400 + 10 * x[1] + 100 * x[0]
 
-my_model.settings = F.Settings(atol=None, rtol=None, transient=False)
+my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
 
 my_model.exports = [
     F.VTXExport(f"c_{subdomain.id}.bp", field=H, subdomain=subdomain)
