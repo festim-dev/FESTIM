@@ -37,6 +37,7 @@ class ProblemBase:
         self.volume_meshtags = None
         self.formulation = None
         self.bc_forms = []
+        self.progress_bar = True
 
     @property
     def volume_subdomains(self):
@@ -102,14 +103,16 @@ class ProblemBase:
 
         if self.settings.transient:
             # Solve transient
-            self.progress = tqdm.autonotebook.tqdm(
-                desc=f"Solving {self.__class__.__name__}",
-                total=self.settings.final_time,
-                unit_scale=True,
-            )
+            if self.progress_bar:
+                self.progress = tqdm.autonotebook.tqdm(
+                    desc=f"Solving {self.__class__.__name__}",
+                    total=self.settings.final_time,
+                    unit_scale=True,
+                )
             while self.t.value < self.settings.final_time:
                 self.iterate()
-            self.progress.refresh()  # refresh progress bar to show 100%
+            if self.progress_bar:
+                self.progress.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
             self.solver.solve(self.u)
@@ -117,9 +120,10 @@ class ProblemBase:
 
     def iterate(self):
         """Iterates the model for a given time step"""
-        self.progress.update(
-            min(self.dt.value, abs(self.settings.final_time - self.t.value))
-        )
+        if self.progress_bar:
+            self.progress.update(
+                min(self.dt.value, abs(self.settings.final_time - self.t.value))
+            )
         self.t.value += self.dt.value
 
         self.update_time_dependent_values()
