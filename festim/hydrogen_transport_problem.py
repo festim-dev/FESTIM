@@ -947,12 +947,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         n = ufl.FacetNormal(mesh)
         cr = ufl.Circumradius(mesh)
 
-        gamma = 10.0
-
         entity_maps = {
             sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
         }
         for interface in self.interfaces:
+            gamma = interface.penalty_term
 
             subdomain_1, subdomain_2 = interface.subdomains
             b_res, t_res = interface.restriction
