@@ -732,6 +732,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         traps=None,
         interfaces=None,
         surface_to_volume=None,
+        petsc_options=None,
     ):
         super().__init__(
             mesh,
@@ -748,6 +749,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.interfaces = interfaces or {}
         self.surface_to_volume = surface_to_volume or {}
+        default_petsc_options = {
+            "ksp_type": "preonly",
+            "pc_type": "lu",
+            "pc_factor_mat_solver_type": "mumps",
+        }
+        self.petsc_options = petsc_options or default_petsc_options
 
     def initialise(self):
         self.define_meshtags_and_measures()
@@ -1049,11 +1056,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             [subdomain.u for subdomain in self.volume_subdomains],
             bcs=self.bc_forms,
             max_iterations=10,
-            petsc_options={
-                "ksp_type": "preonly",
-                "pc_type": "lu",
-                "pc_factor_mat_solver_type": "mumps",
-            },
+            petsc_options=self.petsc_options,
         )
 
     def create_flux_values_fenics(self):
