@@ -1,5 +1,6 @@
 from festim import VolumeQuantity
 import fenics as f
+import numpy as np
 
 
 class TotalVolume(VolumeQuantity):
@@ -58,3 +59,54 @@ class TotalVolume(VolumeQuantity):
 
     def compute(self):
         return f.assemble(self.function * self.dx(self.volume))
+
+
+class TotalVolumeCylindrical(TotalVolume):
+    """
+    Computes the total value of a field in a given volume
+    int(f r dx)
+
+    Args:
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
+        volume (int): the volume id
+        azimuth_range (tuple, optional): Range of the azimuthal angle
+            (theta) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi).
+
+    Attributes:
+        field (str, int): the field ("solute", 0, 1, "T", "retention")
+        volume (int): the volume id
+        export_unit (str): the unit of the derived quantity for exporting
+        title (str): the title of the derived quantity
+        show_units (bool): show the units in the title in the derived quantities
+            file
+        function (dolfin.function.function.Function): the solution function of
+            the hydrogen solute field
+
+    .. note::
+        units are in H/m2 in 1D, H/m in 2D and H in 3D domains for hydrogen
+        concentration and K m in 1D, K m2 in 2D and K m3 in 3D domains for temperature
+
+    """
+
+    def __init__(self, field, volume, azimuth_range = (0, 2*np.pi)):
+        super().__init__(field=field, volume=volume)
+        self.r = None
+        self.azimuth_range = azimuth_range
+
+    @property
+    def azimuth_range(self):
+        return self._azimuth_range
+
+    @azimuth_range.setter
+    def azimuth_range(self, value):
+        if value[0] < 0 or value[1] > 2 * np.pi:
+            raise ValueError("Azimuthal range must be between 0 and pi")
+        self._azimuth_range = value
+
+    @property
+    def allowed_meshes(self):
+        return ["cylindrical"]
+    
+    def compute(self):
+        theta_0, theta_1 = self.azimuth_range
+        return (theta_1 - theta_0) * f.assemble(self.function * self.r * self.dx(self.volume))
