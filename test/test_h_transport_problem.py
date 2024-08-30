@@ -129,7 +129,7 @@ def test_iterate():
     my_model.settings = F.Settings(atol=1e-6, rtol=1e-6, final_time=10)
     my_model.settings.stepsize = 2.0
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
@@ -915,7 +915,7 @@ def test_adaptive_timestepping_grows():
 
     my_model.initialise()
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
@@ -951,7 +951,7 @@ def test_adaptive_timestepping_shrinks():
 
     my_model.initialise()
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,

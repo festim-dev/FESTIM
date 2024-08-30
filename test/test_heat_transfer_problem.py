@@ -514,7 +514,7 @@ def test_adaptive_timestepping_grows():
 
     my_model.initialise()
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
@@ -548,7 +548,7 @@ def test_adaptive_timestepping_shrinks():
 
     my_model.initialise()
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
