@@ -88,7 +88,7 @@ class TotalVolumeCylindrical(TotalVolume):
 
     """
 
-    def __init__(self, field, volume, azimuth_range = (0, 2*np.pi)):
+    def __init__(self, field, volume, azimuth_range=(0, 2 * np.pi)):
         super().__init__(field=field, volume=volume)
         self.r = None
         self.azimuth_range = azimuth_range
@@ -106,11 +106,13 @@ class TotalVolumeCylindrical(TotalVolume):
     @property
     def allowed_meshes(self):
         return ["cylindrical"]
-    
+
     def compute(self):
         theta_0, theta_1 = self.azimuth_range
-        return (theta_1 - theta_0) * f.assemble(self.function * self.r * self.dx(self.volume))
-    
+        return (theta_1 - theta_0) * f.assemble(
+            self.function * self.r * self.dx(self.volume)
+        )
+
 
 class TotalVolumeSpherical(TotalVolume):
     """
@@ -141,7 +143,9 @@ class TotalVolumeSpherical(TotalVolume):
 
     """
 
-    def __init__(self, field, volume, azimuth_range = (0, np.pi), polar_range = (-np.pi, np.pi)):
+    def __init__(
+        self, field, volume, azimuth_range=(0, np.pi), polar_range=(-np.pi, np.pi)
+    ):
         super().__init__(field=field, volume=volume)
         self.r = None
         self.azimuth_range = azimuth_range
@@ -170,9 +174,13 @@ class TotalVolumeSpherical(TotalVolume):
     @property
     def allowed_meshes(self):
         return ["spherical"]
-    
+
     def compute(self):
         phi_0, phi_1 = self.azimuth_range
         theta_0, theta_1 = self.polar_range
 
-        return (phi_1 - phi_0) * (theta_1 - theta_0) * f.assemble(self.function * self.r**2 * self.dx(self.volume))
+        return (
+            (phi_1 - phi_0)
+            * (theta_1 - theta_0)
+            * f.assemble(self.function * self.r**2 * self.dx(self.volume))
+        )
