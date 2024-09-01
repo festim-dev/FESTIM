@@ -1,4 +1,4 @@
-from festim import TotalVolume, TotalVolumeCylindrical
+from festim import TotalVolume, TotalVolumeCylindrical, TotalVolumeSpherical
 import fenics as f
 import pytest
 from .tools import c_1D, c_2D, c_3D
@@ -101,6 +101,71 @@ def test_azimuthal_range_cylindrical(azimuth_range):
     """
     with pytest.raises(ValueError):
         TotalVolumeCylindrical("solute", 1, azimuth_range=azimuth_range)
+
+
+@pytest.mark.parametrize("radius", [2, 3])
+@pytest.mark.parametrize("r0", [0, 2])
+@pytest.mark.parametrize("azimuth_range", [(0, np.pi), (0, np.pi/2)])
+@pytest.mark.parametrize("polar_range", [(-np.pi, np.pi), (np.pi/2, -np.pi/2)])
+def test_compute_spherical(r0, radius, azimuth_range, polar_range):
+    """
+    Test that TotalVolumeSpherical computes the volume correctly on a spherical mesh
+
+    Args:
+        r0 (float): internal radius
+        radius (float): sphere radius
+        azimuth_range (tuple): range of the azimuthal angle
+    """
+    # creating a mesh with FEniCS
+    r1 = r0 + radius
+    mesh_fenics = f.IntervalMesh(100, r0, r1)
+
+    # marking physical groups (volumes and surfaces)
+    volume_markers = f.MeshFunction("size_t", mesh_fenics, mesh_fenics.topology().dim())
+    volume_markers.set_all(1)
+
+    volume = 1
+    my_total = TotalVolumeSpherical("solute", volume, azimuth_range, polar_range)
+
+    dx = f.Measure("dx", domain=mesh_fenics, subdomain_data=volume_markers)
+
+    V = f.FunctionSpace(mesh_fenics, "P", 1)
+    r = f.interpolate(f.Expression("x[0]", degree=1), V)
+    c = 2*r
+
+    my_total.dx = dx
+    my_total.function = c
+    my_total.r = f.Expression("x[0]", degree=1)
+
+    az0, az1 = azimuth_range
+    th0, th1 = polar_range
+
+    expected_value = f.assemble((az1 - az0) * (th1 - th0) * c * r**2 * dx(volume))
+    computed_value = my_total.compute()
+
+    assert np.isclose(expected_value, computed_value)
+
+
+@pytest.mark.parametrize(
+    "azimuth_range", [(-1, np.pi), (0, 3 * np.pi), (-1, 3 * np.pi)]
+)
+def test_azimuthal_range_spherical(azimuth_range):
+    """
+    Tests that an error is raised when the azimuthal range is out of bounds
+    """
+    with pytest.raises(ValueError):
+        TotalVolumeSpherical("solute", 1, azimuth_range=azimuth_range)
+
+
+@pytest.mark.parametrize(
+    "polar_range", [(0, 2 * np.pi), (-2 * np.pi, 0), (-2 * np.pi, 3 * np.pi)]
+)
+def test_polar_range_spherical(polar_range):
+    """
+    Tests that an error is raised when the polar range is out of bounds
+    """
+    with pytest.raises(ValueError):
+        TotalVolumeSpherical("solute", 1, polar_range=polar_range)
 
 
 @pytest.mark.parametrize(

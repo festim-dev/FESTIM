@@ -83,7 +83,8 @@ from .exports.derived_quantities.maximum_surface import MaximumSurface
 from .exports.derived_quantities.total_surface import TotalSurface
 from .exports.derived_quantities.total_volume import (
     TotalVolume,
-    TotalVolumeCylindrical
+    TotalVolumeCylindrical,
+    TotalVolumeSpherical
 )
 from .exports.derived_quantities.average_surface import AverageSurface
 from .exports.derived_quantities.point_value import PointValue
