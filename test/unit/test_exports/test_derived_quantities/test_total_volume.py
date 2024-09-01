@@ -50,7 +50,7 @@ class TestCompute:
 @pytest.mark.parametrize("radius", [2, 3])
 @pytest.mark.parametrize("r0", [0, 2])
 @pytest.mark.parametrize("height", [2, 3])
-@pytest.mark.parametrize("azimuth_range", [(0, np.pi), (0, np.pi/2)])
+@pytest.mark.parametrize("azimuth_range", [(0, np.pi), (0, np.pi / 2)])
 def test_compute_cylindrical(r0, radius, height, azimuth_range):
     """
     Test that TotalVolumeCylindrical computes the volume correctly on a cylinder
@@ -78,7 +78,7 @@ def test_compute_cylindrical(r0, radius, height, azimuth_range):
 
     V = f.FunctionSpace(mesh_fenics, "P", 1)
     r = f.interpolate(f.Expression("x[0]", degree=1), V)
-    c = 2*r
+    c = 2 * r
 
     my_total.dx = dx
     my_total.function = c
@@ -105,8 +105,8 @@ def test_azimuthal_range_cylindrical(azimuth_range):
 
 @pytest.mark.parametrize("radius", [2, 3])
 @pytest.mark.parametrize("r0", [0, 2])
-@pytest.mark.parametrize("azimuth_range", [(0, np.pi), (0, np.pi/2)])
-@pytest.mark.parametrize("polar_range", [(-np.pi, np.pi), (np.pi/2, -np.pi/2)])
+@pytest.mark.parametrize("azimuth_range", [(0, np.pi), (0, np.pi / 2)])
+@pytest.mark.parametrize("polar_range", [(-np.pi, np.pi), (np.pi / 2, -np.pi / 2)])
 def test_compute_spherical(r0, radius, azimuth_range, polar_range):
     """
     Test that TotalVolumeSpherical computes the volume correctly on a spherical mesh
@@ -131,7 +131,7 @@ def test_compute_spherical(r0, radius, azimuth_range, polar_range):
 
     V = f.FunctionSpace(mesh_fenics, "P", 1)
     r = f.interpolate(f.Expression("x[0]", degree=1), V)
-    c = 2*r
+    c = 2 * r
 
     my_total.dx = dx
     my_total.function = c
