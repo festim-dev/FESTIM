@@ -60,7 +60,6 @@ def test_compute_cylindrical(r0, radius, height, azimuth_range):
         radius (float): cylinder radius
         height (float): cylinder height
         azimuth_range (tuple): range of the azimuthal angle
-        soret (bool): if True, the Soret effect will be set
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
