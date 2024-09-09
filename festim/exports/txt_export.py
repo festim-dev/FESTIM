@@ -20,15 +20,21 @@ class TXTExport(festim.Export):
             Defautls to ".2e".
     """
 
-    def __init__(self, field, filename, times=None, header_format=".2e") -> None:
+    def __init__(
+        self, field, filename, times=None, write_at_last=False, header_format=".2e"
+    ) -> None:
         super().__init__(field=field)
         if times:
             self.times = sorted(times)
         else:
             self.times = times
         self.filename = filename
+        self.write_at_last = write_at_last
         self.header_format = header_format
         self._first_time = True
+
+        self.data = None
+        self.header = None
 
     @property
     def filename(self):
@@ -51,15 +57,21 @@ class TXTExport(festim.Export):
                 return True
         return False
 
-    def when_is_next_time(self, current_time):
-        if self.times is None:
-            return None
-        for time in self.times:
-            if current_time < time:
-                return time
-        return None
+    def is_last(self, current_time, final_time):
+        if final_time is None:
+            # write if steady
+            return True
+        elif self.times is None:
+            if np.isclose(current_time, final_time, atol=0):
+                # write at final time if exports at each timestep
+                return True
+        else:
+            if np.isclose(current_time, self.times[-1], atol=0):
+                # write at final time if exports at specific times
+                return True
+        return False
 
-    def write(self, current_time, steady):
+    def write(self, current_time, final_time):
         # create a DG1 functionspace
         V_DG1 = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
 
@@ -72,62 +84,35 @@ class TXTExport(festim.Export):
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
 
-            # if steady or it is the first time to export
-            # write data
+            # write data if steady or it is the first time to export
             # else append new column to the existing file
-            if steady or self._first_time:
-                if steady:
-                    header = "x,t=steady"
+            if final_time is None or self._first_time:
+                if final_time is None:
+                    self.header = "x,t=steady"
                 else:
-                    header = f"x,t={format(current_time, self.header_format)}s"
+                    self.header = f"x,t={format(current_time, self.header_format)}s"
+
                 x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
                 x_column = np.transpose([x.vector()[:]])
-                data = np.column_stack([x_column, solution_column])
+                self.data = np.column_stack([x_column, solution_column])
                 self._first_time = False
             else:
                 # Update the header
-                old_file = open(self.filename)
-                old_header = old_file.readline().split("\n")[0]
-                old_file.close()
-                header = old_header + f",t={format(current_time, self.header_format)}s"
-                # Append new column
-                old_columns = np.loadtxt(self.filename, delimiter=",", skiprows=1)
-                data = np.column_stack([old_columns, solution_column])
+                self.header += f",t={format(current_time, self.header_format)}s"
+                # Add new column
+                self.data = np.column_stack([self.data, solution_column])
 
-            np.savetxt(self.filename, data, header=header, delimiter=",", comments="")
-
-
-class TXTExports:
-    """
-    Args:
-        fields (list): list of exported fields ("solute", "1", "retention",
-            "T"...)
-        filenames (list): list of the filenames for each field (must end with .txt).
-        times (list, optional): if provided, fields will be
-            exported at these timesteps. Otherwise exports at all
-            timesteps. Defaults to None.
-        header_format (str, optional): the format of column headers.
-            Defautls to ".2e".
-    """
-
-    def __init__(
-        self, fields=[], filenames=[], times=None, header_format=".2e"
-    ) -> None:
-        msg = "TXTExports class will be deprecated in future versions of FESTIM"
-        warnings.warn(msg, DeprecationWarning)
-
-        self.fields = fields
-        if len(self.fields) != len(filenames):
-            raise ValueError(
-                "Number of fields to be exported "
-                "doesn't match number of filenames in txt exports"
-            )
-        if times:
-            self.times = sorted(times)
-        else:
-            self.times = times
-        self.filenames = filenames
-        self.header_format = header_format
-        self.exports = []
-        for function, filename in zip(self.fields, self.filenames):
-            self.exports.append(TXTExport(function, filename, times, header_format))
+            if (
+                self.write_at_last and self.is_last(current_time, final_time)
+            ) or not self.write_at_last:
+                if self.is_last(current_time, final_time):
+                    # Sort data by the x-column before at last export time
+                    self.data = self.data[self.data[:, 0].argsort()]
+                # Write data
+                np.savetxt(
+                    self.filename,
+                    self.data,
+                    header=self.header,
+                    delimiter=",",
+                    comments="",
+                )

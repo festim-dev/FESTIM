@@ -88,7 +88,7 @@ from .exports.derived_quantities.adsorbed_hydrogen import AdsorbedHydrogen
 
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
-from .exports.txt_export import TXTExport, TXTExports
+from .exports.txt_export import TXTExport
 
 
 from .settings import Settings
