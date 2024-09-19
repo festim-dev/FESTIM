@@ -1,7 +1,8 @@
-from festim import TXTExport, Stepsize
+from festim import TXTExport, Stepsize, Material
 import fenics as f
 import os
 import pytest
+import numpy as np
 from pathlib import Path
 
 
@@ -36,14 +37,24 @@ class TestWrite:
     def test_file_exists(self, my_export, function):
         current_time = 1
         my_export.function = function
-        my_export.write(current_time=current_time, final_time=None)
+        my_export.write(
+            current_time=current_time,
+            final_time=None,
+            materials=None,
+            chemical_pot=False,
+        )
 
         assert os.path.exists(my_export.filename)
 
     def test_file_doesnt_exist(self, my_export, function):
         current_time = 10
         my_export.function = function
-        my_export.write(current_time=current_time, final_time=None)
+        my_export.write(
+            current_time=current_time,
+            final_time=None,
+            materials=None,
+            chemical_pot=False,
+        )
 
         assert not os.path.exists(my_export.filename)
 
@@ -57,14 +68,24 @@ class TestWrite:
             + "/folder2"
             + my_export.filename[slash_indx:]
         )
-        my_export.write(current_time=current_time, final_time=None)
+        my_export.write(
+            current_time=current_time,
+            final_time=None,
+            materials=None,
+            chemical_pot=False,
+        )
 
         assert os.path.exists(my_export.filename)
 
     def test_subspace(self, my_export, function_subspace):
         current_time = 1
         my_export.function = function_subspace
-        my_export.write(current_time=current_time, final_time=None)
+        my_export.write(
+            current_time=current_time,
+            final_time=None,
+            materials=None,
+            chemical_pot=False,
+        )
 
         assert os.path.exists(my_export.filename)
 
@@ -75,6 +96,47 @@ class TestWrite:
     def test_error_filename_not_a_str(self, my_export):
         with pytest.raises(TypeError, match="filename must be a string"):
             my_export.filename = 2
+
+    def test_sorted_by_x(self, my_export, function):
+        """Checks that the exported data is sorted by x"""
+        current_time = 1
+        my_export.function = function
+        my_export.write(
+            current_time=current_time,
+            final_time=None,
+            materials=None,
+            chemical_pot=False,
+        )
+        assert (np.diff(my_export.data[:, 0]) >= 0).all()
+
+    @pytest.mark.parametrize(
+        "materials,chemical_pot,export_len",
+        [
+            (None, False, 11),
+            (
+                [
+                    Material(id=1, D_0=1, E_D=0, S_0=1, E_S=0, borders=[0, 0.5]),
+                    Material(id=2, D_0=2, E_D=0, S_0=2, E_S=0, borders=[0.5, 1]),
+                ],
+                True,
+                12,  # + 1 duplicate near the interface
+            ),
+        ],
+    )
+    def test_duplicates(self, materials, chemical_pot, export_len, my_export, function):
+        """
+        Checks that the exported data does not contain duplicates
+        except those near interfaces
+        """
+        current_time = 1
+        my_export.function = function
+        my_export.write(
+            current_time=current_time,
+            final_time=None,
+            materials=materials,
+            chemical_pot=chemical_pot,
+        )
+        assert len(my_export.data) == export_len
 
 
 class TestIsItTimeToExport:

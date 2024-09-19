@@ -503,7 +503,12 @@ class Simulation:
         self.update_post_processing_solutions()
 
         self.exports.t = self.t
-        self.exports.write(self.label_to_function, self.mesh.dx)
+        self.exports.write(
+            self.label_to_function,
+            self.mesh.dx,
+            self.materials,
+            self.settings.chemical_pot,
+        )
 
     def update_post_processing_solutions(self):
         """Creates the post-processing functions by splitting self.u. Projects

@@ -71,11 +71,44 @@ class TXTExport(festim.Export):
                 return True
         return False
 
-    def write(self, current_time, final_time):
-        # create a DG1 functionspace
-        V_DG1 = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
+    def filter_duplicates(self, data, materials):
+        x = data[:, 0]
 
-        solution = f.project(self.function, V_DG1)
+        # Collect all borders
+        borders = []
+        for material in materials:
+            for border in material.borders:
+                borders.append(border)
+        borders = np.unique(borders)
+
+        # Find indices of the closest duplicates to interfaces
+        border_indx = []
+        for border in borders:
+            closest_indx = np.abs(x - border).argmin()
+            closest_x = x[closest_indx]
+            for ind in np.where(x == closest_x)[0]:
+                border_indx.append(ind)
+
+        # Find indices of first elements in duplicated pairs and mesh borders
+        _, unique_indx = np.unique(x, return_index=True)
+
+        # Combine both arrays of indices
+        combined_indx = np.concatenate([border_indx, unique_indx])
+
+        # Sort unique indices to return a slice
+        combined_indx = sorted(np.unique(combined_indx))
+
+        return data[combined_indx, :]
+
+    def write(self, current_time, final_time, materials, chemical_pot):
+        # create a DG1 functionspace if chemical_pot is True
+        # else create a CG1 functionspace
+        if chemical_pot:
+            V = f.FunctionSpace(self.function.function_space().mesh(), "DG", 1)
+        else:
+            V = f.FunctionSpace(self.function.function_space().mesh(), "CG", 1)
+
+        solution = f.project(self.function, V)
         solution_column = np.transpose(solution.vector()[:])
         if self.is_it_time_to_export(current_time):
             # if the directory doesn't exist
@@ -84,7 +117,7 @@ class TXTExport(festim.Export):
             if not os.path.exists(dirname):
                 os.makedirs(dirname, exist_ok=True)
 
-            # write data if steady or it is the first time to export
+            # create header if steady or it is the first time to export
             # else append new column to the existing file
             if final_time is None or self._first_time:
                 if final_time is None:
@@ -92,7 +125,7 @@ class TXTExport(festim.Export):
                 else:
                     self.header = f"x,t={format(current_time, self.header_format)}s"
 
-                x = f.interpolate(f.Expression("x[0]", degree=1), V_DG1)
+                x = f.interpolate(f.Expression("x[0]", degree=1), V)
                 x_column = np.transpose([x.vector()[:]])
                 self.data = np.column_stack([x_column, solution_column])
                 self._first_time = False
@@ -106,8 +139,13 @@ class TXTExport(festim.Export):
                 self.write_at_last and self.is_last(current_time, final_time)
             ) or not self.write_at_last:
                 if self.is_last(current_time, final_time):
-                    # Sort data by the x-column before at last export time
+                    # Sort data by the x-column before the last export time
                     self.data = self.data[self.data[:, 0].argsort()]
+
+                    # Filter duplicates if chemical_pot is True
+                    if chemical_pot:
+                        self.data = self.filter_duplicates(self.data, materials)
+
                 # Write data
                 np.savetxt(
                     self.filename,
