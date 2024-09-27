@@ -313,9 +313,9 @@ Meshes from FEniCS
 
 See the `FEniCS documentation <https://fenicsproject.org/olddocs/dolfin/latest/python/demos/built-in-meshes/demo_built-in-meshes.py.html>`_ for more built-in meshes.
 
-------------------
+
 Meshes from GMSH
-------------------
+----------------
 
 The Python API of GMSH can be used to create meshes that are useable in FESTIM. Here we will walk through its usage when creating a monoblock subsection consisting of tungsten surrounding a tube of CuCrZr
 
