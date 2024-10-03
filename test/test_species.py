@@ -91,7 +91,7 @@ def test_implicit_species_concentration():
     implicit_species.create_value_fenics(mesh, t=0.0)
 
     # test the concentration of the implicit species
-    expected_concentration = implicit_species.n - (
+    expected_concentration = implicit_species.value_fenics - (
         species1.solution + species2.solution
     )
     assert implicit_species.concentration == expected_concentration
