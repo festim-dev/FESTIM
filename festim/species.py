@@ -86,6 +86,7 @@ class Trap(Species):
         volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
         trapped_concentration (F.Species): The immobile trapped concentration
         trap_reaction (F.Reaction): The reaction for trapping the mobile conc.
+        empty_trap_sites (F.ImplicitSpecies): The implicit species for the empty trap sites
 
     Usage:
         >>> import festim as F
@@ -151,10 +152,12 @@ class Trap(Species):
     def create_species_and_reaction(self):
         """create the immobile trapped species object and the reaction for trapping"""
         self.trapped_concentration = F.Species(name=self.name, mobile=False)
-        trap_site = F.ImplicitSpecies(n=self.n, others=[self.trapped_concentration])
+        self.empty_trap_sites = F.ImplicitSpecies(
+            n=self.n, others=[self.trapped_concentration]
+        )
 
         self.reaction = F.Reaction(
-            reactant=[self.mobile_species, trap_site],
+            reactant=[self.mobile_species, self.empty_trap_sites],
             product=self.trapped_concentration,
             k_0=self.k_0,
             E_k=self.E_k,
