@@ -217,6 +217,9 @@ class HydrogenTransportProblem(F.ProblemBase):
         self.assign_functions_to_species()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
+
+        self.create_implicit_species_value_fenics()
+
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
@@ -232,6 +235,16 @@ class HydrogenTransportProblem(F.ProblemBase):
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
+
+    def create_implicit_species_value_fenics(self):
+        """For each implicit species, create the value_fenics"""
+        for reaction in self.reactions:
+            for reactant in reaction.reactant:
+                if isinstance(reactant, F.ImplicitSpecies):
+                    reactant.create_value_fenics(
+                        mesh=self.mesh.mesh,
+                        t=self.t,
+                    )
 
     def create_species_from_traps(self):
         """Generate a species and reaction per trap defined in self.traps"""
@@ -648,11 +661,15 @@ class HydrogenTransportProblem(F.ProblemBase):
 
     def update_time_dependent_values(self):
         super().update_time_dependent_values()
+        t = float(self.t)
+
+        for reaction in self.reactions:
+            for reactant in reaction.reactant:
+                if isinstance(reactant, F.ImplicitSpecies):
+                    reactant.update_density(t=t)
 
         if not self.temperature_time_dependent:
             return
-
-        t = float(self.t)
 
         if isinstance(self.temperature_fenics, fem.Constant):
             self.temperature_fenics.value = self.temperature(t=t)
