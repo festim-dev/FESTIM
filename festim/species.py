@@ -258,6 +258,9 @@ class ImplicitSpecies:
         Args:
             t (float): the time
         """
+        if isinstance(self.n, (fem.Function, ufl.core.expr.Expr)):
+            return
+
         if callable(self.n):
             arguments = self.n.__code__.co_varnames
             if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
