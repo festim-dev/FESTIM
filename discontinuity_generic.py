@@ -74,9 +74,50 @@ class NewtonSolver:
             # Assemble F(u_{i-1}) - J(u_D - u_{i-1}) and set du|_bc= u_D - u_{i-1}
             with self.b.localForm() as b_local:
                 b_local.set(0.0)
-            
+
+            constants_L = [
+                form and dolfinx.cpp.fem.pack_constants(form._cpp_object)
+                for form in self.F
+            ]
+            coeffs_L = [
+                dolfinx.cpp.fem.pack_coefficients(form._cpp_object) for form in self.F
+            ]
+
+            constants_a = [
+                [
+                    (
+                        dolfinx.cpp.fem.pack_constants(form._cpp_object)
+                        if form is not None
+                        else np.array([], dtype=PETSc.ScalarType)
+                    )
+                    for form in forms
+                ]
+                for forms in self.J
+            ]
+
+            coeffs_a = [
+                [
+                    (
+                        {}
+                        if form is None
+                        else dolfinx.cpp.fem.pack_coefficients(form._cpp_object)
+                    )
+                    for form in forms
+                ]
+                for forms in self.J
+            ]
+
             dolfinx.fem.petsc.assemble_vector_block(
-                self.b, self.F, self.J, bcs=self.bcs, x0=self.x, scale=-1.0
+                self.b,
+                self.F,
+                self.J,
+                bcs=self.bcs,
+                x0=self.x,
+                scale=-1.0,
+                coeffs_a=coeffs_a,
+                constants_a=constants_a,
+                coeffs_L=coeffs_L,
+                constants_L=constants_L,
             )
             self.b.ghostUpdate(
                 PETSc.InsertMode.INSERT_VALUES, PETSc.ScatterMode.FORWARD
@@ -84,7 +125,9 @@ class NewtonSolver:
 
             # Assemble Jacobian
             self.A.zeroEntries()
-            dolfinx.fem.petsc.assemble_matrix_block(self.A, self.J, bcs=self.bcs)
+            dolfinx.fem.petsc.assemble_matrix_block(
+                self.A, self.J, bcs=self.bcs, constants=constants_a, coeffs=coeffs_a
+            )
             self.A.assemble()
 
             self._solver.solve(self.b, self.dx)
@@ -542,36 +585,36 @@ solver = NewtonSolver(
 )
 solver.solve(1e-5)
 
-for subdomain in list_of_subdomains:
-    u_sub_0 = subdomain.u.sub(0).collapse()
-    u_sub_0.name = "u_sub_0"
+# for subdomain in list_of_subdomains:
+#     u_sub_0 = subdomain.u.sub(0).collapse()
+#     u_sub_0.name = "u_sub_0"
 
-    u_sub_1 = subdomain.u.sub(1).collapse()
-    u_sub_1.name = "u_sub_1"
-    bp = dolfinx.io.VTXWriter(
-        mesh.comm, f"u_{subdomain.id}.bp", [u_sub_0, u_sub_1], engine="BP4"
-    )
-    bp.write(0)
-    bp.close()
-
-
-# derived quantities
-V = dolfinx.fem.functionspace(mesh, ("CG", 1))
-T = dolfinx.fem.Function(V)
-T.interpolate(lambda x: 200 + x[1])
+#     u_sub_1 = subdomain.u.sub(1).collapse()
+#     u_sub_1.name = "u_sub_1"
+#     bp = dolfinx.io.VTXWriter(
+#         mesh.comm, f"u_{subdomain.id}.bp", [u_sub_0, u_sub_1], engine="BP4"
+#     )
+#     bp.write(0)
+#     bp.close()
 
 
-T_b = dolfinx.fem.Function(right_domain.u.sub(0).collapse().function_space)
-T_b.interpolate(T)
+# # derived quantities
+# V = dolfinx.fem.functionspace(mesh, ("CG", 1))
+# T = dolfinx.fem.Function(V)
+# T.interpolate(lambda x: 200 + x[1])
 
-ds_b = ufl.Measure("ds", domain=right_domain.submesh)
-dx_b = ufl.Measure("dx", domain=right_domain.submesh)
-dx = ufl.Measure("dx", domain=mesh)
 
-n_b = ufl.FacetNormal(left_domain.submesh)
+# T_b = dolfinx.fem.Function(right_domain.u.sub(0).collapse().function_space)
+# T_b.interpolate(T)
 
-form = dolfinx.fem.form(left_domain.u.sub(0) * dx_b, entity_maps=entity_maps)
-print(dolfinx.fem.assemble_scalar(form))
+# ds_b = ufl.Measure("ds", domain=right_domain.submesh)
+# dx_b = ufl.Measure("dx", domain=right_domain.submesh)
+# dx = ufl.Measure("dx", domain=mesh)
 
-form = dolfinx.fem.form(T_b * ufl.dot(ufl.grad(left_domain.u.sub(0)), n_b) * ds_b, entity_maps=entity_maps)
-print(dolfinx.fem.assemble_scalar(form))
+# n_b = ufl.FacetNormal(left_domain.submesh)
+
+# form = dolfinx.fem.form(left_domain.u.sub(0) * dx_b, entity_maps=entity_maps)
+# print(dolfinx.fem.assemble_scalar(form))
+
+# form = dolfinx.fem.form(T_b * ufl.dot(ufl.grad(left_domain.u.sub(0)), n_b) * ds_b, entity_maps=entity_maps)
+# print(dolfinx.fem.assemble_scalar(form))
