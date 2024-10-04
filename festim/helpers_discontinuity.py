@@ -112,7 +112,7 @@ class NewtonSolver:
                 self.J,
                 bcs=self.bcs,
                 x0=self.x,
-                scale=-1.0,
+                alpha=-1.0,
                 coeffs_a=coeffs_a,
                 constants_a=constants_a,
                 coeffs_L=coeffs_L,
