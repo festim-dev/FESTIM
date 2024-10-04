@@ -8,6 +8,7 @@ import numpy as np
 import basix
 import dolfinx.fem.petsc
 
+
 class NewtonSolver:
     max_iterations: int
     bcs: list[dolfinx.fem.DirichletBC]
@@ -234,7 +235,7 @@ def generate_mesh():
 
     def left_domain(x):
         return x[0] <= 0.5 + 1e-14
-    
+
     def right_domain(x):
         return x[0] >= 0.7 - 1e-14
 
@@ -315,16 +316,17 @@ class VolumeSubdomain:
     v_map: np.ndarray
     facet_to_parent: np.ndarray
     ft: dolfinx.mesh.MeshTags
-    padded:bool
+    padded: bool
+
     def __init__(self, id):
         self.id = id
 
     def create_subdomain(self, mesh, marker):
         assert marker.dim == mesh.topology.dim
         self.parent_mesh = mesh
-        self.submesh, self.submesh_to_mesh, self.v_map = (
-            dolfinx.mesh.create_submesh(mesh, marker.dim, marker.find(self.id))[0:3]
-        )
+        self.submesh, self.submesh_to_mesh, self.v_map = dolfinx.mesh.create_submesh(
+            mesh, marker.dim, marker.find(self.id)
+        )[0:3]
         num_cells_local = (
             mesh.topology.index_map(marker.dim).size_local
             + mesh.topology.index_map(marker.dim).num_ghosts
@@ -333,7 +335,7 @@ class VolumeSubdomain:
         self.parent_to_submesh[self.submesh_to_mesh] = np.arange(
             len(self.submesh_to_mesh), dtype=np.int32
         )
-        self.padded=False
+        self.padded = False
 
     def transfer_meshtag(self, tag):
         # Transfer meshtags to submesh
@@ -342,23 +344,29 @@ class VolumeSubdomain:
             mesh, tag, self.submesh, self.v_map, self.submesh_to_mesh
         )
 
-class Interface():
+
+class Interface:
     id: int
     subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
     parent_mesh: dolfinx.mesh.Mesh
     restriction: [str, str] = ("+", "-")
     padded: bool
-    def __init__(self, parent_mesh, mt,  id, subdomains):
+
+    def __init__(self, parent_mesh, mt, id, subdomains):
         self.id = id
         self.subdomains = tuple(subdomains)
         self.mt = mt
         self.parent_mesh = parent_mesh
+
     def pad_parent_maps(self):
-        """Workaround to make sparsity-pattern work without skips
-        """ 
+        """Workaround to make sparsity-pattern work without skips"""
 
         integration_data = compute_integration_domains(
-                dolfinx.fem.IntegralType.interior_facet, self.parent_mesh.topology, self.mt.find(self.id), self.mt.dim).reshape(-1, 4)
+            dolfinx.fem.IntegralType.interior_facet,
+            self.parent_mesh.topology,
+            self.mt.find(self.id),
+            self.mt.dim,
+        ).reshape(-1, 4)
         for i in range(2):
             # We pad the parent to submesh map to make sure that sparsity pattern is correct
             mapped_cell_0 = self.subdomains[i].parent_to_submesh[integration_data[:, 0]]
@@ -367,6 +375,7 @@ class Interface():
             self.subdomains[i].parent_to_submesh[integration_data[:, 0]] = max_cells
             self.subdomains[i].parent_to_submesh[integration_data[:, 2]] = max_cells
             self.subdomains[i].padded = True
+
 
 mesh, mt, ct = generate_mesh()
 
@@ -384,18 +393,15 @@ num_cells_local = (
 )
 
 
-
 for subdomain in list_of_subdomains:
     subdomain.create_subdomain(mesh, ct)
     subdomain.transfer_meshtag(mt)
 
 
-
-
-
 i0 = Interface(mesh, mt, 5, (left_domain, mid_domain))
 i1 = Interface(mesh, mt, 6, (mid_domain, right_domain))
 interfaces = [i0, i1]
+
 
 def define_interior_eq(mesh, degree, submesh, submesh_to_mesh, value):
     element_CG = basix.ufl.element(
@@ -439,7 +445,7 @@ def compute_mapped_interior_facet_data(interface: Interface):
     Compute integration data for interface integrals.
     We define the first domain on an interface as the "+" restriction,
     meaning that we must sort all integration entities in this order
-    
+
     Parameters
         interface: Interface between two subdomains
     Returns
@@ -448,7 +454,11 @@ def compute_mapped_interior_facet_data(interface: Interface):
     assert (not interface.subdomains[0].padded) and (not interface.subdomains[1].padded)
     mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
     integration_data = compute_integration_domains(
-        dolfinx.fem.IntegralType.interior_facet, mesh.topology, interface.mt.find(interface.id), interface.mt.dim)
+        dolfinx.fem.IntegralType.interior_facet,
+        mesh.topology,
+        interface.mt.find(interface.id),
+        interface.mt.dim,
+    )
 
     ordered_integration_data = integration_data.reshape(-1, 4).copy()
 
@@ -456,28 +466,31 @@ def compute_mapped_interior_facet_data(interface: Interface):
     mapped_cell_1 = interface.subdomains[0].parent_to_submesh[integration_data[2::4]]
 
     switch = mapped_cell_1 > mapped_cell_0
-    # Order restriction on one side        
+    # Order restriction on one side
     if True in switch:
         ordered_integration_data[switch, [0, 1, 2, 3]] = ordered_integration_data[
             switch, [2, 3, 0, 1]
         ]
-    
+
     # Check that other restriction lies in other interface
-    domain1_cell = interface.subdomains[1].parent_to_submesh[ordered_integration_data[:, 2]]
-    assert (domain1_cell >=0).all()
+    domain1_cell = interface.subdomains[1].parent_to_submesh[
+        ordered_integration_data[:, 2]
+    ]
+    assert (domain1_cell >= 0).all()
 
     return (interface.id, ordered_integration_data.reshape(-1))
 
 
-
-integral_data = [compute_mapped_interior_facet_data(interface) for interface in interfaces]
+integral_data = [
+    compute_mapped_interior_facet_data(interface) for interface in interfaces
+]
 [interface.pad_parent_maps() for interface in interfaces]
-dInterface = ufl.Measure(
-        "dS", domain=mesh, subdomain_data=integral_data
-    )
+dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
+
 
 def mixed_term(u, v, n):
     return ufl.dot(ufl.grad(u), n) * v
+
 
 n = ufl.FacetNormal(mesh)
 cr = ufl.Circumradius(mesh)
@@ -493,7 +506,6 @@ for interface in interfaces:
     n_t = n(t_res)
     h_b = 2 * cr(b_res)
     h_t = 2 * cr(t_res)
-
 
     v_b = subdomain_1.vs[0](b_res)
     v_t = subdomain_2.vs[0](t_res)
@@ -513,17 +525,29 @@ for interface in interfaces:
     K_b = K_0(b_res)
     K_t = K_1(t_res)
 
-    F_0 = (
-        -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(interface.id)
-        - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
-    )
+    F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(
+        interface.id
+    ) - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
 
-    F_1 = (
-        +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(interface.id)
-        - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
+    F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(
+        interface.id
+    ) - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(interface.id)
+    F_0 += (
+        2
+        * gamma
+        / (h_b + h_t)
+        * (u_b / K_b - u_t / K_t)
+        * v_b
+        * dInterface(interface.id)
     )
-    F_0 += 2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_b * dInterface(interface.id)
-    F_1 += -2 * gamma / (h_b + h_t) * (u_b / K_b - u_t / K_t) * v_t * dInterface(interface.id)
+    F_1 += (
+        -2
+        * gamma
+        / (h_b + h_t)
+        * (u_b / K_b - u_t / K_t)
+        * v_t
+        * dInterface(interface.id)
+    )
 
     subdomain_1.F += F_0
     subdomain_2.F += F_1
@@ -531,7 +555,7 @@ for interface in interfaces:
 
 J = []
 forms = []
-for i,subdomain1 in enumerate(list_of_subdomains):
+for i, subdomain1 in enumerate(list_of_subdomains):
     jac = []
     form = subdomain1.F
     for j, subdomain2 in enumerate(list_of_subdomains):
