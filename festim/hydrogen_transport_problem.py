@@ -800,8 +800,13 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         sub_V = bc.species.subdomain_to_function_space[volume_subdomain]
         collapsed_V, _ = sub_V.collapse()
 
-        bc_function = dolfinx.fem.Function(collapsed_V)
-        bc_function.x.array[:] = bc.value
+        bc.create_value(
+            mesh=self.mesh.mesh,
+            temperature=self.temperature_fenics,
+            function_space=collapsed_V,
+            t=self.t,
+        )
+
         volume_subdomain.submesh.topology.create_connectivity(
             volume_subdomain.submesh.topology.dim - 1,
             volume_subdomain.submesh.topology.dim,
@@ -811,7 +816,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             fdim,
             volume_subdomain.ft.find(bc.subdomain.id),
         )
-        form = dolfinx.fem.dirichletbc(bc_function, bc_dofs, sub_V)
+        form = dolfinx.fem.dirichletbc(bc.value_fenics, bc_dofs, sub_V)
         return form
 
     def create_initial_conditions(self):
@@ -926,6 +931,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 if subdomain == self.surface_to_volume[bc.subdomain]:
                     v = bc.species.subdomain_to_test_function[subdomain]
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
+
+        for source in self.sources:
+            v = source.species.subdomain_to_test_function[subdomain]
+            if source.volume == subdomain:
+                form -= source.value_fenics * v * dx
 
         subdomain.F = form
 
