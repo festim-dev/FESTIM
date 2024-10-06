@@ -357,11 +357,11 @@ class Simulation:
 
         self.h_transport_problem.initialise(self.mesh, self.materials, self.dt)
 
-        # raise warning if the derived quantities don't match the type of mesh
-        # eg. SurfaceFlux is used with cylindrical mesh
         for export in self.exports:
             if isinstance(export, festim.DerivedQuantities):
                 for q in export:
+                    # raise warning if the derived quantities don't match the type of mesh
+                    # eg. SurfaceFlux is used with cylindrical mesh
                     if self.mesh.type not in q.allowed_meshes:
                         warnings.warn(
                             f"{type(q)} may not work as intended for {self.mesh.type} meshes"
@@ -381,30 +381,40 @@ class Simulation:
                                 f"SurfaceKinetics boundary condition must be defined on surface {q.surface} to export data with festim.AdsorbedHydrogen"
                             )
 
-        self.exports.initialise_derived_quantities(
-            self.mesh.dx, self.mesh.ds, self.materials
-        )
-
-        # needed to ensure that data is actually exported at TXTExport.times
-        # see issue 675
-        for export in self.exports:
-            if isinstance(export, festim.TXTExport) and export.times:
-                if not self.dt.milestones:
-                    self.dt.milestones = []
-                for time in export.times:
-                    if time not in self.dt.milestones:
-                        msg = "To ensure that TXTExport exports data at the desired times "
-                        msg += "TXTExport.times are added to milestones"
-                        warnings.warn(msg)
-                        self.dt.milestones.append(time)
-                self.dt.milestones.sort()
-
-            # set Soret to True for SurfaceFlux quantities
-            if isinstance(export, festim.DerivedQuantities):
-                for q in export:
+                    # set Soret to True for SurfaceFlux quantities
                     if isinstance(q, festim.SurfaceFlux):
                         q.soret = self.settings.soret
                         q.T = self.T.T
+
+            if isinstance(export, festim.TXTExport):
+                # pre-process data depending on the chemical potential flag, trap element type,
+                #  and material borders
+                project_to_DG = (
+                    self.settings.chemical_pot
+                    or self.settings.traps_element_type == "DG"
+                )
+                export.initialise_TXTExport(
+                    self.mesh.mesh,
+                    project_to_DG,
+                    self.materials,
+                )
+
+                # needed to ensure that data is actually exported at TXTExport.times
+                # see issue 675
+                if export.times:
+                    if not self.dt.milestones:
+                        self.dt.milestones = []
+                    for time in export.times:
+                        if time not in self.dt.milestones:
+                            msg = "To ensure that TXTExport exports data at the desired times "
+                            msg += "TXTExport.times are added to milestones"
+                            warnings.warn(msg)
+                            self.dt.milestones.append(time)
+                    self.dt.milestones.sort()
+
+        self.exports.initialise_derived_quantities(
+            self.mesh.dx, self.mesh.ds, self.materials
+        )
 
     def run(self, completion_tone=False):
         """Runs the model.
@@ -506,8 +516,6 @@ class Simulation:
         self.exports.write(
             self.label_to_function,
             self.mesh.dx,
-            self.materials,
-            self.settings.chemical_pot,
         )
 
     def update_post_processing_solutions(self):

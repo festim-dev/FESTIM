@@ -1,4 +1,4 @@
-from festim import TXTExport, Stepsize, Material
+from festim import TXTExport, Material
 import fenics as f
 import os
 import pytest
@@ -7,6 +7,12 @@ from pathlib import Path
 
 
 class TestWrite:
+    @pytest.fixture
+    def mesh(self):
+        mesh = f.UnitIntervalMesh(10)
+
+        return mesh
+
     @pytest.fixture
     def function(self):
         mesh = f.UnitIntervalMesh(10)
@@ -34,31 +40,29 @@ class TestWrite:
 
         return my_export
 
-    def test_file_exists(self, my_export, function):
+    def test_file_exists(self, my_export, function, mesh):
         current_time = 1
         my_export.function = function
+        my_export.initialise_TXTExport(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
-            materials=None,
-            chemical_pot=False,
         )
 
         assert os.path.exists(my_export.filename)
 
-    def test_file_doesnt_exist(self, my_export, function):
+    def test_file_doesnt_exist(self, my_export, function, mesh):
         current_time = 10
         my_export.function = function
+        my_export.initialise_TXTExport(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
-            materials=None,
-            chemical_pot=False,
         )
 
         assert not os.path.exists(my_export.filename)
 
-    def test_create_folder(self, my_export, function):
+    def test_create_folder(self, my_export, function, mesh):
         """Checks that write() creates the folder if it doesn't exist"""
         current_time = 1
         my_export.function = function
@@ -68,23 +72,21 @@ class TestWrite:
             + "/folder2"
             + my_export.filename[slash_indx:]
         )
+        my_export.initialise_TXTExport(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
-            materials=None,
-            chemical_pot=False,
         )
 
         assert os.path.exists(my_export.filename)
 
-    def test_subspace(self, my_export, function_subspace):
+    def test_subspace(self, my_export, function_subspace, mesh):
         current_time = 1
         my_export.function = function_subspace
+        my_export.initialise_TXTExport(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
-            materials=None,
-            chemical_pot=False,
         )
 
         assert os.path.exists(my_export.filename)
@@ -97,20 +99,19 @@ class TestWrite:
         with pytest.raises(TypeError, match="filename must be a string"):
             my_export.filename = 2
 
-    def test_sorted_by_x(self, my_export, function):
+    def test_sorted_by_x(self, my_export, function, mesh):
         """Checks that the exported data is sorted by x"""
         current_time = 1
         my_export.function = function
+        my_export.initialise_TXTExport(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
-            materials=None,
-            chemical_pot=False,
         )
         assert (np.diff(my_export.data[:, 0]) >= 0).all()
 
     @pytest.mark.parametrize(
-        "materials,chemical_pot,export_len",
+        "materials,project_to_DG,export_len",
         [
             (None, False, 11),
             (
@@ -123,18 +124,19 @@ class TestWrite:
             ),
         ],
     )
-    def test_duplicates(self, materials, chemical_pot, export_len, my_export, function):
+    def test_duplicates(
+        self, materials, project_to_DG, export_len, my_export, function, mesh
+    ):
         """
         Checks that the exported data does not contain duplicates
         except those near interfaces
         """
         current_time = 1
         my_export.function = function
+        my_export.initialise_TXTExport(mesh, project_to_DG, materials)
         my_export.write(
             current_time=current_time,
             final_time=None,
-            materials=materials,
-            chemical_pot=chemical_pot,
         )
         assert len(my_export.data) == export_len
 

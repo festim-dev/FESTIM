@@ -71,7 +71,7 @@ class Exports(list):
             return value
         raise TypeError("festim.Exports must be a list of festim.Export")
 
-    def write(self, label_to_function, dx, materials, chemical_pot):
+    def write(self, label_to_function, dx):
         """writes to file
 
         Args:
@@ -129,7 +129,7 @@ class Exports(list):
                         label_to_function[export.field], self.V_DG1
                     )
                 export.function = label_to_function[export.field]
-                export.write(self.t, self.final_time, materials, chemical_pot)
+                export.write(self.t, self.final_time)
         self.nb_iterations += 1
 
     def initialise_derived_quantities(self, dx, ds, materials):
