@@ -27,6 +27,8 @@ class TXTExport(festim.Export):
             is the mesh vertices. Each next column is the field profile at the specific
             export time.
         header (str): the header of the exported file.
+        V (fenics.FunctionSpace): the vector-function space for the exported field.
+
     """
 
     def __init__(
@@ -43,8 +45,8 @@ class TXTExport(festim.Export):
 
         self.data = None
         self.header = None
+        self.V = None
         self._unique_indices = None
-        self._V = None
 
     @property
     def filename(self):
@@ -60,6 +62,17 @@ class TXTExport(festim.Export):
         self._filename = value
 
     def is_it_time_to_export(self, current_time):
+        """
+        Checks if the exported field should be written to a file or not
+        based on the current time and the TXTExport.times
+
+        Args:
+            current_time (float): the current simulation time
+
+        Returns:
+            bool: True if the exported field should be written to a file, else False
+        """
+
         if self.times is None:
             return True
         for time in self.times:
@@ -68,6 +81,21 @@ class TXTExport(festim.Export):
         return False
 
     def is_last(self, current_time, final_time):
+        """
+        Checks if the current simulation step equals to the last export time.
+        based on the final simulation time, TXTExport.times, and the current time
+
+        Args:
+            current_time (float): the current simulation time.
+            final_time (float, None): the final simulation time.
+
+        Returns:
+            bool: True if simulation is steady (final_time is None), if TXTExport.times
+                are not provided and the current time equals to the final time, or if
+                TXTExport.times are provided and the current time equals to the last time in
+                TXTExport.times, else False.
+        """
+
         if final_time is None:
             # write if steady
             return True
@@ -81,17 +109,32 @@ class TXTExport(festim.Export):
                 return True
         return False
 
-    def initialise_TXTExport(self, mesh, project_to_DG=False, materials=None):
+    def initialise(self, mesh, project_to_DG=False, materials=None):
+        """
+        Initialises TXTExport. Depending on the project_to_DG flag, defines a function space (DG1 or CG1)
+        for projection of the exported field. After that, an unsorted array of mesh vertices is created for export.
+        The array is then used to obtain indices of sorted elements for the data export.
+
+        .. note::
+            If DG1 is used, the duplicated vertices in the array are filtered except those near interfaces,
+            The interfaces are defined by ``material.borders`` in the ``Materials`` list.
+
+        Args:
+            mesh (fenics.Mesh): the mesh.
+            project_to_DG (bool): if True, the exported field is projected to a DG1 function space.
+                Defaults to False.
+            materials (festim.Materials): the materials. Defaults to None.
+        """
 
         if project_to_DG:
-            self._V = f.FunctionSpace(mesh, "DG", 1)
+            self.V = f.FunctionSpace(mesh, "DG", 1)
         else:
-            self._V = f.FunctionSpace(mesh, "CG", 1)
+            self.V = f.FunctionSpace(mesh, "CG", 1)
 
-        x = f.interpolate(f.Expression("x[0]", degree=1), self._V)
+        x = f.interpolate(f.Expression("x[0]", degree=1), self.V)
         x_column = np.transpose([x.vector()[:]])
 
-        # if chemical_pot is True or trap_element_type is DG, get indices of duplicates near interfaces
+        # if project_to_DG is True, get indices of duplicates near interfaces
         # and indices of the first elements from a pair of duplicates otherwise
         if project_to_DG:
             # Collect all borders
@@ -122,16 +165,24 @@ class TXTExport(festim.Export):
             self._unique_indices = np.array(unique_indices)
 
         else:
-            # Get list of unique indices as integers
+            # Get list of unique indices
             self._unique_indices = np.argsort(x_column, axis=0)[:, 0]
 
         self.data = x_column[self._unique_indices]
         self.header = "x"
 
     def write(self, current_time, final_time):
+        """
+        Modifies the header and writes the data to a file depending on
+        the current and the final times of a simulation.
+
+        Args:
+            current_time (float): the current simulation time.
+            final_time (float, None): the final simulation time.
+        """
 
         if self.is_it_time_to_export(current_time):
-            solution = f.project(self.function, self._V)
+            solution = f.project(self.function, self.V)
             solution_column = np.transpose(solution.vector()[:])
 
             # if the directory doesn't exist

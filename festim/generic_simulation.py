@@ -393,7 +393,7 @@ class Simulation:
                     self.settings.chemical_pot
                     or self.settings.traps_element_type == "DG"
                 )
-                export.initialise_TXTExport(
+                export.initialise(
                     self.mesh.mesh,
                     project_to_DG,
                     self.materials,

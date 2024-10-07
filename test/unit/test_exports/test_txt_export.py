@@ -43,7 +43,7 @@ class TestWrite:
     def test_file_exists(self, my_export, function, mesh):
         current_time = 1
         my_export.function = function
-        my_export.initialise_TXTExport(mesh)
+        my_export.initialise(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
@@ -54,7 +54,7 @@ class TestWrite:
     def test_file_doesnt_exist(self, my_export, function, mesh):
         current_time = 10
         my_export.function = function
-        my_export.initialise_TXTExport(mesh)
+        my_export.initialise(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
@@ -72,7 +72,7 @@ class TestWrite:
             + "/folder2"
             + my_export.filename[slash_indx:]
         )
-        my_export.initialise_TXTExport(mesh)
+        my_export.initialise(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
@@ -83,7 +83,7 @@ class TestWrite:
     def test_subspace(self, my_export, function_subspace, mesh):
         current_time = 1
         my_export.function = function_subspace
-        my_export.initialise_TXTExport(mesh)
+        my_export.initialise(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
@@ -103,7 +103,7 @@ class TestWrite:
         """Checks that the exported data is sorted by x"""
         current_time = 1
         my_export.function = function
-        my_export.initialise_TXTExport(mesh)
+        my_export.initialise(mesh)
         my_export.write(
             current_time=current_time,
             final_time=None,
@@ -133,7 +133,7 @@ class TestWrite:
         """
         current_time = 1
         my_export.function = function
-        my_export.initialise_TXTExport(mesh, project_to_DG, materials)
+        my_export.initialise(mesh, project_to_DG, materials)
         my_export.write(
             current_time=current_time,
             final_time=None,
