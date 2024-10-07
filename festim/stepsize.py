@@ -96,6 +96,9 @@ class Stepsize:
             max_stepsize = self.adaptive_stepsize["max_stepsize"]
 
             if not converged:
+                if dt_min is None:
+                    raise ValueError("Solver diverged but dt_min is not set.")
+
                 self.value.assign(float(self.value) / change_ratio)
                 if float(self.value) < dt_min:
                     raise ValueError("stepsize reached minimal value")
