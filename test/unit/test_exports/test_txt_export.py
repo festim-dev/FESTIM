@@ -176,11 +176,11 @@ class TestIsLast:
 
         return my_export
 
-    def test_final_time_none(self, my_export):
+    def test_final_time_is_none(self, my_export):
         assert my_export.is_last(1, None) == True
 
     @pytest.mark.parametrize("current_time,output", [(1, False), (3, False), (5, True)])
-    def test_times_not_none(self, current_time, output, my_export):
+    def test_times_is_none(self, current_time, output, my_export):
         final_time = 5
         assert my_export.is_last(current_time, final_time) == output
 
