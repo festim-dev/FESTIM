@@ -163,3 +163,29 @@ class TestIsItTimeToExport:
         assert not my_export.is_it_time_to_export(0)
         assert not my_export.is_it_time_to_export(5)
         assert not my_export.is_it_time_to_export(1.5)
+
+
+class TestIsLast:
+    @pytest.fixture
+    def my_export(self, tmpdir):
+        d = tmpdir.mkdir("test_folder")
+        my_export = TXTExport(
+            "solute",
+            filename="{}/solute_label.txt".format(str(Path(d))),
+        )
+
+        return my_export
+
+    def test_final_time_none(self, my_export):
+        assert my_export.is_last(1, None) == True
+
+    @pytest.mark.parametrize("current_time,output", [(1, False), (3, False), (5, True)])
+    def test_times_not_none(self, current_time, output, my_export):
+        final_time = 5
+        assert my_export.is_last(current_time, final_time) == output
+
+    @pytest.mark.parametrize("current_time,output", [(1, False), (2, False), (3, True)])
+    def test_times_not_none(self, current_time, output, my_export):
+        my_export.times = [1, 2, 3]
+        final_time = 5
+        assert my_export.is_last(current_time, final_time) == output
