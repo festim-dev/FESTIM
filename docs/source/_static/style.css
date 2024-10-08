@@ -26,6 +26,10 @@ code {
     text-align: center;
 }
 
+.sd-card .sd-card-title {
+    text-align: center;
+}
+
 .sd-card .sd-card-header .sd-card-text {
     margin: 0px;
 }
