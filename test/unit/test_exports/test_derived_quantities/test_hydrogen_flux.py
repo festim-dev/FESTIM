@@ -31,4 +31,5 @@ def test_title_with_units(function, expected_title):
 
 def test_title_without_units():
     my_flux = HydrogenFlux(4)
-    assert my_flux.title == "Flux surface 4: solute"
+    my_flux.show_units = False
+    assert my_flux.title == "solute flux surface 4"

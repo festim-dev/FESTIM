@@ -53,15 +53,13 @@ class SurfaceFlux(SurfaceQuantity):
 
     @property
     def title(self):
-        quantity_title = f"Flux surface {self.surface}: {self.field}"
+        if self.field == "T":
+            quantity_title = f"Heat flux surface {self.surface}"
+        else:
+            quantity_title = f"{self.field} flux surface {self.surface}"
+
         if self.show_units:
-            if self.field == "T":
-                quantity_title = f"Heat flux surface {self.surface}"
-            else:
-                quantity_title = f"{self.field} flux surface {self.surface}"
-
             return quantity_title + f" ({self.export_unit})"
-
         else:
             return quantity_title
 

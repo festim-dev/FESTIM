@@ -17,7 +17,8 @@ def test_title(field, surface):
     """
 
     my_total = TotalSurface(field, surface)
-    assert my_total.title == "Total {} surface {}".format(field, surface)
+    my_total.function = c_2D
+    assert my_total.title == f"Total {field} surface {surface} ({my_total.export_unit})"
 
 
 class TestCompute:
