@@ -31,7 +31,6 @@ from .helpers import (
 
 from .meshing.mesh import Mesh
 from .meshing.mesh_1d import Mesh1D
-from .meshing.mesh_from_refinements import MeshFromRefinements
 from .meshing.mesh_from_vertices import MeshFromVertices
 from .meshing.mesh_from_xdmf import MeshFromXDMF
 

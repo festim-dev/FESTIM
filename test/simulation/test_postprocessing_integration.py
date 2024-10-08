@@ -12,7 +12,7 @@ class TestPostProcessing:
         """A pytest fixture defining the festim.Simulation object"""
         my_sim = festim.Simulation({})
         my_sim.t = 0
-        my_sim.mesh = festim.MeshFromRefinements(10, 1)
+        my_sim.mesh = festim.MeshFromVertices(np.linspace(0, 1, num=11))
         my_sim.settings = festim.Settings(None, None, final_time=10)
         mat1 = festim.Material(1, D_0=1, E_D=1)
         my_sim.materials = festim.Materials([mat1])
@@ -120,10 +120,12 @@ class TestPostProcessing:
             my_sim.run_post_processing()
             data = derived_quantities.data
 
+            print(data)
+
             assert len(data) == i + 1
             assert data[i][0] == t
-            assert data[i][1] == 10
-            assert data[i][2] == 20
+            assert data[i][1] == pytest.approx(10)
+            assert data[i][2] == pytest.approx(20)
             assert data[i][3] == pytest.approx(11)
             assert data[i][4] == pytest.approx(11)
 
@@ -259,7 +261,7 @@ class TestPostProcessing:
         """
         my_sim = festim.Simulation({})
         my_sim.t = 0
-        my_sim.mesh = festim.MeshFromRefinements(10, 1)
+        my_sim.mesh = festim.MeshFromVertices(np.linspace(0, 1, num=11))
         my_sim.settings = festim.Settings(None, None, final_time=10)
         mat1 = festim.Material(1, D_0=1, E_D=1)
         my_sim.materials = festim.Materials([mat1])

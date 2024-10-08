@@ -71,7 +71,7 @@ def test_run_MMS_chemical_pot(tmpdir):
             festim.InitialCondition(field=0, value=u),
         ]
 
-        my_mesh = festim.MeshFromRefinements(round(size / h), size)
+        my_mesh = festim.MeshFromVertices(np.linspace(0, size, round(size / h) + 1))
 
         my_bcs = [
             festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
