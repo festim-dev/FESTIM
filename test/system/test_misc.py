@@ -45,7 +45,7 @@ def test_convective_flux(tmpdir):
 def test_error_steady_state_with_stepsize():
     """Checks that an error is raised when a stepsize is given for a steady state simulation"""
     my_model = F.Simulation()
-    my_model.mesh = F.MeshFromRefinements(1000, size=1)
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1, num=1001))
 
     my_model.materials = F.Materials([F.Material(D_0=1, E_D=0, id=1)])
 
@@ -67,7 +67,7 @@ def test_error_steady_state_with_stepsize():
 def test_error_transient_without_stepsize():
     """Checks that an error is raised when a stepsize is not given for a transient simulation"""
     my_model = F.Simulation()
-    my_model.mesh = F.MeshFromRefinements(1000, size=1)
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1, num=100))
 
     my_model.materials = F.Materials([F.Material(D_0=1, E_D=0, id=1)])
 

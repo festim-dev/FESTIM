@@ -1,10 +1,11 @@
 import festim as F
+import numpy as np
 
 
 def test_extrinsic_trap():
     """Runs a festim sim with an extrinsic trap"""
     my_materials = F.Materials([F.Material(id=1, D_0=2, E_D=1, name="mat")])
-    my_mesh = F.MeshFromRefinements(10, 1)
+    my_mesh = F.MeshFromVertices(np.linspace(0, 1, 11))
 
     my_traps = F.ExtrinsicTrap(
         k_0=1,

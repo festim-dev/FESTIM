@@ -1,51 +1,10 @@
 # Unit tests meshing
 from festim import Materials, Material
-from festim import Mesh, Mesh1D, MeshFromRefinements, MeshFromVertices, MeshFromXDMF
+from festim import Mesh, Mesh1D, MeshFromVertices, MeshFromXDMF
 import fenics
 import pytest
 from pathlib import Path
-
-
-def test_mesh_and_refine_meets_refinement_conditions():
-    """
-    Test that function mesh_and_refine() gives the right
-    refinement conditions
-    """
-
-    def create_subdomains(x1, x2):
-        class domain(fenics.SubDomain):
-            def inside(self, x, on_boundary):
-                return x[0] >= x1 and x[0] <= x2
-
-        domain = domain()
-        return domain
-
-    refinements = [
-        [{"cells": 2, "x": 0.5}, {"cells": 3, "x": 0.25}],
-        [{"cells": 3, "x": 0.5}, {"cells": 11, "x": 0.25}],
-    ]
-    for refinement in refinements:
-        my_mesh = MeshFromRefinements(
-            initial_number_of_cells=2, size=1, refinements=refinement
-        )
-        mesh = my_mesh.mesh
-
-        mf1 = fenics.MeshFunction("size_t", mesh, 1)
-        mf2 = fenics.MeshFunction("size_t", mesh, 1)
-        subdomain1 = create_subdomains(0, refinement[1]["x"])
-        subdomain1.mark(mf1, 1)
-        subdomain2 = create_subdomains(0, refinement[0]["x"])
-        subdomain2.mark(mf2, 2)
-        nb_cell_1 = 0
-        nb_cell_2 = 0
-        for cell in fenics.cells(mesh):
-            cell_no = cell.index()
-            if mf1.array()[cell_no] == 1:
-                nb_cell_1 += 1
-            if mf2.array()[cell_no] == 2:
-                nb_cell_2 += 1
-        assert nb_cell_1 >= refinement[0]["cells"]
-        assert nb_cell_2 >= refinement[1]["cells"]
+import numpy as np
 
 
 class TestDefineMarkers:
@@ -140,9 +99,9 @@ class TestMeshVerticesStartNonZero:
 
 
 class TestDefineMarkersStartNonZero:
-    """Tests to check that MeshFromRefinements that don't start at zero are correctly tagged"""
+    """Tests to check that MeshFromVertices that don't start at zero are correctly tagged"""
 
-    my_mesh = MeshFromRefinements(initial_number_of_cells=10, size=2, start=1)
+    my_mesh = MeshFromVertices(np.linspace(1, 2, num=11))
     materials = [
         Material(id=1, D_0=None, E_D=None, borders=[1, 2]),
         Material(id=2, D_0=None, E_D=None, borders=[2, 3]),
@@ -285,23 +244,3 @@ def test_generate_mesh_from_vertices():
     assert mesh.num_vertices() == len(points)
     assert mesh.num_edges() == len(points) - 1
     assert mesh.num_cells() == len(points) - 1
-
-
-def test_mesh_refinement_course_mesh():
-    """
-    Test for MeshFromRefinements, when mesh too coarse for refinement
-        - return error
-    """
-    mesh_parameters = {
-        "initial_number_of_cells": 2,
-        "size": 10,
-        "refinements": [
-            {"cells": 3, "x": 0.00001},
-        ],
-    }
-
-    with pytest.raises(
-        ValueError,
-        match="Infinite loop: Initial number " + "of cells might be too small",
-    ):
-        MeshFromRefinements(**mesh_parameters)

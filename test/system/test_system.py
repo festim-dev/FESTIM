@@ -45,7 +45,7 @@ def test_run_temperature_stationary(tmpdir):
 
     my_materials = [festim.Material(id=1, D_0=4.1e-7, E_D=0.39, thermal_cond=1)]
 
-    my_mesh = festim.MeshFromRefinements(200, size=size)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, size, num=200))
     my_boundary_conditions = [
         festim.DirichletBC(value=1, field=0, surfaces=[1]),
         festim.DirichletBC(value=u, field="T", surfaces=[1, 2]),
@@ -115,7 +115,7 @@ def test_run_temperature_transient(tmpdir):
             )
         ]
     )
-    my_mesh = festim.MeshFromRefinements(200, size)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, size, num=200))
 
     my_bcs = [
         festim.DirichletBC(surfaces=[1], value=1, field=0),
@@ -216,7 +216,7 @@ def test_run_MMS(tmpdir):
             festim.InitialCondition(field=1, value=v),
         ]
 
-        my_mesh = festim.MeshFromRefinements(round(size / h), size)
+        my_mesh = festim.MeshFromVertices(np.linspace(0, size, num=round(size / h) + 1))
 
         my_bcs = [
             festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
@@ -342,7 +342,7 @@ def test_run_MMS_chemical_pot(tmpdir):
             festim.InitialCondition(field=1, value=v),
         ]
 
-        my_mesh = festim.MeshFromRefinements(round(size / h), size)
+        my_mesh = festim.MeshFromVertices(np.linspace(0, size, num=round(size / h) + 1))
 
         my_bcs = [
             festim.DirichletBC(surfaces=[1, 2], value=u, field=0),
@@ -442,7 +442,7 @@ def test_run_chemical_pot_mass_balance(tmpdir):
         festim.InitialCondition(field=0, value=1),
     ]
 
-    my_mesh = festim.MeshFromRefinements(5, 1)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, num=6))
 
     my_temp = festim.Temperature(700 + 210 * festim.t)
 
@@ -512,7 +512,7 @@ def test_run_MMS_soret(tmpdir):
         ]
 
         size = 0.1
-        my_mesh = festim.MeshFromRefinements(round(size / h), size)
+        my_mesh = festim.MeshFromVertices(np.linspace(0, size, num=round(size / h) + 1))
 
         my_source = festim.Source(f, 1, "solute")
 
@@ -624,7 +624,7 @@ def test_run_MMS_steady_state(tmpdir):
         ]
 
         size = 0.1
-        my_mesh = festim.MeshFromRefinements(round(size / h), size)
+        my_mesh = festim.MeshFromVertices(np.linspace(0, size, num=round(size / h) + 1))
 
         my_sources = [festim.Source(f, 1, "solute"), festim.Source(g, 1, "1")]
 
@@ -718,7 +718,7 @@ def test_chemical_pot_T_solve_stationary(tmpdir):
     my_materials = festim.Materials(
         [festim.Material(id=1, D_0=1, E_D=0.1, S_0=2, E_S=0.2, thermal_cond=1)]
     )
-    my_mesh = festim.MeshFromRefinements(10, 1)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, num=11))
 
     my_temp = festim.HeatTransferProblem(transient=False)
     my_bcs = [
@@ -772,7 +772,7 @@ def test_export_particle_flux_with_chemical_pot(tmpdir):
     my_materials = festim.Materials(
         [festim.Material(id=1, D_0=2, E_D=1, S_0=2, E_S=1, thermal_cond=2)]
     )
-    my_mesh = festim.MeshFromRefinements(10, 1)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, num=11))
 
     my_temp = festim.Temperature(300)
 
@@ -885,7 +885,7 @@ def test_steady_state_traps_not_everywhere():
         ]
     )
 
-    my_mesh = festim.MeshFromRefinements(100, 1)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, num=101))
 
     my_trap = festim.Trap(1, 0, 1, 0, ["mat_1", "mat_3"], 1)
 
@@ -922,7 +922,7 @@ def test_no_jacobian_update():
     mat = festim.Material(id=1, D_0=1, E_D=0)
     my_materials = festim.Materials([mat])
 
-    my_mesh = festim.MeshFromRefinements(10, 1)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, num=100))
 
     my_trap = festim.Trap(1, 0, 1, 0, [mat], 1)
 
@@ -959,7 +959,7 @@ def test_nb_iterations_bewteen_derived_quantities_compute():
 
     def init_sim(nb_it_compute):
         my_materials = festim.Materials([festim.Material(id=1, D_0=1, E_D=0)])
-        my_mesh = festim.MeshFromRefinements(10, 1)
+        my_mesh = festim.MeshFromVertices(np.linspace(0, 1, num=11))
 
         my_temp = festim.Temperature(300)
 
@@ -1011,7 +1011,7 @@ def test_error_steady_state_diverges():
         ]
     )
 
-    my_mesh = festim.MeshFromRefinements(10, 1)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, num=11))
 
     my_temp = festim.Temperature(-1)
 
@@ -1037,7 +1037,7 @@ def test_error_steady_state_diverges():
 def test_completion_tone():
     """Checks that when a completion tone is enabled, sim is not affected"""
     my_model = festim.Simulation(log_level=20)
-    my_model.mesh = festim.MeshFromRefinements(10, size=1)
+    my_model.mesh = festim.MeshFromVertices(np.linspace(0, 1, num=11))
     my_model.materials = festim.Materials([festim.Material(id=1, D_0=1, E_D=0)])
     my_model.T = festim.Temperature(100)
     my_model.boundary_conditions = [
