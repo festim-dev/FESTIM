@@ -29,13 +29,17 @@ class MaximumVolume(VolumeQuantity):
         super().__init__(field=field, volume=volume)
 
     @property
+    def export_unit(self):
+        if self.field == "T":
+            return "K"
+        else:
+            return "H m-3"
+
+    @property
     def title(self):
         quantity_title = f"Maximum {self.field} volume {self.volume}"
         if self.show_units:
-            if self.field == "T":
-                return quantity_title + " (K)"
-            else:
-                return quantity_title + " (H m-3)"
+            return quantity_title + f" ({self.export_unit})"
         else:
             return quantity_title
 

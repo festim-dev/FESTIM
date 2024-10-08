@@ -16,7 +16,7 @@ def test_title(field, volume):
     """
 
     my_max = MaximumVolume(field, volume)
-    assert my_max.title == "Maximum {} volume {}".format(field, volume)
+    assert my_max.title == f"Maximum {field} volume {volume} ({my_max.export_unit})"
 
 
 class TestCompute:

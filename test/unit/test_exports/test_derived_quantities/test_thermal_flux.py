@@ -30,5 +30,6 @@ def test_title_with_units(function, expected_title):
 
 def test_title_without_units():
     my_flux = ThermalFlux(5)
+    my_flux.show_units = False
 
-    assert my_flux.title == "Flux surface 5: T"
+    assert my_flux.title == "Heat flux surface 5"
