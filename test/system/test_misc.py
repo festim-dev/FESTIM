@@ -850,3 +850,30 @@ def test_soret_surface_flux_mass_balance(coordinates, surface_flux_class):
 
     assert not np.isclose(flux_left.data[0], 0)
     assert np.isclose(np.abs(flux_left.data[0]), np.abs(flux_right.data[0]), rtol=1e-2)
+
+
+def test_error_raised_when_diverge_with_no_dt_min():
+    my_model = F.Simulation()
+
+    tungsten = F.Material(id=1, D_0=4.10e-7, E_D=0.39)
+    my_model.materials = tungsten
+
+    my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 1, 10))
+    my_model.T = 400
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(surfaces=[1, 2], value=1e20, field="solute")
+    ]
+
+    my_model.dt = F.Stepsize(0.001, stepsize_change_ratio=1.1)
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        final_time=100,
+    )
+
+    my_model.initialise()
+
+    with pytest.raises(ValueError, match="Solver diverged but dt_min is not set."):
+        my_model.run()
