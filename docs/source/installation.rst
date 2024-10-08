@@ -65,3 +65,11 @@ Specific versions of FESTIM can be installed with::
 with the desired version tag.  For example::
 
     pip install FESTIM==0.9
+
+To upgrade FESTIM to the latest version, run::
+
+    pip install --upgrade FESTIM
+
+To uninstall FESTIM, run::
+
+    pip uninstall FESTIM
