@@ -23,44 +23,46 @@ For more information, feel free to ask questions on the `FESTIM Discourse Page <
    "`FESTIM: An open-source code for hydrogen transport simulations.
    International Journal of Hydrogen Energy 63 (2024): 786-802. <https://doi.org/10.1016/j.ijhydene.2024.03.184>`_",
 
+.. All the logos are from this collection https://www.svgrepo.com/collection/solar-linear-icons/
+
 .. grid:: 1 1 3 3
       :gutter: 2
 
       .. grid-item::
 
          .. card:: Installation
-            :img-top: images/index_getting_started.svg
+            :img-top: images/icons/running-2-svgrepo-com.svg
             :link: installation
             :link-type: doc
 
       .. grid-item::
 
          .. card:: User guide
-            :img-top: images/index_user_guide.svg
+            :img-top: images/icons/book-2-svgrepo-com.svg
             :link: userguide/index
             :link-type: doc
 
       .. grid-item::
 
          .. card:: Tutorials
-            :img-top: images/learn-svgrepo-com.svg
+            :img-top: images/icons/clapperboard-play-svgrepo-com.svg
             :link: https://github.com/festim-dev/FESTIM-workshop
 
       .. grid-item::
 
          .. card:: Developer guide
-            :img-top: images/index_contribute.svg
+            :img-top: images/icons/code-square-svgrepo-com.svg
             :link: devguide/index
             :link-type: doc
 
       .. grid-item::
          .. card:: V&V
-            :img-top: images/check-mark-ok-accept-svgrepo-com.svg
+            :img-top: images/icons/check-square-svgrepo-com.svg
             :link: https://festim-vv-report.readthedocs.io/en/latest/
 
       .. grid-item::
          .. card:: API reference
-            :img-top: images/index_api.svg
+            :img-top: images/icons/keyboard-svgrepo-com.svg
             :link: api/festim
             :link-type: doc
 
