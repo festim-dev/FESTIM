@@ -23,6 +23,58 @@ For more information, feel free to ask questions on the `FESTIM Discourse Page <
    "`FESTIM: An open-source code for hydrogen transport simulations.
    International Journal of Hydrogen Energy 63 (2024): 786-802. <https://doi.org/10.1016/j.ijhydene.2024.03.184>`_",
 
+.. grid:: 1 1 3 3
+    :gutter: 2
+
+    .. grid-item-card::
+        :img-top: images/index_getting_started.svg
+        :link: installation
+        :link-type: doc
+
+        Installation
+        ^^^^^^^^^^^^^
+
+    .. grid-item-card::
+        :img-top: images/index_user_guide.svg
+        :link: userguide/index
+        :link-type: doc
+
+        User guide
+        ^^^^^^^^^^^
+
+    .. grid-item-card::
+        :img-top: images/learn-svgrepo-com.svg
+        :link: https://github.com/festim-dev/FESTIM-workshop
+
+        Tutorials
+        ^^^^^^^^^
+        Learn how to use FESTIM
+
+    .. grid-item-card::
+        :img-top: images/index_contribute.svg
+        :link: devguide/index
+        :link-type: doc
+
+        Developer guide
+        ^^^^^^^^^^^^^^^^^^
+        Learn how to contribute to FESTIM
+
+    .. grid-item-card::
+        :img-top: images/check-mark-ok-accept-svgrepo-com.svg
+        :link: https://festim-vv-report.readthedocs.io/en/latest/
+
+        V&V
+        ^^^
+        Check out the Verification and Validation online book
+
+    .. grid-item-card::
+        :img-top: images/index_api.svg
+        :link: api/festim
+        :link-type: doc
+
+        API reference
+        ^^^^^^^^^^^^^^
+
 Map of FESTIM users
 -------------------
 
