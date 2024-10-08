@@ -15,10 +15,6 @@ Meshing
     :members:
     :show-inheritance:
 
-.. autoclass:: MeshFromRefinements
-    :members:
-    :show-inheritance:
-
 .. autoclass:: MeshFromXDMF
     :members:
     :show-inheritance:
