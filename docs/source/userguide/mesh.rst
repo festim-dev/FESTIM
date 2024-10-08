@@ -90,7 +90,7 @@ GMSH can be installed via the following `link <https://gmsh.info>`_.
 
 To use the Python API, gmsh will need to be pip installed using 
 
-.. code-block:: python
+.. code-block:: bash
 
     pip install gmsh 
 
