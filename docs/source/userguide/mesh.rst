@@ -86,9 +86,8 @@ Here we will walk through GMSH's usage when creating a monoblock subsection cons
 Meshing the geometry with GMSH
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. note::
-    GMSH can be installed via the following `link <https://gmsh.info>`_ 
-    To use the python api, gmsh will need to be pip installed using `pip install gmsh`.
+GMSH can be installed via the following `link <https://gmsh.info>`_ 
+To use the python api, gmsh will need to be pip installed using `pip install gmsh`.
 
 Firstly, GMSH must be imported and initialised.
 
