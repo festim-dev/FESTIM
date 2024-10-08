@@ -24,7 +24,7 @@ class DerivedQuantities(list):
             iterations between each export. If None, the file will be
             exported at the last timestep. Defaults to None.
         show_units (bool, optional): will show the units of each
-            derived quantity in the title in export
+            derived quantity in the title in export. Defaults to True.
 
     Attributes:
         filename (str): the filename.
@@ -45,7 +45,7 @@ class DerivedQuantities(list):
         filename: str = None,
         nb_iterations_between_compute: int = 1,
         nb_iterations_between_exports: int = None,
-        show_units=False,
+        show_units=True,
     ) -> None:
         # checks that input is list
         if len(args) == 0:
@@ -125,11 +125,6 @@ class DerivedQuantities(list):
         header = ["t(s)"]
         for quantity in self:
             quantity.show_units = self.show_units
-            if self.show_units is False:
-                warnings.warn(
-                    "The current derived_quantities title style will be deprecated in a future release, please use show_units=True instead",
-                    DeprecationWarning,
-                )
             header.append(quantity.title)
         return header
 

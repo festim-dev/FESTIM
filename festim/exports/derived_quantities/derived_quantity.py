@@ -39,7 +39,7 @@ class DerivedQuantity(Export):
         self.T = None
         self.data = []
         self.t = []
-        self.show_units = False
+        self.show_units = True
 
     @property
     def allowed_meshes(self):
