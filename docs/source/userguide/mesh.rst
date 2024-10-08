@@ -244,10 +244,10 @@ We can now look at each surface and interface and assign the necessary IDs.
     bottom_id = 6
     outer_cylinder_surface_id = 7
     inner_cylinder_surface_id = 8
-    
+
     tungsten_id = 1
     cucrzr_id = 2
-    
+
     gmsh.model.addPhysicalGroup(2, [7, 10], front_id, name = "front")
     gmsh.model.addPhysicalGroup(2, [6, 9], back_id, name = "back")
     gmsh.model.addPhysicalGroup(2, [1], left_id, name = "left")
@@ -256,7 +256,7 @@ We can now look at each surface and interface and assign the necessary IDs.
     gmsh.model.addPhysicalGroup(2, [2], bottom_id, name = "bottom")
     gmsh.model.addPhysicalGroup(2, [5], outer_cylinder_surface_id, name = "tungsten_cucrzr_interface")
     gmsh.model.addPhysicalGroup(2, [8], inner_cylinder_surface_id, name = "cucrzr_coolant_interface")
-    
+
     gmsh.model.addPhysicalGroup(3,[1], tungsten_id, name = "tungsten")
     gmsh.model.addPhysicalGroup(3, [2], cucrzr_id, name = "cucrzr")
 
@@ -265,7 +265,7 @@ The model must then be resynchronized before generating the mesh.
 .. code-block:: python
 
     gmsh.model.occ.synchronize()
-    
+
     gmsh.model.mesh.generate(3)
 
 The mesh can then be written to a file, and GMSH finalised. 
@@ -288,54 +288,54 @@ This can be done using meshio via the following process:
 
     import meshio
     import numpy as np
-    
+
     msh = meshio.read("my_mesh.msh")
-    
-     # Initialize lists to store cells and their corresponding data
-     triangle_cells_list = []
-     tetra_cells_list = []
-     triangle_data_list = []
-     tetra_data_list = []
-    
-     # Extract cell data for all types
-     for cell in msh.cells:
-         if cell.type == "triangle":
-             triangle_cells_list.append(cell.data)
-         elif cell.type == "tetra":
-             tetra_cells_list.append(cell.data)
-    
-     # Extract physical tags
-     for key, data in msh.cell_data_dict["gmsh:physical"].items():
-         if key == "triangle":
-             triangle_data_list.append(data)
-         elif key == "tetra":
-             tetra_data_list.append(data)
-    
-     # Concatenate all tetrahedral cells and their data
-     tetra_cells = np.concatenate(tetra_cells_list)
-     tetra_data = np.concatenate(tetra_data_list)
-    
-     # Concatenate all triangular cells and their data
-     triangle_cells = np.concatenate(triangle_cells_list)
-     triangle_data = np.concatenate(triangle_data_list)
-    
-     # Create the tetrahedral mesh
-     tetra_mesh = meshio.Mesh(
-         points=msh.points,
-         cells=[("tetra", tetra_cells)],
-         cell_data={"f": [tetra_data]},
-     )
-    
-     # Create the triangular mesh for the surface
-     triangle_mesh = meshio.Mesh(
-         points=msh.points,
-         cells=[("triangle", triangle_cells)],
-         cell_data={"f": [triangle_data]},
-     )
-    
+
+    # Initialize lists to store cells and their corresponding data
+    triangle_cells_list = []
+    tetra_cells_list = []
+    triangle_data_list = []
+    tetra_data_list = []
+
+    # Extract cell data for all types
+    for cell in msh.cells:
+        if cell.type == "triangle":
+            triangle_cells_list.append(cell.data)
+        elif cell.type == "tetra":
+            tetra_cells_list.append(cell.data)
+
+    # Extract physical tags
+    for key, data in msh.cell_data_dict["gmsh:physical"].items():
+        if key == "triangle":
+            triangle_data_list.append(data)
+        elif key == "tetra":
+            tetra_data_list.append(data)
+
+    # Concatenate all tetrahedral cells and their data
+    tetra_cells = np.concatenate(tetra_cells_list)
+    tetra_data = np.concatenate(tetra_data_list)
+
+    # Concatenate all triangular cells and their data
+    triangle_cells = np.concatenate(triangle_cells_list)
+    triangle_data = np.concatenate(triangle_data_list)
+
+    # Create the tetrahedral mesh
+    tetra_mesh = meshio.Mesh(
+        points=msh.points,
+        cells=[("tetra", tetra_cells)],
+        cell_data={"f": [tetra_data]},
+    )
+
+    # Create the triangular mesh for the surface
+    triangle_mesh = meshio.Mesh(
+        points=msh.points,
+        cells=[("triangle", triangle_cells)],
+        cell_data={"f": [triangle_data]},
+    )
+
     # Write the mesh files
-     meshio.write("volume_mesh.xdmf", tetra_mesh)
-     meshio.write("surface_mesh.xdmf", triangle_mesh)
+    meshio.write("volume_mesh.xdmf", tetra_mesh)
+    meshio.write("surface_mesh.xdmf", triangle_mesh)
 
 Using the mesh in FESTIM
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -345,27 +345,27 @@ A FESTIM simulation can then be run:
 .. code-block:: python
 
     import festim as F
-    
+
     model = F.Simulation()
-    
+
     model.mesh = F.MeshFromXDMF(volume_file ="volume_mesh.xdmf", boundary_file = "surface_mesh.xdmf")
-    
+
     model.materials = [F.Material(id=1, D_0=1, E_D=0),
-                       F.Material(id=2, D_0=5, E_D=0)]
-    
+                        F.Material(id=2, D_0=5, E_D=0)]
+
     model.T = F.Temperature(800)
-    
+
     model.boundary_conditions = [F.DirichletBC(surfaces = [top_id], value = 1, field = 0),
-                                 F.DirichletBC(surfaces = [inner_cylinder_surface_id], value = 0, field = 0)]
-    
+                                    F.DirichletBC(surfaces = [inner_cylinder_surface_id], value = 0, field = 0)]
+
     model.exports = [F.XDMFExport("solute")]
-    
+
     model.settings = F.Settings(
         absolute_tolerance=1e-10,
         relative_tolerance=1e-10,
         transient=False,
     )
-    
+
     model.initialise()
     model.run()
 
