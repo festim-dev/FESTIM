@@ -811,8 +811,16 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             volume_subdomain.submesh.topology.dim - 1,
             volume_subdomain.submesh.topology.dim,
         )
+
+        # mapping between sub_function space and collapsed is only needed if
+        # value_fenics is a function of the collapsed space
+        if isinstance(bc.value_fenics, fem.Function):
+            function_space_dofs = (sub_V, collapsed_V)
+        else:
+            function_space_dofs = sub_V
+
         bc_dofs = dolfinx.fem.locate_dofs_topological(
-            (sub_V, collapsed_V),
+            function_space_dofs,
             fdim,
             volume_subdomain.ft.find(bc.subdomain.id),
         )
