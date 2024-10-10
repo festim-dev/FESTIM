@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        container_version: [v0.8.0, nightly]
+        container_version: [v0.9.0, nightly]
     container: dolfinx/dolfinx:${{ matrix.container_version }}
     steps:
         - name: Checkout code
