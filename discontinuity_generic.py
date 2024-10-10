@@ -114,7 +114,7 @@ class NewtonSolver:
                 self.J,
                 bcs=self.bcs,
                 x0=self.x,
-                scale=-1.0,
+                alpha=-1.0,
                 coeffs_a=coeffs_a,
                 constants_a=constants_a,
                 coeffs_L=coeffs_L,
@@ -363,7 +363,7 @@ class Interface:
 
         integration_data = compute_integration_domains(
             dolfinx.fem.IntegralType.interior_facet,
-            self.parent_mesh.topology,
+            self.parent_mesh.topology._cpp_object,
             self.mt.find(self.id),
             self.mt.dim,
         ).reshape(-1, 4)
@@ -455,7 +455,7 @@ def compute_mapped_interior_facet_data(interface: Interface):
     mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
     integration_data = compute_integration_domains(
         dolfinx.fem.IntegralType.interior_facet,
-        mesh.topology,
+        mesh.topology._cpp_object,
         interface.mt.find(interface.id),
         interface.mt.dim,
     )
