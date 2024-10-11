@@ -780,6 +780,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.petsc_options = petsc_options or default_petsc_options
 
     def initialise(self):
+        # check that all species have a list of F.VolumeSubdomain as this is
+        # different from F.HydrogenTransportProblem
+        for spe in self.species:
+            if not isinstance(spe.subdomains, list):
+                raise TypeError("subdomains attribute should be list")
+
         self.define_meshtags_and_measures()
 
         # create submeshes and transfer meshtags to subdomains
