@@ -985,22 +985,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             h_b = 2 * cr(b_res)
             h_t = 2 * cr(t_res)
 
-            # look at the first facet on interface
-            # and get the two cells that are connected to it
-            # and get the material properties of these cells
-            first_facet_interface = mt.find(interface.id)[0]
-            c_plus, c_minus = (
-                f_to_c.links(first_facet_interface)[0],
-                f_to_c.links(first_facet_interface)[1],
-            )
-            id_minus, id_plus = ct.values[c_minus], ct.values[c_plus]
-
-            for subdomain in interface.subdomains:
-                if subdomain.id == id_plus:
-                    subdomain_1 = subdomain
-                if subdomain.id == id_minus:
-                    subdomain_2 = subdomain
-
             all_mobile_species = [spe for spe in self.species if spe.mobile]
             if len(all_mobile_species) > 1:
                 raise NotImplementedError("Multiple mobile species not implemented")
