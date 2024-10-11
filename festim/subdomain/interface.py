@@ -8,13 +8,12 @@ class Interface:
     id: int
     subdomains: tuple[F.VolumeSubdomain, F.VolumeSubdomain]
     parent_mesh: dolfinx.mesh.Mesh
+    mt: dolfinx.mesh.MeshTags
     restriction: list[str, str] = ("+", "-")
     padded: bool
 
     def __init__(
         self,
-        parent_mesh: dolfinx.mesh.Mesh,
-        mt: dolfinx.mesh.MeshTags,
         id: int,
         subdomains: list[F.VolumeSubdomain],
         penalty_term: float = 10.0,
@@ -22,8 +21,6 @@ class Interface:
         """Class representing an interface between two subdomains.
 
         Args:
-            parent_mesh (dolfinx.mesh.Mesh): the parent mesh
-            mt (dolfinx.mesh.MeshTags): the facet meshtags (on the parent mesh)
             id (int): the tag of the interface subdomain in the parent meshtags
             subdomains (list[F.VolumeSubdomain]): the subdomains sharing this interface
             penalty_term (float, optional): Penalty term in the Nietsche DG formulation.
@@ -31,8 +28,6 @@ class Interface:
         """
         self.id = id
         self.subdomains = tuple(subdomains)
-        self.mt = mt
-        self.parent_mesh = parent_mesh
         self.penalty_term = penalty_term
 
     def pad_parent_maps(self):

@@ -787,6 +787,10 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
             subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
+        for interface in self.interfaces:
+            interface.mt = self.volume_meshtags
+            interface.parent_mesh = self.mesh.mesh
+
         self.create_species_from_traps()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)

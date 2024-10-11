@@ -97,11 +97,7 @@ def test_2_materials_2d_mms():
     bottom_surface = F.SurfaceSubdomain(id=2)
     my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
-    my_model.interfaces = [
-        F.Interface(
-            my_model.mesh.mesh, my_model.facet_meshtags, 5, (bottom_domain, top_domain)
-        )
-    ]
+    my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
     my_model.surface_to_volume = {
         top_surface: top_domain,
         bottom_surface: bottom_domain,
@@ -257,15 +253,8 @@ def test_3_materials_transient():
     # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
     # TODO remove mesh and meshtags from these arguments
     my_model.interfaces = [
-        F.Interface(
-            my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)
-        ),
-        F.Interface(
-            my_model.mesh.mesh,
-            my_model.facet_meshtags,
-            7,
-            (middle_domain, right_domain),
-        ),
+        F.Interface(6, (left_domain, middle_domain)),
+        F.Interface(7, (middle_domain, right_domain)),
     ]
 
     my_model.subdomains = [
@@ -350,11 +339,7 @@ def test_2_mats_particle_flux_bc():
     my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
     # we should be able to automate this
-    my_model.interfaces = [
-        F.Interface(
-            my_model.mesh.mesh, my_model.facet_meshtags, 5, (bottom_domain, top_domain)
-        )
-    ]
+    my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
     my_model.surface_to_volume = {
         top_surface: top_domain,
         bottom_surface: bottom_domain,
