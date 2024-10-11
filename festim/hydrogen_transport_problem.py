@@ -840,6 +840,17 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
     def define_function_spaces(self, subdomain: F.VolumeSubdomain):
+        """
+        Creates appropriate function space and functions for a given subdomain (submesh)
+        based on the number of species existing in this subdomain. Then stores the functionspace,
+        the current solution (``u``) and the previous solution (``u_n``) functions. It also populates the
+        correspondance dicts attributes of the species (eg. ``species.subdomain_to_solution``,
+        ``species.subdomain_to_test_function``, etc) for easy access to the right subfunctions,
+        sub-testfunctions etc.
+
+        Args:
+            subdomain (F.VolumeSubdomain): a subdomain of the geometry
+        """
         # get number of species defined in the subdomain
         all_species = [
             species for species in self.species if subdomain in species.subdomains
@@ -864,6 +875,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         u = dolfinx.fem.Function(V)
         u_n = dolfinx.fem.Function(V)
 
+        # store attributes in the subdomain object
+        subdomain.u = u
+        subdomain.u_n = u_n
+
+        # split the functions and assign the subfunctions to the species
         us = list(ufl.split(u))
         u_ns = list(ufl.split(u_n))
         vs = list(ufl.TestFunctions(V))
@@ -881,10 +897,14 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_post_processing_solution[subdomain].name = (
                 f"{species.name}_{subdomain.id}"
             )
-        subdomain.u = u
-        subdomain.u_n = u_n
 
     def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
+        """
+        Creates the variational formulation for each subdomain and stores it in ``subdomain.F``
+
+        Args:
+            subdomain (F.VolumeSubdomain): a subdomain of the geometry
+        """
         form = 0
         # add diffusion and time derivative for each species
         for spe in self.species:
@@ -904,6 +924,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             if spe.mobile:
                 form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
 
+        # add reaction terms
         for reaction in self.reactions:
             if reaction.volume != subdomain:
                 continue
@@ -913,6 +934,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     # temporarily overide the solution to the one of the subdomain
                     species.solution = species.subdomain_to_solution[subdomain]
 
+            # reactant
             for reactant in reaction.reactant:
                 if isinstance(reactant, F.Species):
                     form += (
@@ -936,24 +958,30 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         # add fluxes
         for bc in self.boundary_conditions:
             if isinstance(bc, F.ParticleFluxBC):
+                # check that the bc is applied on a surface
+                # belonging to this subdomain
                 if subdomain == self.surface_to_volume[bc.subdomain]:
                     v = bc.species.subdomain_to_test_function[subdomain]
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
 
+        # add volumetric sources
         for source in self.sources:
             v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
                 form -= source.value_fenics * v * dx
 
+        # store the form in the subdomain object
         subdomain.F = form
 
     def create_formulation(self):
-        # Add coupling term to the interface
-        # Get interface markers on submesh b
+        """
+        Takes all the formulations for each subdomain and adds the interface conditions.
+
+        Finally compute the jacobian matrix and store it in the ``J`` attribute,
+        adds the ``entity_maps`` to the forms and store them in the ``forms`` attribute
+        """
         mesh = self.mesh.mesh
-        ct = self.volume_meshtags
         mt = self.facet_meshtags
-        f_to_c = mesh.topology.connectivity(mesh.topology.dim - 1, mesh.topology.dim)
 
         for interface in self.interfaces:
             interface.mesh = mesh
@@ -1062,9 +1090,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_flux_values_fenics(self):
-        """For each particle flux create the value_fenics"""
+        """For each particle flux create the ``value_fenics`` attribute"""
         for bc in self.boundary_conditions:
-            # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, F.ParticleFluxBC):
                 volume_subdomain = self.surface_to_volume[bc.subdomain]
                 bc.create_value_fenics(
@@ -1086,6 +1113,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 raise NotImplementedError("Export type not implemented")
 
     def post_processing(self):
+        # update post-processing solutions (for each species in each subdomain)
+        # with new solution
         for subdomain in self.volume_subdomains:
             for species in self.species:
                 if subdomain not in species.subdomains:
