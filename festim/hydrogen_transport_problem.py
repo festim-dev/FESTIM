@@ -23,7 +23,6 @@ class HydrogenTransportProblem(F.ProblemBase):
             of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
-        solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
         traps (list of F.Trap): the traps of the model
 
@@ -39,7 +38,6 @@ class HydrogenTransportProblem(F.ProblemBase):
             of the model
         boundary_conditions (list of festim.BoundaryCondition): the boundary
             conditions of the model
-        solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
         traps (list of F.Trap): the traps of the model
         dx (dolfinx.fem.dx): the volume measure of the model
