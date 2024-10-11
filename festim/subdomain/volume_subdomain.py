@@ -10,6 +10,7 @@ class VolumeSubdomain:
 
     Args:
         id (int): the id of the volume subdomain
+        material (festim.Material): the material assigned to the subdomain
     """
 
     id: int
@@ -42,9 +43,21 @@ class VolumeSubdomain:
         entities = locate_entities(mesh, vdim, lambda x: np.full(x.shape[1], True))
         return entities
 
-    def create_subdomain(self, mesh, marker):
+    def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
+        """
+        Creates the following attributes: ``.parent_mesh``, ``.submesh``, ``.submesh_to_mesh``,
+        ``.v_map``, ``padded``, and the entity map ``parent_to_submesh``.
+
+        Only used in ``festim.HTransportProblemDiscontinuous``
+
+        Args:
+            mesh (dolfinx.mesh.Mesh): the parent mesh
+            marker (dolfinx.mesh.MeshTags): the parent volume markers
+        """
         assert marker.dim == mesh.topology.dim
-        self.parent_mesh = mesh
+        self.parent_mesh = (
+            mesh  # NOTE: it doesn't seem like we use this attribute anywhere
+        )
         self.submesh, self.submesh_to_mesh, self.v_map = dolfinx.mesh.create_submesh(
             mesh, marker.dim, marker.find(self.id)
         )[0:3]
@@ -58,7 +71,7 @@ class VolumeSubdomain:
         )
         self.padded = False
 
-    def transfer_meshtag(self, mesh, tag):
+    def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
         # Transfer meshtags to submesh
         assert self.submesh is not None, "Need to call create_subdomain first"
         self.ft, self.facet_to_parent = transfer_meshtags_to_submesh(

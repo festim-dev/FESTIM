@@ -716,6 +716,9 @@ class HydrogenTransportProblem(F.ProblemBase):
 
 
 class HTransportProblemDiscontinuous(HydrogenTransportProblem):
+    interfaces: list[F.Interface]
+    petsc_options: dict
+    surface_to_volume: dict
 
     def __init__(
         self,
@@ -730,10 +733,30 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         settings=None,
         exports=None,
         traps=None,
-        interfaces=None,
-        surface_to_volume=None,
-        petsc_options=None,
+        interfaces: list[F.Interface] = None,
+        surface_to_volume: dict = None,
+        petsc_options: dict = None,
     ):
+        """Class for a multi-material hydrogen transport problem
+        For other arguments see ``festim.HydrogenTransportProblem``.
+
+        Args:
+            interfaces (list, optional): list of interfaces (``festim.Interface``
+                objects). Defaults to None.
+            surface_to_volume (dict, optional): correspondance dictionary linking
+                each ``festim.SurfaceSubdomain`` objects to a ``festim.VolumeSubdomain``
+                object). Defaults to None.
+            petsc_options (dict, optional): petsc options to be passed to the
+                ``festim.NewtonSolver`` object. If None, the default options are:
+                ```
+                default_petsc_options = {
+                    "ksp_type": "preonly",
+                    "pc_type": "lu",
+                    "pc_factor_mat_solver_type": "mumps",
+                }
+                ```
+                Defaults to None.
+        """
         super().__init__(
             mesh,
             subdomains,
@@ -747,7 +770,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             exports,
             traps,
         )
-        self.interfaces = interfaces or {}
+        self.interfaces = interfaces or []
         self.surface_to_volume = surface_to_volume or {}
         default_petsc_options = {
             "ksp_type": "preonly",
@@ -758,7 +781,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def initialise(self):
         self.define_meshtags_and_measures()
-        self.create_submeshes()
+
+        # create submeshes and transfer meshtags to subdomains
+        for subdomain in self.volume_subdomains:
+            subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
+            subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
+
         self.create_species_from_traps()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
@@ -768,8 +796,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.dt = F.as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
-        self.define_temperature()
 
+        self.define_temperature()
         self.create_source_values_fenics()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
@@ -789,12 +817,23 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.u.name = f"u_{subdomain.id}"
 
         self.define_boundary_conditions()
-
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
 
-    def create_dirichletbc_form(self, bc):
+    def create_dirichletbc_form(self, bc: F.FixedConcentrationBC):
+        """
+        Creates the ``value_fenics`` attribute for a given
+        ``festim.FixedConcentrationBC`` and returns the appropriate
+        ``dolfinx.fem.DirichletBC`` object.
+
+        Args:
+            bc (festim.FixedConcentrationBC): the dirichlet BC
+
+        Returns:
+            dolfinx.fem.DirichletBC: the appropriate dolfinx representation
+                generated from ``dolfinx.fem.dirichletbc()``
+        """
         fdim = self.mesh.mesh.topology.dim - 1
         volume_subdomain = self.surface_to_volume[bc.subdomain]
         sub_V = bc.species.subdomain_to_function_space[volume_subdomain]
@@ -832,12 +871,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             raise NotImplementedError(
                 "initial conditions not yet implemented for discontinuous"
             )
-
-    def create_submeshes(self):
-
-        for subdomain in self.volume_subdomains:
-            subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
-            subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
     def define_function_spaces(self, subdomain: F.VolumeSubdomain):
         """

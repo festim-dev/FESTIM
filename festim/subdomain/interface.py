@@ -11,7 +11,24 @@ class Interface:
     restriction: list[str, str] = ("+", "-")
     padded: bool
 
-    def __init__(self, parent_mesh, mt, id, subdomains, penalty_term=10.0):
+    def __init__(
+        self,
+        parent_mesh: dolfinx.mesh.Mesh,
+        mt: dolfinx.mesh.MeshTags,
+        id: int,
+        subdomains: list[F.VolumeSubdomain],
+        penalty_term: float = 10.0,
+    ):
+        """Class representing an interface between two subdomains.
+
+        Args:
+            parent_mesh (dolfinx.mesh.Mesh): the parent mesh
+            mt (dolfinx.mesh.MeshTags): the facet meshtags (on the parent mesh)
+            id (int): the tag of the interface subdomain in the parent meshtags
+            subdomains (list[F.VolumeSubdomain]): the subdomains sharing this interface
+            penalty_term (float, optional): Penalty term in the Nietsche DG formulation.
+                Needs to be "sufficiently large". Defaults to 10.0.
+        """
         self.id = id
         self.subdomains = tuple(subdomains)
         self.mt = mt
