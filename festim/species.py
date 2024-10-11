@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import festim as F
 
 
@@ -52,9 +52,15 @@ class Species:
 
     """
 
-    def __init__(
-        self, name: str = None, mobile=True, subdomains: F.VolumeSubdomain = None
-    ) -> None:
+    subdomains: Union[List[F.VolumeSubdomain], F.VolumeSubdomain]
+    subdomain_to_solution: dict
+    subdomain_to_prev_solution: dict
+    subdomain_to_test_function: dict
+    subdomain_to_post_processing_solution: dict
+    subdomain_to_collapsed_function_space: dict
+    subdomain_to_function_space: dict
+
+    def __init__(self, name: str = None, mobile=True, subdomains=None) -> None:
         self.name = name
         self.mobile = mobile
         self.solution = None

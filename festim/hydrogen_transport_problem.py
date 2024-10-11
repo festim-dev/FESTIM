@@ -173,7 +173,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         return len(self.species) > 1
 
     @property
-    def species(self):
+    def species(self) -> list[F.Species]:
         return self._species
 
     @species.setter

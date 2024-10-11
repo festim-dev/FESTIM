@@ -22,6 +22,8 @@ class VolumeSubdomain:
     facet_to_parent: np.ndarray
     ft: dolfinx.mesh.MeshTags
     padded: bool
+    u: dolfinx.fem.Function
+    u_n: dolfinx.fem.Function
 
     def __init__(self, id, material):
         self.id = id
