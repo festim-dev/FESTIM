@@ -581,17 +581,17 @@ bc_b = dolfinx.fem.dirichletbc(
     ),
 )
 
-t_bc = dolfinx.fem.Function(right_domain.u.function_space)
-t_bc.x.array[:] = 0.05
+t_bc = dolfinx.fem.Constant(right_domain.submesh, 0.05)
+sub_V = right_domain.u.function_space.sub(0)
 right_domain.submesh.topology.create_connectivity(
     right_domain.submesh.topology.dim - 1, right_domain.submesh.topology.dim
 )
-bc_t = dolfinx.fem.dirichletbc(
-    t_bc,
-    dolfinx.fem.locate_dofs_topological(
-        right_domain.u.function_space.sub(0), fdim, right_domain.ft.find(2)
-    ),
+bc_dofs = dolfinx.fem.locate_dofs_topological(
+    sub_V,
+    fdim,
+    right_domain.ft.find(2),
 )
+bc_t = dolfinx.fem.dirichletbc(t_bc, bc_dofs, sub_V)
 bcs = [bc_b, bc_t]
 
 
