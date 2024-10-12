@@ -35,8 +35,6 @@ from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
 
-from .hydrogen_transport_problem import HydrogenTransportProblem
-from .heat_transfer_problem import HeatTransferProblem
 
 from .initial_condition import InitialCondition, InitialTemperature
 
@@ -44,12 +42,13 @@ from .settings import Settings
 
 from .source import ParticleSource, HeatSource, SourceBase
 
-from .species import Species, Trap, ImplicitSpecies, find_species_from_name
-
 from .subdomain.surface_subdomain import SurfaceSubdomain, find_surface_from_id
 from .subdomain.surface_subdomain_1d import SurfaceSubdomain1D
 from .subdomain.volume_subdomain import VolumeSubdomain, find_volume_from_id
 from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
+from .subdomain.interface import Interface
+
+from .species import Species, Trap, ImplicitSpecies, find_species_from_name
 
 from .stepsize import Stepsize
 
@@ -68,3 +67,9 @@ from .exports.vtx import VTXExport, VTXExportForTemperature
 from .exports.xdmf import XDMFExport
 
 from .reaction import Reaction
+
+from .hydrogen_transport_problem import (
+    HydrogenTransportProblem,
+    HTransportProblemDiscontinuous,
+)
+from .heat_transfer_problem import HeatTransferProblem

@@ -4,7 +4,9 @@ import basix
 import ufl
 from mpi4py import MPI
 import numpy as np
+import tqdm.autonotebook
 import festim as F
+from festim.helpers_discontinuity import NewtonSolver
 
 
 class HydrogenTransportProblem(F.ProblemBase):
@@ -171,7 +173,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         return len(self.species) > 1
 
     @property
-    def species(self):
+    def species(self) -> list[F.Species]:
         return self._species
 
     @species.setter
@@ -711,3 +713,506 @@ class HydrogenTransportProblem(F.ProblemBase):
                     export.write(t=float(self.t))
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.write(float(self.t))
+
+
+class HTransportProblemDiscontinuous(HydrogenTransportProblem):
+    interfaces: list[F.Interface]
+    petsc_options: dict
+    surface_to_volume: dict
+
+    def __init__(
+        self,
+        mesh=None,
+        subdomains=None,
+        species=None,
+        reactions=None,
+        temperature=None,
+        sources=None,
+        initial_conditions=None,
+        boundary_conditions=None,
+        settings=None,
+        exports=None,
+        traps=None,
+        interfaces: list[F.Interface] = None,
+        surface_to_volume: dict = None,
+        petsc_options: dict = None,
+    ):
+        """Class for a multi-material hydrogen transport problem
+        For other arguments see ``festim.HydrogenTransportProblem``.
+
+        Args:
+            interfaces (list, optional): list of interfaces (``festim.Interface``
+                objects). Defaults to None.
+            surface_to_volume (dict, optional): correspondance dictionary linking
+                each ``festim.SurfaceSubdomain`` objects to a ``festim.VolumeSubdomain``
+                object). Defaults to None.
+            petsc_options (dict, optional): petsc options to be passed to the
+                ``festim.NewtonSolver`` object. If None, the default options are:
+                ```
+                default_petsc_options = {
+                    "ksp_type": "preonly",
+                    "pc_type": "lu",
+                    "pc_factor_mat_solver_type": "mumps",
+                }
+                ```
+                Defaults to None.
+        """
+        super().__init__(
+            mesh,
+            subdomains,
+            species,
+            reactions,
+            temperature,
+            sources,
+            initial_conditions,
+            boundary_conditions,
+            settings,
+            exports,
+            traps,
+        )
+        self.interfaces = interfaces or []
+        self.surface_to_volume = surface_to_volume or {}
+        default_petsc_options = {
+            "ksp_type": "preonly",
+            "pc_type": "lu",
+            "pc_factor_mat_solver_type": "mumps",
+        }
+        self.petsc_options = petsc_options or default_petsc_options
+
+    def initialise(self):
+        # check that all species have a list of F.VolumeSubdomain as this is
+        # different from F.HydrogenTransportProblem
+        for spe in self.species:
+            if not isinstance(spe.subdomains, list):
+                raise TypeError("subdomains attribute should be list")
+
+        self.define_meshtags_and_measures()
+
+        # create submeshes and transfer meshtags to subdomains
+        for subdomain in self.volume_subdomains:
+            subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
+            subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
+
+        for interface in self.interfaces:
+            interface.mt = self.volume_meshtags
+            interface.parent_mesh = self.mesh.mesh
+
+        self.create_species_from_traps()
+
+        self.t = fem.Constant(self.mesh.mesh, 0.0)
+        if self.settings.transient:
+            # TODO should raise error if no stepsize is provided
+            # TODO Should this be an attribute of festim.Stepsize?
+            self.dt = F.as_fenics_constant(
+                self.settings.stepsize.initial_value, self.mesh.mesh
+            )
+
+        self.define_temperature()
+        self.create_source_values_fenics()
+        self.create_flux_values_fenics()
+        self.create_initial_conditions()
+
+        for subdomain in self.volume_subdomains:
+            self.define_function_spaces(subdomain)
+            ct_r = dolfinx.mesh.meshtags(
+                self.mesh.mesh,
+                self.mesh.mesh.topology.dim,
+                subdomain.submesh_to_mesh,
+                np.full_like(subdomain.submesh_to_mesh, 1, dtype=np.int32),
+            )
+            subdomain.dx = ufl.Measure(
+                "dx", domain=self.mesh.mesh, subdomain_data=ct_r, subdomain_id=1
+            )
+            self.create_subdomain_formulation(subdomain)
+            subdomain.u.name = f"u_{subdomain.id}"
+
+        self.define_boundary_conditions()
+        self.create_formulation()
+        self.create_solver()
+        self.initialise_exports()
+
+    def create_dirichletbc_form(self, bc: F.FixedConcentrationBC):
+        """
+        Creates the ``value_fenics`` attribute for a given
+        ``festim.FixedConcentrationBC`` and returns the appropriate
+        ``dolfinx.fem.DirichletBC`` object.
+
+        Args:
+            bc (festim.FixedConcentrationBC): the dirichlet BC
+
+        Returns:
+            dolfinx.fem.DirichletBC: the appropriate dolfinx representation
+                generated from ``dolfinx.fem.dirichletbc()``
+        """
+        fdim = self.mesh.mesh.topology.dim - 1
+        volume_subdomain = self.surface_to_volume[bc.subdomain]
+        sub_V = bc.species.subdomain_to_function_space[volume_subdomain]
+        collapsed_V, _ = sub_V.collapse()
+
+        bc.create_value(
+            mesh=self.mesh.mesh,
+            temperature=self.temperature_fenics,
+            function_space=collapsed_V,
+            t=self.t,
+        )
+
+        volume_subdomain.submesh.topology.create_connectivity(
+            volume_subdomain.submesh.topology.dim - 1,
+            volume_subdomain.submesh.topology.dim,
+        )
+
+        # mapping between sub_function space and collapsed is only needed if
+        # value_fenics is a function of the collapsed space
+        if isinstance(bc.value_fenics, fem.Function):
+            function_space_dofs = (sub_V, collapsed_V)
+        else:
+            function_space_dofs = sub_V
+
+        bc_dofs = dolfinx.fem.locate_dofs_topological(
+            function_space_dofs,
+            fdim,
+            volume_subdomain.ft.find(bc.subdomain.id),
+        )
+        form = dolfinx.fem.dirichletbc(bc.value_fenics, bc_dofs, sub_V)
+        return form
+
+    def create_initial_conditions(self):
+        if self.initial_conditions:
+            raise NotImplementedError(
+                "initial conditions not yet implemented for discontinuous"
+            )
+
+    def define_function_spaces(self, subdomain: F.VolumeSubdomain):
+        """
+        Creates appropriate function space and functions for a given subdomain (submesh)
+        based on the number of species existing in this subdomain. Then stores the functionspace,
+        the current solution (``u``) and the previous solution (``u_n``) functions. It also populates the
+        correspondance dicts attributes of the species (eg. ``species.subdomain_to_solution``,
+        ``species.subdomain_to_test_function``, etc) for easy access to the right subfunctions,
+        sub-testfunctions etc.
+
+        Args:
+            subdomain (F.VolumeSubdomain): a subdomain of the geometry
+        """
+        # get number of species defined in the subdomain
+        all_species = [
+            species for species in self.species if subdomain in species.subdomains
+        ]
+
+        # instead of using the set function we use a list to keep the order
+        unique_species = []
+        for species in all_species:
+            if species not in unique_species:
+                unique_species.append(species)
+        nb_species = len(unique_species)
+
+        degree = 1
+        element_CG = basix.ufl.element(
+            basix.ElementFamily.P,
+            subdomain.submesh.basix_cell(),
+            degree,
+            basix.LagrangeVariant.equispaced,
+        )
+        element = basix.ufl.mixed_element([element_CG] * nb_species)
+        V = dolfinx.fem.functionspace(subdomain.submesh, element)
+        u = dolfinx.fem.Function(V)
+        u_n = dolfinx.fem.Function(V)
+
+        # store attributes in the subdomain object
+        subdomain.u = u
+        subdomain.u_n = u_n
+
+        # split the functions and assign the subfunctions to the species
+        us = list(ufl.split(u))
+        u_ns = list(ufl.split(u_n))
+        vs = list(ufl.TestFunctions(V))
+        for i, species in enumerate(unique_species):
+            species.subdomain_to_solution[subdomain] = us[i]
+            species.subdomain_to_prev_solution[subdomain] = u_ns[i]
+            species.subdomain_to_test_function[subdomain] = vs[i]
+            species.subdomain_to_function_space[subdomain] = V.sub(i)
+            species.subdomain_to_post_processing_solution[subdomain] = u.sub(
+                i
+            ).collapse()
+            species.subdomain_to_collapsed_function_space[subdomain] = V.sub(
+                i
+            ).collapse()
+            species.subdomain_to_post_processing_solution[subdomain].name = (
+                f"{species.name}_{subdomain.id}"
+            )
+
+    def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
+        """
+        Creates the variational formulation for each subdomain and stores it in ``subdomain.F``
+
+        Args:
+            subdomain (F.VolumeSubdomain): a subdomain of the geometry
+        """
+        form = 0
+        # add diffusion and time derivative for each species
+        for spe in self.species:
+            if subdomain not in spe.subdomains:
+                continue
+            u = spe.subdomain_to_solution[subdomain]
+            u_n = spe.subdomain_to_prev_solution[subdomain]
+            v = spe.subdomain_to_test_function[subdomain]
+            dx = subdomain.dx
+
+            D = subdomain.material.get_diffusion_coefficient(
+                self.mesh.mesh, self.temperature_fenics, spe
+            )
+            if self.settings.transient:
+                form += ((u - u_n) / self.dt) * v * dx
+
+            if spe.mobile:
+                form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
+
+        # add reaction terms
+        for reaction in self.reactions:
+            if reaction.volume != subdomain:
+                continue
+            for species in reaction.reactant + reaction.product:
+                if isinstance(species, F.Species):
+                    # TODO remove
+                    # temporarily overide the solution to the one of the subdomain
+                    species.solution = species.subdomain_to_solution[subdomain]
+
+            # reactant
+            for reactant in reaction.reactant:
+                if isinstance(reactant, F.Species):
+                    form += (
+                        reaction.reaction_term(self.temperature_fenics)
+                        * reactant.subdomain_to_test_function[subdomain]
+                        * dx
+                    )
+
+            # product
+            if isinstance(reaction.product, list):
+                products = reaction.product
+            else:
+                products = [reaction.product]
+            for product in products:
+                form += (
+                    -reaction.reaction_term(self.temperature_fenics)
+                    * product.subdomain_to_test_function[subdomain]
+                    * dx
+                )
+
+        # add fluxes
+        for bc in self.boundary_conditions:
+            if isinstance(bc, F.ParticleFluxBC):
+                # check that the bc is applied on a surface
+                # belonging to this subdomain
+                if subdomain == self.surface_to_volume[bc.subdomain]:
+                    v = bc.species.subdomain_to_test_function[subdomain]
+                    form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
+
+        # add volumetric sources
+        for source in self.sources:
+            v = source.species.subdomain_to_test_function[subdomain]
+            if source.volume == subdomain:
+                form -= source.value_fenics * v * dx
+
+        # store the form in the subdomain object
+        subdomain.F = form
+
+    def create_formulation(self):
+        """
+        Takes all the formulations for each subdomain and adds the interface conditions.
+
+        Finally compute the jacobian matrix and store it in the ``J`` attribute,
+        adds the ``entity_maps`` to the forms and store them in the ``forms`` attribute
+        """
+        mesh = self.mesh.mesh
+        mt = self.facet_meshtags
+
+        for interface in self.interfaces:
+            interface.mesh = mesh
+            interface.mt = mt
+
+        integral_data = [
+            interface.compute_mapped_interior_facet_data(mesh)
+            for interface in self.interfaces
+        ]
+        [interface.pad_parent_maps() for interface in self.interfaces]
+        dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
+
+        def mixed_term(u, v, n):
+            return ufl.dot(ufl.grad(u), n) * v
+
+        n = ufl.FacetNormal(mesh)
+        cr = ufl.Circumradius(mesh)
+
+        entity_maps = {
+            sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
+        }
+        for interface in self.interfaces:
+            gamma = interface.penalty_term
+
+            subdomain_1, subdomain_2 = interface.subdomains
+            b_res, t_res = interface.restriction
+            n_b = n(b_res)
+            n_t = n(t_res)
+            h_b = 2 * cr(b_res)
+            h_t = 2 * cr(t_res)
+
+            all_mobile_species = [spe for spe in self.species if spe.mobile]
+            if len(all_mobile_species) > 1:
+                raise NotImplementedError("Multiple mobile species not implemented")
+            H = all_mobile_species[0]
+
+            v_b = H.subdomain_to_test_function[subdomain_1](b_res)
+            v_t = H.subdomain_to_test_function[subdomain_2](t_res)
+
+            u_b = H.subdomain_to_solution[subdomain_1](b_res)
+            u_t = H.subdomain_to_solution[subdomain_2](t_res)
+
+            K_b = subdomain_1.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(b_res), H
+            )
+            K_t = subdomain_2.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(t_res), H
+            )
+
+            F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(
+                interface.id
+            ) - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(
+                interface.id
+            )
+
+            F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(
+                interface.id
+            ) - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(
+                interface.id
+            )
+            F_0 += (
+                2
+                * gamma
+                / (h_b + h_t)
+                * (u_b / K_b - u_t / K_t)
+                * v_b
+                * dInterface(interface.id)
+            )
+            F_1 += (
+                -2
+                * gamma
+                / (h_b + h_t)
+                * (u_b / K_b - u_t / K_t)
+                * v_t
+                * dInterface(interface.id)
+            )
+
+            subdomain_1.F += F_0
+            subdomain_2.F += F_1
+
+        J = []
+        forms = []
+        for subdomain1 in self.volume_subdomains:
+            jac = []
+            form = subdomain1.F
+            for subdomain2 in self.volume_subdomains:
+                jac.append(
+                    dolfinx.fem.form(
+                        ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
+                    )
+                )
+            J.append(jac)
+            forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
+
+        self.forms = forms
+        self.J = J
+
+    def create_solver(self):
+        self.solver = NewtonSolver(
+            self.forms,
+            self.J,
+            [subdomain.u for subdomain in self.volume_subdomains],
+            bcs=self.bc_forms,
+            max_iterations=10,
+            petsc_options=self.petsc_options,
+        )
+
+    def create_flux_values_fenics(self):
+        """For each particle flux create the ``value_fenics`` attribute"""
+        for bc in self.boundary_conditions:
+            if isinstance(bc, F.ParticleFluxBC):
+                volume_subdomain = self.surface_to_volume[bc.subdomain]
+                bc.create_value_fenics(
+                    mesh=volume_subdomain.submesh,
+                    temperature=self.temperature_fenics,
+                    t=self.t,
+                )
+
+    def initialise_exports(self):
+        for export in self.exports:
+            if isinstance(export, F.VTXExport):
+                species = export.field[0]
+                # override post_processing_solution attribute of species
+                species.post_processing_solution = (
+                    species.subdomain_to_post_processing_solution[export.subdomain]
+                )
+                export.define_writer(MPI.COMM_WORLD)
+            else:
+                raise NotImplementedError("Export type not implemented")
+
+    def post_processing(self):
+        # update post-processing solutions (for each species in each subdomain)
+        # with new solution
+        for subdomain in self.volume_subdomains:
+            for species in self.species:
+                if subdomain not in species.subdomains:
+                    continue
+                collapsed_function = species.subdomain_to_post_processing_solution[
+                    subdomain
+                ]
+                u = subdomain.u
+                v0_to_V = species.subdomain_to_collapsed_function_space[subdomain][1]
+                collapsed_function.x.array[:] = u.x.array[v0_to_V]
+
+        for export in self.exports:
+            if isinstance(export, F.VTXExport):
+                export.write(float(self.t))
+            else:
+                raise NotImplementedError("Export type not implemented")
+
+    def iterate(self):
+        """Iterates the model for a given time step"""
+        if self.show_progress_bar:
+            self.progress_bar.update(
+                min(self.dt.value, abs(self.settings.final_time - self.t.value))
+            )
+        self.t.value += self.dt.value
+
+        self.update_time_dependent_values()
+
+        # solve main problem
+        self.solver.solve(self.settings.rtol)
+
+        # post processing
+        self.post_processing()
+
+        # update previous solution
+        for subdomain in self.volume_subdomains:
+            subdomain.u_n.x.array[:] = subdomain.u.x.array[:]
+
+        # adapt stepsize
+        if self.settings.stepsize.adaptive:
+            raise NotImplementedError("Adaptive stepsize not implemented")
+
+    def run(self):
+        if self.settings.transient:
+            # Solve transient
+            if self.show_progress_bar:
+                self.progress_bar = tqdm.autonotebook.tqdm(
+                    desc=f"Solving {self.__class__.__name__}",
+                    total=self.settings.final_time,
+                    unit_scale=True,
+                )
+            while self.t.value < self.settings.final_time:
+                self.iterate()
+            if self.show_progress_bar:
+                self.progress_bar.refresh()  # refresh progress bar to show 100%
+        else:
+            # Solve steady-state
+            self.solver.solve(self.settings.rtol)
+            self.post_processing()

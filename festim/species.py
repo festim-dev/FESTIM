@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 import festim as F
 
 
@@ -9,6 +9,9 @@ class Species:
     Args:
         name (str, optional): a name given to the species. Defaults to None.
         mobile (bool, optional): whether the species is mobile or not.
+            Defaults to True.
+        subdomain (F.VolumeSubdomain, optional): the volume subdomain where the
+            species is. Defaults to None.
 
     Attributes:
         name (str): a name given to the species.
@@ -26,6 +29,18 @@ class Species:
         post_processing_solution (dolfinx.fem.Function): the solution for post
             processing
         concentration (dolfinx.fem.Function): the concentration of the species
+        subdomains (F.VolumeSubdomain): the volume subdomains where the species is
+        subdomain_to_solution (dict): a dictionary mapping subdomains to solutions
+        subdomain_to_prev_solution (dict): a dictionary mapping subdomains to
+            previous solutions
+        subdomain_to_test_function (dict): a dictionary mapping subdomains to
+            test functions
+        subdomain_to_post_processing_solution (dict): a dictionary mapping
+            subdomains to post processing solutions
+        subdomain_to_collapsed_function_space (dict): a dictionary mapping
+            subdomains to collapsed function spaces
+        subdomain_to_function_space (dict): a dictionary mapping subdomains to
+            function spaces
 
     Usage:
         >>> from festim import Species, HTransportProblem
@@ -37,7 +52,15 @@ class Species:
 
     """
 
-    def __init__(self, name: str = None, mobile=True) -> None:
+    subdomains: Union[List[F.VolumeSubdomain], F.VolumeSubdomain]
+    subdomain_to_solution: dict
+    subdomain_to_prev_solution: dict
+    subdomain_to_test_function: dict
+    subdomain_to_post_processing_solution: dict
+    subdomain_to_collapsed_function_space: dict
+    subdomain_to_function_space: dict
+
+    def __init__(self, name: str = None, mobile=True, subdomains=None) -> None:
         self.name = name
         self.mobile = mobile
         self.solution = None
@@ -46,6 +69,14 @@ class Species:
         self.sub_function_space = None
         self.post_processing_solution = None
         self.collapsed_function_space = None
+
+        self.subdomains = subdomains
+        self.subdomain_to_solution = {}
+        self.subdomain_to_prev_solution = {}
+        self.subdomain_to_test_function = {}
+        self.subdomain_to_post_processing_solution = {}
+        self.subdomain_to_collapsed_function_space = {}
+        self.subdomain_to_function_space = {}
 
     def __repr__(self) -> str:
         return f"Species({self.name})"
