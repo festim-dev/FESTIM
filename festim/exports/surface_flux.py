@@ -4,7 +4,7 @@ import ufl
 
 
 class SurfaceFlux(F.SurfaceQuantity):
-    """Exports surface flux at a given subdomain
+    """Computes the flux of a field on a given surface
 
     Args:
         field (festim.Species): species for which the surface flux is computed
@@ -12,21 +12,15 @@ class SurfaceFlux(F.SurfaceQuantity):
         filename (str, optional): name of the file to which the surface flux is exported
 
     Attributes:
-        field (festim.Species): species for which the surface flux is computed
-        surface (festim.SurfaceSubdomain1D): surface subdomain
-        filename (str): name of the file to which the surface flux is exported
+        see `festim.SurfaceQuantity`
     """
 
-    def __init__(
-        self,
-        field: F.Species,
-        surface: F.SurfaceSubdomain1D,
-        filename: str = None,
-    ) -> None:
-        super().__init__(field, surface, filename)
+    @property
+    def title(self):
+        return f"{self.field.name} flux surface {self.surface.id}"
 
     def compute(self, ds):
-        """Computes the value of the surface flux at the surface
+        """Computes the value of the flux at the surface
 
         Args:
             ds (ufl.Measure): surface measure of the model

@@ -19,8 +19,7 @@ def test_heat_transfer_steady_state():
     T_analytical_ufl = u_exact(ufl)
     T_analytical_np = u_exact(np)
 
-    elements = ufl.FiniteElement("CG", test_mesh_1d.mesh.ufl_cell(), 1)
-    V = fem.FunctionSpace(test_mesh_1d.mesh, elements)
+    V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
     T_solution = fem.Function(V)
     T_solution.interpolate(lambda x: 1 + np.sin(2 * np.pi * x[0]))
 

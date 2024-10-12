@@ -129,7 +129,7 @@ def test_iterate():
     my_model.settings = F.Settings(atol=1e-6, rtol=1e-6, final_time=10)
     my_model.settings.stepsize = 2.0
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
@@ -422,6 +422,120 @@ def test_post_processing_update_D_global():
     assert value_t_1 != value_t_2
 
 
+def test_post_processing_update_D_global_2():
+    """Test that the D_global object is updated at each time
+    step when temperture is time dependent"""
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    surf = F.SurfaceSubdomain1D(id=1, x=1)
+
+    # create species and interpolate solution
+    H = F.Species("H")
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
+    u = fem.Function(V)
+    u.interpolate(lambda x: x[0] ** 2 + 100)
+    H.solution = u
+
+    my_export = F.MaximumSurface(
+        field=H,
+        surface=surf,
+    )
+
+    # Build the model
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat), surf],
+        species=[H],
+        temperature=lambda t: 500 * t,
+        exports=[my_export],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
+    my_model.define_temperature()
+    my_model.initialise_exports()
+
+    # RUN
+    my_model.post_processing()
+    my_value = my_export.D.x.array[-1]
+    assert isinstance(my_value, float)
+
+
+def test_post_processing_update_D_global_volume_1():
+    """Test that the D_global object is updated at each time
+    step when temperture is time dependent"""
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+
+    # create species and interpolate solution
+    H = F.Species("H")
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
+    u = fem.Function(V)
+    u.interpolate(lambda x: x[0] ** 2 + 100)
+    H.solution = u
+
+    my_export = F.AverageVolume(field=H, volume=my_vol)
+
+    # Build the model
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[my_vol],
+        species=[H],
+        temperature=lambda t: 500 * t,
+        exports=[my_export],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
+    my_model.define_temperature()
+    my_model.initialise_exports()
+
+    # RUN
+    my_model.post_processing()
+    my_value = my_model.exports[0].data[-1]
+    assert isinstance(my_value, float)
+
+
+def test_post_processing_update_D_global_volume_2():
+    """Test that the D_global object is updated at each time
+    step when temperture is time dependent"""
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+
+    # create species and interpolate solution
+    H = F.Species("H")
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
+    u = fem.Function(V)
+    u.interpolate(lambda x: x[0] ** 2 + 100)
+    H.solution = u
+
+    my_export = F.MaximumVolume(field=H, volume=my_vol)
+
+    # Build the model
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[my_vol],
+        species=[H],
+        temperature=lambda t: 500 * t,
+        exports=[my_export],
+    )
+
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
+    my_model.define_temperature()
+    my_model.initialise_exports()
+
+    # RUN
+    my_model.post_processing()
+    my_value = my_model.exports[0].data[-1]
+    assert isinstance(my_value, float)
+
+
 @pytest.mark.parametrize(
     "temperature_value, bc_value, expected_values",
     [
@@ -690,7 +804,7 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
     my_model.initialise()
 
     assert np.isclose(
-        my_model.species[0].prev_solution.vector.array[-1],
+        my_model.species[0].prev_solution.x.petsc_vec.array[-1],
         expected_value,
     )
 
@@ -801,7 +915,7 @@ def test_adaptive_timestepping_grows():
 
     my_model.initialise()
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
@@ -837,7 +951,7 @@ def test_adaptive_timestepping_shrinks():
 
     my_model.initialise()
 
-    my_model.progress = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.autonotebook.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
