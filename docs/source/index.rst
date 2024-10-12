@@ -13,7 +13,7 @@ Moreover, users can rapidly get started with FESTIM thanks to its python API.
 
 .. All the logos are from this collection https://www.svgrepo.com/collection/solar-linear-icons/
 
-.. grid:: 1 1 3 3
+.. grid:: 3
       :gutter: 2
 
       .. grid-item::
