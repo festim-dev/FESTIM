@@ -227,7 +227,6 @@ class HydrogenTransportProblem(F.ProblemBase):
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
-        self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
@@ -448,11 +447,27 @@ class HydrogenTransportProblem(F.ProblemBase):
             spe.test_function = sub_test_functions[idx]
 
     def define_boundary_conditions(self):
+        """Create forms for DirichletBC and value_fenics for ParticleFluxBC"""
+        # @jhdark this all_bcs could be a property
+        # I just don't want to modify self.boundary_conditions
+
+        # create all_bcs which includes all flux bcs from SurfaceReactionBC
+        all_bcs = self.boundary_conditions.copy()
         for bc in self.boundary_conditions:
+            if isinstance(bc, F.SurfaceReactionBC):
+                all_bcs += bc.flux_bcs
+                all_bcs.remove(bc)
+
+        for bc in all_bcs:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 bc.species = F.find_species_from_name(bc.species, self.species)
-
+            if isinstance(bc, F.ParticleFluxBC):
+                bc.create_value_fenics(
+                    mesh=self.mesh.mesh,
+                    temperature=self.temperature_fenics,
+                    t=self.t,
+                )
         super().define_boundary_conditions()
 
     def create_dirichletbc_form(self, bc):
@@ -627,6 +642,13 @@ class HydrogenTransportProblem(F.ProblemBase):
                     * bc.species.test_function
                     * self.ds(bc.subdomain.id)
                 )
+            if isinstance(bc, F.SurfaceReactionBC):
+                for flux_bc in bc.flux_bcs:
+                    self.formulation -= (
+                        flux_bc.value_fenics
+                        * flux_bc.species.test_function
+                        * self.ds(flux_bc.subdomain.id)
+                    )
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
@@ -660,8 +682,9 @@ class HydrogenTransportProblem(F.ProblemBase):
             self.temperature_fenics.interpolate(self.temperature_expr)
 
         for bc in self.boundary_conditions:
-            if bc.temperature_dependent:
-                bc.update(t=t)
+            if isinstance(bc, (F.FixedConcentrationBC, F.ParticleFluxBC)):
+                if bc.temperature_dependent:
+                    bc.update(t=t)
 
         for source in self.sources:
             if source.temperature_dependent:
