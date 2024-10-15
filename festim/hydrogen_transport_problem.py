@@ -682,8 +682,9 @@ class HydrogenTransportProblem(F.ProblemBase):
             self.temperature_fenics.interpolate(self.temperature_expr)
 
         for bc in self.boundary_conditions:
-            if bc.temperature_dependent:
-                bc.update(t=t)
+            if isinstance(bc, (F.FixedConcentrationBC, F.ParticleFluxBC)):
+                if bc.temperature_dependent:
+                    bc.update(t=t)
 
         for source in self.sources:
             if source.temperature_dependent:
