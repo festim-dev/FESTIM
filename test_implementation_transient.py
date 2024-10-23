@@ -38,12 +38,8 @@ right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
 # TODO remove mesh and meshtags from these arguments
 my_model.interfaces = [
-    F.Interface(
-        my_model.mesh.mesh, my_model.facet_meshtags, 6, (left_domain, middle_domain)
-    ),
-    F.Interface(
-        my_model.mesh.mesh, my_model.facet_meshtags, 7, (middle_domain, right_domain)
-    ),
+    F.Interface(6, (left_domain, middle_domain)),
+    F.Interface(7, (middle_domain, right_domain)),
 ]
 
 my_model.subdomains = [

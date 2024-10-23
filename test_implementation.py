@@ -84,11 +84,7 @@ bottom_surface = F.SurfaceSubdomain(id=2)
 my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
 # we should be able to automate this
-my_model.interfaces = [
-    F.Interface(
-        my_model.mesh.mesh, my_model.facet_meshtags, 5, (bottom_domain, top_domain)
-    )
-]
+my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
 my_model.surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
 
 H = F.Species("H", mobile=True)
@@ -123,8 +119,8 @@ my_model.reactions = [
 ]
 
 my_model.boundary_conditions = [
-    F.DirichletBC(top_surface, value=0.05, species=H),
-    F.DirichletBC(bottom_surface, value=0.2, species=H),
+    F.FixedConcentrationBC(top_surface, value=0.05, species=H),
+    F.FixedConcentrationBC(bottom_surface, value=0.2, species=H),
 ]
 
 
