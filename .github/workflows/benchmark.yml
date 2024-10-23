@@ -4,16 +4,16 @@ on: [pull_request, push]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    container: dolfinx/dolfinx:v0.7.3
+    container: dolfinx/dolfinx:v0.9.0
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Install local package and dependencies
-      run: |
-        pip install .[test]
+      - name: Install local package and dependencies
+        run: |
+          pip install .[test]
 
-    - name: Run benchmark
-      run: |
-        python3 test/benchmark.py
+      - name: Run benchmark
+        run: |
+          python3 test/benchmark.py
