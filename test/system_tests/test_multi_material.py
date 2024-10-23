@@ -27,8 +27,10 @@ def generate_mesh(n=20):
     gdim = mesh.geometry.dim
     tdim = mesh.topology.dim
     fdim = tdim - 1
-    top_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, top_boundary)
-    bottom_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, bottom_boundary)
+    top_facets = dolfinx.mesh.locate_entities_boundary(
+        mesh, fdim, top_boundary)
+    bottom_facets = dolfinx.mesh.locate_entities_boundary(
+        mesh, fdim, bottom_boundary)
     num_facets_local = (
         mesh.topology.index_map(fdim).size_local
         + mesh.topology.index_map(fdim).num_ghosts
@@ -71,14 +73,16 @@ def test_2_materials_2d_mms():
     D_top = 2.0
     D_bot = 5.0
     c_exact_top_ufl = (
-        lambda x: 1 + ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
+        lambda x: 1 +
+        ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
     )
-    c_exact_bot_ufl = lambda x: K_S_bot / K_S_top * c_exact_top_ufl(x)
+    def c_exact_bot_ufl(x): return K_S_bot / K_S_top * c_exact_top_ufl(x)
 
     c_exact_top_np = (
-        lambda x: 1 + np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
+        lambda x: 1 +
+        np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
     )
-    c_exact_bot_np = lambda x: K_S_bot / K_S_top * c_exact_top_np(x)
+    def c_exact_bot_np(x): return K_S_bot / K_S_top * c_exact_top_np(x)
 
     mesh, mt, ct = generate_mesh(100)
 
@@ -95,7 +99,8 @@ def test_2_materials_2d_mms():
 
     top_surface = F.SurfaceSubdomain(id=1)
     bottom_surface = F.SurfaceSubdomain(id=2)
-    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+    my_model.subdomains = [bottom_domain,
+                           top_domain, top_surface, bottom_surface]
 
     my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
     my_model.surface_to_volume = {
@@ -112,7 +117,8 @@ def test_2_materials_2d_mms():
 
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(top_surface, value=c_exact_top_ufl, species=H),
-        F.FixedConcentrationBC(bottom_surface, value=c_exact_bot_ufl, species=H),
+        F.FixedConcentrationBC(
+            bottom_surface, value=c_exact_bot_ufl, species=H),
     ]
 
     source_top_val = (
@@ -127,15 +133,16 @@ def test_2_materials_2d_mms():
     )
     my_model.sources = [
         F.ParticleSource(volume=top_domain, species=H, value=source_top_val),
-        F.ParticleSource(volume=bottom_domain, species=H, value=source_bottom_val),
+        F.ParticleSource(volume=bottom_domain, species=H,
+                         value=source_bottom_val),
     ]
 
     my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 
     my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
-
     my_model.exports = [
-        F.VTXExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+        F.VTXSpeciesExport(f"u_{subdomain.id}.bp",
+                           field=H, subdomain=subdomain)
         for subdomain in my_model.volume_subdomains
     ]
 
@@ -173,7 +180,8 @@ def test_1_material_discontinuous_version():
     right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
     my_model.subdomains = [subdomain, left_surface, right_surface]
-    my_model.surface_to_volume = {right_surface: subdomain, left_surface: subdomain}
+    my_model.surface_to_volume = {
+        right_surface: subdomain, left_surface: subdomain}
 
     H = F.Species("H", mobile=True)
     trapped_H = F.Species("H_trapped", mobile=False)
@@ -207,7 +215,8 @@ def test_1_material_discontinuous_version():
     my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
 
     my_model.exports = [
-        F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+        F.VTXSpeciesExport(
+            filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
         for subdomain in my_model.volume_subdomains
     ]
 
@@ -298,14 +307,16 @@ def test_3_materials_transient():
 
     my_model.temperature = lambda x: 300 + 100 * x[0]
 
-    my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=True, final_time=100)
+    my_model.settings = F.Settings(
+        atol=None, rtol=1e-5, transient=True, final_time=100)
     my_model.settings.stepsize = 1
 
     my_model.exports = [
-        F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+        F.VTXSpeciesExport(
+            filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
         for subdomain in my_model.volume_subdomains
     ] + [
-        F.VTXExport(
+        F.VTXSpeciesExport(
             filename=f"u_t_{subdomain.id}.bp", field=trapped_H, subdomain=subdomain
         )
         for subdomain in my_model.volume_subdomains
@@ -336,7 +347,8 @@ def test_2_mats_particle_flux_bc():
 
     top_surface = F.SurfaceSubdomain(id=1)
     bottom_surface = F.SurfaceSubdomain(id=2)
-    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+    my_model.subdomains = [bottom_domain,
+                           top_domain, top_surface, bottom_surface]
 
     # we should be able to automate this
     my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
@@ -354,7 +366,8 @@ def test_2_mats_particle_flux_bc():
 
     my_model.boundary_conditions = [
         F.DirichletBC(top_surface, value=0.05, species=H),
-        F.ParticleFluxBC(bottom_surface, value=lambda x: 1.0 + x[0], species=H),
+        F.ParticleFluxBC(
+            bottom_surface, value=lambda x: 1.0 + x[0], species=H),
     ]
 
     my_model.temperature = lambda x: 300 + 10 * x[1] + 100 * x[0]
@@ -362,7 +375,8 @@ def test_2_mats_particle_flux_bc():
     my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
 
     my_model.exports = [
-        F.VTXExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+        F.VTXSpeciesExport(f"u_{subdomain.id}.bp",
+                           field=H, subdomain=subdomain)
         for subdomain in my_model.volume_subdomains
     ]
 

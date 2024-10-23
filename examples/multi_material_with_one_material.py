@@ -21,7 +21,8 @@ left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
 my_model.subdomains = [subdomain, left_surface, right_surface]
-my_model.surface_to_volume = {right_surface: subdomain, left_surface: subdomain}
+my_model.surface_to_volume = {
+    right_surface: subdomain, left_surface: subdomain}
 
 H = F.Species("H", mobile=True)
 trapped_H = F.Species("H_trapped", mobile=False)
@@ -57,7 +58,8 @@ my_model.temperature = lambda x: 300 + 100 * x[0]
 my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
 
 my_model.exports = [
-    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+    F.VTXSpeciesExport(
+        filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
     for subdomain in my_model.volume_subdomains
 ]
 

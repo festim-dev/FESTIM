@@ -64,7 +64,7 @@ def error_L2(u_computed, u_exact, degree_raise=3):
 
 def test_MMS_1():
     thermal_conductivity = 4.0
-    exact_solution = lambda x: 2 * x[0] ** 2
+    def exact_solution(x): return 2 * x[0] ** 2
     mms_source = -4 * thermal_conductivity
 
     my_problem = F.HeatTransferProblem()
@@ -106,9 +106,10 @@ def test_MMS_1():
 
 def test_MMS_T_dependent_thermal_cond():
     """MMS test with space T dependent thermal cond"""
-    thermal_conductivity = lambda T: 3 * T + 2
-    exact_solution = lambda x: 2 * x[0] ** 2 + 1
-    mms_source = lambda x: -(72 * x[0] ** 2 + 20)  # TODO would be nice to automate
+    def thermal_conductivity(T): return 3 * T + 2
+    def exact_solution(x): return 2 * x[0] ** 2 + 1
+    # TODO would be nice to automate
+    def mms_source(x): return -(72 * x[0] ** 2 + 20)
 
     my_problem = F.HeatTransferProblem()
 
@@ -154,7 +155,7 @@ def test_heat_transfer_transient():
     density = 2
     heat_capacity = 3
     thermal_conductivity = 4
-    exact_solution = lambda x, t: 2 * x[0] ** 2 + 20 * t
+    def exact_solution(x, t): return 2 * x[0] ** 2 + 20 * t
     dTdt = 20
     mms_source = density * heat_capacity * dTdt - thermal_conductivity * 4
 
@@ -174,7 +175,8 @@ def test_heat_transfer_transient():
         F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat),
     ]
     # NOTE: it's good to check that without the IC the solution is not the exact one
-    my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
+    my_problem.initial_condition = F.InitialTemperature(
+        lambda x: exact_solution(x, 0))
 
     my_problem.boundary_conditions = [
         F.FixedTemperatureBC(subdomain=left, value=exact_solution),
@@ -196,7 +198,7 @@ def test_heat_transfer_transient():
     my_problem.settings.stepsize = F.Stepsize(0.1)
 
     my_problem.exports = [
-        F.VTXExportForTemperature(filename="test_transient_heat_transfer.bp")
+        F.VTXTemperatureExport(filename="test_transient_heat_transfer.bp")
     ]
 
     my_problem.initialise()
@@ -206,7 +208,7 @@ def test_heat_transfer_transient():
     final_time_sim = (
         my_problem.t.value
     )  # we use the exact final time of the simulation which may differ from the one specified in the settings
-    exact_solution_end = lambda x: exact_solution(x, final_time_sim)
+    def exact_solution_end(x): return exact_solution(x, final_time_sim)
     L2_error = error_L2(computed_solution, exact_solution_end)
     assert L2_error < 1e-7
 
@@ -234,7 +236,8 @@ def test_MES():
     ]
 
     my_problem.sources = [
-        F.HeatSource(value=8 * mat.thermal_conductivity, volume=volume_subdomain)
+        F.HeatSource(value=8 * mat.thermal_conductivity,
+                     volume=volume_subdomain)
     ]
 
     my_problem.settings = F.Settings(
@@ -247,26 +250,27 @@ def test_MES():
     my_problem.run()
 
     computed_solution = my_problem.u
-    analytical_solution = lambda x: 4 * x[0] * (1 - x[0])
+    def analytical_solution(x): return 4 * x[0] * (1 - x[0])
     L2_error = error_L2(computed_solution, analytical_solution)
     assert L2_error < 1e-7
 
 
 # TODO populate this in other tests
 def test_sympify():
-    exact_solution = lambda x, t: 2 * x[0] ** 2 + 20 * t
+    def exact_solution(x, t): return 2 * x[0] ** 2 + 20 * t
 
-    density = lambda T: 0.2 * T + 2
-    heat_capacity = lambda T: 0.2 * T + 3
-    thermal_conductivity = lambda T: 0.1 * T + 4
+    def density(T): return 0.2 * T + 2
+    def heat_capacity(T): return 0.2 * T + 3
+    def thermal_conductivity(T): return 0.1 * T + 4
 
     mms_source_from_sp = source_from_exact_solution(
         exact_solution,
         density=lambda x, t: density(exact_solution(x, t)),
         heat_capacity=lambda x, t: heat_capacity(exact_solution(x, t)),
-        thermal_conductivity=lambda x, t: thermal_conductivity(exact_solution(x, t)),
+        thermal_conductivity=lambda x, t: thermal_conductivity(
+            exact_solution(x, t)),
     )
-    mms_source = lambda x, t: mms_source_from_sp((x[0], None, None), t)
+    def mms_source(x, t): return mms_source_from_sp((x[0], None, None), t)
 
     my_problem = F.HeatTransferProblem()
 
@@ -285,7 +289,8 @@ def test_sympify():
     ]
 
     # NOTE: it's good to check that without the IC the solution is not the exact one
-    my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
+    my_problem.initial_condition = F.InitialTemperature(
+        lambda x: exact_solution(x, 0))
 
     my_problem.boundary_conditions = [
         F.FixedTemperatureBC(subdomain=left, value=exact_solution),
@@ -307,7 +312,7 @@ def test_sympify():
     my_problem.settings.stepsize = F.Stepsize(0.05)
 
     my_problem.exports = [
-        F.VTXExportForTemperature(filename="test_transient_heat_transfer.bp")
+        F.VTXTemperatureExport(filename="test_transient_heat_transfer.bp")
     ]
 
     my_problem.initialise()
@@ -318,7 +323,7 @@ def test_sympify():
         my_problem.t.value
     )  # we use the exact final time of the simulation which may differ from the one specified in the settings
 
-    exact_solution_end = lambda x: exact_solution(x, final_time_sim)
+    def exact_solution_end(x): return exact_solution(x, final_time_sim)
     L2_error = error_L2(computed_solution, exact_solution_end)
     assert L2_error < 1e-7
 
@@ -338,7 +343,8 @@ def test_sources():
     # Test that setting invalid sources raises a TypeError
     with pytest.raises(TypeError, match="festim.HeatSource objects"):
         spe = F.Species("H")
-        htp.sources = [F.ParticleSource(1, vol, spe), F.ParticleSource(1, vol, spe)]
+        htp.sources = [F.ParticleSource(
+            1, vol, spe), F.ParticleSource(1, vol, spe)]
 
 
 def test_boundary_conditions():
@@ -391,7 +397,8 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     facet_tags = np.array(facet_tags).flatten()
     facet_indices = np.array(facet_indices).flatten()
 
-    facet_meshtags = dolfinx.mesh.meshtags(mesh, fdim, facet_indices, facet_tags)
+    facet_meshtags = dolfinx.mesh.meshtags(
+        mesh, fdim, facet_indices, facet_tags)
 
     # create volume meshtags
     num_cells = mesh.topology.index_map(vdim).size_local
@@ -413,7 +420,8 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
     tags_volumes[volume_indices_left] = 2
     tags_volumes[volume_indices_right] = 3
 
-    volume_meshtags = dolfinx.mesh.meshtags(mesh, vdim, mesh_cell_indices, tags_volumes)
+    volume_meshtags = dolfinx.mesh.meshtags(
+        mesh, vdim, mesh_cell_indices, tags_volumes)
 
     # write files
     surface_file_path = os.path.join(tmp_path, "facets_file.xdmf")
@@ -503,7 +511,8 @@ def test_adaptive_timestepping_grows():
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HeatTransferProblem(
         mesh=test_mesh,
-        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=True, final_time=10),
+        settings=F.Settings(atol=1e-10, rtol=1e-10,
+                            transient=True, final_time=10),
         subdomains=[my_vol],
     )
 
@@ -537,7 +546,8 @@ def test_adaptive_timestepping_shrinks():
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HeatTransferProblem(
         mesh=test_mesh,
-        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=True, final_time=10),
+        settings=F.Settings(atol=1e-10, rtol=1e-10,
+                            transient=True, final_time=10),
         subdomains=[my_vol],
     )
 
@@ -585,7 +595,8 @@ def test_update_time_dependent_values_HeatFluxBC(bc_value, expected_values):
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     surface = F.SurfaceSubdomain1D(id=2, x=0)
 
-    my_model = F.HeatTransferProblem(mesh=test_mesh, subdomains=[my_vol, surface])
+    my_model = F.HeatTransferProblem(
+        mesh=test_mesh, subdomains=[my_vol, surface])
     my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
     dt = fem.Constant(test_mesh.mesh, 1.0)
 
@@ -608,5 +619,6 @@ def test_update_time_dependent_values_HeatFluxBC(bc_value, expected_values):
 
         # TEST
         if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
-            computed_value = float(my_model.boundary_conditions[0].value_fenics)
+            computed_value = float(
+                my_model.boundary_conditions[0].value_fenics)
             assert np.isclose(computed_value, expected_values[i])

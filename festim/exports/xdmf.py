@@ -1,63 +1,54 @@
 import mpi4py
 from dolfinx.io import XDMFFile
-import festim as F
+from pathlib import Path
+from festim.species import Species as _Species
+from .vtx import ExportBaseClass
 
 
-class XDMFExport:
+class XDMFExport(ExportBaseClass):
     """Export functions to XDMFfile
 
     Args:
-        filename (str): the name of the output file
-        field (int or festim.Species): the field index to export
+        filename: The name of the output file
+        field: The field(s) to export
 
     Attributes:
-        filename (str): the name of the output file
-        writer (dolfinx.io.XDMFFile): the XDMF writer
-        field (festim.Species, list of festim.Species): the field index to export
+        _writer (dolfinx.io.XDMFFile): the XDMF writer
+        _field (festim.Species, list of festim.Species): the field index to export
     """
 
     _mesh_written: bool
+    _filename: Path
+    _writer: XDMFFile | None
 
-    def __init__(self, filename: str, field) -> None:
-        self.filename = filename
+    def __init__(self, filename: str | Path, field: list[_Species] | _Species) -> None:
+        # Initializes the writer
+        self._writer = None
+        super().__init__(filename, ".xdmf")
         self.field = field
         self._mesh_written = False
 
     @property
-    def filename(self):
-        return self._filename
-
-    @filename.setter
-    def filename(self, value):
-        if not isinstance(value, str):
-            raise TypeError("filename must be of type str")
-        if not value.endswith(".xdmf"):
-            raise ValueError("filename must end with .xdmf")
-        self._filename = value
-
-    @property
-    def field(self):
+    def field(self) -> list[_Species]:
         return self._field
 
     @field.setter
-    def field(self, value):
+    def field(self, value: _Species | list[_Species]):
         # check that field is festim.Species or list of festim.Species
-        if not isinstance(value, (F.Species, str)) and not isinstance(value, list):
-            raise TypeError(
-                "field must be of type festim.Species or str or a list of festim.Species or str"
-            )
-        # check that all elements of list are festim.Species
         if isinstance(value, list):
             for element in value:
-                if not isinstance(element, (F.Species, str)):
-                    raise TypeError(
-                        "field must be of type festim.Species or str or a list of festim.Species or str"
-                    )
-        # if field is festim.Species, convert to list
-        if not isinstance(value, list):
-            value = [value]
-
-        self._field = value
+                if not isinstance(element, _Species):
+                    raise TypeError(f"Each element in the list must be a species, got {type(element)}."
+                                    )
+            val = value
+        elif isinstance(value, _Species):
+            val = [value]
+        else:
+            raise TypeError(
+                f"field must be of type festim.Species or a list of festim.Species, got {
+                    type(value)}."
+            )
+        self._field = val
 
     def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
         """Define the writer
@@ -65,7 +56,7 @@ class XDMFExport:
         Args:
             comm (mpi4py.MPI.Intracomm): the MPI communicator
         """
-        self.writer = XDMFFile(comm, self.filename, "w")
+        self._writer = XDMFFile(comm, self.filename, "w")
 
     def write(self, t: float):
         """Write functions to VTX file
@@ -74,10 +65,14 @@ class XDMFExport:
             t (float): the time of export
         """
         if not self._mesh_written:
-            self.writer.write_mesh(
+            self._writer.write_mesh(
                 self.field[0].post_processing_solution.function_space.mesh
             )
             self._mesh_written = True
 
         for field in self.field:
-            self.writer.write_function(field.post_processing_solution, t)
+            self._writer.write_function(field.post_processing_solution, t)
+
+    def __del__(self):
+        if self._writer is not None:
+            self._writer.close()

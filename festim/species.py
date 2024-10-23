@@ -1,5 +1,4 @@
-from typing import List, Union
-import festim as F
+from festim.subdomain.volume_subdomain import VolumeSubdomain as _VolumeSubdomain
 
 
 class Species:
@@ -52,7 +51,7 @@ class Species:
 
     """
 
-    subdomains: Union[List[F.VolumeSubdomain], F.VolumeSubdomain]
+    subdomains: list[_VolumeSubdomain] | _VolumeSubdomain
     subdomain_to_solution: dict
     subdomain_to_prev_solution: dict
     subdomain_to_test_function: dict
@@ -88,109 +87,15 @@ class Species:
     def concentration(self):
         return self.solution
 
-
-class Trap(Species):
-    """Trap species class for H transport simulation.
-
-    This class only works for 1 mobile species and 1 trapping level and is
-    for convenience, for more details see notes.
-
-    Args:
-        name (str, optional): a name given to the trap. Defaults to None.
-        mobile_species (F.Species): the mobile species to be trapped
-        k_0 (float): the trapping rate constant pre-exponential factor (m3 s-1)
-        E_k (float): the trapping rate constant activation energy (eV)
-        p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
-        E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
-
-
-    Attributes:
-        name (str, optional): a name given to the trap. Defaults to None.
-        mobile_species (F.Species): the mobile species to be trapped
-        k_0 (float): the trapping rate constant pre-exponential factor (m3 s-1)
-        E_k (float): the trapping rate constant activation energy (eV)
-        p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
-        E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
-        trapped_concentration (F.Species): The immobile trapped concentration
-        trap_reaction (F.Reaction): The reaction for trapping the mobile conc.
-
-    Usage:
-        >>> import festim as F
-        >>> trap = F.Trap(name="Trap", species=H, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol)
-        >>> trap.name
-        'Trap'
-        >>> my_model = F.HydorgenTransportProblem()
-        >>> my_model.traps = [trap]
-
-    Notes:
-        This convenience class replaces the need to specify an implicit species and
-        the associated reaction, thus:
-
-        cm = F.Species("mobile")
-        my_trap = F.Trap(
-            name="trapped",
-            mobile_species=cm,
-            k_0=1,
-            E_k=1,
-            p_0=1,
-            E_p=1,
-            n=1,
-            volume=my_vol,
-        )
-        my_model.species = [cm]
-        my_model.traps = [my_trap]
-
-        is equivalent to:
-
-        cm = F.Species("mobile")
-        ct = F.Species("trapped")
-        trap_sites = F.ImplicitSpecies(n=1, others=[ct])
-        trap_reaction = F.Reaction(
-            reactant=[cm, trap_sites],
-            product=ct,
-            k_0=1,
-            E_k=1,
-            p_0=1,
-            E_p=1,
-            volume=my_vol,
-        )
-        my_model.species = [cm, ct]
-        my_model.reactions = [trap_reaction]
-
-
-    """
-
-    def __init__(
-        self, name: str, mobile_species, k_0, E_k, p_0, E_p, n, volume
-    ) -> None:
-        super().__init__(name)
-        self.mobile_species = mobile_species
-        self.k_0 = k_0
-        self.E_k = E_k
-        self.p_0 = p_0
-        self.E_p = E_p
-        self.n = n
-        self.volume = volume
-
-        self.trapped_concentration = None
-        self.reaction = None
-
-    def create_species_and_reaction(self):
-        """create the immobile trapped species object and the reaction for trapping"""
-        self.trapped_concentration = F.Species(name=self.name, mobile=False)
-        trap_site = F.ImplicitSpecies(n=self.n, others=[self.trapped_concentration])
-
-        self.reaction = F.Reaction(
-            reactant=[self.mobile_species, trap_site],
-            product=self.trapped_concentration,
-            k_0=self.k_0,
-            E_k=self.E_k,
-            p_0=self.p_0,
-            E_p=self.E_p,
-            volume=self.volume,
-        )
+    @property
+    def legacy(self) -> bool:
+        """
+        Check if we are using FESTIM 1.0 implementation or FESTIM 2.0
+        """
+        if not self.subdomain_to_solution:
+            return True
+        else:
+            return False
 
 
 class ImplicitSpecies:
@@ -199,14 +104,14 @@ class ImplicitSpecies:
 
     Args:
         n (float): the total concentration of the species
-        others (List[Species]): the list of species from which the implicit
+        others (list[Species]): the list of species from which the implicit
             species concentration is computed (c = n - others)
         name (str, optional): a name given to the species. Defaults to None.
 
     Attributes:
         name (str): a name given to the species.
         n (float): the total concentration of the species
-        others (List[Species]): the list of species from which the implicit
+        others (list[Species]): the list of species from which the implicit
             species concentration is computed (c = n - others)
         concentration (form): the concentration of the species
 
@@ -215,7 +120,7 @@ class ImplicitSpecies:
     def __init__(
         self,
         n: float,
-        others: List[Species] = None,
+        others: list[Species] = None,
         name: str = None,
     ) -> None:
         self.name = name
@@ -234,7 +139,8 @@ class ImplicitSpecies:
             for other in self.others:
                 if other.solution is None:
                     raise ValueError(
-                        f"Cannot compute concentration of {self.name} because {other.name} has no solution"
+                        f"Cannot compute concentration of {
+                            self.name} because {other.name} has no solution"
                     )
         return self.n - sum([other.solution for other in self.others])
 

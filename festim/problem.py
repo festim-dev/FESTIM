@@ -5,6 +5,10 @@ from mpi4py import MPI
 import numpy as np
 import tqdm.autonotebook
 import festim as F
+from festim.mesh.mesh import Mesh as _Mesh
+from festim.source import SourceBase as _SourceBase
+from festim.subdomain.volume_subdomain import VolumeSubdomain as _VolumeSubdomain
+from typing import Any
 
 
 class ProblemBase:
@@ -15,6 +19,10 @@ class ProblemBase:
         simulation
     progress_bar (tqdm.autonotebook.tqdm) the progress bar
     """
+    mesh: _Mesh
+    sources: list[_SourceBase]
+    exports: list[Any]
+    subdomains: list[_VolumeSubdomain]
 
     def __init__(
         self,

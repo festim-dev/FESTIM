@@ -1,11 +1,4 @@
-try:
-    # Python 3.8+
-    from importlib import metadata
-except ImportError:
-    try:
-        import importlib_metadata as metadata
-    except ImportError:
-        __version__ = "unknown"
+from importlib import metadata
 
 try:
     __version__ = metadata.version("FESTIM")
@@ -48,8 +41,8 @@ from .subdomain.volume_subdomain import VolumeSubdomain, find_volume_from_id
 from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
 from .subdomain.interface import Interface
 
-from .species import Species, Trap, ImplicitSpecies, find_species_from_name
-
+from .species import Species, ImplicitSpecies, find_species_from_name
+from .trap import Trap
 from .stepsize import Stepsize
 
 from .exports.surface_quantity import SurfaceQuantity
@@ -63,7 +56,7 @@ from .exports.maximum_surface import MaximumSurface
 from .exports.minimum_surface import MinimumSurface
 from .exports.average_surface import AverageSurface
 from .exports.surface_flux import SurfaceFlux
-from .exports.vtx import VTXExport, VTXExportForTemperature
+from .exports.vtx import VTXSpeciesExport, VTXTemperatureExport
 from .exports.xdmf import XDMFExport
 
 from .reaction import Reaction

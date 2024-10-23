@@ -20,29 +20,26 @@ class HydrogenTransportProblem(F.ProblemBase):
         subdomains: List containing the subdomains
         species: List containing the species
         reactions: List containing the reactions
-        temperature: The temperature of the model (K)
-        sources (list of festim.Source): the hydrogen sources of the model
-        initial_conditions (list of festim.InitialCondition): the initial conditions
-            of the model
-        boundary_conditions (list of festim.BoundaryCondition): the boundary
-            conditions of the model
+        temperature: The temperature or a function describing the temperature as
+            a model of either space or space and time. Unit (K)
+        sources: The hydrogen sources
+        initial_conditions: The initial conditions
+        boundary_conditions: The boundary conditions
         solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
         traps (list of F.Trap): the traps of the model
 
     Attributes:
-        mesh : The mesh of the model
-        subdomains: The subdomains of the model
-        species: The species of the model
-        reactions: the reactions of the model
-        temperature: The temperature of the model (K)
-        sources (list of festim.Source): the hydrogen sources of the model
-        initial_conditions (list of festim.InitialCondition): the initial conditions
-            of the model
-        boundary_conditions (list of festim.BoundaryCondition): the boundary
-            conditions of the model
-        solver_parameters (dict): the solver parameters of the model
-        exports (list of festim.Export): the exports of the model
+        mesh : The mesh
+        subdomains: The subdomains
+        species: The species
+        reactions: the reaction
+        temperature: The temperature in unit `K`
+        sources: The hydrogen sources
+        initial_conditions: The initial conditions
+        boundary_conditions: List of Dirichlet boundary conditions
+        solver_parameters (dict): the solver parameters
+        exports (list of festim.Export): the export
         traps (list of F.Trap): the traps of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
@@ -125,6 +122,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         sources=None,
         initial_conditions=None,
         boundary_conditions=None,
+
         settings=None,
         exports=None,
         traps=None,
@@ -144,6 +142,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         self.initial_conditions = initial_conditions or []
         self.traps = traps or []
         self.temperature_fenics = None
+        self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
     @property
     def temperature(self):
@@ -342,9 +341,13 @@ class HydrogenTransportProblem(F.ProblemBase):
             elif isinstance(export.field, str):
                 export.field = F.find_species_from_name(export.field, self.species)
 
-            if isinstance(export, (F.VTXExport, F.XDMFExport)):
+            # Initialize XDMFFile for writer
+            if isinstance(export, F.XDMFExport):
                 export.define_writer(MPI.COMM_WORLD)
-
+            if isinstance(export, F.VTXSpeciesExport):
+                functions = export.get_functions()
+                self._vtxfiles.append(dolfinx.io.VTXWriter(functions[0].function_space.mesh.comm,
+                                                           export.filename, functions, engine="BP5"))
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
@@ -733,7 +736,7 @@ class HydrogenTransportProblem(F.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-            if isinstance(export, (F.VTXExport, F.XDMFExport)):
+            if isinstance(export, F.XDMFExport):
                 export.write(float(self.t))
 
 
@@ -800,6 +803,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             "pc_factor_mat_solver_type": "mumps",
         }
         self.petsc_options = petsc_options or default_petsc_options
+        self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
     def initialise(self):
         # check that all species have a list of F.VolumeSubdomain as this is
@@ -1167,15 +1171,13 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def initialise_exports(self):
         for export in self.exports:
-            if isinstance(export, F.VTXExport):
-                species = export.field[0]
-                # override post_processing_solution attribute of species
-                species.post_processing_solution = (
-                    species.subdomain_to_post_processing_solution[export.subdomain]
-                )
-                export.define_writer(MPI.COMM_WORLD)
+            if isinstance(export, F.VTXSpeciesExport):
+                functions = export.get_functions()
+                self._vtxfiles.append(dolfinx.io.VTXWriter(functions[0].function_space.mesh.comm,
+                                                           export.filename, functions, engine="BP5"))
             else:
-                raise NotImplementedError("Export type not implemented")
+                raise NotImplementedError(
+                    f"Export type {type(export)} not implemented")
 
     def post_processing(self):
         # update post-processing solutions (for each species in each subdomain)
@@ -1191,11 +1193,13 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 v0_to_V = species.subdomain_to_collapsed_function_space[subdomain][1]
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
 
+        for vtxfile in self._vtxfiles:
+            vtxfile.write(float(self.t))
+
         for export in self.exports:
-            if isinstance(export, F.VTXExport):
-                export.write(float(self.t))
-            else:
-                raise NotImplementedError("Export type not implemented")
+            if not isinstance(export, F.VTXSpeciesExport):
+                raise NotImplementedError(
+                    f"Export type {type(export)} not implemented")
 
     def iterate(self):
         """Iterates the model for a given time step"""
@@ -1238,3 +1242,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             # Solve steady-state
             self.solver.solve(self.settings.rtol)
             self.post_processing()
+
+    def __del__(self):
+        for vtxfile in self._vtxfiles:
+            vtxfile.close()

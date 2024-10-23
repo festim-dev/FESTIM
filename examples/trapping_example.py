@@ -1,3 +1,4 @@
+from petsc4py import PETSc
 import festim as F
 import numpy as np
 
@@ -43,8 +44,10 @@ my_model.boundary_conditions = [
     F.DirichletBC(subdomain=left_surface, value=1e12, species=mobile_H),
 ]
 my_model.exports = [
-    F.VTXExport("mobile_concentration_h.bp", field=mobile_H),  # produces 0 in file
-    F.VTXExport("trapped_concentration_h.bp", field=trapped_H),  # produces 0 in file
+    F.VTXSpeciesExport("mobile_concentration_h.bp",
+                       field=mobile_H),  # produces 0 in file
+    F.VTXSpeciesExport("trapped_concentration_h.bp",
+                       field=trapped_H),  # produces 0 in file
     F.XDMFExport("mobile_concentration_h.xdmf", field=mobile_H),
     F.XDMFExport("trapped_concentration_h.xdmf", field=trapped_H),
 ]
@@ -60,7 +63,6 @@ my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
 
 my_model.initialise()
 
-from petsc4py import PETSc
 
 my_model.solver.convergence_criterion = "incremental"
 ksp = my_model.solver.krylov_solver

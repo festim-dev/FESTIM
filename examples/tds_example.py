@@ -97,7 +97,8 @@ def left_conc_value(t):
 
 
 my_model.boundary_conditions = [
-    F.DirichletBC(subdomain=left_surface, value=left_conc_value, species=mobile_H),
+    F.DirichletBC(subdomain=left_surface,
+                  value=left_conc_value, species=mobile_H),
     F.DirichletBC(subdomain=right_surface, value=0, species=mobile_H),
 ]
 
@@ -107,8 +108,8 @@ left_flux = F.SurfaceFlux(field=mobile_H, surface=left_surface)
 right_flux = F.SurfaceFlux(field=mobile_H, surface=right_surface)
 
 my_model.exports = [
-    # F.VTXExport("mobile_concentration_h.bp", field=mobile_H),
-    # F.VTXExport("trapped_concentration_h.bp", field=trapped_H1),
+    # F.VTXSpeciesExport("mobile_concentration_h.bp", field=mobile_H),
+    # F.VTXSpeciesExport("trapped_concentration_h.bp", field=trapped_H1),
     F.XDMFExport("mobile_concentration_h.xdmf", field=mobile_H),
     F.XDMFExport("trapped_concentration_h1.xdmf", field=trapped_H1),
     F.XDMFExport("trapped_concentration_h2.xdmf", field=trapped_H2),
@@ -118,7 +119,8 @@ my_model.exports = [
 
 # -------- Settings --------- #
 
-my_model.settings = F.Settings(atol=1e10, rtol=1e-10, max_iterations=30, final_time=500)
+my_model.settings = F.Settings(
+    atol=1e10, rtol=1e-10, max_iterations=30, final_time=500)
 
 my_model.settings.stepsize = F.Stepsize(initial_value=0.5)
 

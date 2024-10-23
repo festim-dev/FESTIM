@@ -1,104 +1,116 @@
-from dolfinx.io import VTXWriter
-import mpi4py
+from dolfinx.fem import Function as _Function
+from pathlib import Path
+from festim.species import Species as _Species
+from festim.subdomain.volume_subdomain import VolumeSubdomain as _VolumeSubdomain
+import warnings
 
-import festim as F
 
+class ExportBaseClass():
+    _filename: Path | str
 
-class VTXExportBase:
-    def __init__(self, filename: str) -> None:
-        self.filename = filename
+    def __init__(self, filename: str | Path, ext: str) -> None:
+        name = Path(filename)
+        if name.suffix != ext:
+            warnings.warn(
+                f"Filename {filename} does not have {ext} extension, adding it.")
+            name = name.with_suffix(ext)
+
+        self._filename = Path(filename)
 
     @property
     def filename(self):
         return self._filename
 
-    @filename.setter
-    def filename(self, value):
-        if not isinstance(value, str):
-            raise TypeError("filename must be of type str")
-        if not value.endswith(".bp"):
-            raise ValueError("filename must end with .bp")
-        self._filename = value
 
-    def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
-        """Define the writer
-
-        Args:
-            comm (mpi4py.MPI.Intracomm): the MPI communicator
-        """
-        self.writer = VTXWriter(
-            comm,
-            self.filename,
-            self.functions,
-            "BP4",
-        )
-
-    def write(self, t: float):
-        """Write functions to VTX file
-
-        Args:
-            t (float): the time of export
-        """
-        self.writer.write(t)
+class VTXTemperatureExport(ExportBaseClass):
+    def __init__(
+            self, filename: str | Path):
+        super().__init__(filename, ".bp")
 
 
-class VTXExport(VTXExportBase):
+class VTXSpeciesExport(ExportBaseClass):
     """Export functions to VTX file
 
     Args:
-        filename (str): the name of the output file
-        field (int): the field index to export
+        filename: The name of the output file
+        field: Set of species to export
+        subdomain: A field can be defined on multiple domains.
+            This arguments specifies what subdomains we export on.
+            If `None` we export on all domains.
 
-    Attributes:
-        filename (str): the name of the output file
-        writer (dolfinx.io.VTXWriter): the VTX writer
-        field (festim.Species, list of festim.Species): the field index to export
-
-    Usage:
-        >>> u = dolfinx.fem.Function(V)
-        >>> my_export = festim.VTXExport("my_export.bp")
-        >>> my_export.define_writer(mesh.comm, [u])
-        >>> for t in range(10):
-        ...    u.interpolate(lambda x: t * (x[0] ** 2 + x[1] ** 2 + x[2] ** 2))
-        ...    my_export.write(t)
     """
 
+    field: list[_Species]
+    _subdomain: _VolumeSubdomain
+
     def __init__(
-        self, filename: str, field, subdomain: F.VolumeSubdomain = None
+        self, filename: str | Path,
+        field: _Species | list[_Species],
+        subdomain: _VolumeSubdomain = None
     ) -> None:
+        super().__init__(filename, ".bp")
         self.field = field
-        self.subdomain = subdomain
-        super().__init__(filename)
+        self._subdomain = subdomain
 
     @property
-    def field(self):
+    def field(self) -> list[_Species]:
         return self._field
 
     @field.setter
-    def field(self, value):
-        # check that field is festim.Species or list of festim.Species
-        if not isinstance(value, (F.Species, str)) and not isinstance(value, list):
-            raise TypeError(
-                "field must be of type festim.Species or str or a list of festim.Species or str"
-            )
+    def field(self, value: _Species | list[_Species]):
+        """
+        Update the field to export.
+
+        Note:
+            This also creates a new writer with the updated field.
+
+        Args:
+            value: The species to export
+
+        Raises:
+            TypeError: If input field is not a Species or a list of Species
+        """
         # check that all elements of list are festim.Species
         if isinstance(value, list):
             for element in value:
-                if not isinstance(element, (F.Species, str)):
+                if not isinstance(element, (_Species, str)):
                     raise TypeError(
-                        "field must be of type festim.Species or str or a list of festim.Species or str"
+                        "field must be of type festim.Species or a list of festim.Species or str"
                     )
-        # if field is festim.Species, convert to list
-        if not isinstance(value, list):
-            value = [value]
-
-        self._field = value
+            val = value
+        elif isinstance(value, _Species):
+            val = [value]
+        else:
+            raise TypeError(
+                "field must be of type festim.Species or a list of festim.Species or str",
+                f"got {type(value)}."
+            )
+        self._field = val
 
     @property
-    def functions(self):
-        return [field.post_processing_solution for field in self.field]
+    def subdomain(self) -> _VolumeSubdomain:
+        return self._subdomain
 
+    def get_functions(self) -> list[_Function]:
+        """
+        Returns list of species for a given subdomain.
+        If using legacy mode, return the whole species.
+        """
 
-class VTXExportForTemperature(VTXExportBase):
-    def __init__(self, filename: str) -> None:
-        super().__init__(filename)
+        legacy_output: bool = False
+        for field in self._field:
+            if field.legacy:
+                legacy_output = True
+                break
+        if legacy_output:
+            return [field.post_processing_solution for field in self._field]
+        else:
+            if self._subdomain is None:
+                raise ValueError("Subdomain must be specified")
+            else:
+                outfiles = []
+                for field in self._field:
+                    if self._subdomain in field.subdomains:
+                        outfiles.append(
+                            field.subdomain_to_post_processing_solution[self._subdomain])
+                return outfiles

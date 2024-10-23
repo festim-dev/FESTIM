@@ -1,7 +1,9 @@
-import festim as F
 from typing import Union, Optional, List
 
 from ufl import exp
+from festim.species import Species as _Species, ImplicitSpecies as _ImplicitSpecies
+from festim.subdomain.volume_subdomain_1d import VolumeSubdomain1D as VS1D
+from festim import k_B as _k_B
 
 
 class Reaction:
@@ -45,13 +47,12 @@ class Reaction:
 
     def __init__(
         self,
-        reactant: Union[
-            F.Species, F.ImplicitSpecies, List[Union[F.Species, F.ImplicitSpecies]]
-        ],
+        reactant:
+            _Species | _ImplicitSpecies | list[_Species | _ImplicitSpecies],
         k_0: float,
         E_k: float,
-        volume: F.VolumeSubdomain1D,
-        product: Optional[Union[F.Species, List[F.Species]]] = [],
+        volume: VS1D,
+        product: Optional[Union[_Species, List[_Species]]] = [],
         p_0: float = None,
         E_p: float = None,
     ) -> None:
@@ -76,9 +77,10 @@ class Reaction:
                 f"reactant must be an entry of one or more species objects, not an empty list."
             )
         for i in value:
-            if not isinstance(i, (F.Species, F.ImplicitSpecies)):
+            if not isinstance(i, (_Species, _ImplicitSpecies)):
                 raise TypeError(
-                    f"reactant must be an F.Species or F.ImplicitSpecies, not {type(i)}"
+                    f"reactant must be an F.Species or F.ImplicitSpecies, not {
+                        type(i)}"
                 )
         self._reactant = value
 
@@ -109,11 +111,13 @@ class Reaction:
         if self.product == []:
             if self.p_0 is not None:
                 raise ValueError(
-                    f"p_0 must be None, not {self.p_0} when no products are present."
+                    f"p_0 must be None, not {
+                        self.p_0} when no products are present."
                 )
             if self.E_p is not None:
                 raise ValueError(
-                    f"E_p must be None, not {self.E_p} when no products are present."
+                    f"E_p must be None, not {
+                        self.E_p} when no products are present."
                 )
         else:
             if self.p_0 == None:
@@ -125,10 +129,10 @@ class Reaction:
                     f"E_p cannot be None when reaction products are present."
                 )
 
-        k = self.k_0 * exp(-self.E_k / (F.k_B * temperature))
+        k = self.k_0 * exp(-self.E_k / (_k_B * temperature))
 
         if self.p_0 and self.E_p:
-            p = self.p_0 * exp(-self.E_p / (F.k_B * temperature))
+            p = self.p_0 * exp(-self.E_p / (_k_B * temperature))
         elif self.p_0:
             p = self.p_0
         else:

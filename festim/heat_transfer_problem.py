@@ -1,8 +1,7 @@
 from dolfinx import fem
-from dolfinx.nls.petsc import NewtonSolver
+from dolfinx.io import VTXWriter
 import basix
 import ufl
-from mpi4py import MPI
 import festim as F
 
 
@@ -27,6 +26,7 @@ class HeatTransferProblem(F.ProblemBase):
         )
 
         self.initial_condition = initial_condition
+        self._vtxfile: VTXWriter | None = None
 
     @property
     def sources(self):
@@ -35,7 +35,8 @@ class HeatTransferProblem(F.ProblemBase):
     @sources.setter
     def sources(self, value):
         if not all(isinstance(source, F.HeatSource) for source in value):
-            raise TypeError("sources must be a list of festim.HeatSource objects")
+            raise TypeError(
+                "sources must be a list of festim.HeatSource objects")
         self._sources = value
 
     @property
@@ -198,14 +199,16 @@ class HeatTransferProblem(F.ProblemBase):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics * self.test_function * self.dx(source.volume.id)
+                source.value_fenics * self.test_function *
+                self.dx(source.volume.id)
             )
 
         # add fluxes
         for bc in self.boundary_conditions:
             if isinstance(bc, F.HeatFluxBC):
                 self.formulation -= (
-                    bc.value_fenics * self.test_function * self.ds(bc.subdomain.id)
+                    bc.value_fenics * self.test_function *
+                    self.ds(bc.subdomain.id)
                 )
 
     def initialise_exports(self):
@@ -217,9 +220,10 @@ class HeatTransferProblem(F.ProblemBase):
                 raise NotImplementedError(
                     "XDMF export is not implemented yet for heat transfer problems"
                 )
-            if isinstance(export, (F.VTXExportForTemperature, F.XDMFExport)):
-                export.functions = [self.u]
-                export.define_writer(MPI.COMM_WORLD)
+            if isinstance(export, F.VTXTemperatureExport):
+                self._vtxfile = VTXWriter(self.u.function_space.mesh.comm,
+                                          export.filename, [self.u],
+                                          engine="BP5")
 
     def post_processing(self):
         """Post processes the model"""
@@ -240,6 +244,12 @@ class HeatTransferProblem(F.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-
-            if isinstance(export, (F.VTXExportForTemperature, F.XDMFExport)):
+            if isinstance(export, F.XDMFExport):
                 export.write(float(self.t))
+
+        if self._vtxfile is not None:
+            self._vtxfile.write(float(self.t))
+
+    def __del__(self):
+        if self._vtxfile is not None:
+            self._vtxfile.close()
