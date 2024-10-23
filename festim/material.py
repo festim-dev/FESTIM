@@ -170,7 +170,7 @@ class Material:
             raise ValueError("D_0 and E_D must be either floats or dicts")
 
     def get_solubility_coefficient(self, mesh, temperature, species=None):
-        """Defines the diffusion coefficient
+        """Defines the solubility coefficient
         Args:
 
             mesh (dolfinx.mesh.Mesh): the domain mesh
