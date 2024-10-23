@@ -14,8 +14,7 @@ def test_average_volume_compute_1D():
     # BUILD
     L = 6.0
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
-    dummy_volume = F.VolumeSubdomain1D(
-        id=1, borders=[0, L], material=dummy_mat)
+    dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_mat)
     temp, cell_meshtags = my_mesh.define_meshtags(
         surface_subdomains=[], volume_subdomains=[dummy_volume]
     )
