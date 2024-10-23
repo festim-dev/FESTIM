@@ -1,7 +1,8 @@
-import festim as F
-import dolfinx
-from dolfinx.cpp.fem import compute_integration_domains
 import numpy as np
+
+import dolfinx
+import festim as F
+from dolfinx.cpp.fem import compute_integration_domains
 
 
 class Interface:

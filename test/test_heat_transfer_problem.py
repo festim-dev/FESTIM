@@ -1,14 +1,16 @@
-import festim as F
-import numpy as np
-import dolfinx
-from dolfinx.io import XDMFFile
-from dolfinx import fem
-import ufl
+import os
+
 import mpi4py.MPI as MPI
+
+import numpy as np
+import pytest
 import tqdm.autonotebook
 
-import pytest
-import os
+import dolfinx
+import festim as F
+import ufl
+from dolfinx import fem
+from dolfinx.io import XDMFFile
 
 
 def source_from_exact_solution(

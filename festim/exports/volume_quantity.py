@@ -1,6 +1,7 @@
-import festim as F
 import csv
 import os
+
+import festim as F
 
 
 class VolumeQuantity:

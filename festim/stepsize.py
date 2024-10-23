@@ -1,6 +1,3 @@
-import festim as F
-
-
 class Stepsize:
     """
     A class for evaluating the stepsize of transient simulations.

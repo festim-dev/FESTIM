@@ -1,9 +1,9 @@
-import festim as F
-
 from mpi4py import MPI
+
+import numpy as np
+
 import dolfinx
 import dolfinx.fem.petsc
-import numpy as np
 import festim as F
 import ufl
 

@@ -1,5 +1,6 @@
-import festim as F
 import csv
+
+import festim as F
 
 
 class SurfaceQuantity:

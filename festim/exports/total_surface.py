@@ -1,6 +1,6 @@
 import festim as F
-from dolfinx import fem
 import ufl
+from dolfinx import fem
 
 
 class TotalSurface(F.SurfaceQuantity):

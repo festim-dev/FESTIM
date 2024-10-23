@@ -1,6 +1,8 @@
 from petsc4py import PETSc
-import festim as F
+
 import numpy as np
+
+import festim as F
 
 L = 3e-04
 vertices = np.linspace(0, L, num=1000)

@@ -1,36 +1,38 @@
+import time
+
 from mpi4py import MPI
 from petsc4py import PETSc
-from dolfinx.io import XDMFFile
+
+import numpy as np
+import tqdm.autonotebook
+from test_permeation_problem import test_permeation_problem
+
+import basix
 from dolfinx.fem import (
     Constant,
-    dirichletbc,
     Function,
-    functionspace,
-    locate_dofs_topological,
-    locate_dofs_geometrical,
-    form,
     assemble_scalar,
+    dirichletbc,
+    form,
+    functionspace,
+    locate_dofs_geometrical,
+    locate_dofs_topological,
 )
 from dolfinx.fem.petsc import (
     NonlinearProblem,
 )
+from dolfinx.io import XDMFFile
+from dolfinx.mesh import create_mesh, locate_entities, meshtags
 from dolfinx.nls.petsc import NewtonSolver
 from ufl import (
-    dot,
-    grad,
-    TestFunction,
-    exp,
     FacetNormal,
-    Cell,
-    Mesh,
     Measure,
+    Mesh,
+    TestFunction,
+    dot,
+    exp,
+    grad,
 )
-import basix
-from dolfinx.mesh import create_mesh, meshtags, locate_entities
-import numpy as np
-import tqdm.autonotebook
-import time
-from test_permeation_problem import test_permeation_problem
 
 
 def fenics_test_permeation_problem(mesh_size=1001):

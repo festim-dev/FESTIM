@@ -1,12 +1,13 @@
+from mpi4py import MPI
+
 import numpy as np
 import pytest
+
+import dolfinx.mesh
+import festim as F
 import ufl
-from ufl.conditional import Conditional
 import ufl.core
 from dolfinx import fem
-import dolfinx.mesh
-from mpi4py import MPI
-import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)

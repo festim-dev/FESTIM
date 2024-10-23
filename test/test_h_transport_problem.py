@@ -1,11 +1,13 @@
-import festim as F
-import tqdm.autonotebook
 import mpi4py.MPI as MPI
-import dolfinx.mesh
-from dolfinx import fem, nls
-import ufl
+
 import numpy as np
 import pytest
+import tqdm.autonotebook
+
+import dolfinx.mesh
+import festim as F
+import ufl
+from dolfinx import fem, nls
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)

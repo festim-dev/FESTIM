@@ -1,6 +1,7 @@
-import ufl
-import dolfinx
 import numpy as np
+
+import dolfinx
+import ufl
 from dolfinx.mesh import meshtags
 
 
@@ -41,7 +42,7 @@ class Mesh:
         if isinstance(value, dolfinx.mesh.Mesh):
             self._mesh = value
         else:
-            raise TypeError(f"Mesh must be of type dolfinx.mesh.Mesh")
+            raise TypeError("Mesh must be of type dolfinx.mesh.Mesh")
 
     @property
     def vdim(self):

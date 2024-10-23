@@ -1,9 +1,12 @@
+import os
+
+from mpi4py import MPI
+
+import numpy as np
+import pytest
+
 import festim as F
 from dolfinx import mesh as fenics_mesh
-from mpi4py import MPI
-import pytest
-import numpy as np
-import os
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import meshtags
 

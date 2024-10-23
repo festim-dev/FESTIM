@@ -1,8 +1,10 @@
-import numpy as np
-import festim as F
-import pytest
-import dolfinx.mesh
 from mpi4py import MPI
+
+import numpy as np
+import pytest
+
+import dolfinx.mesh
+import festim as F
 
 
 def test_different_surface_ids():

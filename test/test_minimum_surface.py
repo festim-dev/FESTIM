@@ -1,10 +1,7 @@
-import festim as F
 import numpy as np
-import ufl
-from dolfinx.mesh import meshtags
+
+import festim as F
 from dolfinx import fem
-import pytest
-import os
 
 
 def test_minimum_surface_export_compute_1D():

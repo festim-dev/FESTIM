@@ -1,12 +1,13 @@
+from mpi4py import MPI
+
 import numpy as np
 import pytest
-import ufl
-from ufl.conditional import Conditional
 
-from dolfinx import fem
 import dolfinx.mesh
-from mpi4py import MPI
 import festim as F
+import ufl
+from dolfinx import fem
+from ufl.conditional import Conditional
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 

@@ -1,8 +1,9 @@
+import numpy as np
+
+import dolfinx
 import festim as F
 import ufl
-import dolfinx
 from dolfinx import fem
-import numpy as np
 
 
 class SourceBase:

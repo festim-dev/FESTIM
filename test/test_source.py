@@ -1,10 +1,11 @@
+from mpi4py import MPI
+
+import pytest
+
+import dolfinx.mesh
 import festim as F
 import ufl
-import pytest
-import ufl
 from dolfinx import fem
-import dolfinx.mesh
-from mpi4py import MPI
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 

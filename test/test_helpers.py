@@ -1,8 +1,9 @@
-import festim as F
-from dolfinx import fem
 import numpy as np
 import pytest
+
+import festim as F
 import ufl
+from dolfinx import fem
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)

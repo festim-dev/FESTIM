@@ -1,9 +1,10 @@
-from typing import Union, Optional, List
+from typing import List, Optional, Union
 
-from ufl import exp
-from festim.species import Species as _Species, ImplicitSpecies as _ImplicitSpecies
-from festim.subdomain.volume_subdomain_1d import VolumeSubdomain1D as VS1D
 from festim import k_B as _k_B
+from festim.species import ImplicitSpecies as _ImplicitSpecies
+from festim.species import Species as _Species
+from festim.subdomain.volume_subdomain_1d import VolumeSubdomain1D as VS1D
+from ufl import exp
 
 
 class Reaction:
@@ -73,7 +74,7 @@ class Reaction:
             value = [value]
         if len(value) == 0:
             raise ValueError(
-                f"reactant must be an entry of one or more species objects, not an empty list."
+                "reactant must be an entry of one or more species objects, not an empty list."
             )
         for i in value:
             if not isinstance(i, (_Species, _ImplicitSpecies)):
@@ -121,11 +122,11 @@ class Reaction:
         else:
             if self.p_0 == None:
                 raise ValueError(
-                    f"p_0 cannot be None when reaction products are present."
+                    "p_0 cannot be None when reaction products are present."
                 )
             elif self.E_p == None:
                 raise ValueError(
-                    f"E_p cannot be None when reaction products are present."
+                    "E_p cannot be None when reaction products are present."
                 )
 
         k = self.k_0 * exp(-self.E_k / (_k_B * temperature))

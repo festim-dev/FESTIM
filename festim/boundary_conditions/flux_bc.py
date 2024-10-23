@@ -1,7 +1,8 @@
+import numpy as np
+
 import festim as F
 import ufl
 from dolfinx import fem
-import numpy as np
 
 
 class FluxBCBase:

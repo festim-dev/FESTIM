@@ -1,9 +1,8 @@
-import festim as F
 import numpy as np
-from dolfinx import fem
+
+import festim as F
 import ufl
-from dolfinx.mesh import meshtags
-import pytest
+from dolfinx import fem
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy")
 

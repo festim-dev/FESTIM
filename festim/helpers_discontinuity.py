@@ -1,5 +1,6 @@
-import dolfinx
 import numpy as np
+
+import dolfinx
 
 
 def transfer_meshtags_to_submesh(

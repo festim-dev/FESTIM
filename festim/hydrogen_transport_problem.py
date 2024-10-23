@@ -1,14 +1,17 @@
-import dolfinx
-from dolfinx import fem
-import basix
-import ufl
-from mpi4py import MPI
-import numpy as np
-import tqdm.autonotebook
-import festim as F
-from scifem import NewtonSolver
 from typing import Callable
+
+from mpi4py import MPI
+
+import numpy as np
 import numpy.typing as npt
+import tqdm.autonotebook
+from scifem import NewtonSolver
+
+import basix
+import dolfinx
+import festim as F
+import ufl
+from dolfinx import fem
 
 
 class HydrogenTransportProblem(F.ProblemBase):

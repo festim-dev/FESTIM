@@ -1,10 +1,12 @@
-import festim as F
-import numpy as np
-import ufl
-from dolfinx.mesh import meshtags
-from dolfinx import fem
-import pytest
 import os
+
+import numpy as np
+import pytest
+
+import festim as F
+import ufl
+from dolfinx import fem
+from dolfinx.mesh import meshtags
 
 
 def test_surface_flux_export_compute():

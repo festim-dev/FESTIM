@@ -1,9 +1,8 @@
-import festim as F
 import numpy as np
-from dolfinx import fem
+
+import festim as F
 import ufl
-from dolfinx.mesh import meshtags
-import pytest
+from dolfinx import fem
 
 
 def test_average_surface_compute_1D():

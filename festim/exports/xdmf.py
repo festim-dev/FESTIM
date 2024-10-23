@@ -1,7 +1,10 @@
-import mpi4py
-from dolfinx.io import XDMFFile
 from pathlib import Path
+
+import mpi4py
+
+from dolfinx.io import XDMFFile
 from festim.species import Species as _Species
+
 from .vtx import ExportBaseClass
 
 

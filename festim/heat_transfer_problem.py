@@ -1,8 +1,8 @@
+import basix
+import festim as F
+import ufl
 from dolfinx import fem
 from dolfinx.io import VTXWriter
-import basix
-import ufl
-import festim as F
 
 
 class HeatTransferProblem(F.ProblemBase):

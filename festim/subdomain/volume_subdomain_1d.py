@@ -1,6 +1,7 @@
-from dolfinx.mesh import locate_entities
 import numpy as np
+
 import festim as F
+from dolfinx.mesh import locate_entities
 
 
 class VolumeSubdomain1D(F.VolumeSubdomain):

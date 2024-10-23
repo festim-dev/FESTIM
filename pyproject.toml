@@ -1,10 +1,42 @@
 [build-system]
-requires = [
-    "setuptools >= 45",
-    "wheel",
-    "setuptools_scm[toml] >= 7.0.5"
-]
+requires = ["setuptools >= 45", "wheel", "setuptools_scm[toml] >= 7.0.5"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
 write_to = "festim/_version.py"
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle
+    "W",      # pycodestyle
+    "F",      # pyflakes
+    "I",      # isort - use standalone isort
+    "RUF",    # Ruff-specific rules
+    "UP",     # pyupgrade
+    "ICN",    # flake8-import-conventions
+    "NPY",    # numpy-specific rules
+    "FLY",    # use f-string not static joins
+    "NPY201", # numpy 2.x ruleset
+]
+ignore = ["UP007", "RUF012"]
+allowed-confusables = ["σ"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["festim", "basix", "dolfinx", "ffcx", "ufl"]
+known-third-party = ["gmsh", "numba", "numpy", "pytest", "pyvista", "pyamg"]
+section-order = [
+    "future",
+    "standard-library",
+    "mpi",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+"mpi" = ["mpi4py", "petsc4py"]

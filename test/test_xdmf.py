@@ -1,10 +1,13 @@
-import festim as F
-from dolfinx import fem, mesh
-import mpi4py.MPI as MPI
 import os
+from pathlib import Path
+
+import mpi4py.MPI as MPI
+
 import numpy as np
 import pytest
-from pathlib import Path
+
+import festim as F
+from dolfinx import fem, mesh
 
 
 def test_init():

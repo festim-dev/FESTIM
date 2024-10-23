@@ -1,7 +1,7 @@
-import festim as F
 import numpy as np
+
+import festim as F
 import ufl
-from dolfinx.mesh import meshtags
 from dolfinx import fem
 
 

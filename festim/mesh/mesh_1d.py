@@ -1,9 +1,11 @@
-import dolfinx.mesh
 from mpi4py import MPI
-import basix.ufl
-import ufl
+
 import numpy as np
+
+import basix.ufl
+import dolfinx.mesh
 import festim as F
+import ufl
 
 
 class Mesh1D(F.Mesh):

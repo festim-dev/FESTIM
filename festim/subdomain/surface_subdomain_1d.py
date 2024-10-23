@@ -1,5 +1,6 @@
-import dolfinx.mesh
 import numpy as np
+
+import dolfinx.mesh
 import festim as F
 
 

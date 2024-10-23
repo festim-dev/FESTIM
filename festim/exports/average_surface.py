@@ -1,6 +1,5 @@
 import festim as F
 from dolfinx import fem
-import numpy as np
 
 
 class AverageSurface(F.SurfaceQuantity):

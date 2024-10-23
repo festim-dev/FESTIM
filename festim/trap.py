@@ -1,5 +1,6 @@
-from festim.species import Species as _Species, ImplicitSpecies as _ImplicitSpecies
 from festim.reaction import Reaction as _Reaction
+from festim.species import ImplicitSpecies as _ImplicitSpecies
+from festim.species import Species as _Species
 
 
 class Trap(_Species):
