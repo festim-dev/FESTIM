@@ -8,7 +8,7 @@ class VolumeQuantity:
 
     Args:
         field (festim.Species): species for which the volume quantity is computed
-        surface (festim.VolumeSubdomain): volume subdomain
+        volume (festim.VolumeSubdomain): volume subdomain
         filename (str, optional): name of the file to which the volume quantity is exported
 
     Attributes:
