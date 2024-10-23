@@ -170,12 +170,12 @@ class Material:
             raise ValueError("D_0 and E_D must be either floats or dicts")
 
     def get_solubility_coefficient(self, mesh, temperature, species=None):
-        """Defines the diffusion coefficient
+        """Defines the solubility coefficient
         Args:
 
             mesh (dolfinx.mesh.Mesh): the domain mesh
             temperature (dolfinx.fem.Constant): the temperature
-            species (festim.Species, optional): the species we want the diffusion
+            species (festim.Species, optional): the species we want the solubility
                 coefficient of. Only needed if K_S_0 and E_K_S are dicts.
         Returns:
             ufl.algebra.Product: the solubility coefficient
