@@ -23,7 +23,6 @@ from ufl import (
     FacetNormal,
     Cell,
     Mesh,
-    VectorElement,
     Measure,
 )
 import basix
@@ -38,8 +37,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     L = 3e-04
     indices = np.linspace(0, L, num=mesh_size)
     gdim, shape, degree = 1, "interval", 1
-    cell = Cell(shape, geometric_dimension=gdim)
-    domain = Mesh(VectorElement("Lagrange", cell, degree))
+    domain = Mesh(basix.ufl.element("Lagrange", shape, degree, shape=(gdim,)))
     mesh_points = np.reshape(indices, (len(indices), 1))
     indexes = np.arange(mesh_points.shape[0])
     cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
