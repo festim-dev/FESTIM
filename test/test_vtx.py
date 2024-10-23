@@ -42,7 +42,7 @@ def test_vtx_export_two_functions(tmpdir):
 
 @pytest.mark.skip(reason="Not implemented")
 def test_vtx_export_subdomain():
-    """Test that given multiple subdomains in problem, 
+    """Test that given multiple subdomains in problem,
     only correct functions are extracted from species"""
     pass
 

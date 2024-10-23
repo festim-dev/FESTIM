@@ -35,8 +35,7 @@ class HeatTransferProblem(F.ProblemBase):
     @sources.setter
     def sources(self, value):
         if not all(isinstance(source, F.HeatSource) for source in value):
-            raise TypeError(
-                "sources must be a list of festim.HeatSource objects")
+            raise TypeError("sources must be a list of festim.HeatSource objects")
         self._sources = value
 
     @property
@@ -199,16 +198,14 @@ class HeatTransferProblem(F.ProblemBase):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics * self.test_function *
-                self.dx(source.volume.id)
+                source.value_fenics * self.test_function * self.dx(source.volume.id)
             )
 
         # add fluxes
         for bc in self.boundary_conditions:
             if isinstance(bc, F.HeatFluxBC):
                 self.formulation -= (
-                    bc.value_fenics * self.test_function *
-                    self.ds(bc.subdomain.id)
+                    bc.value_fenics * self.test_function * self.ds(bc.subdomain.id)
                 )
 
     def initialise_exports(self):
@@ -221,9 +218,12 @@ class HeatTransferProblem(F.ProblemBase):
                     "XDMF export is not implemented yet for heat transfer problems"
                 )
             if isinstance(export, F.VTXTemperatureExport):
-                self._vtxfile = VTXWriter(self.u.function_space.mesh.comm,
-                                          export.filename, [self.u],
-                                          engine="BP5")
+                self._vtxfile = VTXWriter(
+                    self.u.function_space.mesh.comm,
+                    export.filename,
+                    [self.u],
+                    engine="BP5",
+                )
 
     def post_processing(self):
         """Post processes the model"""

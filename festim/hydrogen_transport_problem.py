@@ -122,7 +122,6 @@ class HydrogenTransportProblem(F.ProblemBase):
         sources=None,
         initial_conditions=None,
         boundary_conditions=None,
-
         settings=None,
         exports=None,
         traps=None,
@@ -346,8 +345,14 @@ class HydrogenTransportProblem(F.ProblemBase):
                 export.define_writer(MPI.COMM_WORLD)
             if isinstance(export, F.VTXSpeciesExport):
                 functions = export.get_functions()
-                self._vtxfiles.append(dolfinx.io.VTXWriter(functions[0].function_space.mesh.comm,
-                                                           export.filename, functions, engine="BP5"))
+                self._vtxfiles.append(
+                    dolfinx.io.VTXWriter(
+                        functions[0].function_space.mesh.comm,
+                        export.filename,
+                        functions,
+                        engine="BP5",
+                    )
+                )
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
@@ -1173,11 +1178,16 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for export in self.exports:
             if isinstance(export, F.VTXSpeciesExport):
                 functions = export.get_functions()
-                self._vtxfiles.append(dolfinx.io.VTXWriter(functions[0].function_space.mesh.comm,
-                                                           export.filename, functions, engine="BP5"))
+                self._vtxfiles.append(
+                    dolfinx.io.VTXWriter(
+                        functions[0].function_space.mesh.comm,
+                        export.filename,
+                        functions,
+                        engine="BP5",
+                    )
+                )
             else:
-                raise NotImplementedError(
-                    f"Export type {type(export)} not implemented")
+                raise NotImplementedError(f"Export type {type(export)} not implemented")
 
     def post_processing(self):
         # update post-processing solutions (for each species in each subdomain)
@@ -1198,8 +1208,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for export in self.exports:
             if not isinstance(export, F.VTXSpeciesExport):
-                raise NotImplementedError(
-                    f"Export type {type(export)} not implemented")
+                raise NotImplementedError(f"Export type {type(export)} not implemented")
 
     def iterate(self):
         """Iterates the model for a given time step"""

@@ -24,8 +24,7 @@ def relative_error_computed_to_analytical(
     computed_flux = computed_flux[indices]
 
     # evaulate relative error compared to analytical solution
-    relative_error = np.abs(
-        (computed_flux - analytical_flux) / analytical_flux)
+    relative_error = np.abs((computed_flux - analytical_flux) / analytical_flux)
     error = relative_error.mean()
 
     return error
@@ -129,15 +128,12 @@ def test_permeation_problem_multi_volume(tmp_path):
     my_model.mesh = my_mesh
 
     my_mat = F.Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
-    my_subdomain_1 = F.VolumeSubdomain1D(
-        id=1, borders=[0, L / 4], material=my_mat)
-    my_subdomain_2 = F.VolumeSubdomain1D(
-        id=2, borders=[L / 4, L / 2], material=my_mat)
+    my_subdomain_1 = F.VolumeSubdomain1D(id=1, borders=[0, L / 4], material=my_mat)
+    my_subdomain_2 = F.VolumeSubdomain1D(id=2, borders=[L / 4, L / 2], material=my_mat)
     my_subdomain_3 = F.VolumeSubdomain1D(
         id=3, borders=[L / 2, 3 * L / 4], material=my_mat
     )
-    my_subdomain_4 = F.VolumeSubdomain1D(
-        id=4, borders=[3 * L / 4, L], material=my_mat)
+    my_subdomain_4 = F.VolumeSubdomain1D(id=4, borders=[3 * L / 4, L], material=my_mat)
     left_surface = F.SurfaceSubdomain1D(id=1, x=0)
     right_surface = F.SurfaceSubdomain1D(id=2, x=L)
     my_model.subdomains = [

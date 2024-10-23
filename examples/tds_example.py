@@ -97,8 +97,7 @@ def left_conc_value(t):
 
 
 my_model.boundary_conditions = [
-    F.DirichletBC(subdomain=left_surface,
-                  value=left_conc_value, species=mobile_H),
+    F.DirichletBC(subdomain=left_surface, value=left_conc_value, species=mobile_H),
     F.DirichletBC(subdomain=right_surface, value=0, species=mobile_H),
 ]
 
@@ -119,8 +118,7 @@ my_model.exports = [
 
 # -------- Settings --------- #
 
-my_model.settings = F.Settings(
-    atol=1e10, rtol=1e-10, max_iterations=30, final_time=500)
+my_model.settings = F.Settings(atol=1e10, rtol=1e-10, max_iterations=30, final_time=500)
 
 my_model.settings.stepsize = F.Stepsize(initial_value=0.5)
 

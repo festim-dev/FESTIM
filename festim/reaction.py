@@ -47,8 +47,7 @@ class Reaction:
 
     def __init__(
         self,
-        reactant:
-            _Species | _ImplicitSpecies | list[_Species | _ImplicitSpecies],
+        reactant: _Species | _ImplicitSpecies | list[_Species | _ImplicitSpecies],
         k_0: float,
         E_k: float,
         volume: VS1D,

@@ -5,14 +5,15 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain as _VolumeSubdomai
 import warnings
 
 
-class ExportBaseClass():
+class ExportBaseClass:
     _filename: Path | str
 
     def __init__(self, filename: str | Path, ext: str) -> None:
         name = Path(filename)
         if name.suffix != ext:
             warnings.warn(
-                f"Filename {filename} does not have {ext} extension, adding it.")
+                f"Filename {filename} does not have {ext} extension, adding it."
+            )
             name = name.with_suffix(ext)
 
         self._filename = Path(filename)
@@ -23,8 +24,7 @@ class ExportBaseClass():
 
 
 class VTXTemperatureExport(ExportBaseClass):
-    def __init__(
-            self, filename: str | Path):
+    def __init__(self, filename: str | Path):
         super().__init__(filename, ".bp")
 
 
@@ -44,9 +44,10 @@ class VTXSpeciesExport(ExportBaseClass):
     _subdomain: _VolumeSubdomain
 
     def __init__(
-        self, filename: str | Path,
+        self,
+        filename: str | Path,
         field: _Species | list[_Species],
-        subdomain: _VolumeSubdomain = None
+        subdomain: _VolumeSubdomain = None,
     ) -> None:
         super().__init__(filename, ".bp")
         self.field = field
@@ -83,7 +84,7 @@ class VTXSpeciesExport(ExportBaseClass):
         else:
             raise TypeError(
                 "field must be of type festim.Species or a list of festim.Species or str",
-                f"got {type(value)}."
+                f"got {type(value)}.",
             )
         self._field = val
 
@@ -112,5 +113,6 @@ class VTXSpeciesExport(ExportBaseClass):
                 for field in self._field:
                     if self._subdomain in field.subdomains:
                         outfiles.append(
-                            field.subdomain_to_post_processing_solution[self._subdomain])
+                            field.subdomain_to_post_processing_solution[self._subdomain]
+                        )
                 return outfiles

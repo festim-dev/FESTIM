@@ -58,20 +58,27 @@ def error_L2(u_computed, u_exact, degree_raise=3):
 
 
 def run(N):
-    def exact_solution(x, t): return 2 * x[0] ** 2 + 20 * t
+    def exact_solution(x, t):
+        return 2 * x[0] ** 2 + 20 * t
 
-    def density(T): return 0.2 * T + 2
-    def heat_capacity(T): return 0.2 * T + 3
-    def thermal_conductivity(T): return 0.1 * T + 4
+    def density(T):
+        return 0.2 * T + 2
+
+    def heat_capacity(T):
+        return 0.2 * T + 3
+
+    def thermal_conductivity(T):
+        return 0.1 * T + 4
 
     mms_source_from_sp = source_from_exact_solution(
         exact_solution,
         density=lambda x, t: density(exact_solution(x, t)),
         heat_capacity=lambda x, t: heat_capacity(exact_solution(x, t)),
-        thermal_conductivity=lambda x, t: thermal_conductivity(
-            exact_solution(x, t)),
+        thermal_conductivity=lambda x, t: thermal_conductivity(exact_solution(x, t)),
     )
-    def mms_source(x, t): return mms_source_from_sp((x[0], None, None), t)
+
+    def mms_source(x, t):
+        return mms_source_from_sp((x[0], None, None), t)
 
     my_problem = F.HeatTransferProblem()
 
@@ -89,8 +96,7 @@ def run(N):
     ]
 
     # NOTE: it's good to check that without the IC the solution is not the exact one
-    my_problem.initial_condition = F.InitialTemperature(
-        lambda x: exact_solution(x, 0))
+    my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
 
     my_problem.boundary_conditions = [
         F.FixedTemperatureBC(subdomain=left, value=exact_solution),
@@ -123,7 +129,9 @@ def run(N):
         my_problem.t.value
     )  # we use the exact final time of the simulation which may differ from the one specified in the settings
 
-    def exact_solution_end(x): return exact_solution(x, final_time_sim)
+    def exact_solution_end(x):
+        return exact_solution(x, final_time_sim)
+
     L2_error = error_L2(computed_solution, exact_solution_end)
     return L2_error
 

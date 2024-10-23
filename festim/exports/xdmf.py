@@ -38,8 +38,9 @@ class XDMFExport(ExportBaseClass):
         if isinstance(value, list):
             for element in value:
                 if not isinstance(element, _Species):
-                    raise TypeError(f"Each element in the list must be a species, got {type(element)}."
-                                    )
+                    raise TypeError(
+                        f"Each element in the list must be a species, got {type(element)}."
+                    )
             val = value
         elif isinstance(value, _Species):
             val = [value]

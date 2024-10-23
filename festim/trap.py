@@ -93,8 +93,7 @@ class Trap(_Species):
     def create_species_and_reaction(self):
         """create the immobile trapped species object and the reaction for trapping"""
         self.trapped_concentration = _Species(name=self.name, mobile=False)
-        trap_site = _ImplicitSpecies(
-            n=self.n, others=[self.trapped_concentration])
+        trap_site = _ImplicitSpecies(n=self.n, others=[self.trapped_concentration])
 
         self.reaction = _Reaction(
             reactant=[self.mobile_species, trap_site],

@@ -19,6 +19,7 @@ class ProblemBase:
         simulation
     progress_bar (tqdm.autonotebook.tqdm) the progress bar
     """
+
     mesh: _Mesh
     sources: list[_SourceBase]
     exports: list[Any]
