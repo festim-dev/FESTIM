@@ -143,7 +143,8 @@ class NewtonSolver:
                     * s.function_space.dofmap.index_map_bs
                 )
                 s.x.petsc_vec.array_w[:num_sub_dofs] -= (
-                    beta * self.dx.array_r[offset_start : offset_start + num_sub_dofs]
+                    beta *
+                    self.dx.array_r[offset_start: offset_start + num_sub_dofs]
                 )
                 s.x.petsc_vec.ghostUpdate(
                     addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD
@@ -189,7 +190,8 @@ def transfer_meshtags_to_submesh(
     )
     submesh.topology.create_connectivity(submesh.topology.dim, entity_tag.dim)
 
-    c_c_to_e = submesh.topology.connectivity(submesh.topology.dim, entity_tag.dim)
+    c_c_to_e = submesh.topology.connectivity(
+        submesh.topology.dim, entity_tag.dim)
     c_e_to_v = submesh.topology.connectivity(entity_tag.dim, 0)
 
     child_markers = np.full(num_child_entities, 0, dtype=np.int32)
@@ -255,7 +257,8 @@ def generate_mesh():
     vertices = np.sort(np.unique(vertices)).astype(float)
     degree = 1
     domain = ufl.Mesh(
-        basix.ufl.element(basix.ElementFamily.P, "interval", degree, shape=(1,))
+        basix.ufl.element(basix.ElementFamily.P,
+                          "interval", degree, shape=(1,))
     )
     mesh_points = np.reshape(vertices, (len(vertices), 1))
     indexes = np.arange(vertices.shape[0])
@@ -266,8 +269,10 @@ def generate_mesh():
     # Split domain in half and set an interface tag of 5
     tdim = mesh.topology.dim
     fdim = tdim - 1
-    left_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, left_boundary)
-    right_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, right_boundary)
+    left_facets = dolfinx.mesh.locate_entities_boundary(
+        mesh, fdim, left_boundary)
+    right_facets = dolfinx.mesh.locate_entities_boundary(
+        mesh, fdim, right_boundary)
     num_facets_local = (
         mesh.topology.index_map(fdim).size_local
         + mesh.topology.index_map(fdim).num_ghosts
@@ -389,7 +394,8 @@ gdim = mesh.geometry.dim
 tdim = mesh.topology.dim
 fdim = tdim - 1
 num_cells_local = (
-    mesh.topology.index_map(tdim).size_local + mesh.topology.index_map(tdim).num_ghosts
+    mesh.topology.index_map(tdim).size_local +
+    mesh.topology.index_map(tdim).num_ghosts
 )
 
 
@@ -451,7 +457,8 @@ def compute_mapped_interior_facet_data(interface: Interface):
     Returns
         integration_data: Integration data for interior facets
     """
-    assert (not interface.subdomains[0].padded) and (not interface.subdomains[1].padded)
+    assert (not interface.subdomains[0].padded) and (
+        not interface.subdomains[1].padded)
     mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
     integration_data = compute_integration_domains(
         dolfinx.fem.IntegralType.interior_facet,
@@ -623,7 +630,7 @@ solver.solve(1e-5)
 
 
 # # derived quantities
-# V = dolfinx.fem.functionspace(mesh, ("CG", 1))
+# V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
 # T = dolfinx.fem.Function(V)
 # T.interpolate(lambda x: 200 + x[1])
 

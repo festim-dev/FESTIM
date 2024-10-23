@@ -14,14 +14,15 @@ def test_average_volume_compute_1D():
     # BUILD
     L = 6.0
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
-    dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_mat)
+    dummy_volume = F.VolumeSubdomain1D(
+        id=1, borders=[0, L], material=dummy_mat)
     temp, cell_meshtags = my_mesh.define_meshtags(
         surface_subdomains=[], volume_subdomains=[dummy_volume]
     )
     dx = ufl.Measure("dx", domain=my_mesh.mesh, subdomain_data=cell_meshtags)
 
     # give function to species
-    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: x[0] * 0.5 + 2)
 

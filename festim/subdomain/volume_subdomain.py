@@ -42,7 +42,8 @@ class VolumeSubdomain:
         """
         # By default, all entities are included
         # return array like x full of True
-        entities = locate_entities(mesh, vdim, lambda x: np.full(x.shape[1], True))
+        entities = locate_entities(
+            mesh, vdim, lambda x: np.full(x.shape[1], True))
         return entities
 
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):

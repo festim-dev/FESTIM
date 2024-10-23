@@ -15,10 +15,12 @@ class XDMFExport:
         writer (dolfinx.io.XDMFFile): the XDMF writer
         field (festim.Species, list of festim.Species): the field index to export
     """
+    _mesh_written: bool
 
     def __init__(self, filename: str, field) -> None:
         self.filename = filename
         self.field = field
+        self._mesh_written = False
 
     @property
     def filename(self):
@@ -70,5 +72,10 @@ class XDMFExport:
         Args:
             t (float): the time of export
         """
+        if not self._mesh_written:
+            self.writer.write_mesh(
+                self.field[0].post_processing_solution.function_space.mesh)
+            self._mesh_written = True
+
         for field in self.field:
             self.writer.write_function(field.post_processing_solution, t)

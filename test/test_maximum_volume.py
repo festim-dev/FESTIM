@@ -12,11 +12,12 @@ def test_maximum_volume_compute_1D():
     L = 6
     dummy_material = F.Material(D_0=1.5, E_D=1, name="dummy")
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
-    dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_material)
+    dummy_volume = F.VolumeSubdomain1D(
+        id=1, borders=[0, L], material=dummy_material)
     dummy_volume.locate_subdomain_entities(mesh=my_mesh.mesh, vdim=0)
 
     # give function to species
-    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: (x[0] - 1) ** 2 + 2)
 

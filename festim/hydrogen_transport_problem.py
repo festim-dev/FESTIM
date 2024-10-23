@@ -6,7 +6,7 @@ from mpi4py import MPI
 import numpy as np
 import tqdm.autonotebook
 import festim as F
-from festim.helpers_discontinuity import NewtonSolver
+from scifem import NewtonSolver
 
 
 class HydrogenTransportProblem(F.ProblemBase):
@@ -182,7 +182,8 @@ class HydrogenTransportProblem(F.ProblemBase):
         for spe in value:
             if not isinstance(spe, F.Species):
                 raise TypeError(
-                    f"elements of species must be of type festim.Species not {type(spe)}"
+                    f"elements of species must be of type festim.Species not {
+                        type(spe)}"
                 )
         self._species = value
 
@@ -270,11 +271,13 @@ class HydrogenTransportProblem(F.ProblemBase):
             if "t" in arguments and "x" not in arguments:
                 if not isinstance(self.temperature(t=float(self.t)), (float, int)):
                     raise ValueError(
-                        f"self.temperature should return a float or an int, not {type(self.temperature(t=float(self.t)))} "
+                        f"self.temperature should return a float or an int, not {
+                            type(self.temperature(t=float(self.t)))} "
                     )
                 # only t is an argument
                 self.temperature_fenics = F.as_fenics_constant(
-                    mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
+                    mesh=self.mesh.mesh, value=self.temperature(
+                        t=float(self.t))
                 )
             else:
                 x = ufl.SpatialCoordinate(self.mesh.mesh)
@@ -288,7 +291,8 @@ class HydrogenTransportProblem(F.ProblemBase):
                 function_space_temperature = fem.functionspace(
                     self.mesh.mesh, element_temperature
                 )
-                self.temperature_fenics = fem.Function(function_space_temperature)
+                self.temperature_fenics = fem.Function(
+                    function_space_temperature)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = self.t
@@ -316,12 +320,11 @@ class HydrogenTransportProblem(F.ProblemBase):
                             field, self.species
                         )
             elif isinstance(export.field, str):
-                export.field = F.find_species_from_name(export.field, self.species)
+                export.field = F.find_species_from_name(
+                    export.field, self.species)
 
             if isinstance(export, (F.VTXExport, F.XDMFExport)):
                 export.define_writer(MPI.COMM_WORLD)
-                if isinstance(export, F.XDMFExport):
-                    export.writer.write_mesh(self.mesh.mesh)
 
         # compute diffusivity function for surface fluxes
 
@@ -360,7 +363,8 @@ class HydrogenTransportProblem(F.ProblemBase):
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
-            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+            cell_indices = vol.locate_subdomain_entities(
+                self.mesh.mesh, self.mesh.vdim)
 
             # replace values of D_0 and E_D by values from the material
             D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
@@ -370,9 +374,11 @@ class HydrogenTransportProblem(F.ProblemBase):
         D = fem.Function(self.V_DG_1)
 
         expr = D_0 * ufl.exp(
-            -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature_fenics
+            -E_D / F.as_fenics_constant(F.k_B,
+                                        self.mesh.mesh) / self.temperature_fenics
         )
-        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+        D_expr = fem.Expression(
+            expr, self.V_DG_1.element.interpolation_points())
         D.interpolate(D_expr)
         return D, D_expr
 
@@ -565,7 +571,8 @@ class HydrogenTransportProblem(F.ProblemBase):
 
             # assign to previous solution of species
             if not self.multispecies:
-                condition.species.prev_solution.interpolate(condition.expr_fenics)
+                condition.species.prev_solution.interpolate(
+                    condition.expr_fenics)
             else:
                 idx = self.species.index(condition.species)
                 self.u_n.sub(idx).interpolate(condition.expr_fenics)
@@ -591,7 +598,8 @@ class HydrogenTransportProblem(F.ProblemBase):
                     )
 
                 if self.settings.transient:
-                    self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
+                    self.formulation += ((u - u_n) / self.dt) * \
+                        v * self.dx(vol.id)
 
         for reaction in self.reactions:
             for reactant in reaction.reactant:
@@ -1035,7 +1043,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             for interface in self.interfaces
         ]
         [interface.pad_parent_maps() for interface in self.interfaces]
-        dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
+        dInterface = ufl.Measure(
+            "dS", domain=mesh, subdomain_data=integral_data)
 
         def mixed_term(u, v, n):
             return ufl.dot(ufl.grad(u), n) * v
@@ -1058,7 +1067,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
             all_mobile_species = [spe for spe in self.species if spe.mobile]
             if len(all_mobile_species) > 1:
-                raise NotImplementedError("Multiple mobile species not implemented")
+                raise NotImplementedError(
+                    "Multiple mobile species not implemented")
             H = all_mobile_species[0]
 
             v_b = H.subdomain_to_test_function[subdomain_1](b_res)
@@ -1117,7 +1127,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 )
             J.append(jac)
-            forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
+            forms.append(dolfinx.fem.form(
+                subdomain1.F, entity_maps=entity_maps))
 
         self.forms = forms
         self.J = J
