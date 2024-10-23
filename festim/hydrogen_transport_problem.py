@@ -107,19 +107,21 @@ class HydrogenTransportProblem(F.ProblemBase):
         subdomains: list[F.VolumeSubdomain | F.SurfaceSubdomain] | None = None,
         species: list[F.Species] | None = None,
         reactions: list[F.Reaction] | None = None,
-        temperature: float
-        | int
-        | fem.Constant
-        | fem.Function
-        | Callable[
-            [npt.NDArray[dolfinx.default_scalar_type]],
-            npt.NDArray[dolfinx.default_scalar_type],
-        ]
-        | Callable[
-            [npt.NDArray[dolfinx.default_scalar_type], fem.Constant],
-            npt.NDArray[dolfinx.default_scalar_type],
-        ]
-        | None = None,
+        temperature: (
+            float
+            | int
+            | fem.Constant
+            | fem.Function
+            | Callable[
+                [npt.NDArray[dolfinx.default_scalar_type]],
+                npt.NDArray[dolfinx.default_scalar_type],
+            ]
+            | Callable[
+                [npt.NDArray[dolfinx.default_scalar_type], fem.Constant],
+                npt.NDArray[dolfinx.default_scalar_type],
+            ]
+            | None
+        ) = None,
         sources=None,
         initial_conditions=None,
         boundary_conditions=None,
@@ -957,9 +959,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_collapsed_function_space[subdomain] = V.sub(
                 i
             ).collapse()
-            species.subdomain_to_post_processing_solution[
-                subdomain
-            ].name = f"{species.name}_{subdomain.id}"
+            species.subdomain_to_post_processing_solution[subdomain].name = (
+                f"{species.name}_{subdomain.id}"
+            )
 
     def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
         """

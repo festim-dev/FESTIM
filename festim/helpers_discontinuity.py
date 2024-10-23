@@ -26,8 +26,7 @@ def transfer_meshtags_to_submesh(
     )
     submesh.topology.create_connectivity(submesh.topology.dim, entity_tag.dim)
 
-    c_c_to_e = submesh.topology.connectivity(
-        submesh.topology.dim, entity_tag.dim)
+    c_c_to_e = submesh.topology.connectivity(submesh.topology.dim, entity_tag.dim)
     c_e_to_v = submesh.topology.connectivity(entity_tag.dim, 0)
 
     child_markers = np.full(num_child_entities, 0, dtype=np.int32)
