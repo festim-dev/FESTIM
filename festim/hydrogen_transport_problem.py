@@ -1052,7 +1052,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain_0, subdomain_1 = interface.subdomains
             res = interface.restriction
             n_0 = n(res[0])
-            n_1 = n(res[1])
             h_0 = 2 * cr(res[0])
             h_1 = 2 * cr(res[1])
 
