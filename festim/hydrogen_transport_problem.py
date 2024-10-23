@@ -7,6 +7,8 @@ import numpy as np
 import tqdm.autonotebook
 import festim as F
 from scifem import NewtonSolver
+from typing import Callable
+import numpy.typing as npt
 
 
 class HydrogenTransportProblem(F.ProblemBase):
@@ -14,12 +16,11 @@ class HydrogenTransportProblem(F.ProblemBase):
     Hydrogen Transport Problem.
 
     Args:
-        mesh (festim.Mesh): the mesh of the model
-        subdomains (list of festim.Subdomain): the subdomains of the model
-        species (list of festim.Species): the species of the model
-        reactions (list of festim.Reaction): the reactions of the model
-        temperature (float, int, fem.Constant, fem.Function or callable): the
-            temperature of the model (K)
+        mesh: The mesh
+        subdomains: List containing the subdomains
+        species: List containing the species
+        reactions: List containing the reactions
+        temperature: The temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
         initial_conditions (list of festim.InitialCondition): the initial conditions
             of the model
@@ -30,12 +31,11 @@ class HydrogenTransportProblem(F.ProblemBase):
         traps (list of F.Trap): the traps of the model
 
     Attributes:
-        mesh (festim.Mesh): the mesh of the model
-        subdomains (list of festim.Subdomain): the subdomains of the model
-        species (list of festim.Species): the species of the model
-        reactions (list of festim.Reaction): the reactions of the model
-        temperature (float, int, fem.Constant, fem.Function or callable): the
-            temperature of the model (K)
+        mesh : The mesh of the model
+        subdomains: The subdomains of the model
+        species: The species of the model
+        reactions: the reactions of the model
+        temperature: The temperature of the model (K)
         sources (list of festim.Source): the hydrogen sources of the model
         initial_conditions (list of festim.InitialCondition): the initial conditions
             of the model
@@ -71,35 +71,55 @@ class HydrogenTransportProblem(F.ProblemBase):
             of the model
 
 
-    Usage:
-        >>> import festim as F
-        >>> my_model = F.HydrogenTransportProblem()
-        >>> my_model.mesh = F.Mesh(...)
-        >>> my_model.subdomains = [F.Subdomain(...)]
-        >>> my_model.species = [F.Species(name="H"), F.Species(name="Trap")]
-        >>> my_model.temperature = 500
-        >>> my_model.sources = [F.ParticleSource(...)]
-        >>> my_model.boundary_conditions = [F.BoundaryCondition(...)]
-        >>> my_model.initialise()
+    Examples:
+        Can be used as either
+
+        .. highlight:: python
+        .. code-block:: python
+
+            import festim as F
+            my_model = F.HydrogenTransportProblem()
+            my_model.mesh = F.Mesh(...)
+            my_model.subdomains = [F.Subdomain(...)]
+            my_model.species = [F.Species(name="H"), F.Species(name="Trap")]
+            my_model.temperature = 500
+            my_model.sources = [F.ParticleSource(...)]
+            my_model.boundary_conditions = [F.BoundaryCondition(...)]
+            my_model.initialise()
 
         or
 
-        >>> my_model = F.HydrogenTransportProblem(
-        ...     mesh=F.Mesh(...),
-        ...     subdomains=[F.Subdomain(...)],
-        ...     species=[F.Species(name="H"), F.Species(name="Trap")],
-        ... )
-        >>> my_model.initialise()
+        .. highlight:: python
+        .. code-block:: python
+
+            my_model = F.HydrogenTransportProblem(
+                mesh=F.Mesh(...),
+                subdomains=[F.Subdomain(...)],
+                species=[F.Species(name="H"), F.Species(name="Trap")],
+            )
+            my_model.initialise()
 
     """
 
     def __init__(
         self,
-        mesh=None,
-        subdomains=None,
-        species=None,
-        reactions=None,
-        temperature=None,
+        mesh: F.Mesh | None = None,
+        subdomains: list[F.VolumeSubdomain | F.SurfaceSubdomain] | None = None,
+        species: list[F.Species] | None = None,
+        reactions: list[F.Reaction] | None = None,
+        temperature: float
+        | int
+        | fem.Constant
+        | fem.Function
+        | Callable[
+            [npt.NDArray[dolfinx.default_scalar_type]],
+            npt.NDArray[dolfinx.default_scalar_type],
+        ]
+        | Callable[
+            [npt.NDArray[dolfinx.default_scalar_type], fem.Constant],
+            npt.NDArray[dolfinx.default_scalar_type],
+        ]
+        | None = None,
         sources=None,
         initial_conditions=None,
         boundary_conditions=None,
@@ -137,7 +157,7 @@ class HydrogenTransportProblem(F.ProblemBase):
             self._temperature = value
         else:
             raise TypeError(
-                f"Value must be a float, int, fem.Constant, fem.Function, or callable"
+                "Value must be a float, int, fem.Constant, fem.Function, or callable"
             )
 
     @property
@@ -153,7 +173,7 @@ class HydrogenTransportProblem(F.ProblemBase):
             value,
             (fem.Constant, fem.Function),
         ):
-            raise TypeError(f"Value must be a fem.Constant or fem.Function")
+            raise TypeError("Value must be a fem.Constant or fem.Function")
         self._temperature_fenics = value
 
     @property
@@ -198,7 +218,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         elif isinstance(value, dolfinx.mesh.MeshTags):
             self._facet_meshtags = value
         else:
-            raise TypeError(f"value must be of type dolfinx.mesh.MeshTags")
+            raise TypeError("value must be of type dolfinx.mesh.MeshTags")
 
     @property
     def volume_meshtags(self):
@@ -211,7 +231,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         elif isinstance(value, dolfinx.mesh.MeshTags):
             self._volume_meshtags = value
         else:
-            raise TypeError(f"value must be of type dolfinx.mesh.MeshTags")
+            raise TypeError("value must be of type dolfinx.mesh.MeshTags")
 
     def initialise(self):
         self.create_species_from_traps()
@@ -945,9 +965,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_collapsed_function_space[subdomain] = V.sub(
                 i
             ).collapse()
-            species.subdomain_to_post_processing_solution[subdomain].name = (
-                f"{species.name}_{subdomain.id}"
-            )
+            species.subdomain_to_post_processing_solution[
+                subdomain
+            ].name = f"{species.name}_{subdomain.id}"
 
     def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
         """
