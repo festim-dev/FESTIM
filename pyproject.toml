@@ -28,7 +28,7 @@ classifiers = [
 
 [project.optional-dependencies]
 test = ["pytest >= 5.4.3", "pytest-cov", "sympy"]
-lint = ["ruff"]
+lint = ["ruff", "mypy"]
 docs = ["sphinx"]
 
 [project.urls]
