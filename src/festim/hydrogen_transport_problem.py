@@ -1106,46 +1106,45 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for interface in self.interfaces:
             gamma = interface.penalty_term
 
-            subdomain_1, subdomain_2 = interface.subdomains
-            b_res, t_res = interface.restriction
-            n_b = n(b_res)
-            n_t = n(t_res)
-            h_b = 2 * cr(b_res)
-            h_t = 2 * cr(t_res)
+            subdomain_0, subdomain_1 = interface.subdomains
+            res = interface.restriction
+            n_0 = n(res[0])
+            h_0 = 2 * cr(res[0])
+            h_1 = 2 * cr(res[1])
 
             all_mobile_species = [spe for spe in self.species if spe.mobile]
             if len(all_mobile_species) > 1:
                 raise NotImplementedError("Multiple mobile species not implemented")
             H = all_mobile_species[0]
 
-            v_b = H.subdomain_to_test_function[subdomain_1](b_res)
-            v_t = H.subdomain_to_test_function[subdomain_2](t_res)
+            v_b = H.subdomain_to_test_function[subdomain_0](res[0])
+            v_t = H.subdomain_to_test_function[subdomain_1](res[1])
 
-            u_b = H.subdomain_to_solution[subdomain_1](b_res)
-            u_t = H.subdomain_to_solution[subdomain_2](t_res)
+            u_b = H.subdomain_to_solution[subdomain_0](res[0])
+            u_t = H.subdomain_to_solution[subdomain_1](res[1])
 
-            K_b = subdomain_1.material.get_solubility_coefficient(
-                self.mesh.mesh, self.temperature_fenics(b_res), H
+            K_b = subdomain_0.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(res[0]), H
             )
-            K_t = subdomain_2.material.get_solubility_coefficient(
-                self.mesh.mesh, self.temperature_fenics(t_res), H
-            )
-
-            F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_b) * dInterface(
-                interface.id
-            ) - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_b) * dInterface(
-                interface.id
+            K_t = subdomain_1.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(res[1]), H
             )
 
-            F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_b) * dInterface(
+            F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
                 interface.id
-            ) - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_b) * dInterface(
+            ) - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_0) * dInterface(
+                interface.id
+            )
+
+            F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
+                interface.id
+            ) - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_0) * dInterface(
                 interface.id
             )
             F_0 += (
                 2
                 * gamma
-                / (h_b + h_t)
+                / (h_0 + h_1)
                 * (u_b / K_b - u_t / K_t)
                 * v_b
                 * dInterface(interface.id)
@@ -1153,14 +1152,14 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             F_1 += (
                 -2
                 * gamma
-                / (h_b + h_t)
+                / (h_0 + h_1)
                 * (u_b / K_b - u_t / K_t)
                 * v_t
                 * dInterface(interface.id)
             )
 
-            subdomain_1.F += F_0
-            subdomain_2.F += F_1
+            subdomain_0.F += F_0
+            subdomain_1.F += F_1
 
         J = []
         forms = []
