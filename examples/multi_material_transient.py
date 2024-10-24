@@ -50,7 +50,10 @@ my_model.subdomains = [
     left_surface,
     right_surface,
 ]
-my_model.surface_to_volume = {right_surface: right_domain, left_surface: left_domain}
+my_model.surface_to_volume = {
+    right_surface: right_domain,
+    left_surface: left_domain,
+}
 
 H = F.Species("H", mobile=True)
 trapped_H = F.Species("H_trapped", mobile=False)

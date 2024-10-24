@@ -174,7 +174,8 @@ def test_bc_time_dependent_attribute_raises_error_when_value_none():
     my_flux_bc = F.FluxBCBase(subdomain=surface, value=None)
 
     with pytest.raises(
-        TypeError, match="Value must be given to determine if its time dependent"
+        TypeError,
+        match="Value must be given to determine if its time dependent",
     ):
         my_flux_bc.time_dependent
 
@@ -189,7 +190,10 @@ def test_bc_time_dependent_attribute_raises_error_when_value_none():
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),
         (lambda x, t, T: 1.0 + x[0] + t + T, True),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), False),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            False,
+        ),
     ],
 )
 def test_bc_temperature_dependent_attribute(input, expected_value):

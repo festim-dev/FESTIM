@@ -11,7 +11,9 @@ from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
 from festim.mesh.mesh import Mesh as _Mesh
 from festim.source import SourceBase as _SourceBase
-from festim.subdomain.volume_subdomain import VolumeSubdomain as _VolumeSubdomain
+from festim.subdomain.volume_subdomain import (
+    VolumeSubdomain as _VolumeSubdomain,
+)
 
 
 class ProblemBase:

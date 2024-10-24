@@ -85,7 +85,10 @@ my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
 # we should be able to automate this
 my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
-my_model.surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
+my_model.surface_to_volume = {
+    top_surface: top_domain,
+    bottom_surface: bottom_domain,
+}
 
 H = F.Species("H", mobile=True)
 

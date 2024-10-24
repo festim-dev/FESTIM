@@ -63,7 +63,9 @@ def test_callable_for_value():
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_spaces()
@@ -101,7 +103,9 @@ def test_value_callable_x_t_T():
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_spaces()
@@ -440,7 +444,10 @@ def test_bc_time_dependent_attribute(input, expected_value):
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),
         (lambda x, t, T: 1.0 + x[0] + t + T, True),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), False),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            False,
+        ),
     ],
 )
 def test_bc_temperature_dependent_attribute(input, expected_value):

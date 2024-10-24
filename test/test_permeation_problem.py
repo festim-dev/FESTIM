@@ -60,7 +60,11 @@ def test_permeation_problem(mesh_size=1001):
     my_model.boundary_conditions = [
         F.DirichletBC(subdomain=right_surface, value=0, species="H"),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+            subdomain=left_surface,
+            S_0=4.02e21,
+            E_S=1.04,
+            pressure=100,
+            species="H",
         ),
     ]
     outgassing_flux = F.SurfaceFlux(
@@ -156,7 +160,11 @@ def test_permeation_problem_multi_volume(tmp_path):
     my_model.boundary_conditions = [
         F.DirichletBC(subdomain=right_surface, value=0, species="H"),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+            subdomain=left_surface,
+            S_0=4.02e21,
+            E_S=1.04,
+            pressure=100,
+            species="H",
         ),
     ]
     outgassing_flux = F.SurfaceFlux(

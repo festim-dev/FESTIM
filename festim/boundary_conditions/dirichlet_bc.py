@@ -128,7 +128,11 @@ class FixedConcentrationBC(DirichletBCBase):
             return False
 
     def create_value(
-        self, mesh, function_space: fem.FunctionSpace, temperature, t: fem.Constant
+        self,
+        mesh,
+        function_space: fem.FunctionSpace,
+        temperature,
+        t: fem.Constant,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.

@@ -100,7 +100,12 @@ def test_2_materials_2d_mms():
 
     top_surface = F.SurfaceSubdomain(id=1)
     bottom_surface = F.SurfaceSubdomain(id=2)
-    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+    my_model.subdomains = [
+        bottom_domain,
+        top_domain,
+        top_surface,
+        bottom_surface,
+    ]
 
     my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
     my_model.surface_to_volume = {
@@ -177,7 +182,10 @@ def test_1_material_discontinuous_version():
     right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
     my_model.subdomains = [subdomain, left_surface, right_surface]
-    my_model.surface_to_volume = {right_surface: subdomain, left_surface: subdomain}
+    my_model.surface_to_volume = {
+        right_surface: subdomain,
+        left_surface: subdomain,
+    }
 
     H = F.Species("H", mobile=True)
     trapped_H = F.Species("H_trapped", mobile=False)
@@ -314,7 +322,9 @@ def test_3_materials_transient():
         for subdomain in my_model.volume_subdomains
     ] + [
         F.VTXSpeciesExport(
-            filename=f"u_t_{subdomain.id}.bp", field=trapped_H, subdomain=subdomain
+            filename=f"u_t_{subdomain.id}.bp",
+            field=trapped_H,
+            subdomain=subdomain,
         )
         for subdomain in my_model.volume_subdomains
     ]
@@ -344,7 +354,12 @@ def test_2_mats_particle_flux_bc():
 
     top_surface = F.SurfaceSubdomain(id=1)
     bottom_surface = F.SurfaceSubdomain(id=2)
-    my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
+    my_model.subdomains = [
+        bottom_domain,
+        top_domain,
+        top_surface,
+        bottom_surface,
+    ]
 
     # we should be able to automate this
     my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]

@@ -218,9 +218,7 @@ def test_heat_transfer_transient():
     my_problem.run()
 
     computed_solution = my_problem.u
-    final_time_sim = (
-        my_problem.t.value
-    )  # we use the exact final time of the simulation which may differ from the one specified in the settings
+    final_time_sim = my_problem.t.value  # we use the exact final time of the simulation which may differ from the one specified in the settings
 
     def exact_solution_end(x):
         return exact_solution(x, final_time_sim)
@@ -343,9 +341,7 @@ def test_sympify():
     my_problem.run()
 
     computed_solution = my_problem.u
-    final_time_sim = (
-        my_problem.t.value
-    )  # we use the exact final time of the simulation which may differ from the one specified in the settings
+    final_time_sim = my_problem.t.value  # we use the exact final time of the simulation which may differ from the one specified in the settings
 
     def exact_solution_end(x):
         return exact_solution(x, final_time_sim)
@@ -369,7 +365,10 @@ def test_sources():
     # Test that setting invalid sources raises a TypeError
     with pytest.raises(TypeError, match="festim.HeatSource objects"):
         spe = F.Species("H")
-        htp.sources = [F.ParticleSource(1, vol, spe), F.ParticleSource(1, vol, spe)]
+        htp.sources = [
+            F.ParticleSource(1, vol, spe),
+            F.ParticleSource(1, vol, spe),
+        ]
 
 
 def test_boundary_conditions():

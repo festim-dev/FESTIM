@@ -16,7 +16,10 @@ mesh_3D = fenics_mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 
 # 1D meshtags
 my_surface_meshtags = meshtags(
-    mesh_1D, 0, np.array([0, 10], dtype=np.int32), np.array([1, 2], dtype=np.int32)
+    mesh_1D,
+    0,
+    np.array([0, 10], dtype=np.int32),
+    np.array([1, 2], dtype=np.int32),
 )
 
 num_cells = mesh_1D.topology.index_map(1).size_local

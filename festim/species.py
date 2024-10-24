@@ -1,4 +1,6 @@
-from festim.subdomain.volume_subdomain import VolumeSubdomain as _VolumeSubdomain
+from festim.subdomain.volume_subdomain import (
+    VolumeSubdomain as _VolumeSubdomain,
+)
 
 
 class Species:

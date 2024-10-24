@@ -3,7 +3,9 @@ from pathlib import Path
 
 from dolfinx.fem import Function as _Function
 from festim.species import Species as _Species
-from festim.subdomain.volume_subdomain import VolumeSubdomain as _VolumeSubdomain
+from festim.subdomain.volume_subdomain import (
+    VolumeSubdomain as _VolumeSubdomain,
+)
 
 
 class ExportBaseClass:

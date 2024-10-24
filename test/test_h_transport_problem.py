@@ -16,7 +16,8 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 
 # TODO test all the methods in the class
 @pytest.mark.parametrize(
-    "value", [1, fem.Constant(test_mesh.mesh, 1.0), 1.0, "coucou", lambda x: 2 * x[0]]
+    "value",
+    [1, fem.Constant(test_mesh.mesh, 1.0), 1.0, "coucou", lambda x: 2 * x[0]],
 )
 def test_temperature_setter_type(value):
     """Test that the temperature type is correctly set"""
@@ -78,7 +79,10 @@ def test_define_temperature_value_error_raised():
         (lambda t: 1.0 + t, fem.Constant),
         (lambda x: 1.0 + x[0], fem.Function),
         (lambda x, t: 1.0 + x[0] + t, fem.Function),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), fem.Function),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            fem.Function,
+        ),
         (lambda t: 100.0 if t < 1 else 0.0, fem.Constant),
     ],
 )
@@ -118,7 +122,8 @@ def test_define_temperature_error_if_ufl_conditional_t_only(input):
     my_model.temperature = input
 
     with pytest.raises(
-        ValueError, match="self.temperature should return a float or an int, not "
+        ValueError,
+        match="self.temperature should return a float or an int, not ",
     ):
         my_model.define_temperature()
 
@@ -399,7 +404,10 @@ def test_post_processing_update_D_global():
     # Build the model
     my_model = F.HydrogenTransportProblem(
         mesh=my_mesh,
-        subdomains=[F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat), surf],
+        subdomains=[
+            F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat),
+            surf,
+        ],
         species=[H],
         temperature=lambda t: 500 * t,
         exports=[my_export],
@@ -446,7 +454,10 @@ def test_post_processing_update_D_global_2():
     # Build the model
     my_model = F.HydrogenTransportProblem(
         mesh=my_mesh,
-        subdomains=[F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat), surf],
+        subdomains=[
+            F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat),
+            surf,
+        ],
         species=[H],
         temperature=lambda t: 500 * t,
         exports=[my_export],
@@ -563,7 +574,9 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
     volume_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     surface_subdomain = F.SurfaceSubdomain1D(id=1, x=4)
     my_model = F.HydrogenTransportProblem(
-        mesh=test_mesh, species=[H], subdomains=[volume_subdomain, surface_subdomain]
+        mesh=test_mesh,
+        species=[H],
+        subdomains=[volume_subdomain, surface_subdomain],
     )
     my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
     dt = fem.Constant(test_mesh.mesh, 1.0)
@@ -1000,7 +1013,10 @@ def test_define_meshtags_and_measures_with_custom_fenics_mesh():
     mesh_1D = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
     # 1D meshtags
     my_surface_meshtags = dolfinx.mesh.meshtags(
-        mesh_1D, 0, np.array([0, 10], dtype=np.int32), np.array([1, 2], dtype=np.int32)
+        mesh_1D,
+        0,
+        np.array([0, 10], dtype=np.int32),
+        np.array([1, 2], dtype=np.int32),
     )
 
     num_cells = mesh_1D.topology.index_map(1).size_local
@@ -1068,7 +1084,10 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
     surface = F.SurfaceSubdomain1D(id=2, x=0)
     H = F.Species("H")
     my_model = F.HydrogenTransportProblem(
-        mesh=test_mesh, temperature=10, subdomains=[my_vol, surface], species=[H]
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol, surface],
+        species=[H],
     )
     my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
     dt = fem.Constant(test_mesh.mesh, 1.0)

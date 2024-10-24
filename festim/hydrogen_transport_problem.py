@@ -971,9 +971,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_collapsed_function_space[subdomain] = V.sub(
                 i
             ).collapse()
-            species.subdomain_to_post_processing_solution[subdomain].name = (
-                f"{species.name}_{subdomain.id}"
-            )
+            species.subdomain_to_post_processing_solution[
+                subdomain
+            ].name = f"{species.name}_{subdomain.id}"
 
     def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
         """
@@ -1147,7 +1147,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             for subdomain2 in self.volume_subdomains:
                 jac.append(
                     dolfinx.fem.form(
-                        ufl.derivative(form, subdomain2.u), entity_maps=entity_maps
+                        ufl.derivative(form, subdomain2.u),
+                        entity_maps=entity_maps,
                     )
                 )
             J.append(jac)

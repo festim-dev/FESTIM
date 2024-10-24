@@ -127,9 +127,7 @@ def run(N):
     my_problem.run()
 
     computed_solution = my_problem.u
-    final_time_sim = (
-        my_problem.t.value
-    )  # we use the exact final time of the simulation which may differ from the one specified in the settings
+    final_time_sim = my_problem.t.value  # we use the exact final time of the simulation which may differ from the one specified in the settings
 
     def exact_solution_end(x):
         return exact_solution(x, final_time_sim)
