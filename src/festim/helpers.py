@@ -1,5 +1,5 @@
-from dolfinx import fem
 import dolfinx
+from dolfinx import fem
 
 
 def as_fenics_constant(

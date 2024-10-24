@@ -994,9 +994,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_collapsed_function_space[subdomain] = V.sub(
                 i
             ).collapse()
-            species.subdomain_to_post_processing_solution[subdomain].name = (
-                f"{species.name}_{subdomain.id}"
-            )
+            name = f"{species.name}_{subdomain.id}"
+            species.subdomain_to_post_processing_solution[subdomain].name = name
 
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """

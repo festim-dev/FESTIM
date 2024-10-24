@@ -71,8 +71,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     mesh_tags_volumes = meshtags(my_mesh, vdim, cells, markers)
 
     dofs_L = locate_dofs_geometrical(V, lambda x: np.isclose(x[0], 0))
-    dofs_R = locate_dofs_geometrical(
-        V, lambda x: np.isclose(x[0], indices[-1]))
+    dofs_R = locate_dofs_geometrical(V, lambda x: np.isclose(x[0], indices[-1]))
 
     dofs_facets = np.array([dofs_L[0], dofs_R[0]], dtype=np.int32)
     tags_facets = np.array([1, 2], dtype=np.int32)
@@ -102,8 +101,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     bc_sieverts = dirichletbc(
         Constant(my_mesh, PETSc.ScalarType(surface_conc)), left_dofs, V
     )
-    bc_outgas = dirichletbc(
-        Constant(my_mesh, PETSc.ScalarType(0)), right_dofs, V)
+    bc_outgas = dirichletbc(Constant(my_mesh, PETSc.ScalarType(0)), right_dofs, V)
     bcs = [bc_sieverts, bc_outgas]
 
     D_0 = 1.9e-7
