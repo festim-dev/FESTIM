@@ -6,8 +6,6 @@ from dolfinx.io import VTXWriter
 from festim import boundary_conditions, exports, helpers, problem
 from festim import source as _source
 
-__all__ = ["HeatTransferProblem"]
-
 
 class HeatTransferProblem(problem.ProblemBase):
     def __init__(
@@ -39,8 +37,7 @@ class HeatTransferProblem(problem.ProblemBase):
     @sources.setter
     def sources(self, value):
         if not all(isinstance(source, _source.HeatSource) for source in value):
-            raise TypeError(
-                "sources must be a list of festim.HeatSource objects")
+            raise TypeError("sources must be a list of festim.HeatSource objects")
         self._sources = value
 
     @property
@@ -208,16 +205,14 @@ class HeatTransferProblem(problem.ProblemBase):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics * self.test_function *
-                self.dx(source.volume.id)
+                source.value_fenics * self.test_function * self.dx(source.volume.id)
             )
 
         # add fluxes
         for bc in self.boundary_conditions:
             if isinstance(bc, boundary_conditions.HeatFluxBC):
                 self.formulation -= (
-                    bc.value_fenics * self.test_function *
-                    self.ds(bc.subdomain.id)
+                    bc.value_fenics * self.test_function * self.ds(bc.subdomain.id)
                 )
 
     def initialise_exports(self):

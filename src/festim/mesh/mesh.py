@@ -1,7 +1,8 @@
 import dolfinx
 import numpy as np
 import ufl
-from dolfinx.mesh import meshtags, Mesh as dolfinx_Mesh
+from dolfinx.mesh import Mesh as dolfinx_Mesh
+from dolfinx.mesh import meshtags
 
 
 class Mesh:
@@ -18,10 +19,10 @@ class Mesh:
         n: Symbolic representation of the vector normal to the facets
             of the mesh.
     """
+
     _mesh: dolfinx.mesh.Mesh
 
     def __init__(self, mesh: dolfinx_Mesh | None = None):
-
         self.mesh = mesh
         if self._mesh is not None:
             # create cell to facet connectivity
@@ -120,6 +121,7 @@ class Mesh:
             tags_facets[interface_entities] = interface.id
 
         facet_meshtags = meshtags(
-            self._mesh, self.fdim, mesh_facet_indices, tags_facets)
+            self._mesh, self.fdim, mesh_facet_indices, tags_facets
+        )
 
         return facet_meshtags, volume_meshtags
