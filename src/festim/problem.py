@@ -18,21 +18,24 @@ from festim.subdomain.volume_subdomain import (
 
 class ProblemBase:
     """
-    Base class for HeatTransferProblem and HTransportProblem.
+    Base class for :py:class:`HeatTransferProblem <festim.heat_transfer_problem.HeatTransferProblem>` and
+    :py:class:`HydrogenTransportProblem <festim.hydrogen_transport_problem.HydrogenTransportProblem>`.
 
-    show_progress_bar (bool): True if a progress bar is displayed during the
-        simulation
-    progress_bar (tqdm.autonotebook.tqdm) the progress bar
+    Attributes:
+        show_progress_bar: If `True` a progress bar is displayed during the simulation
+        progress_bar: the progress bar
     """
 
     mesh: _Mesh
     sources: list[_SourceBase]
     exports: list[Any]
     subdomains: list[_VolumeSubdomain]
+    show_progress_bar: bool
+    progress_bar: None | tqdm.autonotebook.tqdm
 
     def __init__(
         self,
-        mesh=None,
+        mesh: _Mesh = None,
         sources=None,
         exports=None,
         subdomains=None,

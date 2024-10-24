@@ -37,7 +37,8 @@ class Mesh1D(F.Mesh):
         """Generates a 1D mesh"""
         degree = 1
         domain = ufl.Mesh(
-            basix.ufl.element(basix.ElementFamily.P, "interval", degree, shape=(1,))
+            basix.ufl.element(basix.ElementFamily.P,
+                              "interval", degree, shape=(1,))
         )
 
         mesh_points = np.reshape(self.vertices, (len(self.vertices), 1))
@@ -56,7 +57,8 @@ class Mesh1D(F.Mesh):
             Value error: if borders outside the domain
         """
         # check that subdomains are connected
-        all_borders = [border for vol in volume_subdomains for border in vol.borders]
+        all_borders = [
+            border for vol in volume_subdomains for border in vol.borders]
         sorted_borders = np.sort(all_borders)
         for start, end in zip(sorted_borders[1:-2:2], sorted_borders[2:-1:2]):
             if start != end:

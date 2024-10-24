@@ -31,6 +31,8 @@ from festim import (
 from festim.helpers import as_fenics_constant
 from festim.mesh import Mesh
 
+__all__ = ["HydrogenTransportProblem", "HTransportProblemDiscontinuous"]
+
 
 class HydrogenTransportProblem(problem.ProblemBase):
     """
@@ -123,7 +125,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self,
         mesh: Mesh | None = None,
         subdomains: (
-            list[_subdomain.VolumeSubdomain | _subdomain.SurfaceSubdomain] | None
+            list[_subdomain.VolumeSubdomain |
+                 _subdomain.SurfaceSubdomain] | None
         ) = None,
         species: list[_species.Species] | None = None,
         reactions: list[_reaction.Reaction] | None = None,
@@ -319,7 +322,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
                 # only t is an argument
                 self.temperature_fenics = as_fenics_constant(
-                    mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
+                    mesh=self.mesh.mesh, value=self.temperature(
+                        t=float(self.t))
                 )
             else:
                 x = ufl.SpatialCoordinate(self.mesh.mesh)
@@ -333,7 +337,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 function_space_temperature = fem.functionspace(
                     self.mesh.mesh, element_temperature
                 )
-                self.temperature_fenics = fem.Function(function_space_temperature)
+                self.temperature_fenics = fem.Function(
+                    function_space_temperature)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = self.t
@@ -415,7 +420,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
-            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+            cell_indices = vol.locate_subdomain_entities(
+                self.mesh.mesh, self.mesh.vdim)
 
             # replace values of D_0 and E_D by values from the material
             D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
@@ -425,9 +431,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D = fem.Function(self.V_DG_1)
 
         expr = D_0 * ufl.exp(
-            -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
+            -E_D / as_fenics_constant(k_B, self.mesh.mesh) /
+            self.temperature_fenics
         )
-        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+        D_expr = fem.Expression(
+            expr, self.V_DG_1.element.interpolation_points())
         D.interpolate(D_expr)
         return D, D_expr
 
@@ -508,7 +516,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for bc in self.boundary_conditions:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
-                bc.species = _species.find_species_from_name(bc.species, self.species)
+                bc.species = _species.find_species_from_name(
+                    bc.species, self.species)
 
         super().define_boundary_conditions()
 
@@ -614,7 +623,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             # assign to previous solution of species
             if not self.multispecies:
-                condition.species.prev_solution.interpolate(condition.expr_fenics)
+                condition.species.prev_solution.interpolate(
+                    condition.expr_fenics)
             else:
                 idx = self.species.index(condition.species)
                 self.u_n.sub(idx).interpolate(condition.expr_fenics)
@@ -640,7 +650,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
 
                 if self.settings.transient:
-                    self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
+                    self.formulation += ((u - u_n) / self.dt) * \
+                        v * self.dx(vol.id)
 
         for reaction in self.reactions:
             for reactant in reaction.reactant:
@@ -737,7 +748,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
                     export,
-                    (exports.SurfaceFlux, exports.TotalSurface, exports.AverageSurface),
+                    (exports.SurfaceFlux, exports.TotalSurface,
+                     exports.AverageSurface),
                 ):
                     export.compute(
                         self.ds,
@@ -1084,7 +1096,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             for interface in self.interfaces
         ]
         [interface.pad_parent_maps() for interface in self.interfaces]
-        dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
+        dInterface = ufl.Measure(
+            "dS", domain=mesh, subdomain_data=integral_data)
 
         def mixed_term(u, v, n):
             return ufl.dot(ufl.grad(u), n) * v
@@ -1106,7 +1119,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
             all_mobile_species = [spe for spe in self.species if spe.mobile]
             if len(all_mobile_species) > 1:
-                raise NotImplementedError("Multiple mobile species not implemented")
+                raise NotImplementedError(
+                    "Multiple mobile species not implemented")
             H = all_mobile_species[0]
             v_b = H.subdomain_to_test_function[subdomain_0](res[0])
             v_t = H.subdomain_to_test_function[subdomain_1](res[1])
@@ -1165,7 +1179,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 )
             J.append(jac)
-            forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
+            forms.append(dolfinx.fem.form(
+                subdomain1.F, entity_maps=entity_maps))
 
         self.forms = forms
         self.J = J
@@ -1204,7 +1219,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 )
             else:
-                raise NotImplementedError(f"Export type {type(export)} not implemented")
+                raise NotImplementedError(
+                    f"Export type {type(export)} not implemented")
 
     def post_processing(self):
         # update post-processing solutions (for each species in each subdomain)
@@ -1225,7 +1241,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for export in self.exports:
             if not isinstance(export, exports.VTXSpeciesExport):
-                raise NotImplementedError(f"Export type {type(export)} not implemented")
+                raise NotImplementedError(
+                    f"Export type {type(export)} not implemented")
 
     def iterate(self):
         """Iterates the model for a given time step"""

@@ -1,13 +1,26 @@
-FESTIM
-======
+FESTIM API
+==========
 
-.. automodule:: festim
+
+.. automodule:: festim.boundary_conditions
     :members:
-    :undoc-members:
     :show-inheritance:
-    :inherited-members:
     :exclude-members: __weakref__
     :private-members:
-    :special-members:
     :inherited-members:
-    :exclude-members: __weakref__
+
+
+.. .. automodule:: festim.hydrogen_transport_problem
+..     :members:
+..     :show-inheritance:
+..     :exclude-members: __weakref__
+..     :private-members:
+..     :inherited-members:
+
+
+
+.. .. automodule:: festim.heat_transfer_problem
+..     :members:
+..     :show-inheritance:
+..     :exclude-members: __weakref__
+..     :inherited-members:

@@ -29,7 +29,7 @@ classifiers = [
 [project.optional-dependencies]
 test = ["pytest >= 5.4.3", "pytest-cov", "sympy"]
 lint = ["ruff", "mypy"]
-docs = ["sphinx"]
+docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]
 
 [project.urls]
 Homepage = "https://github.com/RemDelaporteMathurin/FESTIM"
