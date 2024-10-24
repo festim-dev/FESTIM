@@ -1,7 +1,6 @@
 import mpi4py.MPI as MPI
 
 import numpy as np
-
 import ufl
 from dolfinx import fem
 

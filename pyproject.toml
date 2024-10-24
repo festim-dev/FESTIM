@@ -39,6 +39,18 @@ Issues = "https://github.com/RemDelaporteMathurin/FESTIM/issues"
 [tool.setuptools_scm]
 write_to = "festim/_version.py"
 
+[tool.mypy]
+# Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
+# Goal would be to make all of the below True long-term
+disallow_untyped_defs = false
+disallow_any_unimported = false
+no_implicit_optional = false
+check_untyped_defs = false
+warn_return_any = false
+warn_unused_ignores = false
+show_error_codes = true
+ignore_missing_imports = true
+
 [tool.ruff]
 line-length = 88
 indent-width = 4
@@ -61,8 +73,19 @@ ignore = ["UP007", "RUF012"]
 allowed-confusables = ["σ"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["festim", "basix", "dolfinx", "ffcx", "ufl"]
-known-third-party = ["gmsh", "numba", "numpy", "pytest", "pyvista", "pyamg"]
+known-first-party = ["festim"]
+known-third-party = [
+    "basix",
+    "dolfinx",
+    "ffcx",
+    "ufl",
+    "gmsh",
+    "numba",
+    "numpy",
+    "pytest",
+    "pyvista",
+    "pyamg",
+]
 section-order = [
     "future",
     "standard-library",

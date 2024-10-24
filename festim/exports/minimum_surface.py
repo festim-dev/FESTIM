@@ -1,9 +1,9 @@
 import numpy as np
 
-import festim as F
+import festim.exports.surface_quantity as sq
 
 
-class MinimumSurface(F.SurfaceQuantity):
+class MinimumSurface(sq.SurfaceQuantity):
     """Computes the minimum value of a field on a given surface
 
     Args:

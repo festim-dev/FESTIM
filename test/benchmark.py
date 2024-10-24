@@ -3,11 +3,9 @@ import time
 from mpi4py import MPI
 from petsc4py import PETSc
 
+import basix
 import numpy as np
 import tqdm.autonotebook
-from test_permeation_problem import test_permeation_problem
-
-import basix
 from dolfinx.fem import (
     Constant,
     Function,
@@ -24,6 +22,7 @@ from dolfinx.fem.petsc import (
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import create_mesh, locate_entities, meshtags
 from dolfinx.nls.petsc import NewtonSolver
+from test_permeation_problem import test_permeation_problem
 from ufl import (
     FacetNormal,
     Measure,

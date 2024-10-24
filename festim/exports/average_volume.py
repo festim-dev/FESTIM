@@ -1,8 +1,9 @@
-import festim as F
 from dolfinx import fem
 
+from festim.exports import VolumeQuantity
 
-class AverageVolume(F.VolumeQuantity):
+
+class AverageVolume(VolumeQuantity):
     """Computes the average value of a field in a given volume
 
     Args:

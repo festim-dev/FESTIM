@@ -1,9 +1,9 @@
 import numpy as np
 
-import festim as F
+import festim.exports.surface_quantity as sq
 
 
-class MaximumSurface(F.SurfaceQuantity):
+class MaximumSurface(sq.SurfaceQuantity):
     """Computes the maximum value of a field on a given surface
 
     Args:

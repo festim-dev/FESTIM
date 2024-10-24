@@ -1,6 +1,5 @@
-import numpy as np
-
 import dolfinx.mesh
+import numpy as np
 
 
 class SurfaceSubdomain:

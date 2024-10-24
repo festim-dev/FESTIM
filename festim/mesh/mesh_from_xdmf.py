@@ -1,7 +1,8 @@
 from mpi4py import MPI
 
-import festim as F
 from dolfinx.io import XDMFFile
+
+import festim as F
 
 
 class MeshFromXDMF(F.Mesh):

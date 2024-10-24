@@ -4,11 +4,11 @@ from mpi4py import MPI
 
 import numpy as np
 import tqdm.autonotebook
-
-import festim as F
 import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
+
+import festim as F
 from festim.mesh.mesh import Mesh as _Mesh
 from festim.source import SourceBase as _SourceBase
 from festim.subdomain.volume_subdomain import (

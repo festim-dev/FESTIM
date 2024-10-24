@@ -1,11 +1,11 @@
 from mpi4py import MPI
 
-import pytest
-
 import dolfinx.mesh
-import festim as F
+import pytest
 import ufl
 from dolfinx import fem
+
+import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 
@@ -92,7 +92,7 @@ def test_create_value_fenics(value, expected_type):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, dolfinx.default_scalar_type(1.0)), False),
         (lambda t: t, True),
         (lambda t: 1.0 + t, True),
         (lambda x: 1.0 + x[0], False),
@@ -115,7 +115,7 @@ def test_source_time_dependent_attribute(input, expected_value):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, dolfinx.default_scalar_type(1.0)), False),
         (lambda T: T, True),
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),

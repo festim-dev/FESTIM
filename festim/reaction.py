@@ -1,10 +1,11 @@
 from typing import List, Optional, Union
 
+from ufl import exp
+
 from festim import k_B as _k_B
 from festim.species import ImplicitSpecies as _ImplicitSpecies
 from festim.species import Species as _Species
 from festim.subdomain.volume_subdomain_1d import VolumeSubdomain1D as VS1D
-from ufl import exp
 
 
 class Reaction:

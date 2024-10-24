@@ -1,13 +1,13 @@
 import mpi4py.MPI as MPI
 
+import dolfinx.mesh
 import numpy as np
 import pytest
 import tqdm.autonotebook
-
-import dolfinx.mesh
-import festim as F
 import ufl
-from dolfinx import fem, nls
+from dolfinx import default_scalar_type, fem, nls
+
+import festim as F
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
@@ -17,7 +17,13 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 # TODO test all the methods in the class
 @pytest.mark.parametrize(
     "value",
-    [1, fem.Constant(test_mesh.mesh, 1.0), 1.0, "coucou", lambda x: 2 * x[0]],
+    [
+        1,
+        fem.Constant(test_mesh.mesh, default_scalar_type(1.0)),
+        1.0,
+        "coucou",
+        lambda x: 2 * x[0],
+    ],
 )
 def test_temperature_setter_type(value):
     """Test that the temperature type is correctly set"""
@@ -74,7 +80,7 @@ def test_define_temperature_value_error_raised():
     [
         (1.0, fem.Constant),
         (1, fem.Constant),
-        (fem.Constant(test_mesh.mesh, 1.0), fem.Constant),
+        (fem.Constant(test_mesh.mesh, default_scalar_type(1.0)), fem.Constant),
         (lambda t: t, fem.Constant),
         (lambda t: 1.0 + t, fem.Constant),
         (lambda x: 1.0 + x[0], fem.Function),
@@ -1166,7 +1172,7 @@ def test_update_fluxes_with_time_dependent_temperature(
             assert np.isclose(computed_value, expected_values[i])
 
 
-def test_create_source_values_fenics_multispecies():
+def test_create_flux_values_fenics_multispecies():
     """Test that the create_flux_values_fenics method correctly sets the value_fenics
     attribute in a multispecies case"""
     # BUILD

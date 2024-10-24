@@ -2,11 +2,11 @@ import os
 
 import numpy as np
 import pytest
-
-import festim as F
 import ufl
 from dolfinx import fem
 from dolfinx.mesh import meshtags
+
+import festim as F
 
 
 def test_surface_flux_export_compute():

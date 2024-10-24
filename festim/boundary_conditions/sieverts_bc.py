@@ -1,5 +1,6 @@
-import festim as F
 import ufl
+
+import festim as F
 
 
 def sieverts_law(T, S_0, E_S, pressure):

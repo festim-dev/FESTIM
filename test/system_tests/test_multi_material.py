@@ -1,11 +1,11 @@
 from mpi4py import MPI
 
-import numpy as np
-
 import dolfinx
 import dolfinx.fem.petsc
-import festim as F
+import numpy as np
 import ufl
+
+import festim as F
 
 from .tools import error_L2
 

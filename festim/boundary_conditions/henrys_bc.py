@@ -1,5 +1,6 @@
-import festim as F
 import ufl
+
+import festim as F
 
 
 def henrys_law(T, H_0, E_H, pressure):

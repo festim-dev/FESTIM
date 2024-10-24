@@ -1,15 +1,15 @@
 import numpy as np
 
-import festim as F
+from festim.exports import VolumeQuantity
 
 
-class MinimumVolume(F.VolumeQuantity):
-    """Computes the minmum value of a field in a given volume
+class MinimumVolume(VolumeQuantity):
+    """Computes the minimum value of a field in a given volume
 
     Args:
-        field (festim.Species): species for which the minmum volume is computed
+        field (festim.Species): species for which the minimum volume is computed
         volume (festim.VolumeSubdomain): volume subdomain
-        filename (str, optional): name of the file to which the minmum volume is exported
+        filename (str, optional): name of the file to which the minimum volume is exported
 
     Attributes:
         see `festim.VolumeQuantity`

@@ -1,9 +1,10 @@
-import festim as F
 import ufl
 from dolfinx import fem
 
+from festim.exports import VolumeQuantity
 
-class TotalVolume(F.VolumeQuantity):
+
+class TotalVolume(VolumeQuantity):
     """Computes the total value of a field in a given volume
 
     Args:

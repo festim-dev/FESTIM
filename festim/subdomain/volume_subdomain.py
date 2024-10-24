@@ -1,7 +1,7 @@
-import numpy as np
-
 import dolfinx
+import numpy as np
 from dolfinx.mesh import locate_entities
+
 from festim.helpers_discontinuity import transfer_meshtags_to_submesh
 
 

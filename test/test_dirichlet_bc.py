@@ -1,13 +1,13 @@
 from mpi4py import MPI
 
+import dolfinx.mesh
 import numpy as np
 import pytest
-
-import dolfinx.mesh
-import festim as F
 import ufl
-from dolfinx import fem
+from dolfinx import default_scalar_type, fem
 from ufl.conditional import Conditional
+
+import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 
@@ -57,7 +57,10 @@ def test_callable_for_value():
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x, t: 1.0 + x[0] + t
+
+    def value(x, t):
+        return 1.0 + x[0] + t
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
@@ -97,7 +100,10 @@ def test_value_callable_x_t_T():
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x, t, T: 1.0 + x[0] + t + T
+
+    def value(x, t, T):
+        return 1.0 + x[0] + t + T
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
@@ -183,7 +189,10 @@ def test_callable_x_only():
     # BUILD
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x: 1.0 + x[0]
+
+    def value(x):
+        return 1.0 + x[0]
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
@@ -416,7 +425,7 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda t: t, True),
         (lambda t: 1.0 + t, True),
         (lambda x: 1.0 + x[0], False),
@@ -439,7 +448,7 @@ def test_bc_time_dependent_attribute(input, expected_value):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda T: T, True),
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),

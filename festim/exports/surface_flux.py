@@ -1,9 +1,10 @@
-import festim as F
 import ufl
 from dolfinx import fem
 
+from festim.exports import SurfaceQuantity
 
-class SurfaceFlux(F.SurfaceQuantity):
+
+class SurfaceFlux(SurfaceQuantity):
     """Computes the flux of a field on a given surface
 
     Args:

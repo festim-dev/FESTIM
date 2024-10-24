@@ -1,11 +1,13 @@
 import basix
-import festim as F
 import ufl
 from dolfinx import fem
 from dolfinx.io import VTXWriter
 
+from festim import boundary_conditions, exports, helpers, problem
+from festim import source as _source
 
-class HeatTransferProblem(F.ProblemBase):
+
+class HeatTransferProblem(problem.ProblemBase):
     def __init__(
         self,
         mesh=None,
@@ -34,7 +36,7 @@ class HeatTransferProblem(F.ProblemBase):
 
     @sources.setter
     def sources(self, value):
-        if not all(isinstance(source, F.HeatSource) for source in value):
+        if not all(isinstance(source, _source.HeatSource) for source in value):
             raise TypeError("sources must be a list of festim.HeatSource objects")
         self._sources = value
 
@@ -45,7 +47,14 @@ class HeatTransferProblem(F.ProblemBase):
     @boundary_conditions.setter
     def boundary_conditions(self, value):
         if not all(
-            isinstance(bc, (F.FixedTemperatureBC, F.HeatFluxBC)) for bc in value
+            isinstance(
+                bc,
+                (
+                    boundary_conditions.FixedTemperatureBC,
+                    boundary_conditions.HeatFluxBC,
+                ),
+            )
+            for bc in value
         ):
             raise TypeError(
                 "boundary_conditions must be a list of festim.FixedTemperatureBC or festim.HeatFluxBC objects"
@@ -60,7 +69,7 @@ class HeatTransferProblem(F.ProblemBase):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = F.as_fenics_constant(
+            self.dt = helpers.as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -136,7 +145,7 @@ class HeatTransferProblem(F.ProblemBase):
         """For each heat flux create the value_fenics"""
         for bc in self.boundary_conditions:
             # create value_fenics for all F.HeatFluxBC objects
-            if isinstance(bc, F.HeatFluxBC):
+            if isinstance(bc, boundary_conditions.HeatFluxBC):
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.u,
@@ -203,7 +212,7 @@ class HeatTransferProblem(F.ProblemBase):
 
         # add fluxes
         for bc in self.boundary_conditions:
-            if isinstance(bc, F.HeatFluxBC):
+            if isinstance(bc, boundary_conditions.HeatFluxBC):
                 self.formulation -= (
                     bc.value_fenics * self.test_function * self.ds(bc.subdomain.id)
                 )
@@ -213,11 +222,11 @@ class HeatTransferProblem(F.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
-            if isinstance(export, F.XDMFExport):
+            if isinstance(export, exports.XDMFExport):
                 raise NotImplementedError(
                     "XDMF export is not implemented yet for heat transfer problems"
                 )
-            if isinstance(export, F.VTXTemperatureExport):
+            if isinstance(export, exports.VTXTemperatureExport):
                 self._vtxfile = VTXWriter(
                     self.u.function_space.mesh.comm,
                     export.filename,
@@ -230,7 +239,7 @@ class HeatTransferProblem(F.ProblemBase):
 
         for export in self.exports:
             # TODO if export type derived quantity
-            if isinstance(export, F.SurfaceQuantity):
+            if isinstance(export, exports.SurfaceQuantity):
                 raise NotImplementedError(
                     "SurfaceQuantity export is not implemented yet for heat transfer problems"
                 )
@@ -244,7 +253,7 @@ class HeatTransferProblem(F.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-            if isinstance(export, F.XDMFExport):
+            if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
 
         if self._vtxfile is not None:

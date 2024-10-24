@@ -1,9 +1,9 @@
 from mpi4py import MPI
 
+import dolfinx.mesh
 import numpy as np
 import pytest
 
-import dolfinx.mesh
 import festim as F
 
 

@@ -5,9 +5,9 @@ import mpi4py.MPI as MPI
 
 import numpy as np
 import pytest
+from dolfinx import fem, mesh
 
 import festim as F
-from dolfinx import fem, mesh
 
 
 def test_init():
@@ -69,7 +69,10 @@ def test_field_attribute_is_always_list():
 
 @pytest.mark.parametrize("field", [["H", 2], 1, [F.Species("H"), 1]])
 def test_field_attribute_raises_error_when_invalid_type(field):
-    """Test that the field attribute raises an error if the type is not festim.Species or list"""
+    """
+    Test that the field attribute raises an error if the type
+    is not festim.Species or list.
+    """
     with pytest.raises(TypeError):
         F.XDMFExport("my_export.xdmf", field=field)
 

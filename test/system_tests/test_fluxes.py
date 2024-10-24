@@ -1,8 +1,8 @@
 import numpy as np
-
-import festim as F
 import ufl
 from dolfinx import fem
+
+import festim as F
 
 from .tools import error_L2
 

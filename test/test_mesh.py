@@ -4,11 +4,11 @@ from mpi4py import MPI
 
 import numpy as np
 import pytest
-
-import festim as F
 from dolfinx import mesh as fenics_mesh
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import meshtags
+
+import festim as F
 
 mesh_1D = fenics_mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 mesh_2D = fenics_mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)

@@ -1,13 +1,13 @@
 from mpi4py import MPI
 
+import dolfinx.mesh
 import numpy as np
 import pytest
-
-import dolfinx.mesh
-import festim as F
 import ufl
 import ufl.core
-from dolfinx import fem
+from dolfinx import default_scalar_type, fem
+
+import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
@@ -150,7 +150,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     "input, expected_value",
     [
         (1.0, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda t: t, True),
         (lambda t: 1.0 + t, True),
         (lambda x: 1.0 + x[0], False),
@@ -185,7 +185,7 @@ def test_bc_time_dependent_attribute_raises_error_when_value_none():
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda T: T, True),
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),

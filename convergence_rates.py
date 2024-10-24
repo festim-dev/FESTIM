@@ -2,10 +2,10 @@ import mpi4py.MPI as MPI
 
 import matplotlib.pyplot as plt
 import numpy as np
-
-import festim as F
 import ufl
 from dolfinx import fem
+
+import festim as F
 
 
 def source_from_exact_solution(

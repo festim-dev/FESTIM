@@ -1,6 +1,5 @@
-import numpy as np
-
 import dolfinx
+import numpy as np
 import ufl
 from dolfinx.mesh import meshtags
 

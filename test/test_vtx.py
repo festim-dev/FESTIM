@@ -1,9 +1,9 @@
 from mpi4py import MPI
 
+import dolfinx
 import numpy as np
 import pytest
 
-import dolfinx
 import festim as F
 
 mesh = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)

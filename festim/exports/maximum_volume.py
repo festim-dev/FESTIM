@@ -1,9 +1,9 @@
 import numpy as np
 
-import festim as F
+from festim.exports import VolumeQuantity
 
 
-class MaximumVolume(F.VolumeQuantity):
+class MaximumVolume(VolumeQuantity):
     """Computes the maximum value of a field in a given volume
 
     Args:

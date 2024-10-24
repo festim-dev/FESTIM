@@ -1,8 +1,8 @@
 import numpy as np
-
-import festim as F
 import ufl
 from dolfinx import fem
+
+import festim as F
 
 
 def test_total_surface_compute_1D():

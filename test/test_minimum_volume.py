@@ -1,7 +1,7 @@
 import numpy as np
+from dolfinx import fem
 
 import festim as F
-from dolfinx import fem
 
 
 def test_minimum_volume_compute_1D():

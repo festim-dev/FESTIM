@@ -1,11 +1,11 @@
 from mpi4py import MPI
 
 import numpy as np
-
-import festim as F
 import ufl
 from dolfinx import fem
 from dolfinx.mesh import create_unit_cube, create_unit_square, locate_entities
+
+import festim as F
 
 from .tools import error_L2
 

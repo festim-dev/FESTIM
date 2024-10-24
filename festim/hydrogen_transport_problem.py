@@ -2,19 +2,37 @@ from typing import Callable
 
 from mpi4py import MPI
 
+import basix
+import dolfinx
 import numpy as np
 import numpy.typing as npt
 import tqdm.autonotebook
-from scifem import NewtonSolver
-
-import basix
-import dolfinx
-import festim as F
 import ufl
 from dolfinx import fem
+from scifem import NewtonSolver
+
+import festim.boundary_conditions
+import festim.problem
+from festim import (
+    boundary_conditions,
+    exports,
+    k_B,
+    problem,
+)
+from festim import (
+    reaction as _reaction,
+)
+from festim import (
+    species as _species,
+)
+from festim import (
+    subdomain as _subdomain,
+)
+from festim.helpers import as_fenics_constant
+from festim.mesh import Mesh
 
 
-class HydrogenTransportProblem(F.ProblemBase):
+class HydrogenTransportProblem(problem.ProblemBase):
     """
     Hydrogen Transport Problem.
 
@@ -103,10 +121,12 @@ class HydrogenTransportProblem(F.ProblemBase):
 
     def __init__(
         self,
-        mesh: F.Mesh | None = None,
-        subdomains: list[F.VolumeSubdomain | F.SurfaceSubdomain] | None = None,
-        species: list[F.Species] | None = None,
-        reactions: list[F.Reaction] | None = None,
+        mesh: Mesh | None = None,
+        subdomains: (
+            list[_subdomain.VolumeSubdomain | _subdomain.SurfaceSubdomain] | None
+        ) = None,
+        species: list[_species.Species] | None = None,
+        reactions: list[_reaction.Reaction] | None = None,
         temperature: (
             float
             | int
@@ -196,14 +216,14 @@ class HydrogenTransportProblem(F.ProblemBase):
         return len(self.species) > 1
 
     @property
-    def species(self) -> list[F.Species]:
+    def species(self) -> list[_species.Species]:
         return self._species
 
     @species.setter
     def species(self, value):
         # check that all species are of type festim.Species
         for spe in value:
-            if not isinstance(spe, F.Species):
+            if not isinstance(spe, _species.Species):
                 raise TypeError(
                     f"elements of species must be of type festim.Species not {
                         type(spe)}"
@@ -246,7 +266,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = F.as_fenics_constant(
+            self.dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -281,7 +301,7 @@ class HydrogenTransportProblem(F.ProblemBase):
 
         # if temperature is a float or int, create a fem.Constant
         elif isinstance(self.temperature, (float, int)):
-            self.temperature_fenics = F.as_fenics_constant(
+            self.temperature_fenics = as_fenics_constant(
                 self.temperature, self.mesh.mesh
             )
         # if temperature is a fem.Constant or function, pass it to temperature_fenics
@@ -298,7 +318,7 @@ class HydrogenTransportProblem(F.ProblemBase):
                             type(self.temperature(t=float(self.t)))} "
                     )
                 # only t is an argument
-                self.temperature_fenics = F.as_fenics_constant(
+                self.temperature_fenics = as_fenics_constant(
                     mesh=self.mesh.mesh, value=self.temperature(t=float(self.t))
                 )
             else:
@@ -337,16 +357,18 @@ class HydrogenTransportProblem(F.ProblemBase):
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
                     if isinstance(field, str):
-                        export.field[idx] = F.find_species_from_name(
+                        export.field[idx] = _species.find_species_from_name(
                             field, self.species
                         )
             elif isinstance(export.field, str):
-                export.field = F.find_species_from_name(export.field, self.species)
+                export.field = _species.find_species_from_name(
+                    export.field, self.species
+                )
 
             # Initialize XDMFFile for writer
-            if isinstance(export, F.XDMFExport):
+            if isinstance(export, exports.XDMFExport):
                 export.define_writer(MPI.COMM_WORLD)
-            if isinstance(export, F.VTXSpeciesExport):
+            if isinstance(export, exports.VTXSpeciesExport):
                 functions = export.get_functions()
                 self._vtxfiles.append(
                     dolfinx.io.VTXWriter(
@@ -362,7 +384,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
-            if isinstance(export, F.SurfaceQuantity):
+            if isinstance(export, exports.SurfaceQuantity):
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
                     D = spe_to_D_global[export.field]
@@ -388,7 +410,7 @@ class HydrogenTransportProblem(F.ProblemBase):
                 coefficient and the expression of the global diffusion coefficient
                 for a given species
         """
-        assert isinstance(species, F.Species)
+        assert isinstance(species, _species.Species)
 
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
@@ -403,7 +425,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         D = fem.Function(self.V_DG_1)
 
         expr = D_0 * ufl.exp(
-            -E_D / F.as_fenics_constant(F.k_B, self.mesh.mesh) / self.temperature_fenics
+            -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
         )
         D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
         D.interpolate(D_expr)
@@ -429,7 +451,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         else:
             elements = []
             for spe in self.species:
-                if isinstance(spe, F.Species):
+                if isinstance(spe, _species.Species):
                     elements.append(element_CG)
             element = basix.ufl.mixed_element(elements)
 
@@ -486,7 +508,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         for bc in self.boundary_conditions:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
-                bc.species = F.find_species_from_name(bc.species, self.species)
+                bc.species = _species.find_species_from_name(bc.species, self.species)
 
         super().define_boundary_conditions()
 
@@ -551,7 +573,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
-            if isinstance(source, F.ParticleSource):
+            if isinstance(source, festim.source.ParticleSource):
                 source.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
@@ -562,7 +584,7 @@ class HydrogenTransportProblem(F.ProblemBase):
         """For each particle flux create the value_fenics"""
         for bc in self.boundary_conditions:
             # create value_fenics for all F.ParticleFluxBC objects
-            if isinstance(bc, F.ParticleFluxBC):
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature_fenics,
@@ -628,7 +650,7 @@ class HydrogenTransportProblem(F.ProblemBase):
 
         for reaction in self.reactions:
             for reactant in reaction.reactant:
-                if isinstance(reactant, F.Species):
+                if isinstance(reactant, festim.species.Species):
                     self.formulation += (
                         reaction.reaction_term(self.temperature_fenics)
                         * reactant.test_function
@@ -656,7 +678,7 @@ class HydrogenTransportProblem(F.ProblemBase):
 
         # add fluxes
         for bc in self.boundary_conditions:
-            if isinstance(bc, F.ParticleFluxBC):
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 self.formulation -= (
                     bc.value_fenics
                     * bc.species.test_function
@@ -710,7 +732,7 @@ class HydrogenTransportProblem(F.ProblemBase):
             # variables time dependent
             species_not_updated = self.species.copy()  # make a copy of the species
             for export in self.exports:
-                if isinstance(export, F.SurfaceFlux):
+                if isinstance(export, exports.SurfaceFlux):
                     # if the D of the species has not been updated yet
                     if export.field in species_not_updated:
                         export.D.interpolate(export.D_expr)
@@ -718,9 +740,10 @@ class HydrogenTransportProblem(F.ProblemBase):
 
         for export in self.exports:
             # TODO if export type derived quantity
-            if isinstance(export, F.SurfaceQuantity):
+            if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
-                    export, (F.SurfaceFlux, F.TotalSurface, F.AverageSurface)
+                    export,
+                    (exports.SurfaceFlux, exports.TotalSurface, exports.AverageSurface),
                 ):
                     export.compute(
                         self.ds,
@@ -733,8 +756,8 @@ class HydrogenTransportProblem(F.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-            elif isinstance(export, F.VolumeQuantity):
-                if isinstance(export, (F.TotalVolume, F.AverageVolume)):
+            elif isinstance(export, exports.VolumeQuantity):
+                if isinstance(export, (exports.TotalVolume, exports.AverageVolume)):
                     export.compute(self.dx)
                 else:
                     export.compute()
@@ -744,12 +767,12 @@ class HydrogenTransportProblem(F.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-            if isinstance(export, F.XDMFExport):
+            if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
 
 
 class HTransportProblemDiscontinuous(HydrogenTransportProblem):
-    interfaces: list[F.Interface]
+    interfaces: list[_subdomain.Interface]
     petsc_options: dict
     surface_to_volume: dict
 
@@ -766,9 +789,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         settings=None,
         exports=None,
         traps=None,
-        interfaces: list[F.Interface] = None,
-        surface_to_volume: dict = None,
-        petsc_options: dict = None,
+        interfaces: list[_subdomain.Interface] | None = None,
+        surface_to_volume: dict | None = None,
+        petsc_options: dict | None = None,
     ):
         """Class for a multi-material hydrogen transport problem
         For other arguments see ``festim.HydrogenTransportProblem``.
@@ -837,7 +860,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = F.as_fenics_constant(
+            self.dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -865,7 +888,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.create_solver()
         self.initialise_exports()
 
-    def create_dirichletbc_form(self, bc: F.FixedConcentrationBC):
+    def create_dirichletbc_form(self, bc: boundary_conditions.FixedConcentrationBC):
         """
         Creates the ``value_fenics`` attribute for a given
         ``festim.FixedConcentrationBC`` and returns the appropriate
@@ -916,7 +939,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "initial conditions not yet implemented for discontinuous"
             )
 
-    def define_function_spaces(self, subdomain: F.VolumeSubdomain):
+    def define_function_spaces(self, subdomain: _subdomain.VolumeSubdomain):
         """
         Creates appropriate function space and functions for a given subdomain (submesh)
         based on the number of species existing in this subdomain. Then stores the functionspace,
@@ -971,11 +994,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_collapsed_function_space[subdomain] = V.sub(
                 i
             ).collapse()
-            species.subdomain_to_post_processing_solution[
-                subdomain
-            ].name = f"{species.name}_{subdomain.id}"
+            species.subdomain_to_post_processing_solution[subdomain].name = (
+                f"{species.name}_{subdomain.id}"
+            )
 
-    def create_subdomain_formulation(self, subdomain: F.VolumeSubdomain):
+    def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """
         Creates the variational formulation for each subdomain and stores it in ``subdomain.F``
 
@@ -1006,14 +1029,14 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             if reaction.volume != subdomain:
                 continue
             for species in reaction.reactant + reaction.product:
-                if isinstance(species, F.Species):
+                if isinstance(species, festim.species.Species):
                     # TODO remove
                     # temporarily overide the solution to the one of the subdomain
                     species.solution = species.subdomain_to_solution[subdomain]
 
             # reactant
             for reactant in reaction.reactant:
-                if isinstance(reactant, F.Species):
+                if isinstance(reactant, festim.species.Species):
                     form += (
                         reaction.reaction_term(self.temperature_fenics)
                         * reactant.subdomain_to_test_function[subdomain]
@@ -1034,7 +1057,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # add fluxes
         for bc in self.boundary_conditions:
-            if isinstance(bc, F.ParticleFluxBC):
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 # check that the bc is applied on a surface
                 # belonging to this subdomain
                 if subdomain == self.surface_to_volume[bc.subdomain]:
@@ -1170,7 +1193,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
         for bc in self.boundary_conditions:
-            if isinstance(bc, F.ParticleFluxBC):
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 volume_subdomain = self.surface_to_volume[bc.subdomain]
                 bc.create_value_fenics(
                     mesh=volume_subdomain.submesh,
@@ -1180,7 +1203,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def initialise_exports(self):
         for export in self.exports:
-            if isinstance(export, F.VTXSpeciesExport):
+            if isinstance(export, exports.VTXSpeciesExport):
                 functions = export.get_functions()
                 self._vtxfiles.append(
                     dolfinx.io.VTXWriter(
@@ -1211,7 +1234,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             vtxfile.write(float(self.t))
 
         for export in self.exports:
-            if not isinstance(export, F.VTXSpeciesExport):
+            if not isinstance(export, exports.VTXSpeciesExport):
                 raise NotImplementedError(f"Export type {type(export)} not implemented")
 
     def iterate(self):

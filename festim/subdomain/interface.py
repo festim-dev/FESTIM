@@ -1,13 +1,13 @@
-import numpy as np
-
 import dolfinx
-import festim as F
+import numpy as np
 from dolfinx.cpp.fem import compute_integration_domains
+
+from festim.subdomain import VolumeSubdomain
 
 
 class Interface:
     id: int
-    subdomains: tuple[F.VolumeSubdomain, F.VolumeSubdomain]
+    subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
     parent_mesh: dolfinx.mesh.Mesh
     mt: dolfinx.mesh.MeshTags
     restriction: list[str, str] = ("+", "-")
@@ -16,7 +16,7 @@ class Interface:
     def __init__(
         self,
         id: int,
-        subdomains: list[F.VolumeSubdomain],
+        subdomains: list[VolumeSubdomain],
         penalty_term: float = 10.0,
     ):
         """Class representing an interface between two subdomains.

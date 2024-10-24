@@ -1,9 +1,10 @@
-import festim as F
 import ufl
 from dolfinx import fem
 
+from .surface_quantity import SurfaceQuantity
 
-class TotalSurface(F.SurfaceQuantity):
+
+class TotalSurface(SurfaceQuantity):
     """Computes the total value of a field on a given surface
 
     Args:

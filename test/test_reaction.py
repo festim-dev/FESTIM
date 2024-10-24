@@ -1,11 +1,11 @@
 from mpi4py import MPI
 
 import pytest
-
-import festim as F
 from dolfinx.fem import Function, functionspace
 from dolfinx.mesh import create_unit_cube
 from ufl import exp
+
+import festim as F
 
 my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
 
