@@ -112,14 +112,12 @@ class HeatTransferProblem(problem.ProblemBase):
                 the boundary condition for modifying linear systems.
         """
         bc.create_value(
-            mesh=self.mesh.mesh,
             function_space=self.function_space,
             t=self.t,
         )
 
         bc_dofs = bc.define_surface_subdomain_dofs(
             facet_meshtags=self.facet_meshtags,
-            mesh=self.mesh,
             function_space=self.function_space,
         )
 

@@ -1,8 +1,13 @@
+from typing import Callable
+
 import numpy as np
+import numpy.typing as npt
 import ufl
 from dolfinx import fem
+from dolfinx import mesh as _mesh
 
-import festim as F
+from festim import helpers
+from festim import subdomain as _subdomain
 
 
 class DirichletBCBase:
@@ -11,23 +16,36 @@ class DirichletBCBase:
     u = value
 
     Args:
-        subdomain (festim.Subdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
+        subdomain: The surface subdomain where the boundary condition is applied
+        value: The value of the boundary condition
 
     Attributes:
-        subdomain (festim.Subdomain): the surface subdomain where the boundary
-            condition is applied
-        value (float or fem.Constant): the value of the boundary condition
-        value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
-            fenics format
-        bc_expr (fem.Expression): the expression of the boundary condition that is used to
-            update the value_fenics
-        time_dependent (bool): True if the value of the bc is time dependent
+        subdomain: The surface subdomain where the boundary condition is applied
+        value: The value of the boundary condition
+        value_fenics: The value of the boundary condition in fenics format
+        bc_expr: The expression of the boundary condition that is used to
+            update the `value_fenics`
 
     """
 
-    def __init__(self, subdomain, value) -> None:
+    subdomain: _subdomain.SurfaceSubdomain
+    value: (
+        np.ndarray
+        | fem.Constant
+        | int
+        | float
+        | Callable[[np.ndarray], np.ndarray]
+        | Callable[[np.ndarray, float], np.ndarray]
+        | Callable[[float], float]
+    )
+    value_fenics: None | fem.Function | fem.Constant | np.ndarray | float
+    bc_expr: fem.Expression
+
+    def __init__(
+        self,
+        subdomain: _subdomain.SurfaceSubdomain,
+        value: np.ndarray | fem.Constant | int | float | Callable,
+    ):
         self.subdomain = subdomain
         self.value = value
 
@@ -39,18 +57,21 @@ class DirichletBCBase:
         return self._value_fenics
 
     @value_fenics.setter
-    def value_fenics(self, value):
+    def value_fenics(self, value: None | fem.Function | fem.Constant | np.ndarray):
         if value is None:
             self._value_fenics = value
             return
         if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
+            # FIXME: Should we allow sending in a callable here?
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {type(value)}"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {
+                    type(value)}"
             )
         self._value_fenics = value
 
     @property
-    def time_dependent(self):
+    def time_dependent(self) -> bool:
+        """Returns true if the value of the boundary condition is time dependent"""
         if self.value is None:
             return False
         if isinstance(self.value, fem.Constant):
@@ -61,22 +82,47 @@ class DirichletBCBase:
         else:
             return False
 
-    def define_surface_subdomain_dofs(self, facet_meshtags, mesh, function_space):
-        """Defines the facets and the degrees of freedom of the boundary
-        condition
+    def define_surface_subdomain_dofs(
+        self,
+        facet_meshtags: _mesh.MeshTags,
+        function_space: fem.FunctionSpace | tuple[fem.FunctionSpace, fem.FunctionSpace],
+    ) -> npt.NDArray[np.int32] | tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]:
+        """Defines the facets and the degrees of freedom of the boundary condition.
+
+        Given the input meshtags, find all facets matching the boundary condition subdomain ID,
+        and locate all DOFs associated with the input function space(s).
+
+        Note:
+            For sub-spaces, a tuple of sub-spaces are expected as input, and a tuple of arrays
+            associated to each of the function spaces are returned.
 
         Args:
-            facet_meshtags (ddolfinx.mesh.MeshTags): the mesh tags of the
-                surface facets
-            mesh (dolfinx.mesh.Mesh): the mesh
-            function_space (dolfinx.fem.FunctionSpaceBase): the function space
+            facet_meshtags: MeshTags describing some facets in the domain
+            mesh:
+            function_space: The function space or a tuple of function spaces: (sub, collapsed)
         """
-        bc_facets = facet_meshtags.find(self.subdomain.id)
-        bc_dofs = fem.locate_dofs_topological(function_space, mesh.fdim, bc_facets)
+        mesh = (
+            function_space[0].mesh
+            if isinstance(function_space, tuple)
+            else function_space.mesh
+        )
+        if facet_meshtags.topology != mesh.topology._cpp_object:
+            raise ValueError(
+                "Mesh of function-space is not the same as the one used for the meshtags"
+            )
+        if mesh.topology.dim - 1 != facet_meshtags.dim:
+            raise ValueError(
+                f"Meshtags of dimension {
+                    facet_meshtags.dim}, expected {mesh.topology.dim-1}"
+            )
+        bc_dofs = fem.locate_dofs_topological(
+            function_space, facet_meshtags.dim, facet_meshtags.find(
+                self.subdomain.id)
+        )
 
         return bc_dofs
 
-    def update(self, t):
+    def update(self, t: float):
         """Updates the boundary condition value
 
         Args:
@@ -95,23 +141,38 @@ class FixedConcentrationBC(DirichletBCBase):
     Args:
         subdomain (festim.Subdomain): the surface subdomain where the boundary
             condition is applied
-        value (float or fem.Constant): the value of the boundary condition
-        species (str): the name of the species
+        value: The value of the boundary condition. It can be a function of space and/or time
+        species: The name of the species
 
     Attributes:
         temperature_dependent (bool): True if the value of the bc is temperature dependent
 
-    Usage:
-        >>> from festim import FixedConcentrationBC
-        >>> FixedConcentrationBC(subdomain=my_subdomain, value=1, species="H")
-        >>> FixedConcentrationBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
-        >>> FixedConcentrationBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
-        >>> FixedConcentrationBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-        >>> FixedConcentrationBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+    Examples:
+
+        .. highlight:: python
+        .. code-block:: python
+
+            from festim import FixedConcentrationBC
+            FixedConcentrationBC(subdomain=my_subdomain, value=1, species="H")
+            FixedConcentrationBC(subdomain=my_subdomain,
+                                 value=lambda x: 1 + x[0], species="H")
+            FixedConcentrationBC(subdomain=my_subdomain,
+                                 value=lambda t: 1 + t, species="H")
+            FixedConcentrationBC(subdomain=my_subdomain,
+                                 value=lambda T: 1 + T, species="H")
+            FixedConcentrationBC(subdomain=my_subdomain,
+                                 value=lambda x, t: 1 + x[0] + t, species="H")
 
     """
 
-    def __init__(self, subdomain, value, species) -> None:
+    species: str
+
+    def __init__(
+        self,
+        subdomain: _subdomain.SurfaceSubdomain,
+        value: np.ndarray | fem.Constant | int | float | Callable,
+        species: str,
+    ):
         self.species = species
         super().__init__(subdomain, value)
 
@@ -129,28 +190,28 @@ class FixedConcentrationBC(DirichletBCBase):
 
     def create_value(
         self,
-        mesh,
         function_space: fem.FunctionSpace,
-        temperature,
-        t: fem.Constant,
+        temperature: float | fem.Constant,
+        t: float | fem.Constant,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.
-        If the value is a constant, it is converted to a fenics.Constant.
-        If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a fenics.Function and the
-        expression of the function is stored in self.bc_expr.
+        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
+        If the value is a function of t, it is converted to  `dolfinx.fem.Constant`.
+        Otherwise, it is converted to a `dolfinx.fem.Function`.Function and the
+        expression of the function is stored in `bc_expr`.
 
         Args:
-            mesh (dolfinx.mesh.Mesh) : the mesh
             function_space (dolfinx.fem.FunctionSpace): the function space
-            temperature (float): the temperature
+            temperature: The temperature
             t (dolfinx.fem.Constant): the time
         """
+        mesh = function_space.mesh
         x = ufl.SpatialCoordinate(mesh)
 
         if isinstance(self.value, (int, float)):
-            self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
+            self.value_fenics = helpers.as_fenics_constant(
+                mesh=mesh, value=self.value)
 
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
@@ -159,9 +220,10 @@ class FixedConcentrationBC(DirichletBCBase):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "
+                        f"self.value should return a float or an int, not {
+                            type(self.value(t=float(t)))} "
                     )
-                self.value_fenics = F.as_fenics_constant(
+                self.value_fenics = helpers.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:
@@ -184,32 +246,28 @@ class FixedConcentrationBC(DirichletBCBase):
 
 
 # alias for FixedConcentrationBC
-class DirichletBC(FixedConcentrationBC):
-    def __init__(self, subdomain, value, species) -> None:
-        super().__init__(subdomain, value, species)
+DirichletBC = FixedConcentrationBC
 
 
 class FixedTemperatureBC(DirichletBCBase):
-    def __init__(self, subdomain, value):
-        super().__init__(subdomain, value)
-
-    def create_value(self, mesh, function_space: fem.FunctionSpace, t: fem.Constant):
+    def create_value(self, function_space: fem.FunctionSpace, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.
-        If the value is a constant, it is converted to a fenics.Constant.
-        If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a fenics.Function and the
-        expression of the function is stored in self.bc_expr.
+        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
+        If the value is a function of t, it is converted to a `dolfinx.fem.Constant`.
+        Otherwise, it is converted to a` dolfinx.fem.Function` and the
+        expression of the function is stored in `bc_expr`.
 
         Args:
-            mesh (dolfinx.mesh.Mesh) : the mesh
-            function_space (dolfinx.fem.FunctionSpace): the function space
-            t (dolfinx.fem.Constant): the time
+            function_space: the function space
+            t: the time
         """
+        mesh = function_space.mesh
         x = ufl.SpatialCoordinate(mesh)
 
         if isinstance(self.value, (int, float)):
-            self.value_fenics = F.as_fenics_constant(mesh=mesh, value=self.value)
+            self.value_fenics = helpers.as_fenics_constant(
+                mesh=mesh, value=self.value)
 
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
@@ -218,9 +276,10 @@ class FixedTemperatureBC(DirichletBCBase):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "
+                        f"self.value should return a float or an int, not {
+                            type(self.value(t=float(t)))} "
                     )
-                self.value_fenics = F.as_fenics_constant(
+                self.value_fenics = helpers.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:

@@ -1,4 +1,4 @@
-__all__ = ["VolumeSubdomain", "SurfaceSubdomain", "Interface"]
+__all__ = ["VolumeSubdomain", "SurfaceSubdomain", "Interface", "Subdomain"]
 
 
 from .interface import Interface

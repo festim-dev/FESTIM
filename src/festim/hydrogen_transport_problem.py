@@ -523,17 +523,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 the boundary condition for modifying linear systems.
         """
         # create value_fenics
-        function_space_value = None
-
-        if callable(bc.value):
-            # if bc.value is a callable then need to provide a functionspace
-            if not self.multispecies:
-                function_space_value = bc.species.sub_function_space
-            else:
-                function_space_value = bc.species.collapsed_function_space
+        if not self.multispecies:
+            function_space_value = bc.species.sub_function_space
+        else:
+            function_space_value = bc.species.collapsed_function_space
 
         bc.create_value(
-            mesh=self.mesh.mesh,
             temperature=self.temperature_fenics,
             function_space=function_space_value,
             t=self.t,
@@ -550,7 +545,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         bc_dofs = bc.define_surface_subdomain_dofs(
             facet_meshtags=self.facet_meshtags,
-            mesh=self.mesh,
             function_space=function_space_dofs,
         )
 
@@ -907,7 +901,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         collapsed_V, _ = sub_V.collapse()
 
         bc.create_value(
-            mesh=self.mesh.mesh,
             temperature=self.temperature_fenics,
             function_space=collapsed_V,
             t=self.t,

@@ -76,7 +76,7 @@ def test_callable_for_value():
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -119,7 +119,7 @@ def test_value_callable_x_t_T():
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -162,7 +162,7 @@ def test_callable_t_only(value):
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Constant)
@@ -210,7 +210,7 @@ def test_callable_x_only():
     t = fem.Constant(my_model.mesh.mesh, 0.0)
 
     # TEST
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -317,11 +317,11 @@ def test_define_value_error_if_ufl_conditional_t_only(value):
     bc = F.DirichletBC(subdomain, value, species)
 
     t = fem.Constant(mesh, 0.0)
-
+    V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
     with pytest.raises(
         ValueError, match="self.value should return a float or an int, not "
     ):
-        bc.create_value(mesh=mesh, function_space=None, temperature=None, t=t)
+        bc.create_value(V, temperature=None, t=t)
 
 
 def test_species_predefined():

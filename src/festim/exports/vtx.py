@@ -16,7 +16,8 @@ class ExportBaseClass:
         name = Path(filename)
         if name.suffix != ext:
             warnings.warn(
-                f"Filename {filename} does not have {ext} extension, adding it."
+                f"Filename {filename} does not have {
+                    ext} extension, adding it."
             )
             name = name.with_suffix(ext)
 
@@ -91,10 +92,6 @@ class VTXSpeciesExport(ExportBaseClass):
                 f"got {type(value)}.",
             )
         self._field = val
-
-    @property
-    def subdomain(self) -> _VolumeSubdomain:
-        return self._subdomain
 
     def get_functions(self) -> list[_Function]:
         """
