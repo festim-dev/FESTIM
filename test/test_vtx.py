@@ -48,6 +48,45 @@ def test_vtx_export_subdomain():
     pass
 
 
+def test_vtx_suffix_converter(tmpdir):
+    filename = str(tmpdir.join("my_export.txt"))
+    my_export = F.VTXSpeciesExport(filename, field=[])
+    assert my_export.filename.suffix == ".bp"
+
+
+def test_vtx_DG(tmpdir):
+    """Test VTX export setup for DG formulation"""
+    my_model = F.HTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
+    my_mat = F.Material(D_0=3, E_D=2, K_S_0=1, E_K_S=0, name="mat")
+
+    s0 = F.VolumeSubdomain1D(1, borders=[0.0, 2], material=my_mat)
+    s1 = F.VolumeSubdomain1D(2, borders=[2, 4], material=my_mat)
+    l0 = F.SurfaceSubdomain1D(1, x=0.0)
+    l1 = F.SurfaceSubdomain1D(2, x=4.0)
+    my_model.interfaces = [F.Interface(6, (s0, s1))]
+
+    my_model.temperature = 55
+    my_model.subdomains = [s0, s1, l0, l1]
+    my_model.surface_to_volume = {l0: s0, l1: s1}
+    # NOTE: Ask Remi why `H` has to live in both s0 and s1
+    my_model.species = [
+        F.Species("H", subdomains=[s0, s1]),
+        F.Species("T", subdomains=[s0, s1], mobile=False),
+    ]
+
+    filename = str(tmpdir.join("my_export.txt"))
+    my_export = F.VTXSpeciesExport(filename, field=my_model.species, subdomain=s0)
+    assert my_export.filename.suffix == ".bp"
+    my_model.exports = [my_export]
+    my_model.settings = F.Settings(atol=1, rtol=0.1)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
+
+    my_model.initialise()
+    assert len(my_export.get_functions()) == 2
+    assert len(my_model._vtxfiles) == 1
+
+
 def test_vtx_integration_with_h_transport_problem(tmpdir):
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))

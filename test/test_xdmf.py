@@ -67,6 +67,12 @@ def test_field_attribute_is_always_list():
     assert isinstance(my_export.field, list)
 
 
+def test_vtx_suffix_converter(tmpdir):
+    filename = str(tmpdir.join("my_export.txt"))
+    my_export = F.XDMFExport(filename, field=[])
+    assert my_export.filename.suffix == ".xdmf"
+
+
 @pytest.mark.parametrize("field", [["H", 2], 1, [F.Species("H"), 1]])
 def test_field_attribute_raises_error_when_invalid_type(field):
     """

@@ -1108,7 +1108,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             if len(all_mobile_species) > 1:
                 raise NotImplementedError("Multiple mobile species not implemented")
             H = all_mobile_species[0]
-
             v_b = H.subdomain_to_test_function[subdomain_0](res[0])
             v_t = H.subdomain_to_test_function[subdomain_1](res[1])
 

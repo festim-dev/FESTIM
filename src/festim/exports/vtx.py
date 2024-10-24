@@ -21,7 +21,7 @@ class ExportBaseClass:
             )
             name = name.with_suffix(ext)
 
-        self._filename = Path(filename)
+        self._filename = name
 
     @property
     def filename(self):
