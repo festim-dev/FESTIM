@@ -116,8 +116,7 @@ class DirichletBCBase:
                     facet_meshtags.dim}, expected {mesh.topology.dim-1}"
             )
         bc_dofs = fem.locate_dofs_topological(
-            function_space, facet_meshtags.dim, facet_meshtags.find(
-                self.subdomain.id)
+            function_space, facet_meshtags.dim, facet_meshtags.find(self.subdomain.id)
         )
 
         return bc_dofs
@@ -210,8 +209,7 @@ class FixedConcentrationBC(DirichletBCBase):
         x = ufl.SpatialCoordinate(mesh)
 
         if isinstance(self.value, (int, float)):
-            self.value_fenics = helpers.as_fenics_constant(
-                mesh=mesh, value=self.value)
+            self.value_fenics = helpers.as_fenics_constant(mesh=mesh, value=self.value)
 
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
@@ -266,8 +264,7 @@ class FixedTemperatureBC(DirichletBCBase):
         x = ufl.SpatialCoordinate(mesh)
 
         if isinstance(self.value, (int, float)):
-            self.value_fenics = helpers.as_fenics_constant(
-                mesh=mesh, value=self.value)
+            self.value_fenics = helpers.as_fenics_constant(mesh=mesh, value=self.value)
 
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
