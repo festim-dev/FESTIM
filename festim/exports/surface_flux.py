@@ -1,7 +1,7 @@
 import ufl
 from dolfinx import fem
 
-from festim.exports import SurfaceQuantity
+from .surface_quantity import SurfaceQuantity
 
 
 class SurfaceFlux(SurfaceQuantity):

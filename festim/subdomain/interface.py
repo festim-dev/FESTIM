@@ -2,7 +2,7 @@ import dolfinx
 import numpy as np
 from dolfinx.cpp.fem import compute_integration_domains
 
-from festim.subdomain import VolumeSubdomain
+from .volume_subdomain import VolumeSubdomain
 
 
 class Interface:
@@ -58,8 +58,10 @@ class Interface:
         Returns
             integration_data: Integration data for interior facets
         """
-        assert (not self.subdomains[0].padded) and (not self.subdomains[1].padded)
-        mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
+        assert (not self.subdomains[0].padded) and (
+            not self.subdomains[1].padded)
+        mesh.topology.create_connectivity(
+            mesh.topology.dim - 1, mesh.topology.dim)
         integration_data = compute_integration_domains(
             dolfinx.fem.IntegralType.interior_facet,
             mesh.topology._cpp_object,

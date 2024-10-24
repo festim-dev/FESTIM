@@ -1,6 +1,6 @@
 from dolfinx import fem
 
-from festim.exports import VolumeQuantity
+from .volume_quantity import VolumeQuantity
 
 
 class AverageVolume(VolumeQuantity):

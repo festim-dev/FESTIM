@@ -1,7 +1,7 @@
 import ufl
 from dolfinx import fem
 
-from festim.exports import VolumeQuantity
+from .volume_quantity import VolumeQuantity
 
 
 class TotalVolume(VolumeQuantity):

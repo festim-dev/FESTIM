@@ -1,9 +1,9 @@
 from dolfinx import fem
 
-import festim.exports.surface_quantity as sq
+from .surface_quantity import SurfaceQuantity
 
 
-class AverageSurface(sq.SurfaceQuantity):
+class AverageSurface(SurfaceQuantity):
     """Computes the average value of a field on a given surface
 
     Args:

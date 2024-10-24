@@ -1,7 +1,7 @@
 import csv
 import os
 
-import festim as F
+from festim import species
 
 
 class VolumeQuantity:
@@ -50,7 +50,7 @@ class VolumeQuantity:
     @field.setter
     def field(self, value):
         # check that field is festim.Species
-        if not isinstance(value, (F.Species, str)):
+        if not isinstance(value, (species.Species, str)):
             raise TypeError("field must be of type festim.Species")
 
         self._field = value
