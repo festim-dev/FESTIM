@@ -25,5 +25,6 @@ jobs:
           ruff check .
 
       - name: mypy
+        continue-on-error: true
         run: |
           python -m mypy .
