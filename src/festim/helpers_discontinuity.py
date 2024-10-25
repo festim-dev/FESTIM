@@ -9,6 +9,7 @@ def transfer_meshtags_to_submesh(
     Transfer a meshtag from a parent mesh to a sub-mesh.
     """
 
+    # Invert map from sub-mesh to parent-mesh to parent-mesh to sub-mesh
     tdim = mesh.topology.dim
     cell_imap = mesh.topology.index_map(tdim)
     num_cells = cell_imap.size_local + cell_imap.num_ghosts
@@ -16,8 +17,9 @@ def transfer_meshtags_to_submesh(
     mesh_to_submesh[sub_cell_to_parent] = np.arange(
         len(sub_cell_to_parent), dtype=np.int32
     )
-    sub_vertex_to_parent = np.asarray(sub_vertex_to_parent)
 
+    # Compute and access various entity to vertex and vertex to
+    # entity connectivity for parent and sub-mesh.
     submesh.topology.create_connectivity(entity_tag.dim, 0)
 
     num_child_entities = (
