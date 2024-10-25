@@ -80,8 +80,8 @@ class Reaction:
         for i in value:
             if not isinstance(i, (_Species, _ImplicitSpecies)):
                 raise TypeError(
-                    f"reactant must be an F.Species or F.ImplicitSpecies, not {
-                        type(i)}"
+                    "reactant must be an F.Species or F.ImplicitSpecies, not"
+                    + f"{type(i)}"
                 )
         self._reactant = value
 
@@ -112,13 +112,13 @@ class Reaction:
         if self.product == []:
             if self.p_0 is not None:
                 raise ValueError(
-                    f"p_0 must be None, not {
-                        self.p_0} when no products are present."
+                    f"p_0 must be None, not {self.p_0}"
+                    + " when no products are present."
                 )
             if self.E_p is not None:
                 raise ValueError(
-                    f"E_p must be None, not {
-                        self.E_p} when no products are present."
+                    f"E_p must be None, not {self.E_p}"
+                    + " when no products are present."
                 )
         else:
             if self.p_0 == None:
