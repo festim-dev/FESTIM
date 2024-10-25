@@ -4,7 +4,6 @@ from mpi4py import MPI
 
 import basix
 import dolfinx
-import numpy as np
 import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
@@ -864,18 +863,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.create_source_values_fenics()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
-
         for subdomain in self.volume_subdomains:
             self.define_function_spaces(subdomain)
-            ct_r = dolfinx.mesh.meshtags(
-                self.mesh.mesh,
-                self.mesh.mesh.topology.dim,
-                subdomain.submesh_to_mesh,
-                np.full_like(subdomain.submesh_to_mesh, 1, dtype=np.int32),
-            )
-            subdomain.dx = ufl.Measure(
-                "dx", domain=self.mesh.mesh, subdomain_data=ct_r, subdomain_id=1
-            )
             self.create_subdomain_formulation(subdomain)
             subdomain.u.name = f"u_{subdomain.id}"
 
@@ -1007,16 +996,15 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             u = spe.subdomain_to_solution[subdomain]
             u_n = spe.subdomain_to_prev_solution[subdomain]
             v = spe.subdomain_to_test_function[subdomain]
-            dx = subdomain.dx
 
             D = subdomain.material.get_diffusion_coefficient(
                 self.mesh.mesh, self.temperature_fenics, spe
             )
             if self.settings.transient:
-                form += ((u - u_n) / self.dt) * v * dx
+                form += ((u - u_n) / self.dt) * v * self.dx(subdomain.id)
 
             if spe.mobile:
-                form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * dx
+                form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * self.dx(subdomain.id)
 
         # add reaction terms
         for reaction in self.reactions:
@@ -1034,7 +1022,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     form += (
                         reaction.reaction_term(self.temperature_fenics)
                         * reactant.subdomain_to_test_function[subdomain]
-                        * dx
+                        * self.dx(subdomain.id)
                     )
 
             # product
@@ -1046,7 +1034,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 form += (
                     -reaction.reaction_term(self.temperature_fenics)
                     * product.subdomain_to_test_function[subdomain]
-                    * dx
+                    * self.dx(subdomain.id)
                 )
 
         # add fluxes
@@ -1062,7 +1050,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
-                form -= source.value_fenics * v * dx
+                form -= source.value_fenics * v * self.dx(subdomain.id)
 
         # store the form in the subdomain object
         subdomain.F = form
