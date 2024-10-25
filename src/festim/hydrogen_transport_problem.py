@@ -1240,7 +1240,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.update_time_dependent_values()
 
         # solve main problem
-        self.solver.solve(self.settings.rtol)
+        self.solver.solve(self.settings.atol, self.settings.rtol)
 
         # post processing
         self.post_processing()

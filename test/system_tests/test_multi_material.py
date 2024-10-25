@@ -312,7 +312,9 @@ def test_3_materials_transient():
 
     my_model.temperature = lambda x: 300 + 100 * x[0]
 
-    my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=True, final_time=100)
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, transient=True, final_time=100
+    )
     my_model.settings.stepsize = 1
 
     my_model.exports = [
