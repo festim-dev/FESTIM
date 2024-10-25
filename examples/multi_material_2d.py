@@ -1,11 +1,11 @@
-import festim as F
-
 from mpi4py import MPI
+
 import dolfinx
 import dolfinx.fem.petsc
 import numpy as np
-import festim as F
 import ufl
+
+import festim as F
 
 
 # ---------------- Generate a mesh ----------------
@@ -85,7 +85,10 @@ my_model.subdomains = [bottom_domain, top_domain, top_surface, bottom_surface]
 
 # we should be able to automate this
 my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
-my_model.surface_to_volume = {top_surface: top_domain, bottom_surface: bottom_domain}
+my_model.surface_to_volume = {
+    top_surface: top_domain,
+    bottom_surface: bottom_domain,
+}
 
 H = F.Species("H", mobile=True)
 
@@ -107,7 +110,7 @@ my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
 
 my_model.exports = [
-    F.VTXExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+    F.VTXSpeciesExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
     for subdomain in my_model.volume_subdomains
 ]
 

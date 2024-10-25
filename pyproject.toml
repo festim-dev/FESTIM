@@ -1,10 +1,99 @@
 [build-system]
-requires = [
-    "setuptools >= 45",
-    "wheel",
-    "setuptools_scm[toml] >= 7.0.5"
-]
+requires = ["setuptools >= 61", "wheel", "setuptools-scm[toml] >= 7.0.5"]
 build-backend = "setuptools.build_meta"
 
+[project]
+authors = [
+    { name = "Remi Delaporte-Mathurin" },
+    { email = "rdelaportemathurin@gmail.com" },
+]
+dynamic = ["version"]
+name = "FESTIM"
+description = "Finite element simulations of hydrogen transport"
+readme = "README/md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+dependencies = ["tqdm", "scifem>=0.2.8"]
+classifiers = [
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+test = ["pytest >= 5.4.3", "pytest-cov", "sympy"]
+lint = ["ruff", "mypy"]
+docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]
+
+[project.urls]
+Homepage = "https://github.com/RemDelaporteMathurin/FESTIM"
+Issues = "https://github.com/RemDelaporteMathurin/FESTIM/issues"
+
+
 [tool.setuptools_scm]
-write_to = "festim/_version.py"
+write_to = "src/festim/_version.py"
+
+[tool.mypy]
+# Suggested at https://blog.wolt.com/engineering/2021/09/30/professional-grade-mypy-configuration/
+# Goal would be to make all of the below True long-term
+disallow_untyped_defs = false
+disallow_any_unimported = false
+no_implicit_optional = false
+check_untyped_defs = false
+warn_return_any = false
+warn_unused_ignores = false
+show_error_codes = true
+ignore_missing_imports = true
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle
+    "W",      # pycodestyle
+    "F",      # pyflakes
+    "I",      # isort - use standalone isort
+    "RUF",    # Ruff-specific rules
+    "UP",     # pyupgrade
+    "ICN",    # flake8-import-conventions
+    "NPY",    # numpy-specific rules
+    "FLY",    # use f-string not static joins
+    "NPY201", # numpy 2.x ruleset
+]
+ignore = ["UP007", "RUF012"]
+allowed-confusables = ["σ"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["festim"]
+known-third-party = [
+    "basix",
+    "dolfinx",
+    "ffcx",
+    "ufl",
+    "gmsh",
+    "numba",
+    "numpy",
+    "pytest",
+    "pyvista",
+    "pyamg",
+]
+section-order = [
+    "future",
+    "standard-library",
+    "mpi",
+    "third-party",
+    "first-party",
+    "local-folder",
+]
+
+[tool.ruff.lint.isort.sections]
+"mpi" = ["mpi4py", "petsc4py"]

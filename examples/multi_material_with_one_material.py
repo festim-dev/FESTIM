@@ -1,4 +1,5 @@
 import numpy as np
+
 import festim as F
 
 my_model = F.HTransportProblemDiscontinuous()
@@ -57,7 +58,7 @@ my_model.temperature = lambda x: 300 + 100 * x[0]
 my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
 
 my_model.exports = [
-    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+    F.VTXSpeciesExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
     for subdomain in my_model.volume_subdomains
 ]
 

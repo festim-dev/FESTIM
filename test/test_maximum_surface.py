@@ -1,6 +1,7 @@
-import festim as F
 import numpy as np
 from dolfinx import fem
+
+import festim as F
 
 
 def test_maximum_surface_compute_1D():
@@ -14,7 +15,7 @@ def test_maximum_surface_compute_1D():
     dummy_surface.locate_boundary_facet_indices(mesh=my_mesh.mesh)
 
     # give function to species
-    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: (x[0] - 3) ** 2)
 

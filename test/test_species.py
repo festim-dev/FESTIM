@@ -1,11 +1,13 @@
-import festim as F
+from mpi4py import MPI
+
 import dolfinx
-import ufl
 import numpy as np
 import pytest
-from dolfinx.fem import functionspace, Function
+import ufl
+from dolfinx.fem import Function, functionspace
 from dolfinx.mesh import create_unit_cube
-from mpi4py import MPI
+
+import festim as F
 
 
 def test_assign_functions_to_species():

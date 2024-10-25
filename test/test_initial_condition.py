@@ -1,8 +1,10 @@
-import numpy as np
-import festim as F
-import pytest
 from types import LambdaType
+
+import numpy as np
+import pytest
 from dolfinx import fem
+
+import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
 test_mesh = F.Mesh1D(np.linspace(0, 1, 100))

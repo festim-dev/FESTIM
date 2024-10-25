@@ -1,6 +1,7 @@
 import numpy as np
-import festim as F
 import pytest
+
+import festim as F
 
 
 def concentration_A_exact(t, c_A_0, k, p):

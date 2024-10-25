@@ -1,4 +1,5 @@
 import numpy as np
+
 import festim as F
 
 my_model = F.HTransportProblemDiscontinuous()
@@ -49,7 +50,10 @@ my_model.subdomains = [
     left_surface,
     right_surface,
 ]
-my_model.surface_to_volume = {right_surface: right_domain, left_surface: left_domain}
+my_model.surface_to_volume = {
+    right_surface: right_domain,
+    left_surface: left_domain,
+}
 
 H = F.Species("H", mobile=True)
 trapped_H = F.Species("H_trapped", mobile=False)
@@ -86,10 +90,12 @@ my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=True, final_time=
 my_model.settings.stepsize = 1
 
 my_model.exports = [
-    F.VTXExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+    F.VTXSpeciesExport(filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
     for subdomain in my_model.volume_subdomains
 ] + [
-    F.VTXExport(filename=f"u_t_{subdomain.id}.bp", field=trapped_H, subdomain=subdomain)
+    F.VTXSpeciesExport(
+        filename=f"u_t_{subdomain.id}.bp", field=trapped_H, subdomain=subdomain
+    )
     for subdomain in my_model.volume_subdomains
 ]
 

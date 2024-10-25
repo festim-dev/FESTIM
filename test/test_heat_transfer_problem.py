@@ -1,14 +1,16 @@
-import festim as F
-import numpy as np
-import dolfinx
-from dolfinx.io import XDMFFile
-from dolfinx import fem
-import ufl
-import mpi4py.MPI as MPI
-import tqdm.autonotebook
-
-import pytest
 import os
+
+import mpi4py.MPI as MPI
+
+import dolfinx
+import numpy as np
+import pytest
+import tqdm.autonotebook
+import ufl
+from dolfinx import fem
+from dolfinx.io import XDMFFile
+
+import festim as F
 
 
 def source_from_exact_solution(
@@ -64,7 +66,10 @@ def error_L2(u_computed, u_exact, degree_raise=3):
 
 def test_MMS_1():
     thermal_conductivity = 4.0
-    exact_solution = lambda x: 2 * x[0] ** 2
+
+    def exact_solution(x):
+        return 2 * x[0] ** 2
+
     mms_source = -4 * thermal_conductivity
 
     my_problem = F.HeatTransferProblem()
@@ -106,9 +111,16 @@ def test_MMS_1():
 
 def test_MMS_T_dependent_thermal_cond():
     """MMS test with space T dependent thermal cond"""
-    thermal_conductivity = lambda T: 3 * T + 2
-    exact_solution = lambda x: 2 * x[0] ** 2 + 1
-    mms_source = lambda x: -(72 * x[0] ** 2 + 20)  # TODO would be nice to automate
+
+    def thermal_conductivity(T):
+        return 3 * T + 2
+
+    def exact_solution(x):
+        return 2 * x[0] ** 2 + 1
+
+    # TODO would be nice to automate
+    def mms_source(x):
+        return -(72 * x[0] ** 2 + 20)
 
     my_problem = F.HeatTransferProblem()
 
@@ -154,7 +166,10 @@ def test_heat_transfer_transient():
     density = 2
     heat_capacity = 3
     thermal_conductivity = 4
-    exact_solution = lambda x, t: 2 * x[0] ** 2 + 20 * t
+
+    def exact_solution(x, t):
+        return 2 * x[0] ** 2 + 20 * t
+
     dTdt = 20
     mms_source = density * heat_capacity * dTdt - thermal_conductivity * 4
 
@@ -196,17 +211,19 @@ def test_heat_transfer_transient():
     my_problem.settings.stepsize = F.Stepsize(0.1)
 
     my_problem.exports = [
-        F.VTXExportForTemperature(filename="test_transient_heat_transfer.bp")
+        F.VTXTemperatureExport(filename="test_transient_heat_transfer.bp")
     ]
 
     my_problem.initialise()
     my_problem.run()
 
     computed_solution = my_problem.u
-    final_time_sim = (
-        my_problem.t.value
-    )  # we use the exact final time of the simulation which may differ from the one specified in the settings
-    exact_solution_end = lambda x: exact_solution(x, final_time_sim)
+    # we use the exact final time of the simulation which may differ from the one specified in the settings
+    final_time_sim = my_problem.t.value
+
+    def exact_solution_end(x):
+        return exact_solution(x, final_time_sim)
+
     L2_error = error_L2(computed_solution, exact_solution_end)
     assert L2_error < 1e-7
 
@@ -247,18 +264,27 @@ def test_MES():
     my_problem.run()
 
     computed_solution = my_problem.u
-    analytical_solution = lambda x: 4 * x[0] * (1 - x[0])
+
+    def analytical_solution(x):
+        return 4 * x[0] * (1 - x[0])
+
     L2_error = error_L2(computed_solution, analytical_solution)
     assert L2_error < 1e-7
 
 
 # TODO populate this in other tests
 def test_sympify():
-    exact_solution = lambda x, t: 2 * x[0] ** 2 + 20 * t
+    def exact_solution(x, t):
+        return 2 * x[0] ** 2 + 20 * t
 
-    density = lambda T: 0.2 * T + 2
-    heat_capacity = lambda T: 0.2 * T + 3
-    thermal_conductivity = lambda T: 0.1 * T + 4
+    def density(T):
+        return 0.2 * T + 2
+
+    def heat_capacity(T):
+        return 0.2 * T + 3
+
+    def thermal_conductivity(T):
+        return 0.1 * T + 4
 
     mms_source_from_sp = source_from_exact_solution(
         exact_solution,
@@ -266,7 +292,9 @@ def test_sympify():
         heat_capacity=lambda x, t: heat_capacity(exact_solution(x, t)),
         thermal_conductivity=lambda x, t: thermal_conductivity(exact_solution(x, t)),
     )
-    mms_source = lambda x, t: mms_source_from_sp((x[0], None, None), t)
+
+    def mms_source(x, t):
+        return mms_source_from_sp((x[0], None, None), t)
 
     my_problem = F.HeatTransferProblem()
 
@@ -307,18 +335,19 @@ def test_sympify():
     my_problem.settings.stepsize = F.Stepsize(0.05)
 
     my_problem.exports = [
-        F.VTXExportForTemperature(filename="test_transient_heat_transfer.bp")
+        F.VTXTemperatureExport(filename="test_transient_heat_transfer.bp")
     ]
 
     my_problem.initialise()
     my_problem.run()
 
     computed_solution = my_problem.u
-    final_time_sim = (
-        my_problem.t.value
-    )  # we use the exact final time of the simulation which may differ from the one specified in the settings
+    # we use the exact final time of the simulation which may differ from the one specified in the settings
+    final_time_sim = my_problem.t.value
 
-    exact_solution_end = lambda x: exact_solution(x, final_time_sim)
+    def exact_solution_end(x):
+        return exact_solution(x, final_time_sim)
+
     L2_error = error_L2(computed_solution, exact_solution_end)
     assert L2_error < 1e-7
 
@@ -338,7 +367,10 @@ def test_sources():
     # Test that setting invalid sources raises a TypeError
     with pytest.raises(TypeError, match="festim.HeatSource objects"):
         spe = F.Species("H")
-        htp.sources = [F.ParticleSource(1, vol, spe), F.ParticleSource(1, vol, spe)]
+        htp.sources = [
+            F.ParticleSource(1, vol, spe),
+            F.ParticleSource(1, vol, spe),
+        ]
 
 
 def test_boundary_conditions():
