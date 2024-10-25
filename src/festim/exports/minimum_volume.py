@@ -24,5 +24,9 @@ class MinimumVolume(VolumeQuantity):
         Computes the minimum value of solution function within the defined volume
         subdomain, and appends it to the data list
         """
-        self.value = np.min(self.field.solution.x.array[self.volume.entities])
+        solution = self.field.solution
+        indices = self.volume.locate_subdomain_entities(solution.function_space.mesh)
+        # FIXME: np.min/np.max is not parallel safe (unique value per process)
+        # Needs to use a reduction operation (MPI.comm.allreduce(..., op=...))
+        self.value = np.min(self.field.solution.x.array[indices])
         self.data.append(self.value)

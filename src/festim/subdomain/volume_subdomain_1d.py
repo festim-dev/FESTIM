@@ -1,5 +1,6 @@
 import numpy as np
-from dolfinx.mesh import locate_entities
+import numpy.typing as npt
+from dolfinx.mesh import Mesh, locate_entities
 
 from festim.subdomain import VolumeSubdomain
 
@@ -27,20 +28,18 @@ class VolumeSubdomain1D(VolumeSubdomain):
         super().__init__(id, material)
         self.borders = borders
 
-    def locate_subdomain_entities(self, mesh, vdim):
+    def locate_subdomain_entities(self, mesh: Mesh) -> npt.NDArray[np.int32]:
         """Locates all cells in subdomain borders within domain
 
         Args:
             mesh (dolfinx.mesh.Mesh): the mesh of the model
-            vdim (int): the dimension of the volumes of the mesh,
-                for 1D this is always 1
 
         Returns:
             entities (np.array): the entities of the subdomain
         """
-        self.entities = locate_entities(
+        entities = locate_entities(
             mesh,
-            vdim,
+            mesh.topology.dim,
             lambda x: np.logical_and(x[0] >= self.borders[0], x[0] <= self.borders[1]),
         )
-        return self.entities
+        return entities

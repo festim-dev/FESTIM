@@ -24,5 +24,9 @@ class MaximumSurface(sq.SurfaceQuantity):
         Computes the maximum value of the field on the defined surface
         subdomain, and appends it to the data list
         """
-        self.value = np.max(self.field.solution.x.array[self.surface.indices])
+        solution = self.field.solution
+
+        indices = self.surf.locate_boundary_facet_indices(solution.function_space.mesh)
+
+        self.value = np.max(self.field.solution.x.array[indices])
         self.data.append(self.value)

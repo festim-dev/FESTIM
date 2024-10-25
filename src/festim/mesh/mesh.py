@@ -94,7 +94,7 @@ class Mesh:
 
         for vol in volume_subdomains:
             # find all cells in subdomain and mark them as vol.id
-            entities = vol.locate_subdomain_entities(self._mesh, self.vdim)
+            entities = vol.locate_subdomain_entities(self._mesh)
             tags_volumes[entities] = vol.id
 
         volume_meshtags = meshtags(

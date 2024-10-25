@@ -1,10 +1,10 @@
 import dolfinx.mesh
 import numpy as np
 
-import festim as F
+from .surface_subdomain import SurfaceSubdomain
 
 
-class SurfaceSubdomain1D(F.SurfaceSubdomain):
+class SurfaceSubdomain1D(SurfaceSubdomain):
     """
     Surface subdomain class for 1D cases
 
@@ -20,11 +20,15 @@ class SurfaceSubdomain1D(F.SurfaceSubdomain):
         >>> surf_subdomain = F.SurfaceSubdomain1D(id=1, x=1)
     """
 
-    def __init__(self, id, x) -> None:
+    # FIXME: Rename this to _id and use getter/setter
+    id: int
+    x: float
+
+    def __init__(self, id: int, x: float) -> None:
         super().__init__(id)
         self.x = x
 
-    def locate_boundary_facet_indices(self, mesh):
+    def locate_boundary_facet_indices(self, mesh: dolfinx.mesh.Mesh):
         """Locates the dof of the surface subdomain within the function space
         and return the index of the dof
 
@@ -36,8 +40,7 @@ class SurfaceSubdomain1D(F.SurfaceSubdomain):
                 indices of the subdomain
         """
         assert mesh.geometry.dim == 1, "This method is only for 1D meshes"
-        fdim = 0
-        self.indices = dolfinx.mesh.locate_entities_boundary(
-            mesh, fdim, lambda x: np.isclose(x[0], self.x)
+        indices = dolfinx.mesh.locate_entities_boundary(
+            mesh, 0, lambda x: np.isclose(x[0], self.x)
         )
-        return self.indices
+        return indices

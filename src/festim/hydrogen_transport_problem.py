@@ -416,7 +416,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
-            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh, self.mesh.vdim)
+            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh)
 
             # replace values of D_0 and E_D by values from the material
             D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
