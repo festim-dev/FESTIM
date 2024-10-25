@@ -1155,22 +1155,18 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain_1.F += F_1
 
         J = []
-        forms = []
         for subdomain1 in self.volume_subdomains:
             jac = []
-            form = subdomain1.F
             for subdomain2 in self.volume_subdomains:
                 jac.append(
-                    dolfinx.fem.form(
-                        ufl.derivative(form, subdomain2.u),
-                        entity_maps=entity_maps,
-                    )
+                    ufl.derivative(subdomain1.F, subdomain2.u),
                 )
             J.append(jac)
-            forms.append(dolfinx.fem.form(subdomain1.F, entity_maps=entity_maps))
-
-        self.forms = forms
-        self.J = J
+        self.forms = dolfinx.fem.form(
+            [subdomain.F for subdomain in self.volume_subdomains],
+            entity_maps=entity_maps,
+        )
+        self.J = dolfinx.fem.form(J, entity_maps=entity_maps)
 
     def create_solver(self):
         self.solver = NewtonSolver(
