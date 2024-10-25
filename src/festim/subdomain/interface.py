@@ -75,8 +75,8 @@ class Interface:
         switch = mapped_cell_1 > mapped_cell_0
         # Order restriction on one side
         if True in switch:
-            ordered_integration_data[switch, [0, 1, 2, 3]] = ordered_integration_data[
-                switch, [2, 3, 0, 1]
+            ordered_integration_data[switch, :] = ordered_integration_data[switch][
+                :, [2, 3, 0, 1]
             ]
 
         # Check that other restriction lies in other interface
