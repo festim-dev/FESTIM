@@ -80,7 +80,7 @@ class Reaction:
         for i in value:
             if not isinstance(i, (_Species, _ImplicitSpecies)):
                 raise TypeError(
-                    "reactant must be an F.Species or F.ImplicitSpecies, not"
+                    "reactant must be an F.Species or F.ImplicitSpecies, not "
                     + f"{type(i)}"
                 )
         self._reactant = value

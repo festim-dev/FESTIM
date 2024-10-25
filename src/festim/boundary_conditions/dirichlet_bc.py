@@ -217,7 +217,7 @@ class FixedConcentrationBC(DirichletBCBase):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        "self.value should return a float or an int, not"
+                        "self.value should return a float or an int, not "
                         + f"{type(self.value(t=float(t)))} "
                     )
                 self.value_fenics = helpers.as_fenics_constant(
@@ -272,7 +272,7 @@ class FixedTemperatureBC(DirichletBCBase):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        "self.value should return a float or an int, not"
+                        "self.value should return a float or an int, not "
                         + f"{type(self.value(t=float(t)))} "
                     )
                 self.value_fenics = helpers.as_fenics_constant(
