@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from ufl import exp
 
@@ -53,7 +53,7 @@ class Reaction:
         k_0: float,
         E_k: float,
         volume: VS1D,
-        product: Optional[Union[_Species, List[_Species]]] = [],
+        product: Optional[Union[_Species, list[_Species]]] = [],
         p_0: float = None,
         E_p: float = None,
     ) -> None:

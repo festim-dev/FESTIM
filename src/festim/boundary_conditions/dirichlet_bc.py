@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import numpy.typing as npt
@@ -64,8 +64,8 @@ class DirichletBCBase:
         if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
             # FIXME: Should we allow sending in a callable here?
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not {
-                    type(value)}"
+                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"
+                + f"{type(value)}"
             )
         self._value_fenics = value
 
@@ -112,8 +112,7 @@ class DirichletBCBase:
             )
         if mesh.topology.dim - 1 != facet_meshtags.dim:
             raise ValueError(
-                f"Meshtags of dimension {
-                    facet_meshtags.dim}, expected {mesh.topology.dim-1}"
+                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim-1}"
             )
         bc_dofs = fem.locate_dofs_topological(
             function_space, facet_meshtags.dim, facet_meshtags.find(self.subdomain.id)
@@ -218,8 +217,8 @@ class FixedConcentrationBC(DirichletBCBase):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {
-                            type(self.value(t=float(t)))} "
+                        "self.value should return a float or an int, not"
+                        + f"{type(self.value(t=float(t)))} "
                     )
                 self.value_fenics = helpers.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
@@ -273,8 +272,8 @@ class FixedTemperatureBC(DirichletBCBase):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {
-                            type(self.value(t=float(t)))} "
+                        "self.value should return a float or an int, not"
+                        + f"{type(self.value(t=float(t)))} "
                     )
                 self.value_fenics = helpers.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
