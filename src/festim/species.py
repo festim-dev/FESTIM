@@ -141,8 +141,8 @@ class ImplicitSpecies:
             for other in self.others:
                 if other.solution is None:
                     raise ValueError(
-                        f"Cannot compute concentration of {self.name} " +
-                        f"because {other.name} has no solution."
+                        f"Cannot compute concentration of {self.name} "
+                        + f"because {other.name} has no solution."
                     )
         return self.n - sum([other.solution for other in self.others])
 
