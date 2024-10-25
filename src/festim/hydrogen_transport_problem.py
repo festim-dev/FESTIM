@@ -227,8 +227,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for spe in value:
             if not isinstance(spe, _species.Species):
                 raise TypeError(
-                    f"elements of species must be of type festim.Species not {
-                        type(spe)}"
+                    f"elements of species must be of type festim.Species not "
+                    f"{type(spe)}"
                 )
         self._species = value
 
@@ -316,8 +316,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if "t" in arguments and "x" not in arguments:
                 if not isinstance(self.temperature(t=float(self.t)), (float, int)):
                     raise ValueError(
-                        f"self.temperature should return a float or an int, not {
-                            type(self.temperature(t=float(self.t)))} "
+                        f"self.temperature should return a float or an int, not "
+                        f"{type(self.temperature(t=float(self.t)))} "
                     )
                 # only t is an argument
                 self.temperature_fenics = as_fenics_constant(

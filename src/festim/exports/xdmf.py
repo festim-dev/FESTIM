@@ -50,8 +50,8 @@ class XDMFExport(ExportBaseClass):
             val = [value]
         else:
             raise TypeError(
-                f"field must be of type festim.Species or a list of festim.Species, got {
-                    type(value)}."
+                f"field must be of type festim.Species or a list of festim.Species, got "
+                f"{type(value)}."
             )
         self._field = val
 

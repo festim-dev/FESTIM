@@ -16,8 +16,7 @@ class ExportBaseClass:
         name = Path(filename)
         if name.suffix != ext:
             warnings.warn(
-                f"Filename {filename} does not have {
-                    ext} extension, adding it."
+                f"Filename {filename} does not have {ext} extension, adding it."
             )
             name = name.with_suffix(ext)
 
