@@ -111,21 +111,31 @@ class TestWrite:
         assert (np.diff(my_export.data[:, 0]) >= 0).all()
 
     @pytest.mark.parametrize(
-        "materials,project_to_DG,export_len",
+        "materials,project_to_DG,filter,export_len",
         [
-            (None, False, 11),
+            (None, False, False, 11),
             (
                 [
                     Material(id=1, D_0=1, E_D=0, S_0=1, E_S=0, borders=[0, 0.5]),
                     Material(id=2, D_0=2, E_D=0, S_0=2, E_S=0, borders=[0.5, 1]),
                 ],
                 True,
+                True,
                 12,  # + 1 duplicate near the interface
+            ),
+            (
+                [
+                    Material(id=1, D_0=1, E_D=0, S_0=1, E_S=0, borders=[0, 0.5]),
+                    Material(id=2, D_0=2, E_D=0, S_0=2, E_S=0, borders=[0.5, 1]),
+                ],
+                True,
+                False,
+                20,  # 2 * (len_vertices - 1)
             ),
         ],
     )
     def test_duplicates(
-        self, materials, project_to_DG, export_len, my_export, function, mesh
+        self, materials, project_to_DG, filter, export_len, my_export, function, mesh
     ):
         """
         Checks that the exported data does not contain duplicates
@@ -133,11 +143,13 @@ class TestWrite:
         """
         current_time = 1
         my_export.function = function
+        my_export.filter = filter
         my_export.initialise(mesh, project_to_DG, materials)
         my_export.write(
             current_time=current_time,
             final_time=None,
         )
+        print(my_export._unique_indices)
         assert len(my_export.data) == export_len
 
 

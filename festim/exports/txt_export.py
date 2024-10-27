@@ -13,12 +13,15 @@ class TXTExport(festim.Export):
         field (str): the exported field ("solute", "1", "retention",
             "T"...)
         filename (str): the filename (must end with .txt).
-        write_at_last (bool): if True, the data will be exported at
-            the last export time. Otherwise, the data will be exported
-            at each export time. Defaults to False.
         times (list, optional): if provided, the field will be
             exported at these timesteps. Otherwise exports at all
             timesteps. Defaults to None.
+        filter (bool): if True and the field is projected to a DG function space,
+            the duplicated vertices in the output file array are filtered except those near interfaces.
+            Defaults to True.
+        write_at_last (bool): if True, the data will be exported at
+            the last export time. Otherwise, the data will be exported
+            at each export time. Defaults to False.
         header_format (str, optional): the format of column headers.
             Defautls to ".2e".
 
@@ -29,10 +32,20 @@ class TXTExport(festim.Export):
         header (str): the header of the exported file.
         V (fenics.FunctionSpace): the vector-function space for the exported field.
 
+    .. note::
+        The exported field is projected to DG if conservation of chemical potential is considered or
+        ``traps_element_type`` is "DG".
+
     """
 
     def __init__(
-        self, field, filename, times=None, write_at_last=False, header_format=".2e"
+        self,
+        field,
+        filename,
+        times=None,
+        filter=True,
+        write_at_last=False,
+        header_format=".2e",
     ) -> None:
         super().__init__(field=field)
         if times:
@@ -40,6 +53,7 @@ class TXTExport(festim.Export):
         else:
             self.times = times
         self.filename = filename
+        self.filter = filter
         self.write_at_last = write_at_last
         self.header_format = header_format
 
@@ -116,7 +130,7 @@ class TXTExport(festim.Export):
         The array is then used to obtain indices of sorted elements for the data export.
 
         .. note::
-            If DG1 is used, the duplicated vertices in the array are filtered except those near interfaces,
+            If DG1 is used and filter flag is True, the duplicated vertices in the array are filtered except those near interfaces,
             The interfaces are defined by ``material.borders`` in the ``Materials`` list.
 
         Args:
@@ -134,9 +148,9 @@ class TXTExport(festim.Export):
         x = f.interpolate(f.Expression("x[0]", degree=1), self.V)
         x_column = np.transpose([x.vector()[:]])
 
-        # if project_to_DG is True, get indices of duplicates near interfaces
+        # if filter is True, get indices of duplicates near interfaces
         # and indices of the first elements from a pair of duplicates otherwise
-        if project_to_DG:
+        if project_to_DG and self.filter:
             # Collect all borders
             borders = []
             for material in materials:
@@ -165,7 +179,7 @@ class TXTExport(festim.Export):
             self._unique_indices = np.array(unique_indices)
 
         else:
-            # Get list of unique indices
+            # Get list of sorted indices
             self._unique_indices = np.argsort(x_column, axis=0)[:, 0]
 
         self.data = x_column[self._unique_indices]
