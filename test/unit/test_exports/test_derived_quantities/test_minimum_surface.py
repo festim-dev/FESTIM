@@ -16,7 +16,7 @@ def test_title(field, surface):
     """
 
     my_min = MinimumSurface(field, surface)
-    assert my_min.title == "Minimum {} surface {}".format(field, surface)
+    assert my_min.title == f"Minimum {field} surface {surface} ({my_min.export_unit})"
 
 
 class TestCompute:

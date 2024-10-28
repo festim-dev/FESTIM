@@ -16,7 +16,7 @@ def test_title(field, volume):
     """
 
     my_min = MinimumVolume(field, volume)
-    assert my_min.title == "Minimum {} volume {}".format(field, volume)
+    assert my_min.title == f"Minimum {field} volume {volume} ({my_min.export_unit})"
 
 
 class TestCompute:
