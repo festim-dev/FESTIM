@@ -25,6 +25,8 @@ class MinimumSurface(sq.SurfaceQuantity):
         subdomain, and appends it to the data list
         """
         solution = self.field.solution
-        indices = self.surface.locate_boundary_facet_indices(solution.function_space.mesh)
+        indices = self.surface.locate_boundary_facet_indices(
+            solution.function_space.mesh
+        )
         self.value = np.min(self.field.solution.x.array[indices])
         self.data.append(self.value)
