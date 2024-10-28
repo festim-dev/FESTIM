@@ -57,8 +57,7 @@ class TestMakeHeader:
         """
         my_derv_quant = DerivedQuantities([self.surface_flux_1])
 
-        for quantity in my_derv_quant:
-            quantity.function = f.Function(self.V)
+        my_derv_quant[0].function = f.Function(self.V)
 
         header = my_derv_quant.make_header()
 
