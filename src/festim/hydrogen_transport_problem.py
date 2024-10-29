@@ -167,6 +167,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.temperature_fenics = None
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
+        self._element_for_traps = "DG"
+
     @property
     def temperature(self):
         return self._temperature
@@ -446,6 +448,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
             degree,
             basix.LagrangeVariant.equispaced,
         )
+        element_DG = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            degree,
+            basix.LagrangeVariant.equispaced,
+        )
 
         if not self.multispecies:
             element = element_CG
@@ -453,7 +461,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elements = []
             for spe in self.species:
                 if isinstance(spe, _species.Species):
-                    elements.append(element_CG)
+                    if spe.mobile:
+                        elements.append(element_CG)
+                    elif self._element_for_traps == "DG":
+                        elements.append(element_DG)
+                    else:
+                        elements.append(element_CG)
             element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
@@ -690,7 +703,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         # check reactions
                         for reaction in self.reactions:
                             if vol == reaction.volume:
-                                not_defined_in_volume.remove(vol)
+                                if vol in not_defined_in_volume:
+                                    not_defined_in_volume.remove(vol)
 
                     # add c = 0 to formulation where needed
                     for vol in not_defined_in_volume:

@@ -127,13 +127,15 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                         # check reactions
                         for reaction in self.reactions:
                             if vol == reaction.volume:
-                                not_defined_in_volume.remove(vol)
+                                if vol in not_defined_in_volume:
+                                    not_defined_in_volume.remove(vol)
 
                     # add c = 0 to formulation where needed
                     for vol in not_defined_in_volume:
                         self.formulation += (
                             spe.solution * spe.test_function * self.dx(vol.id)
                         )
+        print(self.formulation)
 
     def override_post_processing_solution(self):
         # override the post-processing solution c = theta * K_S
