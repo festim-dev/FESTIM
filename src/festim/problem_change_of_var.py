@@ -135,7 +135,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                         self.formulation += (
                             spe.solution * spe.test_function * self.dx(vol.id)
                         )
-        print(self.formulation)
 
     def override_post_processing_solution(self):
         # override the post-processing solution c = theta * K_S
