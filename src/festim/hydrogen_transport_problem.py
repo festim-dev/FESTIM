@@ -765,6 +765,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
 
+        # should we move this to problem.ProblemBase?
+        for vtxfile in self._vtxfiles:
+            vtxfile.write(float(self.t))
+
 
 class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
