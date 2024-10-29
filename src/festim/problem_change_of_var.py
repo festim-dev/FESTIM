@@ -1,15 +1,41 @@
 import festim.boundary_conditions
 from festim.hydrogen_transport_problem import HydrogenTransportProblem
-from festim.helpers import as_fenics_constant
-from festim import boundary_conditions
+from festim import boundary_conditions, as_fenics_constant
 import festim
 import festim.species as _species
-
+import festim.exports as exports
 import ufl
 from dolfinx import fem
 
+from typing import List
+
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
+    species: List[_species.Species]
+
+    def initialise(self):
+        self.create_species_from_traps()
+        self.define_function_spaces()
+        self.define_meshtags_and_measures()
+        self.assign_functions_to_species()
+
+        self.t = fem.Constant(self.mesh.mesh, 0.0)
+        if self.settings.transient:
+            # TODO should raise error if no stepsize is provided
+            # TODO Should this be an attribute of festim.Stepsize?
+            self.dt = as_fenics_constant(
+                self.settings.stepsize.initial_value, self.mesh.mesh
+            )
+
+        self.define_temperature()
+        self.define_boundary_conditions()
+        self.create_source_values_fenics()
+        self.create_flux_values_fenics()
+        self.create_initial_conditions()
+        self.create_formulation()
+        self.create_solver()
+        self.override_post_processing_solution()
+        self.initialise_exports()
 
     def create_formulation(self):
         """Creates the formulation of the model"""
@@ -108,6 +134,35 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                         self.formulation += (
                             spe.solution * spe.test_function * self.dx(vol.id)
                         )
+
+    def override_post_processing_solution(self):
+        # override the post-processing solution c = theta * K_S
+        Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
+        Q1 = fem.functionspace(self.mesh.mesh, ("DG", 1))
+        K_S0 = fem.Function(Q0)
+        E_KS = fem.Function(Q0)
+        for subdomain in self.volume_subdomains:
+            entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
+            K_S0.x.array[entities] = subdomain.material.K_S_0
+            E_KS.x.array[entities] = subdomain.material.E_K_S
+
+        K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
+
+        for spe in self.species:
+            theta = spe.solution
+
+            spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points())
+            spe.post_processing_solution = fem.Function(Q1)
+            spe.post_processing_solution.interpolate(spe.dg_expr)
+
+    def post_processing(self):
+
+        # need to compute c = theta * K_S
+        # this expression is stored in species.dg_expr
+        for spe in self.species:
+            spe.post_processing_solution.interpolate(spe.dg_expr)
+
+        super().post_processing()
 
     # def define_boundary_conditions(self):
     #     for bc in self.boundary_conditions:
