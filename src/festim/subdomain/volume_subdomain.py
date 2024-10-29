@@ -2,6 +2,7 @@ import dolfinx
 import numpy as np
 
 from festim.helpers_discontinuity import transfer_meshtags_to_submesh
+from festim.material import Material
 
 
 class VolumeSubdomain:
@@ -24,6 +25,7 @@ class VolumeSubdomain:
     padded: bool
     u: dolfinx.fem.Function
     u_n: dolfinx.fem.Function
+    material: Material
 
     def __init__(self, id, material):
         self.id = id
