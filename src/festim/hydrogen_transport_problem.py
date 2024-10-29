@@ -149,6 +149,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         settings=None,
         exports=None,
         traps=None,
+        petsc_options=None,
     ):
         super().__init__(
             mesh=mesh,
@@ -168,6 +169,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
         self._element_for_traps = "DG"
+        self.petcs_options = petsc_options
 
     @property
     def temperature(self):
