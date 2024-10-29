@@ -2,7 +2,7 @@ import numpy as np
 import festim as F
 
 
-def run_change_of_variable():
+def run_change_of_variable(nb_cells_per_segment: int = 100):
     my_model = F.HydrogenTransportProblemDiscontinuousChangeVar()
 
     interface_1 = 0.2
@@ -10,9 +10,9 @@ def run_change_of_variable():
 
     vertices = np.concatenate(
         [
-            np.linspace(0, interface_1, num=100),
-            np.linspace(interface_1, interface_2, num=100),
-            np.linspace(interface_2, 1, num=100),
+            np.linspace(0, interface_1, num=nb_cells_per_segment),
+            np.linspace(interface_1, interface_2, num=nb_cells_per_segment),
+            np.linspace(interface_2, 1, num=nb_cells_per_segment),
         ]
     )
 
@@ -82,7 +82,8 @@ def run_change_of_variable():
 
     my_model.temperature = lambda x: 300 + 100 * x[0]
 
-    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=10)
+    my_model.settings.stepsize = F.Stepsize(1)
 
     my_model.exports = [
         F.VTXSpeciesExport(f"u_{field}_var_change.bp", field=field)
@@ -92,7 +93,7 @@ def run_change_of_variable():
     my_model.run()
 
 
-def run_mixed_formulation():
+def run_mixed_formulation(nb_cells_per_segment: int = 100):
     my_model = F.HTransportProblemDiscontinuous()
 
     interface_1 = 0.2
@@ -100,9 +101,9 @@ def run_mixed_formulation():
 
     vertices = np.concatenate(
         [
-            np.linspace(0, interface_1, num=100),
-            np.linspace(interface_1, interface_2, num=100),
-            np.linspace(interface_2, 1, num=100),
+            np.linspace(0, interface_1, num=nb_cells_per_segment),
+            np.linspace(interface_1, interface_2, num=nb_cells_per_segment),
+            np.linspace(interface_2, 1, num=nb_cells_per_segment),
         ]
     )
 
@@ -191,4 +192,4 @@ def run_mixed_formulation():
 
 if __name__ == "__main__":
     run_change_of_variable()
-    run_mixed_formulation()
+    # run_mixed_formulation()
