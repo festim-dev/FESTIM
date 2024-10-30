@@ -1,6 +1,6 @@
-import festim as F
 import numpy as np
 
+import festim as F
 
 my_model = F.HydrogenTransportProblem()
 
@@ -107,8 +107,8 @@ left_flux = F.SurfaceFlux(field=mobile_H, surface=left_surface)
 right_flux = F.SurfaceFlux(field=mobile_H, surface=right_surface)
 
 my_model.exports = [
-    # F.VTXExport("mobile_concentration_h.bp", field=mobile_H),
-    # F.VTXExport("trapped_concentration_h.bp", field=trapped_H1),
+    # F.VTXSpeciesExport("mobile_concentration_h.bp", field=mobile_H),
+    # F.VTXSpeciesExport("trapped_concentration_h.bp", field=trapped_H1),
     F.XDMFExport("mobile_concentration_h.xdmf", field=mobile_H),
     F.XDMFExport("trapped_concentration_h1.xdmf", field=trapped_H1),
     F.XDMFExport("trapped_concentration_h2.xdmf", field=trapped_H2),

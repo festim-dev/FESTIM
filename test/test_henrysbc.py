@@ -1,10 +1,12 @@
-import festim as F
-import ufl
-import pytest
-import numpy as np
-from dolfinx import fem
-import dolfinx.mesh
 from mpi4py import MPI
+
+import dolfinx.mesh
+import numpy as np
+import pytest
+import ufl
+from dolfinx import fem
+
+import festim as F
 
 
 def henrys_law(T, H_0, E_H, pressure):

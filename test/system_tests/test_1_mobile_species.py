@@ -1,10 +1,13 @@
-import festim as F
-import numpy as np
-from dolfinx import fem
-import ufl
-from .tools import error_L2
-from dolfinx.mesh import create_unit_square, create_unit_cube, locate_entities
 from mpi4py import MPI
+
+import numpy as np
+import ufl
+from dolfinx import fem
+from dolfinx.mesh import create_unit_cube, create_unit_square, locate_entities
+
+import festim as F
+
+from .tools import error_L2
 
 test_mesh_1d = F.Mesh1D(np.linspace(0, 1, 10000))
 test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 50, 50)
