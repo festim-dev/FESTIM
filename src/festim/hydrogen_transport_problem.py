@@ -1147,6 +1147,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain_1.F += F_1
 
         J = []
+        # this is the symbolic differentiation of the Jacobian
         for subdomain1 in self.volume_subdomains:
             jac = []
             for subdomain2 in self.volume_subdomains:
