@@ -25,11 +25,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             self.dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
-        # mobile_species = [spe for spe in self.species if spe.mobile]
-        # if len(mobile_species) > 1:
-        #     raise ValueError(
-        #         f"Only one mobile species is allowed for now. Found {len(mobile_species)}"
-        #     )
 
         self.define_temperature()
         self.define_boundary_conditions()
