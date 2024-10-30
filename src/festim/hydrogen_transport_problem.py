@@ -1155,6 +1155,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     ufl.derivative(subdomain1.F, subdomain2.u),
                 )
             J.append(jac)
+        # compile jacobian (J) and residual (F)
         self.forms = dolfinx.fem.form(
             [subdomain.F for subdomain in self.volume_subdomains],
             entity_maps=entity_maps,
