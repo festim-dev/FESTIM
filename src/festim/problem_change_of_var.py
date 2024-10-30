@@ -25,11 +25,11 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             self.dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
-        mobile_species = [spe for spe in self.species if spe.mobile]
-        if len(mobile_species) > 1:
-            raise ValueError(
-                f"Only one mobile species is allowed for now. Found {len(mobile_species)}"
-            )
+        # mobile_species = [spe for spe in self.species if spe.mobile]
+        # if len(mobile_species) > 1:
+        #     raise ValueError(
+        #         f"Only one mobile species is allowed for now. Found {len(mobile_species)}"
+        #     )
 
         self.define_temperature()
         self.define_boundary_conditions()
@@ -56,10 +56,10 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 D = vol.material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature_fenics, spe
                 )
-                K_S = vol.material.get_solubility_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, spe
-                )
                 if spe.mobile:
+                    K_S = vol.material.get_solubility_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, spe
+                    )
                     c = u * K_S
                     c_n = u_n * K_S
                 else:
@@ -82,10 +82,10 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             # hack enforce the concentration attribute of the species for all species
             # to be used in reaction.reaction_term
             for spe in self.species:
-                K_S = reaction.volume.material.get_solubility_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, spe
-                )
                 if spe.mobile:
+                    K_S = reaction.volume.material.get_solubility_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, spe
+                    )
                     spe.concentration = spe.solution * K_S
 
             # reactant
@@ -144,17 +144,19 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         # override the post-processing solution c = theta * K_S
         Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
         Q1 = fem.functionspace(self.mesh.mesh, ("DG", 1))
-        K_S0 = fem.Function(Q0)
-        E_KS = fem.Function(Q0)
-        for subdomain in self.volume_subdomains:
-            entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
-            # NOTE for several mobile species we may want to ensure we get the correct K_S0 and E_KS
-            K_S0.x.array[entities] = subdomain.material.K_S_0
-            E_KS.x.array[entities] = subdomain.material.E_K_S
-
-        K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
 
         for spe in self.species:
+            if not spe.mobile:
+                continue
+            K_S0 = fem.Function(Q0)
+            E_KS = fem.Function(Q0)
+            for subdomain in self.volume_subdomains:
+                entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
+                K_S0.x.array[entities] = subdomain.material.get_K_S_0(spe)
+                E_KS.x.array[entities] = subdomain.material.get_E_K_S(spe)
+
+            K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
+
             theta = spe.solution
 
             spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points())
@@ -166,6 +168,8 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         # need to compute c = theta * K_S
         # this expression is stored in species.dg_expr
         for spe in self.species:
+            if not spe.mobile:
+                continue
             spe.post_processing_solution.interpolate(spe.dg_expr)
 
         super().post_processing()
@@ -187,16 +191,13 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             function_space_value = bc.species.collapsed_function_space
 
         # create K_S function
-        Q0 = fem.functionspace(
-            self.mesh.mesh, ("DG", 0)
-        )  # NOTE K_S0 and E_KS could be constants here and don't have to be defined on several materials
+        Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
         K_S0 = fem.Function(Q0)
         E_KS = fem.Function(Q0)
         for subdomain in self.volume_subdomains:
             entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
-            # NOTE for several mobile species we may want to ensure we get the correct K_S0 and E_KS
-            K_S0.x.array[entities] = subdomain.material.K_S_0
-            E_KS.x.array[entities] = subdomain.material.E_K_S
+            K_S0.x.array[entities] = subdomain.material.get_K_S_0(bc.species)
+            E_KS.x.array[entities] = subdomain.material.get_E_K_S(bc.species)
 
         K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
 
