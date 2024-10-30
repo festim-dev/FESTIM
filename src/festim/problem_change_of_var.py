@@ -3,7 +3,6 @@ from festim.hydrogen_transport_problem import HydrogenTransportProblem
 from festim import boundary_conditions, as_fenics_constant
 import festim
 import festim.species as _species
-import festim.exports as exports
 import ufl
 from dolfinx import fem
 
@@ -149,6 +148,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         E_KS = fem.Function(Q0)
         for subdomain in self.volume_subdomains:
             entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
+            # NOTE for several mobile species we may want to ensure we get the correct K_S0 and E_KS
             K_S0.x.array[entities] = subdomain.material.K_S_0
             E_KS.x.array[entities] = subdomain.material.E_K_S
 
@@ -170,11 +170,66 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
         super().post_processing()
 
-    # def define_boundary_conditions(self):
-    #     for bc in self.boundary_conditions:
-    #         if isinstance(bc.species, str):
-    #             # if name of species is given then replace with species object
-    #             bc.species = _species.find_species_from_name(bc.species, self.species)
+    def create_dirichletbc_form(self, bc: festim.FixedConcentrationBC):
+        """Creates a dirichlet boundary condition form
 
-    #     for bc in self.boundary_conditions:
-    #         pass
+        Args:
+            bc (festim.DirichletBC): the boundary condition
+
+        Returns:
+            dolfinx.fem.bcs.DirichletBC: A representation of
+                the boundary condition for modifying linear systems.
+        """
+        # create value_fenics
+        if not self.multispecies:
+            function_space_value = bc.species.sub_function_space
+        else:
+            function_space_value = bc.species.collapsed_function_space
+
+        # create K_S function
+        Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
+        K_S0 = fem.Function(Q0)
+        E_KS = fem.Function(Q0)
+        for subdomain in self.volume_subdomains:
+            entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
+            # NOTE for several mobile species we may want to ensure we get the correct K_S0 and E_KS
+            K_S0.x.array[entities] = subdomain.material.K_S_0
+            E_KS.x.array[entities] = subdomain.material.E_K_S
+
+        K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
+
+        bc.create_value(
+            temperature=self.temperature_fenics,
+            function_space=function_space_value,
+            t=self.t,
+            K_S=K_S,
+        )
+
+        # get dofs
+        if self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
+            function_space_dofs = (
+                bc.species.sub_function_space,
+                bc.species.collapsed_function_space,
+            )
+        else:
+            function_space_dofs = bc.species.sub_function_space
+
+        bc_dofs = bc.define_surface_subdomain_dofs(
+            facet_meshtags=self.facet_meshtags,
+            function_space=function_space_dofs,
+        )
+
+        # create form
+        if not self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
+            # no need to pass the functionspace since value_fenics is already a Function
+            function_space_form = None
+        else:
+            function_space_form = bc.species.sub_function_space
+
+        form = fem.dirichletbc(
+            value=bc.value_fenics,
+            dofs=bc_dofs,
+            V=function_space_form,
+        )
+
+        return form
