@@ -187,7 +187,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             function_space_value = bc.species.collapsed_function_space
 
         # create K_S function
-        Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
+        Q0 = fem.functionspace(
+            self.mesh.mesh, ("DG", 0)
+        )  # NOTE K_S0 and E_KS could be constants here and don't have to be defined on several materials
         K_S0 = fem.Function(Q0)
         E_KS = fem.Function(Q0)
         for subdomain in self.volume_subdomains:
@@ -233,3 +235,11 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         )
 
         return form
+
+    def update_time_dependent_values(self):
+        super().update_time_dependent_values()
+
+        if self.temperature_time_dependent:
+            for bc in self.boundary_conditions:
+                if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                    bc.update(self.t)

@@ -127,7 +127,7 @@ class DirichletBCBase:
         """Updates the boundary condition value
 
         Args:
-            t (float): the time
+            t: the time
         """
         if callable(self.value):
             arguments = self.value.__code__.co_varnames
@@ -135,6 +135,8 @@ class DirichletBCBase:
                 self.value_fenics.value = self.value(t=t)
             else:
                 self.value_fenics.interpolate(self.bc_expr)
+        elif self.bc_expr is not None:
+            self.value_fenics.interpolate(self.bc_expr)
 
 
 class FixedConcentrationBC(DirichletBCBase):
