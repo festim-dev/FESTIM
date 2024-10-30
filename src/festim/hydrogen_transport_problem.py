@@ -1163,6 +1163,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain_1.F += F_1
 
         J = []
+        # this is the symbolic differentiation of the Jacobian
         for subdomain1 in self.volume_subdomains:
             jac = []
             for subdomain2 in self.volume_subdomains:
@@ -1170,6 +1171,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     ufl.derivative(subdomain1.F, subdomain2.u),
                 )
             J.append(jac)
+        # compile jacobian (J) and residual (F)
         self.forms = dolfinx.fem.form(
             [subdomain.F for subdomain in self.volume_subdomains],
             entity_maps=entity_maps,
