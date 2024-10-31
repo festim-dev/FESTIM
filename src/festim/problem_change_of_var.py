@@ -33,7 +33,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
-        self.override_post_processing_solution()
+        self.override_post_processing_solution()  # NOTE this is the only difference with parent class
         self.initialise_exports()
 
     def create_formulation(self):
@@ -146,7 +146,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             K_S0 = fem.Function(Q0)
             E_KS = fem.Function(Q0)
             for subdomain in self.volume_subdomains:
-                entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
+                entities = subdomain.locate_subdomain_entities_correct(
+                    self.volume_meshtags
+                )
                 K_S0.x.array[entities] = subdomain.material.get_K_S_0(spe)
                 E_KS.x.array[entities] = subdomain.material.get_E_K_S(spe)
 
@@ -190,7 +192,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         K_S0 = fem.Function(Q0)
         E_KS = fem.Function(Q0)
         for subdomain in self.volume_subdomains:
-            entities = subdomain.locate_subdomain_entities(self.mesh.mesh)
+            entities = subdomain.locate_subdomain_entities_correct(self.volume_meshtags)
             K_S0.x.array[entities] = subdomain.material.get_K_S_0(bc.species)
             E_KS.x.array[entities] = subdomain.material.get_E_K_S(bc.species)
 
