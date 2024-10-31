@@ -227,10 +227,38 @@ def test_2_materials_2d_mms():
 
     c_computed = H.post_processing_solution
 
-    # NOTE maybe not the best way of checking discontinuous functions like this
-    def c_exact_np(x):
-        return np.where(x[1] > 0.5 - 1e-10, c_exact_top_np(x), c_exact_bot_np(x))
+    top_cells = dolfinx.mesh.locate_entities(
+        mesh, mesh.topology.dim, lambda x: x[1] > 0.5 - 1e-14
+    )
+    bot_cells = dolfinx.mesh.locate_entities(
+        mesh, mesh.topology.dim, lambda x: x[1] <= 0.5 + 1e-14
+    )
 
-    L2_error_mobile = error_L2(c_computed, c_exact_np)
+    # Create higher order function space
+    degree = c_computed.function_space.ufl_element().degree
+    family = c_computed.function_space.ufl_element().family_name
+    mesh = c_computed.function_space.mesh
+    W = fem.functionspace(mesh, (family, degree + 3))
+    # Interpolate approximate solution
+    u_W = fem.Function(W)
+    u_W.interpolate(c_computed, cells0=top_cells)
+    u_W.interpolate(c_computed, cells0=bot_cells)
+
+    # Interpolate exact solution, special handling if exact solution
+    # is a ufl expression or a python lambda function
+
+    u_ex_W = fem.Function(W)
+    u_ex_W.interpolate(c_exact_top_np, cells0=top_cells)
+    u_ex_W.interpolate(c_exact_bot_np, cells0=bot_cells)
+
+    # Compute the error in the higher order function space
+    e_W = fem.Function(W)
+    e_W.x.array[:] = u_W.x.array - u_ex_W.x.array
+
+    # Integrate the error
+    error = fem.form(ufl.inner(e_W, e_W) * ufl.dx)
+    error_local = fem.assemble_scalar(error)
+    error_global = mesh.comm.allreduce(error_local, op=MPI.SUM)
+    L2_error_mobile = np.sqrt(error_global)
 
     assert L2_error_mobile < 1e-3
