@@ -7,6 +7,7 @@ import tqdm.autonotebook
 import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
+from petsc4py import PETSc
 
 import festim as F
 from festim.mesh.mesh import Mesh as _Mesh
@@ -41,7 +42,7 @@ class ProblemBase:
         subdomains=None,
         boundary_conditions=None,
         settings=None,
-        petcs_options=None,
+        petsc_options=None,
     ) -> None:
         self.mesh = mesh
         # for arguments to initialise as empty list
@@ -60,7 +61,7 @@ class ProblemBase:
         self.formulation = None
         self.bc_forms = []
         self.show_progress_bar = True
-        self.petcs_options = petcs_options
+        self.petsc_options = petsc_options
 
     @property
     def volume_subdomains(self):
@@ -123,12 +124,21 @@ class ProblemBase:
         self.solver.rtol = self.settings.rtol
         self.solver.max_it = self.settings.max_iterations
 
-        if self.petcs_options is None:
-            ksp = self.solver.krylov_solver
+        ksp = self.solver.krylov_solver
+
+        if self.petsc_options is None:
             ksp.setType("preonly")
             ksp.getPC().setType("lu")
             ksp.getPC().setFactorSolverType("mumps")
             ksp.setErrorIfNotConverged(True)
+        else:
+            # Set PETSc options
+            opts = PETSc.Options()
+            for k, v in self.petsc_options.items():
+                opts[k] = v
+            ksp.setFromOptions()
+
+            print(opts)
 
     def run(self):
         """Runs the model"""
