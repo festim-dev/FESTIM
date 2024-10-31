@@ -2,12 +2,12 @@ import numpy as np
 from mpi4py import MPI
 
 import dolfinx
+from dolfinx import fem
 import dolfinx.fem.petsc
 import numpy as np
 import ufl
 
 import festim as F
-from .tools import error_L2
 
 
 def generate_mesh(n=20):
