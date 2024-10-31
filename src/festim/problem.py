@@ -134,11 +134,10 @@ class ProblemBase:
         else:
             # Set PETSc options
             opts = PETSc.Options()
+            option_prefix = ksp.getOptionsPrefix()
             for k, v in self.petsc_options.items():
-                opts[k] = v
+                opts[f"{option_prefix}{k}"] = v
             ksp.setFromOptions()
-
-            print(opts)
 
     def run(self):
         """Runs the model"""
