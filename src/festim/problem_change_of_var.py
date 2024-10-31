@@ -158,7 +158,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points())
             spe.post_processing_solution = fem.Function(Q1)
-            spe.post_processing_solution.interpolate(spe.dg_expr)
+            spe.post_processing_solution.interpolate(
+                spe.dg_expr
+            )  # NOTE: do we need this line since it's in initialise?
 
     def post_processing(self):
 
