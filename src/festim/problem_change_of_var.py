@@ -125,9 +125,12 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     for vol in self.volume_subdomains:
                         # check reactions
                         for reaction in self.reactions:
-                            if vol == reaction.volume:
-                                if vol in not_defined_in_volume:
-                                    not_defined_in_volume.remove(vol)
+                            if (
+                                spe in reaction.product
+                            ):  # TODO we probably need this in HydrogenTransportProblem too no?
+                                if vol == reaction.volume:
+                                    if vol in not_defined_in_volume:
+                                        not_defined_in_volume.remove(vol)
 
                     # add c = 0 to formulation where needed
                     for vol in not_defined_in_volume:
