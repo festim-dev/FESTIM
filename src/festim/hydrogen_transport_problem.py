@@ -158,6 +158,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             subdomains=subdomains,
             boundary_conditions=boundary_conditions,
             settings=settings,
+            petsc_options=petsc_options,
         )
 
         self.species = species or []
