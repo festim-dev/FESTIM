@@ -99,7 +99,6 @@ class SurfaceReactionBC:
         E_kd,
         subdomain,
     ):
-
         self.reactant = reactant
         self.gas_pressure = gas_pressure
         self.k_r0 = k_r0
