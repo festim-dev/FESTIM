@@ -1,9 +1,8 @@
-import festim as F
 import numpy as np
-from dolfinx import fem
 import ufl
-from dolfinx.mesh import meshtags
-import pytest
+from dolfinx import fem
+
+import festim as F
 
 
 def test_average_surface_compute_1D():
@@ -23,7 +22,7 @@ def test_average_surface_compute_1D():
     ds = ufl.Measure("ds", domain=my_mesh.mesh, subdomain_data=facet_meshtags)
 
     # give function to species
-    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: x[0] * 0.5 + 2)
 

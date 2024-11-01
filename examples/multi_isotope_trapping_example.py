@@ -1,6 +1,6 @@
-import festim as F
 import numpy as np
 
+import festim as F
 
 my_model = F.HydrogenTransportProblem()
 

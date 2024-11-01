@@ -1,6 +1,7 @@
-import festim as F
 import numpy as np
 import pytest
+
+import festim as F
 
 
 @pytest.mark.parametrize("test_type", [int, F.Stepsize, float])

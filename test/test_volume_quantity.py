@@ -1,4 +1,5 @@
 import pytest
+
 import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy")

@@ -1,6 +1,7 @@
-import festim as F
 import numpy as np
 import pytest
+
+import festim as F
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 

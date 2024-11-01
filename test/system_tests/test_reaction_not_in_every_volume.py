@@ -1,5 +1,6 @@
-import festim as F
 import numpy as np
+
+import festim as F
 
 
 def test_sim_reaction_not_in_every_volume():

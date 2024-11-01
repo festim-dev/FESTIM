@@ -1,7 +1,8 @@
+import mpi4py.MPI as MPI
+
+import numpy as np
 import ufl
 from dolfinx import fem
-import numpy as np
-import mpi4py.MPI as MPI
 
 
 def error_L2(u_computed, u_exact, degree_raise=3):
