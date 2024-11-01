@@ -62,14 +62,16 @@ def test_non_homogeneous_density(density_func, expected_value):
 
     total_trapped = F.TotalVolume(field=trapped_H, volume=vol)
     my_model.exports = [
-        F.VTXExport(filename="trapped_c.bp", field=trapped_H),
-        F.VTXExport(filename="c.bp", field=H),
+        F.VTXSpeciesExport(filename="trapped_c.bp", field=trapped_H),
+        F.VTXSpeciesExport(filename="c.bp", field=H),
         total_trapped,
     ]
 
     my_model.initialise()
     my_model.run()
 
+    print(total_trapped.value)
+    print(expected_value)
     assert np.isclose(total_trapped.value, expected_value)
 
 
@@ -124,8 +126,8 @@ def test_density_as_function():
 
     total_trapped = F.TotalVolume(field=trapped_H, volume=vol)
     my_model.exports = [
-        F.VTXExport(filename="trapped_c.bp", field=trapped_H),
-        F.VTXExport(filename="c.bp", field=H),
+        F.VTXSpeciesExport(filename="trapped_c.bp", field=trapped_H),
+        F.VTXSpeciesExport(filename="c.bp", field=H),
         total_trapped,
     ]
 

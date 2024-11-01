@@ -1,11 +1,14 @@
-import festim as F
-from dolfinx import mesh as fenics_mesh
-from mpi4py import MPI
-import pytest
-import numpy as np
 import os
+
+from mpi4py import MPI
+
+import numpy as np
+import pytest
+from dolfinx import mesh as fenics_mesh
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import meshtags
+
+import festim as F
 
 mesh_1D = fenics_mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 mesh_2D = fenics_mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
@@ -13,7 +16,10 @@ mesh_3D = fenics_mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 
 # 1D meshtags
 my_surface_meshtags = meshtags(
-    mesh_1D, 0, np.array([0, 10], dtype=np.int32), np.array([1, 2], dtype=np.int32)
+    mesh_1D,
+    0,
+    np.array([0, 10], dtype=np.int32),
+    np.array([1, 2], dtype=np.int32),
 )
 
 num_cells = mesh_1D.topology.index_map(1).size_local

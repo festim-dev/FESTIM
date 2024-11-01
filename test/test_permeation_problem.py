@@ -1,10 +1,12 @@
+import os
+
 from petsc4py import PETSc
+
+import numpy as np
 from dolfinx.fem import Constant
 from ufl import exp
-import numpy as np
+
 import festim as F
-import os
-import ufl
 
 
 def relative_error_computed_to_analytical(
@@ -58,7 +60,11 @@ def test_permeation_problem(mesh_size=1001):
     my_model.boundary_conditions = [
         F.DirichletBC(subdomain=right_surface, value=0, species="H"),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+            subdomain=left_surface,
+            S_0=4.02e21,
+            E_S=1.04,
+            pressure=100,
+            species="H",
         ),
     ]
     outgassing_flux = F.SurfaceFlux(
@@ -154,7 +160,11 @@ def test_permeation_problem_multi_volume(tmp_path):
     my_model.boundary_conditions = [
         F.DirichletBC(subdomain=right_surface, value=0, species="H"),
         F.SievertsBC(
-            subdomain=left_surface, S_0=4.02e21, E_S=1.04, pressure=100, species="H"
+            subdomain=left_surface,
+            S_0=4.02e21,
+            E_S=1.04,
+            pressure=100,
+            species="H",
         ),
     ]
     outgassing_flux = F.SurfaceFlux(
@@ -163,7 +173,7 @@ def test_permeation_problem_multi_volume(tmp_path):
         surface=right_surface,
     )
     my_model.exports = [
-        F.VTXExport(
+        F.VTXSpeciesExport(
             os.path.join(tmp_path, "mobile_concentration_h.bp"), field=mobile_H
         ),
         outgassing_flux,
