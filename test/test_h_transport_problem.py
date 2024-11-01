@@ -1105,7 +1105,7 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
     my_model.define_meshtags_and_measures()
     my_model.assign_functions_to_species()
     my_model.define_temperature()
-    my_model.create_flux_values_fenics()
+    my_model.define_boundary_conditions()
 
     for i in range(3):
         # RUN
@@ -1159,7 +1159,7 @@ def test_update_fluxes_with_time_dependent_temperature(
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
-    my_model.create_flux_values_fenics()
+    my_model.define_boundary_conditions()
 
     for i in range(3):
         # RUN
