@@ -166,7 +166,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             )  # NOTE: do we need this line since it's in initialise?
 
     def post_processing(self):
-
         # need to compute c = theta * K_S
         # this expression is stored in species.dg_expr
         for spe in self.species:
