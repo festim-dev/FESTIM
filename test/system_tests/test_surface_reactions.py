@@ -331,6 +331,8 @@ def test_pressure_varies_in_time():
 
     expected_flux_after_pressure = -2 * k_d * pressure
     computed_flux_after_pressure = flux_as_array[time_as_array > t_pressure]
+    print(computed_flux_after_pressure)
+    print(expected_flux_after_pressure)
     assert np.allclose(
         computed_flux_after_pressure, expected_flux_after_pressure, rtol=1e-2
     )

@@ -1197,7 +1197,7 @@ def test_create_flux_values_fenics_multispecies():
     my_model.define_temperature()
 
     # RUN
-    my_model.define_boundary_conditions()
+    my_model.create_flux_values_fenics()
 
     # TEST
     assert np.isclose(my_model.boundary_conditions[0].value_fenics.value, 5)
