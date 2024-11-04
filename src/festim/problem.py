@@ -154,6 +154,7 @@ class ProblemBase:
                 self.iterate()
             if self.show_progress_bar:
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
+                self.progress_bar.close()
         else:
             # Solve steady-state
             self.solver.solve(self.u)
