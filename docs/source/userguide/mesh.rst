@@ -167,8 +167,12 @@ Here we stretch both the tungsten and CuCrZr surfaces by 5e-3 in the z-direction
 
 .. code-block:: python
 
-    outer_layer_extrusion = gmsh.model.occ.extrude([(2, base_surface)], 0, 0, 5e-3, numElements=[100])
-    interface_layer_extrusion = gmsh.model.occ.extrude([(2, cylinder_surface)], 0, 0, 5e-3, numElements=[100])
+    outer_layer_extrusion = gmsh.model.occ.extrude(
+        [(2, base_surface)], 0, 0, 5e-3, numElements=[100]
+    )
+    interface_layer_extrusion = gmsh.model.occ.extrude(
+        [(2, cylinder_surface)], 0, 0, 5e-3, numElements=[100]
+    )
 
 Upon performing the extrusion, GMSH will define any necessary surfaces and volumes for us. However, this means that the surface of the outer cylinder will have been defined twice. Therefore it is necessary to remove any duplicate elements via 
 
@@ -212,7 +216,7 @@ If the element has been defined explicitly, this is as easy as doing the followi
 .. code-block:: python
 
     id_number = 1
-    gmsh.model.addPhysicalGroup(2, [base_surface, cylinder_surface], id_number, name = "surface")
+    gmsh.model.addPhysicalGroup(2, [base_surface, cylinder_surface], id_number, name="surface")
 
 where the 2 indicates that this is a 2nd dimension element, and we have listed the surfaces that we would like to assign with this ID number.
 
@@ -248,17 +252,21 @@ We can now look at each surface and interface and assign the necessary IDs.
     tungsten_id = 1
     cucrzr_id = 2
 
-    gmsh.model.addPhysicalGroup(2, [7, 10], front_id, name = "front")
-    gmsh.model.addPhysicalGroup(2, [6, 9], back_id, name = "back")
-    gmsh.model.addPhysicalGroup(2, [1], left_id, name = "left")
-    gmsh.model.addPhysicalGroup(2, [3], right_id, name = "right")
-    gmsh.model.addPhysicalGroup(2, [4], top_id, name = "top")
-    gmsh.model.addPhysicalGroup(2, [2], bottom_id, name = "bottom")
-    gmsh.model.addPhysicalGroup(2, [5], outer_cylinder_surface_id, name = "tungsten_cucrzr_interface")
-    gmsh.model.addPhysicalGroup(2, [8], inner_cylinder_surface_id, name = "cucrzr_coolant_interface")
+    gmsh.model.addPhysicalGroup(2, [7, 10], front_id, name="front")
+    gmsh.model.addPhysicalGroup(2, [6, 9], back_id, name="back")
+    gmsh.model.addPhysicalGroup(2, [1], left_id, name="left")
+    gmsh.model.addPhysicalGroup(2, [3], right_id, name="right")
+    gmsh.model.addPhysicalGroup(2, [4], top_id, name="top")
+    gmsh.model.addPhysicalGroup(2, [2], bottom_id, name="bottom")
+    gmsh.model.addPhysicalGroup(
+        2, [5], outer_cylinder_surface_id, name="tungsten_cucrzr_interface"
+    )
+    gmsh.model.addPhysicalGroup(
+        2, [8], inner_cylinder_surface_id, name="cucrzr_coolant_interface"
+    )
 
-    gmsh.model.addPhysicalGroup(3,[1], tungsten_id, name = "tungsten")
-    gmsh.model.addPhysicalGroup(3, [2], cucrzr_id, name = "cucrzr")
+    gmsh.model.addPhysicalGroup(3, [1], tungsten_id, name="tungsten")
+    gmsh.model.addPhysicalGroup(3, [2], cucrzr_id, name="cucrzr")
 
 The model must then be resynchronized before generating the mesh.
 
