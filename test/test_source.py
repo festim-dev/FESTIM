@@ -1,10 +1,11 @@
-import festim as F
-import ufl
+from mpi4py import MPI
+
+import dolfinx.mesh
 import pytest
 import ufl
 from dolfinx import fem
-import dolfinx.mesh
-from mpi4py import MPI
+
+import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 
@@ -17,7 +18,7 @@ def test_init():
     volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
     value = 1.0
     species = F.Species("test")
-    source = F.Source(volume=volume, value=value, species=species)
+    source = F.ParticleSource(volume=volume, value=value, species=species)
 
     # check that the attributes are set correctly
     assert source.volume == volume
@@ -35,7 +36,7 @@ def test_value_fenics():
     volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
     value = 1.0
     species = F.Species("test")
-    source = F.Source(volume=volume, value=value, species=species)
+    source = F.ParticleSource(volume=volume, value=value, species=species)
 
     # set the value_fenics attribute to a valid value
     value_fenics = fem.Constant(mesh, 2.0)
@@ -56,10 +57,13 @@ def test_value_fenics():
         (1, fem.Constant),
         (lambda t: t, fem.Constant),
         (lambda t: 1.0 + t, fem.Constant),
-        (lambda x: 1.0 + x[0], fem.Function),
-        (lambda x, t: 1.0 + x[0] + t, fem.Function),
-        (lambda x, t, T: 1.0 + x[0] + t + T, fem.Function),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), fem.Function),
+        (lambda x: 1.0 + x[0], ufl.core.expr.Expr),
+        (lambda x, t: 1.0 + x[0] + t, ufl.core.expr.Expr),
+        (lambda x, t, T: 1.0 + x[0] + t + T, ufl.core.expr.Expr),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            ufl.core.expr.Expr,
+        ),
     ],
 )
 def test_create_value_fenics(value, expected_type):
@@ -70,14 +74,13 @@ def test_create_value_fenics(value, expected_type):
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
 
-    source = F.Source(volume=vol_subdomain, value=value, species=species)
+    source = F.ParticleSource(volume=vol_subdomain, value=value, species=species)
 
-    my_function_space = fem.functionspace(mesh, ("Lagrange", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
     # RUN
-    source.create_value_fenics(mesh, my_function_space, T, t)
+    source.create_value_fenics(mesh, T, t)
 
     # TEST
     # check that the value_fenics attribute is set correctly
@@ -89,7 +92,7 @@ def test_create_value_fenics(value, expected_type):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, dolfinx.default_scalar_type(1.0)), False),
         (lambda t: t, True),
         (lambda t: 1.0 + t, True),
         (lambda x: 1.0 + x[0], False),
@@ -102,7 +105,7 @@ def test_source_time_dependent_attribute(input, expected_value):
     """Test that the time_dependent attribute is correctly set"""
     volume = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
-    my_source = F.Source(input, volume, species)
+    my_source = F.ParticleSource(input, volume, species)
 
     assert my_source.time_dependent is expected_value
 
@@ -112,19 +115,22 @@ def test_source_time_dependent_attribute(input, expected_value):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, dolfinx.default_scalar_type(1.0)), False),
         (lambda T: T, True),
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),
         (lambda x, t, T: 1.0 + x[0] + t + T, True),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), False),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            False,
+        ),
     ],
 )
 def test_source_temperature_dependent_attribute(input, expected_value):
     """Test that the temperature_dependent attribute is correctly set"""
     volume = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
-    my_source = F.Source(input, volume, species)
+    my_source = F.ParticleSource(input, volume, species)
 
     assert my_source.temperature_dependent is expected_value
 
@@ -139,9 +145,8 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     def my_value(t):
         return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
 
-    source = F.Source(volume=vol_subdomain, value=my_value, species=species)
+    source = F.ParticleSource(volume=vol_subdomain, value=my_value, species=species)
 
-    my_function_space = fem.functionspace(mesh, ("Lagrange", 1))
     T = fem.Constant(mesh, 550.0)
     t = fem.Constant(mesh, 0.0)
 
@@ -149,7 +154,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        source.create_value_fenics(mesh, my_function_space, T, t)
+        source.create_value_fenics(mesh, T, t)
 
 
 def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
@@ -163,14 +168,13 @@ def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
 
     source = F.HeatSource(volume=vol_subdomain, value=my_value)
 
-    my_function_space = fem.FunctionSpace(mesh, ("CG", 1))
     t = fem.Constant(mesh, 0.0)
 
     with pytest.raises(
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        source.create_value_fenics(mesh, my_function_space, t)
+        source.create_value_fenics(mesh, t)
 
 
 @pytest.mark.parametrize(
@@ -195,7 +199,7 @@ def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
         TypeError,
         match="volume must be of type festim.VolumeSubdomain",
     ):
-        F.Source(volume=volume_input, value=1.0, species=my_spe)
+        F.ParticleSource(volume=volume_input, value=1.0, species=my_spe)
 
 
 @pytest.mark.parametrize(
@@ -220,4 +224,4 @@ def test_TypeError_is_raised_when_species_wrong_type(species_input):
         TypeError,
         match="species must be of type festim.Species",
     ):
-        F.Source(volume=my_vol, value=1.0, species=species_input)
+        F.ParticleSource(volume=my_vol, value=1.0, species=species_input)

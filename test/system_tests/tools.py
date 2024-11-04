@@ -1,15 +1,16 @@
+import mpi4py.MPI as MPI
+
+import numpy as np
 import ufl
 from dolfinx import fem
-import numpy as np
-import mpi4py.MPI as MPI
 
 
 def error_L2(u_computed, u_exact, degree_raise=3):
     # Create higher order function space
-    degree = u_computed.function_space.ufl_element().degree()
-    family = u_computed.function_space.ufl_element().family()
+    degree = u_computed.function_space.ufl_element().degree
+    family = u_computed.function_space.ufl_element().family_name
     mesh = u_computed.function_space.mesh
-    W = fem.FunctionSpace(mesh, (family, degree + degree_raise))
+    W = fem.functionspace(mesh, (family, degree + degree_raise))
     # Interpolate approximate solution
     u_W = fem.Function(W)
     u_W.interpolate(u_computed)

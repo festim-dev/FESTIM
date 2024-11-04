@@ -14,13 +14,13 @@ jobs:
       with:
         activate-environment: myenv
         miniforge-version: latest
-        use-mamba: true
+        # use-mamba: true
         channels: conda-forge
 
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
-        mamba install -c conda-forge fenics-dolfinx=0.7.2
+        conda install -c conda-forge fenics-dolfinx=0.9.0
 
     - name: Install local package and dependencies
       shell: bash -l {0}
@@ -33,7 +33,7 @@ jobs:
         pytest test/ --cov festim --cov-report xml --cov-report term
     
     - name: Upload to codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage.xml

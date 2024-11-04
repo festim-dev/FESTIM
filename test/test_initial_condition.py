@@ -1,8 +1,10 @@
-import numpy as np
-import festim as F
-import pytest
 from types import LambdaType
+
+import numpy as np
+import pytest
 from dolfinx import fem
+
+import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
 test_mesh = F.Mesh1D(np.linspace(0, 1, 100))
@@ -78,7 +80,7 @@ def test_warning_raised_when_giving_time_as_arg_initial_temperature():
     """Test that a warning is raised if the value is given with t in its arguments"""
 
     # give function to species
-    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     my_species = F.Species("test")
     my_species.prev_solution = fem.Function(V)
 
@@ -107,7 +109,7 @@ def test_create_value_fenics_initial_temperature(input_value, expected_type):
     # BUILD
 
     # give function to species
-    V = fem.FunctionSpace(test_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
 
     my_species = F.Species("test")

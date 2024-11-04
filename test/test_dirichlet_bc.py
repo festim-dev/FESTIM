@@ -1,11 +1,12 @@
+from mpi4py import MPI
+
+import dolfinx.mesh
 import numpy as np
 import pytest
 import ufl
+from dolfinx import default_scalar_type, fem
 from ufl.conditional import Conditional
 
-from dolfinx import fem
-import dolfinx.mesh
-from mpi4py import MPI
 import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
@@ -56,13 +57,18 @@ def test_callable_for_value():
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x, t: 1.0 + x[0] + t
+
+    def value(x, t):
+        return 1.0 + x[0] + t
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_spaces()
@@ -70,13 +76,13 @@ def test_callable_for_value():
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
 
     # check the initial value of the boundary condition
-    assert bc.value_fenics.vector.array[-1] == float(
+    assert bc.value_fenics.x.petsc_vec.array[-1] == float(
         value(x=np.array([subdomain.x]), t=0.0)
     )
 
@@ -85,7 +91,7 @@ def test_callable_for_value():
         t.value = i
         bc.update(float(t))
         expected_value = float(value(x=np.array([subdomain.x]), t=float(t)))
-        computed_value = bc.value_fenics.vector.array[-1]
+        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
         assert np.isclose(computed_value, expected_value)
 
 
@@ -94,13 +100,18 @@ def test_value_callable_x_t_T():
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x, t, T: 1.0 + x[0] + t + T
+
+    def value(x, t, T):
+        return 1.0 + x[0] + t + T
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_spaces()
@@ -108,14 +119,14 @@ def test_value_callable_x_t_T():
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
 
     # check the initial value of the boundary condition
     assert np.isclose(
-        bc.value_fenics.vector.array[-1],
+        bc.value_fenics.x.petsc_vec.array[-1],
         float(value(x=np.array([subdomain.x]), t=float(t), T=float(T))),
     )
 
@@ -126,7 +137,7 @@ def test_value_callable_x_t_T():
         bc.update(float(t))
 
         expected_value = float(value(x=np.array([subdomain.x]), t=float(t), T=float(T)))
-        computed_value = bc.value_fenics.vector.array[-1]
+        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
         assert np.isclose(computed_value, expected_value)
 
 
@@ -151,7 +162,7 @@ def test_callable_t_only(value):
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Constant)
@@ -178,7 +189,10 @@ def test_callable_x_only():
     # BUILD
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x: 1.0 + x[0]
+
+    def value(x):
+        return 1.0 + x[0]
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
@@ -196,14 +210,14 @@ def test_callable_x_only():
     t = fem.Constant(my_model.mesh.mesh, 0.0)
 
     # TEST
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
 
     # check the initial value of the boundary condition
     assert np.isclose(
-        bc.value_fenics.vector.array[-1],
+        bc.value_fenics.x.petsc_vec.array[-1],
         float(value(x=np.array([subdomain.x]))),
     )
 
@@ -212,7 +226,7 @@ def test_callable_x_only():
         t.value = i
         bc.update(float(t))
         expected_value = float(value(x=np.array([subdomain.x])))
-        computed_value = bc.value_fenics.vector.array[-1]
+        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
         assert np.isclose(computed_value, expected_value)
 
 
@@ -265,13 +279,13 @@ def test_integration_with_HTransportProblem(value):
         arguments = value.__code__.co_varnames
         if "x" in arguments and "t" in arguments and "T" in arguments:
             expected_value = value(x=np.array([subdomain.x]), t=2.0, T=550.0)
-            computed_value = my_bc.value_fenics.vector.array[-1]
+            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments and "t" in arguments:
             expected_value = value(x=np.array([subdomain.x]), t=2.0)
-            computed_value = my_bc.value_fenics.vector.array[-1]
+            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments:
             expected_value = value(x=np.array([subdomain.x]))
-            computed_value = my_bc.value_fenics.vector.array[-1]
+            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
         elif "t" in arguments:
             expected_value = value(t=2.0)
             computed_value = float(my_bc.value_fenics)
@@ -303,11 +317,11 @@ def test_define_value_error_if_ufl_conditional_t_only(value):
     bc = F.DirichletBC(subdomain, value, species)
 
     t = fem.Constant(mesh, 0.0)
-
+    V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
     with pytest.raises(
         ValueError, match="self.value should return a float or an int, not "
     ):
-        bc.create_value(mesh=mesh, function_space=None, temperature=None, t=t)
+        bc.create_value(V, temperature=None, t=t)
 
 
 def test_species_predefined():
@@ -387,13 +401,13 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
         arguments = value_B.__code__.co_varnames
         if "x" in arguments and "t" in arguments and "T" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0, T=550.0)
-            computed_value = my_bc_B.value_fenics.vector.array[-1]
+            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments and "t" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0)
-            computed_value = my_bc_B.value_fenics.vector.array[-1]
+            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
         elif "x" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]))
-            computed_value = my_bc_B.value_fenics.vector.array[-1]
+            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
         elif "t" in arguments:
             expected_value = value_B(t=2.0)
             computed_value = float(my_bc_B.value_fenics)
@@ -411,7 +425,7 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda t: t, True),
         (lambda t: 1.0 + t, True),
         (lambda x: 1.0 + x[0], False),
@@ -434,12 +448,15 @@ def test_bc_time_dependent_attribute(input, expected_value):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda T: T, True),
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),
         (lambda x, t, T: 1.0 + x[0] + t + T, True),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), False),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            False,
+        ),
     ],
 )
 def test_bc_temperature_dependent_attribute(input, expected_value):

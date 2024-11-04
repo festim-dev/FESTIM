@@ -34,6 +34,7 @@ Contents
    userguide/index
    devguide/index
    publications
+   api/index
 
 
 Indices and tables

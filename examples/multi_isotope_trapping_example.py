@@ -1,6 +1,6 @@
-import festim as F
 import numpy as np
 
+import festim as F
 
 my_model = F.HydrogenTransportProblem()
 
@@ -62,8 +62,7 @@ my_model.reactions = [
         E_k=0.39,
         p_0=1e13,
         E_p=1.2,
-        reactant1=mobile_H,
-        reactant2=empty_trap,
+        reactant=[mobile_H, empty_trap],
         product=trapped_H1,
     ),
     F.Reaction(
@@ -71,8 +70,7 @@ my_model.reactions = [
         E_k=0.39,
         p_0=1e13,
         E_p=1.0,
-        reactant1=mobile_H,
-        reactant2=trapped_H1,
+        reactant=[mobile_H, trapped_H1],
         product=trapped_H2,
     ),
     F.Reaction(
@@ -80,8 +78,7 @@ my_model.reactions = [
         E_k=0.39,
         p_0=1e13,
         E_p=1.2,
-        reactant1=mobile_D,
-        reactant2=empty_trap,
+        reactant=[mobile_D, empty_trap],
         product=trapped_D1,
     ),
     F.Reaction(
@@ -89,8 +86,7 @@ my_model.reactions = [
         E_k=0.39,
         p_0=1e13,
         E_p=1.2,
-        reactant1=mobile_D,
-        reactant2=trapped_D1,
+        reactant=[mobile_D, trapped_D1],
         product=trapped_D2,
     ),
     F.Reaction(
@@ -98,8 +94,7 @@ my_model.reactions = [
         E_k=0.39,
         p_0=1e13,
         E_p=1.0,
-        reactant1=mobile_H,
-        reactant2=trapped_D1,
+        reactant=[mobile_H, trapped_D1],
         product=trapped_HD,
     ),
     F.Reaction(
@@ -107,8 +102,7 @@ my_model.reactions = [
         E_k=0.39,
         p_0=1e13,
         E_p=1.0,
-        reactant1=mobile_D,
-        reactant2=trapped_H1,
+        reactant=[mobile_D, trapped_H1],
         product=trapped_HD,
     ),
 ]
