@@ -1,11 +1,12 @@
+from mpi4py import MPI
+
+import dolfinx.mesh
 import numpy as np
 import pytest
 import ufl
+from dolfinx import default_scalar_type, fem
 from ufl.conditional import Conditional
 
-from dolfinx import fem
-import dolfinx.mesh
-from mpi4py import MPI
 import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
@@ -56,13 +57,18 @@ def test_callable_for_value():
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x, t: 1.0 + x[0] + t
+
+    def value(x, t):
+        return 1.0 + x[0] + t
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_spaces()
@@ -70,7 +76,7 @@ def test_callable_for_value():
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -94,13 +100,18 @@ def test_value_callable_x_t_T():
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x, t, T: 1.0 + x[0] + t + T
+
+    def value(x, t, T):
+        return 1.0 + x[0] + t + T
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
 
     my_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh(mesh), subdomains=[subdomain, vol_subdomain], species=[species]
+        mesh=F.Mesh(mesh),
+        subdomains=[subdomain, vol_subdomain],
+        species=[species],
     )
 
     my_model.define_function_spaces()
@@ -108,7 +119,7 @@ def test_value_callable_x_t_T():
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -151,7 +162,7 @@ def test_callable_t_only(value):
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Constant)
@@ -178,7 +189,10 @@ def test_callable_x_only():
     # BUILD
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
-    value = lambda x: 1.0 + x[0]
+
+    def value(x):
+        return 1.0 + x[0]
+
     species = F.Species("test")
 
     bc = F.DirichletBC(subdomain, value, species)
@@ -196,7 +210,7 @@ def test_callable_x_only():
     t = fem.Constant(my_model.mesh.mesh, 0.0)
 
     # TEST
-    bc.create_value(my_model.mesh.mesh, my_model.function_space, T, t)
+    bc.create_value(my_model.function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -303,11 +317,11 @@ def test_define_value_error_if_ufl_conditional_t_only(value):
     bc = F.DirichletBC(subdomain, value, species)
 
     t = fem.Constant(mesh, 0.0)
-
+    V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
     with pytest.raises(
         ValueError, match="self.value should return a float or an int, not "
     ):
-        bc.create_value(mesh=mesh, function_space=None, temperature=None, t=t)
+        bc.create_value(V, temperature=None, t=t)
 
 
 def test_species_predefined():
@@ -411,7 +425,7 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda t: t, True),
         (lambda t: 1.0 + t, True),
         (lambda x: 1.0 + x[0], False),
@@ -434,12 +448,15 @@ def test_bc_time_dependent_attribute(input, expected_value):
     [
         (1.0, False),
         (None, False),
-        (fem.Constant(mesh, 1.0), False),
+        (fem.Constant(mesh, default_scalar_type(1.0)), False),
         (lambda T: T, True),
         (lambda t: 1.0 + t, False),
         (lambda x, T: 1.0 + x[0] + T, True),
         (lambda x, t, T: 1.0 + x[0] + t + T, True),
-        (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), False),
+        (
+            lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0),
+            False,
+        ),
     ],
 )
 def test_bc_temperature_dependent_attribute(input, expected_value):

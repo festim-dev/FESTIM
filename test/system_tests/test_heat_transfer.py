@@ -1,7 +1,9 @@
-import festim as F
 import numpy as np
-from dolfinx import fem
 import ufl
+from dolfinx import fem
+
+import festim as F
+
 from .tools import error_L2
 
 test_mesh_1d = F.Mesh1D(np.linspace(0, 1, 10000))

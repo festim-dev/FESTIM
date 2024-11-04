@@ -1,9 +1,8 @@
-import festim as F
 import numpy as np
-from dolfinx import fem
 import ufl
-from dolfinx.mesh import meshtags
-import pytest
+from dolfinx import fem
+
+import festim as F
 
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy")
 
@@ -21,7 +20,7 @@ def test_average_volume_compute_1D():
     dx = ufl.Measure("dx", domain=my_mesh.mesh, subdomain_data=cell_meshtags)
 
     # give function to species
-    V = fem.functionspace(my_mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
     c.interpolate(lambda x: x[0] * 0.5 + 2)
 

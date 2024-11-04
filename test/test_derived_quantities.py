@@ -1,6 +1,8 @@
-import festim as F
-import pytest
 import os
+
+import pytest
+
+import festim as F
 
 mobile_H = F.Species("H")
 mobile_D = F.Species("D")

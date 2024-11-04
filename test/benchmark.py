@@ -1,45 +1,44 @@
+import time
+
 from mpi4py import MPI
 from petsc4py import PETSc
-from dolfinx.io import XDMFFile
+
+import basix
+import numpy as np
+import tqdm.autonotebook
 from dolfinx.fem import (
     Constant,
-    dirichletbc,
     Function,
-    functionspace,
-    locate_dofs_topological,
-    locate_dofs_geometrical,
-    form,
     assemble_scalar,
+    dirichletbc,
+    form,
+    functionspace,
+    locate_dofs_geometrical,
+    locate_dofs_topological,
 )
 from dolfinx.fem.petsc import (
     NonlinearProblem,
 )
+from dolfinx.io import XDMFFile
+from dolfinx.mesh import create_mesh, locate_entities, meshtags
 from dolfinx.nls.petsc import NewtonSolver
-from ufl import (
-    dot,
-    grad,
-    TestFunction,
-    exp,
-    FacetNormal,
-    Cell,
-    Mesh,
-    VectorElement,
-    Measure,
-)
-import basix
-from dolfinx.mesh import create_mesh, meshtags, locate_entities
-import numpy as np
-import tqdm.autonotebook
-import time
 from test_permeation_problem import test_permeation_problem
+from ufl import (
+    FacetNormal,
+    Measure,
+    Mesh,
+    TestFunction,
+    dot,
+    exp,
+    grad,
+)
 
 
 def fenics_test_permeation_problem(mesh_size=1001):
     L = 3e-04
     indices = np.linspace(0, L, num=mesh_size)
     gdim, shape, degree = 1, "interval", 1
-    cell = Cell(shape, geometric_dimension=gdim)
-    domain = Mesh(VectorElement("Lagrange", cell, degree))
+    domain = Mesh(basix.ufl.element("Lagrange", shape, degree, shape=(gdim,)))
     mesh_points = np.reshape(indices, (len(indices), 1))
     indexes = np.arange(mesh_points.shape[0])
     cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
@@ -90,6 +89,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
         return S * pressure**0.5
 
     left_facets = mesh_tags_facets.find(1)
+    my_mesh.topology.create_connectivity(fdim, my_mesh.topology.dim)
     left_dofs = locate_dofs_topological(V, fdim, left_facets)
     right_facets = mesh_tags_facets.find(2)
     right_dofs = locate_dofs_topological(V, fdim, right_facets)
@@ -197,7 +197,8 @@ def test_festim_vs_fenics_permeation_benchmark():
     threshold = -0.1
     if diff < threshold:
         raise ValueError(
-            f"festim is {np.abs(diff):.1%} slower than fenics, current acceptable threshold of {np.abs(threshold):.1%}"
+            f"festim is {np.abs(diff):.1%} slower than fenics, current acceptable threshold of {
+                np.abs(threshold):.1%}"
         )
     else:
         print(f"avg relative diff between festim and fenics {diff:.1%}")

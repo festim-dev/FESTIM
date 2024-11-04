@@ -105,3 +105,9 @@ venv.bak/
 
 # version file
 **_version.py
+
+# Input/Output files
+*.bp
+*.xdmf
+*.h5
+*.txt

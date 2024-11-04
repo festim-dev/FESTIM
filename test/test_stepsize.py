@@ -1,6 +1,7 @@
-import festim as F
 import numpy as np
 import pytest
+
+import festim as F
 
 
 @pytest.mark.parametrize("growth_factor, target", [(10, 5), (1.2, 2), (1, 1)])
