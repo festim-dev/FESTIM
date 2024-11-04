@@ -47,7 +47,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         sources: The hydrogen sources
         initial_conditions: The initial conditions
         boundary_conditions: The boundary conditions
-        solver_parameters (dict): the solver parameters of the model
         exports (list of festim.Export): the exports of the model
         traps (list of F.Trap): the traps of the model
 
@@ -60,7 +59,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         sources: The hydrogen sources
         initial_conditions: The initial conditions
         boundary_conditions: List of Dirichlet boundary conditions
-        solver_parameters (dict): the solver parameters
         exports (list of festim.Export): the export
         traps (list of F.Trap): the traps of the model
         dx (dolfinx.fem.dx): the volume measure of the model
