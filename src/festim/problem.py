@@ -159,7 +159,6 @@ class ProblemBase:
             # Solve steady-state
             self.solver.solve(self.u)
             self.post_processing()
-        
 
     def iterate(self):
         """Iterates the model for a given time step"""
