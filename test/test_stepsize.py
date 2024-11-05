@@ -168,18 +168,16 @@ def test_next_milestone(milestones, current_time, expected_value):
     next_milestone = stepsize.next_milestone(current_time=current_time)
     assert expected_value == next_milestone
 
+@pytest.mark.parametrize(
+    "t, expected_value",
+    [(0, 10), (10, 10), (100, 10), (1000, None), (1001, None)],
+)
+def test_get_max_stepsize(t, expected_value):
+    """Tests get_max_stepsize when
+    max_stepsize is a callable.
+    """
+    my_stepsize = F.Stepsize(initial_value=2)
 
-# def test_get_max_stepsize(t):
-#     """Tests get_max_stepsize when
-#     max_stepsize is a callable.
-#     """
-#     my_stepsize = F.Stepsize(initial_value=2)
+    my_stepsize.max_stepsize = lambda t: 10 if t < 1000 else None
 
-#     expected_value = my_stepsize._max_stepsize(t)
-
-#     if t<1000:
-#         my_stepsize.max_stepsize = None
-#     else:
-#         my_stepsize.max_stepsize = 10
-
-#     assert value == expected_value
+    assert my_stepsize.get_max_stepsize(t) == expected_value
