@@ -1,3 +1,5 @@
+import numpy as np
+
 class Stepsize:
     """
     A class for evaluating the stepsize of transient simulations.
@@ -119,18 +121,24 @@ class Stepsize:
         if not self.is_adapt(t):
             return value
 
-        next_milestone = self.next_milestone(t)
-        # if next_milestone is not None: 
-
         max_step = self.get_max_stepsize(t)
 
         if nb_iterations < self.target_nb_iterations:
-            return min(value * self.growth_factor, max_step if max_step is not None else value * self.growth_factor)
+            updated_value = min(value * self.growth_factor, max_step if max_step is not None else value * self.growth_factor)
         elif nb_iterations > self.target_nb_iterations:
-            return value * self.cutback_factor
+            updated_value = value * self.cutback_factor
         else:
-            return value
-        
+            updated_value = value
+
+        next_milestone = self.next_milestone(t)
+        if next_milestone is not None:
+            time_to_milestone = next_milestone - t
+            if updated_value > time_to_milestone and not np.isclose(
+                t, next_milestone, atol=0
+            ):
+                updated_value = time_to_milestone
+
+        return updated_value
 
 
     def is_adapt(self, t):
