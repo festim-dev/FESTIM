@@ -168,6 +168,7 @@ def test_next_milestone(milestones, current_time, expected_value):
     next_milestone = stepsize.next_milestone(current_time=current_time)
     assert expected_value == next_milestone
 
+
 @pytest.mark.parametrize(
     "t, expected_value",
     [(0, 10), (10, 10), (100, 10), (1000, None), (1001, None)],
