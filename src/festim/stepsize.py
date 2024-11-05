@@ -30,7 +30,7 @@ class Stepsize:
             over (resp. under) which the stepsize is increased
             (resp. decreased)
         adaptive (bool): True if the stepsize is adaptive, False otherwise.
-        max_stepsize (float): Maximum stepsize.
+        max_stepsize (float, callable): Maximum stepsize.
         milestones (list): list of times by which the simulation must
             pass.
     """
