@@ -145,7 +145,7 @@ def test_max_stepsize_setter():
 
 @pytest.mark.parametrize(
     "milestones, current_time, expected_value",
-    [([1.0, 25.4], 20.1, 25.4), ([9.8], 10.0, None)],
+    [([1.0, 25.4], 20.1, 25.4), ([9.8], 10.0, None), ([2.0,0.5,20.0], 0.0, 0.5), ([3.4,9.5,4.4], 4.4,4.4), ([15.3, 1.2, 0.7, 1.4], 15.3, 15.3)],
 )
 def test_next_milestone(milestones, current_time, expected_value):
     """Checks that the next milestone is
@@ -170,3 +170,18 @@ def test_no_milestones():
     # Test that setting milestones to None works
     stepsize.milestones = None
     assert stepsize.milestones is None
+
+# def test_get_max_stepsize(t):
+#     """Tests get_max_stepsize when 
+#     max_stepsize is a callable.
+#     """
+#     my_stepsize = F.Stepsize(initial_value=2)
+
+#     expected_value = my_stepsize._max_stepsize(t)
+
+#     if t<1000:
+#         my_stepsize.max_stepsize = None
+#     else:
+#         my_stepsize.max_stepsize = 10
+
+#     assert value == expected_value
