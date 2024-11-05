@@ -15,7 +15,7 @@ class Stepsize:
             over (resp. under) which the stepsize is increased
             (resp. decreased)
         max_stepsize (float or callable, optional): Maximum stepsize.
-            Can be a function of festim.t. Defaults to None.
+            If callable, has to be a function of `t`. Defaults to None.
         milestones (list, optional): list of times by which the simulation must
             pass. Defaults to None.
 
