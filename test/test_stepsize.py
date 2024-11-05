@@ -172,7 +172,7 @@ def test_next_milestone(milestones, current_time, expected_value):
 @pytest.mark.parametrize("nb_its, target", [(1, 4), (5, 4), (4, 4)])
 def test_overshoot_milestone(nb_its, target):
     """Test that stepsize is modified
-    when going to overshot a milestone.
+    when going to overshoot a milestone.
     """
 
     my_stepsize = F.Stepsize(initial_value=0.5)
