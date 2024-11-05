@@ -98,7 +98,7 @@ class Stepsize:
 
     @max_stepsize.setter
     def max_stepsize(self, value):
-        if value is not None and not callable(value):
+        if isinstance(value, float):
             if value < self.initial_value:
                 raise ValueError(
                     "maximum stepsize cannot be less than initial stepsize"
