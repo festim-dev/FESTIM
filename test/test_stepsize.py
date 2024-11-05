@@ -176,7 +176,7 @@ def test_overshoot_milestone(nb_its, target):
     """
 
     my_stepsize = F.Stepsize(initial_value=0.5)
-    my_stepsize.growth_factor = 3
+    my_stepsize.growth_factor = 3.0
     my_stepsize.cutback_factor = 0.9
     my_stepsize.target_nb_iterations = target
 
