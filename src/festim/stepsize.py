@@ -11,6 +11,8 @@ class Stepsize:
         target_nb_iterations (int, optional): number of Newton iterations
             over (resp. under) which the stepsize is increased
             (resp. decreased)
+        max_stepsize (float, optional): Maximum stepsize.
+            Defaults to None.
 
 
     Attributes:
@@ -23,6 +25,7 @@ class Stepsize:
             over (resp. under) which the stepsize is increased
             (resp. decreased)
         adaptive (bool): True if the stepsize is adaptive, False otherwise.
+        max_stepsize (float): Maximum stepsize.
     """
 
     def __init__(
@@ -31,11 +34,13 @@ class Stepsize:
         growth_factor=None,
         cutback_factor=None,
         target_nb_iterations=None,
+        max_stepsize=None,
     ) -> None:
         self.initial_value = initial_value
         self.growth_factor = growth_factor
         self.cutback_factor = cutback_factor
         self.target_nb_iterations = target_nb_iterations
+        self.max_stepsize = max_stepsize
 
         # TODO should this class hold the dt object used in the formulation
 
@@ -67,12 +72,20 @@ class Stepsize:
 
         self._cutback_factor = value
 
+    @property
+    def max_stepsize(self):
+        return self._max_stepsize
+
     def modify_value(self, value, nb_iterations, t=None):
         if not self.is_adapt(t):
             return value
 
         if nb_iterations < self.target_nb_iterations:
-            return value * self.growth_factor
+            return (
+                value * self.growth_factor 
+                if value * self.growth_factor <= self.max_stepsize
+                else value
+            )
         elif nb_iterations > self.target_nb_iterations:
             return value * self.cutback_factor
         else:
