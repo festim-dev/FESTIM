@@ -124,17 +124,17 @@ class Stepsize:
         if not self.is_adapt(t):
             return value
 
-        max_step = self.get_max_stepsize(t)
-
         if nb_iterations < self.target_nb_iterations:
-            updated_value = min(
-                value * self.growth_factor,
-                max_step if max_step is not None else value * self.growth_factor,
-            )
+            updated_value = value * self.growth_factor
         elif nb_iterations > self.target_nb_iterations:
             updated_value = value * self.cutback_factor
         else:
             updated_value = value
+
+        max_step = self.get_max_stepsize(t)
+        if max_step:
+            if updated_value > max_step:
+                updated_value = max_step
 
         next_milestone = self.next_milestone(t)
         if next_milestone is not None:

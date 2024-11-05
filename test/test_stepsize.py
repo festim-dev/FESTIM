@@ -170,3 +170,22 @@ def test_no_milestones():
     # Test that setting milestones to None works
     stepsize.milestones = None
     assert stepsize.milestones is None
+
+
+def test_modify_for_stepsize():
+    """Tests that modify_value returns max_stepsize
+    when max_stepsize is less than next stepsize.
+    """
+    my_stepsize = F.Stepsize(initial_value=1)
+    my_stepsize.max_stepsize = 1
+    my_stepsize.growth_factor = 1.1
+    my_stepsize.target_nb_iterations = 4
+
+    current_value = 2
+    new_value = my_stepsize.modify_value(
+        value=current_value,
+        nb_iterations=my_stepsize.target_nb_iterations,
+    )
+
+    expected_value = 1
+    assert new_value == expected_value
