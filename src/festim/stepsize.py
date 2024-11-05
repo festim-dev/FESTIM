@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class Stepsize:
     """
     A class for evaluating the stepsize of transient simulations.
@@ -55,14 +56,14 @@ class Stepsize:
     @property
     def milestones(self):
         return self._milestones
-    
+
     @milestones.setter
     def milestones(self, value):
         if value:
             self._milestones = sorted(value)
         else:
             self._milestones = value
-    
+
     @property
     def adaptive(self):
         return self.growth_factor or self.cutback_factor or self.target_nb_iterations
@@ -94,22 +95,24 @@ class Stepsize:
     @property
     def max_stepsize(self):
         return self._max_stepsize
-    
+
     @max_stepsize.setter
     def max_stepsize(self, value):
         if value is not None and not callable(value):
             if value < self.initial_value:
-                raise ValueError("maximum stepsize cannot be less than initial stepsize")
-            
+                raise ValueError(
+                    "maximum stepsize cannot be less than initial stepsize"
+                )
+
         self._max_stepsize = value
 
     def get_max_stepsize(self, t):
         """
-        Returns the maximum stepsize at time t. 
-        
+        Returns the maximum stepsize at time t.
+
         Args:
             t (float): the current time
-        
+
         Returns:
             float or None: the maximum stepsize at time t
         """
@@ -124,7 +127,10 @@ class Stepsize:
         max_step = self.get_max_stepsize(t)
 
         if nb_iterations < self.target_nb_iterations:
-            updated_value = min(value * self.growth_factor, max_step if max_step is not None else value * self.growth_factor)
+            updated_value = min(
+                value * self.growth_factor,
+                max_step if max_step is not None else value * self.growth_factor,
+            )
         elif nb_iterations > self.target_nb_iterations:
             updated_value = value * self.cutback_factor
         else:
@@ -140,7 +146,6 @@ class Stepsize:
 
         return updated_value
 
-
     def is_adapt(self, t):
         """
         Methods that defines if the stepsize should be
@@ -153,7 +158,7 @@ class Stepsize:
             bool: True if needs to adapt, False otherwise.
         """
         return True
-    
+
     def next_milestone(self, current_time: float):
         """Returns the next milestone that the simulation must pass.
         Returns None if there are no more milestones.
