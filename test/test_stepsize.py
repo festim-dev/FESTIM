@@ -47,7 +47,8 @@ def test_adaptive_stepsize_shrinks(cutback_factor, target):
     expected_value = current_value * my_stepsize.cutback_factor
     assert np.isclose(new_value, expected_value)
 
-@pytest.mark.parametrize("max_stepsize, growth_factor, target", [(4,3,1)])
+
+@pytest.mark.parametrize("max_stepsize, growth_factor, target", [(4, 3, 1)])
 def test_max_stepsize(max_stepsize, growth_factor, target):
     """Checks that the stepsize is capped at max
     stepsize.
@@ -126,38 +127,46 @@ def test_cutback_factor_setter():
     stepsize.cutback_factor = None
     assert stepsize.cutback_factor is None
 
+
 def test_max_stepsize_setter():
     """Checks that the maximum stepsize setter works correctly"""
     stepsize = F.Stepsize(initial_value=1)
 
     # Test that setting a maximum stepsize less than initial stepsize raises a ValueError
-    with pytest.raises(ValueError, match="maximum stepsize cannot be less than initial stepsize"):
+    with pytest.raises(
+        ValueError, match="maximum stepsize cannot be less than initial stepsize"
+    ):
         stepsize.max_stepsize = 0.5
 
     # Test that setting maximum stepsize to None works
     stepsize.max_stepsize = None
     assert stepsize.max_stepsize is None
 
-@pytest.mark.parametrize("milestones, current_time, expected_value", [([1.0,25.4], 20.1, 25.4), ([9.8], 10.0, None)])
+
+@pytest.mark.parametrize(
+    "milestones, current_time, expected_value",
+    [([1.0, 25.4], 20.1, 25.4), ([9.8], 10.0, None)],
+)
 def test_next_milestone(milestones, current_time, expected_value):
-     """Checks that the next milestone is 
+    """Checks that the next milestone is
      identified and set correctly.
 
     Args:
         milestone (float): next milestone
         current_time (float): current time in simulation
     """
-     stepsize = F.Stepsize(initial_value=0.5)
+    stepsize = F.Stepsize(initial_value=0.5)
 
-     stepsize.milestones = milestones
+    stepsize.milestones = milestones
 
-     next_milestone = stepsize.next_milestone(current_time=current_time)
-     assert expected_value == next_milestone
+    next_milestone = stepsize.next_milestone(current_time=current_time)
+    assert expected_value == next_milestone
+
 
 def test_no_milestones():
-     """Checks that no milestones works correctly"""
-     stepsize = F.Stepsize(initial_value=0.5)
+    """Checks that no milestones works correctly"""
+    stepsize = F.Stepsize(initial_value=0.5)
 
-    # Test that setting milestones to None works 
-     stepsize.milestones = None
-     assert stepsize.milestones is None
+    # Test that setting milestones to None works
+    stepsize.milestones = None
+    assert stepsize.milestones is None
