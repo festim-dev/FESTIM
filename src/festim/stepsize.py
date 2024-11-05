@@ -92,7 +92,7 @@ class Stepsize:
         self._cutback_factor = value
 
     @property
-    def max_stepsize(self, t):
+    def max_stepsize(self):
         return self._max_stepsize
     
     @max_stepsize.setter
