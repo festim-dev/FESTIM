@@ -180,7 +180,7 @@ def test_overshoot_milestone(nb_its, target):
     my_stepsize.cutback_factor = 0.9
     my_stepsize.target_nb_iterations = target
 
-    my_stepsize.milestones = [1.3, 2.5]
+    my_stepsize.milestones = [1.3]
 
     new_value = my_stepsize.modify_value(
         value=my_stepsize,
