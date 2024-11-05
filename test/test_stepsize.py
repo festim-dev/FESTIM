@@ -47,6 +47,31 @@ def test_adaptive_stepsize_shrinks(cutback_factor, target):
     expected_value = current_value * my_stepsize.cutback_factor
     assert np.isclose(new_value, expected_value)
 
+@pytest.mark.parametrize("max_stepsize, growth_factor, target", [(4,3,1)])
+def test_max_stepsize(max_stepsize, growth_factor, target):
+    """Checks that the stepsize is capped at max
+    stepsize.
+
+    Args:
+        max_stepsize (float): maximum stepsize
+        growth_factor (float): the growth factor
+        target (int): the target number of iterations
+    """
+
+    my_stepsize = F.Stepsize(initial_value=2)
+    my_stepsize.max_stepsize = max_stepsize
+    my_stepsize.growth_factor = growth_factor
+    my_stepsize.target_nb_iterations = target
+
+    current_value = 2
+    new_value = my_stepsize.modify_value(
+        value=current_value,
+        nb_iterations=my_stepsize.target_nb_iterations - 1,
+    )
+
+    expected_value = max_stepsize
+    assert new_value == expected_value
+
 
 def test_stepsize_is_unchanged():
     """
@@ -100,3 +125,15 @@ def test_cutback_factor_setter():
     # Test that setting cutback factor to None works
     stepsize.cutback_factor = None
     assert stepsize.cutback_factor is None
+
+def test_max_stepsize_setter():
+    """Checks that the maximum stepsize setter works correctly"""
+    stepsize = F.Stepsize(initial_value=1)
+
+    # Test that setting a maximum stepsize less than initial stepsize raises a ValueError
+    with pytest.raises(ValueError, match="maximum stepsize cannot be less than initial stepsize"):
+        stepsize.max_stepsize = 0.5
+
+    # Test that setting maximum stepsize to None works
+    stepsize.max_stepsize = None
+    assert stepsize.max_stepsize is None

@@ -75,6 +75,14 @@ class Stepsize:
     @property
     def max_stepsize(self):
         return self._max_stepsize
+    
+    @max_stepsize.setter
+    def max_stepsize(self, value):
+        if value is not None:
+            if value < self.initial_value:
+                raise ValueError("maximum stepsize cannot be less than initial stepsize")
+            
+        self._max_stepsize = value
 
     def modify_value(self, value, nb_iterations, t=None):
         if not self.is_adapt(t):
@@ -84,7 +92,7 @@ class Stepsize:
             return (
                 value * self.growth_factor 
                 if value * self.growth_factor <= self.max_stepsize
-                else value
+                else self.max_stepsize
             )
         elif nb_iterations > self.target_nb_iterations:
             return value * self.cutback_factor
