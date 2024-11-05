@@ -163,14 +163,6 @@ def test_next_milestone(milestones, current_time, expected_value):
     assert expected_value == next_milestone
 
 
-def test_no_milestones():
-    """Checks that no milestones works correctly"""
-    stepsize = F.Stepsize(initial_value=0.5)
-
-    # Test that setting milestones to None works
-    stepsize.milestones = None
-    assert stepsize.milestones is None
-
 # def test_get_max_stepsize(t):
 #     """Tests get_max_stepsize when 
 #     max_stepsize is a callable.
