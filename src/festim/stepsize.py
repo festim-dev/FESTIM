@@ -11,8 +11,10 @@ class Stepsize:
         target_nb_iterations (int, optional): number of Newton iterations
             over (resp. under) which the stepsize is increased
             (resp. decreased)
-        max_stepsize (float, optional): Maximum stepsize.
-            Defaults to None.
+        max_stepsize (float or callable, optional): Maximum stepsize.
+            Can be a function of festim.t. Defaults to None.
+        milestones (list, optional): list of times by which the simulation must
+            pass. Defaults to None.
 
 
     Attributes:
@@ -26,6 +28,8 @@ class Stepsize:
             (resp. decreased)
         adaptive (bool): True if the stepsize is adaptive, False otherwise.
         max_stepsize (float): Maximum stepsize.
+        milestones (list): list of times by which the simulation must
+            pass.
     """
 
     def __init__(
@@ -35,15 +39,28 @@ class Stepsize:
         cutback_factor=None,
         target_nb_iterations=None,
         max_stepsize=None,
+        milestones=None,
     ) -> None:
         self.initial_value = initial_value
         self.growth_factor = growth_factor
         self.cutback_factor = cutback_factor
         self.target_nb_iterations = target_nb_iterations
         self.max_stepsize = max_stepsize
+        self.milestones = milestones
 
         # TODO should this class hold the dt object used in the formulation
 
+    @property
+    def milestones(self):
+        return self._milestones
+    
+    @milestones.setter
+    def milestones(self, value):
+        if value:
+            self._milestones = sorted(value)
+        else:
+            self._milestones = value
+    
     @property
     def adaptive(self):
         return self.growth_factor or self.cutback_factor or self.target_nb_iterations
@@ -73,31 +90,48 @@ class Stepsize:
         self._cutback_factor = value
 
     @property
-    def max_stepsize(self):
+    def max_stepsize(self, t):
         return self._max_stepsize
     
     @max_stepsize.setter
     def max_stepsize(self, value):
-        if value is not None:
+        if value is not None and not callable(value):
             if value < self.initial_value:
                 raise ValueError("maximum stepsize cannot be less than initial stepsize")
             
         self._max_stepsize = value
 
+    def get_max_stepsize(self, t):
+        """
+        Returns the maximum stepsize at time t. 
+        
+        Args:
+            t (float): the current time
+        
+        Returns:
+            float or None: the maximum stepsize at time t
+        """
+        if callable(self._max_stepsize):
+            return self._max_stepsize(t)
+        return self._max_stepsize
+
     def modify_value(self, value, nb_iterations, t=None):
         if not self.is_adapt(t):
             return value
 
+        next_milestone = self.next_milestone(t)
+        # if next_milestone is not None: 
+
+        max_step = self.get_max_stepsize(t)
+
         if nb_iterations < self.target_nb_iterations:
-            return (
-                value * self.growth_factor 
-                if value * self.growth_factor <= self.max_stepsize
-                else self.max_stepsize
-            )
+            return min(value * self.growth_factor, max_step if max_step is not None else value * self.growth_factor)
         elif nb_iterations > self.target_nb_iterations:
             return value * self.cutback_factor
         else:
             return value
+        
+
 
     def is_adapt(self, t):
         """
@@ -111,3 +145,20 @@ class Stepsize:
             bool: True if needs to adapt, False otherwise.
         """
         return True
+    
+    def next_milestone(self, current_time: float):
+        """Returns the next milestone that the simulation must pass.
+        Returns None if there are no more milestones.
+
+        Args:
+            current_time (float): current time.
+
+        Returns:
+            float: next milestone.
+        """
+        if self.milestones is None:
+            return None
+        for milestone in self.milestones:
+            if current_time < milestone:
+                return milestone
+        return None
