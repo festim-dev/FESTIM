@@ -131,8 +131,7 @@ class Stepsize:
         else:
             updated_value = value
 
-        max_step = self.get_max_stepsize(t)
-        if max_step:
+        if max_step := self.get_max_stepsize(t):
             if updated_value > max_step:
                 updated_value = max_step
 
