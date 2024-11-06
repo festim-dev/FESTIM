@@ -169,8 +169,7 @@ def test_next_milestone(milestones, current_time, expected_value):
     assert expected_value == next_milestone
 
 
-@pytest.mark.parametrize("nb_its, target", [(1, 4)])
-def test_overshoot_milestone(nb_its, target):
+def test_overshoot_milestone(nb_its=1, target=4):
     """Test that stepsize is modified
     when going to overshoot a milestone.
     """
