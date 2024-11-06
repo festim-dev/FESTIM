@@ -183,7 +183,7 @@ def test_overshoot_milestone(nb_its, target):
     my_stepsize.milestones = [1.3]
 
     new_value = my_stepsize.modify_value(
-        value=my_stepsize,
+        value=0.5,
         nb_iterations=nb_its,
     )
 
