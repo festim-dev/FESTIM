@@ -120,7 +120,7 @@ class Stepsize:
             return self._max_stepsize(t)
         return self._max_stepsize
 
-    def modify_value(self, value, nb_iterations, t):
+    def modify_value(self, value, nb_iterations, t=None):
         if not self.is_adapt(t):
             return value
 
