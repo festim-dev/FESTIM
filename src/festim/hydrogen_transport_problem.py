@@ -412,6 +412,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.D = D
                 export.D_expr = D_expr
 
+            # reset the data and time for SurfaceQuantity and VolumeQuantity
+            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity)):
+                export.t = []
+                export.data = []
+
     def define_D_global(self, species):
         """Defines the global diffusion coefficient for a given species
 
