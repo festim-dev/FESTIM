@@ -175,16 +175,17 @@ def test_overshoot_milestone(nb_its, target):
     when going to overshoot a milestone.
     """
 
-    my_stepsize = F.Stepsize(initial_value=0.5)
+    my_stepsize = F.Stepsize(initial_value=0.1)
     my_stepsize.growth_factor = 3.0
-    my_stepsize.cutback_factor = 0.9
     my_stepsize.target_nb_iterations = target
 
     my_stepsize.milestones = [1.3]
 
+    current_value = 0.5
     new_value = my_stepsize.modify_value(
-        value=0.5,
+        value=current_value,
         nb_iterations=nb_its,
+        t=current_value,
     )
 
     expected_value = 1.3
