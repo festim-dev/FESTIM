@@ -1356,7 +1356,7 @@ class HTransportProblemPenalty(HTransportProblemDiscontinuous):
             else:
                 if subdomain_0.material.solubility_law == "henry":
                     left = u_b / K_b
-                elif subdomain_0.material.solubility_law == "sieverts":
+                elif subdomain_0.material.solubility_law == "sievert":
                     left = (u_b / K_b) ** 2
                 else:
                     raise ValueError(
@@ -1365,7 +1365,7 @@ class HTransportProblemPenalty(HTransportProblemDiscontinuous):
 
                 if subdomain_1.material.solubility_law == "henry":
                     right = u_t / K_t
-                elif subdomain_1.material.solubility_law == "sieverts":
+                elif subdomain_1.material.solubility_law == "sievert":
                     right = (u_t / K_t) ** 2
                 else:
                     raise ValueError(

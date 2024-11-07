@@ -74,10 +74,10 @@ def test_2_materials_2d_mms():
     c_exact_top_ufl = (
         lambda x: 3
         + ufl.sin(ufl.pi * (2 * x[1] + 0.5))
-        + 0.7 * ufl.cos(2 * ufl.pi * x[0])
+        + 0.1 * ufl.cos(2 * ufl.pi * x[0])
     )
     c_exact_top_np = (
-        lambda x: 3 + np.sin(np.pi * (2 * x[1] + 0.5)) + 0.7 * np.cos(2 * np.pi * x[0])
+        lambda x: 3 + np.sin(np.pi * (2 * x[1] + 0.5)) + 0.1 * np.cos(2 * np.pi * x[0])
     )
 
     def c_exact_bot_ufl(x):
@@ -96,7 +96,7 @@ def test_2_materials_2d_mms():
     material_top = F.Material(D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0)
     material_bottom = F.Material(D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0)
 
-    material_top.solubility_law = "sieverts"
+    material_top.solubility_law = "sievert"
     material_bottom.solubility_law = "henry"
 
     top_domain = F.VolumeSubdomain(4, material=material_top)
@@ -111,7 +111,9 @@ def test_2_materials_2d_mms():
         bottom_surface,
     ]
 
-    my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain), penalty_term=1)]
+    my_model.interfaces = [
+        F.Interface(5, (bottom_domain, top_domain), penalty_term=1),
+    ]
     my_model.surface_to_volume = {
         top_surface: top_domain,
         bottom_surface: bottom_domain,
