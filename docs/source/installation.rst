@@ -73,3 +73,21 @@ To upgrade FESTIM to the latest version, run::
 To uninstall FESTIM, run::
 
     pip uninstall FESTIM
+
+
+Installing the ``fenicsx`` branch version
+-------------------------------------------
+
+This version of FESTIM is under development and is not yet available on PyPI.
+It runs on ``dolfinx`` instead of ``fenics`` and can be installed on Linux and MacOS.
+If you are on Windows, you can use the Windows Subsystem for Linux (simply follow the instructions above).
+
+Create a conda environment with ``dolfinx``::
+
+    conda create -n festim-env
+    conda activate festim-env       
+    conda install -c conda-forge fenics-dolfinx
+
+Install the correct FESTIM version with::
+
+    pip install git+https://github.com/FESTIM-dev/FESTIM@fenicsx
