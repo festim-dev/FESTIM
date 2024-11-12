@@ -18,6 +18,9 @@ from .boundary_conditions.dirichlet_bc import (
 )
 from .boundary_conditions.flux_bc import FluxBCBase, HeatFluxBC, ParticleFluxBC
 from .boundary_conditions.henrys_bc import HenrysBC
+from .boundary_conditions.flux_bc import FluxBCBase, ParticleFluxBC, HeatFluxBC
+from .boundary_conditions.surface_reaction import SurfaceReactionBC
+
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
@@ -37,6 +40,7 @@ from .helpers import as_fenics_constant
 from .hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,
     HydrogenTransportProblem,
+    HTransportProblemPenalty,
 )
 from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 from .initial_condition import InitialCondition, InitialTemperature

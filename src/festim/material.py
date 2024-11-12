@@ -20,6 +20,7 @@ class Material:
         thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
         density (float, callable): the density of the material (kg/m3)
         heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
+        solubility_law (str): the solubility law of the material ("sievert" or "henry")
 
     Attributes:
         D_0 (float or dict): the pre-exponential factor of the
@@ -55,6 +56,7 @@ class Material:
         density=None,
         heat_capacity=None,
         name=None,
+        solubility_law=None,
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
@@ -65,6 +67,7 @@ class Material:
         self.density = density
         self.heat_capacity = heat_capacity
         self.name = name
+        self.solubility_law = solubility_law
 
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient

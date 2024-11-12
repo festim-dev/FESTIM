@@ -348,6 +348,35 @@ def test_initialise_exports_multiple_exports_same_species():
     assert Ds[0].x.array[0] == Ds[1].x.array[0]
 
 
+def test_export_resets_quantities():
+    """Test that the export.data and export.t are correctly reset every time a simulation is initiated."""
+    my_mat = F.Material(D_0=1, E_D=0)
+    H = F.Species("H")
+    surf = F.SurfaceSubdomain1D(id=1, x=4)
+
+    my_export = F.SurfaceFlux(
+        field=H,
+        surface=surf,
+    )
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D([0, 1, 2, 3, 4]),
+        subdomains=[F.VolumeSubdomain1D(id=1, borders=[0, 4], material=my_mat), surf],
+        species=[H],
+        temperature=400,
+        exports=[my_export],
+    )
+
+    my_model.settings = F.Settings(atol=1e-15, rtol=1e-15, transient=False)
+
+    for i in range(3):
+        my_model.initialise()
+        my_model.run()
+
+        assert my_model.exports[0].t == [0.0]
+        assert my_model.exports[0].data == [0.0]
+
+
 def test_define_D_global_multispecies():
     """Test that the D_global object is correctly defined when there are multiple
     species in one subdomain"""
@@ -1105,7 +1134,7 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
     my_model.define_meshtags_and_measures()
     my_model.assign_functions_to_species()
     my_model.define_temperature()
-    my_model.create_flux_values_fenics()
+    my_model.define_boundary_conditions()
 
     for i in range(3):
         # RUN
@@ -1159,7 +1188,7 @@ def test_update_fluxes_with_time_dependent_temperature(
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
-    my_model.create_flux_values_fenics()
+    my_model.define_boundary_conditions()
 
     for i in range(3):
         # RUN
