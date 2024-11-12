@@ -1203,7 +1203,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.J,
             [subdomain.u for subdomain in self.volume_subdomains],
             bcs=self.bc_forms,
-            max_iterations=10,
+            max_iterations=self.settings.max_iterations,
             petsc_options=self.petsc_options,
         )
 
@@ -1299,3 +1299,107 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     def __del__(self):
         for vtxfile in self._vtxfiles:
             vtxfile.close()
+
+
+class HTransportProblemPenalty(HTransportProblemDiscontinuous):
+    def create_formulation(self):
+        """
+        Takes all the formulations for each subdomain and adds the interface conditions.
+
+        Finally compute the jacobian matrix and store it in the ``J`` attribute,
+        adds the ``entity_maps`` to the forms and store them in the ``forms`` attribute
+        """
+        mesh = self.mesh.mesh
+        mt = self.facet_meshtags
+
+        for interface in self.interfaces:
+            interface.mesh = mesh
+            interface.mt = mt
+
+        integral_data = [
+            interface.compute_mapped_interior_facet_data(mesh)
+            for interface in self.interfaces
+        ]
+        [interface.pad_parent_maps() for interface in self.interfaces]
+        dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
+
+        entity_maps = {
+            sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
+        }
+        for interface in self.interfaces:
+            subdomain_0, subdomain_1 = interface.subdomains
+            res = interface.restriction
+
+            all_mobile_species = [spe for spe in self.species if spe.mobile]
+            if len(all_mobile_species) > 1:
+                raise NotImplementedError("Multiple mobile species not implemented")
+            H = all_mobile_species[0]
+            v_b = H.subdomain_to_test_function[subdomain_0](res[0])
+            v_t = H.subdomain_to_test_function[subdomain_1](res[1])
+
+            u_b = H.subdomain_to_solution[subdomain_0](res[0])
+            u_t = H.subdomain_to_solution[subdomain_1](res[1])
+
+            K_b = subdomain_0.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(res[0]), H
+            )
+            K_t = subdomain_1.material.get_solubility_coefficient(
+                self.mesh.mesh, self.temperature_fenics(res[1]), H
+            )
+
+            if (
+                subdomain_0.material.solubility_law
+                == subdomain_1.material.solubility_law
+            ):
+                left = u_b / K_b
+                right = u_t / K_t
+            else:
+                if subdomain_0.material.solubility_law == "henry":
+                    left = u_b / K_b
+                elif subdomain_0.material.solubility_law == "sievert":
+                    left = (u_b / K_b) ** 2
+                else:
+                    raise ValueError(
+                        f"Unknown material law {subdomain_0.material.solubility_law}"
+                    )
+
+                if subdomain_1.material.solubility_law == "henry":
+                    right = u_t / K_t
+                elif subdomain_1.material.solubility_law == "sievert":
+                    right = (u_t / K_t) ** 2
+                else:
+                    raise ValueError(
+                        f"Unknown material law {subdomain_1.material.solubility_law}"
+                    )
+
+            equality = right - left
+
+            F_0 = (
+                interface.penalty_term
+                * ufl.inner(equality, v_b)
+                * dInterface(interface.id)
+            )
+            F_1 = (
+                -interface.penalty_term
+                * ufl.inner(equality, v_t)
+                * dInterface(interface.id)
+            )
+
+            subdomain_0.F += F_0
+            subdomain_1.F += F_1
+
+        J = []
+        # this is the symbolic differentiation of the Jacobian
+        for subdomain1 in self.volume_subdomains:
+            jac = []
+            for subdomain2 in self.volume_subdomains:
+                jac.append(
+                    ufl.derivative(subdomain1.F, subdomain2.u),
+                )
+            J.append(jac)
+        # compile jacobian (J) and residual (F)
+        self.forms = dolfinx.fem.form(
+            [subdomain.F for subdomain in self.volume_subdomains],
+            entity_maps=entity_maps,
+        )
+        self.J = dolfinx.fem.form(J, entity_maps=entity_maps)
