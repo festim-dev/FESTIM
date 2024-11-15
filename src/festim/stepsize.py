@@ -141,7 +141,7 @@ class Stepsize:
             if updated_value > time_to_milestone and not np.isclose(
                 t, next_milestone, atol=0
             ):
-                updated_value = next_milestone
+                updated_value = time_to_milestone
 
         return updated_value
 
