@@ -169,19 +169,19 @@ def test_next_milestone(milestones, current_time, expected_value):
     assert expected_value == next_milestone
 
 
-def test_overshoot_milestone(nb_its=1, target=4):
+def test_overshoot_milestone():
     """Test that stepsize is modified
     when going to overshoot a milestone.
     """
 
     my_stepsize = F.Stepsize(initial_value=0.1)
     my_stepsize.growth_factor = 1
-    my_stepsize.target_nb_iterations = target
+    my_stepsize.target_nb_iterations = 4
 
     my_stepsize.milestones = [1.3]
 
     current_value = 100000
-    new_value = my_stepsize.modify_value(value=current_value, nb_iterations=nb_its, t=1)
+    new_value = my_stepsize.modify_value(value=current_value, nb_iterations=1, t=1)
 
     expected_value = 1.3 - 1
 
