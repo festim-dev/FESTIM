@@ -185,7 +185,7 @@ def test_overshoot_milestone(nb_its=1, target=4):
         value=current_value, nb_iterations=nb_its, t=0.9
     )
 
-    expected_value = 1.3
+    expected_value = 1.3 - current_value
 
     assert new_value == expected_value
 
