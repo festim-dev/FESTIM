@@ -1380,14 +1380,17 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.J = dolfinx.fem.form(J, entity_maps=entity_maps)
 
     def create_solver(self):
-        self.solver = NewtonSolver(
+        self.solver = NewNewtonSolver(
             self.forms,
-            self.J,
             [subdomain.u for subdomain in self.volume_subdomains],
             bcs=self.bc_forms,
-            max_iterations=self.settings.max_iterations,
+            J=self.J,
+            # max_iterations=self.settings.max_iterations,
             petsc_options=self.petsc_options,
         )
+        self.solver.atol = self.settings.atol
+        self.solver.rtol = self.settings.rtol
+        self.solver.max_it = self.settings.max_iterations
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
@@ -1447,7 +1450,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.update_time_dependent_values()
 
         # solve main problem
-        self.solver.solve(self.settings.atol, self.settings.rtol)
+        self.solver.solve()
 
         # post processing
         self.post_processing()
@@ -1475,7 +1478,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
-            self.solver.solve(self.settings.rtol)
+            self.solver.solve()
             self.post_processing()
 
     def __del__(self):
