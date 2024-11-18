@@ -90,8 +90,10 @@ def test_implicit_species_concentration():
     species1.solution = Function(V)
     species2.solution = Function(V)
 
+    implicit_species.create_value_fenics(mesh, t=0.0)
+
     # test the concentration of the implicit species
-    expected_concentration = implicit_species.n - (
+    expected_concentration = implicit_species.value_fenics - (
         species1.solution + species2.solution
     )
     assert implicit_species.concentration == expected_concentration
@@ -143,3 +145,18 @@ def test_create_species_and_reaction():
     # TEST
     assert isinstance(my_trap.trapped_concentration, F.Species)
     assert isinstance(my_trap.reaction, F.Reaction)
+
+
+def test_implicit_species_wrong_type():
+    """Test that a ValueError is raised when the value of n in an ImplicitSpecies is
+    a function of time only but doesn't return a float or an int.
+    """
+    mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
+
+    density = lambda t: "coucou"
+    species = F.ImplicitSpecies(n=density)
+
+    with pytest.raises(
+        ValueError, match="self.value should return a float or an int, not "
+    ):
+        species.create_value_fenics(mesh=mesh, t=0.0)
