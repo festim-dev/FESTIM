@@ -38,7 +38,6 @@ import numpy as np
 import dolfinx
 from petsc4py import PETSc
 import ufl
-import pytest
 from packaging.version import parse as _v
 
 _alpha_kw: str = "alpha"
