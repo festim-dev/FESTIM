@@ -1209,23 +1209,29 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.forms = dolfinx.fem.form(
             [subdomain.F for subdomain in self.volume_subdomains],
             entity_maps=entity_maps,
-            jit_options = {"cffi_extra_compile_args": ["-O3", "-march=native"],
-                                "cffi_libraries": ["m"]}
+            jit_options={
+                "cffi_extra_compile_args": ["-O3", "-march=native"],
+                "cffi_libraries": ["m"],
+            },
         )
-        self.J = dolfinx.fem.form(J, entity_maps=entity_maps,
-                jit_options = {"cffi_extra_compile_args": ["-O3", "-march=native"],
-                               "cffi_libraries": ["m"]}
-                               )
+        self.J = dolfinx.fem.form(
+            J,
+            entity_maps=entity_maps,
+            jit_options={
+                "cffi_extra_compile_args": ["-O3", "-march=native"],
+                "cffi_libraries": ["m"],
+            },
+        )
 
     def create_solver(self):
         self.solver = BlockedNewtonSolver(
             self.forms,
             [subdomain.u for subdomain in self.volume_subdomains],
-            J = self.J,
+            J=self.J,
             bcs=self.bc_forms,
             petsc_options=self.petsc_options,
         )
-        self.solver.max_iterations=self.settings.max_iterations,
+        self.solver.max_iterations = (self.settings.max_iterations,)
         self.solver.convergence_criterion = self.settings.convergence_criterion
         self.solver.atol = self.settings.atol
         self.solver.rtol = self.settings.rtol

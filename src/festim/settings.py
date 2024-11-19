@@ -1,5 +1,7 @@
-import festim as F
 from typing import Literal
+
+import festim as F
+
 
 class Settings:
     """Settings for a festim simulation.
@@ -36,7 +38,7 @@ class Settings:
         transient=True,
         final_time=None,
         stepsize=None,
-        convergence_criterion:Literal["residual", "incremental"] = "residual"
+        convergence_criterion: Literal["residual", "incremental"] = "residual",
     ) -> None:
         self.atol = atol
         self.rtol = rtol
