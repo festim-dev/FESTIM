@@ -1231,7 +1231,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             bcs=self.bc_forms,
             petsc_options=self.petsc_options,
         )
-        self.solver.max_iterations = (self.settings.max_iterations,)
+        self.solver.max_iterations = self.settings.max_iterations
         self.solver.convergence_criterion = self.settings.convergence_criterion
         self.solver.atol = self.settings.atol
         self.solver.rtol = self.settings.rtol
