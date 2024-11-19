@@ -1,3 +1,5 @@
+from typing import Literal
+
 import festim as F
 
 
@@ -14,6 +16,7 @@ class Settings:
             Defaults to None
         stepsize (festim.Stepsize, optional): stepsize for a transient
             simulation. Defaults to None
+        convergence_criterion: resiudal or incremental (for Newton solver)
 
     Attributes:
         atol (float): Absolute tolerance for the solver.
@@ -23,6 +26,8 @@ class Settings:
         final_time (float): Final time for a transient simulation.
         stepsize (festim.Stepsize): stepsize for a transient
             simulation.
+        convergence_criterion: resiudal or incremental (for Newton solver)
+
     """
 
     def __init__(
@@ -33,6 +38,7 @@ class Settings:
         transient=True,
         final_time=None,
         stepsize=None,
+        convergence_criterion: Literal["residual", "incremental"] = "residual",
     ) -> None:
         self.atol = atol
         self.rtol = rtol
@@ -40,6 +46,7 @@ class Settings:
         self.transient = transient
         self.final_time = final_time
         self.stepsize = stepsize
+        self.convergence_criterion = convergence_criterion
 
     @property
     def stepsize(self):

@@ -5,9 +5,12 @@ import numpy.typing as npt
 import ufl
 from dolfinx import fem
 from dolfinx import mesh as _mesh
+import ufl.core
+import ufl.core.expr
 
 from festim import helpers
 from festim import subdomain as _subdomain
+from festim.species import Species
 
 
 class DirichletBCBase:
@@ -124,7 +127,7 @@ class DirichletBCBase:
         """Updates the boundary condition value
 
         Args:
-            t (float): the time
+            t: the time
         """
         if callable(self.value):
             arguments = self.value.__code__.co_varnames
@@ -132,6 +135,8 @@ class DirichletBCBase:
                 self.value_fenics.value = self.value(t=t)
             else:
                 self.value_fenics.interpolate(self.bc_expr)
+        elif self.bc_expr is not None:
+            self.value_fenics.interpolate(self.bc_expr)
 
 
 class FixedConcentrationBC(DirichletBCBase):
@@ -163,13 +168,13 @@ class FixedConcentrationBC(DirichletBCBase):
 
     """
 
-    species: str
+    species: Species
 
     def __init__(
         self,
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
-        species: str,
+        species: Species,
     ):
         self.species = species
         super().__init__(subdomain, value)
@@ -191,6 +196,7 @@ class FixedConcentrationBC(DirichletBCBase):
         function_space: fem.FunctionSpace,
         temperature: float | fem.Constant,
         t: float | fem.Constant,
+        K_S: fem.Function = None,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.
@@ -200,9 +206,11 @@ class FixedConcentrationBC(DirichletBCBase):
         expression of the function is stored in `bc_expr`.
 
         Args:
-            function_space (dolfinx.fem.FunctionSpace): the function space
+            function_space: the function space
             temperature: The temperature
-            t (dolfinx.fem.Constant): the time
+            t: the time
+            K_S: The solubility of the species. If provided, the value of the boundary condition
+                is divided by K_S (change of variable method).
         """
         mesh = function_space.mesh
         x = ufl.SpatialCoordinate(mesh)
@@ -240,6 +248,54 @@ class FixedConcentrationBC(DirichletBCBase):
                     function_space.element.interpolation_points(),
                 )
                 self.value_fenics.interpolate(self.bc_expr)
+
+        # if K_S is provided, divide the value by K_S (change of variable method)
+        if K_S is not None:
+            if isinstance(self.value, (int, float)):
+                val_as_cst = helpers.as_fenics_constant(mesh=mesh, value=self.value)
+                self.bc_expr = fem.Expression(
+                    val_as_cst / K_S,
+                    function_space.element.interpolation_points(),
+                )
+                self.value_fenics = fem.Function(function_space)
+                self.value_fenics.interpolate(self.bc_expr)
+
+            elif callable(self.value):
+                arguments = self.value.__code__.co_varnames
+
+                if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                    # only t is an argument
+
+                    # check that value returns a ufl expression
+                    if not isinstance(self.value(t=t), (ufl.core.expr.Expr)):
+                        raise ValueError(
+                            "self.value should return a ufl expression"
+                            + f"{type(self.value(t=t))} "
+                        )
+
+                    self.bc_expr = fem.Expression(
+                        self.value(t=t) / K_S,
+                        function_space.element.interpolation_points(),
+                    )
+                    self.value_fenics = fem.Function(function_space)
+                    self.value_fenics.interpolate(self.bc_expr)
+                else:
+                    self.value_fenics = fem.Function(function_space)
+                    kwargs = {}
+                    if "t" in arguments:
+                        kwargs["t"] = t
+                    if "x" in arguments:
+                        kwargs["x"] = x
+                    if "T" in arguments:
+                        kwargs["T"] = temperature
+
+                    # store the expression of the boundary condition
+                    # to update the value_fenics later
+                    self.bc_expr = fem.Expression(
+                        self.value(**kwargs) / K_S,
+                        function_space.element.interpolation_points(),
+                    )
+                    self.value_fenics.interpolate(self.bc_expr)
 
 
 # alias for FixedConcentrationBC

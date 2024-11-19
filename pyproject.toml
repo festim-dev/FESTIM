@@ -13,7 +13,7 @@ description = "Finite element simulations of hydrogen transport"
 readme = "README/md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
-dependencies = ["tqdm", "scifem>=0.2.8"]
+dependencies = ["tqdm", "scifem>=0.2.13"]
 classifiers = [
     "Natural Language :: English",
     "Topic :: Scientific/Engineering",
