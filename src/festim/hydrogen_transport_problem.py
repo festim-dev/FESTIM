@@ -8,7 +8,7 @@ import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
-from scifem import NewtonSolver
+from scifem import BlockedNewtonSolver
 
 import festim.boundary_conditions
 import festim.problem
@@ -1209,18 +1209,32 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.forms = dolfinx.fem.form(
             [subdomain.F for subdomain in self.volume_subdomains],
             entity_maps=entity_maps,
+            jit_options={
+                "cffi_extra_compile_args": ["-O3", "-march=native"],
+                "cffi_libraries": ["m"],
+            },
         )
-        self.J = dolfinx.fem.form(J, entity_maps=entity_maps)
+        self.J = dolfinx.fem.form(
+            J,
+            entity_maps=entity_maps,
+            jit_options={
+                "cffi_extra_compile_args": ["-O3", "-march=native"],
+                "cffi_libraries": ["m"],
+            },
+        )
 
     def create_solver(self):
-        self.solver = NewtonSolver(
+        self.solver = BlockedNewtonSolver(
             self.forms,
-            self.J,
             [subdomain.u for subdomain in self.volume_subdomains],
+            J=self.J,
             bcs=self.bc_forms,
-            max_iterations=self.settings.max_iterations,
             petsc_options=self.petsc_options,
         )
+        self.solver.max_iterations = self.settings.max_iterations
+        self.solver.convergence_criterion = self.settings.convergence_criterion
+        self.solver.atol = self.settings.atol
+        self.solver.rtol = self.settings.rtol
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
@@ -1279,8 +1293,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.update_time_dependent_values()
 
-        # solve main problem
-        self.solver.solve(self.settings.atol, self.settings.rtol)
+        # Solve main problem
+        self.solver.solve()
 
         # post processing
         self.post_processing()
@@ -1308,7 +1322,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
-            self.solver.solve(self.settings.rtol)
+            self.solver.solve()
             self.post_processing()
 
     def __del__(self):
