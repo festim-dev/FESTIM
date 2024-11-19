@@ -1316,7 +1316,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
-            self.solver.solve(self.settings.rtol)
+            self.solver.solve()
             self.post_processing()
 
     def __del__(self):
