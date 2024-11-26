@@ -47,3 +47,32 @@ code {
     font-weight: bold;
     padding: 2.5rem 0rem 0.5rem 0rem;
 }
+
+
+/* 
+SPHINX-BOOK-THEME HOTFIX (top-right icons): 
+https://github.com/executablebooks/sphinx-book-theme/issues/879 
+*/
+.header-article__inner .header-article-items__end,
+.header-article__inner .header-article-items__start {
+    align-items: start;
+    display: flex;
+    gap: .5rem;
+}
+
+/* 
+SPHINX-BOOK-THEME HOTFIX (right column vertical stretching fix): 
+https://github.com/executablebooks/sphinx-book-theme/issues/879 
+*/
+.toc-entry a.nav-link {
+    padding: .125rem 0 .125rem 1rem;
+}
+
+/* 
+h3 font weight fix (from extra heavy to normal):
+https://github.com/executablebooks/sphinx-book-theme/issues/879 
+*/
+h3 {
+    font-size: 125%;
+    font-weight: normal;
+}
