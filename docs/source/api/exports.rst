@@ -15,10 +15,6 @@ Exports
     :members:
     :show-inheritance:
 
-.. autoclass:: TXTExports
-    :members:
-    :show-inheritance:
-
 .. autoclass:: TrapDensityXDMF
     :members:
     :show-inheritance:
