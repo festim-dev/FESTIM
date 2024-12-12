@@ -877,3 +877,31 @@ def test_error_raised_when_diverge_with_no_dt_min():
 
     with pytest.raises(ValueError, match="Solver diverged but dt_min is not set."):
         my_model.run()
+
+
+def test_error_with_multiple_1d_domains_no_borders():
+    """Test to catch #926"""
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices(vertices=[0, 1, 2, 3, 4, 5])
+
+    # define two mats with no borders
+    mat1 = F.Material(id=1, D_0=1, E_D=0)
+    mat2 = F.Material(id=2, D_0=3, E_D=0)
+    my_model.materials = [mat1, mat2]
+
+    my_model.T = 800
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(value=F.x, field=0, surfaces=[1, 2]),
+    ]
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+    with pytest.raises(
+        ValueError,
+        match="borders attributes need to be set for multiple 1D domains",
+    ):
+        my_model.initialise()
