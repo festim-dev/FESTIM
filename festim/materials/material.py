@@ -29,7 +29,7 @@ class Material:
         my_mat = Material(
             id=1,
             D_0=2e-7,
-            E_d=0.2,
+            E_D=0.2,
             thermal_cond=lambda T: 3 * T + 2,
             heat_capacity=lambda T: 4 * T + 8,
             rho=lambda T: 7 * T + 5,

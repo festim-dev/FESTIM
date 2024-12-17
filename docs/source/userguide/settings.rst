@@ -20,10 +20,10 @@ The settings of a FESTIM simulation are defined with a :class:`festim.Settings` 
 
 Here you define with:
 
-* ``transient``: wether the simulation is transient or steady-state
+* ``transient``: whether the simulation is transient or steady-state
 * ``final_time``: the final time of the simulation
-* ``chemical_pot``: wether to run the simulation with conservation of chemical potential at interfaces (only useful for multi-materials)
-* ``soret``: wether to turn the Soret effect on or not
+* ``chemical_pot``: whether to run the simulation with conservation of chemical potential at interfaces (only useful for multi-materials)
+* ``soret``: whether to turn the Soret effect on or not
 * ``absolute_tolerance``: the absolute tolerance of the Newton solver
 * ``relative_tolerance``: the relative tolerance of the Newton solver
 * ``maximum_iterations``: the maximum iterations of the Newton solver
@@ -31,7 +31,7 @@ Here you define with:
 More advanced settings are also available:
 
 * ``traps_element_type``: the type of finite elements for traps (DG elements can be useful to account for discontinuities)
-* ``update_jacobian``: wether to update the jacobian at each iteration or not
+* ``update_jacobian``: whether to update the jacobian at each iteration or not
 * ``linear_solver``: linear solver method for the Newton solver
 * ``preconditioner``: preconditioning method for the Newton solver
 

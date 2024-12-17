@@ -66,6 +66,11 @@ For complete information on contributions with GitHub see this guide on `GitHub 
    You may want to build the documentation to see if your changes are correctly reflected or if you are updating the docs.
    See :ref:`Documentation guide` for more information.
 
+#. Optional: Format your code using `Black <https://github.com/psf/black>`_.
+
+   The source code of FESTIM is formated with the Black code formatter. Using of a unified code style simplifies the code review
+   and increases its readability. See :ref:`Code formatting` for more information.
+
 #. `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
 
 #. Wait for a :ref:`maintainer<Maintainers>` to review your PR
@@ -158,6 +163,30 @@ Implementing a new feature
 #. Open a PR
 
 
+----------------
+Code formatting
+----------------
+
+Before merging your PR, the modified scripts should be formatted to maintain the consistency of the coding style. FESTIM is formatted using 
+`Black <https://github.com/psf/black>`_ - the uncompromising Python code formatter. To install Black, run the following command:
+
+.. code-block:: bash
+
+   pip install black
+
+After the installation, you can format a file using:
+
+.. code-block:: bash
+
+   black my_script.py
+
+Alternatively, you can format all files in a folder with:
+
+.. code-block:: bash
+
+   black .
+
+
 -------------------
 Documentation guide
 -------------------
@@ -217,4 +246,9 @@ When contributing to the documentation, make sure to:
 #. Write clear and concise documentation
 #. Use the right syntax
 #. Update the documentation when new features are added
+#. Test the documentation using:
 
+.. code-block:: bash
+
+   cd docs/source
+   make doctest

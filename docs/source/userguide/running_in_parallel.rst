@@ -1,6 +1,6 @@
-============
+===================
 Running in parallel
-============
+===================
 
 FESTIM can be run in parallel on N cores using the command: 
 
