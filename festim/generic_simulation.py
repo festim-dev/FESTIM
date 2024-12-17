@@ -278,6 +278,18 @@ class Simulation:
                     msg += f"on surfaces {intersection} for field {dc_sk_bc.field}"
                     raise ValueError(msg)
 
+    def check_mesh_dim_coords(self):
+        """Checks if the used coordinates can be applied for geometry with the specified dimensions"""
+
+        if self.mesh.type == "spherical" and self.mesh.mesh.topology().dim() != 1:
+            raise AttributeError(
+                "spherical coordinates can be used for one-dimensional domains only"
+            )
+        if self.mesh.type == "cylindrical" and self.mesh.mesh.topology().dim() > 2:
+            raise AttributeError(
+                "cylindrical coordinates cannot be used for 3D domains"
+            )
+
     def attribute_boundary_conditions(self):
         """Assigns boundary_conditions to mobile and T"""
         self.T.boundary_conditions = []
@@ -324,6 +336,7 @@ class Simulation:
         self.attribute_source_terms()
         self.attribute_boundary_conditions()
 
+        self.check_mesh_dim_coords()
         if isinstance(self.mesh, festim.Mesh1D):
             self.mesh.define_measures(self.materials)
         else:
