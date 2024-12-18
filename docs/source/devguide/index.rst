@@ -56,10 +56,15 @@ For complete information on contributions with GitHub see this guide on `GitHub 
       git commit -m "Your commit message"
       git push
 
-#. Optional: Test your code
+#. Test your code
 
    If you are adding new features or fixing bugs, it is important to test your code.
    See :ref:`Test suite` for more information.
+
+#. Format your code using `Black <https://github.com/psf/black>`_.
+
+   The source code of FESTIM is formated with the Black code formatter. Using of a unified code style simplifies the code review
+   and increases its readability. See :ref:`Code formatting` for more information.
 
 #. Optional: Build the documentation
 
@@ -158,6 +163,33 @@ Implementing a new feature
 #. Open a PR
 
 
+----------------
+Code formatting
+----------------
+
+Before merging your PR, the modified scripts should be formatted to maintain the consistency of the coding style. FESTIM is formatted using 
+`Black <https://github.com/psf/black>`_. To install Black, run the following command:
+
+.. code-block:: bash
+
+   pip install black
+
+After the installation, you can format a file using:
+
+.. code-block:: bash
+
+   black my_script.py
+
+Alternatively, you can format all files in the current directory with:
+
+.. code-block:: bash
+
+   black .
+
+
+If you use Visual Studio Code, you can install the `extension <https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter>`_ 
+with support for the Black formatter. Then, you can set Black as a default formatter for python and enable formatting "on save" for your code. 
+
 -------------------
 Documentation guide
 -------------------
@@ -217,4 +249,16 @@ When contributing to the documentation, make sure to:
 #. Write clear and concise documentation
 #. Use the right syntax
 #. Update the documentation when new features are added
+#. Test the documentation using:
 
+.. code-block:: bash
+
+   cd docs/source
+   make doctest
+
+or using: 
+
+.. code-block:: bash
+
+   cd docs
+   sphinx-build -b doctest source build
