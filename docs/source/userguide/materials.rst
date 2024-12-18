@@ -11,6 +11,7 @@ To define a material, use the :class:`festim.Material` class:
 .. testsetup::
 
     from festim import Material, Simulation
+    import fenics
 
 .. testcode::
 
@@ -40,7 +41,7 @@ Similarly, several materials can be used in simulations:
 
 .. note::
 
-    When several materials are considered in one-dimensional simulations, the ``borders`` argument should be provided for each material:
+    When several materials are considered in one-dimensional simulations, the ``borders`` argument needs to be provided for each material:
 
     .. testcode::
 
@@ -50,12 +51,12 @@ Similarly, several materials can be used in simulations:
     ``borders`` determine the domain where the material is defined.
     
 
-Some other parameters are optional and are only required for specific types of simulations. The hydrogen solubility in a material should be provided 
+Some other parameters are optional and are only required for specific types of simulations. The hydrogen solubility in a material needs to be provided 
 when the conservation of chemical potential at interfaces of materials is considered. It is defined by the following parameters:
 
 * :code:`S_0`: the solubility pre-exponential factor, its units depend on the solubility law (Sievert's or Henry)
 * :code:`E_S`: the solubility activation energy in eV
-* :code:`solubility_law`: the material’s solubility law. Can be “henry” or “sievert”
+* :code:`solubility_law`: the material’s solubility law. Can be :code:`“henry”` or :code:`“sievert”`
 
 For transient heat transfer simulations, thermal conductivity, heat capacity, and density of a material are required. They can be set using the corresponding  
 material attributes:
@@ -80,8 +81,8 @@ Thermal properties and the heat of transport can be defined as function of tempe
         id=1,
         D_0=2e-7,
         E_D=0.2,
-        thermal_cond=lambda T: 3 * T + 2,
-        heat_capacity=lambda T: 4 * T + 8,
+        thermal_cond=lambda T: 3 * T + 2 * fenics.exp(-20 * T),
+        heat_capacity=lambda T: 4 * T + 8 * fenics.conditional(T < 400, 5, 8),
         rho=lambda T: 7 * T + 5,
         Q=lambda T: -0.5 * T**2,
     )
