@@ -14,7 +14,7 @@ def test_title(field):
     """
     x = 1
     my_value = PointValue(field, x)
-    assert my_value.title == "{} value at [{}]".format(field, x)
+    assert my_value.title == f"{field} value at [{x}] ({my_value.export_unit})"
 
 
 @pytest.mark.parametrize(

@@ -15,7 +15,10 @@ def test_title(field, volume):
     """
 
     my_average = AverageVolume(field, volume)
-    assert my_average.title == "Average {} volume {}".format(field, volume)
+    assert (
+        my_average.title
+        == f"Average {field} volume {volume} ({my_average.export_unit})"
+    )
 
 
 class TestCompute:
