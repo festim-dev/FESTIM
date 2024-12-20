@@ -1,4 +1,5 @@
 .. _boundary conditions:
+
 ===================
 Boundary conditions
 ===================

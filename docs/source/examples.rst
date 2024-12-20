@@ -1,4 +1,6 @@
 Examples
 ********
 
-WIP
+.. warning::
+
+    This page is under construction.
