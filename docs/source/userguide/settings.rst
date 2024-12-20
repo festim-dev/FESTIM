@@ -9,10 +9,9 @@ The settings of a FESTIM simulation are defined with a :code:`Settings` object.
     import festim as F
 
     my_settings = F.Settings(
-        absolute_tolerance=1e10,
-        relative_tolerance=1e-10,
+        atol=1e10,
+        rtol=1e-10,
         transient=False,
-        chemical_pot=True,
     )
 
 
@@ -25,8 +24,3 @@ Here you define:
 * the absolute and relative tolerance of the Newton solver
 * the maximum iterations of the Newton solver
 
-More advanced settings are also available:
-
-* the type of finite elements for traps (DG elements can be useful to account for discontinuities)
-* Wether to update the jacobian at each iteration or not
-* the linear solver

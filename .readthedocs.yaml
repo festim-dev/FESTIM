@@ -6,7 +6,7 @@
 version: 2
 
 conda:
-  environment: docs/source/environment.yaml
+  environment: docs/environment.yml
 
 build:
   os: "ubuntu-20.04"
@@ -16,13 +16,11 @@ build:
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
   configuration: docs/source/conf.py
-
 # If using Sphinx, optionally build your docs in additional formats such as PDF
 # formats:
 #    - pdf
 
 # # Optionally declare the Python requirements required to build your docs
-python:
-  install:
-    - method: pip
-      path: .
+# python:
+#    install:
+#    - requirements: docs/requirements.txt
