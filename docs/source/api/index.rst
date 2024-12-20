@@ -1,7 +1,10 @@
 FESTIM API
 ==========
 
-WIP
+.. warning::
+
+    🔨 This page is under construction. 🔨
+
 
 .. automodule:: festim.boundary_conditions
     :members:
