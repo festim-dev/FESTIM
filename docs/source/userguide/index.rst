@@ -10,12 +10,10 @@ User's Guide
    units
    materials
    boundary_conditions
-   initial_conditions
    sources
    temperature
    mesh
    settings
-   stepsize
    export_post_processing
    troubleshooting
    running_in_parallel

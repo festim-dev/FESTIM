@@ -1,0 +1,19 @@
+name: festim2-docs
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - fenics-dolfinx
+  - matplotlib==3.7.1
+  - pip>=20.1
+  - sphinx==7
+  - folium
+  - numpy==1.24
+  - pip:
+      - sympy
+      - sphinx_book_theme==1.1.2
+      - sphinx-design==0.5.0
+      - sphinxcontrib-bibtex
+      - sphinx-copybutton
+      - pillow
+      - sphinxcontrib-images
