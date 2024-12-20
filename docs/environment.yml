@@ -9,6 +9,8 @@ dependencies:
   - sphinx==7
   - folium
   - numpy==1.24
+  - tqdm
+  - scifem>=0.2.8
   - pip:
       - sympy
       - sphinx_book_theme==1.1.2

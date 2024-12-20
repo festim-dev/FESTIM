@@ -86,7 +86,7 @@ Create a conda environment with ``dolfinx``::
 
     conda create -n festim-env
     conda activate festim-env       
-    conda install -c conda-forge fenics-dolfinx
+    conda install -c conda-forge fenics-dolfinx tqdm
 
 Install the correct FESTIM version with::
 

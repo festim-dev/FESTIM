@@ -56,6 +56,7 @@ Then increase the absolute tolerance of the solver:
 
     import festim as F
 
+    my_model = F.HydrogenTransportProblem()
     my_model.settings = F.Settings(
         atol=1e10,
         rtol=1e-10,
