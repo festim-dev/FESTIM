@@ -129,8 +129,7 @@ class Exports(list):
                         label_to_function[export.field], self.V_DG1
                     )
                 export.function = label_to_function[export.field]
-                steady = self.final_time == None
-                export.write(self.t, steady)
+                export.write(self.t, self.final_time)
         self.nb_iterations += 1
 
     def initialise_derived_quantities(self, dx, ds, materials):
