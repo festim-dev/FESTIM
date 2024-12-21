@@ -149,7 +149,7 @@ class TestWrite:
             current_time=current_time,
             final_time=None,
         )
-        print(my_export._unique_indices)
+
         assert len(my_export.data) == export_len
 
 

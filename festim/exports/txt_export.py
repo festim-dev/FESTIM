@@ -78,7 +78,7 @@ class TXTExport(festim.Export):
     def is_it_time_to_export(self, current_time):
         """
         Checks if the exported field should be written to a file or not
-        based on the current time and the TXTExport.times
+        based on the current time and the ``TXTExport.times``
 
         Args:
             current_time (float): the current simulation time
@@ -97,17 +97,17 @@ class TXTExport(festim.Export):
     def is_last(self, current_time, final_time):
         """
         Checks if the current simulation step equals to the last export time.
-        based on the final simulation time, TXTExport.times, and the current time
+        based on the final simulation time, ``TXTExport.times``, and the current time
 
         Args:
             current_time (float): the current simulation time.
             final_time (float, None): the final simulation time.
 
         Returns:
-            bool: True if simulation is steady (final_time is None), if TXTExport.times
-                are not provided and the current time equals to the final time, or if
-                TXTExport.times are provided and the current time equals to the last time in
-                TXTExport.times, else False.
+            bool: True if simulation is steady (final_time is None), if ``TXTExport.times`` are not
+            provided and the current time equals to the final time, or if
+            ``TXTExport.times`` are provided and the current time equals to the last time in
+            ``TXTExport.times``, else False.
         """
 
         if final_time is None:
@@ -115,22 +115,21 @@ class TXTExport(festim.Export):
             return True
         elif self.times is None:
             if np.isclose(current_time, final_time, atol=0):
-                # write at final time if exports at each timestep
+                # write at the final time if exports at each timestep
                 return True
-        else:
-            if np.isclose(current_time, self.times[-1], atol=0):
-                # write at final time if exports at specific times
-                return True
+        elif np.isclose(current_time, self.times[-1], atol=0):
+            # write at the final time if exports at specific times
+            return True
         return False
 
     def initialise(self, mesh, project_to_DG=False, materials=None):
         """
-        Initialises TXTExport. Depending on the project_to_DG flag, defines a function space (DG1 or CG1)
+        Initialises ``TXTExport``. Depending on the ``project_to_DG flag``, defines a function space (DG1 or CG1)
         for projection of the exported field. After that, an unsorted array of mesh vertices is created for export.
         The array is then used to obtain indices of sorted elements for the data export.
 
         .. note::
-            If DG1 is used and filter flag is True, the duplicated vertices in the array are filtered except those near interfaces,
+            If DG1 is used and the ``filter`` flag is True, the duplicated vertices in the array are filtered except those near interfaces.
             The interfaces are defined by ``material.borders`` in the ``Materials`` list.
 
         Args:
