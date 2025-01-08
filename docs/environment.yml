@@ -6,12 +6,12 @@ dependencies:
   - fenics
   - matplotlib==3.7.1
   - pip>=20.1
-  - sphinx==7
+  - sphinx==7.4.3
   - folium
   - numpy==1.24
   - sympy
   - sphinx-book-theme
-  - sphinx-design~=0.5
+  - sphinx-design
   - sphinxcontrib-bibtex
   - sphinx-copybutton
   - pillow
