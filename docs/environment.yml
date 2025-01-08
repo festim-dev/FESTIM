@@ -11,7 +11,7 @@ dependencies:
   - numpy==1.24
   - sympy
   - sphinx-book-theme
-  - sphinx-design
+  - sphinx-design~=0.5
   - sphinxcontrib-bibtex
   - sphinx-copybutton
   - pillow
