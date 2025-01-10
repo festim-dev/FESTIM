@@ -1,6 +1,5 @@
 from festim import Trap, as_constant_or_expression
 from fenics import NewtonSolver, MPI
-import warnings
 
 
 class ExtrinsicTrapBase(Trap):
@@ -16,7 +15,7 @@ class ExtrinsicTrapBase(Trap):
         relative_tolerance=1e-10,
         maximum_iterations=30,
         linear_solver=None,
-        preconditioner=None,
+        preconditioner="default",
         **kwargs,
     ):
         """Inits ExtrinsicTrap
@@ -74,7 +73,7 @@ class ExtrinsicTrapBase(Trap):
     def define_newton_solver(self):
         """Creates the Newton solver and sets its parameters"""
         self.newton_solver = NewtonSolver(MPI.comm_world)
-        self.newton_solver.parameters["error_on_nonconvergence"] = False
+        self.newton_solver.parameters["error_on_nonconvergence"] = True
         self.newton_solver.parameters["absolute_tolerance"] = self.absolute_tolerance
         self.newton_solver.parameters["relative_tolerance"] = self.relative_tolerance
         self.newton_solver.parameters["maximum_iterations"] = self.maximum_iterations

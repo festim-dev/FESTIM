@@ -22,6 +22,7 @@ def test_title_with_units():
 
 def test_title_without_units():
     my_quantity = AdsorbedHydrogen(1)
+    my_quantity.show_units = False
     assert my_quantity.title == "Adsorbed H on surface 1"
 
 

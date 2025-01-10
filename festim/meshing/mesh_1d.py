@@ -73,6 +73,10 @@ class Mesh1D(Mesh):
 
     def define_measures(self, materials):
         """Creates the fenics.Measure objects for self.dx and self.ds"""
+        if len(materials) > 1 and any(m.borders is None for m in materials):
+            raise ValueError(
+                "borders attributes need to be set for multiple 1D domains"
+            )
         if materials[0].borders is not None:
             materials.check_borders(self.size)
         self.define_markers(materials)

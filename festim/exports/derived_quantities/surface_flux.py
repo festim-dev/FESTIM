@@ -53,15 +53,13 @@ class SurfaceFlux(SurfaceQuantity):
 
     @property
     def title(self):
-        quantity_title = f"Flux surface {self.surface}: {self.field}"
+        if self.field == "T":
+            quantity_title = f"Heat flux surface {self.surface}"
+        else:
+            quantity_title = f"{self.field} flux surface {self.surface}"
+
         if self.show_units:
-            if self.field == "T":
-                quantity_title = f"Heat flux surface {self.surface}"
-            else:
-                quantity_title = f"{self.field} flux surface {self.surface}"
-
             return quantity_title + f" ({self.export_unit})"
-
         else:
             return quantity_title
 
@@ -117,6 +115,16 @@ class SurfaceFluxCylindrical(SurfaceFlux):
         self.azimuth_range = azimuth_range
 
     @property
+    def export_unit(self):
+        # obtain domain dimension
+        dim = self.function.function_space().mesh().topology().dim()
+        # return unit depending on field and dimension of domain
+        if self.field == "T":
+            return f"W m{dim-2}".replace(" m0", "")
+        else:
+            return f"H m{dim-2} s-1".replace(" m0", "")
+
+    @property
     def allowed_meshes(self):
         return ["cylindrical"]
 
@@ -128,10 +136,7 @@ class SurfaceFluxCylindrical(SurfaceFlux):
             quantity_title = f"{self.field} flux surface {self.surface}"
 
         if self.show_units:
-            if self.field == "T":
-                return quantity_title + " (W)"
-            else:
-                return quantity_title + " (H s-1)"
+            return quantity_title + f" ({self.export_unit})"
         else:
             return quantity_title
 
@@ -142,7 +147,7 @@ class SurfaceFluxCylindrical(SurfaceFlux):
     @azimuth_range.setter
     def azimuth_range(self, value):
         if value[0] < 0 or value[1] > 2 * np.pi:
-            raise ValueError("Azimuthal range must be between 0 and pi")
+            raise ValueError("Azimuthal range must be between 0 and 2*pi")
         self._azimuth_range = value
 
     def compute(self):
@@ -209,6 +214,13 @@ class SurfaceFluxSpherical(SurfaceFlux):
         self.azimuth_range = azimuth_range
 
     @property
+    def export_unit(self):
+        if self.field == "T":
+            return f"W"
+        else:
+            return f"H s-1"
+
+    @property
     def allowed_meshes(self):
         return ["spherical"]
 
@@ -220,10 +232,7 @@ class SurfaceFluxSpherical(SurfaceFlux):
             quantity_title = f"{self.field} flux surface {self.surface}"
 
         if self.show_units:
-            if self.field == "T":
-                return quantity_title + " (W)"
-            else:
-                return quantity_title + " (H s-1)"
+            return quantity_title + f" ({self.export_unit})"
         else:
             return quantity_title
 

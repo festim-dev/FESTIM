@@ -2,6 +2,7 @@ import festim
 import fenics as f
 from ufl.core.multiindex import Index
 import pytest
+import numpy as np
 
 
 class TestInitialise:
@@ -125,7 +126,7 @@ def test_get_concentration_for_a_given_material():
     E_S = 0.5
     my_mat = festim.Material(1, 1, 1, S_0=S_0, E_S=E_S)
     my_theta = festim.Theta()
-    my_mesh = festim.MeshFromRefinements(10, 1)
+    my_mesh = festim.MeshFromVertices(np.linspace(0, 1, 11))
     V = f.FunctionSpace(my_mesh.mesh, "CG", 1)
     my_theta.solution = f.interpolate(f.Constant(100), V)
     my_theta.previous_solution = f.interpolate(f.Constant(200), V)

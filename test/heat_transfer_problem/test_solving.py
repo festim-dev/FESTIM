@@ -1,6 +1,7 @@
 import festim
 import pytest
 import fenics as f
+import numpy as np
 
 
 @pytest.mark.parametrize("preconditioner", ["default", "icc"])
@@ -13,7 +14,7 @@ def test_create_functions_linear_solver_gmres(preconditioner):
         preconditioner (str): the preconditioning method
     """
 
-    mesh = festim.MeshFromRefinements(10, size=0.1)
+    mesh = festim.MeshFromVertices(np.linspace(0, 0.1, num=11))
 
     materials = festim.Materials([festim.Material(id=1, D_0=1, E_D=0, thermal_cond=1)])
     mesh.define_measures(materials)
@@ -60,7 +61,7 @@ class Test_solve_once_with_custom_solver:
 
     def test_custom_solver(self):
         """Solves the system using the built-in solver and using the f.NewtonSolver"""
-        mesh = festim.MeshFromRefinements(10, size=0.1)
+        mesh = festim.MeshFromVertices(np.linspace(0, 0.1, num=11))
         materials = festim.Materials(
             [festim.Material(id=1, D_0=1, E_D=0, thermal_cond=1)]
         )

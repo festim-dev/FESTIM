@@ -20,7 +20,12 @@ def test_title(field, surface):
     """
 
     my_h_flux = SurfaceFlux(field, surface)
-    assert my_h_flux.title == "Flux surface {}: {}".format(surface, field)
+    my_h_flux.function = c_1D
+    if field == "T":
+        expected_title = f"Heat flux surface {surface} ({my_h_flux.export_unit})"
+    else:
+        expected_title = f"{field} flux surface {surface} ({my_h_flux.export_unit})"
+    assert my_h_flux.title == expected_title
 
 
 class TestCompute:
@@ -324,6 +329,7 @@ def test_cylindrical_flux_title_no_units_solute():
     festim.CylindricalSurfaceFlux with a solute field without units"""
 
     my_h_flux = SurfaceFluxCylindrical("solute", 2)
+    my_h_flux.show_units = False
     assert my_h_flux.title == "solute flux surface 2"
 
 
@@ -332,7 +338,25 @@ def test_cylindrical_flux_title_no_units_temperature():
     festim.CylindricalSurfaceFlux with a T field without units"""
 
     my_heat_flux = SurfaceFluxCylindrical("T", 4)
+    my_heat_flux.show_units = False
     assert my_heat_flux.title == "Heat flux surface 4"
+
+
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "solute flux surface 3 (H m-1 s-1)"),
+        (c_1D, "T", "Heat flux surface 3 (W m-1)"),
+        (c_2D, "solute", "solute flux surface 3 (H s-1)"),
+        (c_2D, "T", "Heat flux surface 3 (W)"),
+    ],
+)
+def test_cylindrical_flux_with_units(function, field, expected_title):
+    my_flux = SurfaceFluxCylindrical(field=field, surface=3)
+    my_flux.function = function
+    my_flux.show_units = True
+
+    assert my_flux.title == expected_title
 
 
 def test_spherical_flux_title_no_units_solute():
@@ -340,6 +364,7 @@ def test_spherical_flux_title_no_units_solute():
     festim.SphericalSurfaceFlux with a solute field without units"""
 
     my_h_flux = SurfaceFluxSpherical("solute", 3)
+    my_h_flux.show_units = False
     assert my_h_flux.title == "solute flux surface 3"
 
 
@@ -348,4 +373,20 @@ def test_spherical_flux_title_no_units_temperature():
     festim.CSphericalSurfaceFlux with a T field without units"""
 
     my_heat_flux = SurfaceFluxSpherical("T", 5)
+    my_heat_flux.show_units = False
     assert my_heat_flux.title == "Heat flux surface 5"
+
+
+@pytest.mark.parametrize(
+    "function, field, expected_title",
+    [
+        (c_1D, "solute", "solute flux surface 3 (H s-1)"),
+        (c_1D, "T", "Heat flux surface 3 (W)"),
+    ],
+)
+def test_spherical_flux_with_units(function, field, expected_title):
+    my_flux = SurfaceFluxSpherical(field=field, surface=3)
+    my_flux.function = function
+    my_flux.show_units = True
+
+    assert my_flux.title == expected_title

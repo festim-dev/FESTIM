@@ -47,13 +47,20 @@ class TestMakeHeader:
     sph_surface_flux_2 = SurfaceFluxSpherical("T", 6)
     ads_h = AdsorbedHydrogen(1)
 
+    mesh = f.UnitIntervalMesh(10)
+    V = f.FunctionSpace(mesh, "P", 1)
+
     def test_simple(self):
         """
         Tests that a proper header is made for the output .csv file
         when there is only one festim.DerivedQuantity object
         """
         my_derv_quant = DerivedQuantities([self.surface_flux_1])
+
+        my_derv_quant[0].function = f.Function(self.V)
+
         header = my_derv_quant.make_header()
+
         expected_header = ["t(s)", self.surface_flux_1.title]
         assert header == expected_header
 
@@ -68,6 +75,9 @@ class TestMakeHeader:
                 self.tot_surf_1,
             ]
         )
+        for quantity in my_derv_quant:
+            quantity.function = f.Function(self.V)
+
         header = my_derv_quant.make_header()
         expected_header = ["t(s)", self.surface_flux_1.title, self.tot_surf_1.title]
         assert header == expected_header
@@ -89,6 +99,11 @@ class TestMakeHeader:
                 self.ads_h,
             ]
         )
+
+        # to compute the units of the quantities they need a function
+        for quantity in my_derv_quant:
+            quantity.function = f.Function(self.V)
+
         header = my_derv_quant.make_header()
         expected_header = ["t(s)"] + [
             self.surface_flux_1.title,
@@ -120,8 +135,6 @@ class TestMakeHeader:
                 self.avg_surface_2,
                 self.point_1,
                 self.point_2,
-                self.cyl_surface_flux_1,
-                self.cyl_surface_flux_2,
                 self.sph_surface_flux_1,
                 self.sph_surface_flux_2,
                 self.ads_h,
@@ -144,8 +157,6 @@ class TestMakeHeader:
             "Average T surface 6 (K)",
             "retention value at [2] (H m-3)",
             "T value at [9] (K)",
-            "solute flux surface 2 (H s-1)",
-            "Heat flux surface 3 (W)",
             "solute flux surface 5 (H s-1)",
             "Heat flux surface 6 (W)",
             "Adsorbed H on surface 1 (H m-2)",

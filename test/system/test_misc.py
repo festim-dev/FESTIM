@@ -45,7 +45,7 @@ def test_convective_flux(tmpdir):
 def test_error_steady_state_with_stepsize():
     """Checks that an error is raised when a stepsize is given for a steady state simulation"""
     my_model = F.Simulation()
-    my_model.mesh = F.MeshFromRefinements(1000, size=1)
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1, num=1001))
 
     my_model.materials = F.Materials([F.Material(D_0=1, E_D=0, id=1)])
 
@@ -67,7 +67,7 @@ def test_error_steady_state_with_stepsize():
 def test_error_transient_without_stepsize():
     """Checks that an error is raised when a stepsize is not given for a transient simulation"""
     my_model = F.Simulation()
-    my_model.mesh = F.MeshFromRefinements(1000, size=1)
+    my_model.mesh = F.MeshFromVertices(np.linspace(0, 1, num=100))
 
     my_model.materials = F.Materials([F.Material(D_0=1, E_D=0, id=1)])
 
@@ -850,3 +850,58 @@ def test_soret_surface_flux_mass_balance(coordinates, surface_flux_class):
 
     assert not np.isclose(flux_left.data[0], 0)
     assert np.isclose(np.abs(flux_left.data[0]), np.abs(flux_right.data[0]), rtol=1e-2)
+
+
+def test_error_raised_when_diverge_with_no_dt_min():
+    my_model = F.Simulation()
+
+    tungsten = F.Material(id=1, D_0=4.10e-7, E_D=0.39)
+    my_model.materials = tungsten
+
+    my_model.mesh = F.MeshFromVertices(vertices=np.linspace(0, 1, 10))
+    my_model.T = 400
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(surfaces=[1, 2], value=1e20, field="solute")
+    ]
+
+    my_model.dt = F.Stepsize(0.001, stepsize_change_ratio=1.1)
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        final_time=100,
+    )
+
+    my_model.initialise()
+
+    with pytest.raises(ValueError, match="Solver diverged but dt_min is not set."):
+        my_model.run()
+
+
+def test_error_with_multiple_1d_domains_no_borders():
+    """Test to catch #926"""
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices(vertices=[0, 1, 2, 3, 4, 5])
+
+    # define two mats with no borders
+    mat1 = F.Material(id=1, D_0=1, E_D=0)
+    mat2 = F.Material(id=2, D_0=3, E_D=0)
+    my_model.materials = [mat1, mat2]
+
+    my_model.T = 800
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(value=F.x, field=0, surfaces=[1, 2]),
+    ]
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10,
+        relative_tolerance=1e-10,
+        transient=False,
+    )
+    with pytest.raises(
+        ValueError,
+        match="borders attributes need to be set for multiple 1D domains",
+    ):
+        my_model.initialise()

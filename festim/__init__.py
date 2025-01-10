@@ -31,7 +31,6 @@ from .helpers import (
 
 from .meshing.mesh import Mesh
 from .meshing.mesh_1d import Mesh1D
-from .meshing.mesh_from_refinements import MeshFromRefinements
 from .meshing.mesh_from_vertices import MeshFromVertices
 from .meshing.mesh_from_xdmf import MeshFromXDMF
 
@@ -96,7 +95,7 @@ from .exports.derived_quantities.adsorbed_hydrogen import AdsorbedHydrogen
 
 from .exports.derived_quantities.derived_quantities import DerivedQuantities
 
-from .exports.txt_export import TXTExport, TXTExports
+from .exports.txt_export import TXTExport
 
 
 from .settings import Settings

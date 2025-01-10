@@ -17,7 +17,8 @@ def test_title(field, volume):
     """
 
     my_total = TotalVolume(field, volume)
-    assert my_total.title == "Total {} volume {}".format(field, volume)
+    my_total.function = c_2D
+    assert my_total.title == f"Total {field} volume {volume} ({my_total.export_unit})"
 
 
 class TestCompute:

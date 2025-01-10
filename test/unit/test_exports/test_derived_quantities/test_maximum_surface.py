@@ -16,7 +16,7 @@ def test_title(field, surface):
     """
 
     my_max = MaximumSurface(field, surface)
-    assert my_max.title == "Maximum {} surface {}".format(field, surface)
+    assert my_max.title == f"Maximum {field} surface {surface} ({my_max.export_unit})"
 
 
 class TestCompute:

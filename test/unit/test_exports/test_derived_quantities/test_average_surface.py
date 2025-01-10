@@ -23,7 +23,10 @@ def test_title(field, surface):
     """
 
     my_average = AverageSurface(field, surface)
-    assert my_average.title == "Average {} surface {}".format(field, surface)
+    assert (
+        my_average.title
+        == f"Average {field} surface {surface} ({my_average.export_unit})"
+    )
 
 
 class TestCompute:

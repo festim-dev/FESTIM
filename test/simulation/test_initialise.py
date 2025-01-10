@@ -2,6 +2,7 @@ import festim as F
 from pathlib import Path
 import pytest
 import sympy as sp
+import fenics as f
 
 
 def test_initialise_changes_nb_of_sources():
@@ -283,3 +284,57 @@ def test_initial_concentration_traps():
     )
 
     model.initialise()
+
+
+@pytest.mark.parametrize("mesh", [f.UnitSquareMesh(10, 10), f.UnitCubeMesh(10, 10, 10)])
+def test_error_raised_when_spherical_non1D(mesh):
+    """
+    Creates a Simulation object and checks that AttributeError is raised
+    when spherical coordinates are used for non-1D geometries
+    """
+
+    my_model = F.Simulation()
+
+    my_model.mesh = F.Mesh(
+        mesh,
+        type="spherical",
+    )
+
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = 100
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False
+    )
+
+    # test
+    with pytest.raises(
+        AttributeError,
+        match=f"spherical coordinates can be used for one-dimensional domains only",
+    ):
+        my_model.initialise()
+
+
+def test_error_raised_when_cylindrical_3D():
+    """
+    Creates a Simulation object and checks that AttributeError is raised
+    when cylindrical coordinates are used for a 3D geometry
+    """
+
+    my_model = F.Simulation()
+
+    my_model.mesh = F.Mesh(
+        f.UnitCubeMesh(5, 5, 5),
+        type="cylindrical",
+    )
+
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = 100
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, transient=False
+    )
+
+    # test
+    with pytest.raises(
+        AttributeError, match=f"cylindrical coordinates cannot be used for 3D domains"
+    ):
+        my_model.initialise()

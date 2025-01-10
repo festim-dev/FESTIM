@@ -19,3 +19,4 @@ User's Guide
    newton_solver
    export_post_processing
    troubleshooting
+   running_in_parallel
