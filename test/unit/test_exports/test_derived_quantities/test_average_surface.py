@@ -1,10 +1,4 @@
-from festim import (
-    AverageSurface,
-    AverageSurfaceCylindrical,
-    AverageSurfaceSpherical,
-    x,
-    y,
-)
+from festim import AverageSurface, AverageSurfaceCylindrical, AverageSurfaceSpherical, x
 import fenics as f
 import pytest
 import numpy as np

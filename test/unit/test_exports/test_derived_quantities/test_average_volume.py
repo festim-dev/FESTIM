@@ -1,9 +1,8 @@
-from festim import AverageVolume, AverageVolumeCylindrical, AverageVolumeSpherical, x, y
+from festim import AverageVolume, AverageVolumeCylindrical, AverageVolumeSpherical, x
 import fenics as f
 import pytest
 import numpy as np
 from sympy.printing import ccode
-import math
 
 
 @pytest.mark.parametrize("field,volume", [("solute", 1), ("T", 2)])
