@@ -105,48 +105,8 @@ class AverageSurfaceCylindrical(AverageSurface):
 
 class AverageSurfaceSpherical(AverageSurface):
     """
-    Computes the average value of a field in a given volume
-    int(f ds) / int (1 * ds)
-    ds is the surface measure in cylindrical coordinates.
-    ds = r^2 sin(theta) dtheta dphi
-
-    Args:
-        field (str, int):  the field ("solute", 0, 1, "T", "retention")
-        surface (int): the surface id
-
-    Attributes:
-        field (str, int):  the field ("solute", 0, 1, "T", "retention")
-        surface (int): the surface id
-        title (str): the title of the derived quantity
-        show_units (bool): show the units in the title in the derived quantities
-            file
-        function (dolfin.function.function.Function): the solution function of
-            the field
-        r (ufl.indexed.Indexed): the radius of the sphere
-
-    Notes:
-        Units are in H/m3 for hydrogen concentration and K for temperature
+    Computes the average on a spherical "surface" in 1D.
+    Behaves identically to `AverageSurface`.
     """
 
-    def __init__(self, field, surface) -> None:
-        super().__init__(field=field, surface=surface)
-        self.r = None
-
-    def compute(self):
-
-        if self.r is None:
-            mesh = (
-                self.function.function_space().mesh()
-            )  # get the mesh from the function
-            rthetaz = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
-            self.r = rthetaz[0]  # only care about r here
-
-        # dV_z = r dr dtheta , assuming axisymmetry dV_z = theta r dr
-        # dV_r = r dz dtheta , assuming axisymmetry dV_r = theta r dz
-        # in both cases the expression with self.dx is the same
-
-        avg_surf = f.assemble(
-            self.function * self.r**2 * self.ds(self.surface)
-        ) / f.assemble(1 * self.r**2 * self.ds(self.surface))
-
-        return avg_surf
+    pass
