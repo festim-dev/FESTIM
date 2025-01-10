@@ -163,7 +163,7 @@ def test_average_surface_cylindrical_title_no_units_solute():
     festim.AverageSurfaceCylindrical with a solute field without units"""
 
     my_export = AverageSurfaceCylindrical("solute", 4)
-    assert my_export.title == "Average solute surface 4"
+    assert my_export.title == "Average solute surface 4 (H m-3)"
 
 
 def test_average_surface_cylindrical_title_no_units_temperature():
@@ -171,7 +171,7 @@ def test_average_surface_cylindrical_title_no_units_temperature():
     festim.AverageSurfaceCylindrical with a T field without units"""
 
     my_export = AverageSurfaceCylindrical("T", 5)
-    assert my_export.title == "Average T surface 5"
+    assert my_export.title == "Average T surface 5 (K)"
 
 
 def test_average_surface_spherical_title_no_units_solute():
@@ -179,7 +179,7 @@ def test_average_surface_spherical_title_no_units_solute():
     festim.AverageSurfaceSpherical with a solute field without units"""
 
     my_export = AverageSurfaceSpherical("solute", 6)
-    assert my_export.title == "Average solute surface 6"
+    assert my_export.title == "Average solute surface 6 (H m-3)"
 
 
 def test_average_surface_spherical_title_no_units_temperature():
@@ -187,4 +187,4 @@ def test_average_surface_spherical_title_no_units_temperature():
     festim.AverageSurfaceSpherical with a T field without units"""
 
     my_export = AverageSurfaceSpherical("T", 9)
-    assert my_export.title == "Average T surface 9"
+    assert my_export.title == "Average T surface 9 (K)"

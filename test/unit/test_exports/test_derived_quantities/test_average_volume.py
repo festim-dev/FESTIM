@@ -144,7 +144,7 @@ def test_average_volume_cylindrical_title_no_units_solute():
     festim.AverageVolumeCylindrical with a solute field without units"""
 
     my_export = AverageVolumeCylindrical("solute", 4)
-    assert my_export.title == "Average solute volume 4"
+    assert my_export.title == "Average solute volume 4 (H m-3)"
 
 
 def test_average_volume_cylindrical_title_no_units_temperature():
@@ -152,7 +152,7 @@ def test_average_volume_cylindrical_title_no_units_temperature():
     festim.AverageVolumeCylindrical with a T field without units"""
 
     my_export = AverageVolumeCylindrical("T", 5)
-    assert my_export.title == "Average T volume 5"
+    assert my_export.title == "Average T volume 5 (K)"
 
 
 def test_average_volume_spherical_title_no_units_solute():
@@ -160,7 +160,7 @@ def test_average_volume_spherical_title_no_units_solute():
     festim.AverageVolumeSpherical with a solute field without units"""
 
     my_export = AverageVolumeSpherical("solute", 6)
-    assert my_export.title == "Average solute volume 6"
+    assert my_export.title == "Average solute volume 6 (H m-3)"
 
 
 def test_average_volume_spherical_title_no_units_temperature():
@@ -168,4 +168,4 @@ def test_average_volume_spherical_title_no_units_temperature():
     festim.AverageVolumeSpherical with a T field without units"""
 
     my_export = AverageVolumeSpherical("T", 9)
-    assert my_export.title == "Average T volume 9"
+    assert my_export.title == "Average T volume 9 (K)"
