@@ -103,10 +103,4 @@ class AverageSurfaceCylindrical(AverageSurface):
         return avg_surf
 
 
-class AverageSurfaceSpherical(AverageSurface):
-    """
-    Computes the average on a spherical "surface" in 1D.
-    Behaves identically to `AverageSurface`.
-    """
-
-    pass
+AverageSurfaceSpherical = AverageSurface
