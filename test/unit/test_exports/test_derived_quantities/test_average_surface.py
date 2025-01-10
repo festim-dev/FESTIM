@@ -59,9 +59,7 @@ class TestCompute:
 @pytest.mark.parametrize("radius", [1, 4])
 @pytest.mark.parametrize("r0", [3, 5])
 @pytest.mark.parametrize("height", [2, 7])
-@pytest.mark.parametrize("c_top", [8, 9])
-@pytest.mark.parametrize("c_bottom", [10, 11])
-def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
+def test_compute_cylindrical(r0, radius, height):
     """
     Test that AverageSurfaceCylindrical computes the value correctly on a hollow cylinder
 
@@ -69,19 +67,16 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
         r0 (float): internal radius
         radius (float): cylinder radius
         height (float): cylinder height
-        c_top (float): concentration top
-        c_bottom (float): concentration bottom
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
-    z0 = 0
-    z1 = z0 + height
+    z0, z1 = 0, height
+
     mesh_fenics = f.RectangleMesh(f.Point(r0, z0), f.Point(r1, z1), 10, 10)
 
     top_surface = f.CompiledSubDomain(
         f"on_boundary && near(x[1], {z1}, tol)", tol=1e-14
     )
-
     surface_markers = f.MeshFunction(
         "size_t", mesh_fenics, mesh_fenics.topology().dim() - 1
     )
@@ -93,15 +88,16 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
 
     my_export = AverageSurfaceCylindrical("solute", top_id)
     V = f.FunctionSpace(mesh_fenics, "P", 1)
-    c_fun = lambda z: c_bottom + (c_top - c_bottom) / (z1 - z0) * z
+    c_fun = lambda r: 2 * r
+
     expr = f.Expression(
-        ccode(c_fun(y)),
+        ccode(c_fun(x)),
         degree=1,
     )
     my_export.function = f.interpolate(expr, V)
     my_export.ds = ds
 
-    expected_value = c_bottom + (c_top - c_bottom) / (z1 - z0) * height
+    expected_value = 4 / 3 * (r1**3 - r0**3) / (r1**2 - r0**2)
 
     computed_value = my_export.compute()
 
@@ -110,9 +106,7 @@ def test_compute_cylindrical(r0, radius, height, c_top, c_bottom):
 
 @pytest.mark.parametrize("radius", [2, 4])
 @pytest.mark.parametrize("r0", [3, 5])
-@pytest.mark.parametrize("c_left", [8, 9])
-@pytest.mark.parametrize("c_right", [10, 11])
-def test_compute_spherical(r0, radius, c_left, c_right):
+def test_compute_spherical(r0, radius):
     """
     Test that AverageSurfaceSpherical computes the average value correctly
     on a hollow sphere
@@ -120,8 +114,6 @@ def test_compute_spherical(r0, radius, c_left, c_right):
     Args:
         r0 (float): internal radius
         radius (float): sphere  radius
-        c_left (float): concentration left
-        c_right (float): concentration right
     """
     # creating a mesh with FEniCS
     r1 = r0 + radius
@@ -142,7 +134,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
 
     my_export = AverageSurfaceSpherical("solute", right_id)
     V = f.FunctionSpace(mesh_fenics, "P", 1)
-    c_fun = lambda r: c_left + (c_right - c_left) / (r1 - r0) * r
+    c_fun = lambda r: 4 * r
     expr = f.Expression(
         ccode(c_fun(x)),
         degree=1,
@@ -151,7 +143,7 @@ def test_compute_spherical(r0, radius, c_left, c_right):
 
     my_export.ds = ds
 
-    expected_value = c_left + ((c_right - c_left) / (r1 - r0)) * r1
+    expected_value = 4 * r1
 
     computed_value = my_export.compute()
 
