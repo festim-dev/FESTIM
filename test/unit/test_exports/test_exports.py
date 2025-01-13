@@ -94,46 +94,6 @@ def test_assign_exports_wrong_type():
             my_exports.insert(0, export_combination)
 
 
-class TestExportsPropertyDeprWarn:
-    """
-    A temporary test to check DeprecationWarnings in festim.Exports.exports
-    """
-
-    my_export = festim.Export(field=0)
-    my_exports = festim.Exports([])
-
-    def test_property_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_exports.exports
-
-    def test_property_setter_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_exports.exports = [self.my_export]
-
-
-class TestExportsPropertyRaiseError:
-    """
-    A temporary test to check TypeErrors in festim.Exports.exports
-    """
-
-    my_export = festim.Export(field=0)
-    my_exports = festim.Exports([])
-
-    def test_set_exports_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="exports must be a list",
-        ):
-            self.my_exports.exports = self.my_export
-
-    def test_set_exports_list_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="exports must be a list of festim.Export",
-        ):
-            self.my_exports.exports = [self.my_export, 1]
-
-
 def test_instanciate_with_no_elements():
     """
     Test to catch bug described in issue #724
