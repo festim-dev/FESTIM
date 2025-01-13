@@ -7,7 +7,6 @@ import fenics as f
 import os
 import numpy as np
 from typing import Union
-import warnings
 
 
 class DerivedQuantities(list):
@@ -62,29 +61,6 @@ class DerivedQuantities(list):
 
         self.data = []
         self.t = []
-
-    @property
-    def derived_quantities(self):
-        warnings.warn(
-            "The derived_quantities attribute will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
-            DeprecationWarning,
-        )
-        return self
-
-    @derived_quantities.setter
-    def derived_quantities(self, value):
-        warnings.warn(
-            "The derived_quantities attribute will be deprecated in a future release, please use festim.DerivedQuantities as a list instead",
-            DeprecationWarning,
-        )
-        if isinstance(value, list):
-            if not all(isinstance(t, DerivedQuantity) for t in value):
-                raise TypeError(
-                    "derived_quantities must be a list of festim.DerivedQuantity"
-                )
-            super().__init__(value)
-        else:
-            raise TypeError("derived_quantities must be a list")
 
     def __setitem__(self, index, item):
         super().__setitem__(index, self._validate_derived_quantity(item))
