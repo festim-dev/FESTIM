@@ -1,6 +1,5 @@
 import festim
 import fenics as f
-import warnings
 
 
 class Traps(list):
@@ -20,27 +19,6 @@ class Traps(list):
         self.F = None
         self.extrinsic_formulations = []
         self.sub_expressions = []
-
-    @property
-    def traps(self):
-        warnings.warn(
-            "The traps attribute will be deprecated in a future release, please use festim.Traps as a list instead",
-            DeprecationWarning,
-        )
-        return self
-
-    @traps.setter
-    def traps(self, value):
-        warnings.warn(
-            "The traps attribute will be deprecated in a future release, please use festim.Traps as a list instead",
-            DeprecationWarning,
-        )
-        if isinstance(value, list):
-            if not all(isinstance(t, festim.Trap) for t in value):
-                raise TypeError("traps must be a list of festim.Trap")
-            super().__init__(value)
-        else:
-            raise TypeError("traps must be a list")
 
     def __setitem__(self, index, item):
         super().__setitem__(index, self._validate_trap(item))
