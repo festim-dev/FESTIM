@@ -65,7 +65,8 @@ class ExtrinsicTrapBase(Trap):
             self._newton_solver = value
         elif isinstance(value, NewtonSolver):
             if self._newton_solver:
-                print("Settings for the Newton solver will be overwritten")
+                if MPI.comm_world.rank == 0:
+                    print("Settings for the Newton solver will be overwritten")
             self._newton_solver = value
         else:
             raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")

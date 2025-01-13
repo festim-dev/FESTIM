@@ -55,7 +55,8 @@ class HTransportProblem:
             self._newton_solver = value
         elif isinstance(value, NewtonSolver):
             if self._newton_solver:
-                print("Settings for the Newton solver will be overwritten")
+                if MPI.comm_world.rank == 0:
+                    print("Settings for the Newton solver will be overwritten")
             self._newton_solver = value
         else:
             raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
@@ -102,7 +103,8 @@ class HTransportProblem:
         self.define_newton_solver()
 
         # Boundary conditions
-        print("Defining boundary conditions")
+        if MPI.comm_world.rank == 0:
+            print("Defining boundary conditions")
         self.create_dirichlet_bcs(materials, mesh)
         if self.settings.transient:
             self.traps.define_variational_problem_extrinsic_traps(mesh.dx, dt, self.T)
@@ -177,7 +179,9 @@ class HTransportProblem:
                     concentration.test_function = list(split(self.v))[index]
                     index += 1
 
-        print("Defining initial values")
+        if MPI.comm_world.rank == 0:
+            print("Defining initial values")
+
         field_to_component = {
             "solute": 0,
             "0": 0,
@@ -253,7 +257,9 @@ class HTransportProblem:
             dt (festim.Stepsize, optional): the stepsize, only needed if
                 self.settings.transient is True. Defaults to None.
         """
-        print("Defining variational problem")
+        if MPI.comm_world.rank == 0:
+            print("Defining variational problem")
+
         expressions = []
         F = 0
 

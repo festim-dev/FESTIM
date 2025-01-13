@@ -178,7 +178,8 @@ class Mobile(Concentration):
         F_source = 0
         expressions_source = []
 
-        print("Defining source terms")
+        if MPI.comm_world.rank == 0:
+            print("Defining source terms")
         for source in self.sources:
             if type(source.volume) is list:
                 volumes = source.volume

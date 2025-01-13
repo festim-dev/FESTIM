@@ -43,6 +43,8 @@ class MeshFromXDMF(Mesh):
         f.XDMFFile(self.boundary_file).read(surface_markers, "f")
         surface_markers = f.MeshFunction("size_t", mesh, surface_markers)
 
-        print("Succesfully load mesh with " + str(len(volume_markers)) + " cells")
+        if f.MPI.comm_world.rank == 0:
+            print("Succesfully load mesh with " + str(len(volume_markers)) + " cells")
+
         self.volume_markers = volume_markers
         self.surface_markers = surface_markers

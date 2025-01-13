@@ -461,7 +461,8 @@ class Simulation:
             self.h_transport_problem.compute_jacobian()
 
         #  Time-stepping
-        print("Time stepping...")
+        if MPI.comm_world.rank == 0:
+            print("Time stepping...")
         while self.t < self.settings.final_time and not np.isclose(
             self.t, self.settings.final_time, atol=0
         ):
@@ -469,7 +470,8 @@ class Simulation:
 
     def run_steady(self):
         # Solve steady state
-        print("Solving steady state problem...")
+        if MPI.comm_world.rank == 0:
+            print("Solving steady state problem...")
 
         nb_iterations, converged = self.h_transport_problem.solve_once()
 
@@ -480,7 +482,8 @@ class Simulation:
         # print final message
         if converged:
             msg = "Solved problem in {:.2f} s".format(elapsed_time)
-            print(msg)
+            if MPI.comm_world.rank == 0:
+                print(msg)
         else:
             msg = "The solver diverged in "
             msg += "{:.0f} iteration(s) ({:.2f} s)".format(nb_iterations, elapsed_time)
@@ -517,9 +520,11 @@ class Simulation:
             not np.isclose(self.t, self.settings.final_time, atol=0)
             and self.log_level == 40
         ):
-            print(msg, end="\r")
+            if MPI.comm_world.rank == 0:
+                print(msg, end="\r")
         else:
-            print(msg)
+            if MPI.comm_world.rank == 0:
+                print(msg)
 
     def run_post_processing(self):
         """Create post processing functions and compute/write the exports"""
