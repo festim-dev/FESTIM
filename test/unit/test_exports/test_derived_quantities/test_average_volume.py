@@ -154,3 +154,21 @@ def test_average_volume_spherical_title_no_units_temperature():
 
     my_export = AverageVolumeSpherical("T", 9)
     assert my_export.title == "Average T volume 9 (K)"
+
+
+def test_avg_vol_cylindrical_allow_meshes():
+    """A simple test to check cylindrical meshes are the only
+    meshes allowed when using AverageVolumeCylindrical"""
+
+    my_export = AverageVolumeCylindrical("solute", 3)
+
+    assert my_export.allowed_meshes == ["cylindrical"]
+
+
+def test_avg_vol_spherical_allow_meshes():
+    """A simple test to check cylindrical meshes are the only
+    meshes allowed when using AverageVolumeSpherical"""
+
+    my_export = AverageVolumeSpherical("solute", 5)
+
+    assert my_export.allowed_meshes == ["spherical"]

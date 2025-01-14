@@ -180,3 +180,21 @@ def test_average_surface_spherical_title_no_units_temperature():
 
     my_export = AverageSurfaceSpherical("T", 9)
     assert my_export.title == "Average T surface 9 (K)"
+
+
+def test_avg_surf_cylindrical_allow_meshes():
+    """A simple test to check cylindrical meshes are the only
+    meshes allowed when using AverageSurfaceCylindrical"""
+
+    my_export = AverageSurfaceCylindrical("solute", 2)
+
+    assert my_export.allowed_meshes == ["cylindrical"]
+
+
+def test_avg_surf_spherical_allow_meshes():
+    """A simple test to check spherical meshes are one of the
+    meshes allowed when using AverageSurfaceSpherical"""
+
+    my_export = AverageSurfaceSpherical("T", 6)
+
+    assert "spherical" in my_export.allowed_meshes
