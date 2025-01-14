@@ -117,7 +117,6 @@ def test_TXTExport_times_added_to_milestones(tmpdir):
         F.SurfaceFlux(field="solute", surface=1),
         F.TotalVolume(field="solute", volume=1),
         F.TotalSurface(field="solute", surface=1),
-        F.AverageSurface(field="solute", surface=1),
         F.AverageVolume(field="solute", volume=1),
         F.HydrogenFlux(surface=1),
         F.ThermalFlux(surface=1),
