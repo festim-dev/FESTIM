@@ -213,50 +213,6 @@ def test_assign_traps_wrong_type():
             my_traps.insert(0, trap_combination)
 
 
-class TestTrapsPropertyDeprWarn:
-    """
-    A temporary test to check DeprecationWarnings in festim.Traps.traps
-    """
-
-    my_mat = festim.Material(1, 1, 1)
-    my_trap = festim.Trap(1, 1, 1, 1, [my_mat], 1)
-
-    my_traps = festim.Traps([])
-
-    def test_property_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_traps.traps
-
-    def test_property_setter_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_traps.traps = [self.my_trap]
-
-
-class TestTrapsPropertyRaiseError:
-    """
-    A temporary test to check TypeErrors in festim.Traps.traps
-    """
-
-    my_mat = festim.Material(1, 1, 1)
-    my_trap = festim.Trap(1, 1, 1, 1, [my_mat], 1)
-
-    my_traps = festim.Traps([])
-
-    def test_set_traps_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="traps must be a list",
-        ):
-            self.my_traps.traps = self.my_trap
-
-    def test_set_traps_list_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="traps must be a list of festim.Trap",
-        ):
-            self.my_traps.traps = [self.my_trap, 1]
-
-
 def test_instanciate_with_no_elements():
     """
     Test to catch bug described in issue #724

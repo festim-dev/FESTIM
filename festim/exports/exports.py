@@ -1,6 +1,5 @@
 import festim
 import fenics as f
-import warnings
 
 
 class Exports(list):
@@ -21,33 +20,6 @@ class Exports(list):
         self.V_DG1 = None
         self.final_time = None
         self.nb_iterations = 0
-
-    @property
-    def exports(self):
-        warnings.warn(
-            "The exports attribute will be deprecated in a future release, please use festim.Exports as a list instead",
-            DeprecationWarning,
-        )
-        return self
-
-    @exports.setter
-    def exports(self, value):
-        warnings.warn(
-            "The exports attribute will be deprecated in a future release, please use festim.Exports as a list instead",
-            DeprecationWarning,
-        )
-        if isinstance(value, list):
-            if not all(
-                (
-                    isinstance(t, festim.Export)
-                    or isinstance(t, festim.DerivedQuantities)
-                )
-                for t in value
-            ):
-                raise TypeError("exports must be a list of festim.Export")
-            super().__init__(value)
-        else:
-            raise TypeError("exports must be a list")
 
     def __setitem__(self, index, item):
         super().__setitem__(index, self._validate_export(item))
