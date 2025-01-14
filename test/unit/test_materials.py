@@ -402,46 +402,6 @@ def test_assign_materials_wrong_type():
             my_materials.insert(0, mat_combination)
 
 
-class TestMaterialsPropertyDeprWarn:
-    """
-    A temporary test to check DeprecationWarnings in F.Materials.materials
-    """
-
-    my_mat = F.Material(id=1, E_D=1, D_0=1)
-    my_mats = F.Materials([])
-
-    def test_property_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_mats.materials
-
-    def test_property_setter_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_mats.materials = [self.my_mat]
-
-
-class TestMaterialsPropertyRaiseError:
-    """
-    A temporary test to check TypeErrors in F.Materials.materials
-    """
-
-    my_mat = F.Material(id=1, E_D=1, D_0=1)
-    my_mats = F.Materials([])
-
-    def test_set_materials_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="materials must be a list",
-        ):
-            self.my_mats.materials = self.my_mat
-
-    def test_set_materials_list_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="materials must be a list of festim.Material",
-        ):
-            self.my_mats.materials = [self.my_mat, 1]
-
-
 def test_instanciate_with_no_elements():
     """
     Test to catch bug described in issue #724

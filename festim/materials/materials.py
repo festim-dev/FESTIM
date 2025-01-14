@@ -5,7 +5,6 @@ from festim import k_B, Material, HeatTransferProblem
 import festim
 import fenics as f
 from typing import Union
-import warnings
 
 
 class Materials(list):
@@ -28,27 +27,6 @@ class Materials(list):
         self.heat_capacity = None
         self.density = None
         self.Q = None
-
-    @property
-    def materials(self):
-        warnings.warn(
-            "The materials attribute will be deprecated in a future release, please use festim.Materials as a list instead",
-            DeprecationWarning,
-        )
-        return self
-
-    @materials.setter
-    def materials(self, value):
-        warnings.warn(
-            "The materials attribute will be deprecated in a future release, please use festim.Materials as a list instead",
-            DeprecationWarning,
-        )
-        if isinstance(value, list):
-            if not all(isinstance(t, festim.Material) for t in value):
-                raise TypeError("materials must be a list of festim.Material")
-            super().__init__(value)
-        else:
-            raise TypeError("materials must be a list")
 
     def __setitem__(self, index, item):
         super().__setitem__(index, self._validate_material(item))

@@ -543,49 +543,6 @@ def test_assign_derived_quantitites_wrong_type():
             my_derived_quantities.insert(0, dq_combination)
 
 
-class TestDerivedQuantititesPropertyDeprWarn:
-    """
-    A temporary test to check DeprecationWarnings in festim.DerivedQuantitites.exports
-    """
-
-    my_derived_quantity = SurfaceFlux(0, 2)
-    my_derived_quantities = DerivedQuantities([])
-
-    def test_property_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_derived_quantities.derived_quantities
-
-    def test_property_setter_depr_warns(self):
-        with pytest.deprecated_call():
-            self.my_derived_quantities.derived_quantities = [self.my_derived_quantity]
-
-
-class TestDerivedQuantititesPropertyRaiseError:
-    """
-    A temporary test to check TypeErrors in festim.DerivedQuantitites.exports
-    """
-
-    my_derived_quantity = SurfaceFlux(0, 2)
-    my_derived_quantities = DerivedQuantities([])
-
-    def test_set_der_quants_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="derived_quantities must be a list",
-        ):
-            self.my_derived_quantities.derived_quantities = self.my_derived_quantity
-
-    def test_set_der_quants_list_wrong_type(self):
-        with pytest.raises(
-            TypeError,
-            match="derived_quantities must be a list of festim.DerivedQuantity",
-        ):
-            self.my_derived_quantities.derived_quantities = [
-                self.my_derived_quantity,
-                1,
-            ]
-
-
 def test_instanciate_with_no_derived_quantities():
     """
     Test to catch bug described in issue #724
