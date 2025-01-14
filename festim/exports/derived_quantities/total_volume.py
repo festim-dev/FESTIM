@@ -84,8 +84,8 @@ class TotalVolumeCylindrical(TotalVolume):
         r (ufl.indexed.Indexed): the radius of the cylinder
 
     .. note::
-        Units are in H for hydrogen concentration
-        and K in 1D, K m in 2D domains for temperature
+        Units are in H/m in 1D and H in 2D for hydrogen concentration
+        and K m2 in 1D, K m3 in 2D domains for temperature
     """
 
     def __init__(self, field, volume, azimuth_range=(0, 2 * np.pi)) -> None:
@@ -103,9 +103,9 @@ class TotalVolumeCylindrical(TotalVolume):
             # TODO we could simply do that all the time
         # return unit depending on field and dimension of domain
         if self.field == "T":
-            return f"K m{dim-1}".replace(" m0", "").replace(" m1", " m")
+            return f"K m{dim+1}"
         else:
-            return f"H m{dim-3}".replace(" m0", "")
+            return f"H m{dim-2}".replace(" m0", "")
 
     @property
     def azimuth_range(self):
@@ -114,7 +114,7 @@ class TotalVolumeCylindrical(TotalVolume):
     @azimuth_range.setter
     def azimuth_range(self, value):
         if value[0] < 0 or value[1] > 2 * np.pi:
-            raise ValueError("Azimuthal range must be between 0 and pi")
+            raise ValueError("Azimuthal range must be between 0 and 2 pi")
         self._azimuth_range = value
 
     @property
@@ -127,13 +127,13 @@ class TotalVolumeCylindrical(TotalVolume):
             mesh = (
                 self.function.function_space().mesh()
             )  # get the mesh from the function
-            rthetaphi = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
-            self.r = rthetaphi[0]  # only care about r here
+            rthetaz = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
+            self.r = rthetaz[0]  # only care about r here
 
-        tot_surf = f.assemble(self.function * self.r * self.ds(self.volume))
-        tot_surf *= self.azimuth_range[1] - self.azimuth_range[0]
+        tot_vol = f.assemble(self.function * self.r * self.dx(self.volume))
+        tot_vol *= self.azimuth_range[1] - self.azimuth_range[0]
 
-        return tot_surf
+        return tot_vol
 
 
 class TotalVolumeSpherical(TotalVolume):
@@ -165,7 +165,7 @@ class TotalVolumeSpherical(TotalVolume):
     """
 
     def __init__(
-        self, field, volume, azimuth_range=(0, 2 * np.pi), polar_range=(-np.pi, np.pi)
+        self, field, volume, azimuth_range=(0, 2 * np.pi), polar_range=(0, np.pi)
     ) -> None:
         super().__init__(field=field, volume=volume)
         self.r = None
@@ -175,7 +175,7 @@ class TotalVolumeSpherical(TotalVolume):
     @property
     def export_unit(self):
         if self.field == "T":
-            return f"K m2"
+            return f"K m3"
         else:
             return f"H"
 
@@ -190,6 +190,16 @@ class TotalVolumeSpherical(TotalVolume):
         self._azimuth_range = value
 
     @property
+    def polar_range(self):
+        return self._polar_range
+
+    @polar_range.setter
+    def polar_range(self, value):
+        if value[0] < 0 or value[1] > np.pi:
+            raise ValueError("Polar range must be between 0 and pi")
+        self._polar_range = value
+
+    @property
     def allowed_meshes(self):
         return ["spherical"]
 
@@ -199,12 +209,13 @@ class TotalVolumeSpherical(TotalVolume):
             mesh = (
                 self.function.function_space().mesh()
             )  # get the mesh from the function
-            rthetaz = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
-            self.r = rthetaz[0]  # only care about r here
+            rthetaphi = f.SpatialCoordinate(mesh)  # get the coordinates from the mesh
+            self.r = rthetaphi[0]  # only care about r here
 
-        tot_surf = f.assemble(self.function * self.r**2 * self.ds(self.volume))
-        tot_surf *= (self.polar_range[1] - self.polar_range[0]) * (
-            -np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0])
+        tot_vol = f.assemble(self.function * self.r**2 * self.dx(self.volume))
+
+        tot_vol *= (self.azimuth_range[1] - self.azimuth_range[0]) * (
+            np.cos(self.polar_range[0]) - np.cos(self.polar_range[1])
         )
 
-        return tot_surf
+        return tot_vol
