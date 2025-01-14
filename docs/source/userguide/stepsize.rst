@@ -69,3 +69,14 @@ This will modify the stepsize as needed.
         max_stepsize=5,
         milestones=[1, 5, 6, 10]
         )
+
+
+.. note::
+    
+    If your stepsize is constant, you can define it simply as a ``float`` or ``int``:
+    
+    .. testcode::
+
+        my_model = F.Simulation()
+
+        my_model.dt = 2.0

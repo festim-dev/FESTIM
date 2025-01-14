@@ -182,6 +182,21 @@ class Simulation:
                 "accepted types for T attribute are int, float, sympy.Expr or festim.Temperature"
             )
 
+    @property
+    def dt(self):
+        return self._dt
+
+    @dt.setter
+    def dt(self, value):
+        if value is None:
+            self._dt = value
+        elif isinstance(value, (int, float)):
+            self._dt = festim.Stepsize(value)
+        elif isinstance(value, festim.Stepsize):
+            self._dt = value
+        else:
+            raise TypeError("dt must be an int, float, or festim.Stepsize")
+
     def attribute_source_terms(self):
         """Assigns the source terms (in self.sources) to the correct field
         (self.mobile, self.T, or traps)
