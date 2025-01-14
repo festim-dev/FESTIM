@@ -27,6 +27,7 @@ from .helpers import (
     as_constant,
     as_expression,
     as_constant_or_expression,
+    festim_print,
 )
 
 from .meshing.mesh import Mesh
