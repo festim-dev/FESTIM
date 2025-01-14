@@ -1,6 +1,6 @@
 import festim
 import xml.etree.ElementTree as ET
-from fenics import Expression, UserExpression, Constant
+from fenics import Expression, UserExpression, Constant, MPI
 import sympy as sp
 
 
@@ -108,3 +108,8 @@ def extract_xdmf_labels(filename):
 
     unique_labels = list(set(labels))
     return unique_labels
+
+
+def festim_print(msg, end="\n"):
+    if MPI.comm_world.rank == 0:
+        print(msg, end=end)
