@@ -132,7 +132,7 @@ def test_hit_stepsize_max_with_t_stop(time):
     assert my_stepsize.adaptive_stepsize["max_stepsize"](time) == max_stepsize(time)
 
 
-@pytest.mark.parametrize("time", [1, 2.5, "coucou", np.array([1, 2]), [1, 2]])
+@pytest.mark.parametrize("time", [1, 2.5, festim.Stepsize(1.0),"coucou", np.array([1, 2]), [1, 2]])
 def test_stepsize_as_value(time):
     """
     A test to check that users can pass an int or float to the dt attribute when
@@ -143,6 +143,7 @@ def test_stepsize_as_value(time):
 
     if isinstance(time, (int, float, festim.Stepsize)):
         my_model.dt = time
+        assert isinstance(my_model.dt, festim.Stepsize)
     else:
         with pytest.raises(
             TypeError, match="dt must be an int, float, or festim.Stepsize"

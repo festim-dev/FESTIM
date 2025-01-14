@@ -73,7 +73,7 @@ This will modify the stepsize as needed.
 
 .. note::
     
-    When defining the simulation, if your stepsize is constant, you can define it simply by providing it as a `float`` or `int`:
+    If your stepsize is constant, you can define it simply as a ``float`` or ``int``:
     
     .. testcode::
 
