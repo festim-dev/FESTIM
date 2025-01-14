@@ -1,6 +1,5 @@
 from festim import SurfaceQuantity
 import fenics as f
-import numpy as np
 
 
 class AverageSurface(SurfaceQuantity):
@@ -82,6 +81,10 @@ class AverageSurfaceCylindrical(AverageSurface):
     def __init__(self, field, surface) -> None:
         super().__init__(field=field, surface=surface)
         self.r = None
+
+    @property
+    def allowed_meshes(self):
+        return ["cylindrical"]
 
     def compute(self):
 

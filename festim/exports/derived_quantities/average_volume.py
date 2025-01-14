@@ -1,6 +1,5 @@
 from festim import VolumeQuantity
 import fenics as f
-import numpy as np
 
 
 class AverageVolume(VolumeQuantity):
@@ -82,6 +81,10 @@ class AverageVolumeCylindrical(AverageVolume):
         super().__init__(field=field, volume=volume)
         self.r = None
 
+    @property
+    def allowed_meshes(self):
+        return ["cylindrical"]
+
     def compute(self):
 
         if self.r is None:
@@ -120,6 +123,10 @@ class AverageVolumeSpherical(AverageVolume):
     def __init__(self, field, volume) -> None:
         super().__init__(field=field, volume=volume)
         self.r = None
+
+    @property
+    def allowed_meshes(self):
+        return ["spherical"]
 
     def compute(self):
 
