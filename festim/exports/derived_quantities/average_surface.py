@@ -30,7 +30,7 @@ class AverageSurface(SurfaceQuantity):
 
     @property
     def allowed_meshes(self):
-        return ["cartesian"]
+        return ["cartesian", "spherical"]
 
     @property
     def export_unit(self):
