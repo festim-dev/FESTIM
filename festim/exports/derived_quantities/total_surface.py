@@ -150,7 +150,7 @@ class TotalSurfaceSpherical(TotalSurface):
         azimuth_range (tuple, optional): Range of the azimuthal angle
             (theta) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi)
         polar_range (tuple, optional): Range of the polar angle
-            (theta) needs to be between - pi and pi. Defaults to (-np.pi, np.pi).
+            (theta) needs to be between 0 and pi. Defaults to (0, np.pi).
 
     Attributes:
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
@@ -168,7 +168,7 @@ class TotalSurfaceSpherical(TotalSurface):
     """
 
     def __init__(
-        self, field, surface, azimuth_range=(0, 2 * np.pi), polar_range=(-np.pi, np.pi)
+        self, field, surface, azimuth_range=(0, 2 * np.pi), polar_range=(0, np.pi)
     ) -> None:
         super().__init__(field=field, surface=surface)
         self.r = None
@@ -189,7 +189,7 @@ class TotalSurfaceSpherical(TotalSurface):
     @azimuth_range.setter
     def azimuth_range(self, value):
         if value[0] < 0 or value[1] > 2 * np.pi:
-            raise ValueError("Azimuthal range must be between 0 and pi")
+            raise ValueError("Azimuthal range must be between 0 and 2 pi")
         self._azimuth_range = value
 
     @property
@@ -198,8 +198,8 @@ class TotalSurfaceSpherical(TotalSurface):
 
     @polar_range.setter
     def polar_range(self, value):
-        if value[0] < -np.pi or value[1] > np.pi:
-            raise ValueError("Polar range must be between - pi and pi")
+        if value[0] < 0 or value[1] > np.pi:
+            raise ValueError("Polar range must be between 0 and pi")
         self._polar_range = value
 
     @property
@@ -217,8 +217,8 @@ class TotalSurfaceSpherical(TotalSurface):
 
         tot_surf = f.assemble(self.function * self.r**2 * self.ds(self.surface))
 
-        tot_surf *= (self.polar_range[1] - self.polar_range[0]) * (
-            -np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0])
+        tot_surf *= (self.azimuth_range[1] - self.azimuth_range[0]) * (
+            np.cos(self.polar_range[0]) - np.cos(self.polar_range[1])
         )
 
         return tot_surf
