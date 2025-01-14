@@ -117,7 +117,6 @@ def test_TXTExport_times_added_to_milestones(tmpdir):
         F.SurfaceFlux(field="solute", surface=1),
         F.TotalVolume(field="solute", volume=1),
         F.TotalSurface(field="solute", surface=1),
-        F.AverageSurface(field="solute", surface=1),
         F.AverageVolume(field="solute", volume=1),
         F.HydrogenFlux(surface=1),
         F.ThermalFlux(surface=1),
@@ -148,6 +147,62 @@ def test_cartesian_and_surface_flux_warning(quantity, sys):
 
     # test
     with pytest.warns(UserWarning, match=f"may not work as intended for {sys} meshes"):
+        my_model.initialise()
+
+
+@pytest.mark.parametrize("sys", ["cartesian", "spherical"])
+def test_cylindrical_quantities_warning(sys):
+    """
+    Creates a Simulation object and checks that, if either a cartesian
+    or spherical meshes are given with a AverageSurfaceCylindrical, a warning is raised.
+
+    Args:
+        sys (str): type of the coordinate system
+    """
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3], type=sys)
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = F.Temperature(100)
+    my_model.dt = F.Stepsize(initial_value=3)
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, final_time=4
+    )
+
+    derived_quantities = F.DerivedQuantities(
+        [F.AverageSurfaceCylindrical(field="solute", surface=1)]
+    )
+    my_model.exports = [derived_quantities]
+
+    # test
+    with pytest.warns(UserWarning, match=f"may not work as intended for {sys} meshes"):
+        my_model.initialise()
+
+
+def test_spherical_quantities_warning():
+    """
+    Creates a Simulation object and checks that, if a cylindrical
+    mesh is given with a AverageSurfaceSpherical, a warning is raised.
+    """
+    # build
+    my_model = F.Simulation()
+    my_model.mesh = F.MeshFromVertices([1, 2, 3], type="cylindrical")
+    my_model.materials = F.Material(id=1, D_0=1, E_D=0)
+    my_model.T = F.Temperature(100)
+    my_model.dt = F.Stepsize(initial_value=3)
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e-10, relative_tolerance=1e-10, final_time=4
+    )
+
+    derived_quantities = F.DerivedQuantities(
+        [F.AverageSurfaceSpherical(field="solute", surface=1)]
+    )
+    my_model.exports = [derived_quantities]
+
+    # test
+    with pytest.warns(
+        UserWarning, match=f"may not work as intended for cylindrical meshes"
+    ):
         my_model.initialise()
 
 
