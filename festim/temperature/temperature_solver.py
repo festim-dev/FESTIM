@@ -73,8 +73,9 @@ class HeatTransferProblem(festim.Temperature):
             self._newton_solver = value
         elif isinstance(value, f.NewtonSolver):
             if self._newton_solver:
-                if f.MPI.comm_world.rank == 0:
-                    print("Settings for the Newton solver will be overwritten")
+                festim.festim_print(
+                    "Settings for the Newton solver will be overwritten"
+                )
             self._newton_solver = value
         else:
             raise TypeError("accepted type for newton_solver is fenics.NewtonSolver")
@@ -132,8 +133,7 @@ class HeatTransferProblem(festim.Temperature):
             self.define_newton_solver()
 
         if not self.transient:
-            if f.MPI.comm_world.rank == 0:
-                print("Solving stationary heat equation")
+            festim.festim_print("Solving stationary heat equation")
 
             dT = f.TrialFunction(self.T.function_space())
             JT = f.derivative(self.F, self.T, dT)
@@ -156,8 +156,7 @@ class HeatTransferProblem(festim.Temperature):
             dt (festim.Stepsize, optional): the stepsize. Only needed if
                 self.transient is True. Defaults to None.
         """
-        if f.MPI.comm_world.rank == 0:
-            print("Defining variational problem heat transfers")
+        festim.festim_print("Defining variational problem heat transfers")
 
         T, T_n = self.T, self.T_n
         v_T = self.v_T

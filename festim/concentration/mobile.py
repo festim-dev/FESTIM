@@ -1,4 +1,11 @@
-from festim import Concentration, FluxBC, k_B, RadioactiveDecay, SurfaceKinetics
+from festim import (
+    Concentration,
+    FluxBC,
+    k_B,
+    RadioactiveDecay,
+    SurfaceKinetics,
+    festim_print,
+)
 from fenics import *
 
 
@@ -178,8 +185,7 @@ class Mobile(Concentration):
         F_source = 0
         expressions_source = []
 
-        if MPI.comm_world.rank == 0:
-            print("Defining source terms")
+        festim_print("Defining source terms")
         for source in self.sources:
             if type(source.volume) is list:
                 volumes = source.volume
