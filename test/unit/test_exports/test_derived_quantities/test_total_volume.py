@@ -1,7 +1,7 @@
 from festim import x, y, TotalVolume, TotalVolumeCylindrical, TotalVolumeSpherical
 import fenics as f
 import pytest
-from .tools import c_1D, c_2D, c_3D
+from .tools import c_1D, c_2D, c_3D, mesh_1D, mesh_2D
 from sympy.printing import ccode
 import numpy as np
 
@@ -229,3 +229,26 @@ def test_tot_vol_spherical_allow_meshes():
     my_export = TotalVolumeSpherical("solute", 1)
 
     assert my_export.allowed_meshes == ["spherical"]
+
+
+@pytest.mark.parametrize(
+    "mesh, field, expected_title",
+    [
+        (mesh_1D, "solute", "Total solute volume 1 (H m-1)"),
+        (mesh_1D, "T", "Total T volume 1 (K m2)"),
+        (mesh_2D, "solute", "Total solute volume 1 (H)"),
+        (mesh_2D, "T", "Total T volume 1 (K m3)"),
+    ],
+)
+def test_tot_vol_cyl_get_dimension_from_mesh(mesh, field, expected_title):
+    """A test to ensure the dimension required for the units can be taken
+    from a mesh and produces the expected title"""
+
+    my_export = TotalVolumeCylindrical(field, 1)
+
+    vm = f.MeshFunction("size_t", mesh, mesh.topology().dim())
+    dx = f.Measure("dx", domain=mesh, subdomain_data=vm)
+
+    my_export.dx = dx
+
+    assert my_export.title == expected_title
