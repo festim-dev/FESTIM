@@ -148,7 +148,7 @@ class TotalSurfaceSpherical(TotalSurface):
         field (str, int):  the field ("solute", 0, 1, "T", "retention")
         surface (int): the surface id
         azimuth_range (tuple, optional): Range of the azimuthal angle
-            (theta) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi)
+            (phi) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi)
         polar_range (tuple, optional): Range of the polar angle
             (theta) needs to be between 0 and pi. Defaults to (0, np.pi).
 
