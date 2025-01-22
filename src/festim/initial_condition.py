@@ -31,11 +31,41 @@ class InitialCondition:
         self.value = value
         self.species = species
 
-        self.value_fenics = F.ConvertToFenicsObject(value)
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if value is None:
+            self._value = value
+        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+            self._value = F.Value(value)
+        elif callable(value):
+            self._value = F.Value(value)
+        else:
+            raise TypeError(
+                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )
 
 
 class InitialTemperature:
     def __init__(self, value) -> None:
         self.value = value
 
-        self.value_fenics = F.ConvertToFenicsObject(value)
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if value is None:
+            self._value = value
+        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+            self._value = F.Value(value)
+        elif callable(value):
+            self._value = F.Value(value)
+        else:
+            raise TypeError(
+                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )

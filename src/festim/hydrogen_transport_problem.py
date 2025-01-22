@@ -165,7 +165,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.reactions = reactions or []
         self.initial_conditions = initial_conditions or []
         self.traps = traps or []
-        self.temperature_fenics = None
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
     @property
@@ -177,45 +176,23 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if value is None:
             self._temperature = value
         elif isinstance(value, (float, int, fem.Constant, fem.Function)):
-            self._temperature = value
+            self._temperature = festim.Value(value)
         elif callable(value):
             arguments = value.__code__.co_varnames
             if "T" in arguments:
                 raise ValueError("Temperature cannot be a function of temperature, T")
-            self._temperature = value
+            self._temperature = festim.Value(value)
         else:
             raise TypeError(
                 "Value must be a float, int, fem.Constant, fem.Function, or callable"
             )
 
     @property
-    def temperature_fenics(self):
-        return self._temperature_fenics
-
-    @temperature_fenics.setter
-    def temperature_fenics(self, value):
-        if value is None:
-            self._temperature_fenics = value
-            return
-        elif not isinstance(
-            value,
-            festim.ConvertToFenicsObject,
-        ):
-            raise TypeError("Value must be a fem.Constant or fem.Function")
-
-        self._temperature_fenics = value
-
-    @property
     def temperature_time_dependent(self):
         if self.temperature is None:
             return False
-        if isinstance(self.temperature, fem.Constant):
-            return False
-        if callable(self.temperature):
-            arguments = self.temperature.__code__.co_varnames
-            return "t" in arguments
         else:
-            return False
+            return self.temperature.time_dependent
 
     @property
     def multispecies(self):
@@ -317,9 +294,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if self.temperature is None:
             raise ValueError("the temperature attribute needs to be defined")
 
-        self.temperature_fenics = festim.ConvertToFenicsObject(
-            input_value=self.temperature
-        )
+        if self.temperature.temperature_dependent:
+            raise ValueError(
+                "the temperature input value cannot be dependent on temperature"
+            )
 
         degree = 1
         element_temperature = basix.ufl.element(
@@ -332,7 +310,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             self.mesh.mesh, element_temperature
         )
 
-        self.temperature_fenics.convert_value(
+        self.temperature.convert_input_value(
             mesh=self.mesh.mesh, function_space=function_space_temperature, t=self.t
         )
 
@@ -420,7 +398,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         expr = D_0 * ufl.exp(
             -E_D
             / as_fenics_constant(k_B, self.mesh.mesh)
-            / self.temperature_fenics.fenics_object
+            / self.temperature.fenics_object
         )
         D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
         D.interpolate(D_expr)
@@ -515,18 +493,21 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # if name of species is given then replace with species object
                 bc.species = _species.find_species_from_name(bc.species, self.species)
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                if isinstance(bc.value, (int, float)):
-                    bc.value_fenics.as_fenics_constant(
+                if isinstance(
+                    bc.value.input_value,
+                    (int, float, fem.Constant, fem.Function, ufl.core.expr.Expr),
+                ):
+                    bc.value.convert_input_value(
                         mesh=self.mesh.mesh,
-                        value=bc.value,
+                        t=self.t,
+                        temperature=self.temperature.fenics_object,
                     )
-                elif isinstance(bc.value, (fem.Function, ufl.core.expr.Expr)):
-                    bc.value_fenics.fenics_object = bc.value
 
                 else:
-                    bc.value_fenics.as_mapped_function(
+                    bc.value.fenics_object = festim.as_mapped_function(
+                        value=bc.value.input_value,
                         mesh=self.mesh.mesh,
-                        temperature=self.temperature_fenics.fenics_object,
+                        temperature=self.temperature.fenics_object,
                         t=self.t,
                     )
 
@@ -548,9 +529,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
         else:
             function_space_value = bc.species.collapsed_function_space
 
-        bc.value_fenics.convert_value(
+        bc.value.convert_input_value(
             mesh=self.mesh.mesh,
-            temperature=self.temperature_fenics.fenics_object,
+            temperature=self.temperature.fenics_object,
             function_space=function_space_value,
             t=self.t,
         )
@@ -572,16 +553,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
         )
 
         # create form
-        if not self.multispecies and isinstance(
-            bc.value_fenics.fenics_object, (fem.Function)
-        ):
+        if not self.multispecies and isinstance(bc.value.fenics_object, (fem.Function)):
             # no need to pass the functionspace since value_fenics is already a Function
             function_space_form = None
         else:
             function_space_form = bc.species.sub_function_space
 
         form = fem.dirichletbc(
-            value=bc.value_fenics.fenics_object,
+            value=bc.value.fenics_object,
             dofs=bc_dofs,
             V=function_space_form,
         )
@@ -593,18 +572,21 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, festim.source.ParticleSource):
-                if isinstance(source.value, (int, float)):
-                    source.value_fenics.as_fenics_constant(
+                if isinstance(
+                    source.value.input_value,
+                    (int, float, fem.Constant, fem.Function, ufl.core.expr.Expr),
+                ):
+                    source.value.convert_input_value(
                         mesh=self.mesh.mesh,
-                        value=source.value,
-                    )
-                elif isinstance(source.value, (fem.Function, ufl.core.expr.Expr)):
-                    source.value_fenics.fenics_object = self.value
-                elif callable(source.value):
-                    source.value_fenics.as_mapped_function(
-                        mesh=self.mesh.mesh,
-                        temperature=self.temperature_fenics.fenics_object,
                         t=self.t,
+                        temperature=self.temperature.fenics_object,
+                    )
+                elif callable(source.value.input_value):
+                    source.value.fenics_object = festim.as_mapped_function(
+                        value=source.value.input_value,
+                        mesh=self.mesh.mesh,
+                        t=self.t,
+                        temperature=self.temperature.fenics_object,
                     )
 
     def create_flux_values_fenics(self):
@@ -613,9 +595,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
             # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
 
-                bc.value_fenics.convert_value(
+                bc.value.convert_input_value(
                     mesh=self.mesh.mesh,
-                    temperature=self.temperature_fenics,
+                    temperature=self.temperature.fenics_object,
                     t=self.t,
                 )
 
@@ -631,35 +613,43 @@ class HydrogenTransportProblem(problem.ProblemBase):
         function_space_value = None
 
         for condition in self.initial_conditions:
+
             # create value_fenics for condition
             function_space_value = None
-            if callable(condition.value):
+            if callable(condition.value.input_value):
+
+                if condition.value.time_dependent:
+                    raise ValueError("Initial conditions cannot be time dependent")
+
                 # if bc.value is a callable then need to provide a functionspace
                 if not self.multispecies:
                     function_space_value = condition.species.sub_function_space
                 else:
                     function_space_value = condition.species.collapsed_function_space
 
-            if isinstance(condition.value, (int, float)):
-                condition.value_fenics.fenics_interpolation_expression = (
-                    lambda x: np.full(x.shape[1], condition.value)
+            if isinstance(condition.value.input_value, (int, float)):
+                condition.value.fenics_interpolation_expression = lambda x: np.full(
+                    x.shape[1], condition.value.input_value
                 )
             else:
-                condition.value_fenics.as_fenics_interpolation_expression(
-                    mesh=self.mesh.mesh,
-                    temperature=self.temperature_fenics.fenics_object,
-                    function_space=function_space_value,
+                condition.value.fenics_interpolation_expression = (
+                    festim.as_fenics_interpolation_expression(
+                        value=condition.value.input_value,
+                        function_space=function_space_value,
+                        mesh=self.mesh.mesh,
+                        temperature=self.temperature.fenics_object,
+                    )
                 )
 
             # assign to previous solution of species
             if not self.multispecies:
                 condition.species.prev_solution.interpolate(
-                    condition.value_fenics.fenics_interpolation_expression
+                    condition.value.fenics_interpolation_expression
                 )
             else:
                 idx = self.species.index(condition.species)
                 self.u_n.sub(idx).interpolate(
-                    condition.value_fenics.fenics_interpolation_expression
+                    condition.value.fenics_interpolation_expression
                 )
 
     def create_formulation(self):
@@ -675,7 +665,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             for vol in self.volume_subdomains:
                 D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics.fenics_object, spe
+                    self.mesh.mesh, self.temperature.fenics_object, spe
                 )
                 if spe.mobile:
                     self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
@@ -689,7 +679,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             for reactant in reaction.reactant:
                 if isinstance(reactant, festim.species.Species):
                     self.formulation += (
-                        reaction.reaction_term(self.temperature_fenics.fenics_object)
+                        reaction.reaction_term(self.temperature.fenics_object)
                         * reactant.test_function
                         * self.dx(reaction.volume.id)
                     )
@@ -701,14 +691,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 products = [reaction.product]
             for product in products:
                 self.formulation += (
-                    -reaction.reaction_term(self.temperature_fenics.fenics_object)
+                    -reaction.reaction_term(self.temperature.fenics_object)
                     * product.test_function
                     * self.dx(reaction.volume.id)
                 )
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics.fenics_object
+                source.value.fenics_object
                 * source.species.test_function
                 * self.dx(source.volume.id)
             )
@@ -717,7 +707,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for bc in self.boundary_conditions:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 self.formulation -= (
-                    bc.value_fenics.fenics_object
+                    bc.value.fenics_object
                     * bc.species.test_function
                     * self.ds(bc.subdomain.id)
                 )
@@ -760,7 +750,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if not self.temperature_time_dependent:
             return
 
-        self.temperature_fenics.update(t=t)
+        self.temperature.update(t=t)
 
         for bc in self.boundary_conditions:
             if isinstance(
@@ -770,12 +760,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     boundary_conditions.ParticleFluxBC,
                 ),
             ):
-                if bc.value_fenics.temperature_dependent:
-                    bc.value_fenics.update(t=t)
+                if bc.value.temperature_dependent:
+                    bc.value.update(t=t)
 
         for source in self.sources:
-            if source.value_fenics.temperature_dependent:
-                source.value_fenics.update(t=t)
+            if source.value.temperature_dependent:
+                source.value.update(t=t)
 
     def post_processing(self):
         """Post processes the model"""

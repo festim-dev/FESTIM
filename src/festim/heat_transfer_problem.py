@@ -3,6 +3,8 @@ import ufl
 from dolfinx import fem
 from dolfinx.io import VTXWriter
 
+import numpy as np
+
 from festim import boundary_conditions, exports, helpers, problem
 from festim import source as _source
 
@@ -111,8 +113,9 @@ class HeatTransferProblem(problem.ProblemBase):
             dolfinx.fem.bcs.DirichletBC: A representation of
                 the boundary condition for modifying linear systems.
         """
-        bc.create_value(
+        bc.value.convert_input_value(
             function_space=self.function_space,
+            mesh=self.mesh.mesh,
             t=self.t,
         )
 
@@ -121,11 +124,11 @@ class HeatTransferProblem(problem.ProblemBase):
             function_space=self.function_space,
         )
 
-        if isinstance(bc.value_fenics, (fem.Function)):
-            form = fem.dirichletbc(value=bc.value_fenics, dofs=bc_dofs)
+        if isinstance(bc.value.fenics_object, (fem.Function)):
+            form = fem.dirichletbc(value=bc.value.fenics_object, dofs=bc_dofs)
         else:
             form = fem.dirichletbc(
-                value=bc.value_fenics, dofs=bc_dofs, V=self.function_space
+                value=bc.value.fenics_object, dofs=bc_dofs, V=self.function_space
             )
 
         return form
@@ -134,19 +137,30 @@ class HeatTransferProblem(problem.ProblemBase):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all source objects
-            source.create_value_fenics(
-                mesh=self.mesh.mesh,
-                t=self.t,
-            )
+            if isinstance(
+                source.value.input_value,
+                (int, float, fem.Constant, fem.Function, ufl.core.expr.Expr),
+            ):
+                source.value.convert_input_value(
+                    mesh=self.mesh.mesh,
+                    t=self.t,
+                )
+            elif callable(source.value.input_value):
+                source.value.fenics_object = helpers.as_mapped_function(
+                    value=source.value.input_value,
+                    mesh=self.mesh.mesh,
+                    t=self.t,
+                )
 
     def create_flux_values_fenics(self):
         """For each heat flux create the value_fenics"""
         for bc in self.boundary_conditions:
             # create value_fenics for all F.HeatFluxBC objects
             if isinstance(bc, boundary_conditions.HeatFluxBC):
-                bc.create_value_fenics(
+
+                bc.value.convert_input_value(
+                    function_space=self.function_space,
                     mesh=self.mesh.mesh,
-                    temperature=self.u,
                     t=self.t,
                 )
 
@@ -164,13 +178,27 @@ class HeatTransferProblem(problem.ProblemBase):
 
         # create value_fenics for condition
 
-        self.initial_condition.create_expr_fenics(
-            mesh=self.mesh.mesh,
-            function_space=self.function_space,
-        )
+        # self.initial_condition.value.create_expr_fenics(
+        #     mesh=self.mesh.mesh,
+        #     function_space=self.function_space,
+        # )
+        if isinstance(self.initial_condition.value.input_value, (int, float)):
+            self.initial_condition.value.fenics_interpolation_expression = (
+                lambda x: np.full(x.shape[1], self.initial_condition.value.input_value)
+            )
+        else:
+            self.initial_condition.value.fenics_interpolation_expression = (
+                helpers.as_fenics_interpolation_expression(
+                    value=self.initial_condition.value.input_value,
+                    function_space=self.function_space,
+                    mesh=self.mesh.mesh,
+                )
+            )
 
         # assign to previous solution of species
-        self.u_n.interpolate(self.initial_condition.expr_fenics)
+        self.u_n.interpolate(
+            self.initial_condition.value.fenics_interpolation_expression
+        )
 
     def create_formulation(self):
         """Creates the formulation of the model"""
@@ -205,14 +233,18 @@ class HeatTransferProblem(problem.ProblemBase):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics * self.test_function * self.dx(source.volume.id)
+                source.value.fenics_object
+                * self.test_function
+                * self.dx(source.volume.id)
             )
 
         # add fluxes
         for bc in self.boundary_conditions:
             if isinstance(bc, boundary_conditions.HeatFluxBC):
                 self.formulation -= (
-                    bc.value_fenics * self.test_function * self.ds(bc.subdomain.id)
+                    bc.value.fenics_object
+                    * self.test_function
+                    * self.ds(bc.subdomain.id)
                 )
 
     def initialise_exports(self):

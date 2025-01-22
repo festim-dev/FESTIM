@@ -5,6 +5,31 @@ from collections.abc import Callable
 import ufl
 
 
+# def as_fenics_constant(
+#     value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
+# ) -> fem.Constant:
+#     """Converts a value to a dolfinx.Constant
+
+#     Args:
+#         value: the value to convert
+#         mesh: the mesh of the domiain
+
+#     Returns:
+#         The converted value
+
+#     Raises:
+#         TypeError: if the value is not a float, an int or a dolfinx.Constant
+#     """
+#     if isinstance(value, (float, int)):
+#         return fem.Constant(mesh, dolfinx.default_scalar_type(value))
+#     elif isinstance(value, fem.Constant):
+#         return value
+#     else:
+#         raise TypeError(
+#             f"Value must be a float, an int or a dolfinx.Constant, not {type(value)}"
+#         )
+
+
 def as_fenics_constant(
     value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
 ) -> fem.Constant:
@@ -15,13 +40,13 @@ def as_fenics_constant(
         mesh: the mesh of the domiain
 
     Returns:
-        The converted value
+        (fem.Constant) The converted value
 
     Raises:
         TypeError: if the value is not a float, an int or a dolfinx.Constant
     """
     if isinstance(value, (float, int)):
-        return fem.Constant(mesh, dolfinx.default_scalar_type(value))
+        return fem.Constant(mesh, dolfinx.default_scalar_type(float(value)))
     elif isinstance(value, fem.Constant):
         return value
     else:
@@ -30,30 +55,98 @@ def as_fenics_constant(
         )
 
 
-class ConvertToFenicsObject:
-    """
-    u = value
+def as_mapped_function(
+    value, mesh=None, t=None, temperature=None
+) -> ufl.core.expr.Expr:
+    """Maps a user given function
 
     Args:
-        value: The value of the user input
+        value (Callable): the callable to convert
+        mesh (dolfinx.mesh.Mesh): the mesh of the domain
+        t (fem.Constant): the time
+        temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the temperature
+
+    Returns:
+        (ufl.core.expr.Expr) The mapped function
+    """
+
+    arguments = value.__code__.co_varnames
+
+    kwargs = {}
+    if "t" in arguments:
+        kwargs["t"] = t
+    if "x" in arguments:
+        x = ufl.SpatialCoordinate(mesh)
+        kwargs["x"] = x
+    if "T" in arguments:
+        kwargs["T"] = temperature
+
+    return value(**kwargs)
+
+
+def as_fenics_interpolation_expression(
+    value, function_space, mesh=None, t=None, temperature=None
+) -> fem.Expression:
+    """Converts a callable input value to a fenics expression"""
+
+    mapped_function = as_mapped_function(
+        value=value, mesh=mesh, t=t, temperature=temperature
+    )
+
+    return fem.Expression(
+        mapped_function,
+        function_space.element.interpolation_points(),
+    )
+
+
+def as_fenics_interp_expr_and_function(
+    value, function_space, mesh=None, t=None, temperature=None
+) -> fem.Function:
+
+    fenics_interpolation_expression = as_fenics_interpolation_expression(
+        value=value,
+        function_space=function_space,
+        mesh=mesh,
+        t=t,
+        temperature=temperature,
+    )
+    fenics_object = fem.Function(function_space)
+    fenics_object.interpolate(fenics_interpolation_expression)
+
+    return fenics_interpolation_expression, fenics_object
+
+
+class Value:
+    """
+    A class to handle input values from users and convert them to a relevent fenics object
+
+    Args:
+        input_value: The value of the user input
 
     Attributes:
-        value: The value of the user input
-        fenics_object: The value of the user input in fenics format
-        fenics_interpolation_expression: The expression of the user input that is used to
+        input_value : The value of the user input
+        fenics_interpolation_expression : The expression of the user input that is used to
             update the `fenics_object`
+        fenics_object : The value of the user input in fenics format
 
     """
 
     input_value: (
-        np.ndarray
-        | fem.Constant
-        | int
+        int
         | float
+        | np.ndarray
         | Callable[[np.ndarray], np.ndarray]
         | Callable[[np.ndarray, float], np.ndarray]
         | Callable[[float], float]
+        | fem.Constant
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
     )
+
+    mapped_function: ufl.core.expr.Expr
+    fenics_interpolation_expression: fem.Expression
+    fenics_object: fem.Function | fem.Constant | ufl.core.expr.Expr
 
     def __init__(self, input_value):
         self,
@@ -62,6 +155,34 @@ class ConvertToFenicsObject:
         self.mapped_function = None
         self.fenics_interpolation_expression = None
         self.fenics_object = None
+
+    @property
+    def input_value(self):
+        return self._input_value
+
+    @input_value.setter
+    def input_value(self, value):
+        if value is None:
+            self._input_value = value
+        elif isinstance(
+            value,
+            (
+                float,
+                int,
+                fem.Constant,
+                np.ndarray,
+                fem.Function,
+                ufl.core.expr.Expr,
+                fem.Function,
+            ),
+        ):
+            self._input_value = value
+        elif callable(value):
+            self._input_value = value
+        else:
+            raise TypeError(
+                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )
 
     @property
     def time_dependent(self) -> bool:
@@ -89,78 +210,30 @@ class ConvertToFenicsObject:
         else:
             return False
 
-    def as_fenics_constant(self, value, mesh: dolfinx.mesh.Mesh) -> fem.Constant:
-        """Converts a value to a dolfinx.Constant
-
-        Args:
-            value: the value to convert
-            mesh: the mesh of the domiain
-
-        Raises:
-            TypeError: if the value is not a float, an int or a dolfinx.Constant
-        """
-        if isinstance(value, (float, int)):
-            self.fenics_object = fem.Constant(
-                mesh, dolfinx.default_scalar_type(float(value))
-            )
-        else:
-            raise TypeError(
-                f"Value must be a float, an int or a dolfinx.Constant, not {type(value)}"
-            )
-
-    def as_mapped_function(self, mesh=None, t=None, temperature=None):
-        arguments = self.input_value.__code__.co_varnames
-
-        kwargs = {}
-        if "t" in arguments:
-            kwargs["t"] = t
-        if "x" in arguments:
-            x = ufl.SpatialCoordinate(mesh)
-            kwargs["x"] = x
-        if "T" in arguments:
-            kwargs["T"] = temperature
-
-        self.fenics_object = self.input_value(**kwargs)
-
-    def as_fenics_interpolation_expression(
-        self, function_space, temperature=None, t=None, mesh=None
+    def convert_input_value(
+        self, mesh=None, function_space=None, t=None, temperature=None
     ):
-
-        self.as_mapped_function(mesh=mesh, t=t, temperature=temperature)
-        # store the expression
-        self.fenics_interpolation_expression = fem.Expression(
-            self.fenics_object,
-            function_space.element.interpolation_points(),
-        )
-
-    def as_fenics_function(self, function_space, t, mesh=None, temperature=None):
-
-        if self.fenics_interpolation_expression is None:
-            self.as_fenics_interpolation_expression(
-                mesh=mesh, function_space=function_space, temperature=temperature, t=t
-            )
-
-        self.fenics_object = fem.Function(function_space)
-        self.fenics_object.interpolate(self.fenics_interpolation_expression)
-
-    def convert_value(self, mesh=None, function_space=None, t=None, temperature=None):
-        """Converts the value to a fenics object
+        """Converts a user given value to a relevent fenics object depending
+        on the type of the value provided
 
         Args:
-            function_space: the function space of the fenics object
-            t: the time
-            temperature: the temperature
+            mesh (dolfinx.mesh.Mesh): the mesh of the domain
+            function_space (dolfinx.fem.function.FunctionSpace): the function space of the fenics object
+            t (fem.Constant): the time
+            temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the temperature
         """
         if isinstance(self.input_value, fem.Constant):
             self.fenics_object = self.input_value
+
         elif isinstance(self.input_value, fem.Expression):
             self.fenics_interpolation_expression = self.input_value
+
         elif isinstance(self.input_value, (fem.Function, ufl.core.expr.Expr)):
             self.fenics_object = self.input_value
+
         elif isinstance(self.input_value, (float, int)):
-            if mesh is None:
-                raise ValueError("Mesh must be provided to create a constant")
-            self.as_fenics_constant(mesh=mesh, value=self.input_value)
+            self.fenics_object = as_fenics_constant(value=self.input_value, mesh=mesh)
+
         elif callable(self.input_value):
             args = self.input_value.__code__.co_varnames
             # if only t is an argument, create constant object
@@ -170,16 +243,32 @@ class ConvertToFenicsObject:
                         "self.value should return a float or an int, not "
                         + f"{type(self.input_value(t=float(t)))} "
                     )
-                self.as_fenics_constant(mesh=mesh, value=self.input_value(t=float(t)))
-            elif self.temperature_dependent:
-                self.as_fenics_function(
-                    mesh=mesh,
-                    function_space=function_space,
-                    t=t,
-                    temperature=temperature,
+
+                self.fenics_object = as_fenics_constant(
+                    value=self.input_value(t=float(t)), mesh=mesh
                 )
+
+            elif self.temperature_dependent:
+                self.fenics_interpolation_expression, self.fenics_object = (
+                    as_fenics_interp_expr_and_function(
+                        value=self.input_value,
+                        function_space=function_space,
+                        mesh=mesh,
+                        t=t,
+                        temperature=temperature,
+                    )
+                )
+
             else:
-                self.as_fenics_function(mesh=mesh, function_space=function_space, t=t)
+                self.fenics_interpolation_expression, self.fenics_object = (
+                    as_fenics_interp_expr_and_function(
+                        value=self.input_value,
+                        function_space=function_space,
+                        mesh=mesh,
+                        t=t,
+                    )
+                )
+
         else:
             raise TypeError(
                 f"Value must be a float, an int or a callable, not {type(self.input_value)}"
@@ -193,13 +282,10 @@ class ConvertToFenicsObject:
         """
         if callable(self.input_value):
             arguments = self.input_value.__code__.co_varnames
+
             if isinstance(self.fenics_object, fem.Constant) and "t" in arguments:
                 self.fenics_object.value = float(self.input_value(t=t))
+
             elif isinstance(self.fenics_object, fem.Function):
                 if self.fenics_interpolation_expression is not None:
                     self.fenics_object.interpolate(self.fenics_interpolation_expression)
-
-        # if isinstance(self.fenics_object, fem.Constant):
-        #     self.fenics_object.value = self.input_value(t=t)
-        # elif isinstance(self.fenics_object, fem.Function):
-        #     self.fenics_object.interpolate(self.fenics_interpolation_expression)

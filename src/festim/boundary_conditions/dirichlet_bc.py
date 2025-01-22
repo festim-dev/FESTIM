@@ -49,38 +49,22 @@ class DirichletBCBase:
         self.subdomain = subdomain
         self.value = value
 
-        self.value_fenics = helpers.ConvertToFenicsObject(value)
-        # self.bc_expr = None
+    @property
+    def value(self):
+        return self._value
 
-    # @property
-    # def value_fenics(self):
-    #     return self._value_fenics
-
-    # @value_fenics.setter
-    # def value_fenics(self, value: None | fem.Function | fem.Constant | np.ndarray):
-    #     if value is None:
-    #         self._value_fenics = value
-    #         return
-    #     if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
-    #         # FIXME: Should we allow sending in a callable here?
-    #         raise TypeError(
-    #             "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"
-    #             + f"{type(value)}"
-    #         )
-    #     self._value_fenics = value
-
-    # @property
-    # def time_dependent(self) -> bool:
-    #     """Returns true if the value of the boundary condition is time dependent"""
-    #     if self.value is None:
-    #         return False
-    #     if isinstance(self.value, fem.Constant):
-    #         return False
-    #     if callable(self.value):
-    #         arguments = self.value.__code__.co_varnames
-    #         return "t" in arguments
-    #     else:
-    #         return False
+    @value.setter
+    def value(self, value):
+        if value is None:
+            self._value = value
+        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+            self._value = helpers.Value(value)
+        elif callable(value):
+            self._value = helpers.Value(value)
+        else:
+            raise TypeError(
+                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )
 
     def define_surface_subdomain_dofs(
         self,
@@ -119,19 +103,6 @@ class DirichletBCBase:
         )
 
         return bc_dofs
-
-    # def update(self, t: float):
-    #     """Updates the boundary condition value
-
-    #     Args:
-    #         t (float): the time
-    #     """
-    #     if callable(self.value):
-    #         arguments = self.value.__code__.co_varnames
-    #         if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
-    #             self.value_fenics.value = self.value(t=t)
-    #         else:
-    #             self.value_fenics.interpolate(self.bc_expr)
 
 
 class FixedConcentrationBC(DirichletBCBase):
@@ -174,122 +145,42 @@ class FixedConcentrationBC(DirichletBCBase):
         self.species = species
         super().__init__(subdomain, value)
 
-    # @property
-    # def temperature_dependent(self):
-    #     if self.value is None:
-    #         return False
-    #     if isinstance(self.value, fem.Constant):
-    #         return False
-    #     if callable(self.value):
-    #         arguments = self.value.__code__.co_varnames
-    #         return "T" in arguments
-    #     else:
-    #         return False
-
-    # def create_value(
-    #     self,
-    #     function_space: fem.FunctionSpace,
-    #     temperature: float | fem.Constant,
-    #     t: float | fem.Constant,
-    # ):
-    #     """Creates the value of the boundary condition as a fenics object and sets it to
-    #     self.value_fenics.
-    #     If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-    #     If the value is a function of t, it is converted to  `dolfinx.fem.Constant`.
-    #     Otherwise, it is converted to a `dolfinx.fem.Function`.Function and the
-    #     expression of the function is stored in `bc_expr`.
-
-    #     Args:
-    #         function_space (dolfinx.fem.FunctionSpace): the function space
-    #         temperature: The temperature
-    #         t (dolfinx.fem.Constant): the time
-    #     """
-    #     mesh = function_space.mesh
-    #     x = ufl.SpatialCoordinate(mesh)
-
-    #     if isinstance(self.value, (int, float)):
-    #         self.value_fenics = helpers.as_fenics_constant(mesh=mesh, value=self.value)
-
-    #     elif callable(self.value):
-    #         arguments = self.value.__code__.co_varnames
-
-    #         if "t" in arguments and "x" not in arguments and "T" not in arguments:
-    #             # only t is an argument
-    #             if not isinstance(self.value(t=float(t)), (float, int)):
-    #                 raise ValueError(
-    #                     "self.value should return a float or an int, not "
-    #                     + f"{type(self.value(t=float(t)))} "
-    #                 )
-    #             self.value_fenics = helpers.as_fenics_constant(
-    #                 mesh=mesh, value=self.value(t=float(t))
-    #             )
-    #         else:
-    #             self.value_fenics = fem.Function(function_space)
-    #             kwargs = {}
-    #             if "t" in arguments:
-    #                 kwargs["t"] = t
-    #             if "x" in arguments:
-    #                 kwargs["x"] = x
-    #             if "T" in arguments:
-    #                 kwargs["T"] = temperature
-
-    #             # store the expression of the boundary condition
-    #             # to update the value_fenics later
-    #             self.bc_expr = fem.Expression(
-    #                 self.value(**kwargs),
-    #                 function_space.element.interpolation_points(),
-    #             )
-    #             self.value_fenics.interpolate(self.bc_expr)
-
 
 # alias for FixedConcentrationBC
 DirichletBC = FixedConcentrationBC
 
 
 class FixedTemperatureBC(DirichletBCBase):
-    def create_value(self, function_space: fem.FunctionSpace, t: fem.Constant):
-        """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-        If the value is a function of t, it is converted to a `dolfinx.fem.Constant`.
-        Otherwise, it is converted to a` dolfinx.fem.Function` and the
-        expression of the function is stored in `bc_expr`.
+    """
+    Args:
+        subdomain (festim.Subdomain): the surface subdomain where the boundary
+            condition is applied
+        value: The value of the boundary condition. It can be a function of space and/or time
 
-        Args:
-            function_space: the function space
-            t: the time
-        """
-        mesh = function_space.mesh
-        x = ufl.SpatialCoordinate(mesh)
+    Examples:
 
-        if isinstance(self.value, (int, float)):
-            self.value_fenics = helpers.as_fenics_constant(mesh=mesh, value=self.value)
+        .. highlight:: python
+        .. code-block:: python
 
-        elif callable(self.value):
-            arguments = self.value.__code__.co_varnames
+            from festim import FixedTemperatureBC
+            FixedTemperatureBC(subdomain=my_subdomain, value=1)
+            FixedTemperatureBC(subdomain=my_subdomain,
+                                 value=lambda x: 1 + x[0])
+            FixedTemperatureBC(subdomain=my_subdomain,
+                                 value=lambda t: 1 + t)
+            FixedTemperatureBC(subdomain=my_subdomain,
+                                 value=lambda x, t: 1 + x[0] + t)
 
-            if "t" in arguments and "x" not in arguments:
-                # only t is an argument
-                if not isinstance(self.value(t=float(t)), (float, int)):
-                    raise ValueError(
-                        "self.value should return a float or an int, not "
-                        + f"{type(self.value(t=float(t)))} "
-                    )
-                self.value_fenics = helpers.as_fenics_constant(
-                    mesh=mesh, value=self.value(t=float(t))
-                )
-            else:
-                self.value_fenics = fem.Function(function_space)
-                kwargs = {}
-                if "t" in arguments:
-                    kwargs["t"] = t
-                if "x" in arguments:
-                    kwargs["x"] = x
+    """
 
-                # store the expression of the boundary condition
-                # to update the value_fenics later
-                self.bc_expr = fem.Expression(
-                    self.value(**kwargs),
-                    function_space.element.interpolation_points(),
-                )
-                self.value_fenics.interpolate(self.bc_expr)
+    def __init__(
+        self,
+        subdomain: _subdomain.SurfaceSubdomain,
+        value: np.ndarray | fem.Constant | int | float | Callable,
+    ):
+        super().__init__(subdomain, value)
+
+        if self.value.temperature_dependent:
+            raise ValueError(
+                "Temperature dependent boundary conditions are not supported for FixedTemperatureBC"
+            )

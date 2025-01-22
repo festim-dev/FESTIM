@@ -1,6 +1,3 @@
-import dolfinx
-import numpy as np
-import ufl
 from dolfinx import fem
 
 import festim as F
@@ -40,7 +37,22 @@ class SourceBase:
         self.value = value
         self.volume = volume
 
-        self.value_fenics = F.ConvertToFenicsObject(value)
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if value is None:
+            self._value = value
+        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+            self._value = F.Value(value)
+        elif callable(value):
+            self._value = F.Value(value)
+        else:
+            raise TypeError(
+                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )
 
     @property
     def volume(self):
@@ -75,3 +87,6 @@ class ParticleSource(SourceBase):
 class HeatSource(SourceBase):
     def __init__(self, value, volume):
         super().__init__(value, volume)
+
+        if self.value.temperature_dependent:
+            raise ValueError("Heat source cannot be temperature dependent")

@@ -1,5 +1,3 @@
-import numpy as np
-import ufl
 from dolfinx import fem
 
 import festim as F
@@ -34,7 +32,22 @@ class FluxBCBase:
         self.subdomain = subdomain
         self.value = value
 
-        self.value_fenics = F.ConvertToFenicsObject(value)
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        if value is None:
+            self._value = value
+        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+            self._value = F.Value(value)
+        elif callable(value):
+            self._value = F.Value(value)
+        else:
+            raise TypeError(
+                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+            )
 
 
 class ParticleFluxBC(FluxBCBase):
@@ -118,3 +131,6 @@ class HeatFluxBC(FluxBCBase):
 
     def __init__(self, subdomain, value):
         super().__init__(subdomain=subdomain, value=value)
+
+        if self.value.temperature_dependent:
+            raise ValueError("Heat flux cannot be temperature dependent")
