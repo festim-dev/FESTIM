@@ -189,9 +189,9 @@ class ProblemBase:
     def update_time_dependent_values(self):
         t = float(self.t)
         for bc in self.boundary_conditions:
-            if bc.time_dependent:
-                bc.update(t=t)
+            if bc.value_fenics.time_dependent:
+                bc.value_fenics.update(t=t)
 
         for source in self.sources:
-            if source.time_dependent:
-                source.update(t=t)
+            if source.value_fenics.time_dependent:
+                source.value_fenics.update(t=t)

@@ -107,7 +107,7 @@ def test_define_temperature(input, expected_type):
     my_model.define_temperature()
 
     # TEST
-    assert isinstance(my_model.temperature_fenics, expected_type)
+    assert isinstance(my_model.temperature_fenics.fenics_object, expected_type)
 
 
 @pytest.mark.parametrize(
@@ -129,7 +129,7 @@ def test_define_temperature_error_if_ufl_conditional_t_only(input):
 
     with pytest.raises(
         ValueError,
-        match="self.temperature should return a float or an int, not ",
+        match="self.value should return a float or an int, not",
     ):
         my_model.define_temperature()
 
@@ -258,6 +258,7 @@ def test_define_D_global_different_temperatures():
 
     my_model.define_function_spaces()
     my_model.define_meshtags_and_measures()
+    my_model.t = 1
     my_model.define_temperature()
 
     D_computed, D_expr = my_model.define_D_global(H)
@@ -293,6 +294,7 @@ def test_define_D_global_different_materials():
 
     my_model.define_function_spaces()
     my_model.define_meshtags_and_measures()
+    my_model.t = 0
     my_model.define_temperature()
 
     D_computed, D_expr = my_model.define_D_global(H)
@@ -340,6 +342,7 @@ def test_initialise_exports_multiple_exports_same_species():
 
     my_model.define_function_spaces()
     my_model.define_meshtags_and_measures()
+    my_model.t = 0
     my_model.define_temperature()
     my_model.initialise_exports()
 
@@ -402,6 +405,7 @@ def test_define_D_global_multispecies():
 
     my_model.define_function_spaces()
     my_model.define_meshtags_and_measures()
+    my_model.t = 0
     my_model.define_temperature()
 
     D_A_computed, D_A_expr = my_model.define_D_global(A)
@@ -677,8 +681,8 @@ def test_update_time_dependent_values_source(source_value, expected_values):
         my_model.update_time_dependent_values()
 
         # TEST
-        if isinstance(my_model.sources[0].value_fenics, fem.Constant):
-            computed_value = float(my_model.sources[0].value_fenics)
+        if isinstance(my_model.sources[0].value_fenics.fenics_object, fem.Constant):
+            computed_value = float(my_model.sources[0].value_fenics.fenics_object)
             assert np.isclose(computed_value, expected_values[i])
 
 
@@ -731,8 +735,8 @@ def test_update_sources_with_time_dependent_temperature(
         my_model.update_time_dependent_values()
 
         # TEST
-        if isinstance(my_model.sources[0].value_fenics, fem.Constant):
-            computed_value = float(my_model.sources[0].value_fenics)
+        if isinstance(my_model.sources[0].value_fenics.fenics_object, fem.Constant):
+            computed_value = float(my_model.sources[0].value_fenics.fenics_object)
             assert np.isclose(computed_value, expected_values[i])
 
 
@@ -763,8 +767,8 @@ def test_create_source_values_fenics_multispecies():
     my_model.create_source_values_fenics()
 
     # TEST
-    assert np.isclose(my_model.sources[0].value_fenics.value, 5)
-    assert np.isclose(my_model.sources[1].value_fenics.value, 11)
+    assert np.isclose(float(my_model.sources[0].value_fenics.fenics_object), 5)
+    assert np.isclose(float(my_model.sources[1].value_fenics.fenics_object), 11)
 
 
 # TODO replace this by a proper MMS test
@@ -1229,5 +1233,9 @@ def test_create_flux_values_fenics_multispecies():
     my_model.create_flux_values_fenics()
 
     # TEST
-    assert np.isclose(my_model.boundary_conditions[0].value_fenics.value, 5)
-    assert np.isclose(my_model.boundary_conditions[1].value_fenics.value, 11)
+    assert np.isclose(
+        float(my_model.boundary_conditions[0].value_fenics.fenics_object), 5
+    )
+    assert np.isclose(
+        float(my_model.boundary_conditions[1].value_fenics.fenics_object), 11
+    )
