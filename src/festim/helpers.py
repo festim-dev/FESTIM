@@ -5,31 +5,6 @@ from collections.abc import Callable
 import ufl
 
 
-# def as_fenics_constant(
-#     value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
-# ) -> fem.Constant:
-#     """Converts a value to a dolfinx.Constant
-
-#     Args:
-#         value: the value to convert
-#         mesh: the mesh of the domiain
-
-#     Returns:
-#         The converted value
-
-#     Raises:
-#         TypeError: if the value is not a float, an int or a dolfinx.Constant
-#     """
-#     if isinstance(value, (float, int)):
-#         return fem.Constant(mesh, dolfinx.default_scalar_type(value))
-#     elif isinstance(value, fem.Constant):
-#         return value
-#     else:
-#         raise TypeError(
-#             f"Value must be a float, an int or a dolfinx.Constant, not {type(value)}"
-#         )
-
-
 def as_fenics_constant(
     value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
 ) -> fem.Constant:
@@ -211,7 +186,12 @@ class Value:
             return False
 
     def convert_input_value(
-        self, mesh=None, function_space=None, t=None, temperature=None
+        self,
+        mesh=None,
+        function_space=None,
+        t=None,
+        temperature=None,
+        up_to_mapping=False,
     ):
         """Converts a user given value to a relevent fenics object depending
         on the type of the value provided
@@ -221,6 +201,8 @@ class Value:
             function_space (dolfinx.fem.function.FunctionSpace): the function space of the fenics object
             t (fem.Constant): the time
             temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the temperature
+            up_to_mapping (bool): if True, the value is only mapped to a function if the input is callable,
+                not interpolated or converted to a function
         """
         if isinstance(self.input_value, fem.Constant):
             self.fenics_object = self.input_value
@@ -246,6 +228,11 @@ class Value:
 
                 self.fenics_object = as_fenics_constant(
                     value=self.input_value(t=float(t)), mesh=mesh
+                )
+
+            elif up_to_mapping:
+                self.fenics_object = as_mapped_function(
+                    value=self.input_value, mesh=mesh, t=t, temperature=temperature
                 )
 
             elif self.temperature_dependent:

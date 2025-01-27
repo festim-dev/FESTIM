@@ -493,23 +493,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # if name of species is given then replace with species object
                 bc.species = _species.find_species_from_name(bc.species, self.species)
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                if isinstance(
-                    bc.value.input_value,
-                    (int, float, fem.Constant, fem.Function, ufl.core.expr.Expr),
-                ):
-                    bc.value.convert_input_value(
-                        mesh=self.mesh.mesh,
-                        t=self.t,
-                        temperature=self.temperature.fenics_object,
-                    )
 
-                else:
-                    bc.value.fenics_object = festim.as_mapped_function(
-                        value=bc.value.input_value,
-                        mesh=self.mesh.mesh,
-                        temperature=self.temperature.fenics_object,
-                        t=self.t,
-                    )
+                bc.value.convert_input_value(
+                    mesh=self.mesh.mesh,
+                    t=self.t,
+                    temperature=self.temperature.fenics_object,
+                    up_to_mapping=True,
+                )
 
         super().define_boundary_conditions()
 
@@ -571,34 +561,23 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
-            if isinstance(source, festim.source.ParticleSource):
-                if isinstance(
-                    source.value.input_value,
-                    (int, float, fem.Constant, fem.Function, ufl.core.expr.Expr),
-                ):
-                    source.value.convert_input_value(
-                        mesh=self.mesh.mesh,
-                        t=self.t,
-                        temperature=self.temperature.fenics_object,
-                    )
-                elif callable(source.value.input_value):
-                    source.value.fenics_object = festim.as_mapped_function(
-                        value=source.value.input_value,
-                        mesh=self.mesh.mesh,
-                        t=self.t,
-                        temperature=self.temperature.fenics_object,
-                    )
+            source.value.convert_input_value(
+                mesh=self.mesh.mesh,
+                t=self.t,
+                temperature=self.temperature.fenics_object,
+                up_to_mapping=True,
+            )
 
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
         for bc in self.boundary_conditions:
             # create value_fenics for all F.ParticleFluxBC objects
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-
                 bc.value.convert_input_value(
                     mesh=self.mesh.mesh,
                     temperature=self.temperature.fenics_object,
                     t=self.t,
+                    up_to_mapping=True,
                 )
 
     def create_initial_conditions(self):
