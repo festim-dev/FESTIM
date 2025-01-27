@@ -131,6 +131,9 @@ class Value:
         self.fenics_interpolation_expression = None
         self.fenics_object = None
 
+    def __repr__(self) -> str:
+        return str(self.input_value)
+
     @property
     def input_value(self):
         return self._input_value
