@@ -121,7 +121,7 @@ class ProblemBase:
         )
         self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
         self.solver.atol = self.settings.atol
-        self.solver.rtol = self.settings.rtol if not callable(self.settings.rtol) else 1e-10
+        self.solver.rtol = self.settings.rtol if not callable(self.settings.rtol) else self.settings.rtol
         self.solver.max_it = self.settings.max_iterations
 
         ksp = self.solver.krylov_solver
