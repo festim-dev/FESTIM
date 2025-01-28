@@ -30,9 +30,7 @@ def as_fenics_constant(
         )
 
 
-def as_mapped_function(
-    value, mesh=None, t=None, temperature=None
-) -> ufl.core.expr.Expr:
+def as_ufl_expression(value, mesh=None, t=None, temperature=None) -> ufl.core.expr.Expr:
     """Maps a user given function
 
     Args:
@@ -64,7 +62,7 @@ def as_fenics_interpolation_expression(
 ) -> fem.Expression:
     """Converts a callable input value to a fenics expression"""
 
-    mapped_function = as_mapped_function(
+    mapped_function = as_ufl_expression(
         value=value, mesh=mesh, t=t, temperature=temperature
     )
 
@@ -119,7 +117,7 @@ class Value:
         | fem.Function
     )
 
-    mapped_function: ufl.core.expr.Expr
+    ufl_expression: ufl.core.expr.Expr
     fenics_interpolation_expression: fem.Expression
     fenics_object: fem.Function | fem.Constant | ufl.core.expr.Expr
 
@@ -127,7 +125,7 @@ class Value:
         self,
         self.input_value = input_value
 
-        self.mapped_function = None
+        self.ufl_expression = None
         self.fenics_interpolation_expression = None
         self.fenics_object = None
 
@@ -194,7 +192,7 @@ class Value:
         function_space=None,
         t=None,
         temperature=None,
-        up_to_mapping=False,
+        up_to_ufl_expr=False,
     ):
         """Converts a user given value to a relevent fenics object depending
         on the type of the value provided
@@ -204,7 +202,7 @@ class Value:
             function_space (dolfinx.fem.function.FunctionSpace): the function space of the fenics object
             t (fem.Constant): the time
             temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the temperature
-            up_to_mapping (bool): if True, the value is only mapped to a function if the input is callable,
+            up_to_ufl_expr (bool): if True, the value is only mapped to a function if the input is callable,
                 not interpolated or converted to a function
         """
         if isinstance(self.input_value, fem.Constant):
@@ -233,8 +231,8 @@ class Value:
                     value=self.input_value(t=float(t)), mesh=mesh
                 )
 
-            elif up_to_mapping:
-                self.fenics_object = as_mapped_function(
+            elif up_to_ufl_expr:
+                self.fenics_object = as_ufl_expression(
                     value=self.input_value, mesh=mesh, t=t, temperature=temperature
                 )
 

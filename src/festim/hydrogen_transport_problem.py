@@ -498,7 +498,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     mesh=self.mesh.mesh,
                     t=self.t,
                     temperature=self.temperature.fenics_object,
-                    up_to_mapping=True,
+                    up_to_ufl_expr=True,
                 )
 
         super().define_boundary_conditions()
@@ -565,7 +565,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 mesh=self.mesh.mesh,
                 t=self.t,
                 temperature=self.temperature.fenics_object,
-                up_to_mapping=True,
+                up_to_ufl_expr=True,
             )
 
     def create_flux_values_fenics(self):
@@ -577,7 +577,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     mesh=self.mesh.mesh,
                     temperature=self.temperature.fenics_object,
                     t=self.t,
-                    up_to_mapping=True,
+                    up_to_ufl_expr=True,
                 )
 
     def create_initial_conditions(self):

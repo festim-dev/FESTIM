@@ -137,20 +137,11 @@ class HeatTransferProblem(problem.ProblemBase):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all source objects
-            if isinstance(
-                source.value.input_value,
-                (int, float, fem.Constant, fem.Function, ufl.core.expr.Expr),
-            ):
-                source.value.convert_input_value(
-                    mesh=self.mesh.mesh,
-                    t=self.t,
-                )
-            elif callable(source.value.input_value):
-                source.value.fenics_object = helpers.as_mapped_function(
-                    value=source.value.input_value,
-                    mesh=self.mesh.mesh,
-                    t=self.t,
-                )
+            source.value.convert_input_value(
+                mesh=self.mesh.mesh,
+                t=self.t,
+                up_to_ufl_expr=True,
+            )
 
     def create_flux_values_fenics(self):
         """For each heat flux create the value_fenics"""
@@ -176,12 +167,6 @@ class HeatTransferProblem(problem.ProblemBase):
                 "Initial conditions can only be defined for transient simulations"
             )
 
-        # create value_fenics for condition
-
-        # self.initial_condition.value.create_expr_fenics(
-        #     mesh=self.mesh.mesh,
-        #     function_space=self.function_space,
-        # )
         if isinstance(self.initial_condition.value.input_value, (int, float)):
             self.initial_condition.value.fenics_interpolation_expression = (
                 lambda x: np.full(x.shape[1], self.initial_condition.value.input_value)
