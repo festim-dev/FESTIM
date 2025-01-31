@@ -38,8 +38,7 @@ from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (
     as_fenics_constant,
-    as_ufl_expression,
-    as_fenics_interpolation_expression,
+    as_mapped_function,
     as_fenics_interp_expr_and_function,
     Value,
 )

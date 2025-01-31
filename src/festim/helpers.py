@@ -15,7 +15,7 @@ def as_fenics_constant(
         mesh: the mesh of the domiain
 
     Returns:
-        (fem.Constant) The converted value
+        The converted value
 
     Raises:
         TypeError: if the value is not a float, an int or a dolfinx.Constant
@@ -30,17 +30,22 @@ def as_fenics_constant(
         )
 
 
-def as_ufl_expression(value, mesh=None, t=None, temperature=None) -> ufl.core.expr.Expr:
-    """Maps a user given function
+def as_mapped_function(
+    value: Callable,
+    mesh: dolfinx.mesh.Mesh = None,
+    t: fem.Constant = None,
+    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
+) -> ufl.core.expr.Expr:
+    """Maps a user given callable function to the mesh, time or temperature within festim as needed
 
     Args:
-        value (Callable): the callable to convert
-        mesh (dolfinx.mesh.Mesh): the mesh of the domain
-        t (fem.Constant): the time
-        temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the temperature
+        value: the callable to convert
+        mesh: the mesh of the domain
+        t: the time
+        temperature: the temperature
 
     Returns:
-        (ufl.core.expr.Expr) The mapped function
+        The mapped function
     """
 
     arguments = value.__code__.co_varnames
@@ -57,32 +62,37 @@ def as_ufl_expression(value, mesh=None, t=None, temperature=None) -> ufl.core.ex
     return value(**kwargs)
 
 
-def as_fenics_interpolation_expression(
-    value, function_space, mesh=None, t=None, temperature=None
-) -> fem.Expression:
-    """Converts a callable input value to a fenics expression"""
+def as_fenics_interp_expr_and_function(
+    value: Callable,
+    function_space: dolfinx.fem.function.FunctionSpace,
+    mesh: dolfinx.mesh.Mesh = None,
+    t: fem.Constant = None,
+    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
+) -> tuple[fem.Expression, fem.Function]:
+    """Takes a user given callable function, maps the function to the mesh, time or
+    temperature within festim as needed. Then creates the fenics interpolation expression
+    and function objects
 
-    mapped_function = as_ufl_expression(
+    Args:
+        value: the callable to convert
+        function_space: The function space to interpolate function over
+        mesh: the mesh of the domain
+        t: the time
+        temperature: the temperature
+
+    Returns:
+        fenics interpolation expression, fenics function
+    """
+
+    mapped_function = as_mapped_function(
         value=value, mesh=mesh, t=t, temperature=temperature
     )
 
-    return fem.Expression(
+    fenics_interpolation_expression = fem.Expression(
         mapped_function,
         function_space.element.interpolation_points(),
     )
 
-
-def as_fenics_interp_expr_and_function(
-    value, function_space, mesh=None, t=None, temperature=None
-) -> fem.Function:
-
-    fenics_interpolation_expression = as_fenics_interpolation_expression(
-        value=value,
-        function_space=function_space,
-        mesh=mesh,
-        t=t,
-        temperature=temperature,
-    )
     fenics_object = fem.Function(function_space)
     fenics_object.interpolate(fenics_interpolation_expression)
 
@@ -188,11 +198,11 @@ class Value:
 
     def convert_input_value(
         self,
-        mesh=None,
-        function_space=None,
-        t=None,
-        temperature=None,
-        up_to_ufl_expr=False,
+        function_space: dolfinx.fem.function.FunctionSpace = None,
+        mesh: dolfinx.mesh.Mesh = None,
+        t: fem.Constant = None,
+        temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
+        up_to_ufl_expr: bool = False,
     ):
         """Converts a user given value to a relevent fenics object depending
         on the type of the value provided
@@ -232,19 +242,8 @@ class Value:
                 )
 
             elif up_to_ufl_expr:
-                self.fenics_object = as_ufl_expression(
+                self.fenics_object = as_mapped_function(
                     value=self.input_value, mesh=mesh, t=t, temperature=temperature
-                )
-
-            elif self.temperature_dependent:
-                self.fenics_interpolation_expression, self.fenics_object = (
-                    as_fenics_interp_expr_and_function(
-                        value=self.input_value,
-                        function_space=function_space,
-                        mesh=mesh,
-                        t=t,
-                        temperature=temperature,
-                    )
                 )
 
             else:
@@ -254,6 +253,7 @@ class Value:
                         function_space=function_space,
                         mesh=mesh,
                         t=t,
+                        temperature=temperature,
                     )
                 )
 

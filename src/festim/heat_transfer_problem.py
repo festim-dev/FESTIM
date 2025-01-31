@@ -172,8 +172,8 @@ class HeatTransferProblem(problem.ProblemBase):
                 lambda x: np.full(x.shape[1], self.initial_condition.value.input_value)
             )
         else:
-            self.initial_condition.value.fenics_interpolation_expression = (
-                helpers.as_fenics_interpolation_expression(
+            self.initial_condition.value.fenics_interpolation_expression, _ = (
+                helpers.as_fenics_interp_expr_and_function(
                     value=self.initial_condition.value.input_value,
                     function_space=self.function_space,
                     mesh=self.mesh.mesh,

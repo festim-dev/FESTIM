@@ -611,8 +611,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     x.shape[1], condition.value.input_value
                 )
             else:
-                condition.value.fenics_interpolation_expression = (
-                    festim.as_fenics_interpolation_expression(
+                condition.value.fenics_interpolation_expression, _ = (
+                    festim.as_fenics_interp_expr_and_function(
                         value=condition.value.input_value,
                         function_space=function_space_value,
                         mesh=self.mesh.mesh,
