@@ -1226,23 +1226,25 @@ def test_MMS_surface_kinetics():
     """
     MMS test for SurfaceKinetics BC
     """
-    exact_solution_cm = lambda x, t: 1 + 2 * x**2 + x + 2 * t
-    exact_solution_cs = (
-        lambda t: n_surf * (1 + 2 * t + 2 * lambda_IS - D) / (2 * n_IS - 1 - 2 * t)
-    )
 
     n_IS = 20
     n_surf = 5
     D = 7
     lambda_IS = 2
-    k_bs = n_IS / n_surf
+    k_bs = 3
     k_sb = 2 * n_IS / n_surf
 
+    exact_solution_cm = lambda x, t: 1 + 2 * x**2 + x + 2 * t
+    exact_solution_cs = (
+        lambda t: n_surf
+        * (3 * (1 + 2 * t) + 2 * lambda_IS - D)
+        / (2 * n_IS + 1 + 2 * t)
+    )
     solute_source = 2 * (1 - 2 * D)
 
-    def J_vs(T, surf_conc, t):
+    def J_vs(T, surf_conc, solute, t):
         return (
-            2 * n_surf * (2 * n_IS + 2 * lambda_IS - D) / (2 * n_IS - 1 - 2 * t) ** 2
+            2 * n_surf * (6 * n_IS - 2 * lambda_IS + D) / (2 * n_IS + 1 + 2 * t) ** 2
             + 2 * lambda_IS
             - D
         )

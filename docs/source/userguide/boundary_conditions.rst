@@ -116,13 +116,13 @@ The current class is supported for 1D simulations only. Refer to the :ref:`Kinet
     from festim import t
     import fenics as f
 
-    def k_bs(T, surf_conc, t):
+    def k_bs(T, surf_conc, mobile_conc, t):
         return 1e13*f.exp(-0.2/k_b/T)
 
-    def k_sb(T, surf_conc, t):
+    def k_sb(T, surf_conc, mobile_conc, t):
         return 1e13*f.exp(-1.0/k_b/T)
 
-    def J_vs(T, surf_conc, t):
+    def J_vs(T, surf_conc, mobile_conc, t):
 
         J_des = 2e5*surf_conc**2*f.exp(-1.2/k_b/T)
         J_ads = 1e17*(1-surf_conc/1e17)**2*f.conditional(t<10, 1, 0)

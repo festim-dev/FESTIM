@@ -22,16 +22,13 @@ class SurfaceKinetics(FluxBC):
 
     .. math::
 
-         J_{\mathrm{bs}} = k_{\mathrm{bs}} c_{\mathrm{m}} \lambda_{\mathrm{abs}} \left(1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}}\right),
+         J_{\mathrm{bs}} = k_{\mathrm{bs}} c_{\mathrm{m}} \left(1 - \dfrac{c_\mathrm{s}}{n_{\mathrm{surf}}}\right),
 
     the H flux from surface to subsurface :math:`J_{\mathrm{sb}}` (in :math:`\mathrm{m}^{-2} \ \mathrm{s}^{-1}`) is:
 
     .. math::
 
          J_{\mathrm{sb}} = k_{\mathrm{sb}} c_{\mathrm{s}} \left(1 - \dfrac{c_{\mathrm{m}}}{n_\mathrm{IS}}\right),
-
-    :math:`\lambda_{\mathrm{abs}}=n_{\mathrm{surf}}/n_{\mathrm{IS}}` is the characteristic distance between surface and
-    subsurface sites (:math:`\mathrm{m}`).
 
     For more details see:
         E.A. Hodille et al 2017 Nucl. Fusion 57 056002; Y. Hamamoto et al 2020 Nucl. Mater. Energy 23 100751
@@ -43,7 +40,7 @@ class SurfaceKinetics(FluxBC):
     Args:
         k_sb (float or callable): rate constant for the surface-to-subsurface transition (:math:`\mathrm{s}^{-1}`),
             can accept additional parameters (see example)
-        k_bs (float or callable): rate constant for the subsurface-to-surface transition (:math:`\mathrm{s}^{-1}`),
+        k_bs (float or callable): rate constant for the subsurface-to-surface transition (:math:`\mathrm{m} \ \mathrm{s}^{-1}`),
             can accept additional parameters (see example)
         lambda_IS (float): characteristic distance between two iterstitial sites (:math:`\mathrm{m}`)
         n_surf (float): surface concentration of adsorption sites (:math:`\mathrm{m}^{-2}`)
@@ -63,13 +60,13 @@ class SurfaceKinetics(FluxBC):
 
     Example::
 
-        def K_sb(T, surf_conc, prm1, prm2):
-            return 1e13 * f.exp(-2.0/F.k_B/T)
+        def K_sb(T, surf_conc, mobile_conc, prm1, prm2):
+            return 1e13 * f.exp(-2.0/F.k_B/T) + mobile_conc
 
-        def K_bs(T, surf_conc, prm1, prm2):
+        def K_bs(T, surf_conc, mobile_conc, prm1, prm2):
             return 1e13 * f.exp(-0.2/F.k_B/T)
 
-        def J_vs(T, surf_conc, prm1, prm2):
+        def J_vs(T, surf_conc, mobile_conc, prm1, prm2):
             return (1-surf_conc/5) ** 2 * fenics.exp(-2/F.k_B/T) + prm1 * prm2
 
         my_surf_model = SurfaceKinetics(
@@ -133,25 +130,22 @@ class SurfaceKinetics(FluxBC):
         lambda_IS = self.lambda_IS
         n_surf = self.n_surf
         n_IS = self.n_IS
-        lambda_abs = (
-            n_surf / n_IS
-        )  # characteristic distance between surface and subsurface sites
         self.form = 0
 
         for i, surf in enumerate(self.surfaces):
 
             J_vs = self.J_vs
             if callable(J_vs):
-                J_vs = J_vs(T.T, self.solutions[i], **self.prms)
+                J_vs = J_vs(T.T, self.solutions[i], solute, **self.prms)
             k_sb = self.k_sb
             if callable(k_sb):
-                k_sb = k_sb(T.T, self.solutions[i], **self.prms)
+                k_sb = k_sb(T.T, self.solutions[i], solute, **self.prms)
             k_bs = self.k_bs
             if callable(k_bs):
-                k_bs = k_bs(T.T, self.solutions[i], **self.prms)
+                k_bs = k_bs(T.T, self.solutions[i], solute, **self.prms)
 
             J_sb = k_sb * self.solutions[i] * (1 - solute / n_IS)
-            J_bs = k_bs * (solute * lambda_abs) * (1 - self.solutions[i] / n_surf)
+            J_bs = k_bs * solute * (1 - self.solutions[i] / n_surf)
 
             if dt is not None:
                 # Surface concentration form
