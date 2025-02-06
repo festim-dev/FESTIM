@@ -620,14 +620,14 @@ def test_create_form_surf_kinetics():
     """
 
     # build
-    def k_sb(cs, T, prm1, prm2):
-        return 2 * T + cs**2 + prm1 - prm2
+    def k_sb(T, cs, cm, prm1, prm2):
+        return 2 * T + cs**2 / cm + prm1 - prm2
 
-    def k_bs(cs, T, prm1, prm2):
-        return 2 * T + 3 * cs + prm1 + prm2
+    def k_bs(T, cs, cm, prm1, prm2):
+        return 2 * T + 3 * cs + cm + prm1 + prm2
 
-    def J_vs(cs, T, prm1, prm2):
-        return 2 * T + 1
+    def J_vs(T, cs, cm, prm1, prm2):
+        return 2 * T + 5 * cm - 3 * cs
 
     lambda_IS = 1
     n_surf = 1
@@ -678,11 +678,11 @@ def test_create_form_surf_kinetics():
     # test
     p1 = my_bc.sub_expressions[0]
     p2 = my_bc.sub_expressions[1]
-    K_sb = k_sb(T.T, adsorbed, p1, p2)
-    K_bs = k_bs(T.T, adsorbed, p1, p2)
-    j_vs = J_vs(T.T, adsorbed, p1, p2)
+    K_sb = k_sb(T.T, adsorbed, solute, p1, p2)
+    K_bs = k_bs(T.T, adsorbed, solute, p1, p2)
+    j_vs = J_vs(T.T, adsorbed, solute, p1, p2)
     J_sb = K_sb * adsorbed * (1 - solute / n_IS)
-    J_bs = K_bs * (solute * n_surf / n_IS) * (1 - adsorbed / n_surf)
+    J_bs = K_bs * solute * (1 - adsorbed / n_surf)
 
     expected_form = (
         (adsorbed - adsorbed_prev) / dt.value * adsorbed_test_function * ds(1)
