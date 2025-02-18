@@ -115,7 +115,7 @@ class DirichletBCBase:
             )
         if mesh.topology.dim - 1 != facet_meshtags.dim:
             raise ValueError(
-                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim-1}"
+                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim - 1}"
             )
         bc_dofs = fem.locate_dofs_topological(
             function_space, facet_meshtags.dim, facet_meshtags.find(self.subdomain.id)
