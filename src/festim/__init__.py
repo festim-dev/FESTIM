@@ -40,7 +40,6 @@ from .helpers import as_fenics_constant
 from .hydrogen_transport_problem import (
     HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblem,
-    HydrogenTransportProblemPenalty,
     HydrogenTransportProblemDiscontinuousChangeVar,
 )
 from .initial_condition import InitialCondition, InitialTemperature
