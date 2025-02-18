@@ -49,11 +49,11 @@ class Species:
             function spaces
 
     Usage:
-        >>> from festim import Species, HTransportProblem
+        >>> from festim import Species, HydrogenTransportProblem
         >>> species = Species(name="H")
         >>> species.name
         'H'
-        >>> my_model = HTransportProblem()
+        >>> my_model = HydrogenTransportProblem()
         >>> my_model.species.append(species)
 
     """

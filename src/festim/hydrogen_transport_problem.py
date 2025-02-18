@@ -31,7 +31,7 @@ from festim import (
 from festim.helpers import as_fenics_constant
 from festim.mesh import Mesh
 
-__all__ = ["HydrogenTransportProblem", "HTransportProblemDiscontinuous"]
+__all__ = ["HydrogenTransportProblem", "HydrogenTransportProblemDiscontinuous"]
 
 
 class HydrogenTransportProblem(problem.ProblemBase):
@@ -838,7 +838,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             vtxfile.write(float(self.t))
 
 
-class HTransportProblemDiscontinuous(HydrogenTransportProblem):
+class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     petsc_options: dict
     surface_to_volume: dict
@@ -1350,7 +1350,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             vtxfile.close()
 
 
-class HTransportProblemPenalty(HTransportProblemDiscontinuous):
+class HydrogenTransportProblemPenalty(HydrogenTransportProblemDiscontinuous):
     def create_formulation(self):
         """
         Takes all the formulations for each subdomain and adds the interface conditions.
