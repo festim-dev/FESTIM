@@ -41,8 +41,8 @@ from .hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,
     HydrogenTransportProblem,
     HTransportProblemPenalty,
+    HydrogenTransportProblemDiscontinuousChangeVar,
 )
-from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 from .initial_condition import InitialCondition, InitialTemperature
 from .material import Material
 from .mesh.mesh import Mesh
