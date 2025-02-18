@@ -1086,7 +1086,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     petsc_options: dict
     surface_to_volume: dict
-    method_interface: str = "nietsche"
+    method_interface: str = "penalty"
 
     def __init__(
         self,
