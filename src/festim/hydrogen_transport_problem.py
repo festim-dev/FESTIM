@@ -861,6 +861,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
         self.create_implicit_species_value_fenics()
 
+        for species in self.species:
+            species.change_var = True
+
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
@@ -868,7 +871,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         self.create_initial_conditions()
         self.create_formulation()
         self.create_solver()
-        self.override_post_processing_solution()  # NOTE this is the only difference with parent class
+        self.override_post_processing_solution()
         self.initialise_exports()
 
     def create_formulation(self):
