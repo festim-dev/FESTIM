@@ -38,9 +38,9 @@ from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import as_fenics_constant
 from .hydrogen_transport_problem import (
-    HTransportProblemDiscontinuous,
+    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblem,
-    HTransportProblemPenalty,
+    HydrogenTransportProblemPenalty,
     HydrogenTransportProblemDiscontinuousChangeVar,
 )
 from .initial_condition import InitialCondition, InitialTemperature
