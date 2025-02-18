@@ -1,6 +1,11 @@
 from festim.subdomain.volume_subdomain import (
     VolumeSubdomain as _VolumeSubdomain,
 )
+from festim.helpers import as_fenics_constant
+
+from typing import List, Union
+import ufl
+from dolfinx import fem
 
 
 class Species:
@@ -105,7 +110,7 @@ class ImplicitSpecies:
     c = n - others
 
     Args:
-        n (float): the total concentration of the species
+        n (Union[float, callable]): the total concentration of the species
         others (list[Species]): the list of species from which the implicit
             species concentration is computed (c = n - others)
         name (str, optional): a name given to the species. Defaults to None.
@@ -116,13 +121,13 @@ class ImplicitSpecies:
         others (list[Species]): the list of species from which the implicit
             species concentration is computed (c = n - others)
         concentration (form): the concentration of the species
-
+        value_fenics: the total concentration as a fenics object
     """
 
     def __init__(
         self,
-        n: float,
-        others: list[Species] = None,
+        n: Union[float, callable],
+        others: List[Species] = None,
         name: str = None,
     ) -> None:
         self.name = name
@@ -144,7 +149,61 @@ class ImplicitSpecies:
                         f"Cannot compute concentration of {self.name} "
                         + f"because {other.name} has no solution."
                     )
-        return self.n - sum([other.solution for other in self.others])
+        return self.value_fenics - sum([other.solution for other in self.others])
+
+    def create_value_fenics(self, mesh, t: fem.Constant):
+        """Creates the value of the density as a fenics object and sets it to
+        self.value_fenics.
+        If the value is a constant, it is converted to a fenics.Constant.
+        If the value is a function of t, it is converted to a fenics.Constant.
+        Otherwise, it is converted to a ufl Expression
+
+        Args:
+            mesh (dolfinx.mesh.Mesh) : the mesh
+            t (dolfinx.fem.Constant): the time
+        """
+        x = ufl.SpatialCoordinate(mesh)
+
+        if isinstance(self.n, (int, float)):
+            self.value_fenics = as_fenics_constant(mesh=mesh, value=self.n)
+
+        elif isinstance(self.n, (fem.Function, ufl.core.expr.Expr)):
+            self.value_fenics = self.n
+
+        elif callable(self.n):
+            arguments = self.n.__code__.co_varnames
+
+            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+                # only t is an argument
+                if not isinstance(self.n(t=float(t)), (float, int)):
+                    raise ValueError(
+                        f"self.value should return a float or an int, not {type(self.n(t=float(t)))} "
+                    )
+                self.value_fenics = as_fenics_constant(
+                    mesh=mesh, value=self.n(t=float(t))
+                )
+            else:
+                kwargs = {}
+                if "t" in arguments:
+                    kwargs["t"] = t
+                if "x" in arguments:
+                    kwargs["x"] = x
+
+                self.value_fenics = self.n(**kwargs)
+
+    def update_density(self, t):
+        """Updates the density value (only if the density is a function of time only)
+
+        Args:
+            t (float): the time
+        """
+        if isinstance(self.n, (fem.Function, ufl.core.expr.Expr)):
+            return
+
+        if callable(self.n):
+            arguments = self.n.__code__.co_varnames
+            if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
+                self.value_fenics.value = self.n(t=t)
 
 
 def find_species_from_name(name: str, species: list):

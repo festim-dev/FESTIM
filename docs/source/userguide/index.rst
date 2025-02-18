@@ -13,8 +13,7 @@ User's Guide
    sources
    temperature
    mesh
-   traps
    settings
    export_post_processing
-   simulations
    troubleshooting
+   running_in_parallel

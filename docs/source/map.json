@@ -1,0 +1,355 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -84.3101,
+                    35.9312
+                ]
+            },
+            "properties": {
+                "name": "Oak Ridge National Laboratory",
+                "path": "images/user_logos/Oak_Ridge_National_Laboratory.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    5.7843,
+                    43.7254
+                ]
+            },
+            "properties": {
+                "name": "IRFM cadarache France",
+                "path": "images/user_logos/IRFM_cadarache_France.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    2.3458,
+                    48.9583
+                ]
+            },
+            "properties": {
+                "name": "LSPM Villetaneuse France",
+                "path": "images/user_logos/LSPM_Villetaneuse_France.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -71.0921,
+                    42.3601
+                ]
+            },
+            "properties": {
+                "name": "MIT Cambridge, MA USA",
+                "path": "images/user_logos/MIT_Cambridge_MA_USA.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -74.6596903,
+                    40.35006468849364
+                ]
+            },
+            "properties": {
+                "name": "Thea Energy USA",
+                "path": "images/user_logos/Thea_Energy_USA.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -71.6152,
+                    42.5406
+                ]
+            },
+            "properties": {
+                "name": "Commonwealth Fusion Systems Devens, MA USA",
+                "path": "images/user_logos/Commonwealth_Fusion_Systems Devens_MA_USA.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -89.4012,
+                    43.0761
+                ]
+            },
+            "properties": {
+                "name": "University Wisconsin Madison USA",
+                "path": "images/user_logos/University_Wisconsin_Madison_USA.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -122.41135340346865,
+                    37.77479335835942
+                ]
+            },
+            "properties": {
+                "name": "Marathon Fusion USA",
+                "path": "images/user_logos/Marathon_Fusion_USA.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -117.1611,
+                    32.7157
+                ]
+            },
+            "properties": {
+                "name": "University San Diego",
+                "path": "images/user_logos/University_San_Diego.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    37.6649462235042,
+                    55.66362336404334
+                ]
+            },
+            "properties": {
+                "name": "MEPhI moscow Russia",
+                "path": "images/user_logos/MEPhI_moscow_Russia.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    5.0266,
+                    43.5455
+                ]
+            },
+            "properties": {
+                "name": "ITER organization France",
+                "path": "images/user_logos/ITER_organization_France.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -1.229138717146069,
+                    51.65868576158049
+                ]
+            },
+            "properties": {
+                "name": "UKAEA UK",
+                "path": "images/user_logos/UKAEA_UK.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -3.530686738097156,
+                    50.719235968686455
+                ]
+            },
+            "properties": {
+                "name": "digiLab UK",
+                "path": "images/user_logos/digiLab_UK.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.4269,
+                    52.0720
+                ]
+            },
+            "properties": {
+                "name": "Cranfield University UK",
+                "path": "images/user_logos/Cranfield_University_UK.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    7.6818,
+                    45.0703
+                ]
+            },
+            "properties": {
+                "name": "Politecnico di Torino",
+                "path": "images/user_logos/Politecnico_di_Torino.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    116.3056,
+                    39.9923
+                ]
+            },
+            "properties": {
+                "name": "Beihang University",
+                "path": "images/user_logos/Beihang_University.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    117.2703,
+                    31.8669
+                ]
+            },
+            "properties": {
+                "name": "Institute of Plasma Physics, Chinese Academy of Sciences",
+                "path": "images/user_logos/Institute_of_plasma_physics_Chinese_academy_of_sciences.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    14.487728061376515,
+                    46.043586411058726
+                ]
+            },
+            "properties": {
+                "name": "Institut Jožef Stefan",
+                "path": "images/user_logos/Institut_Jožef_Stefan.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    139.76446527724698,
+                    35.68673663876397
+                ]
+            },
+            "properties": {
+                "name": "Kyoto Fusioneering",
+                "path": "images/user_logos/Kyoto_Fusioneering.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    12.455144726473035,
+                    41.818823289415484
+                ]
+            },
+            "properties": {
+                "name": "ENI",
+                "path": "images/user_logos/ENI.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    12.670768074076161,
+                    41.83511773016589
+                ]
+            },
+            "properties": {
+                "name": "ENEA",
+                "path": "images/user_logos/ENEA.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -122.2637636728507,
+                    47.94311816450899
+                ]
+            },
+            "properties": {
+                "name": "Zap Energy",
+                "path": "images/user_logos/Zap_Energy.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.3409612613765139,
+                    51.305321198230246
+                ]
+            },
+            "properties": {
+                "name": "Frazer Nash",
+                "path": "images/user_logos/Frazer_Nash.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -0.5894234846558715,
+                    51.243827970913635
+                ]
+            },
+            "properties": {
+                "name": "University of Surrey",
+                "path": "images/user_logos/University_of_Surrey.png"
+            }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    140.10389,
+                    36.11139
+                ]
+            },
+            "properties": {
+                "name": "University of Tsukuba",
+                "path": "images/user_logos/Logo_of_University_of_Tsukuba.png"
+            }
+        }
+    ]
+}
