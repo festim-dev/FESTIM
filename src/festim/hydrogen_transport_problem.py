@@ -1435,26 +1435,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
 
             if self.method_interface == "penalty":
-                subdomain_0, subdomain_1 = interface.subdomains
-                res = interface.restriction
-
-                all_mobile_species = [spe for spe in self.species if spe.mobile]
-                if len(all_mobile_species) > 1:
-                    raise NotImplementedError("Multiple mobile species not implemented")
-                H = all_mobile_species[0]
-                v_b = H.subdomain_to_test_function[subdomain_0](res[0])
-                v_t = H.subdomain_to_test_function[subdomain_1](res[1])
-
-                u_b = H.subdomain_to_solution[subdomain_0](res[0])
-                u_t = H.subdomain_to_solution[subdomain_1](res[1])
-
-                K_b = subdomain_0.material.get_solubility_coefficient(
-                    self.mesh.mesh, self.temperature_fenics(res[0]), H
-                )
-                K_t = subdomain_1.material.get_solubility_coefficient(
-                    self.mesh.mesh, self.temperature_fenics(res[1]), H
-                )
-
                 if (
                     subdomain_0.material.solubility_law
                     == subdomain_1.material.solubility_law
@@ -1554,6 +1534,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "cffi_libraries": ["m"],
             },
         )
+
+    def create_interface_forms(self):
+        pass
 
     def create_solver(self):
         self.solver = BlockedNewtonSolver(
