@@ -197,8 +197,11 @@ def test_festim_vs_fenics_permeation_benchmark():
     threshold = -0.1
     if diff < threshold:
         raise ValueError(
-            f"festim is {np.abs(diff):.1%} slower than fenics, current acceptable threshold of {
-                np.abs(threshold):.1%}"
+            f"festim is {
+                np.abs(diff):.1%
+            } slower than fenics, current acceptable threshold of {
+                np.abs(threshold):.1%
+            }"
         )
     else:
         print(f"avg relative diff between festim and fenics {diff:.1%}")

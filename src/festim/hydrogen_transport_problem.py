@@ -8,7 +8,7 @@ import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
-from scifem import NewtonSolver
+from scifem import BlockedNewtonSolver
 
 import festim.boundary_conditions
 import festim.problem
@@ -166,6 +166,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.traps = traps or []
         self.temperature_fenics = None
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
+
+        self._element_for_traps = "DG"
+        self.petcs_options = petsc_options
 
     @property
     def temperature(self):
@@ -463,6 +466,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
             degree,
             basix.LagrangeVariant.equispaced,
         )
+        element_DG = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            degree,
+            basix.LagrangeVariant.equispaced,
+        )
 
         if not self.multispecies:
             element = element_CG
@@ -470,7 +479,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elements = []
             for spe in self.species:
                 if isinstance(spe, _species.Species):
-                    elements.append(element_CG)
+                    if spe.mobile:
+                        elements.append(element_CG)
+                    elif self._element_for_traps == "DG":
+                        elements.append(element_DG)
+                    else:
+                        elements.append(element_CG)
             element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
@@ -730,7 +744,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         # check reactions
                         for reaction in self.reactions:
                             if vol == reaction.volume:
-                                not_defined_in_volume.remove(vol)
+                                if vol in not_defined_in_volume:
+                                    not_defined_in_volume.remove(vol)
 
                     # add c = 0 to formulation where needed
                     for vol in not_defined_in_volume:
@@ -1213,18 +1228,32 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.forms = dolfinx.fem.form(
             [subdomain.F for subdomain in self.volume_subdomains],
             entity_maps=entity_maps,
+            jit_options={
+                "cffi_extra_compile_args": ["-O3", "-march=native"],
+                "cffi_libraries": ["m"],
+            },
         )
-        self.J = dolfinx.fem.form(J, entity_maps=entity_maps)
+        self.J = dolfinx.fem.form(
+            J,
+            entity_maps=entity_maps,
+            jit_options={
+                "cffi_extra_compile_args": ["-O3", "-march=native"],
+                "cffi_libraries": ["m"],
+            },
+        )
 
     def create_solver(self):
-        self.solver = NewtonSolver(
+        self.solver = BlockedNewtonSolver(
             self.forms,
-            self.J,
             [subdomain.u for subdomain in self.volume_subdomains],
+            J=self.J,
             bcs=self.bc_forms,
-            max_iterations=self.settings.max_iterations,
             petsc_options=self.petsc_options,
         )
+        self.solver.max_iterations = self.settings.max_iterations
+        self.solver.convergence_criterion = self.settings.convergence_criterion
+        self.solver.atol = self.settings.atol
+        self.solver.rtol = self.settings.rtol
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
@@ -1283,8 +1312,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.update_time_dependent_values()
 
-        # solve main problem
-        self.solver.solve(self.settings.atol, self.settings.rtol)
+        # Solve main problem
+        self.solver.solve()
 
         # post processing
         self.post_processing()
@@ -1312,7 +1341,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
         else:
             # Solve steady-state
-            self.solver.solve(self.settings.rtol)
+            self.solver.solve()
             self.post_processing()
 
     def __del__(self):
