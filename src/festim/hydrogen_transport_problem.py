@@ -123,6 +123,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     """
 
+    petsc_options: dict
+
     def __init__(
         self,
         mesh: Mesh | None = None,
@@ -173,7 +175,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
         self._element_for_traps = "DG"
-        self.petcs_options = petsc_options
+        default_petsc_options = {
+            "ksp_type": "preonly",
+            "pc_type": "lu",
+            "pc_factor_mat_solver_type": "mumps",
+        }
+        self.petsc_options = petsc_options or default_petsc_options
 
     @property
     def temperature(self):
@@ -1087,7 +1094,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
-    petsc_options: dict
     surface_to_volume: dict
     method_interface: str = "penalty"
 
@@ -1140,15 +1146,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             settings,
             exports,
             traps,
+            petsc_options=petsc_options,
         )
         self.interfaces = interfaces or []
         self.surface_to_volume = surface_to_volume or {}
-        default_petsc_options = {
-            "ksp_type": "preonly",
-            "pc_type": "lu",
-            "pc_factor_mat_solver_type": "mumps",
-        }
-        self.petsc_options = petsc_options or default_petsc_options
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
     def initialise(self):
