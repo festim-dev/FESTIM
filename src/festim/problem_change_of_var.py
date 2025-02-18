@@ -26,6 +26,8 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
+        self.create_implicit_species_value_fenics()
+
         self.define_temperature()
         self.define_boundary_conditions()
         self.create_source_values_fenics()
