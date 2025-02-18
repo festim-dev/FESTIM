@@ -1535,9 +1535,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             },
         )
 
-    def create_interface_forms(self):
-        pass
-
     def create_solver(self):
         self.solver = BlockedNewtonSolver(
             self.forms,
