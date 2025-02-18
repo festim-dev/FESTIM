@@ -38,7 +38,7 @@ then run the following commands::
 
     conda create -n festim-env
     conda activate festim-env       
-    conda install -c conda-forge fenics-dolfinx tqdm
+    conda install -c conda-forge fenics-dolfinx tqdm scifem
 
 
 Installing FESTIM
