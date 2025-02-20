@@ -21,7 +21,7 @@ def as_fenics_constant(
     Raises:
         TypeError: if the value is not a float, an int or a dolfinx.Constant
     """
-    if isinstance(value, "float | int"):
+    if isinstance(value, float | int):
         return fem.Constant(mesh, dolfinx.default_scalar_type(float(value)))
     elif isinstance(value, fem.Constant):
         return value
@@ -155,7 +155,13 @@ class Value:
             self._input_value = value
         elif isinstance(
             value,
-            "float | int | fem.Constant | np.ndarray | fem.Function | ufl.core.expr.Expr | fem.Function",  # noqa: E501
+            float
+            | int
+            | fem.Constant
+            | np.ndarray
+            | fem.Function
+            | ufl.core.expr.Expr
+            | fem.Function,
         ):
             self._input_value = value
         elif callable(value):
@@ -170,9 +176,7 @@ class Value:
         """Returns true if the value given is time dependent"""
         if self.input_value is None:
             return False
-        if isinstance(self.input_value, fem.Constant):
-            return False
-        if isinstance(self.input_value, ufl.core.expr.Expr):
+        if isinstance(self.input_value, fem.Constant | ufl.core.expr.Expr):
             return False
         if callable(self.input_value):
             arguments = self.input_value.__code__.co_varnames
@@ -185,9 +189,7 @@ class Value:
         """Returns true if the value given is temperature dependent"""
         if self.input_value is None:
             return False
-        if isinstance(self.input_value, fem.Constant):
-            return False
-        if isinstance(self.input_value, ufl.core.expr.Expr):
+        if isinstance(self.input_value, fem.Constant | ufl.core.expr.Expr):
             return False
         if callable(self.input_value):
             arguments = self.input_value.__code__.co_varnames
@@ -216,14 +218,13 @@ class Value:
             up_to_ufl_expr (bool): if True, the value is only mapped to a function if
                 the input is callable, not interpolated or converted to a function
         """
-        if isinstance(self.input_value, fem.Constant):
+        if isinstance(
+            self.input_value, fem.Constant | fem.Function | ufl.core.expr.Expr
+        ):
             self.fenics_object = self.input_value
 
         elif isinstance(self.input_value, fem.Expression):
             self.fenics_interpolation_expression = self.input_value
-
-        elif isinstance(self.input_value, fem.Function | ufl.core.expr.Expr):
-            self.fenics_object = self.input_value
 
         elif isinstance(self.input_value, float | int):
             self.fenics_object = as_fenics_constant(value=self.input_value, mesh=mesh)
