@@ -1,7 +1,6 @@
 import numpy as np
 import ufl
 from dolfinx import fem
-import festim as F
 
 
 # TODO rename this to InitialConcentration and create a new base class
