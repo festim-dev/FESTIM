@@ -136,7 +136,10 @@ def test_error_raised_wehn_input_value_is_not_accepted():
 
     with pytest.raises(
         TypeError,
-        match="Value must be a float, int, fem.Constant, fem.Function, or callable",
+        match=(
+            "Value must be a float, int, fem.Constant, np.ndarray, fem.Expression, "
+            "ufl.core.expr.Expr, fem.Function, or callable not coucou"
+        ),
     ):
         F.Value("coucou")
 
@@ -208,6 +211,25 @@ def test_input_values_of_constants_and_functions_are_accepted(value):
     assert test_value.fenics_object == value
 
 
+def test_input_values_of_expressions_are_accepted():
+    """Test that the input values of constants and functions are accepted"""
+
+    my_func = lambda x: 1.0 + x[0]
+    kwargs = {}
+    kwargs["x"] = x
+    mapped_func = my_func(**kwargs)
+
+    test_expression = fem.Expression(
+        mapped_func,
+        test_function_space.element.interpolation_points(),
+    )
+    test_value = F.Value(input_value=test_expression)
+
+    test_value.convert_input_value()
+
+    assert test_value.fenics_interpolation_expression == test_expression
+
+
 def test_ValueError_raised_when_callable_returns_wrong_type():
     """The create_value_fenics method should raise a ValueError when the callable
     returns an object which is not a float or int"""
@@ -225,3 +247,25 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
         test_value.convert_input_value(mesh=test_mesh.mesh, temperature=T, t=t)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        1,
+        1.0,
+        np.array([1.0, 2.0, 3.0]),
+        lambda t: t,
+        lambda T: 1.0 + T,
+        lambda x: 1.0 + x[0],
+        lambda x, t: 1.0 + x[0] + t,
+        lambda x, t, T: 1.0 + x[0] + t + T,
+        lambda T, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + T[0], 0.0),
+    ],
+)
+def test_value_representation(value):
+    """Test that the representation of the value is correct"""
+
+    test_value = F.Value(value)
+
+    assert repr(test_value) == f"{value}"
