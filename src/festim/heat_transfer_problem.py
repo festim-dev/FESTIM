@@ -145,7 +145,6 @@ class HeatTransferProblem(problem.ProblemBase):
         for bc in self.boundary_conditions:
             # create value_fenics for all F.HeatFluxBC objects
             if isinstance(bc, boundary_conditions.HeatFluxBC):
-
                 bc.create_value_fenics(
                     mesh=self.mesh.mesh,
                     temperature=self.u,

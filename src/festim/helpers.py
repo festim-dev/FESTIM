@@ -132,7 +132,7 @@ class Value:
     fenics_object: fem.Function | fem.Constant | ufl.core.expr.Expr
 
     def __init__(self, input_value):
-        self,
+        (self,)
         self.input_value = input_value
 
         self.ufl_expression = None
