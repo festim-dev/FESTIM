@@ -165,6 +165,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.reactions = reactions or []
         self.initial_conditions = initial_conditions or []
         self.traps = traps or []
+        self.temperature_fenics = None
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
     @property
@@ -176,23 +177,41 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if value is None:
             self._temperature = value
         elif isinstance(value, (float, int, fem.Constant, fem.Function)):
-            self._temperature = festim.Value(value)
+            self._temperature = value
         elif callable(value):
-            arguments = value.__code__.co_varnames
-            if "T" in arguments:
-                raise ValueError("Temperature cannot be a function of temperature, T")
-            self._temperature = festim.Value(value)
+            self._temperature = value
         else:
             raise TypeError(
                 "Value must be a float, int, fem.Constant, fem.Function, or callable"
             )
 
     @property
+    def temperature_fenics(self):
+        return self._temperature_fenics
+
+    @temperature_fenics.setter
+    def temperature_fenics(self, value):
+        if value is None:
+            self._temperature_fenics = value
+            return
+        elif not isinstance(
+            value,
+            (fem.Constant, fem.Function),
+        ):
+            raise TypeError("Value must be a fem.Constant or fem.Function")
+        self._temperature_fenics = value
+
+    @property
     def temperature_time_dependent(self):
         if self.temperature is None:
             return False
+        if isinstance(self.temperature, fem.Constant):
+            return False
+        if callable(self.temperature):
+            arguments = self.temperature.__code__.co_varnames
+            return "t" in arguments
         else:
-            return self.temperature.time_dependent
+            return False
 
     @property
     def multispecies(self):
