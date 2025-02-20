@@ -563,7 +563,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         else:
             function_space_value = bc.species.collapsed_function_space
 
-        bc.create_value_fenics(
+        bc.create_value(
             temperature=self.temperature_fenics,
             function_space=function_space_value,
             t=self.t,
@@ -714,14 +714,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for bc in self.boundary_conditions:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 self.formulation -= (
-                    bc.value.fenics_object
+                    bc.value_fenics
                     * bc.species.test_function
                     * self.ds(bc.subdomain.id)
                 )
             if isinstance(bc, boundary_conditions.SurfaceReactionBC):
                 for flux_bc in bc.flux_bcs:
                     self.formulation -= (
-                        flux_bc.value_fenics.fenics_object
+                        flux_bc.value_fenics
                         * flux_bc.species.test_function
                         * self.ds(flux_bc.subdomain.id)
                     )

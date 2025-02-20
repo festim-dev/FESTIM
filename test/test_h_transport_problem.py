@@ -107,7 +107,7 @@ def test_define_temperature(input, expected_type):
     my_model.define_temperature()
 
     # TEST
-    assert isinstance(my_model.temperature.fenics_object, expected_type)
+    assert isinstance(my_model.temperature_fenics, expected_type)
 
 
 @pytest.mark.parametrize(
@@ -129,7 +129,7 @@ def test_define_temperature_error_if_ufl_conditional_t_only(input):
 
     with pytest.raises(
         ValueError,
-        match="self.value should return a float or an int, not",
+        match="self.temperature should return a float or an int, not",
     ):
         my_model.define_temperature()
 
@@ -214,8 +214,8 @@ def test_update_time_dependent_values_temperature(T_function, expected_values):
         my_model.update_time_dependent_values()
 
         # TEST
-        if isinstance(my_model.temperature.fenics_object, fem.Constant):
-            computed_value = float(my_model.temperature.fenics_object)
+        if isinstance(my_model.temperature_fenics, fem.Constant):
+            computed_value = float(my_model.temperature_fenics)
             assert np.isclose(computed_value, expected_values[i])
 
 
@@ -301,12 +301,8 @@ def test_define_D_global_different_materials():
 
     computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
 
-    D_expected_left = D_0_left * np.exp(
-        -E_D_left / (F.k_B * my_model.temperature.input_value)
-    )
-    D_expected_right = D_0_right * np.exp(
-        -E_D_right / (F.k_B * my_model.temperature.input_value)
-    )
+    D_expected_left = D_0_left * np.exp(-E_D_left / (F.k_B * my_model.temperature))
+    D_expected_right = D_0_right * np.exp(-E_D_right / (F.k_B * my_model.temperature))
 
     expected_values = [D_expected_left, D_expected_right]
 
@@ -417,8 +413,8 @@ def test_define_D_global_multispecies():
 
     computed_values = [D_A_computed.x.array[-1], D_B_computed.x.array[-1]]
 
-    D_expected_A = D_0_A * np.exp(-E_D_A / (F.k_B * my_model.temperature.input_value))
-    D_expected_B = D_0_B * np.exp(-E_D_B / (F.k_B * my_model.temperature.input_value))
+    D_expected_A = D_0_A * np.exp(-E_D_A / (F.k_B * my_model.temperature))
+    D_expected_B = D_0_B * np.exp(-E_D_B / (F.k_B * my_model.temperature))
 
     expected_values = [D_expected_A, D_expected_B]
 
@@ -640,10 +636,8 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
         my_model.update_time_dependent_values()
 
         # TEST
-        if isinstance(
-            my_model.boundary_conditions[0].value.fenics_object, fem.Constant
-        ):
-            computed_value = float(my_model.boundary_conditions[0].value.fenics_object)
+        if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.boundary_conditions[0].value_fenics)
             assert np.isclose(computed_value, expected_values[i])
 
 
@@ -1152,10 +1146,8 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
         my_model.update_time_dependent_values()
 
         # TEST
-        if isinstance(
-            my_model.boundary_conditions[0].value.fenics_object, fem.Constant
-        ):
-            computed_value = float(my_model.boundary_conditions[0].value.fenics_object)
+        if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.boundary_conditions[0].value_fenics)
             assert np.isclose(computed_value, expected_values[i])
 
 
@@ -1208,10 +1200,8 @@ def test_update_fluxes_with_time_dependent_temperature(
         my_model.update_time_dependent_values()
 
         # TEST
-        if isinstance(
-            my_model.boundary_conditions[0].value.fenics_object, fem.Constant
-        ):
-            computed_value = float(my_model.boundary_conditions[0].value.fenics_object)
+        if isinstance(my_model.boundary_conditions[0].value_fenics, fem.Constant):
+            computed_value = float(my_model.boundary_conditions[0].value_fenics)
             assert np.isclose(computed_value, expected_values[i])
 
 
