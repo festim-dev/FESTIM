@@ -177,6 +177,8 @@ class Value:
             return False
         if isinstance(self.input_value, fem.Constant):
             return False
+        if isinstance(self.input_value, ufl.core.expr.Expr):
+            return False
         if callable(self.input_value):
             arguments = self.input_value.__code__.co_varnames
             return "t" in arguments
@@ -189,6 +191,8 @@ class Value:
         if self.input_value is None:
             return False
         if isinstance(self.input_value, fem.Constant):
+            return False
+        if isinstance(self.input_value, ufl.core.expr.Expr):
             return False
         if callable(self.input_value):
             arguments = self.input_value.__code__.co_varnames
@@ -262,11 +266,11 @@ class Value:
                 f"Value must be a float, an int or a callable, not {type(self.input_value)}"
             )
 
-    def update(self, t):
+    def update(self, t: float):
         """Updates the value
 
         Args:
-            t (float): the time
+            t: the time
         """
         if callable(self.input_value):
             arguments = self.input_value.__code__.co_varnames
