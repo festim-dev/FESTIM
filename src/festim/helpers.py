@@ -159,7 +159,7 @@ class Value:
             | int
             | fem.Constant
             | np.ndarray
-            | fem.Function
+            | fem.Expression
             | ufl.core.expr.Expr
             | fem.Function,
         ):
@@ -168,7 +168,8 @@ class Value:
             self._input_value = value
         else:
             raise TypeError(
-                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+                "Value must be a float, int, fem.Constant, np.ndarray, fem.Expression,"
+                f" ufl.core.expr.Expr, fem.Function, or callable not {value}"
             )
 
     @property
@@ -258,12 +259,6 @@ class Value:
                         temperature=temperature,
                     )
                 )
-
-        else:
-            raise TypeError(
-                f"Value must be a float, an int or a callable, not "
-                f"{type(self.input_value)}"
-            )
 
     def update(self, t: float):
         """Updates the value
