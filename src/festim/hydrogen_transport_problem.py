@@ -1109,7 +1109,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
-                form -= source.value_fenics * v * self.dx(subdomain.id)
+                form -= source.value.fenics_object * v * self.dx(subdomain.id)
 
         # store the form in the subdomain object
         subdomain.F = form
