@@ -632,14 +632,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
         function_space_value = None
 
         for condition in self.initial_conditions:
-
             # create value_fenics for condition
             function_space_value = None
             if callable(condition.value):
-
-                if condition.value.time_dependent:
-                    raise ValueError("Initial conditions cannot be time dependent")
-
                 # if bc.value is a callable then need to provide a functionspace
                 if not self.multispecies:
                     function_space_value = condition.species.sub_function_space

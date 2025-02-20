@@ -1233,5 +1233,5 @@ def test_create_flux_values_fenics_multispecies():
     my_model.create_flux_values_fenics()
 
     # TEST
-    assert np.isclose(float(my_model.boundary_conditions[0].value.fenics_object), 5)
-    assert np.isclose(float(my_model.boundary_conditions[1].value.fenics_object), 11)
+    assert np.isclose(float(my_model.boundary_conditions[0].value_fenics), 5)
+    assert np.isclose(float(my_model.boundary_conditions[1].value_fenics), 11)
