@@ -1,5 +1,3 @@
-from dolfinx import fem
-import ufl
 import festim as F
 
 
@@ -43,19 +41,7 @@ class SourceBase:
 
     @value.setter
     def value(self, value):
-        if value is None:
-            self._value = F.Value(value)
-        elif isinstance(
-            value,
-            (float, int, fem.Constant, fem.Function, ufl.core.expr.Expr),
-        ):
-            self._value = F.Value(value)
-        elif callable(value):
-            self._value = F.Value(value)
-        else:
-            raise TypeError(
-                "Value must be a float, int, fem.Constant, fem.Function, or callable"
-            )
+        self._value = F.Value(value)
 
     @property
     def volume(self):
