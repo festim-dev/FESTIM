@@ -1,5 +1,5 @@
 from dolfinx import fem
-
+import ufl
 import festim as F
 
 
@@ -44,8 +44,11 @@ class SourceBase:
     @value.setter
     def value(self, value):
         if value is None:
-            self._value = value
-        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+            self._value = F.Value(value)
+        elif isinstance(
+            value,
+            (float, int, fem.Constant, fem.Function, ufl.core.expr.Expr),
+        ):
             self._value = F.Value(value)
         elif callable(value):
             self._value = F.Value(value)
