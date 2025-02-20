@@ -1,8 +1,9 @@
-import dolfinx
-from dolfinx import fem
-import numpy as np
 from collections.abc import Callable
+
+import dolfinx
+import numpy as np
 import ufl
+from dolfinx import fem
 
 
 def as_fenics_constant(
@@ -20,7 +21,7 @@ def as_fenics_constant(
     Raises:
         TypeError: if the value is not a float, an int or a dolfinx.Constant
     """
-    if isinstance(value, (float, int)):
+    if isinstance(value, "float | int"):
         return fem.Constant(mesh, dolfinx.default_scalar_type(float(value)))
     elif isinstance(value, fem.Constant):
         return value
@@ -36,7 +37,8 @@ def as_mapped_function(
     t: fem.Constant = None,
     temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
 ) -> ufl.core.expr.Expr:
-    """Maps a user given callable function to the mesh, time or temperature within festim as needed
+    """Maps a user given callable function to the mesh, time or temperature within
+    festim as needed
 
     Args:
         value: the callable to convert
@@ -70,8 +72,8 @@ def as_fenics_interp_expr_and_function(
     temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
 ) -> tuple[fem.Expression, fem.Function]:
     """Takes a user given callable function, maps the function to the mesh, time or
-    temperature within festim as needed. Then creates the fenics interpolation expression
-    and function objects
+    temperature within festim as needed. Then creates the fenics interpolation
+    expression and function objects
 
     Args:
         value: the callable to convert
@@ -101,15 +103,16 @@ def as_fenics_interp_expr_and_function(
 
 class Value:
     """
-    A class to handle input values from users and convert them to a relevent fenics object
+    A class to handle input values from users and convert them to a relevent fenics
+    object
 
     Args:
         input_value: The value of the user input
 
     Attributes:
         input_value : The value of the user input
-        fenics_interpolation_expression : The expression of the user input that is used to
-            update the `fenics_object`
+        fenics_interpolation_expression : The expression of the user input that is used
+            to update the `fenics_object`
         fenics_object : The value of the user input in fenics format
 
     """
@@ -152,15 +155,7 @@ class Value:
             self._input_value = value
         elif isinstance(
             value,
-            (
-                float,
-                int,
-                fem.Constant,
-                np.ndarray,
-                fem.Function,
-                ufl.core.expr.Expr,
-                fem.Function,
-            ),
+            "float | int | fem.Constant | np.ndarray | fem.Function | ufl.core.expr.Expr | fem.Function",  # noqa: E501
         ):
             self._input_value = value
         elif callable(value):
@@ -213,11 +208,13 @@ class Value:
 
         Args:
             mesh (dolfinx.mesh.Mesh): the mesh of the domain
-            function_space (dolfinx.fem.function.FunctionSpace): the function space of the fenics object
+            function_space (dolfinx.fem.function.FunctionSpace): the function space of
+                the fenics object
             t (fem.Constant): the time
-            temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the temperature
-            up_to_ufl_expr (bool): if True, the value is only mapped to a function if the input is callable,
-                not interpolated or converted to a function
+            temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the
+                temperature
+            up_to_ufl_expr (bool): if True, the value is only mapped to a function if
+                the input is callable, not interpolated or converted to a function
         """
         if isinstance(self.input_value, fem.Constant):
             self.fenics_object = self.input_value
@@ -225,17 +222,17 @@ class Value:
         elif isinstance(self.input_value, fem.Expression):
             self.fenics_interpolation_expression = self.input_value
 
-        elif isinstance(self.input_value, (fem.Function, ufl.core.expr.Expr)):
+        elif isinstance(self.input_value, fem.Function | ufl.core.expr.Expr):
             self.fenics_object = self.input_value
 
-        elif isinstance(self.input_value, (float, int)):
+        elif isinstance(self.input_value, float | int):
             self.fenics_object = as_fenics_constant(value=self.input_value, mesh=mesh)
 
         elif callable(self.input_value):
             args = self.input_value.__code__.co_varnames
             # if only t is an argument, create constant object
             if "t" in args and "x" not in args and "T" not in args:
-                if not isinstance(self.input_value(t=float(t)), (float, int)):
+                if not isinstance(self.input_value(t=float(t)), float | int):
                     raise ValueError(
                         "self.value should return a float or an int, not "
                         + f"{type(self.input_value(t=float(t)))} "
@@ -263,7 +260,8 @@ class Value:
 
         else:
             raise TypeError(
-                f"Value must be a float, an int or a callable, not {type(self.input_value)}"
+                f"Value must be a float, an int or a callable, not "
+                f"{type(self.input_value)}"
             )
 
     def update(self, t: float):
