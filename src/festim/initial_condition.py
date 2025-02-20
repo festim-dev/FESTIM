@@ -31,41 +31,69 @@ class InitialCondition:
         self.value = value
         self.species = species
 
-    @property
-    def value(self):
-        return self._value
+        self.expr_fenics = None
 
-    @value.setter
-    def value(self, value):
-        if value is None:
-            self._value = value
-        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
-            self._value = F.Value(value)
-        elif callable(value):
-            self._value = F.Value(value)
-        else:
-            raise TypeError(
-                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+    def create_expr_fenics(self, mesh, temperature, function_space):
+        """Creates the expr_fenics of the initial condition.
+        If the value is a float or int, a function is created with an array with
+        the shape of the mesh and all set to the value.
+        Otherwise, it is converted to a fem.Expression.
+
+        Args:
+            mesh (dolfinx.mesh.Mesh) : the mesh
+            temperature (float): the temperature
+            function_space(dolfinx.fem.FunctionSpaceBase): the function space of the species
+        """
+        x = ufl.SpatialCoordinate(mesh)
+
+        if isinstance(self.value, (int, float)):
+            self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
+
+        elif callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            kwargs = {}
+            if "t" in arguments:
+                raise ValueError("Initial condition cannot be a function of time.")
+            if "x" in arguments:
+                kwargs["x"] = x
+            if "T" in arguments:
+                kwargs["T"] = temperature
+
+            self.expr_fenics = fem.Expression(
+                self.value(**kwargs),
+                function_space.element.interpolation_points(),
             )
 
 
 class InitialTemperature:
     def __init__(self, value) -> None:
         self.value = value
+        self.expr_fenics = None
 
-    @property
-    def value(self):
-        return self._value
+    def create_expr_fenics(self, mesh, function_space):
+        """Creates the expr_fenics of the initial condition.
+        If the value is a float or int, a function is created with an array with
+        the shape of the mesh and all set to the value.
+        Otherwise, it is converted to a fem.Expression.
 
-    @value.setter
-    def value(self, value):
-        if value is None:
-            self._value = value
-        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
-            self._value = F.Value(value)
-        elif callable(value):
-            self._value = F.Value(value)
-        else:
-            raise TypeError(
-                "Value must be a float, int, fem.Constant, fem.Function, or callable"
+        Args:
+            mesh (dolfinx.mesh.Mesh) : the mesh
+            function_space(dolfinx.fem.FunctionSpace): the function space of the species
+        """
+        x = ufl.SpatialCoordinate(mesh)
+
+        if isinstance(self.value, (int, float)):
+            self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
+
+        elif callable(self.value):
+            arguments = self.value.__code__.co_varnames
+            kwargs = {}
+            if "t" in arguments:
+                raise ValueError("Initial condition cannot be a function of time.")
+            if "x" in arguments:
+                kwargs["x"] = x
+
+            self.expr_fenics = fem.Expression(
+                self.value(**kwargs),
+                function_space.element.interpolation_points(),
             )
