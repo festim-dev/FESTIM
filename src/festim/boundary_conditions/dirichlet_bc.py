@@ -122,6 +122,7 @@ class DirichletBCBase:
 
     def update(self, t: float):
         """Updates the boundary condition value
+
         Args:
             t (float): the time
         """
@@ -197,6 +198,7 @@ class FixedConcentrationBC(DirichletBCBase):
         If the value is a function of t, it is converted to  `dolfinx.fem.Constant`.
         Otherwise, it is converted to a `dolfinx.fem.Function`.Function and the
         expression of the function is stored in `bc_expr`.
+
         Args:
             function_space (dolfinx.fem.FunctionSpace): the function space
             temperature: The temperature
@@ -252,6 +254,7 @@ class FixedTemperatureBC(DirichletBCBase):
         If the value is a function of t, it is converted to a `dolfinx.fem.Constant`.
         Otherwise, it is converted to a` dolfinx.fem.Function` and the
         expression of the function is stored in `bc_expr`.
+
         Args:
             function_space: the function space
             t: the time
