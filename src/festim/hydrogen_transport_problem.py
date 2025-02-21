@@ -21,6 +21,7 @@ from festim import (
 from festim import (
     reaction as _reaction,
 )
+from festim import source as _source
 from festim import (
     species as _species,
 )
@@ -29,9 +30,8 @@ from festim import (
 )
 from festim.helpers import as_fenics_constant
 from festim.mesh import Mesh
-from festim import source as _source
 
-__all__ = ["HydrogenTransportProblem", "HTransportProblemDiscontinuous"]
+__all__ = ["HTransportProblemDiscontinuous", "HydrogenTransportProblem"]
 
 
 class HydrogenTransportProblem(problem.ProblemBase):
@@ -1063,7 +1063,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
                 V = dolfinx.fem.functionspace(self.mesh.mesh, ("Lagrange", 1))
-                                
+
                 source.value.convert_input_value(
                     mesh=self.mesh.mesh,
                     function_space=V,

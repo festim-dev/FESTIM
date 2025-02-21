@@ -1,11 +1,10 @@
 from collections.abc import Callable
+from typing import Optional
 
 import dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
-
-from typing import Optional
 
 
 def as_fenics_constant(
