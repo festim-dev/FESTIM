@@ -5,6 +5,8 @@ import numpy as np
 import ufl
 from dolfinx import fem
 
+from typing import Optional
+
 
 def as_fenics_constant(
     value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
@@ -33,18 +35,18 @@ def as_fenics_constant(
 
 def as_mapped_function(
     value: Callable,
-    mesh: dolfinx.mesh.Mesh = None,
-    t: fem.Constant = None,
-    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
+    function_space: Optional[fem.functionspace] = None,
+    t: Optional[fem.Constant] = None,
+    temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
 ) -> ufl.core.expr.Expr:
     """Maps a user given callable function to the mesh, time or temperature within
     festim as needed
 
     Args:
         value: the callable to convert
-        mesh: the mesh of the domain
-        t: the time
-        temperature: the temperature
+        function_space: the function space of the domain, optional
+        t: the time, optional
+        temperature: the temperature, optional
 
     Returns:
         The mapped function
@@ -57,7 +59,7 @@ def as_mapped_function(
     if "t" in arguments:
         kwargs["t"] = t
     if "x" in arguments:
-        x = ufl.SpatialCoordinate(mesh)
+        x = ufl.SpatialCoordinate(function_space.mesh)
         kwargs["x"] = x
     if "T" in arguments:
         kwargs["T"] = temperature
@@ -68,9 +70,8 @@ def as_mapped_function(
 def as_fenics_interp_expr_and_function(
     value: Callable,
     function_space: dolfinx.fem.function.FunctionSpace,
-    mesh: dolfinx.mesh.Mesh = None,
-    t: fem.Constant = None,
-    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
+    t: Optional[fem.Constant] = None,
+    temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
 ) -> tuple[fem.Expression, fem.Function]:
     """Takes a user given callable function, maps the function to the mesh, time or
     temperature within festim as needed. Then creates the fenics interpolation
@@ -79,16 +80,15 @@ def as_fenics_interp_expr_and_function(
     Args:
         value: the callable to convert
         function_space: The function space to interpolate function over
-        mesh: the mesh of the domain
-        t: the time
-        temperature: the temperature
+        t: the time, optional
+        temperature: the temperature, optional
 
     Returns:
         fenics interpolation expression, fenics function
     """
 
     mapped_function = as_mapped_function(
-        value=value, mesh=mesh, t=t, temperature=temperature
+        value=value, function_space=function_space, t=t, temperature=temperature
     )
 
     fenics_interpolation_expression = fem.Expression(
@@ -118,18 +118,7 @@ class Value:
 
     """
 
-    input_value: (
-        int
-        | float
-        | np.ndarray
-        | Callable[[np.ndarray], np.ndarray]
-        | Callable[[np.ndarray, float], np.ndarray]
-        | Callable[[float], float]
-        | fem.Constant
-        | fem.Expression
-        | ufl.core.expr.Expr
-        | fem.Function
-    )
+    input_value: float | int | fem.Constant | np.ndarray | fem.Expression | ufl.core.expr.Expr | fem.Function
 
     ufl_expression: ufl.core.expr.Expr
     fenics_interpolation_expression: fem.Expression
@@ -200,24 +189,22 @@ class Value:
 
     def convert_input_value(
         self,
-        function_space: dolfinx.fem.function.FunctionSpace = None,
-        mesh: dolfinx.mesh.Mesh = None,
-        t: fem.Constant = None,
-        temperature: fem.Function | fem.Constant | ufl.core.expr.Expr = None,
-        up_to_ufl_expr: bool = False,
+        mesh: Optional[dolfinx.mesh.Mesh] = None,
+        function_space: Optional[dolfinx.fem.function.FunctionSpace] = None,
+        t: Optional[fem.Constant] = None,
+        temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
+        up_to_ufl_expr: Optional[bool] = False,
     ):
         """Converts a user given value to a relevent fenics object depending
         on the type of the value provided
 
         Args:
-            mesh (dolfinx.mesh.Mesh): the mesh of the domain
-            function_space (dolfinx.fem.function.FunctionSpace): the function space of
-                the fenics object
-            t (fem.Constant): the time
-            temperature (fem.Function, fem.Constant or ufl.core.expr.Expr): the
-                temperature
-            up_to_ufl_expr (bool): if True, the value is only mapped to a function if
-                the input is callable, not interpolated or converted to a function
+            mesh: the mesh of the domain, optional
+            function_space: the function space of the fenics object, optional
+            t: the time, optional
+            temperature: the temperature, optional
+            up_to_ufl_expr: if True, the value is only mapped to a function if the input 
+                is callable, not interpolated or converted to a function, optional
         """
         if isinstance(
             self.input_value, fem.Constant | fem.Function | ufl.core.expr.Expr
@@ -246,7 +233,10 @@ class Value:
 
             elif up_to_ufl_expr:
                 self.fenics_object = as_mapped_function(
-                    value=self.input_value, mesh=mesh, t=t, temperature=temperature
+                    value=self.input_value,
+                    function_space=function_space,
+                    t=t,
+                    temperature=temperature,
                 )
 
             else:
@@ -254,7 +244,6 @@ class Value:
                     as_fenics_interp_expr_and_function(
                         value=self.input_value,
                         function_space=function_space,
-                        mesh=mesh,
                         t=t,
                         temperature=temperature,
                     )

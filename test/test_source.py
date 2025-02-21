@@ -51,6 +51,7 @@ def test_create_fenics_object(value, expected_type):
     # BUILD
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
+    V = fem.functionspace(mesh, ("Lagrange", 1))
 
     source = F.ParticleSource(volume=vol_subdomain, value=value, species=species)
 
@@ -58,7 +59,9 @@ def test_create_fenics_object(value, expected_type):
     t = fem.Constant(mesh, 0.0)
 
     # RUN
-    source.value.convert_input_value(mesh=mesh, temperature=T, t=t, up_to_ufl_expr=True)
+    source.value.convert_input_value(
+        function_space=V, mesh=mesh, temperature=T, t=t, up_to_ufl_expr=True
+    )
 
     # TEST
     # check that the value_fenics attribute is set correctly

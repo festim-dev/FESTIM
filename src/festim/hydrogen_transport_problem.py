@@ -29,6 +29,7 @@ from festim import (
 )
 from festim.helpers import as_fenics_constant
 from festim.mesh import Mesh
+from festim import source as _source
 
 __all__ = ["HydrogenTransportProblem", "HTransportProblemDiscontinuous"]
 
@@ -615,12 +616,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
-            source.value.convert_input_value(
-                mesh=self.mesh.mesh,
-                t=self.t,
-                temperature=self.temperature_fenics,
-                up_to_ufl_expr=True,
-            )
+            if isinstance(source, _source.ParticleSource):
+                source.value.convert_input_value(
+                    mesh=self.mesh.mesh,
+                    function_space=self.function_space,
+                    t=self.t,
+                    temperature=self.temperature_fenics,
+                    up_to_ufl_expr=True,
+                )
 
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
@@ -1053,6 +1056,21 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             ).collapse()
             name = f"{species.name}_{subdomain.id}"
             species.subdomain_to_post_processing_solution[subdomain].name = name
+
+    def create_source_values_fenics(self):
+        """For each source create the value_fenics"""
+        for source in self.sources:
+            # create value_fenics for all F.ParticleSource objects
+            if isinstance(source, _source.ParticleSource):
+                V = dolfinx.fem.functionspace(self.mesh.mesh, ("Lagrange", 1))
+                                
+                source.value.convert_input_value(
+                    mesh=self.mesh.mesh,
+                    function_space=V,
+                    t=self.t,
+                    temperature=self.temperature_fenics,
+                    up_to_ufl_expr=True,
+                )
 
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """

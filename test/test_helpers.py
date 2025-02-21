@@ -75,6 +75,7 @@ def test_value_convert_up_to_ufl_inputs(input_value, expected_output_type):
     """Test that float and  value is correctly converted"""
 
     my_mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
+    V = fem.functionspace(my_mesh, ("Lagrange", 1))
     my_t = fem.Constant(my_mesh, default_scalar_type(10))
     my_T = fem.Constant(my_mesh, default_scalar_type(3))
 
@@ -82,6 +83,7 @@ def test_value_convert_up_to_ufl_inputs(input_value, expected_output_type):
 
     test_value.convert_input_value(
         mesh=my_mesh,
+        function_space=V,
         t=my_t,
         temperature=my_T,
         up_to_ufl_expr=True,

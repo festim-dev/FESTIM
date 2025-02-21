@@ -136,6 +136,7 @@ class HeatTransferProblem(problem.ProblemBase):
             # create value_fenics for all source objects
             source.value.convert_input_value(
                 mesh=self.mesh.mesh,
+                function_space=self.function_space,
                 t=self.t,
                 up_to_ufl_expr=True,
             )
