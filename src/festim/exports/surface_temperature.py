@@ -1,8 +1,10 @@
 import ufl
 from dolfinx import fem
 from .surface_quantity import SurfaceQuantity
+import csv
+import festim as F
 
-class SurfaceTemperature(SurfaceQuantity):
+class SurfaceTemperature(F.HydrogenTransportProblem):
     """Computes the temperature on a given surface
 
     Args:
@@ -26,7 +28,7 @@ class SurfaceTemperature(SurfaceQuantity):
         """
 
         # Obtain the temperature field
-        temperature_field = self.field.solution
+        temperature_field = self.temperature_fenics
 
         # Compute the average temperature on the surface
         self.value = fem.assemble_scalar(
