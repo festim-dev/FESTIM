@@ -379,11 +379,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 continue 
 
             if isinstance(export, exports.SurfaceTemperature):
-                export.temperature_field = self.temperature_fenics  # Assign the temperature field
-                export.compute(self.ds)  # Compute the temperature on the surface
-                export.t.append(float(self.t))  # Append the current time
-                if export.filename is not None:
-                    export.write(t=float(self.t))  # Write to file if filename is provided
                 continue
             
             # if name of species is given then replace with species object
@@ -432,8 +427,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.D = D
                 export.D_expr = D_expr
 
+            elif isinstance(export, exports.SurfaceTemperature):
+                export.temperature_field = self.temperature_fenics
+
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity)):
+            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity, exports.SurfaceTemperature)):
                 export.t = []
                 export.data = []
 
@@ -823,6 +821,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
+
+            elif isinstance(export, exports.SurfaceTemperature):
+                export.compute(self.ds)  # compute surface temp
+
+                export.t.append(float(self.t))  # update export time
+                export.data.append(export.value)  # update export data
+
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))  
+
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, (exports.TotalVolume, exports.AverageVolume)):
                     export.compute(self.dx)
