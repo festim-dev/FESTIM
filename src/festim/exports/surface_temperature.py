@@ -62,12 +62,14 @@ class SurfaceTemperature:
         Args:
             ds (ufl.Measure): surface measure of the model
         """
-        # Compute the average temperature on the surface
-        self.value = fem.assemble_scalar(
-            fem.form(
-                self.temperature_field * ds(self.surface.id)
-            )
-        )
+        temperature_field = self.temperature_field  
+
+        surface_integral = fem.assemble_scalar(fem.form(temperature_field * ds(self.surface.id))) # integral over surface
+        
+        surface_area = fem.assemble_scalar(fem.form(1 * ds(self.surface.id)))
+
+        self.value = surface_integral / surface_area # avg temp
+
         self.data.append(self.value)
 
     def write(self, t):
