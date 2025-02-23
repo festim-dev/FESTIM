@@ -1,43 +1,88 @@
-import ufl
-from dolfinx import fem
 import csv
-from festim.hydrogen_transport_problem import HydrogenTransportProblem
+from dolfinx import fem
+import ufl
+import festim as F
 
-class SurfaceTemperature(HydrogenTransportProblem):
-    """Computes the temperature on a given surface
+class SurfaceTemperature:
+    """Exports the temperature on a given surface.
 
     Args:
-        temperature_field (festim.Temperature): temperature field to be computed
-        surface (festim.SurfaceSubdomain1D): surface subdomain
+        temperature_field (fem.Constant or fem.Function): the temperature field to be computed
+        surface (int or festim.SurfaceSubdomain): the surface subdomain
         filename (str, optional): name of the file to which the surface temperature is exported
 
     Attributes:
-        see `festim.SurfaceQuantity`
+        temperature_field (fem.Constant or fem.Function): the temperature field
+        surface (int or festim.SurfaceSubdomain): the surface subdomain
+        filename (str): name of the file to which the surface temperature is exported
+        t (list): list of time values
+        data (list): list of temperature values on the surface
     """
+
+    def __init__(self, temperature_field, surface, filename: str = None) -> None:
+        self.temperature_field = temperature_field
+        self.surface = surface
+        self.filename = filename
+
+        self.t = []
+        self.data = []
+        self._first_time_export = True
+
+    @property
+    def filename(self):
+        return self._filename
+
+    @filename.setter
+    def filename(self, value):
+        if value is None:
+            self._filename = None
+        elif not isinstance(value, str):
+            raise TypeError("filename must be of type str")
+        elif not value.endswith(".csv") and not value.endswith(".txt"):
+            raise ValueError("filename must end with .csv or .txt")
+        self._filename = value
+
+    @property
+    def surface(self):
+        return self._surface
+
+    @surface.setter
+    def surface(self, value):
+        if not isinstance(value, (int, F.SurfaceSubdomain)) or isinstance(value, bool):
+            raise TypeError("surface should be an int or F.SurfaceSubdomain")
+        self._surface = value
 
     @property
     def title(self):
         return f"Temperature surface {self.surface.id}"
 
     def compute(self, ds):
-        """Computes the value of the temperature at the surface
+        """Computes the average temperature on the surface.
 
         Args:
             ds (ufl.Measure): surface measure of the model
         """
-
-        # Obtain the temperature field
-        temperature_field = self.temperature_fenics
-
         # Compute the average temperature on the surface
         self.value = fem.assemble_scalar(
             fem.form(
-                temperature_field * ds(self.surface.id)
+                self.temperature_field * ds(self.surface.id)
             )
         )
         self.data.append(self.value)
 
-# Example usage:
-# Assuming you have a temperature field and a surface defined
-# surface_temp = SurfaceTemperature(temperature_field, surface)
-# surface_temp.compute(ds)
+    def write(self, t):
+        """Writes the time and temperature value to the file.
+
+        Args:
+            t (float): current time value
+        """
+        if self.filename is not None:
+            if self._first_time_export:
+                header = ["t(s)", f"{self.title}"]
+                with open(self.filename, mode="w+", newline="") as file:
+                    writer = csv.writer(file)
+                    writer.writerow(header)
+                self._first_time_export = False
+            with open(self.filename, mode="a", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow([t, self.value])

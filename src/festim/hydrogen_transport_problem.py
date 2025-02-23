@@ -377,6 +377,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
                 )
                 continue 
+
+            if isinstance(export, exports.SurfaceTemperature):
+                export.temperature_field = self.temperature_fenics  # Assign the temperature field
+                export.compute(self.ds)  # Compute the temperature on the surface
+                export.t.append(float(self.t))  # Append the current time
+                if export.filename is not None:
+                    export.write(t=float(self.t))  # Write to file if filename is provided
+                continue
             
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
