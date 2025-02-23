@@ -1,7 +1,7 @@
 import ufl
 from dolfinx import fem
 import csv
-from src.festim.hydrogen_transport_problem import HydrogenTransportProblem
+from festim.hydrogen_transport_problem import HydrogenTransportProblem
 
 class SurfaceTemperature(HydrogenTransportProblem):
     """Computes the temperature on a given surface
