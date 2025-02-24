@@ -789,6 +789,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if source.temperature_dependent:
                 source.update(t=t)
 
+    surface_temp_processed = False
+
     def post_processing(self):
         """Post processes the model"""
 
@@ -803,6 +805,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         export.D.interpolate(export.D_expr)
                         species_not_updated.remove(export.field)
 
+        last_time = None
         for export in self.exports:
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
@@ -823,14 +826,16 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.SurfaceTemperature):
-                export.compute(self.ds)  # compute surface temp
+                if self.t != last_time:
+                    export.compute(self.ds)  # compute surface temp
 
-                export.t.append(float(self.t))  # update export time
-                export.data.append(export.value)  # update export data
+                    export.t.append(float(self.t))  # update export time
 
-                # if filename given write export data to file
-                if export.filename is not None:
-                    export.write(t=float(self.t))  
+                    # if filename given write export data to file
+                    if export.filename is not None:
+                        export.write(t=float(self.t))  
+                
+                last_time = self.t
 
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, (exports.TotalVolume, exports.AverageVolume)):
