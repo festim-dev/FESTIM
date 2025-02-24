@@ -805,7 +805,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         export.D.interpolate(export.D_expr)
                         species_not_updated.remove(export.field)
 
-        last_time = None
         for export in self.exports:
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
@@ -826,16 +825,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.SurfaceTemperature):
-                if self.t != last_time:
-                    export.compute(self.ds)  # compute surface temp
+                export.compute(self.ds)  # compute surface temp
 
-                    export.t.append(float(self.t))  # update export time
+                export.t.append(float(self.t))  # update export time
 
-                    # if filename given write export data to file
-                    if export.filename is not None:
-                        export.write(t=float(self.t))  
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))  
                 
-                last_time = self.t
 
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, (exports.TotalVolume, exports.AverageVolume)):
