@@ -369,17 +369,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
-            if isinstance(export, exports.VTXTemperatureExport):
-                temperature_field = self.temperature_fenics  
-                self._vtxfiles.append(
-                    dolfinx.io.VTXWriter(
-                        temperature_field.function_space.mesh.comm,
-                        export.filename,
-                        [temperature_field],
-                        engine="BP5",
-                    )
-                )
-                continue 
 
             if isinstance(export, exports.SurfaceTemperature):
                 continue
