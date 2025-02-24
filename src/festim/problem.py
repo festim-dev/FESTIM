@@ -120,8 +120,8 @@ class ProblemBase:
             bcs=self.bc_forms,
         )
         self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
-        self.solver.atol = self.settings.atol if not callable(self.settings.atol) else self.settings.atol(0.0)
-        self.solver.rtol = self.settings.rtol if not callable(self.settings.rtol) else self.settings.rtol(0.0)
+        self.solver.atol = self.settings.atol
+        self.solver.rtol = self.settings.rtol
         self.solver.max_it = self.settings.max_iterations
 
         ksp = self.solver.krylov_solver
@@ -151,12 +151,6 @@ class ProblemBase:
                     unit_scale=True,
                 )
             while self.t.value < self.settings.final_time:
-                 # update rtol if it's callable
-                if callable(self.settings.rtol):
-                    self.solver.rtol = self.settings.rtol(self.t.value)
-                # update atol if it's callable
-                if callable(self.settings.atol):
-                    self.solver.atol = self.settings.atol(self.t.value)
                 self.iterate()
             if self.show_progress_bar:
                 self.progress_bar.refresh()  # refresh progress bar to show 100%

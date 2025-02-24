@@ -381,9 +381,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 )
                 continue 
 
-            if isinstance(export, exports.SurfaceTemperature):
-                continue
-            
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
@@ -415,19 +412,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
-            if isinstance(export, exports.VTXTemperatureExport):
-                temperature_field = self.temperature_fenics  
-                self._vtxfiles.append(
-                    dolfinx.io.VTXWriter(
-                        temperature_field.function_space.mesh.comm,
-                        export.filename,
-                        [temperature_field],
-                        engine="BP5",
-                    )
-                )
-                continue 
-
-            elif isinstance(export, exports.SurfaceQuantity):
+            if isinstance(export, exports.SurfaceQuantity):
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
                     D = spe_to_D_global[export.field]
@@ -442,11 +427,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.D = D
                 export.D_expr = D_expr
 
-            elif isinstance(export, exports.SurfaceTemperature):
-                export.temperature_field = self.temperature_fenics
-
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity, exports.SurfaceTemperature)):
+            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity)):
                 export.t = []
                 export.data = []
 
