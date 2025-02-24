@@ -415,7 +415,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
         spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
-            if isinstance(export, exports.SurfaceQuantity):
+            if isinstance(export, exports.VTXTemperatureExport):
+                temperature_field = self.temperature_fenics  
+                self._vtxfiles.append(
+                    dolfinx.io.VTXWriter(
+                        temperature_field.function_space.mesh.comm,
+                        export.filename,
+                        [temperature_field],
+                        engine="BP5",
+                    )
+                )
+                continue 
+
+            elif isinstance(export, exports.SurfaceQuantity):
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
                     D = spe_to_D_global[export.field]
