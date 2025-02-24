@@ -117,7 +117,15 @@ class Value:
 
     """
 
-    input_value: float | int | fem.Constant | np.ndarray | fem.Expression | ufl.core.expr.Expr | fem.Function
+    input_value: (
+        float
+        | int
+        | fem.Constant
+        | np.ndarray
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+    )
 
     ufl_expression: ufl.core.expr.Expr
     fenics_interpolation_expression: fem.Expression
@@ -202,7 +210,7 @@ class Value:
             function_space: the function space of the fenics object, optional
             t: the time, optional
             temperature: the temperature, optional
-            up_to_ufl_expr: if True, the value is only mapped to a function if the input 
+            up_to_ufl_expr: if True, the value is only mapped to a function if the input
                 is callable, not interpolated or converted to a function, optional
         """
         if isinstance(

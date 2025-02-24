@@ -20,17 +20,28 @@ class SourceBase:
         volume: the volume subdomains where the source is applied
     """
 
-    value: float | int | fem.Constant | np.ndarray | fem.Expression | \
-           ufl.core.expr.Expr | fem.Function
+    value: (
+        float
+        | int
+        | fem.Constant
+        | np.ndarray
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+    )
     volume: VolumeSubdomain
 
     def __init__(
-            self,
-            value: float | int | fem.Constant | np.ndarray | fem.Expression |
-                   ufl.core.expr.Expr | fem.Function,
-            volume: VolumeSubdomain
-            ):
-
+        self,
+        value: float
+        | int
+        | fem.Constant
+        | np.ndarray
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function,
+        volume: VolumeSubdomain,
+    ):
         self.value = value
         self.volume = volume
 
@@ -125,6 +136,7 @@ class HeatSource(SourceBase):
             HeatSource(volume=my_vol, value=lambda t: 1 + t)
             HeatSource(volume=my_vol, value=lambda x, t: 1 + x[0] + t)
     """
+
     def __init__(self, value, volume):
         super().__init__(value, volume)
 
