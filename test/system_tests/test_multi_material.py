@@ -142,7 +142,7 @@ def test_2_materials_2d_mms():
 
     my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 
-    my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
+    my_model.settings = F.Settings(atol=1e-5, rtol=1e-5, transient=False)
     my_model.exports = [
         F.VTXSpeciesExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
         for subdomain in my_model.volume_subdomains
@@ -216,7 +216,7 @@ def test_1_material_discontinuous_version():
 
     my_model.temperature = lambda x: 300 + 100 * x[0]
 
-    my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
+    my_model.settings = F.Settings(atol=1e-5, rtol=1e-5, transient=False)
 
     my_model.exports = [
         F.VTXSpeciesExport(
@@ -384,7 +384,7 @@ def test_2_mats_particle_flux_bc():
 
     my_model.temperature = lambda x: 300 + 10 * x[1] + 100 * x[0]
 
-    my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
+    my_model.settings = F.Settings(atol=1e-5, rtol=1e-5, transient=False)
 
     my_model.exports = [
         F.VTXSpeciesExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)

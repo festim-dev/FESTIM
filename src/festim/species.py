@@ -225,3 +225,13 @@ def find_species_from_name(name: str, species: list):
         if spe.name == name:
             return spe
     raise ValueError(f"Species {name} not found in list of species")
+
+
+class SpeciesChangeVar(Species):
+    @property
+    def concentration(self):
+        return self._concentration
+
+    @concentration.setter
+    def concentration(self, value):
+        self._concentration = value

@@ -121,6 +121,58 @@ class Material:
         else:
             raise TypeError("E_D must be either a float, int or a dict")
 
+    def get_K_S_0(self, species=None) -> float:
+        """Returns the pre-exponential factor of the solubility coefficient
+        Args:
+            species: the species we want the pre-exponential
+                factor of the solubility coefficient of. Only needed if K_S_0 is a dict.
+        Returns:
+            the pre-exponential factor of the solubility coefficient
+        """
+
+        if isinstance(self.K_S_0, (float, int)):
+            return self.K_S_0
+
+        elif isinstance(self.K_S_0, dict):
+            if species is None:
+                raise ValueError("species must be provided if K_S_0 is a dict")
+
+            if species in self.K_S_0:
+                return self.K_S_0[species]
+            elif species.name in self.K_S_0:
+                return self.K_S_0[species.name]
+            else:
+                raise ValueError(f"{species} is not in K_S_0 keys")
+
+        else:
+            raise TypeError("K_S_0 must be either a float, int or a dict")
+
+    def get_E_K_S(self, species=None) -> float:
+        """Returns the activation energy of the solubility coefficient
+        Args:
+            species: the species we want the activation
+                energy of the solubility coefficient of. Only needed if E_K_S is a dict.
+        Returns:
+            the activation energy of the solubility coefficient
+        """
+
+        if isinstance(self.E_K_S, (float, int)):
+            return self.E_K_S
+
+        elif isinstance(self.E_K_S, dict):
+            if species is None:
+                raise ValueError("species must be provided if E_K_S is a dict")
+
+            if species in self.E_K_S:
+                return self.E_K_S[species]
+            elif species.name in self.E_K_S:
+                return self.E_K_S[species.name]
+            else:
+                raise ValueError(f"{species} is not in E_K_S keys")
+
+        else:
+            raise TypeError("E_K_S must be either a float, int or a dict")
+
     def get_diffusion_coefficient(self, mesh, temperature, species=None):
         """Defines the diffusion coefficient
         Args:
@@ -184,7 +236,7 @@ class Material:
         Returns:
             ufl.algebra.Product: the solubility coefficient
         """
-        # TODO use get_D_0 and get_E_D to refactore this method, something like:
+        # TODO use get_K_S0 and get_E_K_S to refactore this method, something like:
         # K_S_0 = self.get_K_S_0(species=species)
         # E_K_S = self.get_E_K_S(species=species)
 

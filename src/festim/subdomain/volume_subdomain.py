@@ -2,6 +2,7 @@ import dolfinx
 import numpy as np
 
 from festim.helpers_discontinuity import transfer_meshtags_to_submesh
+from festim.material import Material
 
 
 class VolumeSubdomain:
@@ -24,6 +25,7 @@ class VolumeSubdomain:
     padded: bool
     u: dolfinx.fem.Function
     u_n: dolfinx.fem.Function
+    material: Material
 
     def __init__(self, id, material):
         self.id = id
@@ -41,6 +43,17 @@ class VolumeSubdomain:
         cell_map = mesh.topology.index_map(mesh.topology.dim)
         num_cells_local = cell_map.size_local + cell_map.num_ghosts
         return np.arange(num_cells_local, dtype=np.int32)
+
+    def locate_subdomain_entities_correct(self, cell_tags: dolfinx.mesh.MeshTags):
+        """Locates all cells in subdomain borders within domain
+
+        Args:
+            cell_tags (dolfinx.mesh.MeshTags): the mesh tags of the model
+
+        Returns:
+            entities (np.array): the entities of the subdomain
+        """
+        return cell_tags.find(self.id)
 
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
