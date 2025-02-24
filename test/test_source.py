@@ -60,7 +60,7 @@ def test_create_fenics_object(value, expected_type):
 
     # RUN
     source.value.convert_input_value(
-        function_space=V, mesh=mesh, temperature=T, t=t, up_to_ufl_expr=True
+        function_space=V, temperature=T, t=t, up_to_ufl_expr=True
     )
 
     # TEST
@@ -123,6 +123,8 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
 
+    V = fem.functionspace(mesh, ("Lagrange", 1))
+
     def my_value(t):
         return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
 
@@ -136,7 +138,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
         source.value.convert_input_value(
-            mesh=mesh, temperature=T, t=t, up_to_ufl_expr=True
+            function_space=V, temperature=T, t=t, up_to_ufl_expr=True
         )
 
 
@@ -153,11 +155,13 @@ def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
 
     t = fem.Constant(mesh, 0.0)
 
+    V = fem.functionspace(mesh, ("Lagrange", 1))
+
     with pytest.raises(
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        source.value.convert_input_value(mesh=mesh, t=t, up_to_ufl_expr=True)
+        source.value.convert_input_value(function_space=V, t=t, up_to_ufl_expr=True)
 
 
 @pytest.mark.parametrize(

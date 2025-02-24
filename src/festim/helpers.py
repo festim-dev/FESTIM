@@ -196,7 +196,6 @@ class Value:
 
     def convert_input_value(
         self,
-        mesh: Optional[dolfinx.mesh.Mesh] = None,
         function_space: Optional[dolfinx.fem.function.FunctionSpace] = None,
         t: Optional[fem.Constant] = None,
         temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
@@ -206,7 +205,6 @@ class Value:
         on the type of the value provided
 
         Args:
-            mesh: the mesh of the domain, optional
             function_space: the function space of the fenics object, optional
             t: the time, optional
             temperature: the temperature, optional
@@ -222,7 +220,9 @@ class Value:
             self.fenics_interpolation_expression = self.input_value
 
         elif isinstance(self.input_value, float | int):
-            self.fenics_object = as_fenics_constant(value=self.input_value, mesh=mesh)
+            self.fenics_object = as_fenics_constant(
+                value=self.input_value, mesh=function_space.mesh
+            )
 
         elif callable(self.input_value):
             args = self.input_value.__code__.co_varnames
@@ -235,7 +235,7 @@ class Value:
                     )
 
                 self.fenics_object = as_fenics_constant(
-                    value=self.input_value(t=float(t)), mesh=mesh
+                    value=self.input_value(t=float(t)), mesh=function_space.mesh
                 )
 
             elif up_to_ufl_expr:

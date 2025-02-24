@@ -12,13 +12,7 @@ import festim as F
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
 
-element_CG = basix.ufl.element(
-    basix.ElementFamily.P,
-    test_mesh.mesh.basix_cell(),
-    1,
-    basix.LagrangeVariant.equispaced,
-)
-test_function_space = fem.functionspace(test_mesh.mesh, element_CG)
+test_function_space = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
 test_function = fem.Function(test_function_space)
 
 
@@ -48,11 +42,9 @@ def test_temperature_type_and_processing(value):
 def test_value_convert_float_int_inputs(input_value, expected_output_type):
     """Test that float and  value is correctly converted"""
 
-    mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
-
     test_value = F.Value(input_value)
 
-    test_value.convert_input_value(mesh=mesh)
+    test_value.convert_input_value(function_space=test_function_space)
 
     assert isinstance(test_value.fenics_object, expected_output_type)
 
@@ -82,7 +74,6 @@ def test_value_convert_up_to_ufl_inputs(input_value, expected_output_type):
     test_value = F.Value(input_value)
 
     test_value.convert_input_value(
-        mesh=my_mesh,
         function_space=V,
         t=my_t,
         temperature=my_T,
@@ -113,19 +104,12 @@ def test_value_convert_callable_inputs(input_value, expected_output_type):
     my_t = fem.Constant(my_mesh, default_scalar_type(8))
     my_T = fem.Constant(my_mesh, default_scalar_type(5))
 
-    element_CG = basix.ufl.element(
-        basix.ElementFamily.P,
-        my_mesh.basix_cell(),
-        1,
-        basix.LagrangeVariant.equispaced,
-    )
-    my_function_space = fem.functionspace(my_mesh, element_CG)
+    my_function_space = fem.functionspace(my_mesh, ("Lagrange", 1))
 
     test_value = F.Value(input_value)
 
     test_value.convert_input_value(
         function_space=my_function_space,
-        mesh=my_mesh,
         t=my_t,
         temperature=my_T,
     )
@@ -248,7 +232,9 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
         ValueError,
         match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
     ):
-        test_value.convert_input_value(mesh=test_mesh.mesh, temperature=T, t=t)
+        test_value.convert_input_value(
+            function_space=test_function_space, temperature=T, t=t
+        )
 
 
 @pytest.mark.parametrize(

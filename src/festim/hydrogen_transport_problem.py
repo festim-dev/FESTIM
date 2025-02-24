@@ -618,7 +618,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
                 source.value.convert_input_value(
-                    mesh=self.mesh.mesh,
                     function_space=self.function_space,
                     t=self.t,
                     temperature=self.temperature_fenics,
@@ -1065,7 +1064,6 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 V = dolfinx.fem.functionspace(self.mesh.mesh, ("Lagrange", 1))
 
                 source.value.convert_input_value(
-                    mesh=self.mesh.mesh,
                     function_space=V,
                     t=self.t,
                     temperature=self.temperature_fenics,
