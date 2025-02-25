@@ -4,19 +4,19 @@ import ufl
 import festim as F
 
 class SurfaceTemperature:
-    """Exports the temperature on a given surface.
+    """Exports the average temperature on a given surface.
 
     Args:
         temperature_field (fem.Constant or fem.Function): the temperature field to be computed
         surface (int or festim.SurfaceSubdomain): the surface subdomain
-        filename (str, optional): name of the file to which the surface temperature is exported
+        filename (str, optional): name of the file to which the average surface temperature is exported
 
     Attributes:
         temperature_field (fem.Constant or fem.Function): the temperature field
         surface (int or festim.SurfaceSubdomain): the surface subdomain
         filename (str): name of the file to which the surface temperature is exported
         t (list): list of time values
-        data (list): list of temperature values on the surface
+        data (list): list of average temperature values on the surface
     """
 
     def __init__(self, temperature_field, surface, filename: str = None) -> None:
