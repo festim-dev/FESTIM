@@ -47,8 +47,7 @@ def test_average_surface_temperature_compute_1D(T_function, expected_values):
 
     my_export = F.SurfaceTemperature(temperature_field=my_model.temperature, surface=dummy_surface)
     my_export.compute(ds)
-    my_export = F.SurfaceTemperature(temperature_field=T_function, surface=dummy_surface)
 
     # TEST
     for i in range(0,2):
-        assert np.isclose(my_export.value, expected_values[i])
+        assert np.isclose(my_export, expected_values[i])
