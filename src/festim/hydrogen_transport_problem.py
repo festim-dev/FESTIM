@@ -934,12 +934,15 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.create_implicit_species_value_fenics()
 
+        for subdomain in self.volume_subdomains:
+            self.define_function_spaces(subdomain)
+
         self.define_temperature()
         self.create_source_values_fenics()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
+
         for subdomain in self.volume_subdomains:
-            self.define_function_spaces(subdomain)
             self.create_subdomain_formulation(subdomain)
             subdomain.u.name = f"u_{subdomain.id}"
 
@@ -1061,14 +1064,15 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                V = dolfinx.fem.functionspace(self.mesh.mesh, ("Lagrange", 1))
+                for subdomain in source.species.subdomains:
+                    V = source.species.subdomain_to_function_space[subdomain]
 
-                source.value.convert_input_value(
-                    function_space=V,
-                    t=self.t,
-                    temperature=self.temperature_fenics,
-                    up_to_ufl_expr=True,
-                )
+                    source.value.convert_input_value(
+                        function_space=V,
+                        t=self.t,
+                        temperature=self.temperature_fenics,
+                        up_to_ufl_expr=True,
+                    )
 
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """
