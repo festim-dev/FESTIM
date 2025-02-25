@@ -78,6 +78,26 @@ class CoupledHeatTransferHydrogenTransport:
         self._heat_problem = value
 
     def initialise(self):
+        if (
+            self.heat_problem.settings.transient
+            and self.hydrogen_problem.settings.transient
+        ):
+            # make sure both problems have the same initial time step and final time,
+            # use minimal initial value of the two and maximal final time of the two
+            min_initial_dt = min(
+                float(self.heat_problem.settings.stepsize.initial_value),
+                float(self.hydrogen_problem.settings.stepsize.initial_value),
+            )
+            self.heat_problem.settings.stepsize.initial_value = min_initial_dt
+            self.hydrogen_problem.settings.stepsize.initial_value = min_initial_dt
+
+            max_final_time = max(
+                float(self.heat_problem.settings.final_time),
+                float(self.hydrogen_problem.settings.final_time),
+            )
+            self.heat_problem.settings.final_time = max_final_time
+            self.hydrogen_problem.settings.final_time = max_final_time
+
         self.heat_problem.initialise()
 
         self.heat_problem.show_progress_bar = False
@@ -95,25 +115,16 @@ class CoupledHeatTransferHydrogenTransport:
         self.heat_problem.iterate()
         self.hydrogen_problem.iterate()
 
+        # use the same time step for both problems, use minimum of the two
         next_dt_value = min(
             float(self.hydrogen_problem.dt), float(self.heat_problem.dt)
         )
-
         self.heat_problem.dt = as_fenics_constant(
             value=next_dt_value, mesh=self.heat_problem.mesh.mesh
         )
         self.hydrogen_problem.dt = as_fenics_constant(
             value=next_dt_value, mesh=self.hydrogen_problem.mesh.mesh
         )
-
-        # update temperarure dependent values in hydrogen problem
-        t = float(self.hydrogen_problem.t)
-        for bc in self.hydrogen_problem.boundary_conditions:
-            if bc.temperature_dependent:
-                bc.update(t=t)
-        for source in self.hydrogen_problem.sources:
-            if source.temperature_dependent:
-                source.update(t=t)
 
     def run(self):
         if (
