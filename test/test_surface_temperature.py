@@ -39,6 +39,7 @@ def test_average_surface_temperature_compute_1D(T_function, expected_values):
     my_model.temperature = T_function
 
     my_model.define_temperature()
+    my_model.initialise_exports()
 
     # RUN
     for i in range(3):
