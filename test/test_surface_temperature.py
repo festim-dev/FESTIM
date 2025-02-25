@@ -1,6 +1,7 @@
 import numpy as np
 import ufl
 from dolfinx import fem
+import pytest
 
 import festim as F
 
