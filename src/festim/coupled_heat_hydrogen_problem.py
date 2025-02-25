@@ -1,8 +1,8 @@
 import tqdm.autonotebook
 
 from festim.heat_transfer_problem import HeatTransferProblem
-from festim.hydrogen_transport_problem import HydrogenTransportProblem
 from festim.helpers import as_fenics_constant
+from festim.hydrogen_transport_problem import HydrogenTransportProblem
 
 
 class CoupledHeatTransferHydrogenTransport:
@@ -44,10 +44,13 @@ class CoupledHeatTransferHydrogenTransport:
 
     """
 
+    hydrogen_problem: HydrogenTransportProblem
+    heat_problem: HeatTransferProblem
+
     def __init__(
         self,
-        hydrogen_problem,
-        heat_problem,
+        hydrogen_problem: HydrogenTransportProblem,
+        heat_problem: HeatTransferProblem,
     ) -> None:
         self.hydrogen_problem = hydrogen_problem
         self.heat_problem = heat_problem
@@ -85,6 +88,7 @@ class CoupledHeatTransferHydrogenTransport:
             raise ValueError(
                 "The meshes of the heat transfer and hydrogen transport problems must be the same"
             )
+
         self.hydrogen_problem.initialise()
 
     def iterate(self):
@@ -101,7 +105,15 @@ class CoupledHeatTransferHydrogenTransport:
         self.hydrogen_problem.dt = as_fenics_constant(
             value=next_dt_value, mesh=self.hydrogen_problem.mesh.mesh
         )
-        self.hydrogen_problem.update_time_dependent_values()
+
+        # update temperarure dependent values in hydrogen problem
+        t = float(self.hydrogen_problem.t)
+        for bc in self.hydrogen_problem.boundary_conditions:
+            if bc.temperature_dependent:
+                bc.update(t=t)
+        for source in self.hydrogen_problem.sources:
+            if source.temperature_dependent:
+                source.update(t=t)
 
     def run(self):
         if (
