@@ -169,7 +169,7 @@ class Value:
             )
 
     @property
-    def time_dependent(self) -> bool:
+    def explicit_time_dependent(self) -> bool:
         """Returns true if the value given is time dependent"""
         if self.input_value is None:
             return False
