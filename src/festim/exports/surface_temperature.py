@@ -53,6 +53,10 @@ class SurfaceTemperature:
         self._surface = value
 
     @property
+    def temperature_field(self):
+        return self._temperature_field
+
+    @property
     def title(self):
         return f"Temperature surface {self.surface.id}"
 
