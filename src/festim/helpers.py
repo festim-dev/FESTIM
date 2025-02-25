@@ -114,6 +114,9 @@ class Value:
         fenics_interpolation_expression : The expression of the user input that is used
             to update the `fenics_object`
         fenics_object : The value of the user input in fenics format
+        explicit_time_dependent : True if the user input value is explicitly time
+            dependent
+        temperature_dependent : True if the user input value is temperature dependent
 
     """
 
@@ -130,6 +133,8 @@ class Value:
     ufl_expression: ufl.core.expr.Expr
     fenics_interpolation_expression: fem.Expression
     fenics_object: fem.Function | fem.Constant | ufl.core.expr.Expr
+    explicit_time_dependent: bool
+    temperature_dependent: bool
 
     def __init__(self, input_value):
         self.input_value = input_value

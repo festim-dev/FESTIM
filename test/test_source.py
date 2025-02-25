@@ -82,13 +82,13 @@ def test_create_fenics_object(value, expected_type):
         (lambda x, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + x[0], 0.0), True),
     ],
 )
-def test_source_time_dependent_attribute(input, expected_value):
+def test_source_explicit_time_dependent_attribute(input, expected_value):
     """Test that the time_dependent attribute is correctly set"""
     volume = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
     my_source = F.ParticleSource(input, volume, species)
 
-    assert my_source.value.time_dependent is expected_value
+    assert my_source.value.explicit_time_dependent is expected_value
 
 
 @pytest.mark.parametrize(

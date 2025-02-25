@@ -152,7 +152,7 @@ def test_time_dependent_values(input_value, expected_output):
 
     test_value = F.Value(input_value)
 
-    assert test_value.time_dependent == expected_output
+    assert test_value.explicit_time_dependent == expected_output
 
 
 @pytest.mark.parametrize(
