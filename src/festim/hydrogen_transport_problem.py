@@ -279,7 +279,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self.define_temperature()
         self.define_boundary_conditions()
-        self.create_source_values_fenics()
+        self.convert_source_input_values_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -612,7 +612,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         return form
 
-    def create_source_values_fenics(self):
+    def convert_source_input_values_to_fenics_objects(self):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
@@ -938,7 +938,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.define_function_spaces(subdomain)
 
         self.define_temperature()
-        self.create_source_values_fenics()
+        self.convert_source_input_values_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
 
@@ -1059,7 +1059,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             name = f"{species.name}_{subdomain.id}"
             species.subdomain_to_post_processing_solution[subdomain].name = name
 
-    def create_source_values_fenics(self):
+    def convert_source_input_values_to_fenics_objects(self):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects

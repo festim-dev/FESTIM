@@ -673,7 +673,7 @@ def test_update_time_dependent_values_source(source_value, expected_values):
     my_model.define_meshtags_and_measures()
     my_model.assign_functions_to_species()
     my_model.define_temperature()
-    my_model.create_source_values_fenics()
+    my_model.convert_source_input_values_to_fenics_objects()
 
     for i in range(3):
         # RUN
@@ -727,7 +727,7 @@ def test_update_sources_with_time_dependent_temperature(
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
-    my_model.create_source_values_fenics()
+    my_model.convert_source_input_values_to_fenics_objects()
 
     for i in range(3):
         # RUN
@@ -740,7 +740,7 @@ def test_update_sources_with_time_dependent_temperature(
             assert np.isclose(computed_value, expected_values[i])
 
 
-def test_create_source_values_fenics_multispecies():
+def test_convert_source_input_values_to_fenics_objects_multispecies():
     """Test that the define_sources method correctly sets the value_fenics attribute in
     a multispecies case"""
     # BUILD
@@ -764,7 +764,7 @@ def test_create_source_values_fenics_multispecies():
     my_model.define_temperature()
 
     # RUN
-    my_model.create_source_values_fenics()
+    my_model.convert_source_input_values_to_fenics_objects()
 
     # TEST
     assert np.isclose(float(my_model.sources[0].value.fenics_object), 5)
