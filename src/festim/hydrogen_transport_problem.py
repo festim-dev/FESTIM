@@ -371,7 +371,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for export in self.exports:
             if isinstance(export, exports.VTXTemperatureExport):
-                if isinstance(self.temperature_fenics, (fem.Function, fem.Constant, fem.Expression)):
+                if isinstance(self.temperature_fenics, (fem.Function, fem.Expression)):
                     temperature_field = self.temperature_fenics
                 else:
                     mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 1, 1)
