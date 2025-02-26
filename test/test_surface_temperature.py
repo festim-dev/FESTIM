@@ -5,15 +5,15 @@ import pytest
 
 import festim as F
 
-# @pytest.mark.parametrize(
-#     "T_function, expected_values",
-#     [
-#         (3, 3),
-#         (lambda t: t, 2.5),
-#     ],
-# )
+@pytest.mark.parametrize(
+    "T_function, expected_values",
+    [
+        (3, 3),
+        (lambda t: t, 2.5),
+    ],
+)
 
-def test_surface_temperature_compute_1D():
+def test_surface_temperature_compute_1D(T_function, expected_values):
     """Test that the average surface temperature export computes the correct value"""
 
     # BUILD
@@ -31,7 +31,7 @@ def test_surface_temperature_compute_1D():
 
     my_model = F.HydrogenTransportProblem(
         mesh=my_mesh,
-        temperature=3,
+        temperature=T_function,
     )
     my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
     dt = fem.Constant(my_mesh.mesh, 1.0)
@@ -44,11 +44,10 @@ def test_surface_temperature_compute_1D():
         my_model.t.value += dt.value
         my_model.update_time_dependent_values()
 
-    my_export = F.SurfaceTemperature(temperature_field=3, surface=dummy_surface)
+    my_export = F.SurfaceTemperature(temperature_field=T_function, surface=dummy_surface)
     my_export.compute(ds)
-    print(my_export.value)
 
     # TEST
     for i in range(0,2):
-        assert np.isclose(my_export.value, 3)
-        # assert np.isclose(my_export.value, expected_values)
+        # assert np.isclose(my_export.value, 3)
+        assert np.isclose(my_export.value, expected_values)
