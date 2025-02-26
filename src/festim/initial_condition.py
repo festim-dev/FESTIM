@@ -1,6 +1,10 @@
 import numpy as np
 import ufl
 from dolfinx import fem
+import mpi4py.MPI as MPI
+import adios4dolfinx
+
+from typing import Union, Callable
 
 
 # TODO rename this to InitialConcentration and create a new base class
@@ -15,7 +19,7 @@ class InitialCondition:
     Attributes:
         value (float, int, fem.Constant or callable): the value of the initial condition
         species (festim.Species): the species to which the source is applied
-        expr_fenics (LambdaType or fem.Expression): the value of the initial condition in
+        expr_fenics: the value of the initial condition in
             fenics format
 
     Usage:
@@ -25,6 +29,8 @@ class InitialCondition:
         >>> InitialCondition(value=lambda T: 1 + T, species=my_species)
         >>> InitialCondition(value=lambda x, T: 1 + x[0] + T, species=my_species)
     """
+
+    expr_fenics: Union[Callable, fem.Expression]
 
     def __init__(self, value, species):
         self.value = value
@@ -62,6 +68,30 @@ class InitialCondition:
                 self.value(**kwargs),
                 function_space.element.interpolation_points(),
             )
+
+
+class InitialConcentrationFromFile(InitialCondition):
+    expr_fenics: fem.Function
+
+    def __init__(self, filename, species, name: str, timestamp: float):
+        self.filename = filename
+        self.name = name
+        self.timestamp = timestamp
+        super().__init__(value=None, species=species)
+
+    def create_expr_fenics(self, mesh, temperature, function_space):
+
+        mesh_in = adios4dolfinx.read_mesh(self.filename, MPI.COMM_WORLD)
+        V_in = fem.functionspace(mesh_in, ("P", 1))
+        u_in = fem.Function(V_in)
+        adios4dolfinx.read_function(
+            filename=self.filename,
+            u=u_in,
+            name=self.name,
+            time=self.timestamp,
+        )
+
+        self.expr_fenics = u_in
 
 
 class InitialTemperature:
