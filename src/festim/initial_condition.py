@@ -70,19 +70,18 @@ class InitialCondition:
             )
 
 
-class InitialConcentrationFromFile(InitialCondition):
+class InitialConcentrationFromFile:
     expr_fenics: fem.Function
 
     def __init__(self, filename, species, name: str, timestamp: float):
         self.filename = filename
         self.name = name
         self.timestamp = timestamp
-        super().__init__(value=None, species=species)
+        self.species = species
 
-    def create_expr_fenics(self, mesh, temperature, function_space):
-
+    def read_function(self, element="P", order=1) -> fem.Function:
         mesh_in = adios4dolfinx.read_mesh(self.filename, MPI.COMM_WORLD)
-        V_in = fem.functionspace(mesh_in, ("P", 1))
+        V_in = fem.functionspace(mesh_in, (element, order))
         u_in = fem.Function(V_in)
         adios4dolfinx.read_function(
             filename=self.filename,
@@ -91,7 +90,7 @@ class InitialConcentrationFromFile(InitialCondition):
             time=self.timestamp,
         )
 
-        self.expr_fenics = u_in
+        return u_in
 
 
 class InitialTemperature:
