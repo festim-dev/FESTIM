@@ -530,7 +530,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             for idx, spe in enumerate(self.species):
                 spe.sub_function_space = self.function_space.sub(idx)
-                spe.post_processing_solution = self.u.sub(idx)
+                spe.sub_function = self.u.sub(
+                    idx
+                )  # TODO add this to discontinuous class
+                spe.post_processing_solution = self.u.sub(idx).collapse()
                 spe.collapsed_function_space, _ = self.function_space.sub(
                     idx
                 ).collapse()
@@ -797,6 +800,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     def post_processing(self):
         """Post processes the model"""
+
+        # update post-processing for mixed function space
+        if self.multispecies:
+            for spe in self.species:
+                spe.post_processing_solution = spe.sub_function.collapse()
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
@@ -1298,6 +1306,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                         )
                     )
                 else:
+                    raise NotImplementedError(
+                        f"Export type {type(export)} not implemented"
+                    )
                     mesh = (
                         export.field[0]
                         .subdomain_to_function_space[export._subdomain]
