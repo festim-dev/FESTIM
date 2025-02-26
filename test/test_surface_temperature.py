@@ -80,7 +80,7 @@ def test_title_generation(tmp_path, value):
 
     my_export = F.SurfaceTemperature(
         filename=os.path.join(tmp_path, f"{value}"),
-        field=my_model.temperature_fenics,
+        temperature_field=my_model.temperature_fenics,
         surface=F.SurfaceSubdomain1D(id=35, x=1),
     )
     my_export.value = 2.0
@@ -109,7 +109,7 @@ def test_write_overwrite(tmp_path):
 
     my_export2 = F.SurfaceTemperature(
         filename=filename,
-        field=my_model.temperature_fenics,
+        temperature_field=my_model.temperature_fenics,
         surface=F.SurfaceSubdomain1D(id=1, x=1),
     )
     my_export2.value = 3.0
@@ -158,7 +158,7 @@ def test_field_setter_raises_TypeError():
     with pytest.raises(TypeError):
 
         F.SurfaceTemperature(
-            temperature_field=1,
+            temperature_field="str",
             surface=F.SurfaceSubdomain1D(id=1, x=1),
         )
 
