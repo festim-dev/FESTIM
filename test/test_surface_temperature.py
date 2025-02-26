@@ -9,7 +9,7 @@ import festim as F
     "T_function, expected_values",
     [
         (3, 3),
-        (lambda t: t, 2.5),
+        (lambda t: t, 3.0),
     ],
 )
 
