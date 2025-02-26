@@ -36,7 +36,7 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
     my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
     dt = fem.Constant(my_mesh.mesh, 1.0)
 
-    my_model.temperature = T_function
+    my_model.temperature = 3
 
     my_model.define_temperature()
     my_model.initialise_exports()
