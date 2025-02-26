@@ -10,6 +10,7 @@ import festim as F
     [
         (3, 3),
         (lambda t: t, 3.0),
+        (lambda x, t: 1.0 + x[0] + t, 6.0),
     ],
 )
 
