@@ -10,18 +10,24 @@ class CoupledHeatTransferHydrogenTransport:
     Coupled heat transfer and hydrogen transport problem
 
     Args:
-        hydrogen_problem: the hydrogen transport problem
         heat_problem: the heat transfer problem
+        hydrogen_problem: the hydrogen transport problem
 
     Attributes:
-        hydrogen_problem: the hydrogen transport problem
         heat_problem: the heat transfer problem
+        hydrogen_problem: the hydrogen transport problem
 
     Examples:
         .. highlight:: python
         .. code-block:: python
 
             import festim as F
+
+            my_heat_transfer_model = F.HeatTransferProblem(
+                mesh=F.Mesh(...),
+                subdomains=[F.Subdomain(...)],
+                ...
+            )
 
             my_h_transport_model = F.HydrogenTransportProblem(
                 mesh=F.Mesh(...),
@@ -30,30 +36,34 @@ class CoupledHeatTransferHydrogenTransport:
                 ...
             )
 
-            my_heat_transfer_model = F.HeatTransferProblem(
-                mesh=F.Mesh(...),
-                subdomains=[F.Subdomain(...)],
-                ...
-            )
-
             coupled_problem = F.CoupledHeatTransferHydrogenTransport(
-                hydrogen_problem=my_h_transport_model,
                 heat_problem=my_heat_transfer_model,
+                hydrogen_problem=my_h_transport_model,
             )
 
 
     """
 
-    hydrogen_problem: HydrogenTransportProblem
     heat_problem: HeatTransferProblem
+    hydrogen_problem: HydrogenTransportProblem
 
     def __init__(
         self,
-        hydrogen_problem: HydrogenTransportProblem,
         heat_problem: HeatTransferProblem,
+        hydrogen_problem: HydrogenTransportProblem,
     ) -> None:
-        self.hydrogen_problem = hydrogen_problem
         self.heat_problem = heat_problem
+        self.hydrogen_problem = hydrogen_problem
+
+    @property
+    def heat_problem(self):
+        return self._heat_problem
+
+    @heat_problem.setter
+    def heat_problem(self, value):
+        if not isinstance(value, HeatTransferProblem):
+            raise TypeError("heat_problem must be a festim.HeatTransferProblem object")
+        self._heat_problem = value
 
     @property
     def hydrogen_problem(self):
@@ -66,16 +76,6 @@ class CoupledHeatTransferHydrogenTransport:
                 "hydrogen_problem must be a festim.HydrogenTransportProblem object"
             )
         self._hydrogen_problem = value
-
-    @property
-    def heat_problem(self):
-        return self._heat_problem
-
-    @heat_problem.setter
-    def heat_problem(self, value):
-        if not isinstance(value, HeatTransferProblem):
-            raise TypeError("heat_problem must be a festim.HeatTransferProblem object")
-        self._heat_problem = value
 
     def initialise(self):
         if (
