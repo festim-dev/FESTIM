@@ -13,7 +13,7 @@ import festim as F
     ],
 )
 
-def test_average_surface_temperature_compute_1D(T_function, expected_values):
+def test_surface_temperature_compute_1D(T_function, expected_values):
     """Test that the average surface temperature export computes the correct value"""
 
     # BUILD
