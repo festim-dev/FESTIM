@@ -59,11 +59,13 @@ def test_title(tmp_path):
     surf_1 = F.SurfaceSubdomain(id=1)
     results = "test.csv"
     temp = 400
-    surface_temp = F.SurfaceTemperature(temperature_field=temp,surface=surf_1,filename=results)
+    surface_temp = F.SurfaceTemperature(
+        temperature_field=temp, surface=surf_1, filename=results
+    )
 
     my_model = F.HydrogenTransportProblem(
-            temperature=temp,
-        )
+        temperature=temp,
+    )
     surface_temp.filename = os.path.join(tmp_path, "test.csv")
     surface_temp.value = 1
 
