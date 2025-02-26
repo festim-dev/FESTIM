@@ -70,3 +70,140 @@ def test_title(tmp_path):
     surface_temp.value = 1
 
     assert surface_temp.title == "Temperature surface 1"
+
+@pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
+def test_title_generation(tmp_path, value):
+    """Test that the title is made to be written to the header in a csv or txt file"""
+    my_model = F.HydrogenTransportProblem(
+        temperature=500
+    )
+    my_model.define_temperature()
+
+    my_export = F.SurfaceTemperature(
+        filename=os.path.join(tmp_path, f"{value}"),
+        field=my_model.temperature_fenics,
+        surface=F.SurfaceSubdomain1D(id=35, x=1),
+    )
+    my_export.value = 2.0
+    my_export.write(0)
+    title = np.genfromtxt(my_export.filename, delimiter=",", max_rows=1, dtype=str)
+
+    expected_title = "Temperature surface 35"
+
+    assert title[1] == expected_title
+
+
+def test_write_overwrite(tmp_path):
+    """Test that the write method overwrites the file if it already exists"""
+    filename = os.path.join(tmp_path, "my_export.csv")
+    my_model = F.HydrogenTransportProblem(
+        temperature=500
+    )
+    my_model.define_temperature()
+
+    my_export = F.SurfaceTemperature(
+        filename=filename,
+        field=my_model.temperature_fenics,
+        surface=F.SurfaceSubdomain1D(id=35, x=1),
+    )
+    my_export.value = 2.0
+    my_export.write(0)
+    my_export.write(1)
+
+    my_export2 = F.SurfaceTemperature(
+        filename=filename,
+        field=my_model.temperature_fenics,
+        surface=F.SurfaceSubdomain1D(id=1, x=1),
+    )
+    my_export2.value = 3.0
+    my_export2.write(1)
+    my_export2.write(2)
+    my_export2.write(3)
+
+    data = np.genfromtxt(filename, delimiter=",", names=True)
+    file_length = data.size
+    expected_length = 3
+
+    assert file_length == expected_length
+
+
+def test_filename_setter_raises_TypeError():
+    """Test that a TypeError is raised when the filename is not a string"""
+
+    with pytest.raises(TypeError, match="filename must be of type str"):
+        my_model = F.HydrogenTransportProblem(
+        temperature=500
+        )
+        my_model.define_temperature()
+
+        F.SurfaceTemperature(
+            filename=1,
+            field=my_model.temperature_fenics,
+            surface=F.SurfaceSubdomain1D(id=1, x=1),
+        )
+
+def test_filename_setter_raises_ValueError(tmp_path):
+    """Test that a ValueError is raised when the filename does not end with .csv or .txt"""
+
+    with pytest.raises(ValueError):
+        my_model = F.HydrogenTransportProblem(
+            temperature=500
+        )
+        my_model.define_temperature()
+
+        F.SurfaceTemperature(
+            filename=os.path.join(tmp_path, "my_export.xdmf"),
+            field=my_model.temperature_fenics,
+            surface=F.SurfaceSubdomain1D(id=1, x=1),
+        )
+
+def test_field_setter_raises_TypeError():
+    """Test that a TypeError is raised when the field is not an int, float, fem.Constant, fem.Expression, or fem.Function"""
+
+    with pytest.raises(TypeError):
+
+        F.SurfaceTemperature(
+            field=1,
+            surface=F.SurfaceSubdomain1D(id=1, x=1),
+        )
+
+
+@pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
+def test_writer(tmp_path, value):
+    """Test that the writes values at each timestep to either a csv or txt file"""
+    my_model = F.HydrogenTransportProblem(
+            temperature=500
+        )
+    my_model.define_temperature()
+
+    my_export = F.SurfaceTemperature(
+        filename=os.path.join(tmp_path, f"{value}"),
+        field=my_model.temperature_fenics,
+        surface=F.SurfaceSubdomain1D(id=1, x=0),
+    )
+    my_export.value = 2.0
+
+    for i in range(10):
+        my_export.write(i)
+        file_length = len(np.genfromtxt(my_export.filename, delimiter=","))
+
+        expected_length = i + 2
+
+        assert file_length == expected_length
+
+
+def test_surface_setter_raises_TypeError():
+    """Test that a TypeError is raised when the surface is not a
+    F.SurfaceSubdomain"""
+
+    with pytest.raises(
+        TypeError, match="surface should be an int or F.SurfaceSubdomain"
+    ):
+        my_model = F.HydrogenTransportProblem(
+                temperature=500
+            )
+        my_model.define_temperature()
+        F.SurfaceTemperature(
+            field=my_model.temperature_fenics,
+            surface="1",
+        )
