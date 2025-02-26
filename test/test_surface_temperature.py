@@ -2,6 +2,7 @@ import numpy as np
 import ufl
 from dolfinx import fem
 import pytest
+import os
 
 import festim as F
 
@@ -52,3 +53,18 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
 
     # TEST
     assert np.isclose(my_export.value, expected_values)
+
+
+def test_title(tmp_path):
+    surf_1 = F.SurfaceSubdomain(id=1)
+    results = "test.csv"
+    temp = 400
+    surface_temp = F.SurfaceTemperature(temperature_field=temp,surface=surf_1,filename=results)
+
+    my_model = F.HydrogenTransportProblem(
+            temperature=temp,
+        )
+    surface_temp.filename = os.path.join(tmp_path, "test.csv")
+    surface_temp.value = 1
+
+    assert surface_temp.title == "Temperature surface 1"
