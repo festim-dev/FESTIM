@@ -44,8 +44,9 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
         my_model.t.value += dt.value
         my_model.update_time_dependent_values()
 
-    my_export = F.SurfaceTemperature(temperature_field=my_model.temperature, surface=dummy_surface)
+    my_export = F.SurfaceTemperature(temperature_field=my_model.temperature_fenics, surface=dummy_surface)
     my_export.compute(ds)
+    print(my_export.value)
 
     # TEST
     assert np.isclose(my_export.value, expected_values)
