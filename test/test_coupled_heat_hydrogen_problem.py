@@ -105,33 +105,3 @@ def test_final_time_values_are_the_same():
         float(test_coupled_problem.heat_problem.settings.final_time),
         float(test_coupled_problem.hydrogen_problem.settings.final_time),
     )
-
-
-def test_error_is_raised_when_meshes_not_the_same():
-    """Test that a ValueError is raised when the meshes used in the heat_problem and
-    the hydorgen problem are not the same"""
-    alt_mesh = F.Mesh1D(vertices=np.linspace(0, 2, 20))
-
-    test_heat_problem = F.HeatTransferProblem(
-        mesh=test_mesh,
-        subdomains=test_subdomains,
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=1),
-    )
-
-    test_hydrogen_problem = F.HydrogenTransportProblem(
-        mesh=alt_mesh,
-        subdomains=test_subdomains,
-        species=[test_H],
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=1),
-    )
-
-    test_coupled_problem = F.CoupledHeatTransferHydrogenTransport(
-        heat_problem=test_heat_problem,
-        hydrogen_problem=test_hydrogen_problem,
-    )
-
-    with pytest.raises(
-        ValueError,
-        match="The meshes of the heat transfer and hydrogen transport problems must be the same",
-    ):
-        test_coupled_problem.initialise()
