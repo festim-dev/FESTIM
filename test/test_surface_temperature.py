@@ -48,6 +48,4 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
     my_export.compute(ds)
 
     # TEST
-    for i in range(0,2):
-        # assert np.isclose(my_export.value, 3)
-        assert np.isclose(my_export.value, expected_values)
+    assert np.isclose(my_export.value, expected_values)
