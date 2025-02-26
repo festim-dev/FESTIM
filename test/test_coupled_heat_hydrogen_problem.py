@@ -48,6 +48,9 @@ def test_error_rasied_when_wrong_heat_problem_given(object):
 
 
 def test_initial_dt_values_are_the_same():
+    """Test that the smallest of the stepsize intial_value values given is used in both
+    the heat_problem and the hydorgen_problem"""
+
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
@@ -75,6 +78,9 @@ def test_initial_dt_values_are_the_same():
 
 
 def test_final_time_values_are_the_same():
+    """Test that the largest of the final_time values given is used in both
+    the heat_problem and the hydorgen_problem"""
+
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
@@ -102,6 +108,8 @@ def test_final_time_values_are_the_same():
 
 
 def test_error_is_raised_when_meshes_not_the_same():
+    """Test that a ValueError is raised when the meshes used in the heat_problem and
+    the hydorgen problem are not the same"""
     alt_mesh = F.Mesh1D(vertices=np.linspace(0, 2, 20))
 
     test_heat_problem = F.HeatTransferProblem(

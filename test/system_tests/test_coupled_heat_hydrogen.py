@@ -9,6 +9,9 @@ test_H = F.Species("H", mobile=True)
 
 
 def test_ensure_steady_T_field_passed_to_hydrogen_problem_the_same():
+    """Test that the temperature field evaluated in the heat_problem is the same
+    as that used in the temperature_fenics in the hydrogen problem"""
+
     T_func = lambda x: 2 * x[0] + 10
     test_vol_sub = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=test_mat)
     left_sub = F.SurfaceSubdomain1D(id=2, x=0)
@@ -50,12 +53,15 @@ def test_ensure_steady_T_field_passed_to_hydrogen_problem_the_same():
 
 
 def test_T_dependent_species():
+    """Test that the function in the hydrogen problem which is temperature dependent
+    has the correct value at x=1, when temperature field is space dependent"""
+
     T_func = lambda x: 2 * x[0] + 10
     c_func = lambda T: T
 
     test_vol_sub = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=test_mat)
     left_sub = F.SurfaceSubdomain1D(id=2, x=0)
-    right_sub = F.SurfaceSubdomain1D(id=2, x=1)
+    right_sub = F.SurfaceSubdomain1D(id=3, x=1)
 
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
@@ -90,6 +96,10 @@ def test_T_dependent_species():
 
 
 def test_transient_t_depedent_temp_and_T_dependent_species():
+    """Test that the function in the hydrogen problem which is temperature dependent
+    has the correct value at x=1, when temperature field is time and space dependent
+    in transient"""
+
     T_func = lambda x, t: 2 * x[0] + 10 + t
     c_func = lambda T: T
 
@@ -98,7 +108,7 @@ def test_transient_t_depedent_temp_and_T_dependent_species():
     )
     test_vol_sub = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
     left_sub = F.SurfaceSubdomain1D(id=2, x=0)
-    right_sub = F.SurfaceSubdomain1D(id=2, x=1)
+    right_sub = F.SurfaceSubdomain1D(id=3, x=1)
 
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
