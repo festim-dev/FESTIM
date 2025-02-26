@@ -59,7 +59,7 @@ class SurfaceTemperature:
     @temperature_field.setter
     def temperature_field(self, value):
         # check that temperature field is float, int, fem.Constant, fem.Function, or fem.Expression
-        if not isinstance(value, (fem.Constant, fem.Function, fem.Expression, int, float, str)):
+        if not isinstance(value, (fem.Constant, fem.Function, fem.Expression, int, float)):
             raise TypeError("field must be of type float, int, fem.Constant, fem.Function, or fem.Expression")
                         
         self._temperature_field = value
