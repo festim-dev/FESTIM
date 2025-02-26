@@ -646,8 +646,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 "Initial conditions can only be defined for transient simulations"
             )
 
-        function_space_value = None
-
         for condition in self.initial_conditions:
             if isinstance(
                 condition, festim.initial_condition.InitialConcentrationFromFile
