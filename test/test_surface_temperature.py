@@ -13,12 +13,11 @@ import festim as F
 #     ],
 # )
 
-def test_surface_temperature_compute_1D(T_function, expected_values):
+def test_surface_temperature_compute_1D():
     """Test that the average surface temperature export computes the correct value"""
 
     # BUILD
     L = 6.0
-    D = 1.5
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=6)
     dummy_volume = F.VolumeSubdomain1D(
