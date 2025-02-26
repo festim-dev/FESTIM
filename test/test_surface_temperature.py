@@ -46,6 +46,7 @@ def test_surface_temperature_compute_1D():
 
     my_export = F.SurfaceTemperature(temperature_field=3, surface=dummy_surface)
     my_export.compute(ds)
+    print(my_export.value)
 
     # TEST
     for i in range(0,2):
