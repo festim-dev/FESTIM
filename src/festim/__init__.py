@@ -30,7 +30,6 @@ from .exports.minimum_surface import MinimumSurface
 from .exports.minimum_volume import MinimumVolume
 from .exports.surface_flux import SurfaceFlux
 from .exports.surface_quantity import SurfaceQuantity
-from .exports.surface_temperature import SurfaceTemperature
 from .exports.total_surface import TotalSurface
 from .exports.total_volume import TotalVolume
 from .exports.volume_quantity import VolumeQuantity

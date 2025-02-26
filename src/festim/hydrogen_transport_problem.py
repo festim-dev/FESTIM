@@ -833,9 +833,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if export.filename is not None:
                     export.write(t=float(self.t))
 
-            elif isinstance(export, exports.SurfaceTemperature):
-                export.compute(self.ds)  # compute surface temp
-
                 export.t.append(float(self.t))  # update export time
 
                 # if filename given write export data to file
