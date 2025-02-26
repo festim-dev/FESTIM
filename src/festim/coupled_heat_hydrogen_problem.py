@@ -1,8 +1,30 @@
+import numpy as np
 import tqdm.autonotebook
+from dolfinx import fem
 
 from festim.heat_transfer_problem import HeatTransferProblem
 from festim.helpers import as_fenics_constant
 from festim.hydrogen_transport_problem import HydrogenTransportProblem
+
+
+def nmm_interpolate(f_out: fem.function, f_in: fem.function):
+    """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
+    another function (f_out) with a mismatching mesh
+
+    args:
+        f_out: function to interpolate into
+        f_in: function to interpolate from
+
+    """
+
+    dim = f_out.function_space.mesh.topology.dim
+    index_map = f_out.function_space.mesh.topology.index_map(dim)
+    ncells = index_map.size_local + index_map.num_ghosts
+    cells = np.arange(ncells, dtype=np.int32)
+    interpolation_data = fem.create_interpolation_data(
+        f_out.function_space, f_in.function_space, cells, padding=1e-11
+    )
+    f_out.interpolate_nonmatching(f_in, cells, interpolation_data=interpolation_data)
 
 
 class CoupledHeatTransferHydrogenTransport:
@@ -16,6 +38,8 @@ class CoupledHeatTransferHydrogenTransport:
     Attributes:
         heat_problem: the heat transfer problem
         hydrogen_problem: the hydrogen transport problem
+        non_matching_meshes: True if the meshes in the heat_problem and hydorgen_problem
+            are not matching
 
     Examples:
         .. highlight:: python
@@ -47,6 +71,8 @@ class CoupledHeatTransferHydrogenTransport:
     heat_problem: HeatTransferProblem
     hydrogen_problem: HydrogenTransportProblem
 
+    non_matching_meshes: bool
+
     def __init__(
         self,
         heat_problem: HeatTransferProblem,
@@ -77,6 +103,10 @@ class CoupledHeatTransferHydrogenTransport:
             )
         self._hydrogen_problem = value
 
+    @property
+    def non_matching_meshes(self):
+        return self.heat_problem.mesh.mesh != self.hydrogen_problem.mesh.mesh
+
     def initialise(self):
         if (
             self.heat_problem.settings.transient
@@ -102,17 +132,26 @@ class CoupledHeatTransferHydrogenTransport:
 
         self.heat_problem.show_progress_bar = False
 
-        if self.heat_problem.mesh.mesh == self.hydrogen_problem.mesh.mesh:
-            self.hydrogen_problem.temperature = self.heat_problem.u
+        if self.non_matching_meshes:
+            self.hydrogen_problem.define_function_spaces()
+            T_func = fem.Function(self.hydrogen_problem.function_space)
+
+            nmm_interpolate(T_func, self.heat_problem.u)
+
+            self.hydrogen_problem.temperature = T_func
         else:
-            raise ValueError(
-                "The meshes of the heat transfer and hydrogen transport problems must be the same"
-            )
+            self.hydrogen_problem.temperature = self.heat_problem.u
 
         self.hydrogen_problem.initialise()
 
     def iterate(self):
         self.heat_problem.iterate()
+
+        if self.non_matching_meshes:
+            nmm_interpolate(
+                self.hydrogen_problem.temperature_fenics, self.heat_problem.u
+            )
+
         self.hydrogen_problem.iterate()
 
         # use the same time step for both problems, use minimum of the two
@@ -152,6 +191,10 @@ class CoupledHeatTransferHydrogenTransport:
             self.heat_problem.solver.solve(self.heat_problem.u)
             self.heat_problem.post_processing()
 
-            self.hydrogen_problem.temperature = self.heat_problem.u
+            if self.non_matching_meshes:
+                nmm_interpolate(
+                    self.hydrogen_problem.temperature_fenics, self.heat_problem.u
+                )
+
             self.hydrogen_problem.initialise()
             self.hydrogen_problem.run()
