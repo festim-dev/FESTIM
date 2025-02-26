@@ -87,7 +87,8 @@ def test_vtx_DG(tmpdir):
     assert len(my_model._vtxfiles) == 1
 
 
-def test_vtx_integration_with_h_transport_problem(tmpdir):
+@pytest.mark.parametrize("checkpoint", [True, False])
+def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     my_mat = F.Material(D_0=1, E_D=0, name="mat")
@@ -100,14 +101,19 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
     my_model.temperature = 500
 
     filename = str(tmpdir.join("my_export.bp"))
-    my_export = F.VTXSpeciesExport(filename, field=my_model.species[0])
+    my_export = F.VTXSpeciesExport(
+        filename, field=my_model.species[0], checkpoint=checkpoint
+    )
     my_model.exports = [my_export]
     my_model.settings = F.Settings(atol=1, rtol=0.1)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
-    assert len(my_model._vtxfiles) == 1
+    if checkpoint:
+        assert len(my_model._vtxfiles) == 0
+    else:
+        assert len(my_model._vtxfiles) == 1
 
 
 def test_field_attribute_is_always_list():

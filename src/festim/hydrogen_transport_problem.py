@@ -9,6 +9,7 @@ import tqdm.autonotebook
 import ufl
 from dolfinx import fem
 from scifem import BlockedNewtonSolver
+import adios4dolfinx
 
 import festim.boundary_conditions
 import festim.problem
@@ -386,14 +387,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.define_writer(MPI.COMM_WORLD)
             if isinstance(export, exports.VTXSpeciesExport):
                 functions = export.get_functions()
-                self._vtxfiles.append(
-                    dolfinx.io.VTXWriter(
-                        functions[0].function_space.mesh.comm,
-                        export.filename,
-                        functions,
-                        engine="BP5",
+                if not export._checkpoint:
+                    self._vtxfiles.append(
+                        dolfinx.io.VTXWriter(
+                            functions[0].function_space.mesh.comm,
+                            export.filename,
+                            functions,
+                            engine="BP5",
+                        )
                     )
-                )
+                else:
+                    adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
@@ -832,6 +836,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
 
+            if isinstance(export, exports.VTXSpeciesExport):
+                if export._checkpoint:
+                    for field in export.field:
+                        adios4dolfinx.write_function(
+                            export.filename,
+                            field.post_processing_solution,
+                            time=float(self.t),
+                            name=field.name,
+                        )
         # should we move this to problem.ProblemBase?
         for vtxfile in self._vtxfiles:
             vtxfile.write(float(self.t))
@@ -1270,14 +1283,25 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for export in self.exports:
             if isinstance(export, exports.VTXSpeciesExport):
                 functions = export.get_functions()
-                self._vtxfiles.append(
-                    dolfinx.io.VTXWriter(
-                        functions[0].function_space.mesh.comm,
-                        export.filename,
-                        functions,
-                        engine="BP5",
+                if not export._checkpoint:
+                    self._vtxfiles.append(
+                        dolfinx.io.VTXWriter(
+                            functions[0].function_space.mesh.comm,
+                            export.filename,
+                            functions,
+                            engine="BP5",
+                        )
                     )
-                )
+                else:
+                    mesh = (
+                        export.field[0]
+                        .subdomain_to_function_space[export._subdomain]
+                        .mesh
+                    )
+                    adios4dolfinx.write_mesh(
+                        export.filename,
+                        mesh=mesh,
+                    )
             else:
                 raise NotImplementedError(f"Export type {type(export)} not implemented")
 
@@ -1301,6 +1325,18 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for export in self.exports:
             if not isinstance(export, exports.VTXSpeciesExport):
                 raise NotImplementedError(f"Export type {type(export)} not implemented")
+            if isinstance(export, exports.VTXSpeciesExport):
+                if export._checkpoint:
+                    for field in export.field:
+                        solution = field.subdomain_to_post_processing_solution[
+                            export._subdomain
+                        ]
+                        adios4dolfinx.write_function(
+                            export.filename,
+                            solution,
+                            time=float(self.t),
+                            name=field.name,
+                        )
 
     def iterate(self):
         """Iterates the model for a given time step"""
