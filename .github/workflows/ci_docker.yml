@@ -60,6 +60,7 @@ jobs:
           with:
             message: 'test message!'
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            issue_number: ${{ github.event.pull_request.number }}
 
         - name: Upload to codecov
           uses: codecov/codecov-action@v4
