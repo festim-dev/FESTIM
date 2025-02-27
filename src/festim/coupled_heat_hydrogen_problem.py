@@ -4,7 +4,12 @@ from dolfinx import fem
 
 from festim.heat_transfer_problem import HeatTransferProblem
 from festim.helpers import as_fenics_constant
-from festim.hydrogen_transport_problem import HydrogenTransportProblem
+from festim.hydrogen_transport_problem import (
+    HTransportProblemDiscontinuous,
+    HTransportProblemPenalty,
+    HydrogenTransportProblem,
+)
+from festim.problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 
 
 def nmm_interpolate(f_out: fem.function, f_in: fem.function):
@@ -15,6 +20,8 @@ def nmm_interpolate(f_out: fem.function, f_in: fem.function):
         f_out: function to interpolate into
         f_in: function to interpolate from
 
+    notes:
+    https://fenicsproject.discourse.group/t/gjk-error-in-interpolation-between-non-matching-second-ordered-3d-meshes/16086/6
     """
 
     dim = f_out.function_space.mesh.topology.dim
@@ -97,7 +104,20 @@ class CoupledHeatTransferHydrogenTransport:
 
     @hydrogen_problem.setter
     def hydrogen_problem(self, value):
-        if not isinstance(value, HydrogenTransportProblem):
+        if isinstance(
+            value,
+            HTransportProblemDiscontinuous
+            | HTransportProblemPenalty
+            | HydrogenTransportProblemDiscontinuousChangeVar,
+        ):
+            raise NotImplementedError(
+                "Coupled heat transfer - hydorgen transport simulations with "
+                "HydrogenTransportProblemDiscontinuousChangeVar, "
+                "HTransportProblemPenalty or"
+                "HydrogenTransportProblemDiscontinuousChangeVar, "
+                "not currently supported"
+            )
+        elif not isinstance(value, HydrogenTransportProblem):
             raise TypeError(
                 "hydrogen_problem must be a festim.HydrogenTransportProblem object"
             )
@@ -115,26 +135,28 @@ class CoupledHeatTransferHydrogenTransport:
             # make sure both problems have the same initial time step and final time,
             # use minimal initial value of the two and maximal final time of the two
             min_initial_dt = min(
-                float(self.heat_problem.settings.stepsize.initial_value),
-                float(self.hydrogen_problem.settings.stepsize.initial_value),
+                self.heat_problem.settings.stepsize.initial_value,
+                self.hydrogen_problem.settings.stepsize.initial_value,
             )
             self.heat_problem.settings.stepsize.initial_value = min_initial_dt
             self.hydrogen_problem.settings.stepsize.initial_value = min_initial_dt
 
-            max_final_time = max(
-                float(self.heat_problem.settings.final_time),
-                float(self.hydrogen_problem.settings.final_time),
-            )
-            self.heat_problem.settings.final_time = max_final_time
-            self.hydrogen_problem.settings.final_time = max_final_time
+            if (
+                self.heat_problem.settings.final_time
+                != self.hydrogen_problem.settings.final_time
+            ):
+                raise ValueError(
+                    "Final time values in the heat transfer and hydrogen transport "
+                    "model must be the same"
+                )
 
         self.heat_problem.initialise()
 
         self.heat_problem.show_progress_bar = False
 
         if self.non_matching_meshes:
-            self.hydrogen_problem.define_function_spaces()
-            T_func = fem.Function(self.hydrogen_problem.function_space)
+            V = fem.functionspace(self.hydrogen_problem.mesh.mesh, ("P", 1))
+            T_func = fem.Function(V)
 
             nmm_interpolate(T_func, self.heat_problem.u)
 
@@ -184,12 +206,11 @@ class CoupledHeatTransferHydrogenTransport:
                 self.iterate()
 
             if self.hydrogen_problem.show_progress_bar:
-                self.hydrogen_problem.progress_bar.refresh()  # refresh progress bar to show 100%
+                self.hydrogen_problem.progress_bar.refresh()
                 self.hydrogen_problem.progress_bar.close()
         else:
             # Solve steady-state
-            self.heat_problem.solver.solve(self.heat_problem.u)
-            self.heat_problem.post_processing()
+            self.heat_problem.run()
 
             if self.non_matching_meshes:
                 nmm_interpolate(
