@@ -147,8 +147,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
         Q1 = fem.functionspace(self.mesh.mesh, ("DG", 1))
 
-        print(self.temperature_fenics.x.array[0])
-
         for spe in self.species:
             if not spe.mobile:
                 continue
