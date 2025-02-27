@@ -27,7 +27,7 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: ./coverage.xml
   
-  run-tests-on-latest-dolfinx:
+  run-tests-on-nightly-dolfinx:
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -45,7 +45,7 @@ jobs:
 
         - name: Run tests
           run: |
-            python3 -m pytest test/ --cov festim --cov-report xml --cov-report term || echo "::warning::test failed on latest version of dolfinx, but continuing..."
+            python3 -m pytest test/ --cov festim --cov-report xml --cov-report term || echo "::⚠️ warning::test failed on nightly version of dolfinx, but continuing..."
 
         - name: Ensure job is not marked as failure
           if: always()
@@ -56,3 +56,9 @@ jobs:
           with:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: ./coverage.xml
+        
+        - name: Comment on PR
+          if: always()
+          run: gh pr comment ${{ github.event.pull_request.number }} --body "$(cat warning.txt)"
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
