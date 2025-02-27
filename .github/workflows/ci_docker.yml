@@ -1,10 +1,6 @@
 name: Docker CI
 on: [pull_request, push]
 
-permissions:  
-  contents: read
-  pull-requests: write  # ✅ Ensures PR comments can be created
-
 jobs:
   run-tests:
     runs-on: ubuntu-latest
@@ -34,6 +30,8 @@ jobs:
   run-tests-on-nightly-dolfinx:
     runs-on: ubuntu-latest
     continue-on-error: true
+    permissions:
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -58,14 +56,8 @@ jobs:
           if: always()
           run: echo "Forcing job success"
 
-        - name: Upload to codecov
-          uses: codecov/codecov-action@v4
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: ./coverage.xml
-        
         - name: Update or create a comment
-          if: env.warning == 'true' && github.event_name == 'pull_request'  # ✅ Prevents errors when triggered by push
+          if: env.warning == 'true' && github.event_name == 'pull_request'
           uses: actions/github-script@v7
           with:
             github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -74,32 +66,38 @@ jobs:
               const issue_number = context.payload.pull_request.number;
 
               if (!issue_number) {
-                console.log("Not a pull request, skipping comment.");
-                return;
-              }
-  
+              console.log("Not a pull request, skipping comment.");
+              return;
+                  }
+            
               // Fetch existing comments
-              const { data: comments } = await github.rest.issues.listComments({
-                owner, repo, issue_number
-              });
-  
+                  const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number
+                  });
+            
               // Look for an existing warning comment
               const warningComment = comments.find(comment => 
-                comment.user.login === 'github-actions[bot]' && 
-                comment.body.includes("⚠️ Warning")
-              );
-  
-              if (warningComment) {
-                // Update the existing warning comment
-                await github.rest.issues.updateComment({
-                  owner, repo,
-                  comment_id: warningComment.id,
-                  body: "⚠️ Warning: Tests failed on dolfinx nightly, but workflow continues. (Updated)"
-                });
-              } else {
-                // Post a new comment if none exists
-                await github.rest.issues.createComment({
-                  owner, repo, issue_number,
-                  body: "⚠️ Warning: Tests failed on dolfinx nightly, but workflow continues."
-                });
-              }
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes("⚠️ Warning")
+                  );
+            
+                  if (warningComment) {
+              // Update the existing warning comment
+              await github.rest.issues.updateComment({
+                owner, repo,
+                comment_id: warningComment.id,
+                body: "⚠️ Warning: Tests failed on dolfinx nightly, but workflow continues. (Updated)"
+              });
+                  } else {
+              // Post a new comment if none exists
+              await github.rest.issues.createComment({
+                owner, repo, issue_number,
+                body: "⚠️ Warning: Tests failed on dolfinx nightly, but workflow continues."
+              });
+                  }
+
+        - name: Upload to codecov
+          uses: codecov/codecov-action@v4
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: ./coverage.xml
