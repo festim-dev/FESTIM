@@ -30,10 +30,7 @@ jobs:
   run-tests-on-nightly-dolfinx:
     runs-on: ubuntu-latest
     continue-on-error: true
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+    permissions: write-all
     strategy:
       fail-fast: false
       matrix:
