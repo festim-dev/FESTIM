@@ -46,7 +46,7 @@ jobs:
         - name: Run tests
           id: check
           run: |
-            if ! python3 -m pytest test/ --cov festim --cov-report xml --cov-report term: then
+            if ! python3 -m pytest test/ --cov festim --cov-report xml --cov-report term; then
               echo "warning=true" >> $GITHUB_ENV
             fi
 
