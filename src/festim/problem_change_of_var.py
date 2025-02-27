@@ -1,12 +1,13 @@
-import festim.boundary_conditions
-from festim.hydrogen_transport_problem import HydrogenTransportProblem
-from festim import boundary_conditions, as_fenics_constant
-import festim
-import festim.species as _species
+from typing import List
+
 import ufl
 from dolfinx import fem
 
-from typing import List
+import festim.boundary_conditions
+import festim.species as _species
+from festim import boundary_conditions
+from festim.helpers import as_fenics_constant
+from festim.hydrogen_transport_problem import HydrogenTransportProblem
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
@@ -78,6 +79,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             # hack enforce the concentration attribute of the species for all species
             # to be used in reaction.reaction_term
+
             for spe in self.species:
                 if spe.mobile:
                     K_S = reaction.volume.material.get_solubility_coefficient(
@@ -144,6 +146,8 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         # override the post-processing solution c = theta * K_S
         Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
         Q1 = fem.functionspace(self.mesh.mesh, ("DG", 1))
+
+        print(self.temperature_fenics.x.array[0])
 
         for spe in self.species:
             if not spe.mobile:
