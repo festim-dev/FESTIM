@@ -1,6 +1,10 @@
 name: Docker CI
 on: [pull_request, push]
 
+permissions:  
+  contents: read
+  pull-requests: write  # ✅ Ensures PR comments can be created
+
 jobs:
   run-tests:
     runs-on: ubuntu-latest
@@ -30,8 +34,6 @@ jobs:
   run-tests-on-nightly-dolfinx:
     runs-on: ubuntu-latest
     continue-on-error: true
-    permissions:
-      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
@@ -63,13 +65,18 @@ jobs:
             files: ./coverage.xml
         
         - name: Update or create a comment
-          if: env.warning == 'true'
+          if: env.warning == 'true' && github.event_name == 'pull_request'  # ✅ Prevents errors when triggered by push
           uses: actions/github-script@v7
           with:
             github-token: ${{ secrets.GITHUB_TOKEN }}
             script: |
               const { owner, repo } = context.repo;
               const issue_number = context.payload.pull_request.number;
+
+              if (!issue_number) {
+                console.log("Not a pull request, skipping comment.");
+                return;
+              }
   
               // Fetch existing comments
               const { data: comments } = await github.rest.issues.listComments({
@@ -87,13 +94,12 @@ jobs:
                 await github.rest.issues.updateComment({
                   owner, repo,
                   comment_id: warningComment.id,
-                  body: "⚠️ Warning: Some-command failed, but workflow continues. (Updated)"
+                  body: "⚠️ Warning: Tests failed on dolfinx nightly, but workflow continues. (Updated)"
                 });
               } else {
                 // Post a new comment if none exists
                 await github.rest.issues.createComment({
                   owner, repo, issue_number,
-                  body: "⚠️ Warning: Some-command failed, but workflow continues."
+                  body: "⚠️ Warning: Tests failed on dolfinx nightly, but workflow continues."
                 });
               }
-      
