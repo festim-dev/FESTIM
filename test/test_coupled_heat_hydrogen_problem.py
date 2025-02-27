@@ -13,7 +13,7 @@ test_H = F.Species("H")
     "object",
     ["coucou", 1, 1.0],
 )
-def test_error_rasied_when_wrong_hydrogen_problem_given(object):
+def test_error_raised_when_wrong_hydrogen_problem_given(object):
     """Test TypeError is raised when an object that isnt a
     festim.HydrogenTransportProblem object is given to hydrogen_problem"""
 
@@ -30,9 +30,36 @@ def test_error_rasied_when_wrong_hydrogen_problem_given(object):
 
 @pytest.mark.parametrize(
     "object",
+    [
+        F.HTransportProblemDiscontinuous(),
+        F.HTransportProblemPenalty(),
+        F.HydrogenTransportProblemDiscontinuousChangeVar(),
+    ],
+)
+def test_error_raised_when_wrong_type_hydrogen_problem_given(object):
+    """Test TypeError is raised when an object that isnt a
+    festim.HydrogenTransportProblem object is given to hydrogen_problem"""
+
+    test_heat_problem = F.HeatTransferProblem()
+
+    with pytest.raises(
+        NotImplementedError,
+        match="Coupled heat transfer - hydorgen transport simulations with "
+        "HydrogenTransportProblemDiscontinuousChangeVar, "
+        "HTransportProblemPenalty or"
+        "HydrogenTransportProblemDiscontinuousChangeVar, "
+        "not currently supported",
+    ):
+        F.CoupledHeatTransferHydrogenTransport(
+            heat_problem=test_heat_problem, hydrogen_problem=object
+        )
+
+
+@pytest.mark.parametrize(
+    "object",
     ["coucou", 1, 1.0],
 )
-def test_error_rasied_when_wrong_heat_problem_given(object):
+def test_error_raised_when_wrong_heat_problem_given(object):
     """Test TypeError is raised when an object that isnt a
     festim.HeatTransferProblem object is given to heat_problem"""
 
@@ -77,21 +104,21 @@ def test_initial_dt_values_are_the_same():
     )
 
 
-def test_final_time_values_are_the_same():
-    """Test that the largest of the final_time values given is used in both
-    the heat_problem and the hydorgen_problem"""
+def test_error_raised_when_final_times_not_the_same():
+    """Test that an error is raised when the final time values given in the heat_problem
+    and the hydorgen_problem are not the same"""
 
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=5),
+        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=10),
     )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
         species=[test_H],
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=10),
+        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=5),
     )
 
     test_coupled_problem = F.CoupledHeatTransferHydrogenTransport(
@@ -99,9 +126,9 @@ def test_final_time_values_are_the_same():
         hydrogen_problem=test_hydrogen_problem,
     )
 
-    test_coupled_problem.initialise()
-
-    assert np.isclose(
-        float(test_coupled_problem.heat_problem.settings.final_time),
-        float(test_coupled_problem.hydrogen_problem.settings.final_time),
-    )
+    with pytest.raises(
+        ValueError,
+        match="Final time values in the heat transfer and hydrogen transport model"
+        " must be the same",
+    ):
+        test_coupled_problem.initialise()
