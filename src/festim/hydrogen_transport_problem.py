@@ -1308,16 +1308,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 else:
                     raise NotImplementedError(
-                        f"Export type {type(export)} not implemented"
-                    )
-                    mesh = (
-                        export.field[0]
-                        .subdomain_to_function_space[export._subdomain]
-                        .mesh
-                    )
-                    adios4dolfinx.write_mesh(
-                        export.filename,
-                        mesh=mesh,
+                        f"Export type {type(export)} not implemented for mixed-domain approach"
                     )
             else:
                 raise NotImplementedError(f"Export type {type(export)} not implemented")
@@ -1344,16 +1335,9 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                 raise NotImplementedError(f"Export type {type(export)} not implemented")
             if isinstance(export, exports.VTXSpeciesExport):
                 if export._checkpoint:
-                    for field in export.field:
-                        solution = field.subdomain_to_post_processing_solution[
-                            export._subdomain
-                        ]
-                        adios4dolfinx.write_function(
-                            export.filename,
-                            solution,
-                            time=float(self.t),
-                            name=field.name,
-                        )
+                    raise NotImplementedError(
+                        f"Export type {type(export)} not implemented for mixed-domain approach"
+                    )
 
     def iterate(self):
         """Iterates the model for a given time step"""
