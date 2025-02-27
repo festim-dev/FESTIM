@@ -44,8 +44,11 @@ jobs:
             pip install .[test]
 
         - name: Run tests
+          id: check
           run: |
-            python3 -m pytest test/ --cov festim --cov-report xml --cov-report term || echo "::⚠️ warning::test failed on nightly version of dolfinx, but continuing..."
+            if ! python3 -m pytest test/ --cov festim --cov-report xml --cov-report term: then
+              echo "warning=true" >> $GITHUB_ENV
+            fi
 
         - name: Ensure job is not marked as failure
           if: always()
@@ -57,8 +60,38 @@ jobs:
             token: ${{ secrets.CODECOV_TOKEN }}
             files: ./coverage.xml
         
-        - name: Comment on PR
-          if: always()
-          run: gh pr comment ${{ github.event.pull_request.number }} --body "$(cat warning.txt)"
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Update or create a comment
+          if: env.warning == 'true'
+          uses: actions/github-script@v7
+          with:
+            github-token: ${{ secrets.GITHUB_TOKEN }}
+            script: |
+              const { owner, repo } = context.repo;
+              const issue_number = context.payload.pull_request.number;
+  
+              // Fetch existing comments
+              const { data: comments } = await github.rest.issues.listComments({
+                owner, repo, issue_number
+              });
+  
+              // Look for an existing warning comment
+              const warningComment = comments.find(comment => 
+                comment.user.login === 'github-actions[bot]' && 
+                comment.body.includes("⚠️ Warning")
+              );
+  
+              if (warningComment) {
+                // Update the existing warning comment
+                await github.rest.issues.updateComment({
+                  owner, repo,
+                  comment_id: warningComment.id,
+                  body: "⚠️ Warning: Some-command failed, but workflow continues. (Updated)"
+                });
+              } else {
+                // Post a new comment if none exists
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number,
+                  body: "⚠️ Warning: Some-command failed, but workflow continues."
+                });
+              }
+      
