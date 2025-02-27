@@ -45,10 +45,11 @@ jobs:
 
         - name: Run tests
           run: |
-            if python3 -m pytest test/ --cov festim --cov-report xml --cov-report term: then
-              echo "::warning::tests failed, but it's treated as a warning."
-              exit 0
-            fi
+            python3 -m pytest test/ --cov festim --cov-report xml --cov-report term || echo "::warning::test failed on latest version of dolfinx, but continuing..."
+
+        - name: Ensure job is not marked as failure
+          if: always()
+          run: echo "Forcing job success"
 
         - name: Upload to codecov
           uses: codecov/codecov-action@v4
