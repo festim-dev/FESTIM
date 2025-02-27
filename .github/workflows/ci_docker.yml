@@ -4,11 +4,10 @@ on: [pull_request, push]
 jobs:
   run-tests:
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        container_version: [v0.9.0, nightly]
+        container_version: [v0.9.0]
     container: dolfinx/dolfinx:${{ matrix.container_version }}
     steps:
         - name: Checkout code
@@ -21,6 +20,35 @@ jobs:
         - name: Run tests
           run: |
             python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+        
+        - name: Upload to codecov
+          uses: codecov/codecov-action@v4
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+            files: ./coverage.xml
+  
+  run-tests-on-latest-dolfinx:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        container_version: [nightly]
+    container: dolfinx/dolfinx:${{ matrix.container_version }}
+    steps:
+        - name: Checkout code
+          uses: actions/checkout@v2
+      
+        - name: Install local package and dependencies
+          run: |
+            pip install .[test]
+
+        - name: Run tests
+          run: |
+            if python3 -m pytest test/ --cov festim --cov-report xml --cov-report term: then
+              echo "::warning::tests failed, but it's treated as a warning."
+              exit 0
+            fi
 
         - name: Upload to codecov
           uses: codecov/codecov-action@v4
