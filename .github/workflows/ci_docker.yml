@@ -31,7 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     permissions:
-      pull-requests: write-all
+      contents: write
+      pull-requests: write
     strategy:
       fail-fast: false
       matrix:
