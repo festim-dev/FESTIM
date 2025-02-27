@@ -4,7 +4,7 @@ import dolfinx
 import mpi4py.MPI as MPI
 
 
-def test():
+def test_out_in():
     mesh = dolfinx.mesh.create_unit_square(
         MPI.COMM_WORLD, nx=10, ny=10, cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
     )
@@ -13,7 +13,7 @@ def test():
 
     my_mat = F.Material(name="mat", D_0=1, E_D=0)
     vol = F.VolumeSubdomain(id=0, material=my_mat)
-    surf = F.SurfaceSubdomain(id=0)
+    surf = F.SurfaceSubdomain(id=1)
     my_model.subdomains = [vol, surf]
 
     H = F.Species("H")
@@ -32,15 +32,19 @@ def test():
     ]
 
     my_model.settings = F.Settings(
-        atol=1e-12, rtol=1e-12, transient=True, final_time=100
+        atol=1e-12, rtol=1e-12, transient=True, final_time=10
     )
     my_model.settings.stepsize = F.Stepsize(1)
 
     my_model.exports = [
         F.VTXSpeciesExport(
-            filename="H.bp",
-            field=[H],
+            filename="out_checkpoint.bp",
+            field=[H, D],
             checkpoint=True,
+        ),
+        F.VTXSpeciesExport(
+            filename="model_1_out_h.bp",
+            field=[H],
         ),
     ]
 
@@ -49,27 +53,42 @@ def test():
 
     my_model2 = F.HydrogenTransportProblem()
     my_model2.mesh = F.Mesh(mesh)
-    my_model.subdomains = [vol, surf]
+    my_model2.subdomains = [vol, surf]
 
     H = F.Species("H")
     D = F.Species("D")
-    my_model.species = [H, D]
+    my_model2.species = [H, D]
 
-    my_model.temperature = 500
+    my_model2.temperature = 500
 
-    my_model.initial_conditions = [
+    my_model2.initial_conditions = [
         F.InitialConcentrationFromFile(
-            filename="H.bp", species=H, name="H", timestamp=100
+            filename="out_checkpoint.bp", species=H, name="H", timestamp=10
         ),
-        # F.InitialConcentrationFromFile(
-        #     filename="H.bp", species=D, name="D", timestamp=100
-        # ),
+        F.InitialConcentrationFromFile(
+            filename="out_checkpoint.bp", species=D, name="D", timestamp=10
+        ),
     ]
 
-    my_model.settings = F.Settings(
-        atol=1e-12, rtol=1e-12, transient=True, final_time=100
+    my_model2.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, transient=True, final_time=10
     )
-    my_model.settings.stepsize = F.Stepsize(1)
+    my_model2.settings.stepsize = F.Stepsize(0.1)
 
-    my_model.initialise()
-    my_model.run()
+    my_model2.exports = [
+        F.VTXSpeciesExport(
+            filename="model_2_out_h.bp",
+            field=[H],
+        ),
+    ]
+
+    my_model2.initialise()
+    my_model2.run()
+
+    import numpy as np
+
+    np.testing.assert_allclose(
+        H.post_processing_solution.x.array,
+        1.5,
+        atol=1e-10,
+    )

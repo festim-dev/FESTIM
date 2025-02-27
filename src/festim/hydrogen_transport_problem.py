@@ -523,6 +523,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             sub_test_functions = [ufl.TestFunction(self.function_space)]
             self.species[0].sub_function_space = self.function_space
             self.species[0].post_processing_solution = self.u
+            self.species[0].sub_function = self.u
         else:
             sub_solutions = list(ufl.split(self.u))
             sub_prev_solution = list(ufl.split(self.u_n))
