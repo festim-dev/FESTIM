@@ -85,7 +85,7 @@ class Interface:
                 self.mt.find(self.id),
             )
 
-        integration_data = compute_integration_domains(args)
+        integration_data = compute_integration_domains(*args)
 
         ordered_integration_data = integration_data.reshape(-1, 4).copy()
 
