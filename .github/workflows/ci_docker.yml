@@ -69,8 +69,10 @@ jobs:
           uses: actions/checkout@v3
       
         - name: Comment PR
-          uses: thollander/actions-comment-pull-request@v3
-          with:
-            message: 'test message!'
-            github-token: ${{ secrets.GITHUB_TOKEN }}
-            pr-number: ${{ github.event.pull_request.number }}
+          run: |
+            python .github/workflows/scripts/linter_make_comment.py \
+            --head-repo-owner=${{ github.event.workflow_run.head_repository.owner.login }} \
+            --workflow-run-id=${{ github.event.workflow_run.id }} \
+            --head-sha=${{ github.event.workflow_run.head_sha }}
+          env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
