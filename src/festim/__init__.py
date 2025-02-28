@@ -41,6 +41,7 @@ from .helpers import (
     as_mapped_function,
     as_fenics_interp_expr_and_function,
     Value,
+    get_interpolation_points,
 )
 from .hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,

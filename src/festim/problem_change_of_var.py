@@ -2,6 +2,7 @@ import festim.boundary_conditions
 from festim.hydrogen_transport_problem import HydrogenTransportProblem
 from festim import boundary_conditions, as_fenics_constant
 import festim
+from festim.helpers import get_interpolation_points
 import festim.species as _species
 import ufl
 from dolfinx import fem
@@ -161,7 +162,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             theta = spe.solution
 
-            spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points())
+            spe.dg_expr = fem.Expression(
+                theta * K_S, get_interpolation_points(Q1.element)
+            )
             spe.post_processing_solution = fem.Function(Q1)
             spe.post_processing_solution.interpolate(
                 spe.dg_expr

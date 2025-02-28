@@ -5,6 +5,7 @@ import dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
+from packaging import version
 
 
 def as_fenics_constant(
@@ -276,3 +277,13 @@ class Value:
             elif isinstance(self.fenics_object, fem.Function):
                 if self.fenics_interpolation_expression is not None:
                     self.fenics_object.interpolate(self.fenics_interpolation_expression)
+
+
+# Check the version of dolfinx
+dolfinx_version = dolfinx.__version__
+
+# Define the appropriate method based on the version
+if version.parse(dolfinx_version) > version.parse("0.9.0"):
+    get_interpolation_points = lambda element: element.interpolation_points
+else:
+    get_interpolation_points = lambda element: element.interpolation_points()

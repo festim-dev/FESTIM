@@ -28,7 +28,7 @@ from festim import (
 from festim import (
     subdomain as _subdomain,
 )
-from festim.helpers import as_fenics_constant
+from festim.helpers import as_fenics_constant, get_interpolation_points
 from festim.mesh import Mesh
 
 __all__ = ["HTransportProblemDiscontinuous", "HydrogenTransportProblem"]
@@ -361,7 +361,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # to update the temperature_fenics later
                 self.temperature_expr = fem.Expression(
                     self.temperature(**kwargs),
-                    function_space_temperature.element.interpolation_points(),
+                    get_interpolation_points(function_space_temperature.element),
                 )
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
@@ -449,7 +449,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         expr = D_0 * ufl.exp(
             -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
         )
-        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+        D_expr = fem.Expression(expr, get_interpolation_points(self.V_DG_1.element))
         D.interpolate(D_expr)
         return D, D_expr
 
