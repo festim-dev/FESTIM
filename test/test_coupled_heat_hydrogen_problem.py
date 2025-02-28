@@ -23,7 +23,7 @@ def test_error_raised_when_wrong_hydrogen_problem_given(object):
         TypeError,
         match="hydrogen_problem must be a festim.HydrogenTransportProblem object",
     ):
-        F.CoupledHeatTransferHydrogenTransport(
+        F.CoupledtTransientHeatTransferHydrogenTransport(
             heat_problem=test_heat_problem, hydrogen_problem=object
         )
 
@@ -50,7 +50,7 @@ def test_error_raised_when_wrong_type_hydrogen_problem_given(object):
         "HydrogenTransportProblemDiscontinuousChangeVar, "
         "not currently supported",
     ):
-        F.CoupledHeatTransferHydrogenTransport(
+        F.CoupledtTransientHeatTransferHydrogenTransport(
             heat_problem=test_heat_problem, hydrogen_problem=object
         )
 
@@ -69,7 +69,7 @@ def test_error_raised_when_wrong_heat_problem_given(object):
         TypeError,
         match="heat_problem must be a festim.HeatTransferProblem object",
     ):
-        F.CoupledHeatTransferHydrogenTransport(
+        F.CoupledtTransientHeatTransferHydrogenTransport(
             heat_problem=object, hydrogen_problem=test_hydrogen_problem
         )
 
@@ -91,7 +91,7 @@ def test_initial_dt_values_are_the_same():
         settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1.5, final_time=5),
     )
 
-    test_coupled_problem = F.CoupledHeatTransferHydrogenTransport(
+    test_coupled_problem = F.CoupledtTransientHeatTransferHydrogenTransport(
         heat_problem=test_heat_problem,
         hydrogen_problem=test_hydrogen_problem,
     )
@@ -121,7 +121,7 @@ def test_error_raised_when_final_times_not_the_same():
         settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=5),
     )
 
-    test_coupled_problem = F.CoupledHeatTransferHydrogenTransport(
+    test_coupled_problem = F.CoupledtTransientHeatTransferHydrogenTransport(
         heat_problem=test_heat_problem,
         hydrogen_problem=test_hydrogen_problem,
     )
