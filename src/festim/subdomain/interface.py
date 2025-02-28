@@ -47,7 +47,6 @@ class Interface:
                 dolfinx.fem.IntegralType.interior_facet,
                 self.parent_mesh.topology._cpp_object,
                 self.mt.find(self.id),
-                self.mt.dim,
             )
 
         integration_data = compute_integration_domains(*args).reshape(-1, 4)
@@ -71,12 +70,22 @@ class Interface:
         """
         assert (not self.subdomains[0].padded) and (not self.subdomains[1].padded)
         mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
-        integration_data = compute_integration_domains(
-            dolfinx.fem.IntegralType.interior_facet,
-            mesh.topology._cpp_object,
-            self.mt.find(self.id),
-            self.mt.dim,
-        )
+
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            args = (
+                dolfinx.fem.IntegralType.interior_facet,
+                self.parent_mesh.topology._cpp_object,
+                self.mt.find(self.id),
+                self.mt.dim,
+            )
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            args = (
+                dolfinx.fem.IntegralType.interior_facet,
+                mesh.topology._cpp_object,
+                self.mt.find(self.id),
+            )
+
+        integration_data = compute_integration_domains(args)
 
         ordered_integration_data = integration_data.reshape(-1, 4).copy()
 
