@@ -12,26 +12,21 @@ test_H = F.Species("H", mobile=True)
 
 
 def test_MMS_coupled_problem():
-    """Test that the function in the hydrogen problem which is temperature dependent
-    has the correct value at x=1, when temperature field is time and space dependent
-    in transient"""
+    """MMS coupled heat and hydrogen test with 1 mobile species and 1 trap in a 1s
+    transient, the values of the temperature, mobile and trapped solutions at the last
+    time step is compared to an analytical solution"""
 
-    density = 1.2
-    heat_capacity = 2.6
+    density, heat_capacity = 1.2, 2.6
     thermal_conductivity = 4.2
-    D_0 = 1.2
-    E_D = 0.1
-    k_0 = 2.2
-    E_k = 0.2
-    p_0 = 0.5
-    E_p = 0.1
+    D_0, E_D = 1.2, 0.1
+    k_0, E_k = 2.2, 0.2
+    p_0, E_p = 0.5, 0.1
     n_trap = 5
     k_B = F.k_B
 
     final_time = 1
 
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
-
     test_mat = F.Material(
         D_0=D_0,
         E_D=E_D,
@@ -39,18 +34,15 @@ def test_MMS_coupled_problem():
         density=density,
         heat_capacity=heat_capacity,
     )
-
     test_vol_sub = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=test_mat)
     left_sub = F.SurfaceSubdomain1D(id=2, x=0)
     right_sub = F.SurfaceSubdomain1D(id=3, x=1)
-
     test_mobile = F.Species("mobile", mobile=True)
     test_trapped = F.Species(name="trapped", mobile=False, subdomains=[test_vol_sub])
     test_traps = F.ImplicitSpecies(n=n_trap, others=[test_mobile, test_trapped])
 
     # define temperature sim
-    def exact_T_solution(x, t):
-        return 3 * x[0] ** 2 + 10 * t
+    exact_T_solution = lambda x, t: 3 * x[0] ** 2 + 10 * t
 
     dTdt = 10
     mms_T_source = (
@@ -76,49 +68,36 @@ def test_MMS_coupled_problem():
         ),
     )
 
-    # define hydrogen problem
-    def exact_mobile_solution(x, t):
-        return 2 * x[0] ** 2 + 15 * t
+    exact_mobile_solution = lambda x, t: 2 * x[0] ** 2 + 15 * t
+    exact_trapped_solution = lambda x, t: 4 * x[0] ** 2 + 12 * t
 
-    def exact_trapped_solution(x, t):
-        return 4 * x[0] ** 2 + 12 * t
-
-    def exact_mobile_intial_cond(x):
-        return 2 * x[0] ** 2
-
-    def exact_trapped_intial_cond(x):
-        return 4 * x[0] ** 2
+    exact_mobile_intial_cond = lambda x: 2 * x[0] ** 2
+    exact_trapped_intial_cond = lambda x: 4 * x[0] ** 2
 
     dmobiledt = 15
     dtrappeddt = 12
 
+    D = lambda x, t: D_0 * ufl.exp(-E_D / (k_B * exact_T_solution(x, t)))
+    k = lambda x, t: k_0 * ufl.exp(-E_k / (k_B * exact_T_solution(x, t)))
+    p = lambda x, t: p_0 * ufl.exp(-E_p / (k_B * exact_T_solution(x, t)))
+
     def mms_mobile_source(x, t):
         return (
             dmobiledt
-            - ufl.div(
-                D_0
-                * ufl.exp(-E_D / (k_B * (3 * x[0] ** 2 + 10 * t)))
-                * ufl.grad(2 * x[0] ** 2 + 15 * t)
-            )
-            + k_0
-            * ufl.exp(-E_k / (k_B * (3 * x[0] ** 2 + 10 * t)))
-            * (2 * x[0] ** 2 + 15 * t)
-            * (n_trap - (4 * x[0] ** 2 + 12 * t))
-            - p_0
-            * ufl.exp(-E_p / (k_B * (3 * x[0] ** 2 + 10 * t)))
-            * (4 * x[0] ** 2 + 12 * t)
+            - ufl.div(D(x, t) * ufl.grad(exact_mobile_solution(x, t)))
+            + k(x, t)
+            * (exact_mobile_solution(x, t))
+            * (n_trap - (exact_trapped_solution(x, t)))
+            - p(x, t) * (exact_trapped_solution(x, t))
         )
 
     def mms_trapped_source(x, t):
         return (
             dtrappeddt
-            - k_0
-            * ufl.exp(-E_k / k_B * (3 * x[0] ** 2 + 10 * t))
-            * (2 * x[0] ** 2 + 15 * t)
-            * (n_trap - (4 * x[0] ** 2 + 12 * t))
-            + p_0
-            * ufl.exp(-E_p / k_B * (3 * x[0] ** 2 + 10 * t))
-            * (4 * x[0] ** 2 + 12 * t)
+            + k(x, t)
+            * (exact_mobile_solution(x, t))
+            * (n_trap - (exact_trapped_solution(x, t)))
+            - p(x, t) * (exact_trapped_solution(x, t))
         )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
@@ -187,7 +166,7 @@ def test_MMS_coupled_problem():
     test_coupled_problem.initialise()
     test_coupled_problem.run()
 
-    T_computed = test_coupled_problem.heat_problem.u
+    T_computed = test_coupled_problem.hydrogen_problem.temperature_fenics
     mobile_computed = test_mobile.post_processing_solution
     trapped_computed = test_trapped.post_processing_solution
 
