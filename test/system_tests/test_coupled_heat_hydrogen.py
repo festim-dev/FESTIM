@@ -16,6 +16,7 @@ def test_MMS_coupled_problem():
     transient, the values of the temperature, mobile and trapped solutions at the last
     time step is compared to an analytical solution"""
 
+    # coupled simulation properties
     density, heat_capacity = 1.2, 2.6
     thermal_conductivity = 4.2
     D_0, E_D = 1.2, 0.1
@@ -23,9 +24,9 @@ def test_MMS_coupled_problem():
     p_0, E_p = 0.5, 0.1
     n_trap = 5
     k_B = F.k_B
-
     final_time = 1
 
+    # common festim objects
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
     test_mat = F.Material(
         D_0=D_0,
@@ -68,6 +69,7 @@ def test_MMS_coupled_problem():
         ),
     )
 
+    # define hydrogen problem
     exact_mobile_solution = lambda x, t: 2 * x[0] ** 2 + 15 * t
     exact_trapped_solution = lambda x, t: 4 * x[0] ** 2 + 12 * t
 
@@ -130,10 +132,10 @@ def test_MMS_coupled_problem():
             F.Reaction(
                 reactant=[test_mobile, test_traps],
                 product=test_trapped,
-                k_0=1.0,
-                E_k=0.2,
-                p_0=0.1,
-                E_p=0.3,
+                k_0=k_0,
+                E_k=E_k,
+                p_0=p_0,
+                E_p=E_p,
                 volume=test_vol_sub,
             )
         ],
@@ -150,7 +152,7 @@ def test_MMS_coupled_problem():
             ),
         ],
         settings=F.Settings(
-            atol=1,
+            atol=1e-10,
             rtol=1e-10,
             transient=True,
             stepsize=final_time / 20,
@@ -158,14 +160,15 @@ def test_MMS_coupled_problem():
         ),
     )
 
+    # define coupled problem
     test_coupled_problem = F.CoupledtTransientHeatTransferHydrogenTransport(
         heat_problem=test_heat_problem,
         hydrogen_problem=test_hydrogen_problem,
     )
-
     test_coupled_problem.initialise()
     test_coupled_problem.run()
 
+    # compare computed values with exact solutions
     T_computed = test_coupled_problem.hydrogen_problem.temperature_fenics
     mobile_computed = test_mobile.post_processing_solution
     trapped_computed = test_trapped.post_processing_solution
@@ -178,6 +181,7 @@ def test_MMS_coupled_problem():
     L2_error_mobile = error_L2(mobile_computed, exact_mobile)
     L2_error_trapped = error_L2(trapped_computed, exact_trapped)
 
+    # TEST ensure L2 error below 2e07
     assert L2_error_T < 2e-07
     assert L2_error_mobile < 2e-07
     assert L2_error_trapped < 2e-07
