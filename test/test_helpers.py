@@ -207,7 +207,7 @@ def test_input_values_of_expressions_are_accepted():
 
     test_expression = fem.Expression(
         mapped_func,
-        test_function_space.element.interpolation_points(),
+        F.get_interpolation_points(test_function_space.element),
     )
     test_value = F.Value(input_value=test_expression)
 
