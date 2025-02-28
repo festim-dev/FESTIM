@@ -67,7 +67,6 @@ def test_MMS_coupled_problem():
         ],
         sources=[F.HeatSource(value=mms_T_source, volume=test_vol_sub)],
         initial_condition=F.InitialTemperature(lambda x: exact_T_solution(x, 0)),
-        exports=[F.VTXTemperatureExport(filename="mms_test_temperature")],
         settings=F.Settings(
             atol=1e-10,
             rtol=1e-10,
@@ -178,18 +177,6 @@ def test_MMS_coupled_problem():
             stepsize=final_time / 20,
             final_time=final_time,
         ),
-        exports=[
-            F.VTXSpeciesExport(
-                filename="mms_test_output_mobile",
-                field=test_mobile,
-                subdomain=test_vol_sub,
-            ),
-            F.VTXSpeciesExport(
-                filename="mms_test_output_trapped",
-                field=test_trapped,
-                subdomain=test_vol_sub,
-            ),
-        ],
     )
 
     test_coupled_problem = F.CoupledtTransientHeatTransferHydrogenTransport(
