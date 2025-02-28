@@ -168,34 +168,16 @@ class CoupledtTransientHeatTransferHydrogenTransport:
         )
 
     def run(self):
-        if (
-            self.heat_problem.settings.transient
-            and self.hydrogen_problem.settings.transient
-        ):
-            if self.hydrogen_problem.show_progress_bar:
-                self.hydrogen_problem.progress_bar = tqdm.autonotebook.tqdm(
-                    desc=f"Solving {self.__class__.__name__}",
-                    total=self.hydrogen_problem.settings.final_time,
-                    unit_scale=True,
-                )
+        if self.hydrogen_problem.show_progress_bar:
+            self.hydrogen_problem.progress_bar = tqdm.autonotebook.tqdm(
+                desc=f"Solving {self.__class__.__name__}",
+                total=self.hydrogen_problem.settings.final_time,
+                unit_scale=True,
+            )
 
-            while (
-                self.hydrogen_problem.t.value
-                < self.hydrogen_problem.settings.final_time
-            ):
-                self.iterate()
+        while self.hydrogen_problem.t.value < self.hydrogen_problem.settings.final_time:
+            self.iterate()
 
-            if self.hydrogen_problem.show_progress_bar:
-                self.hydrogen_problem.progress_bar.refresh()
-                self.hydrogen_problem.progress_bar.close()
-        else:
-            # Solve steady-state
-            self.heat_problem.run()
-
-            if self.non_matching_meshes:
-                nmm_interpolate(
-                    self.hydrogen_problem.temperature_fenics, self.heat_problem.u
-                )
-
-            self.hydrogen_problem.initialise()
-            self.hydrogen_problem.run()
+        if self.hydrogen_problem.show_progress_bar:
+            self.hydrogen_problem.progress_bar.refresh()
+            self.hydrogen_problem.progress_bar.close()
