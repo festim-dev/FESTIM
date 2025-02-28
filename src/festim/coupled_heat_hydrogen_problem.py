@@ -1,37 +1,14 @@
-import numpy as np
 import tqdm.autonotebook
 from dolfinx import fem
 
 from festim.heat_transfer_problem import HeatTransferProblem
-from festim.helpers import as_fenics_constant
+from festim.helpers import as_fenics_constant, nmm_interpolate
 from festim.hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,
     HTransportProblemPenalty,
     HydrogenTransportProblem,
 )
 from festim.problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
-
-
-def nmm_interpolate(f_out: fem.function, f_in: fem.function):
-    """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
-    another function (f_out) with a mismatching mesh
-
-    args:
-        f_out: function to interpolate into
-        f_in: function to interpolate from
-
-    notes:
-    https://fenicsproject.discourse.group/t/gjk-error-in-interpolation-between-non-matching-second-ordered-3d-meshes/16086/6
-    """
-
-    dim = f_out.function_space.mesh.topology.dim
-    index_map = f_out.function_space.mesh.topology.index_map(dim)
-    ncells = index_map.size_local + index_map.num_ghosts
-    cells = np.arange(ncells, dtype=np.int32)
-    interpolation_data = fem.create_interpolation_data(
-        f_out.function_space, f_in.function_space, cells, padding=1e-11
-    )
-    f_out.interpolate_nonmatching(f_in, cells, interpolation_data=interpolation_data)
 
 
 class CoupledtTransientHeatTransferHydrogenTransport:
@@ -72,7 +49,6 @@ class CoupledtTransientHeatTransferHydrogenTransport:
                 hydrogen_problem=my_h_transport_model,
             )
 
-
     """
 
     heat_problem: HeatTransferProblem
@@ -93,7 +69,7 @@ class CoupledtTransientHeatTransferHydrogenTransport:
             or not self.hydrogen_problem.settings.transient
         ):
             raise TypeError(
-                "Both the heat problem and hydrogen problems must be transient"
+                "Both the heat and hydrogen problems must be set to transient"
             )
 
     @property
