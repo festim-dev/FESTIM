@@ -20,7 +20,9 @@ from .boundary_conditions.flux_bc import FluxBCBase, HeatFluxBC, ParticleFluxBC
 from .boundary_conditions.henrys_bc import HenrysBC
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .boundary_conditions.surface_reaction import SurfaceReactionBC
-from .coupled_heat_hydrogen_problem import CoupledHeatTransferHydrogenTransport
+from .coupled_heat_hydrogen_problem import (
+    CoupledtTransientHeatTransferHydrogenTransport,
+)
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
 from .exports.maximum_surface import MaximumSurface
