@@ -93,7 +93,7 @@ def as_fenics_interp_expr_and_function(
 
     fenics_interpolation_expression = fem.Expression(
         mapped_function,
-        function_space.element.interpolation_points(),
+        get_interpolation_points(function_space.element),
     )
 
     fenics_object = fem.Function(function_space)
