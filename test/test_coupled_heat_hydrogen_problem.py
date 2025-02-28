@@ -132,3 +132,25 @@ def test_error_raised_when_final_times_not_the_same():
         " must be the same",
     ):
         test_coupled_problem.initialise()
+
+
+def test_error_raised_when_both_problems_not_transient():
+    """Test that an error is raised when the heat_problem and hydorgen_problem are not
+    set to transient"""
+
+    test_heat_problem = F.HeatTransferProblem(
+        settings=F.Settings(atol=1, rtol=1, transient=False),
+    )
+
+    test_hydrogen_problem = F.HydrogenTransportProblem(
+        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=4),
+    )
+
+    with pytest.raises(
+        TypeError,
+        match="Both the heat and hydrogen problems must be set to transient",
+    ):
+        F.CoupledtTransientHeatTransferHydrogenTransport(
+            heat_problem=test_heat_problem,
+            hydrogen_problem=test_hydrogen_problem,
+        )
