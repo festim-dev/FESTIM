@@ -34,9 +34,9 @@ def nmm_interpolate(f_out: fem.function, f_in: fem.function):
     f_out.interpolate_nonmatching(f_in, cells, interpolation_data=interpolation_data)
 
 
-class CoupledHeatTransferHydrogenTransport:
+class CoupledtTransientHeatTransferHydrogenTransport:
     """
-    Coupled heat transfer and hydrogen transport problem
+    Coupled heat transfer and hydrogen transport transient problem
 
     Args:
         heat_problem: the heat transfer problem
@@ -88,6 +88,14 @@ class CoupledHeatTransferHydrogenTransport:
         self.heat_problem = heat_problem
         self.hydrogen_problem = hydrogen_problem
 
+        if (
+            not self.heat_problem.settings.transient
+            or not self.hydrogen_problem.settings.transient
+        ):
+            raise TypeError(
+                "Both the heat problem and hydrogen problems must be transient"
+            )
+
     @property
     def heat_problem(self):
         return self._heat_problem
@@ -128,27 +136,23 @@ class CoupledHeatTransferHydrogenTransport:
         return self.heat_problem.mesh.mesh != self.hydrogen_problem.mesh.mesh
 
     def initialise(self):
-        if (
-            self.heat_problem.settings.transient
-            and self.hydrogen_problem.settings.transient
-        ):
-            # make sure both problems have the same initial time step and final time,
-            # use minimal initial value of the two and maximal final time of the two
-            min_initial_dt = min(
-                self.heat_problem.settings.stepsize.initial_value,
-                self.hydrogen_problem.settings.stepsize.initial_value,
-            )
-            self.heat_problem.settings.stepsize.initial_value = min_initial_dt
-            self.hydrogen_problem.settings.stepsize.initial_value = min_initial_dt
+        # make sure both problems have the same initial time step and final time,
+        # use minimal initial value of the two and maximal final time of the two
+        min_initial_dt = min(
+            self.heat_problem.settings.stepsize.initial_value,
+            self.hydrogen_problem.settings.stepsize.initial_value,
+        )
+        self.heat_problem.settings.stepsize.initial_value = min_initial_dt
+        self.hydrogen_problem.settings.stepsize.initial_value = min_initial_dt
 
-            if (
-                self.heat_problem.settings.final_time
-                != self.hydrogen_problem.settings.final_time
-            ):
-                raise ValueError(
-                    "Final time values in the heat transfer and hydrogen transport "
-                    "model must be the same"
-                )
+        if (
+            self.heat_problem.settings.final_time
+            != self.hydrogen_problem.settings.final_time
+        ):
+            raise ValueError(
+                "Final time values in the heat transfer and hydrogen transport "
+                "model must be the same"
+            )
 
         self.heat_problem.initialise()
 
