@@ -25,3 +25,15 @@ def as_fenics_constant(
         raise TypeError(
             f"Value must be a float, an int or a dolfinx.Constant, not {type(value)}"
         )
+
+
+from packaging import version
+
+# Check the version of dolfinx
+dolfinx_version = dolfinx.__version__
+
+# Define the appropriate method based on the version
+if version.parse(dolfinx_version) > version.parse("0.9.0"):
+    get_interpolation_points = lambda element: element.interpolation_points
+else:
+    get_interpolation_points = lambda element: element.interpolation_points()
