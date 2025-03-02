@@ -3,6 +3,7 @@ requires = ["setuptools >= 61", "wheel", "setuptools-scm[toml] >= 7.0.5"]
 build-backend = "setuptools.build_meta"
 
 [project]
+<<<<<<< HEAD
 authors = [
     { name = "Remi Delaporte-Mathurin" },
     { email = "rdelaportemathurin@gmail.com" },
@@ -35,6 +36,36 @@ docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]
 Homepage = "https://github.com/RemDelaporteMathurin/FESTIM"
 Issues = "https://github.com/RemDelaporteMathurin/FESTIM/issues"
 
+=======
+name = "festim"
+authors = [
+    {name = "Remi Delaporte-Mathurin", email = "rdelaportemathurin@gmail.com"},
+]
+description = "Finite element simulations of hydrogen transport"
+license = {file = "LICENSE"}
+classifiers = [
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+requires-python = ">=3.6"
+dynamic = ["version"]
+
+[project.optional-dependencies]
+tests = ["pytest>=5.4.3"]
+
+[project.urls]
+Repository = "https://github.com/festim-dev/FESTIM"
+Issues = "https://github.com/festim-dev/FESTIM/issues"
+>>>>>>> upstream/main
 
 [tool.setuptools_scm]
 write_to = "src/festim/_version.py"

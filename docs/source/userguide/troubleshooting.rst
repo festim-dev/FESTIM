@@ -25,9 +25,17 @@ This will provide more information during the solving stage.
 
 .. testcode::
 
+<<<<<<< HEAD
     import dolfinx
 
     dolfinx.log.set_log_level(dolfinx.log.LogLevel.INFO)
+=======
+    import festim as F
+
+    my_model = F.Simulation()
+
+    my_model.log_level = 20
+>>>>>>> upstream/main
 
 From there, depending on the behaviour of the solver, you can try the following:
 
@@ -42,6 +50,7 @@ Solution is zero everywhere
 Sometimes, the solver converges fine but the solution is zero everywhere.
 This is often due to an excessively high absolute tolerance.
 The Newton solver then converges in zero iterations. In other words, nothing is solved.
+<<<<<<< HEAD
 First, check that this is the case by setting the log level to INFO:
 
 .. testcode::
@@ -51,13 +60,30 @@ First, check that this is the case by setting the log level to INFO:
     dolfinx.log.set_log_level(dolfinx.log.LogLevel.INFO)
 
 Then increase the absolute tolerance of the solver:
+=======
+First, check that this is the case by setting the log level to 20:
+>>>>>>> upstream/main
 
 .. testcode::
 
     import festim as F
 
+<<<<<<< HEAD
     my_model = F.HydrogenTransportProblem()
     my_model.settings = F.Settings(
         atol=1e10,
         rtol=1e-10,
+=======
+    my_model = F.Simulation()
+
+    my_model.log_level = 20
+
+Then increase the absolute tolerance of the solver:
+
+.. testcode::
+
+    my_model.settings = F.Settings(
+        absolute_tolerance=1e10,
+        relative_tolerance=1e-10,
+>>>>>>> upstream/main
     )

@@ -18,6 +18,25 @@ Where can I find help?
 ----------------------
 
 If you're having an issue, the best way to find help is to join the `FESTIM discourse <https://festim.discourse.group>`_. Engage in discussions, ask questions, and connect with other users. This collaborative space allows you to share your experiences and seek assistance. `Slack <https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g>`_ is also a good place to discuss.
+<<<<<<< HEAD
+=======
+
+
+--------------
+Install FESTIM
+--------------
+
+Follow the :ref:`installation instructions<Installation>` to install FESTIM on your computer.
+
+------------------------
+Your first FESTIM script
+------------------------
+
+
+Follow `this tutorial <https://github.com/festim-dev/FESTIM-workshop/blob/main/tasks/task01.ipynb>`_ to learn how
+to run a simple 1D diffusion problem in steady state with an homogeneous temperature, a volumetric source of hydrogen,
+and the concentration fixed at zero at boundaries.
+>>>>>>> upstream/main
 
 
 --------------

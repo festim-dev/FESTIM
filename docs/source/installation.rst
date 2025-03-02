@@ -3,6 +3,7 @@ Installation
 ============
 
 FESTIM is installed in two steps:
+<<<<<<< HEAD
     1. `Installing FEniCSx`_ through Anaconda or Docker
     2. `Installing FESTIM`_ through pip in the FEniCS environment
 
@@ -10,6 +11,15 @@ Installing FEniCSx
 -----------------
 
 FEniCSx can be installed with Anaconda on MacOs and Linux. 
+=======
+    1. `Installing FEniCS`_ through Anaconda or Docker
+    2. `Installing FESTIM`_ through pip on the FEniCS environment
+
+Installing FEniCS
+-----------------
+
+FEniCS can be installed with Anaconda on MacOs and Linux. 
+>>>>>>> upstream/main
 In order to use the Anaconda distribution on Windows, 
 use the `Windows Subsystem for Linux <https://learn.microsoft.com/en-us/windows/wsl/install>`_. 
 
@@ -38,13 +48,66 @@ then run the following commands::
 
     conda create -n festim-env
     conda activate festim-env       
+<<<<<<< HEAD
     conda install -c conda-forge fenics-dolfinx tqdm scifem
+=======
+    conda install -c conda-forge fenics numpy=1.24
+
+Alternatively, It can be installed using `Docker <https://www.docker.com/>`_::
+
+    docker run -ti -v $(pwd):/home/fenics/shared quay.io/fenicsproject/stable:latest
+
+.. note::
+    :code:`$(pwd)` needs to be replaced by :code:`${PWD}` on Windows
+
+
+For more information on how to install FEniCS, see `Download <https://fenicsproject.org/download/archive/>`_ on the FEniCS website.
+>>>>>>> upstream/main
 
 
 Installing FESTIM
 -----------------
 
+<<<<<<< HEAD
 This version of FESTIM is under development and is not yet available on PyPI.
 FESTIM can then be installed using pip::
 
+=======
+FESTIM can then be installed using pip::
+
+    pip install FESTIM
+
+Specific versions of FESTIM can be installed with::
+
+    pip install FESTIM==[version]
+
+with the desired version tag.  For example::
+
+    pip install FESTIM==0.9
+
+To upgrade FESTIM to the latest version, run::
+
+    pip install --upgrade FESTIM
+
+To uninstall FESTIM, run::
+
+    pip uninstall FESTIM
+
+
+Installing the ``fenicsx`` branch version
+-------------------------------------------
+
+This version of FESTIM is under development and is not yet available on PyPI.
+It runs on ``dolfinx`` instead of ``fenics`` and can be installed on Linux and MacOS.
+If you are on Windows, you can use the Windows Subsystem for Linux (simply follow the instructions above).
+
+Create a conda environment with ``dolfinx``::
+
+    conda create -n festim-env
+    conda activate festim-env       
+    conda install -c conda-forge fenics-dolfinx
+
+Install the correct FESTIM version with::
+
+>>>>>>> upstream/main
     pip install git+https://github.com/FESTIM-dev/FESTIM@fenicsx

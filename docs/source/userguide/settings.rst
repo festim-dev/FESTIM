@@ -1,10 +1,12 @@
+.. _settings_ug:
+
 ========
 Settings
 ========
 
-The settings of a FESTIM simulation are defined with a :code:`Settings` object.
+The settings of a FESTIM simulation are defined with a :class:`festim.Settings` object.
 
-.. code-block:: python
+.. testcode::
 
     import festim as F
 
@@ -15,12 +17,24 @@ The settings of a FESTIM simulation are defined with a :code:`Settings` object.
     )
 
 
-Here you define:
+Here you define with:
 
-* wether the simulation is transient or steady-state
-* the final time of the simulation
-* wether to run the simulation with conservation of chemical potential at interfaces (only useful for multi-materials)
-* wether to turn the Soret effect on
-* the absolute and relative tolerance of the Newton solver
-* the maximum iterations of the Newton solver
+* ``transient``: whether the simulation is transient or steady-state
+* ``final_time``: the final time of the simulation
+* ``chemical_pot``: whether to run the simulation with conservation of chemical potential at interfaces (only useful for multi-materials)
+* ``soret``: whether to turn the Soret effect on or not
+* ``absolute_tolerance``: the absolute tolerance of the Newton solver
+* ``relative_tolerance``: the relative tolerance of the Newton solver
+* ``maximum_iterations``: the maximum iterations of the Newton solver
 
+<<<<<<< HEAD
+=======
+More advanced settings are also available:
+
+* ``traps_element_type``: the type of finite elements for traps (DG elements can be useful to account for discontinuities)
+* ``update_jacobian``: whether to update the jacobian at each iteration or not
+* ``linear_solver``: linear solver method for the Newton solver
+* ``preconditioner``: preconditioning method for the Newton solver
+
+See :ref:`settings_api` for more details.
+>>>>>>> upstream/main

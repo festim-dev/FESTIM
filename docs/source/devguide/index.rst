@@ -104,7 +104,11 @@ This is to make sure the changes don't break existing functionalities.
 It is also very useful to catch bugs that developers could have missed.
 Click `here <https://www.atlassian.com/continuous-delivery/continuous-integration>`_ for more information on CI.
 
+<<<<<<< HEAD
 All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/test>`_ at the root of the FESTIM repository.
+=======
+All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
+>>>>>>> upstream/main
 
 You need to have the right dependencies installed to test your code (see :ref:`installation<Installation>`).
 
@@ -197,7 +201,11 @@ Documentation guide
 The documentation is a crucial part of the project. It is the first thing users will see when they want to use FESTIM.
 It is important to keep it up to date and clear.
 
+<<<<<<< HEAD
 The documentation is written in `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_ and is located in the `docs folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/docs>`_ at the root of the FESTIM repository.
+=======
+The documentation is written in `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_ and is located in the `docs folder <https://github.com/festim-dev/FESTIM/tree/main/docs>`_ at the root of the FESTIM repository.
+>>>>>>> upstream/main
 
 The documentation is built using `Sphinx <https://www.sphinx-doc.org/en/master/>`_.
 
@@ -231,12 +239,20 @@ Alternatively, you can use the following command to build the documentation in o
       
       conda env create -f docs/environment.yml
    
+<<<<<<< HEAD
    This will create a new environment called `festim2-docs` with all the necessary dependencies.
+=======
+   This will create a new environment called `festim-docs` with all the necessary dependencies.
+>>>>>>> upstream/main
    Activate it using:
 
    .. code-block:: bash
 
+<<<<<<< HEAD
       conda activate festim2-docs
+=======
+      conda activate festim-docs
+>>>>>>> upstream/main
 
 The documentation is hosted on `Read the Docs <https://readthedocs.org/>`_ and is automatically updated when a new commit is pushed to the repository or to a Pull Request.
 

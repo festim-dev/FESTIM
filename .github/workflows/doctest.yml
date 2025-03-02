@@ -7,6 +7,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+<<<<<<< HEAD
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -19,3 +20,17 @@ jobs:
       - name: Doc Tests
         shell: bash -l {0}
         run: sphinx-build -b doctest docs/source docs/_build/doctest
+=======
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: festim-docs
+        environment-file: docs/environment.yml
+
+    - name: Doc Tests
+      shell: bash -l {0}
+      run: sphinx-build -b doctest docs/source docs/_build/doctest
+>>>>>>> upstream/main

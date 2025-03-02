@@ -1,8 +1,13 @@
+<<<<<<< HEAD
 name: festim2-docs
+=======
+name: festim-docs
+>>>>>>> upstream/main
 channels:
   - conda-forge
   - defaults
 dependencies:
+<<<<<<< HEAD
   - fenics-dolfinx
   - matplotlib==3.7.1
   - pip>=20.1
@@ -18,3 +23,18 @@ dependencies:
   - sphinx-book-theme
   - sphinx-copybutton
   - pillow
+=======
+  - fenics
+  - matplotlib==3.7.1
+  - pip>=20.1
+  - sphinx==7.4.3
+  - folium
+  - numpy==1.24
+  - sympy
+  - sphinx-book-theme
+  - sphinx-design
+  - sphinxcontrib-bibtex
+  - sphinx-copybutton
+  - pillow
+  - sphinxcontrib-images
+>>>>>>> upstream/main

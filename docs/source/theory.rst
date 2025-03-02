@@ -339,15 +339,23 @@ The fluxes for subsurface-to-surface and surface-to-subsurface transitions are d
 .. math::
     :label: eq_Jbs
 
+<<<<<<< HEAD
     J_\mathrm{bs} = k_\mathrm{bs} \lambda_\mathrm{abs} c_\mathrm{m} \left(1-\dfrac{c_\mathrm{s}}{n_\mathrm{surf}}\right)
+=======
+    J_\mathrm{bs} = k_\mathrm{bs} c_\mathrm{m} \left(1-\dfrac{c_\mathrm{s}}{n_\mathrm{surf}}\right)
+>>>>>>> upstream/main
 
 .. math::
     :label: eq_Jsb
 
     J_\mathrm{sb} = k_\mathrm{sb} c_\mathrm{s} \left(1-\dfrac{c_\mathrm{m}}{n_\mathrm{IS}}\right)
 
+<<<<<<< HEAD
 where :math:`n_\mathrm{surf}\,[\mathrm{m}^{-2}]` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}\,[\mathrm{m}^{-3}]` is the bulk concentration of interstitial sites,
 :math:`\lambda_\mathrm{abs}=n_\mathrm{surf}/n_\mathrm{IS}\,[\mathrm{m}]` is the characteristic distance between surface and subsurface sites, :math:`k_\mathrm{bs}\,[\mathrm{s}^{-1}]` 
+=======
+where :math:`n_\mathrm{surf}\,[\mathrm{m}^{-2}]` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}\,[\mathrm{m}^{-3}]` is the bulk concentration of interstitial sites, :math:`k_\mathrm{bs}\,[\mathrm{m}\,\mathrm{s}^{-1}]` 
+>>>>>>> upstream/main
 and :math:`k_\mathrm{sb}\,[\mathrm{s}^{-1}]` are the rate constants for subsurface-to-surface and surface-to-subsurface transitions, respectively. 
 Usually, these rate constants are expressed in the Arrhenius form: :math:`k_i=k_{i,0}\exp(-E_{k,i} / kT)`. Both these processes are assumed to take place
 if there are available sites on the surface (in the subsurface). Possible surface/subsurface saturation is accounted for with terms in brackets.
