@@ -101,13 +101,14 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
 
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXSpeciesExport(filename, field=my_model.species[0])
-    my_model.exports = [my_export]
+    my_temp_export = F.VTXTemperatureExport(filename)
+    my_model.exports = [my_export, my_temp_export]
     my_model.settings = F.Settings(atol=1, rtol=0.1)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
-    assert len(my_model._vtxfiles) == 1
+    assert len(my_model._vtxfiles) == 2
 
 
 def test_field_attribute_is_always_list():
@@ -130,3 +131,4 @@ def test_filename_raises_error_when_wrong_type():
     """Test that the filename attribute raises an error if the extension is not .bp"""
     with pytest.raises(TypeError):
         F.VTXSpeciesExport(1, field=[F.Species("H")])
+        F.VTXTemperatureExport(1)
