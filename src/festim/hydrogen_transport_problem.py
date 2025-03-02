@@ -793,8 +793,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if source.temperature_dependent:
                 source.update(t=t)
 
-    surface_temp_processed = False
-
     def post_processing(self):
         """Post processes the model"""
 
