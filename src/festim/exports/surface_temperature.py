@@ -29,20 +29,6 @@ class SurfaceTemperature(F.SurfaceQuantity):
         self._first_time_export = True
 
     @property
-    def filename(self):
-        return self._filename
-
-    @filename.setter
-    def filename(self, value):
-        if value is None:
-            self._filename = None
-        elif not isinstance(value, str):
-            raise TypeError("filename must be of type str")
-        elif not value.endswith(".csv") and not value.endswith(".txt"):
-            raise ValueError("filename must end with .csv or .txt")
-        self._filename = value
-
-    @property
     def temperature_field(self):
         return self._temperature_field
     
