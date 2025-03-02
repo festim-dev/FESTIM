@@ -370,6 +370,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
+            if isinstance(export, exports.VTXTemperatureExport):
+                if isinstance(self.temperature_fenics, (fem.Function, fem.Expression)):
+                    temperature_field = self.temperature_fenics
+                else:
+                    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 1, 1)
+                    V = dolfinx.fem.FunctionSpace(mesh, ("CG", 1))
+                    temperature_field = dolfinx.fem.Function(V)
+                    temperature_field.interpolate(lambda x: np.full(x.shape[1], self.temperature_fenics))
+
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
@@ -401,6 +410,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
+
             if isinstance(export, exports.SurfaceQuantity):
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
