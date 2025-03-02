@@ -7,7 +7,6 @@ class AverageSurfaceTemperature(F.SurfaceQuantity):
     """Exports the average temperature on a given surface.
 
     Args:
-        temperature_field (fem.Constant or fem.Function): the temperature field to be computed
         surface (int or festim.SurfaceSubdomain): the surface subdomain
         filename (str, optional): name of the file to which the average surface temperature is exported
 
@@ -19,26 +18,14 @@ class AverageSurfaceTemperature(F.SurfaceQuantity):
         data (list): list of average temperature values on the surface
     """
 
-    def __init__(self, temperature_field, surface, filename: str = None) -> None:
-        self.temperature_field = temperature_field
+    def __init__(self, surface, filename: str = None) -> None:
         self.surface = surface
         self.filename = filename
 
+        self.temperature_field = None
         self.t = []
         self.data = []
         self._first_time_export = True
-
-    @property
-    def temperature_field(self):
-        return self._temperature_field
-    
-    @temperature_field.setter
-    def temperature_field(self, value):
-        # check that temperature field is float, int, fem.Constant, fem.Function, or fem.Expression
-        if not isinstance(value, (fem.Constant, fem.Function, fem.Expression, int, float)):
-            raise TypeError("field must be of type float, int, fem.Constant, fem.Function, or fem.Expression")
-                        
-        self._temperature_field = value
 
     @property
     def title(self):
