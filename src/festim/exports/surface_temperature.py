@@ -43,16 +43,6 @@ class SurfaceTemperature(F.SurfaceQuantity):
         self._filename = value
 
     @property
-    def surface(self):
-        return self._surface
-
-    @surface.setter
-    def surface(self, value):
-        if not isinstance(value, (int, F.SurfaceSubdomain)) or isinstance(value, bool):
-            raise TypeError("surface should be an int or F.SurfaceSubdomain")
-        self._surface = value
-
-    @property
     def temperature_field(self):
         return self._temperature_field
     
