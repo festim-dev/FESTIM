@@ -371,8 +371,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for export in self.exports:
 
             if isinstance(export, exports.AverageSurfaceTemperature):
-                export.temperature_field = self.temperature_fenics
-            
+                continue
+
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
