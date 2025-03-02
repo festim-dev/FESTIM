@@ -59,20 +59,3 @@ class SurfaceTemperature(F.SurfaceQuantity):
         self.value = surface_integral / surface_area # avg temp
 
         self.data.append(self.value)
-
-    def write(self, t):
-        """Writes the time and temperature value to the file.
-
-        Args:
-            t (float): current time value
-        """
-        if self.filename is not None:
-            if self._first_time_export:
-                header = ["t(s)", f"{self.title}"]
-                with open(self.filename, mode="w+", newline="") as file:
-                    writer = csv.writer(file)
-                    writer.writerow(header)
-                self._first_time_export = False
-            with open(self.filename, mode="a", newline="") as file:
-                writer = csv.writer(file)
-                writer.writerow([t, self.value])
