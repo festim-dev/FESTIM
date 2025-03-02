@@ -812,7 +812,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
                     export,
-                    (exports.SurfaceFlux, exports.TotalSurface, exports.AverageSurface),
+                    (exports.SurfaceFlux, exports.TotalSurface, exports.AverageSurface, exports.AverageSurfaceTemperature),
                 ):
                     export.compute(
                         self.ds,
@@ -825,16 +825,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
-
-            elif isinstance(export, exports.AverageSurfaceTemperature):
-                export.compute(self.ds)  # compute surface temp
-
-                export.t.append(float(self.t))  # update export time
-
-                # if filename given write export data to file
-                if export.filename is not None:
-                    export.write(t=float(self.t))  
-                
 
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, (exports.TotalVolume, exports.AverageVolume)):
