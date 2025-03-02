@@ -1,9 +1,9 @@
 import csv
 from dolfinx import fem
 import ufl
-import festim as F
+from .surface_quantity import SurfaceQuantity
 
-class AverageSurfaceTemperature(F.SurfaceQuantity):
+class AverageSurfaceTemperature(SurfaceQuantity):
     """Exports the average temperature on a given surface.
 
     Args:
