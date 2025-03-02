@@ -5,6 +5,7 @@ from mpi4py import MPI
 import basix
 import dolfinx
 import numpy.typing as npt
+import numpy as np
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
@@ -374,10 +375,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if isinstance(self.temperature_fenics, (fem.Function, fem.Expression)):
                     temperature_field = self.temperature_fenics
                 else:
-                    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 1, 1)
-                    V = dolfinx.fem.FunctionSpace(mesh, ("CG", 1))
+                    V = dolfinx.fem.FunctionSpace(self.mesh, ("CG", 1))
                     temperature_field = dolfinx.fem.Function(V)
-                    temperature_field.interpolate(lambda x: np.full(x.shape[1], self.temperature_fenics))
+                    temperature_field.interpolate(self.temperature_fenics)
 
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
