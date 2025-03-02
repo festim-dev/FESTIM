@@ -423,7 +423,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.temperature_field = self.temperature_fenics
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity, exports.AverageSurfaceTemperature)):
+            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity)):
                 export.t = []
                 export.data = []
 

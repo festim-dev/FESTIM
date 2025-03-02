@@ -49,6 +49,7 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
     my_export = F.AverageSurfaceTemperature(
         surface=dummy_surface
     )
+    my_export.temperature_field = my_model.temperature_field
     my_export.compute(ds)
 
     # TEST
