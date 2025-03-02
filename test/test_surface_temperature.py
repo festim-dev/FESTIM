@@ -47,7 +47,7 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
         my_model.update_time_dependent_values()
 
     my_export = F.AverageSurfaceTemperature(
-        temperature_field=my_model.temperature_fenics, surface=dummy_surface
+        surface=dummy_surface
     )
     my_export.compute(ds)
 
@@ -60,7 +60,7 @@ def test_title(tmp_path):
     results = "test.csv"
     temp = 400
     surface_temp = F.AverageSurfaceTemperature(
-        temperature_field=temp, surface=surf_1, filename=results
+        surface=surf_1, filename=results
     )
 
     my_model = F.HydrogenTransportProblem(
@@ -80,7 +80,6 @@ def test_title_generation(tmp_path, value):
 
     my_export = F.AverageSurfaceTemperature(
         filename=os.path.join(tmp_path, f"{value}"),
-        temperature_field=my_model.temperature_fenics,
         surface=F.SurfaceSubdomain1D(id=35, x=1),
     )
     my_export.value = 2.0
@@ -100,7 +99,6 @@ def test_write_overwrite(tmp_path):
 
     my_export = F.AverageSurfaceTemperature(
         filename=filename,
-        temperature_field=my_model.temperature_fenics,
         surface=F.SurfaceSubdomain1D(id=35, x=1),
     )
     my_export.value = 2.0
@@ -109,7 +107,6 @@ def test_write_overwrite(tmp_path):
 
     my_export2 = F.AverageSurfaceTemperature(
         filename=filename,
-        temperature_field=my_model.temperature_fenics,
         surface=F.SurfaceSubdomain1D(id=1, x=1),
     )
     my_export2.value = 3.0
@@ -133,7 +130,6 @@ def test_filename_setter_raises_TypeError():
 
         F.AverageSurfaceTemperature(
             filename=1,
-            temperature_field=my_model.temperature_fenics,
             surface=F.SurfaceSubdomain1D(id=1, x=1),
         )
 
@@ -147,7 +143,6 @@ def test_filename_setter_raises_ValueError(tmp_path):
 
         F.AverageSurfaceTemperature(
             filename=os.path.join(tmp_path, "my_export.xdmf"),
-            temperature_field=my_model.temperature_fenics,
             surface=F.SurfaceSubdomain1D(id=1, x=1),
         )
 
@@ -158,7 +153,6 @@ def test_field_setter_raises_TypeError():
     with pytest.raises(TypeError):
 
         F.AverageSurfaceTemperature(
-            temperature_field="str",
             surface=F.SurfaceSubdomain1D(id=1, x=1),
         )
 
@@ -171,7 +165,6 @@ def test_writer(tmp_path, value):
 
     my_export = F.AverageSurfaceTemperature(
         filename=os.path.join(tmp_path, f"{value}"),
-        temperature_field=my_model.temperature_fenics,
         surface=F.SurfaceSubdomain1D(id=1, x=0),
     )
     my_export.value = 2.0
@@ -195,6 +188,5 @@ def test_surface_setter_raises_TypeError():
         my_model = F.HydrogenTransportProblem(mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)),temperature=500)
         my_model.define_temperature()
         F.AverageSurfaceTemperature(
-            temperature_field=my_model.temperature_fenics,
             surface="1",
         )
