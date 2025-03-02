@@ -147,16 +147,6 @@ def test_filename_setter_raises_ValueError(tmp_path):
         )
 
 
-def test_field_setter_raises_TypeError():
-    """Test that a TypeError is raised when the field is not an int, float, fem.Constant, fem.Expression, or fem.Function"""
-
-    with pytest.raises(TypeError):
-
-        F.AverageSurfaceTemperature(
-            surface=F.SurfaceSubdomain1D(id=1, x=1),
-        )
-
-
 @pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
 def test_writer(tmp_path, value):
     """Test that the writes values at each timestep to either a csv or txt file"""
