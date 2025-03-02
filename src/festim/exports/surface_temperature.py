@@ -3,6 +3,7 @@ from dolfinx import fem
 import ufl
 from .surface_quantity import SurfaceQuantity
 
+
 class AverageSurfaceTemperature(SurfaceQuantity):
     """Exports the average temperature on a given surface.
 
@@ -37,12 +38,14 @@ class AverageSurfaceTemperature(SurfaceQuantity):
         Args:
             ds (ufl.Measure): surface measure of the model
         """
-        temperature_field = self.temperature_field  
+        temperature_field = self.temperature_field
 
-        surface_integral = fem.assemble_scalar(fem.form(temperature_field * ds(self.surface.id))) # integral over surface
-        
+        surface_integral = fem.assemble_scalar(
+            fem.form(temperature_field * ds(self.surface.id))
+        )  # integral over surface
+
         surface_area = fem.assemble_scalar(fem.form(1 * ds(self.surface.id)))
 
-        self.value = surface_integral / surface_area # avg temp
+        self.value = surface_integral / surface_area  # avg temp
 
         self.data.append(self.value)

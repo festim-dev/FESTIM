@@ -369,7 +369,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
-
             if isinstance(export, exports.AverageSurfaceTemperature):
                 continue
 
@@ -812,7 +811,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
                     export,
-                    (exports.SurfaceFlux, exports.TotalSurface, exports.AverageSurface, exports.AverageSurfaceTemperature),
+                    (
+                        exports.SurfaceFlux,
+                        exports.TotalSurface,
+                        exports.AverageSurface,
+                        exports.AverageSurfaceTemperature,
+                    ),
                 ):
                     export.compute(
                         self.ds,

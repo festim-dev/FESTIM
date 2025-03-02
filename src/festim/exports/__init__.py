@@ -9,7 +9,7 @@ __all__ = [
     "AverageSurface",
     "AverageVolume",
     "TotalVolume",
-    "AverageSurfaceTemperature"
+    "AverageSurfaceTemperature",
 ]
 
 from .average_surface import AverageSurface

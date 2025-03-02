@@ -46,9 +46,7 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
         my_model.t.value += dt.value
         my_model.update_time_dependent_values()
 
-    my_export = F.AverageSurfaceTemperature(
-        surface=dummy_surface
-    )
+    my_export = F.AverageSurfaceTemperature(surface=dummy_surface)
     my_export.temperature_field = my_model.temperature_fenics
     my_export.compute(ds)
 
@@ -60,9 +58,7 @@ def test_title(tmp_path):
     surf_1 = F.SurfaceSubdomain(id=1)
     results = "test.csv"
     temp = 400
-    surface_temp = F.AverageSurfaceTemperature(
-        surface=surf_1, filename=results
-    )
+    surface_temp = F.AverageSurfaceTemperature(surface=surf_1, filename=results)
 
     my_model = F.HydrogenTransportProblem(
         temperature=temp,
@@ -76,7 +72,9 @@ def test_title(tmp_path):
 @pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
 def test_title_generation(tmp_path, value):
     """Test that the title is made to be written to the header in a csv or txt file"""
-    my_model = F.HydrogenTransportProblem(mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)),temperature=500)
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)), temperature=500
+    )
     my_model.define_temperature()
 
     my_export = F.AverageSurfaceTemperature(
@@ -95,7 +93,9 @@ def test_title_generation(tmp_path, value):
 def test_write_overwrite(tmp_path):
     """Test that the write method overwrites the file if it already exists"""
     filename = os.path.join(tmp_path, "my_export.csv")
-    my_model = F.HydrogenTransportProblem(mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)),temperature=500)
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)), temperature=500
+    )
     my_model.define_temperature()
 
     my_export = F.AverageSurfaceTemperature(
@@ -126,7 +126,9 @@ def test_filename_setter_raises_TypeError():
     """Test that a TypeError is raised when the filename is not a string"""
 
     with pytest.raises(TypeError, match="filename must be of type str"):
-        my_model = F.HydrogenTransportProblem(mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)),temperature=500)
+        my_model = F.HydrogenTransportProblem(
+            mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)), temperature=500
+        )
         my_model.define_temperature()
 
         F.AverageSurfaceTemperature(
@@ -139,7 +141,9 @@ def test_filename_setter_raises_ValueError(tmp_path):
     """Test that a ValueError is raised when the filename does not end with .csv or .txt"""
 
     with pytest.raises(ValueError):
-        my_model = F.HydrogenTransportProblem(mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)),temperature=500)
+        my_model = F.HydrogenTransportProblem(
+            mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)), temperature=500
+        )
         my_model.define_temperature()
 
         F.AverageSurfaceTemperature(
@@ -151,7 +155,9 @@ def test_filename_setter_raises_ValueError(tmp_path):
 @pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
 def test_writer(tmp_path, value):
     """Test that the writes values at each timestep to either a csv or txt file"""
-    my_model = F.HydrogenTransportProblem(mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)),temperature=500)
+    my_model = F.HydrogenTransportProblem(
+        mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)), temperature=500
+    )
     my_model.define_temperature()
 
     my_export = F.AverageSurfaceTemperature(
@@ -176,7 +182,9 @@ def test_surface_setter_raises_TypeError():
     with pytest.raises(
         TypeError, match="surface should be an int or F.SurfaceSubdomain"
     ):
-        my_model = F.HydrogenTransportProblem(mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)),temperature=500)
+        my_model = F.HydrogenTransportProblem(
+            mesh=F.Mesh1D(np.linspace(0, 6.0, 10000)), temperature=500
+        )
         my_model.define_temperature()
         F.AverageSurfaceTemperature(
             surface="1",
