@@ -370,7 +370,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for export in self.exports:
 
-            if isinstance(export, exports.SurfaceTemperature):
+            if isinstance(export, exports.AverageSurfaceTemperature):
                 continue
             
             # if name of species is given then replace with species object
@@ -419,11 +419,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.D = D
                 export.D_expr = D_expr
 
-            elif isinstance(export, exports.SurfaceTemperature):
+            elif isinstance(export, exports.AverageSurfaceTemperature):
                 export.temperature_field = self.temperature_fenics
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity, exports.SurfaceTemperature)):
+            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity, exports.AverageSurfaceTemperature)):
                 export.t = []
                 export.data = []
 
@@ -826,7 +826,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if export.filename is not None:
                     export.write(t=float(self.t))
 
-            elif isinstance(export, exports.SurfaceTemperature):
+            elif isinstance(export, exports.AverageSurfaceTemperature):
                 export.compute(self.ds)  # compute surface temp
 
                 export.t.append(float(self.t))  # update export time
