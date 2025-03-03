@@ -21,3 +21,21 @@ def test_stepsize_value_wrong_type():
 
     with pytest.raises(TypeError):
         my_settings.stepsize = "coucou"
+
+@pytest.mark.parametrize(
+        "rtol", [1e-10, lambda t: 1e-8 if t<10 else 1e-10],
+        )
+def test_callable_rtol(rtol): 
+    """Tests callable rtol."""
+    my_settings = F.Settings(atol=0.1, rtol=rtol)
+
+    assert my_settings.rtol == rtol
+
+@pytest.mark.parametrize(
+        "atol", [1e10, lambda t: 1e12 if t<10 else 1e10]
+        )
+def test_callable_atol(atol): 
+    """Tests callable atol."""
+    my_settings = F.Settings(atol=atol, rtol=0.1)
+
+    assert my_settings.atol == atol
