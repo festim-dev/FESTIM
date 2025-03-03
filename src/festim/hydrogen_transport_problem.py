@@ -209,7 +209,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
     def temperature_time_dependent(self):
         if self.temperature is None:
             return False
-        if isinstance(self.temperature, fem.Constant):
+        if isinstance(self.temperature, fem.Constant | fem.Function):
             return False
         if callable(self.temperature):
             arguments = self.temperature.__code__.co_varnames
@@ -272,7 +272,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = as_fenics_constant(
+            self._dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -770,28 +770,28 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if isinstance(reactant, _species.ImplicitSpecies):
                     reactant.update_density(t=t)
 
-        if not self.temperature_time_dependent:
-            return
+        if (
+            isinstance(self.temperature, fem.Function)
+            or self.temperature_time_dependent
+        ):
+            for bc in self.boundary_conditions:
+                if isinstance(
+                    bc,
+                    boundary_conditions.FixedConcentrationBC
+                    | boundary_conditions.ParticleFluxBC,
+                ):
+                    if bc.temperature_dependent:
+                        bc.update(t=t)
 
-        if isinstance(self.temperature_fenics, fem.Constant):
-            self.temperature_fenics.value = self.temperature(t=t)
-        elif isinstance(self.temperature_fenics, fem.Function):
-            self.temperature_fenics.interpolate(self.temperature_expr)
+            for source in self.sources:
+                if source.value.temperature_dependent:
+                    source.value.update(t=t)
 
-        for bc in self.boundary_conditions:
-            if isinstance(
-                bc,
-                (
-                    boundary_conditions.FixedConcentrationBC,
-                    boundary_conditions.ParticleFluxBC,
-                ),
-            ):
-                if bc.temperature_dependent:
-                    bc.update(t=t)
-
-        for source in self.sources:
-            if source.value.temperature_dependent:
-                source.value.update(t=t)
+        if self.temperature_time_dependent:
+            if isinstance(self.temperature_fenics, fem.Constant):
+                self.temperature_fenics.value = self.temperature(t=t)
+            elif isinstance(self.temperature_fenics, fem.Function):
+                self.temperature_fenics.interpolate(self.temperature_expr)
 
     def post_processing(self):
         """Post processes the model"""
@@ -947,7 +947,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = as_fenics_constant(
+            self._dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 

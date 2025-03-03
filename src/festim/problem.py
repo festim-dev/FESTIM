@@ -71,6 +71,10 @@ class ProblemBase:
     def surface_subdomains(self):
         return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
 
+    @property
+    def dt(self):
+        return self._dt
+
     def define_meshtags_and_measures(self):
         """Defines the facet and volume meshtags of the model which are used
         to define the measures fo the model, dx and ds"""

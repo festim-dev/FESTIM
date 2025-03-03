@@ -1,13 +1,14 @@
-import festim.boundary_conditions
-from festim.hydrogen_transport_problem import HydrogenTransportProblem
-from festim import boundary_conditions, as_fenics_constant
-import festim
-from festim.helpers import get_interpolation_points
-import festim.species as _species
+from typing import List
+
 import ufl
 from dolfinx import fem
 
-from typing import List
+import festim
+import festim.boundary_conditions
+import festim.species as _species
+from festim import boundary_conditions
+from festim.helpers import as_fenics_constant, get_interpolation_points
+from festim.hydrogen_transport_problem import HydrogenTransportProblem
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
@@ -23,7 +24,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = as_fenics_constant(
+            self._dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -79,6 +80,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             # hack enforce the concentration attribute of the species for all species
             # to be used in reaction.reaction_term
+
             for spe in self.species:
                 if spe.mobile:
                     K_S = reaction.volume.material.get_solubility_coefficient(
