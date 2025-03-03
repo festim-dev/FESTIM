@@ -58,9 +58,6 @@ def test_tolerances_solve_before_passed_to_fenics(rtol,atol):
         temperature=300,
     )
 
-    my_model.boundary_conditions = [
-    F.DirichletBC(surfaces=[1, 2], value=1e15, field=0)  # H/m3/s
-]
     my_model.sources = [F.Source(value=1e20, volume=1, field=0)]
     my_model.dt = F.Stepsize(0.05, milestones=[0.1, 0.2, 0.5, 1])  # s
     my_model.initialise()
