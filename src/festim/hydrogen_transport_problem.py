@@ -375,7 +375,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if isinstance(self.temperature_fenics, (fem.Function, fem.Expression)):
                     temperature_field = self.temperature_fenics
                 else:
-                    V = dolfinx.fem.FunctionSpace(self.mesh, ("CG", 1))
+                    V = dolfinx.fem.functionspace(self.mesh, ("CG", 1))
                     temperature_field = dolfinx.fem.Function(V)
                     temperature_field.interpolate(self.temperature_fenics)
 
