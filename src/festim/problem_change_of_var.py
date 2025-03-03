@@ -2,6 +2,7 @@ import festim.boundary_conditions
 from festim.hydrogen_transport_problem import HydrogenTransportProblem
 from festim import boundary_conditions, as_fenics_constant
 import festim
+from festim.helpers import get_interpolation_points
 import festim.species as _species
 import ufl
 from dolfinx import fem
@@ -30,7 +31,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
         self.define_temperature()
         self.define_boundary_conditions()
-        self.create_source_values_fenics()
+        self.convert_source_input_values_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -104,7 +105,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics
+                source.value.fenics_object
                 * source.species.test_function
                 * self.dx(source.volume.id)
             )
@@ -161,7 +162,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             theta = spe.solution
 
-            spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points())
+            spe.dg_expr = fem.Expression(
+                theta * K_S, get_interpolation_points(Q1.element)
+            )
             spe.post_processing_solution = fem.Function(Q1)
             spe.post_processing_solution.interpolate(
                 spe.dg_expr
