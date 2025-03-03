@@ -5,6 +5,9 @@ import mpi4py.MPI as MPI
 
 
 def test_out_in():
+    """
+    Tests that a model can write a checkpoint file and another model can read it.
+    """
     mesh = dolfinx.mesh.create_unit_square(
         MPI.COMM_WORLD, nx=10, ny=10, cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
     )
