@@ -49,7 +49,7 @@ def test_callable_atol(atol):
         (lambda t: 1e-8 if t < 10 else 1e-10, lambda t: 1e12 if t < 10 else 1e10),
     ],
 )
-def test_tolerances_solve_before_passed_to_fenics(rtol, atol):
+def test_tolerances_value(rtol, atol):
     """Tests that the tolerances, if callable, are called & return an integer before passed to fenics"""
 
     # BUILD
@@ -70,5 +70,13 @@ def test_tolerances_solve_before_passed_to_fenics(rtol, atol):
     my_model.settings.stepsize = F.Stepsize(0.05, milestones=[0.1, 0.2, 0.5, 1])  # s
     my_model.initialise()
 
-    # RUN & TEST
-    my_model.run()
+    # check at t=0
+    assert my_model.solver.atol == atol(t=0.0)
+    assert my_model.solver.rtol == rtol(t=0.0)
+
+    my_model.t.value = 20
+    my_model.iterate()  
+
+    # check at t=20
+    assert my_model.solver.atol == atol(t=20.0)
+    assert my_model.solver.rtol == rtol(t=20.0)
