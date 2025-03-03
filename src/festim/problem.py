@@ -123,12 +123,12 @@ class ProblemBase:
         self.solver.atol = (
             self.settings.atol
             if not callable(self.settings.rtol)
-            else self.settings.rtol(0.0)
+            else self.settings.rtol(float(self.t))
         )
         self.solver.rtol = (
             self.settings.rtol
             if not callable(self.settings.rtol)
-            else self.settings.rtol(0.0)
+            else self.settings.rtol(float(self.t))
         )
         self.solver.max_it = self.settings.max_iterations
 
@@ -159,12 +159,6 @@ class ProblemBase:
                     unit_scale=True,
                 )
             while self.t.value < self.settings.final_time:
-                # update rtol if it's callable
-                if callable(self.settings.rtol):
-                    self.solver.rtol = self.settings.rtol(self.t.value)
-                # update rtol if it's callable
-                if callable(self.settings.atol):
-                    self.solver.atol = self.settings.atol(self.t.value)
                 self.iterate()
             if self.show_progress_bar:
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
@@ -180,6 +174,14 @@ class ProblemBase:
             self.progress_bar.update(
                 min(self.dt.value, abs(self.settings.final_time - self.t.value))
             )
+            
+        # update rtol if it's callable
+        if callable(self.settings.rtol):
+            self.solver.rtol = self.settings.rtol(self.t.value)
+        # update rtol if it's callable
+        if callable(self.settings.atol):
+            self.solver.atol = self.settings.atol(self.t.value)
+
         self.t.value += self.dt.value
 
         self.update_time_dependent_values()
