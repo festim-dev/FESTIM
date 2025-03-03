@@ -29,7 +29,6 @@ class MinimumVolume(VolumeQuantity):
         solution = self.field.solution
         indices = self.volume.locate_subdomain_entities(solution.function_space.mesh)
 
-        solution.function_space.mesh.comm.barrier()
         self.value = solution.function_space.mesh.comm.allreduce(
             np.min(self.field.solution.x.array[indices]), op=MPI.MIN
         )
