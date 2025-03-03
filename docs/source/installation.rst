@@ -63,6 +63,9 @@ use the `Windows Subsystem for Linux <https://learn.microsoft.com/en-us/windows/
 Installing FESTIM with pip
 --------------------------
 
+.. note::
+    FEniCS is required for the pip install to work. Consider installing it either with Conda, Docker, or from source.
+
 FESTIM can be installed using pip::
 
     pip install FESTIM
