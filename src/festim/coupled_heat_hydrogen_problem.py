@@ -11,7 +11,7 @@ from festim.hydrogen_transport_problem import (
 from festim.problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 
 
-class CoupledtTransientHeatTransferHydrogenTransport:
+class CoupledTransientHeatTransferHydrogenTransport:
     """
     Coupled heat transfer and hydrogen transport transient problem
 

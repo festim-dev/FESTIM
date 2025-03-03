@@ -161,7 +161,7 @@ def test_MMS_coupled_problem():
     )
 
     # define coupled problem
-    test_coupled_problem = F.CoupledtTransientHeatTransferHydrogenTransport(
+    test_coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
         heat_problem=test_heat_problem,
         hydrogen_problem=test_hydrogen_problem,
     )
@@ -228,7 +228,7 @@ def test_coupled_problem_non_matching_mesh():
         ),
     )
 
-    test_coupled_problem = F.CoupledtTransientHeatTransferHydrogenTransport(
+    test_coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
         heat_problem=test_heat_problem,
         hydrogen_problem=test_hydrogen_problem,
     )

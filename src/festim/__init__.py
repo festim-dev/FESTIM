@@ -21,7 +21,7 @@ from .boundary_conditions.henrys_bc import HenrysBC
 from .boundary_conditions.sieverts_bc import SievertsBC
 from .boundary_conditions.surface_reaction import SurfaceReactionBC
 from .coupled_heat_hydrogen_problem import (
-    CoupledtTransientHeatTransferHydrogenTransport,
+    CoupledTransientHeatTransferHydrogenTransport,
 )
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
