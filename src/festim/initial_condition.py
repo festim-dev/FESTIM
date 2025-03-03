@@ -114,6 +114,10 @@ def read_function_from_file(
     """
     Read a function from a file
 
+    note::
+        The function is read from a file using adios4dolfinx. For more information
+        see the [adios4dolfinx documentation](https://jsdokken.com/adios4dolfinx/README.html).
+
     Args:
         filename (str): the filename
         name (str): the name of the function
