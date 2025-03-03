@@ -1,3 +1,5 @@
+from mpi4py import MPI
+
 import numpy as np
 
 import festim.exports.surface_quantity as sq
@@ -28,5 +30,9 @@ class MinimumSurface(sq.SurfaceQuantity):
         indices = self.surface.locate_boundary_facet_indices(
             solution.function_space.mesh
         )
-        self.value = np.min(self.field.solution.x.array[indices])
+
+        MPI.COMM_WORLD.barrier()
+        self.value = solution.function_space.mesh.comm.allreduce(
+            np.min(self.field.solution.x.array[indices]), op=MPI.MIN
+        )
         self.data.append(self.value)
