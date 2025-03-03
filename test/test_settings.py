@@ -44,7 +44,8 @@ def test_callable_atol(atol):
         "rtol, atol", [(1e10,1e10), (lambda t: 1e-8 if t<10 else 1e-10,lambda t: 1e12 if t<10 else 1e10)]
         )
 def test_tolerances_solve_before_passed_to_fenics(rtol,atol):
-    """Tests that the tolerances, if callable, are solved before passed to fenics"""
+    """Tests that the tolerances, if callable, are called & return an integer before passed to fenics"""
+    
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
@@ -54,13 +55,15 @@ def test_tolerances_solve_before_passed_to_fenics(rtol,atol):
         mesh=test_mesh,
         settings=F.Settings(atol=atol, rtol=rtol, transient=True, final_time=10),
         subdomains=[my_vol],
+        temperature=300,
     )
 
-    stepsize = F.Stepsize(initial_value=1)
-    my_model.settings.stepsize = stepsize
-
+    my_model.boundary_conditions = [
+    F.DirichletBC(surfaces=[1, 2], value=1e15, field=0)  # H/m3/s
+]
+    my_model.sources = [F.Source(value=1e20, volume=1, field=0)]
+    my_model.dt = F.Stepsize(0.05, milestones=[0.1, 0.2, 0.5, 1])  # s
     my_model.initialise()
 
     # RUN & TEST
-    for i in range(10):
-        my_model.iterate()
+    my_model.run()
