@@ -22,30 +22,36 @@ def test_stepsize_value_wrong_type():
     with pytest.raises(TypeError):
         my_settings.stepsize = "coucou"
 
+
 @pytest.mark.parametrize(
-        "rtol", [1e-10, lambda t: 1e-8 if t<10 else 1e-10],
-        )
-def test_callable_rtol(rtol): 
+    "rtol",
+    [1e-10, lambda t: 1e-8 if t < 10 else 1e-10],
+)
+def test_callable_rtol(rtol):
     """Tests callable rtol."""
     my_settings = F.Settings(atol=0.1, rtol=rtol)
 
     assert my_settings.rtol == rtol
 
-@pytest.mark.parametrize(
-        "atol", [1e10, lambda t: 1e12 if t<10 else 1e10]
-        )
-def test_callable_atol(atol): 
+
+@pytest.mark.parametrize("atol", [1e10, lambda t: 1e12 if t < 10 else 1e10])
+def test_callable_atol(atol):
     """Tests callable atol."""
     my_settings = F.Settings(atol=atol, rtol=0.1)
 
     assert my_settings.atol == atol
 
+
 @pytest.mark.parametrize(
-        "rtol, atol", [(1e10,1e10), (lambda t: 1e-8 if t<10 else 1e-10,lambda t: 1e12 if t<10 else 1e10)]
-        )
-def test_tolerances_solve_before_passed_to_fenics(rtol,atol):
+    "rtol, atol",
+    [
+        (1e10, 1e10),
+        (lambda t: 1e-8 if t < 10 else 1e-10, lambda t: 1e12 if t < 10 else 1e10),
+    ],
+)
+def test_tolerances_solve_before_passed_to_fenics(rtol, atol):
     """Tests that the tolerances, if callable, are called & return an integer before passed to fenics"""
-    
+
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
