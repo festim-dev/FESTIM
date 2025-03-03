@@ -160,12 +160,8 @@ class CoupledTransientHeatTransferHydrogenTransport:
         next_dt_value = min(
             float(self.hydrogen_problem.dt), float(self.heat_problem.dt)
         )
-        self.heat_problem.dt = as_fenics_constant(
-            value=next_dt_value, mesh=self.heat_problem.mesh.mesh
-        )
-        self.hydrogen_problem.dt = as_fenics_constant(
-            value=next_dt_value, mesh=self.hydrogen_problem.mesh.mesh
-        )
+        self.heat_problem.dt.value = next_dt_value
+        self.hydrogen_problem.dt.value = next_dt_value
 
     def run(self):
         if self.hydrogen_problem.show_progress_bar:
