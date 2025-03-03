@@ -1,3 +1,5 @@
+from mpi4py import MPI
+
 import numpy as np
 
 from festim.exports import VolumeQuantity
@@ -26,7 +28,9 @@ class MinimumVolume(VolumeQuantity):
         """
         solution = self.field.solution
         indices = self.volume.locate_subdomain_entities(solution.function_space.mesh)
-        # FIXME: np.min/np.max is not parallel safe (unique value per process)
-        # Needs to use a reduction operation (MPI.comm.allreduce(..., op=...))
-        self.value = np.min(self.field.solution.x.array[indices])
+
+        MPI.COMM_WORLD.barrier()
+        self.value = solution.function_space.mesh.comm.allreduce(
+            np.min(self.field.solution.x.array[indices]), op=MPI.MIN
+        )
         self.data.append(self.value)
