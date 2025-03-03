@@ -52,7 +52,7 @@ from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVa
 from .initial_condition import (
     InitialCondition,
     InitialTemperature,
-    InitialConcentrationFromFile,
+    read_function_from_file,
 )
 from .material import Material
 from .mesh.mesh import Mesh

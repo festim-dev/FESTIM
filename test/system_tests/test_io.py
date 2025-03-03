@@ -62,11 +62,21 @@ def test_out_in():
     my_model2.temperature = 500
 
     my_model2.initial_conditions = [
-        F.InitialConcentrationFromFile(
-            filename="out_checkpoint.bp", species=H, name="H", timestamp=10
+        F.InitialCondition(
+            value=F.read_function_from_file(
+                filename="out_checkpoint.bp",
+                name="H",
+                timestamp=10,
+            ),
+            species=H,
         ),
-        F.InitialConcentrationFromFile(
-            filename="out_checkpoint.bp", species=D, name="D", timestamp=10
+        F.InitialCondition(
+            value=F.read_function_from_file(
+                filename="out_checkpoint.bp",
+                name="D",
+                timestamp=10,
+            ),
+            species=D,
         ),
     ]
 

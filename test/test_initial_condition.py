@@ -155,10 +155,12 @@ def test_checkpointing_single_species(tmpdir):
     H = F.Species("H")
     my_problem.species = [H]
     my_problem.mesh = F.Mesh(mesh)
+
+    function_initial_value = F.read_function_from_file(
+        filename=filename, name="my_function", timestamp=0.2
+    )
     my_problem.initial_conditions = [
-        F.InitialConcentrationFromFile(
-            filename=filename, species=H, name="my_function", timestamp=0.2
-        )
+        F.InitialCondition(value=function_initial_value, species=H)
     ]
     mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
     my_problem.subdomains = [F.VolumeSubdomain(id=0, material=mat)]
@@ -209,12 +211,23 @@ def test_checkpointing_multiple_species(tmpdir):
     D = F.Species("D")
     my_problem.species = [H, D]
     my_problem.mesh = F.Mesh(mesh)
+
     my_problem.initial_conditions = [
-        F.InitialConcentrationFromFile(
-            filename=filename, species=H, name="my_function1", timestamp=0.2
+        F.InitialCondition(
+            value=F.read_function_from_file(
+                filename=filename,
+                name="my_function1",
+                timestamp=0.2,
+            ),
+            species=H,
         ),
-        F.InitialConcentrationFromFile(
-            filename=filename, species=D, name="my_function2", timestamp=0.3
+        F.InitialCondition(
+            value=F.read_function_from_file(
+                filename=filename,
+                name="my_function2",
+                timestamp=0.3,
+            ),
+            species=D,
         ),
     ]
     mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")

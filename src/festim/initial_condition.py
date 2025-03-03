@@ -15,11 +15,11 @@ class InitialCondition:
     Initial condition class
 
     Args:
-        value (float, int, fem.Constant or callable): the value of the initial condition
+        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition
         species (festim.Species): the species to which the condition is applied
 
     Attributes:
-        value (float, int, fem.Constant or callable): the value of the initial condition
+        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition
         species (festim.Species): the species to which the source is applied
         expr_fenics: the value of the initial condition in
             fenics format
@@ -55,7 +55,8 @@ class InitialCondition:
 
         if isinstance(self.value, (int, float)):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
-
+        elif isinstance(self.value, fem.Function):
+            self.expr_fenics = self.value
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
             kwargs = {}
@@ -70,29 +71,6 @@ class InitialCondition:
                 self.value(**kwargs),
                 get_interpolation_points(function_space.element),
             )
-
-
-class InitialConcentrationFromFile:
-    expr_fenics: fem.Function
-
-    def __init__(self, filename, species, name: str, timestamp: float):
-        self.filename = filename
-        self.name = name
-        self.timestamp = timestamp
-        self.species = species
-
-    def read_function(self, element="P", order=1) -> fem.Function:
-        mesh_in = adios4dolfinx.read_mesh(self.filename, MPI.COMM_WORLD)
-        V_in = fem.functionspace(mesh_in, (element, order))
-        u_in = fem.Function(V_in)
-        adios4dolfinx.read_function(
-            filename=self.filename,
-            u=u_in,
-            name=self.name,
-            time=self.timestamp,
-        )
-
-        return u_in
 
 
 class InitialTemperature:
@@ -114,7 +92,8 @@ class InitialTemperature:
 
         if isinstance(self.value, (int, float)):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
-
+        elif isinstance(self.value, fem.Function):
+            self.expr_fenics = self.value
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
             kwargs = {}
@@ -127,3 +106,31 @@ class InitialTemperature:
                 self.value(**kwargs),
                 get_interpolation_points(function_space.element),
             )
+
+
+def read_function_from_file(
+    filename: str, name: str, timestamp: int | float, family="P", order: int = 1
+) -> fem.Function:
+    """
+    Read a function from a file
+
+    Args:
+        filename (str): the filename
+        name (str): the name of the function
+        timestamp (int, float): the timestamp of the function
+        family (str): the family of the function space
+        order (int): the order of the function space
+
+    Returns:
+        the function
+    """
+    mesh_in = adios4dolfinx.read_mesh(filename, MPI.COMM_WORLD)
+    V_in = fem.functionspace(mesh_in, (family, order))
+    u_in = fem.Function(V_in)
+    adios4dolfinx.read_function(
+        filename=filename,
+        u=u_in,
+        name=name,
+        time=timestamp,
+    )
+    return u_in

@@ -653,27 +653,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
             )
 
         for condition in self.initial_conditions:
-            if isinstance(
-                condition, festim.initial_condition.InitialConcentrationFromFile
-            ):
-                u_in = condition.read_function(element="P", order=1)
-                condition.expr_fenics = u_in
-            else:
-                function_space_value = None
-                if callable(condition.value):
-                    # if bc.value is a callable then need to provide a functionspace
-                    if not self.multispecies:
-                        function_space_value = condition.species.sub_function_space
-                    else:
-                        function_space_value = (
-                            condition.species.collapsed_function_space
-                        )
+            function_space_value = None
+            if callable(condition.value):
+                # if bc.value is a callable then need to provide a functionspace
+                if not self.multispecies:
+                    function_space_value = condition.species.sub_function_space
+                else:
+                    function_space_value = condition.species.collapsed_function_space
 
-                condition.create_expr_fenics(
-                    mesh=self.mesh.mesh,
-                    temperature=self.temperature_fenics,
-                    function_space=function_space_value,
-                )
+            condition.create_expr_fenics(
+                mesh=self.mesh.mesh,
+                temperature=self.temperature_fenics,
+                function_space=function_space_value,
+            )
 
             # assign to previous solution of species
             if not self.multispecies:
