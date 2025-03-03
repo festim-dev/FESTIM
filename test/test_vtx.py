@@ -130,3 +130,8 @@ def test_filename_raises_error_when_wrong_type():
     """Test that the filename attribute raises an error if the extension is not .bp"""
     with pytest.raises(TypeError):
         F.VTXSpeciesExport(1, field=[F.Species("H")])
+
+def test_filename_temp_raises_error_when_wrong_type():
+    """Test that the filename attribute for VTXTemperature export raises an error if the extension is not .bp"""
+    with pytest.raises(TypeError):
+        F.VTXTemperatureExport(1)
