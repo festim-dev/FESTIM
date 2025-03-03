@@ -6,6 +6,8 @@ import adios4dolfinx
 
 from typing import Union, Callable
 
+from festim.helpers import get_interpolation_points
+
 
 # TODO rename this to InitialConcentration and create a new base class
 class InitialCondition:
@@ -66,7 +68,7 @@ class InitialCondition:
 
             self.expr_fenics = fem.Expression(
                 self.value(**kwargs),
-                function_space.element.interpolation_points(),
+                get_interpolation_points(function_space.element),
             )
 
 
@@ -123,5 +125,5 @@ class InitialTemperature:
 
             self.expr_fenics = fem.Expression(
                 self.value(**kwargs),
-                function_space.element.interpolation_points(),
+                get_interpolation_points(function_space.element),
             )

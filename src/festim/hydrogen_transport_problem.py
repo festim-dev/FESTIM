@@ -22,16 +22,17 @@ from festim import (
 from festim import (
     reaction as _reaction,
 )
+from festim import source as _source
 from festim import (
     species as _species,
 )
 from festim import (
     subdomain as _subdomain,
 )
-from festim.helpers import as_fenics_constant
+from festim.helpers import as_fenics_constant, get_interpolation_points
 from festim.mesh import Mesh
 
-__all__ = ["HydrogenTransportProblem", "HTransportProblemDiscontinuous"]
+__all__ = ["HTransportProblemDiscontinuous", "HydrogenTransportProblem"]
 
 
 class HydrogenTransportProblem(problem.ProblemBase):
@@ -279,7 +280,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self.define_temperature()
         self.define_boundary_conditions()
-        self.create_source_values_fenics()
+        self.convert_source_input_values_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -361,7 +362,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # to update the temperature_fenics later
                 self.temperature_expr = fem.Expression(
                     self.temperature(**kwargs),
-                    function_space_temperature.element.interpolation_points(),
+                    get_interpolation_points(function_space_temperature.element),
                 )
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
@@ -452,7 +453,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         expr = D_0 * ufl.exp(
             -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
         )
-        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points())
+        D_expr = fem.Expression(expr, get_interpolation_points(self.V_DG_1.element))
         D.interpolate(D_expr)
         return D, D_expr
 
@@ -619,15 +620,16 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         return form
 
-    def create_source_values_fenics(self):
+    def convert_source_input_values_to_fenics_objects(self):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
-            if isinstance(source, festim.source.ParticleSource):
-                source.create_value_fenics(
-                    mesh=self.mesh.mesh,
-                    temperature=self.temperature_fenics,
+            if isinstance(source, _source.ParticleSource):
+                source.value.convert_input_value(
+                    function_space=self.function_space,
                     t=self.t,
+                    temperature=self.temperature_fenics,
+                    up_to_ufl_expr=True,
                 )
 
     def create_flux_values_fenics(self):
@@ -726,7 +728,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics
+                source.value.fenics_object
                 * source.species.test_function
                 * self.dx(source.volume.id)
             )
@@ -796,8 +798,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     bc.update(t=t)
 
         for source in self.sources:
-            if source.temperature_dependent:
-                source.update(t=t)
+            if source.value.temperature_dependent:
+                source.value.update(t=t)
 
     def post_processing(self):
         """Post processes the model"""
@@ -959,12 +961,15 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.create_implicit_species_value_fenics()
 
-        self.define_temperature()
-        self.create_source_values_fenics()
-        self.create_flux_values_fenics()
-        self.create_initial_conditions()
         for subdomain in self.volume_subdomains:
             self.define_function_spaces(subdomain)
+
+        self.define_temperature()
+        self.convert_source_input_values_to_fenics_objects()
+        self.create_flux_values_fenics()
+        self.create_initial_conditions()
+
+        for subdomain in self.volume_subdomains:
             self.create_subdomain_formulation(subdomain)
             subdomain.u.name = f"u_{subdomain.id}"
 
@@ -1081,6 +1086,21 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             name = f"{species.name}_{subdomain.id}"
             species.subdomain_to_post_processing_solution[subdomain].name = name
 
+    def convert_source_input_values_to_fenics_objects(self):
+        """For each source create the value_fenics"""
+        for source in self.sources:
+            # create value_fenics for all F.ParticleSource objects
+            if isinstance(source, _source.ParticleSource):
+                for subdomain in source.species.subdomains:
+                    V = source.species.subdomain_to_function_space[subdomain]
+
+                    source.value.convert_input_value(
+                        function_space=V,
+                        t=self.t,
+                        temperature=self.temperature_fenics,
+                        up_to_ufl_expr=True,
+                    )
+
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """
         Creates the variational formulation for each subdomain and stores it in ``subdomain.F``
@@ -1150,7 +1170,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
-                form -= source.value_fenics * v * self.dx(subdomain.id)
+                form -= source.value.fenics_object * v * self.dx(subdomain.id)
 
         # store the form in the subdomain object
         subdomain.F = form
