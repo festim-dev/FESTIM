@@ -22,7 +22,7 @@ class CoupledTransientHeatTransferHydrogenTransport:
     Attributes:
         heat_problem: the heat transfer problem
         hydrogen_problem: the hydrogen transport problem
-        non_matching_meshes: True if the meshes in the heat_problem and hydorgen_problem
+        non_matching_meshes: True if the meshes in the heat_problem and hydrogen_problem
             are not matching
 
     Examples:

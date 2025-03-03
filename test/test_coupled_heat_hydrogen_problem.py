@@ -76,7 +76,7 @@ def test_error_raised_when_wrong_heat_problem_given(object):
 
 def test_initial_dt_values_are_the_same():
     """Test that the smallest of the stepsize intial_value values given is used in both
-    the heat_problem and the hydorgen_problem"""
+    the heat_problem and the hydrogen_problem"""
 
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
@@ -142,7 +142,7 @@ def test_dts_always_the_same():
 
 def test_error_raised_when_final_times_not_the_same():
     """Test that an error is raised when the final time values given in the heat_problem
-    and the hydorgen_problem are not the same"""
+    and the hydrogen_problem are not the same"""
 
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
