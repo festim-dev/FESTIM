@@ -73,8 +73,8 @@ def test_MMS_coupled_problem():
     exact_mobile_solution = lambda x, t: 2 * x[0] ** 2 + 15 * t
     exact_trapped_solution = lambda x, t: 4 * x[0] ** 2 + 12 * t
 
-    exact_mobile_intial_cond = lambda x: 2 * x[0] ** 2
-    exact_trapped_intial_cond = lambda x: 4 * x[0] ** 2
+    exact_mobile_intial_cond = lambda x: exact_mobile_solution(x, t=0)
+    exact_trapped_intial_cond = lambda x: exact_trapped_solution(x, t=0)
 
     dmobiledt = 15
     dtrappeddt = 12
@@ -174,14 +174,14 @@ def test_MMS_coupled_problem():
     trapped_computed = test_trapped.post_processing_solution
 
     exact_T = lambda x: 3 * x[0] ** 2 + 10 * final_time
-    exact_mobile = lambda x: 2 * x[0] ** 2 + 15 * final_time
+    exact_mobile = lambda x: exact_mobile_solution(x, t=final_time)
     exact_trapped = lambda x: 4 * x[0] ** 2 + 12 * final_time
 
     L2_error_T = error_L2(T_computed, exact_T)
     L2_error_mobile = error_L2(mobile_computed, exact_mobile)
     L2_error_trapped = error_L2(trapped_computed, exact_trapped)
 
-    # TEST ensure L2 error below 2e07
+    # TEST ensure L2 error below 2e-7
     assert L2_error_T < 2e-07
     assert L2_error_mobile < 2e-07
     assert L2_error_trapped < 2e-07
