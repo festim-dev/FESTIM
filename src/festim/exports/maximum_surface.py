@@ -31,7 +31,7 @@ class MaximumSurface(sq.SurfaceQuantity):
             solution.function_space.mesh
         )
 
-        MPI.COMM_WORLD.barrier()
+        solution.function_space.mesh.comm.barrier()
         self.value = solution.function_space.mesh.comm.allreduce(
             np.max(self.field.solution.x.array[indices]), op=MPI.MAX
         )
