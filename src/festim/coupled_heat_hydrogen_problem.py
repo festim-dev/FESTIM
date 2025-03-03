@@ -80,6 +80,7 @@ class CoupledTransientHeatTransferHydrogenTransport:
     def heat_problem(self, value):
         if not isinstance(value, HeatTransferProblem):
             raise TypeError("heat_problem must be a festim.HeatTransferProblem object")
+        value.show_progress_bar = False
         self._heat_problem = value
 
     @property
@@ -131,8 +132,6 @@ class CoupledTransientHeatTransferHydrogenTransport:
             )
 
         self.heat_problem.initialise()
-
-        self.heat_problem.show_progress_bar = False
 
         if self.non_matching_meshes:
             V = fem.functionspace(self.hydrogen_problem.mesh.mesh, ("P", 1))
