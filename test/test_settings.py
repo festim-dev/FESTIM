@@ -69,6 +69,8 @@ def test_tolerances_value(rtol, atol):
     my_model.settings.stepsize = F.Stepsize(0.05, milestones=[0.1, 0.2, 0.5, 1])  # s
     my_model.initialise()
 
+    my_model.t.value = 0.0
+    my_model.iterate()
     # check at t=0
     assert my_model.solver.atol == atol(t=0.0)
     assert my_model.solver.rtol == rtol(t=0.0)
