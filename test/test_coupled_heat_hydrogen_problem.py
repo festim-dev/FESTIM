@@ -104,6 +104,42 @@ def test_initial_dt_values_are_the_same():
     )
 
 
+def test_dts_always_the_same():
+    """Test that the correct dt value is modified"""
+
+    dt = F.Stepsize(
+        1000, growth_factor=1000, cutback_factor=0.9, target_nb_iterations=4
+    )
+
+    test_heat_problem = F.HeatTransferProblem(
+        mesh=test_mesh,
+        subdomains=test_subdomains,
+        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=dt, final_time=1),
+        initial_condition=F.InitialTemperature(500),
+    )
+
+    test_hydrogen_problem = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        subdomains=test_subdomains,
+        species=[test_H],
+        initial_conditions=[F.InitialCondition(value=10, species=test_H)],
+        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=0.1, final_time=1),
+    )
+
+    test_coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
+        heat_problem=test_heat_problem,
+        hydrogen_problem=test_hydrogen_problem,
+    )
+
+    test_coupled_problem.initialise()
+
+    value_dt_heat_initial = test_heat_problem.dt.value
+
+    test_coupled_problem.run()
+
+    assert np.isclose(value_dt_heat_initial, 0.1)
+
+
 def test_error_raised_when_final_times_not_the_same():
     """Test that an error is raised when the final time values given in the heat_problem
     and the hydorgen_problem are not the same"""

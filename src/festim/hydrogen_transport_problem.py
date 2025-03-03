@@ -271,7 +271,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = as_fenics_constant(
+            self._dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -928,7 +928,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = as_fenics_constant(
+            self._dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
