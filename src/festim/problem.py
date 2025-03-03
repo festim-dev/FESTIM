@@ -174,7 +174,7 @@ class ProblemBase:
             self.progress_bar.update(
                 min(self.dt.value, abs(self.settings.final_time - self.t.value))
             )
-            
+
         # update rtol if it's callable
         if callable(self.settings.rtol):
             self.solver.rtol = self.settings.rtol(self.t.value)

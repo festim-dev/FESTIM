@@ -79,7 +79,7 @@ def test_tolerances_value(rtol, atol):
         assert my_model.solver.rtol == rtol
 
     my_model.t.value = 20
-    my_model.iterate()  
+    my_model.iterate()
 
     # check at t=20
     if type(atol) != float:
