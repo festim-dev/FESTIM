@@ -44,7 +44,7 @@ def test_error_raised_when_wrong_type_hydrogen_problem_given(object):
 
     with pytest.raises(
         NotImplementedError,
-        match="Coupled heat transfer - hydorgen transport simulations with "
+        match="Coupled heat transfer - hydrogen transport simulations with "
         "HydrogenTransportProblemDiscontinuousChangeVar, "
         "HTransportProblemPenalty or"
         "HydrogenTransportProblemDiscontinuousChangeVar, "
