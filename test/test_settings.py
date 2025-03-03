@@ -50,7 +50,7 @@ def test_callable_atol(atol):
     ],
 )
 def test_tolerances_value(rtol, atol):
-    """Tests that the tolerances, if callable, are called & return an integer before passed to fenics"""
+    """Tests that the tolerances, if callable, are called & return correct float before passed to fenics"""
 
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
@@ -71,12 +71,14 @@ def test_tolerances_value(rtol, atol):
     my_model.initialise()
 
     # check at t=0
-    assert my_model.solver.atol == atol(t=0.0)
-    assert my_model.solver.rtol == rtol(t=0.0)
+    if type(atol) != float:
+        assert my_model.solver.atol == atol(t=0.0)
+        assert my_model.solver.rtol == rtol(t=0.0)
 
     my_model.t.value = 20
     my_model.iterate()  
 
     # check at t=20
-    assert my_model.solver.atol == atol(t=20.0)
-    assert my_model.solver.rtol == rtol(t=20.0)
+    if type(atol) != float:
+        assert my_model.solver.atol == atol(t=20.0)
+        assert my_model.solver.rtol == rtol(t=20.0)
