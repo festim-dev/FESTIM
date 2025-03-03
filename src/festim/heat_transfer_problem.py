@@ -69,7 +69,7 @@ class HeatTransferProblem(problem.ProblemBase):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = helpers.as_fenics_constant(
+            self._dt = helpers.as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
