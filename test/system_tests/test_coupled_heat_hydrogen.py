@@ -5,11 +5,6 @@ import festim as F
 
 from .tools import error_L2
 
-test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, 500))
-test_mat = F.Material(D_0=1, E_D=0, thermal_conductivity=1)
-test_subdomains = [F.VolumeSubdomain1D(id=1, borders=[0, 1], material=test_mat)]
-test_H = F.Species("H", mobile=True)
-
 
 def test_MMS_coupled_problem():
     """MMS coupled heat and hydrogen test with 1 mobile species and 1 trap in a 1s
@@ -188,43 +183,102 @@ def test_MMS_coupled_problem():
 
 
 def test_coupled_problem_non_matching_mesh():
-    """Test that the function in the hydrogen problem which is temperature dependent
-    has the correct value at x=1, when temperature field is time and space dependent,
-    and the problems have mismatching meshes, in transient"""
+    """MMS coupled heat and hydrogen test with 1 mobile species in a 1s transient with
+    mismatched meshes, the value of the mobile solution at the last time step is
+    compared to an analytical solution"""
 
-    T_func = lambda x, t: 3 * x[0] + 5 + t
-    c_func = lambda T: 5 * T
+    # coupled simulation properties
+    density, heat_capacity = 1.3, 2.3
+    thermal_conductivity = 4.1
+    D_0, E_D = 1.3, 0.2
+    k_B = F.k_B
+    final_time = 5
 
-    my_mat = F.Material(
-        D_0=1, E_D=0, thermal_conductivity=1, density=1, heat_capacity=1
+    # common festim objects
+    test_mat = F.Material(
+        D_0=D_0,
+        E_D=E_D,
+        thermal_conductivity=thermal_conductivity,
+        density=density,
+        heat_capacity=heat_capacity,
     )
-    test_vol_sub = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    test_vol_sub = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=test_mat)
     left_sub = F.SurfaceSubdomain1D(id=2, x=0)
     right_sub = F.SurfaceSubdomain1D(id=3, x=1)
-    test_mesh_2 = F.Mesh1D(vertices=np.linspace(0, 1, 1000))
+    test_mobile = F.Species("mobile", mobile=True)
+
+    # define temperature sim
+    exact_T_solution = lambda x, t: 2 * x[0] ** 2 + 5 * t
+
+    dTdt = 5
+
+    mms_T_source = (
+        test_mat.density * test_mat.heat_capacity * dTdt
+        - test_mat.thermal_conductivity * 4
+    )
+
+    # Corse mesh for heat trasnfer problem
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, 500))
 
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=[test_vol_sub, left_sub, right_sub],
         boundary_conditions=[
-            F.FixedTemperatureBC(subdomain=left_sub, value=0),
-            F.FixedTemperatureBC(subdomain=right_sub, value=T_func),
+            F.FixedTemperatureBC(subdomain=left_sub, value=exact_T_solution),
+            F.FixedTemperatureBC(subdomain=right_sub, value=exact_T_solution),
         ],
+        sources=[F.HeatSource(value=mms_T_source, volume=test_vol_sub)],
+        initial_condition=F.InitialTemperature(lambda x: exact_T_solution(x, 0)),
         settings=F.Settings(
-            atol=1e-10, rtol=1e-10, transient=True, final_time=5, stepsize=0.5
+            atol=1e-10,
+            rtol=1e-10,
+            transient=True,
+            final_time=final_time,
+            stepsize=final_time / 20,
         ),
     )
+
+    # define hydrogen problem
+    exact_mobile_solution = lambda x, t: 4 * x[0] ** 2 + 10 * t
+
+    dmobiledt = 10
+
+    D = lambda x, t: D_0 * ufl.exp(-E_D / (k_B * exact_T_solution(x, t)))
+
+    def mms_mobile_source(x, t):
+        return dmobiledt - ufl.div(D(x, t) * ufl.grad(exact_mobile_solution(x, t)))
+
+    # Fine mesh for hydrogen transport problem
+    test_mesh_2 = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
         mesh=test_mesh_2,
         subdomains=[test_vol_sub, left_sub, right_sub],
         boundary_conditions=[
-            F.FixedConcentrationBC(subdomain=left_sub, value=0, species=test_H),
-            F.FixedConcentrationBC(subdomain=right_sub, value=c_func, species=test_H),
+            F.FixedConcentrationBC(
+                subdomain=left_sub, value=exact_mobile_solution, species=test_mobile
+            ),
+            F.FixedConcentrationBC(
+                subdomain=right_sub, value=exact_mobile_solution, species=test_mobile
+            ),
         ],
-        species=[test_H],
+        species=[test_mobile],
+        initial_conditions=[
+            F.InitialCondition(
+                value=lambda x: exact_mobile_solution(x, t=0), species=test_mobile
+            ),
+        ],
+        sources=[
+            F.ParticleSource(
+                value=mms_mobile_source, volume=test_vol_sub, species=test_mobile
+            ),
+        ],
         settings=F.Settings(
-            atol=1, rtol=1e-10, transient=True, final_time=5, stepsize=0.5
+            atol=1e-10,
+            rtol=1e-10,
+            transient=True,
+            final_time=final_time,
+            stepsize=final_time / 20,
         ),
     )
 
@@ -236,4 +290,10 @@ def test_coupled_problem_non_matching_mesh():
     test_coupled_problem.initialise()
     test_coupled_problem.run()
 
-    assert np.isclose(test_coupled_problem.hydrogen_problem.u.x.array[-1], 65)
+    exact_solution = lambda x: exact_mobile_solution(x, t=final_time)
+
+    computed_solution = test_mobile.post_processing_solution
+
+    L2_error = error_L2(computed_solution, exact_solution)
+
+    assert L2_error < 2e-07
