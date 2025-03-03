@@ -39,3 +39,28 @@ def test_callable_atol(atol):
     my_settings = F.Settings(atol=atol, rtol=0.1)
 
     assert my_settings.atol == atol
+
+@pytest.mark.parametrize(
+        "rtol", "atol", [(1e10,1e10), (lambda t: 1e-8 if t<10 else 1e-10,lambda t: 1e12 if t<10 else 1e10)]
+        )
+def test_tolerances_solve_before_passed_to_fenics(rtol,atol):
+    """Tests that the tolerances, if callable, are solved before passed to fenics"""
+    # BUILD
+    test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
+    dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
+
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        settings=F.Settings(atol=atol, rtol=rtol, transient=True, final_time=10),
+        subdomains=[my_vol],
+    )
+
+    stepsize = F.Stepsize(initial_value=1)
+    my_model.settings.stepsize = stepsize
+
+    my_model.initialise()
+
+    # RUN & TEST
+    for i in range(10):
+        my_model.iterate()
