@@ -41,7 +41,7 @@ def test_callable_atol(atol):
     assert my_settings.atol == atol
 
 @pytest.mark.parametrize(
-        "rtol", "atol", [(1e10,1e10), (lambda t: 1e-8 if t<10 else 1e-10,lambda t: 1e12 if t<10 else 1e10)]
+        "rtol, atol", [(1e10,1e10), (lambda t: 1e-8 if t<10 else 1e-10,lambda t: 1e12 if t<10 else 1e10)]
         )
 def test_tolerances_solve_before_passed_to_fenics(rtol,atol):
     """Tests that the tolerances, if callable, are solved before passed to fenics"""
