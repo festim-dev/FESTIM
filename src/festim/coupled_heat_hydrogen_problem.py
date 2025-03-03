@@ -95,7 +95,7 @@ class CoupledTransientHeatTransferHydrogenTransport:
             | HydrogenTransportProblemDiscontinuousChangeVar,
         ):
             raise NotImplementedError(
-                "Coupled heat transfer - hydorgen transport simulations with "
+                "Coupled heat transfer - hydrogen transport simulations with "
                 "HydrogenTransportProblemDiscontinuousChangeVar, "
                 "HTransportProblemPenalty or"
                 "HydrogenTransportProblemDiscontinuousChangeVar, "
