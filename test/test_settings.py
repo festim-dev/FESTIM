@@ -57,8 +57,10 @@ def test_tolerances_solve_before_passed_to_fenics(rtol,atol):
         subdomains=[my_vol],
         temperature=300,
     )
+    H = F.Species("H")
+    my_model.species = [H]
 
-    my_model.sources = [F.Source(value=1e20, volume=1, field=0)]
+    my_model.sources = [F.ParticleSource(value=1e20, volume=1, species=H)]
     my_model.dt = F.Stepsize(0.05, milestones=[0.1, 0.2, 0.5, 1])  # s
     my_model.initialise()
 
