@@ -7,38 +7,12 @@ import festim
 import festim.boundary_conditions
 import festim.species as _species
 from festim import boundary_conditions
-from festim.helpers import as_fenics_constant, get_interpolation_points
+from festim.helpers import get_interpolation_points
 from festim.hydrogen_transport_problem import HydrogenTransportProblem
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
     species: List[_species.Species]
-
-    def initialise(self):
-        self.create_species_from_traps()
-        self.define_function_spaces()
-        self.define_meshtags_and_measures()
-        self.assign_functions_to_species()
-
-        self.t = fem.Constant(self.mesh.mesh, 0.0)
-        if self.settings.transient:
-            # TODO should raise error if no stepsize is provided
-            # TODO Should this be an attribute of festim.Stepsize?
-            self._dt = as_fenics_constant(
-                self.settings.stepsize.initial_value, self.mesh.mesh
-            )
-
-        self.create_implicit_species_value_fenics()
-
-        self.define_temperature()
-        self.define_boundary_conditions()
-        self.convert_source_input_values_to_fenics_objects()
-        self.create_flux_values_fenics()
-        self.create_initial_conditions()
-        self.create_formulation()
-        self.create_solver()
-        self.override_post_processing_solution()  # NOTE this is the only difference with parent class
-        self.initialise_exports()
 
     def create_formulation(self):
         """Creates the formulation of the model"""
@@ -86,6 +60,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     K_S = reaction.volume.material.get_solubility_coefficient(
                         self.mesh.mesh, self.temperature_fenics, spe
                     )
+                    assert isinstance(spe, _species.SpeciesChangeVar)
                     spe.concentration = spe.solution * K_S
 
             # reactant
@@ -142,6 +117,10 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                         self.formulation += (
                             spe.solution * spe.test_function * self.dx(vol.id)
                         )
+
+    def initialise_exports(self):
+        self.override_post_processing_solution()
+        super().initialise_exports()
 
     def override_post_processing_solution(self):
         # override the post-processing solution c = theta * K_S
