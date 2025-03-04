@@ -49,7 +49,6 @@ from .hydrogen_transport_problem import (
     HTransportProblemPenalty,
     HydrogenTransportProblem,
 )
-from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 from .initial_condition import (
     InitialCondition,
     InitialTemperature,

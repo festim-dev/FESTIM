@@ -15,7 +15,8 @@ class InitialCondition:
     Initial condition class
 
     Args:
-        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition
+        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition.
+            If a fem.Function is passed, the mesh of the function needs to match the mesh of the problem.
         species (festim.Species): the species to which the condition is applied
 
     Attributes:
