@@ -124,8 +124,16 @@ class ProblemBase:
             bcs=self.bc_forms,
         )
         self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
-        self.solver.atol = self.settings.atol
-        self.solver.rtol = self.settings.rtol
+        self.solver.atol = (
+            self.settings.atol
+            if not callable(self.settings.rtol)
+            else self.settings.rtol(float(self.t))
+        )
+        self.solver.rtol = (
+            self.settings.rtol
+            if not callable(self.settings.rtol)
+            else self.settings.rtol(float(self.t))
+        )
         self.solver.max_it = self.settings.max_iterations
 
         ksp = self.solver.krylov_solver
@@ -170,6 +178,14 @@ class ProblemBase:
             self.progress_bar.update(
                 min(self.dt.value, abs(self.settings.final_time - self.t.value))
             )
+
+        # update rtol if it's callable
+        if callable(self.settings.rtol):
+            self.solver.rtol = self.settings.rtol(self.t.value)
+        # update rtol if it's callable
+        if callable(self.settings.atol):
+            self.solver.atol = self.settings.atol(self.t.value)
+
         self.t.value += self.dt.value
 
         self.update_time_dependent_values()

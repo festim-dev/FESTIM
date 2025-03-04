@@ -7,8 +7,8 @@ class Settings:
     """Settings for a festim simulation.
 
     Args:
-        atol (float): Absolute tolerance for the solver.
-        rtol (float): Relative tolerance for the solver.
+        atol (float or callable): Absolute tolerance for the solver.
+        rtol (float or callable): Relative tolerance for the solver.
         max_iterations (int, optional): Maximum number of iterations for the
             solver. Defaults to 30.
         transient (bool, optional): Whether the simulation is transient or not.
@@ -19,8 +19,8 @@ class Settings:
         convergence_criterion: resiudal or incremental (for Newton solver)
 
     Attributes:
-        atol (float): Absolute tolerance for the solver.
-        rtol (float): Relative tolerance for the solver.
+        atol (float or callable): Absolute tolerance for the solver.
+        rtol (float or callable): Relative tolerance for the solver.
         max_iterations (int): Maximum number of iterations for the solver.
         transient (bool): Whether the simulation is transient or not.
         final_time (float): Final time for a transient simulation.
