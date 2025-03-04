@@ -120,11 +120,11 @@ def read_function_from_file(
         see the [adios4dolfinx documentation](https://jsdokken.com/adios4dolfinx/README.html).
 
     Args:
-        filename (str): the filename
-        name (str): the name of the function
-        timestamp (int, float): the timestamp of the function
-        family (str): the family of the function space
-        order (int): the order of the function space
+        filename: the filename
+        name: the name of the function
+        timestamp: the timestamp of the function
+        family: the family of the function space
+        order: the order of the function space
 
     Returns:
         the function

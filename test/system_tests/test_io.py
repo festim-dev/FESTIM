@@ -4,7 +4,7 @@ import dolfinx
 import mpi4py.MPI as MPI
 
 
-def test_out_in():
+def test_writing_and_reading_of_species_function_using_checkpoints():
     """
     Tests that a model can write a checkpoint file and another model can read it.
     """
