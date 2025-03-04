@@ -150,9 +150,9 @@ class Reaction:
             products = [self.product]
 
         if len(products) > 0:
-            product_of_products = products[0].solution
+            product_of_products = products[0].concentration
             for product in products[1:]:
-                product_of_products *= product.solution
+                product_of_products *= product.concentration
         else:
             product_of_products = 0
         return k * product_of_reactants - (p * product_of_products)
