@@ -1477,6 +1477,21 @@ class HTransportProblemPenalty(HTransportProblemDiscontinuous):
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
     species: List[_species.Species]
 
+    def initialise(self):
+        # check if a SurfaceReactionBC is given
+        for bc in self.boundary_conditions:
+            if isinstance(bc, (boundary_conditions.SurfaceReactionBC)):
+                raise ValueError(
+                    f"{type(bc)} not implemented for HydrogenTransportProblemDiscontinuousChangeVar"
+                )
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
+                if bc.species_dependent_value:
+                    raise ValueError(
+                        f"{type(bc)} concentration-dependent not implemented for HydrogenTransportProblemDiscontinuousChangeVar"
+                    )
+
+        super().initialise()
+
     def create_formulation(self):
         """Creates the formulation of the model"""
 
