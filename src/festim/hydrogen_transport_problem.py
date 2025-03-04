@@ -1510,38 +1510,8 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     self.formulation += ((c - c_n) / self.dt) * v * self.dx(vol.id)
 
         for reaction in self.reactions:
-            if isinstance(reaction.product, list):
-                products = reaction.product
-            else:
-                products = [reaction.product]
+            self.add_reaction_term(reaction)
 
-            # hack enforce the concentration attribute of the species for all species
-            # to be used in reaction.reaction_term
-
-            for spe in self.species:
-                if spe.mobile:
-                    K_S = reaction.volume.material.get_solubility_coefficient(
-                        self.mesh.mesh, self.temperature_fenics, spe
-                    )
-                    assert isinstance(spe, _species.SpeciesChangeVar)
-                    spe.concentration = spe.solution * K_S
-
-            # reactant
-            for reactant in reaction.reactant:
-                if isinstance(reactant, festim.species.Species):
-                    self.formulation += (
-                        reaction.reaction_term(self.temperature_fenics)
-                        * reactant.test_function
-                        * self.dx(reaction.volume.id)
-                    )
-
-            # product
-            for product in products:
-                self.formulation += (
-                    -reaction.reaction_term(self.temperature_fenics)
-                    * product.test_function
-                    * self.dx(reaction.volume.id)
-                )
         # add sources
         for source in self.sources:
             self.formulation -= (
@@ -1580,6 +1550,55 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                         self.formulation += (
                             spe.solution * spe.test_function * self.dx(vol.id)
                         )
+
+    def add_reaction_term(self, reaction: _reaction.Reaction):
+        """Adds the reaction term to the formulation"""
+
+        products = (
+            reaction.product
+            if isinstance(reaction.product, list)
+            else [reaction.product]
+        )
+
+        # we cannot use the `concentration` attribute of the mobile species and need to use u * K_S instead
+
+        def get_concentrations(species_list) -> List:
+            concentrations = []
+            for spe in species_list:
+                if isinstance(spe, _species.ImplicitSpecies):
+                    concentrations.append(None)
+                elif spe.mobile:
+                    K_S = reaction.volume.material.get_solubility_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, spe
+                    )
+                    concentrations.append(spe.solution * K_S)
+                else:
+                    concentrations.append(None)
+            return concentrations
+
+        reactant_concentrations = get_concentrations(reaction.reactant)
+        product_concentrations = get_concentrations(products)
+
+        # get the reaction term from the reaction
+        reaction_term = reaction.reaction_term(
+            temperature=self.temperature_fenics,
+            reactant_concentrations=reactant_concentrations,
+            product_concentrations=product_concentrations,
+        )
+
+        # add reaction term to formulation
+        # reactant
+        for reactant in reaction.reactant:
+            if isinstance(reactant, festim.species.Species):
+                self.formulation += (
+                    reaction_term * reactant.test_function * self.dx(reaction.volume.id)
+                )
+
+        # product
+        for product in products:
+            self.formulation += (
+                -reaction_term * product.test_function * self.dx(reaction.volume.id)
+            )
 
     def initialise_exports(self):
         self.override_post_processing_solution()

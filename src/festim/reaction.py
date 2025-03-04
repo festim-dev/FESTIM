@@ -1,6 +1,7 @@
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 from ufl import exp
+from ufl.core.expr import Expr
 
 from festim import k_B as _k_B
 from festim.species import ImplicitSpecies as _ImplicitSpecies
@@ -102,11 +103,27 @@ class Reaction:
             products = self.product
         return f"{reactants} <--> {products}"
 
-    def reaction_term(self, temperature):
+    def reaction_term(
+        self,
+        temperature,
+        reactant_concentrations: List = None,
+        product_concentrations: List = None,
+    ) -> Expr:
         """Compute the reaction term at a given temperature.
 
         Arguments:
-            temperature (): The temperature at which the reaction term is computed.
+            temperature: The temperature at which the reaction term is computed.
+            reactant_concentrations: The concentrations of the reactants. Must
+                be the same length as the reactants. If None, the ``concentration``
+                attribute of each reactant is used. If an element is None, the
+                ``concentration`` attribute of the reactant is used.
+            product_concentrations: The concentrations of the products. Must
+                be the same length as the products. If None, the ``concentration``
+                attribute of each product is used. If an element is None, the
+                ``concentration`` attribute of the product is used.
+
+        Returns:
+            The reaction term to be used in a formulation.
         """
 
         if self.product == []:
@@ -130,6 +147,9 @@ class Reaction:
                     "E_p cannot be None when reaction products are present."
                 )
 
+        products = self.product if isinstance(self.product, list) else [self.product]
+
+        # reaction rates
         k = self.k_0 * exp(-self.E_k / (_k_B * temperature))
 
         if self.p_0 and self.E_p:
@@ -139,20 +159,35 @@ class Reaction:
         else:
             p = 0
 
+        # if reactant_concentrations is provided, use these concentrations
         reactants = self.reactant
-        product_of_reactants = reactants[0].concentration
-        for reactant in reactants[1:]:
-            product_of_reactants *= reactant.concentration
-
-        if isinstance(self.product, list):
-            products = self.product
+        if reactant_concentrations is not None:
+            assert len(reactant_concentrations) == len(reactants)
+            for i, reactant in enumerate(reactants):
+                if reactant_concentrations[i] is None:
+                    reactant_concentrations[i] = reactant.concentration
         else:
-            products = [self.product]
+            reactant_concentrations = [reactant.concentration for reactant in reactants]
 
-        if len(products) > 0:
-            product_of_products = products[0].concentration
-            for product in products[1:]:
-                product_of_products *= product.concentration
+        # if product_concentrations is provided, use these concentrations
+        if product_concentrations is not None:
+            assert len(product_concentrations) == len(products)
+            for i, product in enumerate(products):
+                if product_concentrations[i] is None:
+                    product_concentrations[i] = product.concentration
+        else:
+            product_concentrations = [product.concentration for product in products]
+
+        # multiply all concentrations to be used in the term
+        product_of_reactants = reactant_concentrations[0]
+        for reactant_conc in reactant_concentrations[1:]:
+            product_of_reactants *= reactant_conc
+
+        if products:
+            product_of_products = product_concentrations[0]
+            for product_conc in product_concentrations[1:]:
+                product_of_products *= product_conc
         else:
             product_of_products = 0
+
         return k * product_of_reactants - (p * product_of_products)

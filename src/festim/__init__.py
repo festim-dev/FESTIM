@@ -59,7 +59,7 @@ from .mesh.mesh_from_xdmf import MeshFromXDMF
 from .reaction import Reaction
 from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
-from .species import ImplicitSpecies, Species, SpeciesChangeVar, find_species_from_name
+from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
 from .subdomain.interface import Interface
 from .subdomain.surface_subdomain import SurfaceSubdomain, find_surface_from_id
