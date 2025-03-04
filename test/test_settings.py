@@ -70,6 +70,7 @@ def test_tolerances_value(rtol, atol):
     my_model.initialise()
 
     my_model.t.value = 0.0
+    my_model.show_progress_bar = False
     my_model.iterate()
     # check at t=0
     assert my_model.solver.atol == atol(t=0.0)
