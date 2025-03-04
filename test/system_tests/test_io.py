@@ -4,7 +4,7 @@ import dolfinx
 import mpi4py.MPI as MPI
 
 
-def test_writing_and_reading_of_species_function_using_checkpoints():
+def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
     """
     Tests that a model can write a checkpoint file and another model can read it.
     """
@@ -41,12 +41,12 @@ def test_writing_and_reading_of_species_function_using_checkpoints():
 
     my_model.exports = [
         F.VTXSpeciesExport(
-            filename="out_checkpoint.bp",
+            filename=tmpdir + "/out_checkpoint.bp",
             field=[H, D],
             checkpoint=True,
         ),
         F.VTXSpeciesExport(
-            filename="model_1_out_h.bp",
+            filename=tmpdir + "/model_1_out_h.bp",
             field=[H],
         ),
     ]
@@ -67,7 +67,7 @@ def test_writing_and_reading_of_species_function_using_checkpoints():
     my_model2.initial_conditions = [
         F.InitialCondition(
             value=F.read_function_from_file(
-                filename="out_checkpoint.bp",
+                filename=tmpdir + "/out_checkpoint.bp",
                 name="H",
                 timestamp=10,
             ),
@@ -75,7 +75,7 @@ def test_writing_and_reading_of_species_function_using_checkpoints():
         ),
         F.InitialCondition(
             value=F.read_function_from_file(
-                filename="out_checkpoint.bp",
+                filename=tmpdir + "/out_checkpoint.bp",
                 name="D",
                 timestamp=10,
             ),
@@ -90,7 +90,7 @@ def test_writing_and_reading_of_species_function_using_checkpoints():
 
     my_model2.exports = [
         F.VTXSpeciesExport(
-            filename="model_2_out_h.bp",
+            filename=tmpdir + "/model_2_out_h.bp",
             field=[H],
         ),
     ]
