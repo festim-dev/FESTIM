@@ -7,8 +7,8 @@ from festim.hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,
     HTransportProblemPenalty,
     HydrogenTransportProblem,
+    HydrogenTransportProblemDiscontinuousChangeVar,
 )
-from festim.problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 
 
 class CoupledTransientHeatTransferHydrogenTransport:
