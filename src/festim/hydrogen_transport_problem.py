@@ -4,6 +4,7 @@ from mpi4py import MPI
 
 import basix
 import dolfinx
+from typing import List
 import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
@@ -28,8 +29,9 @@ from festim import (
 from festim import (
     subdomain as _subdomain,
 )
-from festim.helpers import as_fenics_constant, get_interpolation_points
+from festim.helpers import as_fenics_constant, get_interpolation_points, nmm_interpolate
 from festim.mesh import Mesh
+from festim.advection import AdvectionTerm
 
 __all__ = ["HTransportProblemDiscontinuous", "HydrogenTransportProblem"]
 
@@ -119,6 +121,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     """
 
+    advection_terms: List[AdvectionTerm]
+
     def __init__(
         self,
         mesh: Mesh | None = None,
@@ -170,6 +174,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self._element_for_traps = "DG"
         self.petcs_options = petsc_options
+        self.advection_terms = []
 
     @property
     def temperature(self):
@@ -736,6 +741,16 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         * self.ds(flux_bc.subdomain.id)
                     )
 
+        for adv_term in self.advection_terms:
+            for species in adv_term.species:
+                conc = species.solution
+                v = species.test_function
+                vel = adv_term.velocity
+                advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
+                    adv_term.subdomain.id
+                )
+                self.formulation += advection_term
+
         # check if each species is defined in all volumes
         if not self.settings.transient:
             for spe in self.species:
@@ -1144,6 +1159,31 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
                 form -= source.value.fenics_object * v * self.dx(subdomain.id)
+
+        # add advection
+        for adv_term in self.advection_terms:
+            if adv_term.subdomain != subdomain:
+                continue
+            for spe in adv_term.species:
+                v = spe.subdomain_to_test_function[subdomain]
+                conc = spe.subdomain_to_solution[subdomain]
+                vel = adv_term.velocity
+
+                # since the meshes are different, we need to interpolate onto a new functionspace
+                submesh = subdomain.submesh
+                v_cg = basix.ufl.element(
+                    "Lagrange",
+                    submesh.topology.cell_name(),
+                    2,
+                    shape=(submesh.geometry.dim,),
+                )
+                V_velocity = dolfinx.fem.functionspace(submesh, v_cg)
+                vel_2 = dolfinx.fem.Function(V_velocity)
+                nmm_interpolate(vel_2, vel)
+
+                form += ufl.inner(ufl.dot(ufl.grad(conc), vel_2), v) * self.dx(
+                    subdomain.id
+                )
 
         # store the form in the subdomain object
         subdomain.F = form

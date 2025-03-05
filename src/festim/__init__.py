@@ -67,3 +67,5 @@ from .subdomain.surface_subdomain_1d import SurfaceSubdomain1D
 from .subdomain.volume_subdomain import VolumeSubdomain, find_volume_from_id
 from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
 from .trap import Trap
+
+from .advection import AdvectionTerm
