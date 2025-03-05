@@ -101,14 +101,46 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
 
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXSpeciesExport(filename, field=my_model.species[0])
-    my_temp_export = F.VTXTemperatureExport(filename)
-    my_model.exports = [my_export, my_temp_export]
-    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
+    my_model.exports = [my_export]
+    my_model.settings = F.Settings(atol=1, rtol=0.1)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
-    assert len(my_model._vtxfiles) == 2
+    assert len(my_model._vtxfiles) == 1
+
+
+@pytest.mark.parametrize(
+    "T",
+    [
+        500,
+        lambda t: 500 + t,
+        lambda x: 500 + 200 * x[0],
+        lambda x, t: 500 + 200 * x[0] + t,
+    ],
+)
+def test_vtx_temperature(T, tmpdir):
+    """Tests that VTX temperature exports work with HydrogenTransportProblem"""
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
+    my_mat = F.Material(D_0=1, E_D=0, name="mat")
+    my_model.subdomains = [
+        F.VolumeSubdomain1D(1, borders=[0.0, 4.0], material=my_mat),
+        F.SurfaceSubdomain1D(1, x=0.0),
+        F.SurfaceSubdomain1D(2, x=4.0),
+    ]
+    my_model.species = [F.Species("H")]
+    my_model.temperature = T
+
+    filename = str(tmpdir.join("my_export.bp"))
+
+    my_export = F.VTXTemperatureExport(filename)
+    my_model.exports = [my_export]
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
+
+    my_model.initialise()
+    assert len(my_model._vtxfiles) == 1
 
     my_model.run()
 
@@ -133,6 +165,7 @@ def test_filename_raises_error_when_wrong_type():
     """Test that the filename attribute raises an error if the extension is not .bp"""
     with pytest.raises(TypeError):
         F.VTXSpeciesExport(1, field=[F.Species("H")])
+
 
 def test_filename_temp_raises_error_when_wrong_type():
     """Test that the filename attribute for VTXTemperature export raises an error if the extension is not .bp"""
