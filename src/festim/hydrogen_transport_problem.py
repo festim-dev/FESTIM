@@ -371,13 +371,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
-            if isinstance(export, exports.VTXTemperatureExport):
-                if isinstance(self.temperature_fenics, (fem.Function, fem.Expression)):
-                    temperature_field = self.temperature_fenics
-                else:
-                    V = dolfinx.fem.functionspace(self.mesh.mesh, ("CG", 1))
-                    temperature_field = dolfinx.fem.Function(V)
-                    temperature_field.interpolate(self.temperature_fenics)
+            if isinstance(export, festim.VTXTemperatureExport):
+                self._temperature_as_function = self._get_temperature_field_as_function()
+                self._vtxfiles.append(
+                    dolfinx.io.VTXWriter(
+                        self._temperature_as_function.function_space.mesh.comm,
+                        export.filename,
+                        self._temperature_as_function,
+                        engine="BP5",
+                    )
+                )
+                continue
 
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
@@ -404,6 +408,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         engine="BP5",
                     )
                 )
+
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
@@ -430,6 +435,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity)):
                 export.t = []
                 export.data = []
+
+    def _get_temperature_field_as_function(self) -> dolfinx.fem.Function:
+        if isinstance(self.temperature_fenics, (fem.Function, fem.Expression)): # FIXME need to do something else for Expression
+            return self.temperature_fenics
+        elif isinstance(self.temperature_fenics, fem.Constant):
+            V = dolfinx.fem.functionspace(self.mesh.mesh, ("P", 1))
+            temperature_field = dolfinx.fem.Function(V)
+            temperature_expr = fem.Expression(
+                    self.temperature_fenics,
+                    get_interpolation_points(V.element),
+                )
+            temperature_field.interpolate(temperature_expr)
+            return temperature_field
 
     def define_D_global(self, species):
         """Defines the global diffusion coefficient for a given species
@@ -813,6 +831,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         species_not_updated.remove(export.field)
 
         for export in self.exports:
+            if isinstance(export, festim.VTXTemperatureExport) and self.temperature_time_dependent:
+                self._temperature_as_function.interpolate(self._get_temperature_field_as_function())
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(

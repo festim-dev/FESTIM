@@ -97,18 +97,20 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
         F.SurfaceSubdomain1D(2, x=4.0),
     ]
     my_model.species = [F.Species("H")]
-    my_model.temperature = 500
+    my_model.temperature = lambda t: 500 + t
 
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXSpeciesExport(filename, field=my_model.species[0])
     my_temp_export = F.VTXTemperatureExport(filename)
     my_model.exports = [my_export, my_temp_export]
-    my_model.settings = F.Settings(atol=1, rtol=0.1)
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
     assert len(my_model._vtxfiles) == 2
+
+    my_model.run()
 
 
 def test_field_attribute_is_always_list():
