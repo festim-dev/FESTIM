@@ -120,6 +120,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     """
 
+    _temperature_as_function: fem.Function
+
     def __init__(
         self,
         mesh: Mesh | None = None,
@@ -171,6 +173,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self._element_for_traps = "DG"
         self.petcs_options = petsc_options
+
+        self._temperature_as_function = None
 
     @property
     def temperature(self):
@@ -372,7 +376,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for export in self.exports:
             if isinstance(export, festim.VTXTemperatureExport):
-                self._temperature_as_function = self._get_temperature_field_as_function()
+                self._temperature_as_function = (
+                    self._get_temperature_field_as_function()
+                )
                 self._vtxfiles.append(
                     dolfinx.io.VTXWriter(
                         self._temperature_as_function.function_space.mesh.comm,
@@ -437,15 +443,26 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.data = []
 
     def _get_temperature_field_as_function(self) -> dolfinx.fem.Function:
-        if isinstance(self.temperature_fenics, (fem.Function, fem.Expression)): # FIXME need to do something else for Expression
+        """
+        Based on the type of the temperature_fenics attribute, converts
+        it as a Function to be used in VTX export
+
+        Returns:
+            the temperature field of the simulation
+        """
+        if isinstance(self.temperature_fenics, fem.Function):
             return self.temperature_fenics
         elif isinstance(self.temperature_fenics, fem.Constant):
-            V = dolfinx.fem.functionspace(self.mesh.mesh, ("P", 1))
+            # use existing function space if function already exists
+            if self._temperature_as_function is None:
+                V = dolfinx.fem.functionspace(self.mesh.mesh, ("P", 1))
+            else:
+                V = self._temperature_as_function.function_space
             temperature_field = dolfinx.fem.Function(V)
             temperature_expr = fem.Expression(
-                    self.temperature_fenics,
-                    get_interpolation_points(V.element),
-                )
+                self.temperature_fenics,
+                get_interpolation_points(V.element),
+            )
             temperature_field.interpolate(temperature_expr)
             return temperature_field
 
@@ -831,8 +848,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         species_not_updated.remove(export.field)
 
         for export in self.exports:
-            if isinstance(export, festim.VTXTemperatureExport) and self.temperature_time_dependent:
-                self._temperature_as_function.interpolate(self._get_temperature_field_as_function())
+            if (
+                isinstance(export, festim.VTXTemperatureExport)
+                and self.temperature_time_dependent
+            ):
+                self._temperature_as_function.interpolate(
+                    self._get_temperature_field_as_function()
+                )
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
