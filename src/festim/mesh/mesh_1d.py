@@ -31,7 +31,7 @@ class Mesh1D(F.Mesh):
 
     @vertices.setter
     def vertices(self, value):
-        self._vertices = np.sort(np.unique(value)).astype(float)
+        self._vertices = np.sort(np.unique(value)).astype(np.float64)
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
