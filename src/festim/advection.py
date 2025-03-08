@@ -1,6 +1,7 @@
 import ufl
 from dolfinx import fem
 
+from festim.helpers import Value, nmm_interpolate
 from festim.species import Species
 from festim.subdomain import VolumeSubdomain
 
@@ -42,14 +43,14 @@ class AdvectionTerm:
     @velocity.setter
     def velocity(self, value):
         if value is None:
-            self._velocity = value
+            self._velocity = Value(value)
         elif isinstance(
             value,
             fem.Expression | ufl.core.expr.Expr | fem.Function,
         ):
-            self._velocity = value
+            self._velocity = Value(value)
         elif callable(value):
-            self._velocity = value
+            self._velocity = Value(value)
         else:
             raise TypeError(
                 "velocity must be a fem.Expression, ufl.core.expr.Expr, fem.Function, "
@@ -85,3 +86,11 @@ class AdvectionTerm:
                     f"{type(spe)}"
                 )
         self._species = value
+
+    def update_velocity_field(self, t: float):
+        """Updates the value
+
+        Args:
+            t: the time
+        """
+        nmm_interpolate(self.velocity.fenics_object, self.velocity.input_value(t=t))
