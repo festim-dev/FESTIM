@@ -742,10 +742,20 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
 
         for adv_term in self.advection_terms:
+            # create vector functionspace based on the elements in the mesh
+            v_cg = basix.ufl.element(
+                "CG", self.mesh.mesh.topology.cell_name(), 1, shape=(self.mesh.vdim,)
+            )
+            V_adv = dolfinx.fem.functionspace(self.mesh.mesh, v_cg)
+
             for species in adv_term.species:
                 conc = species.solution
                 v = species.test_function
-                vel = adv_term.velocity
+
+                # interpolate velocity onto problem mesh
+                vel = fem.Function(V_adv)
+                nmm_interpolate(vel, adv_term.velocity)
+
                 advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
                     adv_term.subdomain.id
                 )
