@@ -1,7 +1,7 @@
 import ufl
 from dolfinx import fem
 
-from festim.helpers import Value, nmm_interpolate
+from festim.helpers import VelocityField, nmm_interpolate
 from festim.species import Species
 from festim.subdomain import VolumeSubdomain
 
@@ -43,16 +43,16 @@ class AdvectionTerm:
     @velocity.setter
     def velocity(self, value):
         if value is None:
-            self._velocity = Value(value)
+            self._velocity = VelocityField(value)
         elif isinstance(
             value,
             fem.Function,
         ):
-            self._velocity = Value(value)
+            self._velocity = VelocityField(value)
         elif callable(value):
             args = value.__code__.co_varnames
-            if "t" in args:
-                self._velocity = Value(value)
+            if args == ("t",):
+                self._velocity = VelocityField(value)
             else:
                 raise TypeError("Advection field can only be a function of time (t)")
         else:
@@ -90,11 +90,3 @@ class AdvectionTerm:
                     f"{type(spe)}"
                 )
         self._species = value
-
-    def update_velocity_field(self, t: float):
-        """Updates the velocity field
-
-        Args:
-            t: the time
-        """
-        nmm_interpolate(self.velocity.fenics_object, self.velocity.input_value(t=t))
