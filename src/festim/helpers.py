@@ -1,6 +1,7 @@
 from collections.abc import Callable
 from typing import Optional
 
+import basix
 import dolfinx
 import numpy as np
 import ufl
@@ -277,6 +278,83 @@ class Value:
             elif isinstance(self.fenics_object, fem.Function):
                 if self.fenics_interpolation_expression is not None:
                     self.fenics_object.interpolate(self.fenics_interpolation_expression)
+
+
+class VelocityField(Value):
+    """
+    A class to handle input values of velocity fields from users and convert them to a
+    relevent fenics object
+
+    Args:
+        input_value: The value of the user input
+
+    Attributes:
+        input_value : The value of the user input
+        fenics_interpolation_expression : The expression of the user input that is used
+            to update the `fenics_object`
+        fenics_object : The value of the user input in fenics format
+        explicit_time_dependent : True if the user input value is explicitly time
+            dependent
+        temperature_dependent : True if the user input value is temperature dependent
+        vector_function_space: the vector function space of the fenics object
+    """
+
+    input_value: fem.Function | Callable
+
+    fenics_object: fem.Function
+    explicit_time_dependent: bool
+    temperature_dependent: bool
+    vector_function_space: fem.function.FunctionSpace
+
+    def __init__(self, input_value):
+        super().__init__(input_value)
+
+        self.fenics_object = None
+
+    def convert_input_value(
+        self,
+        function_space: dolfinx.fem.function.FunctionSpace,
+        t: Optional[fem.Constant] = None,
+    ):
+        """Converts a user given value to a relevent fenics object
+
+        Args:
+            function_space: the function space of the fenics object
+            t: the time, optional
+        """
+
+        v_cg = basix.ufl.element(
+            "CG",
+            function_space.mesh.topology.cell_name(),
+            1,
+            shape=(function_space.mesh.topology.dim,),
+        )
+        self.vector_function_space = dolfinx.fem.functionspace(
+            function_space.mesh, v_cg
+        )
+
+        self.fenics_object = fem.Function(self.vector_function_space)
+
+        if isinstance(self.input_value, fem.Function):
+            vel = self.input_value
+
+        elif callable(self.input_value):
+            vel = self.input_value(t=t)
+            if not isinstance(vel, fem.Function):
+                raise ValueError(
+                    "A time dependent advection field should return an fem.Function"
+                    f", not a {type(vel)}"
+                )
+
+        nmm_interpolate(self.fenics_object, vel)
+
+    def update(self, t: fem.Constant):
+        """Updates the velocity field
+
+        Args:
+            t: the time
+        """
+        nmm_interpolate(self.fenics_object, self.input_value(t=float(t)))
 
 
 # Check the version of dolfinx

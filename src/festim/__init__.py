@@ -43,6 +43,7 @@ from .helpers import (
     as_fenics_interp_expr_and_function,
     Value,
     get_interpolation_points,
+    VelocityField,
 )
 from .hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,
