@@ -50,7 +50,7 @@ class AdvectionTerm:
         ):
             self._velocity = Value(value)
         elif callable(value):
-            args = self.value.__code__.co_varnames
+            args = value.__code__.co_varnames
             if "t" in args:
                 self._velocity = Value(value)
             else:
