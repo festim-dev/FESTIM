@@ -46,11 +46,15 @@ class AdvectionTerm:
             self._velocity = Value(value)
         elif isinstance(
             value,
-            fem.Expression | ufl.core.expr.Expr | fem.Function,
+            fem.Function,
         ):
             self._velocity = Value(value)
         elif callable(value):
-            self._velocity = Value(value)
+            args = self.value.__code__.co_varnames
+            if "t" in args:
+                self._velocity = Value(value)
+            else:
+                raise TypeError("Advection field can only be a function of time (t)")
         else:
             raise TypeError(
                 "velocity must be a fem.Expression, ufl.core.expr.Expr, fem.Function, "
@@ -88,7 +92,7 @@ class AdvectionTerm:
         self._species = value
 
     def update_velocity_field(self, t: float):
-        """Updates the value
+        """Updates the velocity field
 
         Args:
             t: the time
