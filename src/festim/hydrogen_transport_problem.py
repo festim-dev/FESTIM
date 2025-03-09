@@ -639,12 +639,20 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for ad_term in self.advection_terms:
             if ad_term.velocity.explicit_time_dependent:
-                ad_term.vector_function_space = V_adv
+                # test transient advection field returns a fem.function
+                if not isinstance(
+                    ad_term.velocity.input_value(t=float(self.t)), fem.Function
+                ):
+                    raise ValueError(
+                        "A time dependent advection field should return an fem.Function"
+                        f", not a {type(ad_term.velocity.input_value(t=float(self.t)))}"
+                    )
                 vel = ad_term.velocity.input_value(t=self.t)
             else:
                 vel = ad_term.velocity.input_value
 
             ad_term.velocity.fenics_object = fem.Function(V_adv)
+
             nmm_interpolate(ad_term.velocity.fenics_object, vel)
 
     def create_flux_values_fenics(self):
