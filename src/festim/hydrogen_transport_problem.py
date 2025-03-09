@@ -644,6 +644,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             else:
                 vel = ad_term.velocity.input_value
 
+            ad_term.velocity.fenics_object = fem.Function(V_adv)
             nmm_interpolate(ad_term.velocity.fenics_object, vel)
 
     def create_flux_values_fenics(self):
