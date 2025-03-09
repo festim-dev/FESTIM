@@ -639,7 +639,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """For each advection term convert the input value"""
 
         for ad_term in self.advection_terms:
-            if isinstance(ad_term.velocity, VelocityField):
+            if isinstance(ad_term, AdvectionTerm):
                 ad_term.velocity.convert_input_value(
                     function_space=self.function_space, t=self.t
                 )
