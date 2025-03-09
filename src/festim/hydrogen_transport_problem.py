@@ -640,14 +640,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for ad_term in self.advection_terms:
             if ad_term.velocity.explicit_time_dependent:
                 # test transient advection field returns a fem.function
+                vel = ad_term.velocity.input_value(t=self.t)
                 if not isinstance(
-                    ad_term.velocity.input_value(t=float(self.t)), fem.Function
+                    vel , fem.Function
                 ):
                     raise ValueError(
                         "A time dependent advection field should return an fem.Function"
-                        f", not a {type(ad_term.velocity.input_value(t=float(self.t)))}"
+                        f", not a {type(vel)}"
                     )
-                vel = ad_term.velocity.input_value(t=self.t)
             else:
                 vel = ad_term.velocity.input_value
 

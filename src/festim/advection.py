@@ -58,7 +58,7 @@ class AdvectionTerm:
         else:
             raise TypeError(
                 "velocity must be a fem.Expression, ufl.core.expr.Expr, fem.Function, "
-                f"or callable not {value}"
+                f"or callable not {type(value)}"
             )
 
     @property
