@@ -29,7 +29,12 @@ from festim import (
 from festim import (
     subdomain as _subdomain,
 )
-from festim.helpers import as_fenics_constant, get_interpolation_points, nmm_interpolate
+from festim.helpers import (
+    as_fenics_constant,
+    get_interpolation_points,
+    nmm_interpolate,
+    VelocityField,
+)
 from festim.mesh import Mesh
 from festim.advection import AdvectionTerm
 
@@ -285,7 +290,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.define_temperature()
         self.define_boundary_conditions()
         self.convert_source_input_values_to_fenics_objects()
-        self.convert_adevection_field_values_to_fenics_objects()
+        self.convert_advection_term_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -630,30 +635,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     up_to_ufl_expr=True,
                 )
 
-    def convert_adevection_field_values_to_fenics_objects(self):
-        """For each source create the value_fenics"""
-        v_cg = basix.ufl.element(
-            "CG", self.mesh.mesh.topology.cell_name(), 1, shape=(self.mesh.vdim,)
-        )
-        V_adv = dolfinx.fem.functionspace(self.mesh.mesh, v_cg)
+    def convert_advection_term_to_fenics_objects(self):
+        """For each advection term convert the input value"""
 
         for ad_term in self.advection_terms:
-            if ad_term.velocity.explicit_time_dependent:
-                # test transient advection field returns a fem.function
-                vel = ad_term.velocity.input_value(t=self.t)
-                if not isinstance(
-                    vel , fem.Function
-                ):
-                    raise ValueError(
-                        "A time dependent advection field should return an fem.Function"
-                        f", not a {type(vel)}"
-                    )
-            else:
-                vel = ad_term.velocity.input_value
-
-            ad_term.velocity.fenics_object = fem.Function(V_adv)
-
-            nmm_interpolate(ad_term.velocity.fenics_object, vel)
+            if isinstance(ad_term.velocity, VelocityField):
+                ad_term.velocity.convert_input_value(
+                    function_space=self.function_space, t=self.t
+                )
 
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
@@ -834,7 +823,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for advec_term in self.advection_terms:
             if advec_term.velocity.explicit_time_dependent:
-                advec_term.update_velocity_field(t=float(self.t))
+                advec_term.velocity.update(t=t)
 
     def post_processing(self):
         """Post processes the model"""
