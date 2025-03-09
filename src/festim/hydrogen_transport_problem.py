@@ -285,6 +285,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.define_temperature()
         self.define_boundary_conditions()
         self.convert_source_input_values_to_fenics_objects()
+        self.convert_adevection_field_values_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -629,6 +630,22 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     up_to_ufl_expr=True,
                 )
 
+    def convert_adevection_field_values_to_fenics_objects(self):
+        """For each source create the value_fenics"""
+        v_cg = basix.ufl.element(
+            "CG", self.mesh.mesh.topology.cell_name(), 1, shape=(self.mesh.vdim,)
+        )
+        V_adv = dolfinx.fem.functionspace(self.mesh.mesh, v_cg)
+
+        for ad_term in self.advection_terms:
+            if ad_term.velocity.explicit_time_dependent:
+                ad_term.vector_function_space = V_adv
+                vel = ad_term.velocity.input_value(t=self.t)
+            else:
+                vel = ad_term.velocity.input_value
+
+            nmm_interpolate(ad_term.velocity.fenics_object, vel)
+
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
         for bc in self.boundary_conditions:
@@ -743,18 +760,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for adv_term in self.advection_terms:
             # create vector functionspace based on the elements in the mesh
-            v_cg = basix.ufl.element(
-                "CG", self.mesh.mesh.topology.cell_name(), 1, shape=(self.mesh.vdim,)
-            )
-            V_adv = dolfinx.fem.functionspace(self.mesh.mesh, v_cg)
 
             for species in adv_term.species:
                 conc = species.solution
                 v = species.test_function
-
-                # interpolate velocity onto problem mesh
-                vel = fem.Function(V_adv)
-                nmm_interpolate(vel, adv_term.velocity)
+                vel = adv_term.velocity.fenics_object
 
                 advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
                     adv_term.subdomain.id
@@ -812,6 +822,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 self.temperature_fenics.value = self.temperature(t=t)
             elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
+
+        for advec_term in self.advection_terms:
+            if advec_term.velocity.explicit_time_dependent:
+                advec_term.update_velocity_field(t=float(self.t))
 
     def post_processing(self):
         """Post processes the model"""
