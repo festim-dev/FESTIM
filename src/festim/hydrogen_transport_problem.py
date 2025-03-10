@@ -1,10 +1,10 @@
+import warnings
 from collections.abc import Callable
 
 from mpi4py import MPI
 
 import basix
 import dolfinx
-from typing import List
 import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
@@ -29,14 +29,9 @@ from festim import (
 from festim import (
     subdomain as _subdomain,
 )
-from festim.helpers import (
-    as_fenics_constant,
-    get_interpolation_points,
-    nmm_interpolate,
-    VelocityField,
-)
-from festim.mesh import Mesh
 from festim.advection import AdvectionTerm
+from festim.helpers import as_fenics_constant, get_interpolation_points, nmm_interpolate
+from festim.mesh import Mesh
 
 __all__ = ["HTransportProblemDiscontinuous", "HydrogenTransportProblem"]
 
@@ -57,6 +52,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         boundary_conditions: The boundary conditions
         exports (list of festim.Export): the exports of the model
         traps (list of F.Trap): the traps of the model
+        advection_terms: the advection terms of the model
 
     Attributes:
         mesh : The mesh
@@ -69,6 +65,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         boundary_conditions: List of Dirichlet boundary conditions
         exports (list of festim.Export): the export
         traps (list of F.Trap): the traps of the model
+        advection_terms: the advection terms of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpaceBase): the function space of the
@@ -126,7 +123,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     """
 
-    advection_terms: List[AdvectionTerm]
+    advection_terms: list[AdvectionTerm]
 
     def __init__(
         self,
@@ -158,6 +155,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         exports=None,
         traps=None,
         petsc_options=None,
+        advection_terms=None,
     ):
         super().__init__(
             mesh=mesh,
@@ -179,7 +177,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self._element_for_traps = "DG"
         self.petcs_options = petsc_options
-        self.advection_terms = []
+        self.advection_terms = advection_terms or []
 
     @property
     def temperature(self):
@@ -844,8 +842,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
                     export,
-                    (exports.SurfaceFlux, exports.TotalSurface, exports.AverageSurface),
+                    exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
                 ):
+                    if len(self.advection_terms) > 0:
+                        warnings.warn(
+                            "Advection terms are not currently accounted for in the "
+                            "evaluation of surface flux values"
+                        )
                     export.compute(
                         self.ds,
                     )
