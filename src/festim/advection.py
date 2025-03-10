@@ -1,7 +1,7 @@
 import ufl
 from dolfinx import fem
 
-from festim.helpers import VelocityField, nmm_interpolate
+from festim.helpers import VelocityField
 from festim.species import Species
 from festim.subdomain import VolumeSubdomain
 
@@ -42,6 +42,7 @@ class AdvectionTerm:
 
     @velocity.setter
     def velocity(self, value):
+        err_message = f"velocity must be a fem.Function, or callable not {type(value)}"
         if value is None:
             self._velocity = VelocityField(value)
         elif isinstance(
@@ -49,17 +50,12 @@ class AdvectionTerm:
             fem.Function,
         ):
             self._velocity = VelocityField(value)
+        elif isinstance(value, fem.Constant | fem.Expression | ufl.core.expr.Expr):
+            raise TypeError(err_message)
         elif callable(value):
-            args = value.__code__.co_varnames
-            if args == ("t",):
-                self._velocity = VelocityField(value)
-            else:
-                raise TypeError("Advection field can only be a function of time (t)")
+            self._velocity = VelocityField(value)
         else:
-            raise TypeError(
-                "velocity must be a fem.Expression, ufl.core.expr.Expr, fem.Function, "
-                f"or callable not {type(value)}"
-            )
+            raise TypeError(err_message)
 
     @property
     def subdomain(self):
@@ -82,6 +78,8 @@ class AdvectionTerm:
 
     @species.setter
     def species(self, value):
+        if not isinstance(value, list):
+            value = [value]
         # check that all species are of type festim.Species
         for spe in value:
             if not isinstance(spe, Species):
