@@ -2,6 +2,8 @@ from collections.abc import Callable
 from typing import Optional
 
 import basix
+import basix.ufl
+
 import dolfinx
 import numpy as np
 import ufl
@@ -304,16 +306,11 @@ class VelocityField(Value):
     fenics_object: fem.Function
     explicit_time_dependent: bool
     temperature_dependent: bool
-    vector_function_space: fem.function.FunctionSpace
-
-    def __init__(self, input_value):
-        super().__init__(input_value)
-
-        self.fenics_object = None
+    vector_function_space: fem.FunctionSpace
 
     def convert_input_value(
         self,
-        function_space: dolfinx.fem.function.FunctionSpace,
+        function_space: dolfinx.fem.FunctionSpace,
         t: Optional[fem.Constant] = None,
     ):
         """Converts a user given value to a relevent fenics object
@@ -323,6 +320,27 @@ class VelocityField(Value):
             t: the time, optional
         """
 
+        if isinstance(self.input_value, fem.Function):
+            vel = self.input_value
+
+        elif callable(self.input_value):
+            # if callable function has args other than time, t, raise Typer Error
+            args = self.input_value.__code__.co_varnames
+            if args != ("t",):
+                raise TypeError(
+                    "velocity function can only be a function of time arg t"
+                )
+
+            vel = self.input_value(t)
+
+            # if function does not return an fem.Fucntion, raise Typer Error
+            if not isinstance(vel, fem.Function):
+                raise ValueError(
+                    "A time dependent advection field should return an fem.Function"
+                    f", not a {type(vel)}"
+                )
+
+        # create vector function space and function
         v_cg = basix.ufl.element(
             "CG",
             function_space.mesh.topology.cell_name(),
@@ -332,20 +350,9 @@ class VelocityField(Value):
         self.vector_function_space = dolfinx.fem.functionspace(
             function_space.mesh, v_cg
         )
-
         self.fenics_object = fem.Function(self.vector_function_space)
 
-        if isinstance(self.input_value, fem.Function):
-            vel = self.input_value
-
-        elif callable(self.input_value):
-            vel = self.input_value(t=t)
-            if not isinstance(vel, fem.Function):
-                raise ValueError(
-                    "A time dependent advection field should return an fem.Function"
-                    f", not a {type(vel)}"
-                )
-
+        # interpolate input value into fenics object function
         nmm_interpolate(self.fenics_object, vel)
 
     def update(self, t: fem.Constant):
@@ -367,7 +374,7 @@ else:
     get_interpolation_points = lambda element: element.interpolation_points()
 
 
-def nmm_interpolate(f_out: fem.function, f_in: fem.function):
+def nmm_interpolate(f_out: fem.Function, f_in: fem.Function):
     """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
     another function (f_out) with a mismatching mesh
 
