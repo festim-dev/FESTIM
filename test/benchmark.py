@@ -34,7 +34,7 @@ from ufl import (
 )
 
 
-def fenics_test_permeation_problem(mesh_size=1001):
+def fenics_test_permeation_problem(tmpdir, mesh_size=1001):
     L = 3e-04
     indices = np.linspace(0, L, num=mesh_size)
     gdim, shape, degree = 1, "interval", 1
@@ -129,7 +129,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
     ksp.setFromOptions()
 
-    mobile_xdmf = XDMFFile(MPI.COMM_WORLD, "mobile_concentration.xdmf", "w")
+    mobile_xdmf = XDMFFile(MPI.COMM_WORLD, tmpdir + "/mobile_concentration.xdmf", "w")
     mobile_xdmf.write_mesh(my_mesh)
 
     flux_values = []
