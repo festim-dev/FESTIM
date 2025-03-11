@@ -49,7 +49,11 @@ from .hydrogen_transport_problem import (
     HTransportProblemPenalty,
     HydrogenTransportProblem,
 )
-from .initial_condition import InitialCondition, InitialTemperature
+from .initial_condition import (
+    InitialCondition,
+    InitialTemperature,
+    read_function_from_file,
+)
 from .material import Material
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
