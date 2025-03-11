@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest >= 5.4.3", "pytest-cov", "sympy"]
+test = ["pytest >= 5.4.3", "pytest-cov", "sympy", "ipyparallel"]
 lint = ["ruff", "mypy"]
 docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]
 
