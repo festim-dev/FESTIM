@@ -30,7 +30,7 @@ from festim import (
     subdomain as _subdomain,
 )
 from festim.advection import AdvectionTerm
-from festim.helpers import as_fenics_constant, get_interpolation_points, nmm_interpolate
+from festim.helpers import as_fenics_constant, get_interpolation_points
 from festim.mesh import Mesh
 
 __all__ = ["HTransportProblemDiscontinuous", "HydrogenTransportProblem"]
@@ -123,8 +123,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     """
 
-    advection_terms: list[AdvectionTerm]
-
     def __init__(
         self,
         mesh: Mesh | None = None,
@@ -154,8 +152,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         settings=None,
         exports=None,
         traps=None,
-        petsc_options=None,
         advection_terms=None,
+        petsc_options=None,
     ):
         super().__init__(
             mesh=mesh,
@@ -172,12 +170,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.reactions = reactions or []
         self.initial_conditions = initial_conditions or []
         self.traps = traps or []
+        self.advection_terms = advection_terms or []
         self.temperature_fenics = None
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
         self._element_for_traps = "DG"
         self.petcs_options = petsc_options
-        self.advection_terms = advection_terms or []
 
     @property
     def temperature(self):
@@ -636,9 +634,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
     def convert_advection_term_to_fenics_objects(self):
         """For each advection term convert the input value"""
 
-        for ad_term in self.advection_terms:
-            if isinstance(ad_term, AdvectionTerm):
-                ad_term.velocity.convert_input_value(
+        for advec_term in self.advection_terms:
+            if isinstance(advec_term, AdvectionTerm):
+                advec_term.velocity.convert_input_value(
                     function_space=self.function_space, t=self.t
                 )
 
@@ -979,6 +977,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.define_temperature()
         self.convert_source_input_values_to_fenics_objects()
+        self.convert_advection_term_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
 
@@ -1114,6 +1113,19 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                         up_to_ufl_expr=True,
                     )
 
+    def convert_advection_term_to_fenics_objects(self):
+        """For each advection term convert the input value"""
+
+        for advec_term in self.advection_terms:
+            if isinstance(advec_term, AdvectionTerm):
+                for spe in advec_term.species:
+                    for subdomain in spe.subdomains:
+                        V = spe.subdomain_to_function_space[subdomain]
+
+                        advec_term.velocity.convert_input_value(
+                            function_space=V, t=self.t
+                        )
+
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """
         Creates the variational formulation for each subdomain and stores it in ``subdomain.F``
@@ -1189,20 +1201,12 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
         for adv_term in self.advection_terms:
             if adv_term.subdomain != subdomain:
                 continue
-            v_cg = basix.ufl.element(
-                "CG",
-                subdomain.submesh.topology.cell_name(),
-                2,
-                shape=(subdomain.submesh.geometry.dim,),
-            )
-            V_velocity = dolfinx.fem.functionspace(subdomain.submesh, v_cg)
 
             for spe in adv_term.species:
                 v = spe.subdomain_to_test_function[subdomain]
                 conc = spe.subdomain_to_solution[subdomain]
 
-                vel = dolfinx.fem.Function(V_velocity)
-                nmm_interpolate(vel, adv_term.velocity)
+                vel = adv_term.velocity.fenics_object
 
                 form += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
                     subdomain.id
