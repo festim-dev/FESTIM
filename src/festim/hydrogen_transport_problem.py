@@ -807,7 +807,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if update_pp_sol:
             for spe in self.species:
                 spe.post_processing_solution.x.array[:] = self.u.x.array[
-                    spe.map_to_main_function
+                    spe.dof_map_to_parent_function
                 ]
 
         # update post-processing for mixed function space
