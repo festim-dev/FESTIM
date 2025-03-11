@@ -111,3 +111,5 @@ venv.bak/
 *.xdmf
 *.h5
 *.txt
+
+.vscode/
