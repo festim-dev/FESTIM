@@ -70,3 +70,17 @@ def test_species_setter_changes_input_to_list(value):
     )
 
     assert isinstance(my_advection_term.species, list)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [lambda x: x[0], lambda t: t[0], lambda x, t: x[0] + 2 * t],
+)
+def test_velocity_accepts_callable_values(value):
+    my_subdomain = F.VolumeSubdomain(id=1, material="dummy_mat")
+
+    F.AdvectionTerm(velocity=value, subdomain=my_subdomain, species=F.Species("H"))
+
+
+def test_subdomain_accepts_None_value():
+    F.AdvectionTerm(velocity=None, subdomain=None, species=F.Species("H"))
