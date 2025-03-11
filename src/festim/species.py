@@ -34,6 +34,8 @@ class Species:
             case single species case, this is None.
         post_processing_solution (dolfinx.fem.Function): the solution for post
             processing
+        sub_function: the sub function of the solution
+        dof_map_to_parent_function: the dof map to the parent function
         concentration (dolfinx.fem.Function): the concentration of the species
         subdomains (F.VolumeSubdomain): the volume subdomains where the species is
         subdomain_to_solution (dict): a dictionary mapping subdomains to solutions
@@ -76,6 +78,7 @@ class Species:
         self.post_processing_solution = None
         self.collapsed_function_space = None
         self.sub_function = None
+        self.dof_map_to_parent_function = None
 
         self.subdomains = subdomains
         self.subdomain_to_solution = {}
