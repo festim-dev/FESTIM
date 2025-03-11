@@ -433,7 +433,6 @@ def test_post_processing_update_D_global():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: 2 * x[0] ** 2 + 1)
-    H.solution = u
 
     my_export = F.SurfaceFlux(
         field=H,
@@ -453,6 +452,8 @@ def test_post_processing_update_D_global():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    H.solution.x.array[:] = u.x.array[:]
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -483,7 +484,6 @@ def test_post_processing_update_D_global_2():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: x[0] ** 2 + 100)
-    H.solution = u
 
     my_export = F.MaximumSurface(
         field=H,
@@ -503,6 +503,8 @@ def test_post_processing_update_D_global_2():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    H.solution.x.array[:] = u.x.array[:]
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -526,7 +528,6 @@ def test_post_processing_update_D_global_volume_1():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: x[0] ** 2 + 100)
-    H.solution = u
 
     my_export = F.AverageVolume(field=H, volume=my_vol)
 
@@ -540,6 +541,8 @@ def test_post_processing_update_D_global_volume_1():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    H.solution.x.array[:] = u.x.array[:]
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -563,7 +566,6 @@ def test_post_processing_update_D_global_volume_2():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: x[0] ** 2 + 100)
-    H.solution = u
 
     my_export = F.MaximumVolume(field=H, volume=my_vol)
 
@@ -577,6 +579,8 @@ def test_post_processing_update_D_global_volume_2():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    H.solution.x.array[:] = u.x.array[:]
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
