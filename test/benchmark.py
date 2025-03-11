@@ -34,7 +34,7 @@ from ufl import (
 )
 
 
-def fenics_test_permeation_problem(tmpdir, mesh_size=1001):
+def fenics_test_permeation_problem(mesh_size=1001):
     L = 3e-04
     indices = np.linspace(0, L, num=mesh_size)
     gdim, shape, degree = 1, "interval", 1
