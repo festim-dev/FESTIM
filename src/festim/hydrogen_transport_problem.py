@@ -526,7 +526,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             self.species[0].sub_function_space = self.function_space
             self.species[0].post_processing_solution = self.u
             self.species[0].sub_function = self.u
-            self.species[0].map_to_main_function = np.arange(len(self.u.x.array))
+            self.species[0].dof_map_to_parent_function = np.arange(len(self.u.x.array))
         else:
             sub_solutions = list(ufl.split(self.u))
             sub_prev_solution = list(ufl.split(self.u_n))
@@ -538,7 +538,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     idx
                 )  # TODO add this to discontinuous class
                 spe.post_processing_solution = self.u.sub(idx).collapse()
-                spe.collapsed_function_space, spe.map_to_main_function = (
+                spe.collapsed_function_space, spe.dof_map_to_parent_function = (
                     self.function_space.sub(idx).collapse()
                 )
 
