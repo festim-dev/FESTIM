@@ -32,7 +32,7 @@ def relative_error_computed_to_analytical(
     return error
 
 
-def test_permeation_problem(mesh_size=1001):
+def test_permeation_problem(tmpdir, mesh_size=1001):
     """Test running a problem with a mobile species permeating through a 1D
     domain, checks that the computed permeation flux matches the analytical
     solution"""
@@ -68,12 +68,12 @@ def test_permeation_problem(mesh_size=1001):
         ),
     ]
     outgassing_flux = F.SurfaceFlux(
-        filename="outgassing_flux.txt",
+        filename=f"{tmpdir}/outgassing_flux.txt",
         field=mobile_H,
         surface=right_surface,
     )
     my_model.exports = [
-        F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
+        F.XDMFExport(tmpdir + "/mobile_concentration.xdmf", field=mobile_H),
         outgassing_flux,
     ]
 
