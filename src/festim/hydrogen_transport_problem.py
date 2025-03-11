@@ -5,6 +5,7 @@ from mpi4py import MPI
 import basix
 import dolfinx
 import numpy.typing as npt
+import numpy as np
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
@@ -520,6 +521,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             sub_test_functions = [ufl.TestFunction(self.function_space)]
             self.species[0].sub_function_space = self.function_space
             self.species[0].post_processing_solution = self.u
+            self.species[0].map_to_main_function = np.arange(len(self.u.x.array))
         else:
             sub_solutions = list(ufl.split(self.u))
             sub_prev_solution = list(ufl.split(self.u_n))
@@ -527,10 +529,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             for idx, spe in enumerate(self.species):
                 spe.sub_function_space = self.function_space.sub(idx)
-                spe.post_processing_solution = self.u.sub(idx)
-                spe.collapsed_function_space, _ = self.function_space.sub(
-                    idx
-                ).collapse()
+                spe.post_processing_solution = self.u.sub(idx).collapse()
+                spe.collapsed_function_space, spe.map_to_main_function = (
+                    self.function_space.sub(idx).collapse()
+                )
 
         for idx, spe in enumerate(self.species):
             spe.solution = sub_solutions[idx]
@@ -788,8 +790,20 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
-    def post_processing(self):
-        """Post processes the model"""
+    def post_processing(self, update_pp_sol=True):
+        """Post processing for the problem
+
+        Args:
+            update_pp_sol: If False, the post-processing solution will not
+                be updated. Right now it is only used in the
+                HydrogenTransportProblemDiscontinuousChangeVar class
+        """
+
+        if update_pp_sol:
+            for spe in self.species:
+                spe.post_processing_solution.x.array[:] = self.u.x.array[
+                    spe.map_to_main_function
+                ]
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
