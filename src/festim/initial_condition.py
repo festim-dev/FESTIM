@@ -1,6 +1,10 @@
 import numpy as np
 import ufl
 from dolfinx import fem
+import mpi4py.MPI as MPI
+import adios4dolfinx
+
+from typing import Union, Callable
 
 from festim.helpers import get_interpolation_points
 
@@ -11,13 +15,14 @@ class InitialCondition:
     Initial condition class
 
     Args:
-        value (float, int, fem.Constant or callable): the value of the initial condition
+        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition.
+            If a fem.Function is passed, the mesh of the function needs to match the mesh of the problem.
         species (festim.Species): the species to which the condition is applied
 
     Attributes:
-        value (float, int, fem.Constant or callable): the value of the initial condition
+        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition
         species (festim.Species): the species to which the source is applied
-        expr_fenics (LambdaType or fem.Expression): the value of the initial condition in
+        expr_fenics: the value of the initial condition in
             fenics format
 
     Usage:
@@ -27,6 +32,8 @@ class InitialCondition:
         >>> InitialCondition(value=lambda T: 1 + T, species=my_species)
         >>> InitialCondition(value=lambda x, T: 1 + x[0] + T, species=my_species)
     """
+
+    expr_fenics: Union[Callable, fem.Expression]
 
     def __init__(self, value, species):
         self.value = value
@@ -49,7 +56,8 @@ class InitialCondition:
 
         if isinstance(self.value, (int, float)):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
-
+        elif isinstance(self.value, fem.Function):
+            self.expr_fenics = self.value
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
             kwargs = {}
@@ -85,7 +93,8 @@ class InitialTemperature:
 
         if isinstance(self.value, (int, float)):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
-
+        elif isinstance(self.value, fem.Function):
+            self.expr_fenics = self.value
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
             kwargs = {}
@@ -98,3 +107,35 @@ class InitialTemperature:
                 self.value(**kwargs),
                 get_interpolation_points(function_space.element),
             )
+
+
+def read_function_from_file(
+    filename: str, name: str, timestamp: int | float, family="P", order: int = 1
+) -> fem.Function:
+    """
+    Read a function from a file
+
+    note::
+        The function is read from a file using adios4dolfinx. For more information
+        see the [adios4dolfinx documentation](https://jsdokken.com/adios4dolfinx/README.html).
+
+    Args:
+        filename: the filename
+        name: the name of the function
+        timestamp: the timestamp of the function
+        family: the family of the function space
+        order: the order of the function space
+
+    Returns:
+        the function
+    """
+    mesh_in = adios4dolfinx.read_mesh(filename, MPI.COMM_WORLD)
+    V_in = fem.functionspace(mesh_in, (family, order))
+    u_in = fem.Function(V_in)
+    adios4dolfinx.read_function(
+        filename=filename,
+        u=u_in,
+        name=name,
+        time=timestamp,
+    )
+    return u_in
