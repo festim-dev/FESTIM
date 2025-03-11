@@ -2,6 +2,7 @@ import os
 
 from mpi4py import MPI
 
+import ipyparallel as ipp
 import numpy as np
 import pytest
 from dolfinx import mesh as fenics_mesh
@@ -29,6 +30,14 @@ my_volume_meshtags = meshtags(
     np.arange(num_cells, dtype=np.int32),
     np.full(num_cells, 1, dtype=np.int32),
 )
+
+
+@pytest.fixture(scope="module")
+def cluster():
+    cluster = ipp.Cluster(engines="mpi", n=2)
+    rc = cluster.start_and_connect_sync()
+    yield rc
+    cluster.stop_cluster_sync()
 
 
 @pytest.mark.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
@@ -160,3 +169,16 @@ def test_error_rasied_when_mesh_is_wrong_type():
         F.Mesh(
             mesh="mesh",
         )
+
+
+def test_create_1D_mesh_parallel(cluster):
+    """Test creating a 1D mesh in parallel using ipyparallel"""
+
+    vertices = np.linspace(0, 1, num=11)
+
+    def create_mesh(vertices):
+        F.Mesh1D(vertices=vertices)
+
+    query = cluster[:].apply_async(create_mesh, vertices)
+    query.wait()
+    assert query.successful()
