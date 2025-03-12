@@ -33,6 +33,14 @@ my_volume_meshtags = meshtags(
 )
 
 
+@pytest.fixture(scope="module")
+def cluster():
+    cluster = ipp.Cluster(engines="mpi", n=2, log_level=logging.ERROR)
+    rc = cluster.start_and_connect_sync()
+    yield rc
+    cluster.stop_cluster_sync()
+
+
 @pytest.mark.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
 def test_get_fdim(mesh):
     my_mesh = F.Mesh(mesh)
@@ -164,7 +172,7 @@ def test_error_raised_when_mesh_is_wrong_type():
         )
 
 
-def test_create_1D_mesh_parallel():
+def test_create_1D_mesh_parallel(cluster):
     """Test creating a 1D mesh in parallel using ipyparallel"""
 
     def create_mesh():
@@ -173,8 +181,6 @@ def test_create_1D_mesh_parallel():
 
         F.Mesh1D(vertices=np.linspace(0, 1, num=1001))
 
-    with ipp.Cluster(engines="mpi", n=4, log_level=logging.ERROR) as cluster:
-        # Create a mesh and write to XDMFFile
-        query = cluster[:].apply_async(create_mesh)
-        query.wait()
-        assert query.successful(), query.error
+    query = cluster[:].apply_async(create_mesh)
+    query.wait()
+    assert query.successful(), query.error
