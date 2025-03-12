@@ -34,7 +34,7 @@ my_volume_meshtags = meshtags(
 
 @pytest.fixture(scope="module")
 def cluster():
-    cluster = ipp.Cluster(engines="mpi", n=2)
+    cluster = ipp.Cluster(engines="mpi", n=4)
     rc = cluster.start_and_connect_sync()
     yield rc
     cluster.stop_cluster_sync()
@@ -162,7 +162,7 @@ def test_mesh_vertices_from_list(vertices):
     assert isinstance(my_mesh.vertices, np.ndarray)
 
 
-def test_error_rasied_when_mesh_is_wrong_type():
+def test_error_raised_when_mesh_is_wrong_type():
     """Test that an TypeError is raised when the mesh is not a dolfinx mesh"""
 
     with pytest.raises(TypeError, match="Mesh must be of type dolfinx.mesh.Mesh"):
