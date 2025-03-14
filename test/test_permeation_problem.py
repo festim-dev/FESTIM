@@ -7,6 +7,7 @@ from dolfinx.fem import Constant
 from ufl import exp
 
 import festim as F
+import tempfile
 
 
 def relative_error_computed_to_analytical(
@@ -67,13 +68,15 @@ def test_permeation_problem(mesh_size=1001):
             species="H",
         ),
     ]
+
+    temp_dir = tempfile.TemporaryDirectory()
     outgassing_flux = F.SurfaceFlux(
-        filename="outgassing_flux.txt",
+        filename=f"{temp_dir.name}/outgassing_flux.txt",
         field=mobile_H,
         surface=right_surface,
     )
     my_model.exports = [
-        F.XDMFExport("mobile_concentration.xdmf", field=mobile_H),
+        F.XDMFExport(temp_dir.name + "/mobile_concentration.xdmf", field=mobile_H),
         outgassing_flux,
     ]
 

@@ -62,7 +62,7 @@ def generate_mesh(n=20):
     return mesh, mt, ct
 
 
-def test_2_materials_2d_mms():
+def test_2_materials_2d_mms(tmpdir):
     """
     MMS case for a 2D problem with 2 materials
     adapted from https://festim-vv-report.readthedocs.io/en/v1.0/verification/mms/discontinuity.html
@@ -144,7 +144,9 @@ def test_2_materials_2d_mms():
 
     my_model.settings = F.Settings(atol=1e-5, rtol=1e-5, transient=False)
     my_model.exports = [
-        F.VTXSpeciesExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+        F.VTXSpeciesExport(
+            tmpdir + f"/u_{subdomain.id}.bp", field=H, subdomain=subdomain
+        )
         for subdomain in my_model.volume_subdomains
     ]
 
@@ -162,7 +164,7 @@ def test_2_materials_2d_mms():
 
 
 # TODO make this a MMS case
-def test_1_material_discontinuous_version():
+def test_1_material_discontinuous_version(tmpdir):
     my_model = F.HTransportProblemDiscontinuous()
 
     N = 1500
@@ -220,7 +222,7 @@ def test_1_material_discontinuous_version():
 
     my_model.exports = [
         F.VTXSpeciesExport(
-            filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain
+            filename=tmpdir + f"/u_{subdomain.id}.bp", field=H, subdomain=subdomain
         )
         for subdomain in my_model.volume_subdomains
     ]
@@ -229,7 +231,7 @@ def test_1_material_discontinuous_version():
     my_model.run()
 
 
-def test_3_materials_transient():
+def test_3_materials_transient(tmpdir):
     my_model = F.HTransportProblemDiscontinuous()
 
     interface_1 = 0.5
@@ -319,12 +321,12 @@ def test_3_materials_transient():
 
     my_model.exports = [
         F.VTXSpeciesExport(
-            filename=f"u_{subdomain.id}.bp", field=H, subdomain=subdomain
+            filename=tmpdir + f"/u_{subdomain.id}.bp", field=H, subdomain=subdomain
         )
         for subdomain in my_model.volume_subdomains
     ] + [
         F.VTXSpeciesExport(
-            filename=f"u_t_{subdomain.id}.bp",
+            filename=tmpdir + f"/u_t_{subdomain.id}.bp",
             field=trapped_H,
             subdomain=subdomain,
         )
@@ -335,7 +337,7 @@ def test_3_materials_transient():
     my_model.run()
 
 
-def test_2_mats_particle_flux_bc():
+def test_2_mats_particle_flux_bc(tmpdir):
     mesh, mt, ct = generate_mesh()
 
     my_model = F.HTransportProblemDiscontinuous()
@@ -387,7 +389,9 @@ def test_2_mats_particle_flux_bc():
     my_model.settings = F.Settings(atol=1e-5, rtol=1e-5, transient=False)
 
     my_model.exports = [
-        F.VTXSpeciesExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+        F.VTXSpeciesExport(
+            tmpdir + f"/u_{subdomain.id}.bp", field=H, subdomain=subdomain
+        )
         for subdomain in my_model.volume_subdomains
     ]
 
