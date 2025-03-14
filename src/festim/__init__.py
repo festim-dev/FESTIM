@@ -10,6 +10,7 @@ R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 
+from .advection import AdvectionTerm, VelocityField
 from .boundary_conditions.dirichlet_bc import (
     DirichletBC,
     DirichletBCBase,
@@ -38,12 +39,11 @@ from .exports.vtx import VTXSpeciesExport, VTXTemperatureExport
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (
-    as_fenics_constant,
-    as_mapped_function,
-    as_fenics_interp_expr_and_function,
     Value,
+    as_fenics_constant,
+    as_fenics_interp_expr_and_function,
+    as_mapped_function,
     get_interpolation_points,
-    VelocityField,
 )
 from .hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,
@@ -72,5 +72,3 @@ from .subdomain.surface_subdomain_1d import SurfaceSubdomain1D
 from .subdomain.volume_subdomain import VolumeSubdomain, find_volume_from_id
 from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
 from .trap import Trap
-
-from .advection import AdvectionTerm
