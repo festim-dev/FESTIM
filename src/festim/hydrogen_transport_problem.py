@@ -643,10 +643,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """For each advection term convert the input value"""
 
         for advec_term in self.advection_terms:
-            if isinstance(advec_term, AdvectionTerm):
-                advec_term.velocity.convert_input_value(
-                    function_space=self.function_space, t=self.t
-                )
+            advec_term.velocity.convert_input_value(
+                function_space=self.function_space, t=self.t
+            )
 
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
