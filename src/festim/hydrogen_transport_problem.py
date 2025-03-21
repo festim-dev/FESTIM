@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Callable
 
 from mpi4py import MPI
@@ -29,6 +30,7 @@ from festim import (
 from festim import (
     subdomain as _subdomain,
 )
+from festim.advection import AdvectionTerm
 from festim.helpers import as_fenics_constant, get_interpolation_points
 from festim.mesh import Mesh
 
@@ -51,6 +53,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         boundary_conditions: The boundary conditions
         exports (list of festim.Export): the exports of the model
         traps (list of F.Trap): the traps of the model
+        advection_terms: the advection terms of the model
 
     Attributes:
         mesh : The mesh
@@ -63,6 +66,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         boundary_conditions: List of Dirichlet boundary conditions
         exports (list of festim.Export): the export
         traps (list of F.Trap): the traps of the model
+        advection_terms: the advection terms of the model
         dx (dolfinx.fem.dx): the volume measure of the model
         ds (dolfinx.fem.ds): the surface measure of the model
         function_space (dolfinx.fem.FunctionSpaceBase): the function space of the
@@ -149,6 +153,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         settings=None,
         exports=None,
         traps=None,
+        advection_terms=None,
         petsc_options=None,
     ):
         super().__init__(
@@ -166,6 +171,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.reactions = reactions or []
         self.initial_conditions = initial_conditions or []
         self.traps = traps or []
+        self.advection_terms = advection_terms or []
         self.temperature_fenics = None
         self._vtxfiles: list[dolfinx.io.VTXWriter] = []
 
@@ -281,6 +287,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.define_temperature()
         self.define_boundary_conditions()
         self.convert_source_input_values_to_fenics_objects()
+        self.convert_advection_term_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -632,6 +639,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     up_to_ufl_expr=True,
                 )
 
+    def convert_advection_term_to_fenics_objects(self):
+        """For each advection term convert the input value"""
+
+        for advec_term in self.advection_terms:
+            advec_term.velocity.convert_input_value(
+                function_space=self.function_space, t=self.t
+            )
+
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
         for bc in self.boundary_conditions:
@@ -741,6 +756,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         * self.ds(flux_bc.subdomain.id)
                     )
 
+        for adv_term in self.advection_terms:
+            # create vector functionspace based on the elements in the mesh
+
+            for species in adv_term.species:
+                conc = species.solution
+                v = species.test_function
+                vel = adv_term.velocity.fenics_object
+
+                advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
+                    adv_term.subdomain.id
+                )
+                self.formulation += advection_term
+
         # check if each species is defined in all volumes
         if not self.settings.transient:
             for spe in self.species:
@@ -793,6 +821,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elif isinstance(self.temperature_fenics, fem.Function):
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
+        for advec_term in self.advection_terms:
+            if advec_term.velocity.explicit_time_dependent:
+                advec_term.velocity.update(t=t)
+
     def post_processing(self):
         """Post processes the model"""
 
@@ -817,8 +849,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
                     export,
-                    (exports.SurfaceFlux, exports.TotalSurface, exports.AverageSurface),
+                    exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
                 ):
+                    if len(self.advection_terms) > 0:
+                        warnings.warn(
+                            "Advection terms are not currently accounted for in the "
+                            "evaluation of surface flux values"
+                        )
                     export.compute(
                         self.ds,
                     )
@@ -958,6 +995,7 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.define_temperature()
         self.convert_source_input_values_to_fenics_objects()
+        self.convert_advection_term_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
 
@@ -1093,6 +1131,19 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                         up_to_ufl_expr=True,
                     )
 
+    def convert_advection_term_to_fenics_objects(self):
+        """For each advection term convert the input value"""
+
+        for advec_term in self.advection_terms:
+            if isinstance(advec_term, AdvectionTerm):
+                for spe in advec_term.species:
+                    for subdomain in spe.subdomains:
+                        V = spe.subdomain_to_function_space[subdomain]
+
+                        advec_term.velocity.convert_input_value(
+                            function_space=V, t=self.t
+                        )
+
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """
         Creates the variational formulation for each subdomain and stores it in ``subdomain.F``
@@ -1163,6 +1214,21 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
                 form -= source.value.fenics_object * v * self.dx(subdomain.id)
+
+        # add advection
+        for adv_term in self.advection_terms:
+            if adv_term.subdomain != subdomain:
+                continue
+
+            for spe in adv_term.species:
+                v = spe.subdomain_to_test_function[subdomain]
+                conc = spe.subdomain_to_solution[subdomain]
+
+                vel = adv_term.velocity.fenics_object
+
+                form += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
+                    subdomain.id
+                )
 
         # store the form in the subdomain object
         subdomain.F = form
