@@ -54,7 +54,7 @@ Volume subdomains define distinct regions within the simulation domain and assig
 
 .. testcode::
 
-    my_material = Material(id=1, D_0=1, E_D=1)
+    my_material = Material(D_0=1, E_D=1)
     my_volume = VolumeSubdomain(id=1, material=my_material)
 
 For 1D domains, use the :class:`festim.VolumeSubdomain1D` class, which requires a `borders` argument to specify the domain boundaries where the material is applied.
@@ -65,7 +65,7 @@ For 1D domains, use the :class:`festim.VolumeSubdomain1D` class, which requires 
 
 .. testcode::
 
-    my_material = Material(id=1, D_0=1, E_D=1)
+    my_material = Material(D_0=1, E_D=1)
     my_volume = VolumeSubdomain1D(id=1, material=my_material, borders=[0, 1])
 
 ----------
@@ -82,11 +82,10 @@ To define a material, use the :class:`festim.Material` class:
 
 .. testcode::
 
-    mat = Material(id=1, D_0=2, E_D=0.1)
+    mat = Material(D_0=2, E_D=0.1)
 
-The :class:`festim.Material` class requires three arguments:
+The :class:`festim.Material` class requires two arguments:
 
-* :code:`id`: A unique identifier for the material/volume. Useful when defining volumetric source terms or exports. Multiple volumes can share the same material ID.
 * :code:`D_0`: The diffusivity pre-exponential factor (m²/s).
 * :code:`E_D`: The diffusivity activation energy (eV).
 
@@ -94,6 +93,7 @@ Diffusivity is automatically computed using these parameters based on the Arrhen
 
 Additional parameters are required for specific simulations. When considering chemical potential conservation at material interfaces, hydrogen solubility must be specified using:
 
+* :code:`name`: Name for the material.
 * :code:`S_0`: The solubility pre-exponential factor (units depend on the solubility law: Sievert's or Henry's).
 * :code:`E_S`: The solubility activation energy (eV).
 * :code:`solubility_law`: The solubility law, either :code:`"henry"` or :code:`"sievert"`.
@@ -118,7 +118,7 @@ Thermal properties can be defined as functions of temperature. For example:
 .. testcode::
 
     my_mat = Material(
-        id=1,
+        name="my_fancy_material",
         D_0=2e-7,
         E_D=0.2,
         thermal_conductivity=lambda T: 3 * T + 2 * ufl.exp(-20 * T),
