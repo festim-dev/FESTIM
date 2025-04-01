@@ -13,7 +13,7 @@ description = "Finite element simulations of hydrogen transport"
 readme = "README/md"
 requires-python = ">=3.9"
 license = { file = "LICENSE" }
-dependencies = ["tqdm", "scifem>=0.2.13"]
+dependencies = ["tqdm", "scifem>=0.2.13", "adios4dolfinx"]
 classifiers = [
     "Natural Language :: English",
     "Topic :: Scientific/Engineering",
@@ -27,7 +27,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest >= 5.4.3", "pytest-cov", "sympy"]
+test = ["pytest >= 5.4.3", "pytest-cov", "sympy", "ipyparallel"]
 lint = ["ruff", "mypy"]
 docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]
 

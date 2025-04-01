@@ -153,7 +153,7 @@ def test_iterate():
     V = fem.functionspace(mesh, ("Lagrange", 1))
     my_model.u = fem.Function(V)
     my_model.u_n = fem.Function(V)
-    my_model.dt = fem.Constant(mesh, 2.0)
+    my_model._dt = fem.Constant(mesh, 2.0)
     v = ufl.TestFunction(V)
 
     source_value = 2.0

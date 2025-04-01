@@ -10,6 +10,7 @@ R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
 
+from .advection import AdvectionTerm, VelocityField
 from .boundary_conditions.dirichlet_bc import (
     DirichletBC,
     DirichletBCBase,
@@ -18,10 +19,11 @@ from .boundary_conditions.dirichlet_bc import (
 )
 from .boundary_conditions.flux_bc import FluxBCBase, HeatFluxBC, ParticleFluxBC
 from .boundary_conditions.henrys_bc import HenrysBC
-from .boundary_conditions.flux_bc import FluxBCBase, ParticleFluxBC, HeatFluxBC
-from .boundary_conditions.surface_reaction import SurfaceReactionBC
-
 from .boundary_conditions.sieverts_bc import SievertsBC
+from .boundary_conditions.surface_reaction import SurfaceReactionBC
+from .coupled_heat_hydrogen_problem import (
+    CoupledTransientHeatTransferHydrogenTransport,
+)
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
 from .exports.maximum_surface import MaximumSurface
@@ -37,28 +39,32 @@ from .exports.vtx import VTXSpeciesExport, VTXTemperatureExport
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (
-    as_fenics_constant,
-    as_mapped_function,
-    as_fenics_interp_expr_and_function,
     Value,
+    as_fenics_constant,
+    as_fenics_interp_expr_and_function,
+    as_mapped_function,
     get_interpolation_points,
 )
 from .hydrogen_transport_problem import (
     HTransportProblemDiscontinuous,
-    HydrogenTransportProblem,
     HTransportProblemPenalty,
+    HydrogenTransportProblem,
 )
-from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
-from .initial_condition import InitialCondition, InitialTemperature
+from .initial_condition import (
+    InitialCondition,
+    InitialTemperature,
+    read_function_from_file,
+)
 from .material import Material
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
 from .problem import ProblemBase
+from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 from .reaction import Reaction
 from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
-from .species import ImplicitSpecies, Species, find_species_from_name, SpeciesChangeVar
+from .species import ImplicitSpecies, Species, SpeciesChangeVar, find_species_from_name
 from .stepsize import Stepsize
 from .subdomain.interface import Interface
 from .subdomain.surface_subdomain import SurfaceSubdomain, find_surface_from_id

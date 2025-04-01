@@ -14,7 +14,7 @@ def test_vtx_export_one_function(tmpdir):
     """Test can add one function to a vtx export"""
     u = dolfinx.fem.Function(V)
     sp = F.Species("H")
-    sp.post_processing_solution = u
+    sp.sub_function = u
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXSpeciesExport(filename, field=sp)
 
@@ -30,8 +30,8 @@ def test_vtx_export_two_functions(tmpdir):
 
     sp1 = F.Species("1")
     sp2 = F.Species("2")
-    sp1.post_processing_solution = u
-    sp2.post_processing_solution = v
+    sp1.sub_function = u
+    sp2.sub_function = v
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXSpeciesExport(filename, field=[sp1, sp2])
 
@@ -87,7 +87,8 @@ def test_vtx_DG(tmpdir):
     assert len(my_model._vtxfiles) == 1
 
 
-def test_vtx_integration_with_h_transport_problem(tmpdir):
+@pytest.mark.parametrize("checkpoint", [True, False])
+def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     my_mat = F.Material(D_0=1, E_D=0, name="mat")
@@ -100,14 +101,19 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
     my_model.temperature = lambda t: 500 + t
 
     filename = str(tmpdir.join("my_export.bp"))
-    my_export = F.VTXSpeciesExport(filename, field=my_model.species[0])
+    my_export = F.VTXSpeciesExport(
+        filename, field=my_model.species[0], checkpoint=checkpoint
+    )
     my_model.exports = [my_export]
     my_model.settings = F.Settings(atol=1, rtol=0.1)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
-    assert len(my_model._vtxfiles) == 1
+    if checkpoint:
+        assert len(my_model._vtxfiles) == 0
+    else:
+        assert len(my_model._vtxfiles) == 1
 
 
 @pytest.mark.parametrize(

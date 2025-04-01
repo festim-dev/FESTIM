@@ -31,19 +31,24 @@ class Mesh1D(F.Mesh):
 
     @vertices.setter
     def vertices(self, value):
-        self._vertices = np.sort(np.unique(value)).astype(float)
+        self._vertices = np.sort(np.unique(value)).astype(np.float64)
 
     def generate_mesh(self):
         """Generates a 1D mesh"""
+
+        if MPI.COMM_WORLD.rank == 0:
+            mesh_points = np.reshape(self.vertices, (len(self.vertices), 1))
+            indexes = np.arange(self.vertices.shape[0])
+            cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
+
+        else:
+            mesh_points = np.empty((0, 1), dtype=np.float64)
+            cells = np.empty((0, 2), dtype=np.int64)
+
         degree = 1
         domain = ufl.Mesh(
             basix.ufl.element(basix.ElementFamily.P, "interval", degree, shape=(1,))
         )
-
-        mesh_points = np.reshape(self.vertices, (len(self.vertices), 1))
-        indexes = np.arange(self.vertices.shape[0])
-        cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
-
         return dolfinx.mesh.create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
 
     def check_borders(self, volume_subdomains):
