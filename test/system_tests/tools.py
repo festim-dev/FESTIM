@@ -3,6 +3,15 @@ import mpi4py.MPI as MPI
 import numpy as np
 import ufl
 from dolfinx import fem
+from festim import Mesh1D
+from dolfinx.mesh import create_unit_square, create_unit_cube
+
+test_mesh_1d = Mesh1D(np.linspace(0, 1, 10000))
+test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 50, 50)
+test_mesh_3d = create_unit_cube(MPI.COMM_WORLD, 20, 20, 20)
+x_1d = ufl.SpatialCoordinate(test_mesh_1d.mesh)
+x_2d = ufl.SpatialCoordinate(test_mesh_2d)
+x_3d = ufl.SpatialCoordinate(test_mesh_3d)
 
 
 def error_L2(u_computed, u_exact, degree_raise=3):

@@ -1,3 +1,5 @@
+from mpi4py import MPI
+
 import numpy as np
 
 from festim.exports import VolumeQuantity
@@ -27,5 +29,8 @@ class MaximumVolume(VolumeQuantity):
         """
         solution = self.field.solution
         indices = self.volume.locate_subdomain_entities(solution.function_space.mesh)
-        self.value = np.max(self.field.solution.x.array[indices])
+
+        self.value = solution.function_space.mesh.comm.allreduce(
+            np.max(self.field.solution.x.array[indices]), op=MPI.MAX
+        )
         self.data.append(self.value)

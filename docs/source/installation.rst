@@ -2,12 +2,6 @@
 Installation
 ============
 
-FESTIM is installed in two steps:
-    1. `Installing FEniCSx`_ through Anaconda or Docker
-    2. `Installing FESTIM`_ through pip in the FEniCS environment
-
-Installing FEniCSx
------------------
 
 FEniCSx can be installed with Anaconda on MacOs and Linux. 
 In order to use the Anaconda distribution on Windows, 
@@ -38,13 +32,4 @@ then run the following commands::
 
     conda create -n festim-env
     conda activate festim-env       
-    conda install -c conda-forge fenics-dolfinx tqdm scifem
-
-
-Installing FESTIM
------------------
-
-This version of FESTIM is under development and is not yet available on PyPI.
-FESTIM can then be installed using pip::
-
-    pip install git+https://github.com/FESTIM-dev/FESTIM@fenicsx
+    conda install -c conda-forge festim>=2.0a0

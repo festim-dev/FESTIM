@@ -1,6 +1,7 @@
 import dolfinx
 import numpy as np
 from dolfinx.cpp.fem import compute_integration_domains
+from packaging.version import Version
 
 from .volume_subdomain import VolumeSubdomain
 
@@ -34,12 +35,21 @@ class Interface:
     def pad_parent_maps(self):
         """Workaround to make sparsity-pattern work without skips"""
 
-        integration_data = compute_integration_domains(
-            dolfinx.fem.IntegralType.interior_facet,
-            self.parent_mesh.topology._cpp_object,
-            self.mt.find(self.id),
-            self.mt.dim,
-        ).reshape(-1, 4)
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            args = (
+                dolfinx.fem.IntegralType.interior_facet,
+                self.parent_mesh.topology._cpp_object,
+                self.mt.find(self.id),
+                self.mt.dim,
+            )
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            args = (
+                dolfinx.fem.IntegralType.interior_facet,
+                self.parent_mesh.topology._cpp_object,
+                self.mt.find(self.id),
+            )
+
+        integration_data = compute_integration_domains(*args).reshape(-1, 4)
         for i in range(2):
             # We pad the parent to submesh map to make sure that sparsity pattern is correct
             mapped_cell_0 = self.subdomains[i].parent_to_submesh[integration_data[:, 0]]
@@ -60,12 +70,22 @@ class Interface:
         """
         assert (not self.subdomains[0].padded) and (not self.subdomains[1].padded)
         mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
-        integration_data = compute_integration_domains(
-            dolfinx.fem.IntegralType.interior_facet,
-            mesh.topology._cpp_object,
-            self.mt.find(self.id),
-            self.mt.dim,
-        )
+
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            args = (
+                dolfinx.fem.IntegralType.interior_facet,
+                self.parent_mesh.topology._cpp_object,
+                self.mt.find(self.id),
+                self.mt.dim,
+            )
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            args = (
+                dolfinx.fem.IntegralType.interior_facet,
+                mesh.topology._cpp_object,
+                self.mt.find(self.id),
+            )
+
+        integration_data = compute_integration_domains(*args)
 
         ordered_integration_data = integration_data.reshape(-1, 4).copy()
 

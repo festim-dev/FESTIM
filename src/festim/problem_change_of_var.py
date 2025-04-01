@@ -1,12 +1,14 @@
-import festim.boundary_conditions
-from festim.hydrogen_transport_problem import HydrogenTransportProblem
-from festim import boundary_conditions, as_fenics_constant
-import festim
-import festim.species as _species
+from typing import List
+
 import ufl
 from dolfinx import fem
 
-from typing import List
+import festim
+import festim.boundary_conditions
+import festim.species as _species
+from festim import boundary_conditions
+from festim.helpers import as_fenics_constant, get_interpolation_points
+from festim.hydrogen_transport_problem import HydrogenTransportProblem
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
@@ -22,7 +24,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = as_fenics_constant(
+            self._dt = as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -30,7 +32,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
         self.define_temperature()
         self.define_boundary_conditions()
-        self.create_source_values_fenics()
+        self.convert_source_input_values_to_fenics_objects()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
         self.create_formulation()
@@ -78,6 +80,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             # hack enforce the concentration attribute of the species for all species
             # to be used in reaction.reaction_term
+
             for spe in self.species:
                 if spe.mobile:
                     K_S = reaction.volume.material.get_solubility_coefficient(
@@ -104,7 +107,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics
+                source.value.fenics_object
                 * source.species.test_function
                 * self.dx(source.volume.id)
             )
@@ -161,7 +164,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             theta = spe.solution
 
-            spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points())
+            spe.dg_expr = fem.Expression(
+                theta * K_S, get_interpolation_points(Q1.element)
+            )
             spe.post_processing_solution = fem.Function(Q1)
             spe.post_processing_solution.interpolate(
                 spe.dg_expr
