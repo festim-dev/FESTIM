@@ -18,6 +18,7 @@ Surface Subdomains
 ------------------
 
 Use the :class:`festim.SurfaceSubdomain` class to define surface subdomains.
+
 .. testsetup::
 
     from festim import SurfaceSubdomain
@@ -40,7 +41,7 @@ For 1D domains, use the :class:`festim.SurfaceSubdomain1D` class, which requires
 
 .. testcode::
 
-    my_surface = SurfaceSubdomain1D(id=1, x=10)
+    my_1D_surface = SurfaceSubdomain1D(id=1, x=10)
     
 ------------------
 Volume Subdomains
@@ -66,7 +67,7 @@ For 1D domains, use the :class:`festim.VolumeSubdomain1D` class, which requires 
 .. testcode::
 
     my_material = Material(D_0=1, E_D=1)
-    my_volume = VolumeSubdomain1D(id=1, material=my_material, borders=[0, 1])
+    my_1D_volume = VolumeSubdomain1D(id=1, material=my_material, borders=[0, 1])
 
 ----------
 Materials
