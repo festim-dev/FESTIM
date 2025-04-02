@@ -6,6 +6,7 @@ from mpi4py import MPI
 import basix
 import dolfinx
 import numpy.typing as npt
+import numpy as np
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
@@ -124,6 +125,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     """
 
+    _temperature_as_function: fem.Function
+
     def __init__(
         self,
         mesh: Mesh | None = None,
@@ -177,6 +180,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self._element_for_traps = "DG"
         self.petcs_options = petsc_options
+
+        self._temperature_as_function = None
 
     @property
     def temperature(self):
@@ -378,6 +383,20 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
+            if isinstance(export, festim.VTXTemperatureExport):
+                self._temperature_as_function = (
+                    self._get_temperature_field_as_function()
+                )
+                self._vtxfiles.append(
+                    dolfinx.io.VTXWriter(
+                        self._temperature_as_function.function_space.mesh.comm,
+                        export.filename,
+                        self._temperature_as_function,
+                        engine="BP5",
+                    )
+                )
+                continue
+
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
@@ -406,12 +425,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
                 else:
                     adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
+
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
         spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
+
             if isinstance(export, exports.SurfaceQuantity):
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
@@ -431,6 +452,30 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity)):
                 export.t = []
                 export.data = []
+
+    def _get_temperature_field_as_function(self) -> dolfinx.fem.Function:
+        """
+        Based on the type of the temperature_fenics attribute, converts
+        it as a Function to be used in VTX export
+
+        Returns:
+            the temperature field of the simulation
+        """
+        if isinstance(self.temperature_fenics, fem.Function):
+            return self.temperature_fenics
+        elif isinstance(self.temperature_fenics, fem.Constant):
+            # use existing function space if function already exists
+            if self._temperature_as_function is None:
+                V = dolfinx.fem.functionspace(self.mesh.mesh, ("P", 1))
+            else:
+                V = self._temperature_as_function.function_space
+            temperature_field = dolfinx.fem.Function(V)
+            temperature_expr = fem.Expression(
+                self.temperature_fenics,
+                get_interpolation_points(V.element),
+            )
+            temperature_field.interpolate(temperature_expr)
+            return temperature_field
 
     def define_D_global(self, species):
         """Defines the global diffusion coefficient for a given species
@@ -845,6 +890,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         species_not_updated.remove(export.field)
 
         for export in self.exports:
+            if (
+                isinstance(export, festim.VTXTemperatureExport)
+                and self.temperature_time_dependent
+            ):
+                self._temperature_as_function.interpolate(
+                    self._get_temperature_field_as_function()
+                )
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
