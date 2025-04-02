@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 from mpi4py import MPI
 
+import adios4dolfinx
 import basix
 import dolfinx
 import numpy.typing as npt
@@ -10,7 +11,6 @@ import tqdm.autonotebook
 import ufl
 from dolfinx import fem
 from scifem import BlockedNewtonSolver
-import adios4dolfinx
 
 import festim.boundary_conditions
 import festim.problem
