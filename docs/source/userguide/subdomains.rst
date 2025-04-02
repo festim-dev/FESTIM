@@ -1,11 +1,6 @@
-==========
-Subdomains
-==========
-
-.. warning::
-
-    🔨 This page is under construction. 🔨
-
+=======================
+Subdomains & Materials
+=======================
 
 Subdomains define different regions within the simulation domain, each assigned specific physical models or materials.
 
@@ -42,7 +37,33 @@ For 1D domains, use the :class:`festim.SurfaceSubdomain1D` class, which requires
 .. testcode::
 
     my_1D_surface = SurfaceSubdomain1D(id=1, x=10)
-    
+
+
+Custom surface subdomains can be created by subclassing the :class:`festim.SurfaceSubdomain` class. In this case we can use a custom unit square mesh, and would like to have a defined surface on the top of the domain where y=1
+
+.. testcode::
+
+    from dolfinx.mesh import create_unit_square
+    from mpi4py import MPI
+    from festim import SurfaceSubdomain
+
+    my_mesh = create_unit_square(MPI.COMM_WORLD, 50, 50)
+
+    class TopSurface(SurfaceSubdomain):
+        
+        # Surface subdomains need a method to locate the facets of the mesh
+        def locate_boundary_facet_indices(self, mesh):
+            surface_dim = mesh.topology.dim - 1 # dimension of the surface of the domain
+
+            # locate the facets of the mesh where y = 1 
+            indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[1], 1)) 
+            return indices
+
+.. note::
+
+    The different coordinates x, y, z are represented by x[0], x[1], x[2] in fenics, respectively.
+
+
 ------------------
 Volume Subdomains
 ------------------
