@@ -8,17 +8,14 @@ Subdomains are categorized as:
 1. **Surface subdomains**: Regions on the outer boundaries of the simulation domain.
 2. **Volume subdomains**: Regions inside the simulation domain.
 
-------------------
 Surface Subdomains
-------------------
+==================
 
 Use the :class:`festim.SurfaceSubdomain` class to define surface subdomains.
 
-.. testsetup::
+.. testcode::
 
     from festim import SurfaceSubdomain
-
-.. testcode::
 
     my_surface = SurfaceSubdomain(id=1)
 
@@ -30,11 +27,9 @@ The `id` is a unique identifier for the surface subdomain. It corresponds to mes
 
 For 1D domains, use the :class:`festim.SurfaceSubdomain1D` class, which requires an additional `x` argument to specify the surface position.
 
-.. testsetup::
+.. testcode::
 
     from festim import SurfaceSubdomain1D
-
-.. testcode::
 
     my_1D_surface = SurfaceSubdomain1D(id=1, x=10)
 
@@ -64,28 +59,23 @@ Custom surface subdomains can be created by subclassing the :class:`festim.Surfa
     The different coordinates x, y, z are represented by x[0], x[1], x[2] in fenics, respectively.
 
 
-------------------
 Volume Subdomains
-------------------
+=================
 
 Volume subdomains define distinct regions within the simulation domain and assign materials to these regions.
 
-.. testsetup::
+.. testcode::
 
     from festim import VolumeSubdomain, Material
-
-.. testcode::
 
     my_material = Material(D_0=1, E_D=1)
     my_volume = VolumeSubdomain(id=1, material=my_material)
 
 For 1D domains, use the :class:`festim.VolumeSubdomain1D` class, which requires a `borders` argument to specify the domain boundaries where the material is applied.
 
-.. testsetup::
+.. testcode::
 
     from festim import VolumeSubdomain1D, Material
-
-.. testcode::
 
     my_material = Material(D_0=1, E_D=1)
     my_1D_volume = VolumeSubdomain1D(id=1, material=my_material, borders=[0, 1])
@@ -98,11 +88,9 @@ Materials play a key role in hydrogen transport simulations, defining diffusivit
 
 To define a material, use the :class:`festim.Material` class:
 
-.. testsetup::
+.. testcode::
 
     from festim import Material
-
-.. testcode::
 
     mat = Material(D_0=2, E_D=0.1)
 
@@ -126,18 +114,15 @@ For transient heat transfer simulations, thermal conductivity, heat capacity, an
 * :code:`heat_capacity`: Heat capacity (J/kg/K).
 * :code:`density`: Density (kg/m³).
 
----------------------------------
 Temperature-dependent Parameters
 ---------------------------------
 
 Thermal properties can be defined as functions of temperature. For example:
 
-.. testsetup::
+.. testcode::
 
     from festim import Material
     import ufl
-
-.. testcode::
 
     my_mat = Material(
         name="my_fancy_material",
@@ -148,9 +133,8 @@ Thermal properties can be defined as functions of temperature. For example:
         density=lambda T: 7 * T + 5,
     )
 
---------------------
 Integration with HTM
---------------------
+---------------------
 
 H-transport-materials (HTM) is a Python database of hydrogen transport properties. Using HTM helps prevent copy-paste errors and ensures consistency across simulations by using standardised property values.
 
