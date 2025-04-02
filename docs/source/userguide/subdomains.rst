@@ -34,7 +34,7 @@ For 1D domains, use the :class:`festim.SurfaceSubdomain1D` class, which requires
     my_1D_surface = SurfaceSubdomain1D(id=1, x=10)
 
 
-Custom surface subdomains can be created by subclassing the :class:`festim.SurfaceSubdomain` class. In this case we can use a custom unit square mesh, and would like to have a defined surface on the top of the domain where y=1
+Custom surface subdomains can be created by subclassing the :class:`festim.SurfaceSubdomain` class. In this case we can use a custom unit square mesh, and would like to have a defined surface on the top of the domain where y=1.
 
 .. testcode::
 
