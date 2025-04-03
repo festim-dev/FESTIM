@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 from mpi4py import MPI
 
+import adios4dolfinx
 import basix
 import dolfinx
 import numpy.typing as npt
@@ -11,7 +12,6 @@ import tqdm.autonotebook
 import ufl
 from dolfinx import fem
 from scifem import BlockedNewtonSolver
-import adios4dolfinx
 
 import festim.boundary_conditions
 import festim.problem
@@ -141,12 +141,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
             | fem.Constant
             | fem.Function
             | Callable[
-                [npt.NDArray[dolfinx.default_scalar_type]],
-                npt.NDArray[dolfinx.default_scalar_type],
+                [npt.NDArray[dolfinx.default_scalar_type]],  # type: ignore
+                npt.NDArray[dolfinx.default_scalar_type],  # type: ignore
             ]
             | Callable[
-                [npt.NDArray[dolfinx.default_scalar_type], fem.Constant],
-                npt.NDArray[dolfinx.default_scalar_type],
+                [npt.NDArray[dolfinx.default_scalar_type], fem.Constant],  # type: ignore
+                npt.NDArray[dolfinx.default_scalar_type],  # type: ignore
             ]
             | None
         ) = None,
@@ -191,7 +191,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
     def temperature(self, value):
         if value is None:
             self._temperature = value
-        elif isinstance(value, (float, int, fem.Constant, fem.Function)):
+        elif isinstance(value, float | int | fem.Constant | fem.Function):
             self._temperature = value
         elif callable(value):
             self._temperature = value
@@ -211,7 +211,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             return
         elif not isinstance(
             value,
-            (fem.Constant, fem.Function),
+            fem.Constant | fem.Function,
         ):
             raise TypeError("Value must be a fem.Constant or fem.Function")
         self._temperature_fenics = value
@@ -330,19 +330,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
             raise ValueError("the temperature attribute needs to be defined")
 
         # if temperature is a float or int, create a fem.Constant
-        elif isinstance(self.temperature, (float, int)):
+        elif isinstance(self.temperature, float | int):
             self.temperature_fenics = as_fenics_constant(
                 self.temperature, self.mesh.mesh
             )
         # if temperature is a fem.Constant or function, pass it to temperature_fenics
-        elif isinstance(self.temperature, (fem.Constant, fem.Function)):
+        elif isinstance(self.temperature, fem.Constant | fem.Function):
             self.temperature_fenics = self.temperature
 
         # if temperature is callable, process accordingly
         elif callable(self.temperature):
             arguments = self.temperature.__code__.co_varnames
             if "t" in arguments and "x" not in arguments:
-                if not isinstance(self.temperature(t=float(self.t)), (float, int)):
+                if not isinstance(self.temperature(t=float(self.t)), float | int):
                     raise ValueError(
                         f"self.temperature should return a float or an int, not "
                         f"{type(self.temperature(t=float(self.t)))} "
@@ -449,7 +449,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.D_expr = D_expr
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(export, (exports.SurfaceQuantity, exports.VolumeQuantity)):
+            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 export.t = []
                 export.data = []
 
@@ -515,7 +515,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         function u and u_n. Create global DG function spaces of degree 0 and 1
         for the global diffusion coefficient"""
 
-        # TODO: expose degree as a property to the user (element_degree ?) in ProblemBase
+        # TODO: expose degree as a property to the user (element_degree ?)
+        # in ProblemBase
         degree = 1
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
@@ -920,7 +921,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if export.filename is not None:
                     export.write(t=float(self.t))
             elif isinstance(export, exports.VolumeQuantity):
-                if isinstance(export, (exports.TotalVolume, exports.AverageVolume)):
+                if isinstance(export, exports.TotalVolume | exports.AverageVolume):
                     export.compute(self.dx)
                 else:
                     export.compute()
@@ -1113,11 +1114,11 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
     def define_function_spaces(self, subdomain: _subdomain.VolumeSubdomain):
         """
         Creates appropriate function space and functions for a given subdomain (submesh)
-        based on the number of species existing in this subdomain. Then stores the functionspace,
-        the current solution (``u``) and the previous solution (``u_n``) functions. It also populates the
-        correspondance dicts attributes of the species (eg. ``species.subdomain_to_solution``,
-        ``species.subdomain_to_test_function``, etc) for easy access to the right subfunctions,
-        sub-testfunctions etc.
+        based on the number of species existing in this subdomain. Then stores the
+        functionspace, the current solution (``u``) and the previous solution (``u_n``)
+        functions. It also populates the correspondance dicts attributes of the species
+        (eg. ``species.subdomain_to_solution``, ``species.subdomain_to_test_function``,
+        etc) for easy access to the right subfunctions, sub-testfunctions etc.
 
         Args:
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
@@ -1198,7 +1199,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """
-        Creates the variational formulation for each subdomain and stores it in ``subdomain.F``
+        Creates the variational formulation for each subdomain and stores it in
+        ``subdomain.F``
 
         Args:
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
@@ -1438,7 +1440,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 else:
                     raise NotImplementedError(
-                        f"Export type {type(export)} not implemented for mixed-domain approach"
+                        f"Export type {type(export)} not implemented for "
+                        f"mixed-domain approach"
                     )
             else:
                 raise NotImplementedError(f"Export type {type(export)} not implemented")
@@ -1466,7 +1469,8 @@ class HTransportProblemDiscontinuous(HydrogenTransportProblem):
             if isinstance(export, exports.VTXSpeciesExport):
                 if export._checkpoint:
                     raise NotImplementedError(
-                        f"Export type {type(export)} not implemented for mixed-domain approach"
+                        f"Export type {type(export)} not implemented "
+                        f"for mixed-domain approach"
                     )
 
     def iterate(self):
