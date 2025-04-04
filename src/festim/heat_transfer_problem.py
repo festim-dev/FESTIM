@@ -69,7 +69,7 @@ class HeatTransferProblem(problem.ProblemBase):
         if self.settings.transient:
             # TODO should raise error if no stepsize is provided
             # TODO Should this be an attribute of festim.Stepsize?
-            self.dt = helpers.as_fenics_constant(
+            self._dt = helpers.as_fenics_constant(
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
@@ -134,9 +134,10 @@ class HeatTransferProblem(problem.ProblemBase):
         """For each source create the value_fenics"""
         for source in self.sources:
             # create value_fenics for all source objects
-            source.create_value_fenics(
-                mesh=self.mesh.mesh,
+            source.value.convert_input_value(
+                function_space=self.function_space,
                 t=self.t,
+                up_to_ufl_expr=True,
             )
 
     def create_flux_values_fenics(self):
@@ -205,7 +206,9 @@ class HeatTransferProblem(problem.ProblemBase):
         # add sources
         for source in self.sources:
             self.formulation -= (
-                source.value_fenics * self.test_function * self.dx(source.volume.id)
+                source.value.fenics_object
+                * self.test_function
+                * self.dx(source.volume.id)
             )
 
         # add fluxes

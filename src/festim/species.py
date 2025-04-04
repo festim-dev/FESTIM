@@ -76,6 +76,7 @@ class Species:
         self.sub_function_space = None
         self.post_processing_solution = None
         self.collapsed_function_space = None
+        self.sub_function = None
 
         self.subdomains = subdomains
         self.subdomain_to_solution = {}

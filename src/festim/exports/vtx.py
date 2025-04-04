@@ -41,21 +41,26 @@ class VTXSpeciesExport(ExportBaseClass):
         subdomain: A field can be defined on multiple domains.
             This arguments specifies what subdomains we export on.
             If `None` we export on all domains.
-
+        checkpoint: If True, the export will be a checkpoint file
+            using adios4dolfinx and won't be readable by ParaView.
+            Default is False.
     """
 
     field: list[_Species]
     _subdomain: _VolumeSubdomain
+    _checkpoint: bool
 
     def __init__(
         self,
         filename: str | Path,
         field: _Species | list[_Species],
         subdomain: _VolumeSubdomain = None,
+        checkpoint: bool = False,
     ) -> None:
         super().__init__(filename, ".bp")
         self.field = field
         self._subdomain = subdomain
+        self._checkpoint = checkpoint
 
     @property
     def field(self) -> list[_Species]:
@@ -104,7 +109,7 @@ class VTXSpeciesExport(ExportBaseClass):
                 legacy_output = True
                 break
         if legacy_output:
-            return [field.post_processing_solution for field in self._field]
+            return [field.sub_function for field in self._field]
         else:
             if self._subdomain is None:
                 raise ValueError("Subdomain must be specified")

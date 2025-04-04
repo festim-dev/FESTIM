@@ -158,7 +158,7 @@ def test_MMS_T_dependent_thermal_cond():
     assert L2_error < 1e-7
 
 
-def test_heat_transfer_transient():
+def test_heat_transfer_transient(tmpdir):
     """
     MMS test for transient heat transfer
     constant thermal conductivity density and heat capacity
@@ -211,7 +211,7 @@ def test_heat_transfer_transient():
     my_problem.settings.stepsize = F.Stepsize(0.1)
 
     my_problem.exports = [
-        F.VTXTemperatureExport(filename="test_transient_heat_transfer.bp")
+        F.VTXTemperatureExport(filename=tmpdir + "/test_transient_heat_transfer.bp")
     ]
 
     my_problem.initialise()
@@ -273,7 +273,7 @@ def test_MES():
 
 
 # TODO populate this in other tests
-def test_sympify():
+def test_sympify(tmpdir):
     def exact_solution(x, t):
         return 2 * x[0] ** 2 + 20 * t
 
@@ -335,7 +335,7 @@ def test_sympify():
     my_problem.settings.stepsize = F.Stepsize(0.05)
 
     my_problem.exports = [
-        F.VTXTemperatureExport(filename="test_transient_heat_transfer.bp")
+        F.VTXTemperatureExport(filename=tmpdir + "/test_transient_heat_transfer.bp")
     ]
 
     my_problem.initialise()
@@ -603,7 +603,6 @@ def test_adaptive_timestepping_shrinks():
         (lambda t: t, [1.0, 2.0, 3.0]),
         (lambda t: 1.0 + t, [2.0, 3.0, 4.0]),
         (lambda x, t: 1.0 + x[0] + t, [6.0, 7.0, 8.0]),
-        (lambda T, t: T + 2 * t, [12.0, 14.0, 16.0]),
         (
             lambda x, t: ufl.conditional(ufl.lt(t, 1.5), 100.0 + x[0], 0.0),
             [104.0, 0.0, 0.0],

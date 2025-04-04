@@ -22,7 +22,7 @@ simple_space = lambda x: 10 - 10 * x[0]
         (step_function_time_homogeneous, 10.0),
     ],
 )
-def test_non_homogeneous_density(density_func, expected_value):
+def test_non_homogeneous_density(density_func, expected_value, tmpdir):
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
     my_mat = F.Material(name="mat", D_0=1, E_D=0)
@@ -62,8 +62,8 @@ def test_non_homogeneous_density(density_func, expected_value):
 
     total_trapped = F.TotalVolume(field=trapped_H, volume=vol)
     my_model.exports = [
-        F.VTXSpeciesExport(filename="trapped_c.bp", field=trapped_H),
-        F.VTXSpeciesExport(filename="c.bp", field=H),
+        F.VTXSpeciesExport(filename=tmpdir + "/trapped_c.bp", field=trapped_H),
+        F.VTXSpeciesExport(filename=tmpdir + "/c.bp", field=H),
         total_trapped,
     ]
 
@@ -75,7 +75,7 @@ def test_non_homogeneous_density(density_func, expected_value):
     assert np.isclose(total_trapped.value, expected_value)
 
 
-def test_density_as_function():
+def test_density_as_function(tmpdir):
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
     my_mat = F.Material(name="mat", D_0=1, E_D=0)
@@ -126,8 +126,8 @@ def test_density_as_function():
 
     total_trapped = F.TotalVolume(field=trapped_H, volume=vol)
     my_model.exports = [
-        F.VTXSpeciesExport(filename="trapped_c.bp", field=trapped_H),
-        F.VTXSpeciesExport(filename="c.bp", field=H),
+        F.VTXSpeciesExport(filename=tmpdir + "/trapped_c.bp", field=trapped_H),
+        F.VTXSpeciesExport(filename=tmpdir + "/c.bp", field=H),
         total_trapped,
     ]
 
