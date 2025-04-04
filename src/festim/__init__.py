@@ -47,8 +47,7 @@ from .helpers import (
 )
 from .problem import ProblemBase
 from .hydrogen_transport_problem import (
-    HTransportProblemDiscontinuous,
-    HTransportProblemPenalty,
+    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblem,
     HydrogenTransportProblemDiscontinuousChangeVar,
 )
