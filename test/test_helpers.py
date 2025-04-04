@@ -257,3 +257,43 @@ def test_value_representation(value):
     test_value = F.Value(value)
 
     assert repr(test_value) == f"{value}"
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        lambda T: 1.0 + T,
+        lambda x: 1.0 + x[0],
+        lambda x, t: 1.0 + x[0] + t,
+        lambda x, t, T: 1.0 + x[0] + t + T,
+        lambda T, t: ufl.conditional(ufl.lt(t, 1.0), 100.0 + T[0], 0.0),
+    ],
+)
+def test_velocity_field_convert_input_error_when_t_not_only_arg(value):
+    """Test when an input value of type callable is converted that a Type error is
+    rasied when t is not the only arg"""
+
+    test_value = F.VelocityField(value)
+    t = F.as_fenics_constant(value=1.0, mesh=test_mesh.mesh)
+
+    with pytest.raises(
+        TypeError, match="velocity function can only be a function of time arg t"
+    ):
+        test_value.convert_input_value(function_space=test_function_space, t=t)
+
+
+def test_velocity_field_convert_input_error_when_callable_doesnt_return_fem_func():
+    """Test when an input value of type callable is converted that a Type error is
+    rasied when t is not the only arg"""
+
+    def example_func(t):
+        return 2 * t
+
+    test_value = F.VelocityField(input_value=lambda t: example_func(t))
+    t = F.as_fenics_constant(value=1.0, mesh=test_mesh.mesh)
+
+    with pytest.raises(
+        ValueError,
+        match=f"A time dependent advection field should return an fem.Function, not a <class 'ufl.algebra.Product'>",
+    ):
+        test_value.convert_input_value(function_space=test_function_space, t=t)

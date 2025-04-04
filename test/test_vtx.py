@@ -14,7 +14,7 @@ def test_vtx_export_one_function(tmpdir):
     """Test can add one function to a vtx export"""
     u = dolfinx.fem.Function(V)
     sp = F.Species("H")
-    sp.post_processing_solution = u
+    sp.sub_function = u
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXSpeciesExport(filename, field=sp)
 
@@ -30,8 +30,8 @@ def test_vtx_export_two_functions(tmpdir):
 
     sp1 = F.Species("1")
     sp2 = F.Species("2")
-    sp1.post_processing_solution = u
-    sp2.post_processing_solution = v
+    sp1.sub_function = u
+    sp2.sub_function = v
     filename = str(tmpdir.join("my_export.bp"))
     my_export = F.VTXSpeciesExport(filename, field=[sp1, sp2])
 
@@ -87,7 +87,8 @@ def test_vtx_DG(tmpdir):
     assert len(my_model._vtxfiles) == 1
 
 
-def test_vtx_integration_with_h_transport_problem(tmpdir):
+@pytest.mark.parametrize("checkpoint", [True, False])
+def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     my_mat = F.Material(D_0=1, E_D=0, name="mat")
@@ -97,17 +98,57 @@ def test_vtx_integration_with_h_transport_problem(tmpdir):
         F.SurfaceSubdomain1D(2, x=4.0),
     ]
     my_model.species = [F.Species("H")]
-    my_model.temperature = 500
+    my_model.temperature = lambda t: 500 + t
 
     filename = str(tmpdir.join("my_export.bp"))
-    my_export = F.VTXSpeciesExport(filename, field=my_model.species[0])
+    my_export = F.VTXSpeciesExport(
+        filename, field=my_model.species[0], checkpoint=checkpoint
+    )
     my_model.exports = [my_export]
     my_model.settings = F.Settings(atol=1, rtol=0.1)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
+    if checkpoint:
+        assert len(my_model._vtxfiles) == 0
+    else:
+        assert len(my_model._vtxfiles) == 1
+
+
+@pytest.mark.parametrize(
+    "T",
+    [
+        500,
+        lambda t: 500 + t,
+        lambda x: 500 + 200 * x[0],
+        lambda x, t: 500 + 200 * x[0] + t,
+    ],
+)
+def test_vtx_temperature(T, tmpdir):
+    """Tests that VTX temperature exports work with HydrogenTransportProblem"""
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
+    my_mat = F.Material(D_0=1, E_D=0, name="mat")
+    my_model.subdomains = [
+        F.VolumeSubdomain1D(1, borders=[0.0, 4.0], material=my_mat),
+        F.SurfaceSubdomain1D(1, x=0.0),
+        F.SurfaceSubdomain1D(2, x=4.0),
+    ]
+    my_model.species = [F.Species("H")]
+    my_model.temperature = T
+
+    filename = str(tmpdir.join("my_export.bp"))
+
+    my_export = F.VTXTemperatureExport(filename)
+    my_model.exports = [my_export]
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
+
+    my_model.initialise()
     assert len(my_model._vtxfiles) == 1
+
+    my_model.run()
 
 
 def test_field_attribute_is_always_list():
@@ -130,3 +171,9 @@ def test_filename_raises_error_when_wrong_type():
     """Test that the filename attribute raises an error if the extension is not .bp"""
     with pytest.raises(TypeError):
         F.VTXSpeciesExport(1, field=[F.Species("H")])
+
+
+def test_filename_temp_raises_error_when_wrong_type():
+    """Test that the filename attribute for VTXTemperature export raises an error if the extension is not .bp"""
+    with pytest.raises(TypeError):
+        F.VTXTemperatureExport(1)

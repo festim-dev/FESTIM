@@ -289,7 +289,7 @@ else:
     get_interpolation_points = lambda element: element.interpolation_points()
 
 
-def nmm_interpolate(f_out: fem.function, f_in: fem.function):
+def nmm_interpolate(f_out: fem.Function, f_in: fem.Function):
     """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
     another function (f_out) with a mismatching mesh
 

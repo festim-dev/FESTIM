@@ -62,7 +62,7 @@ def generate_mesh(n=20):
     return mesh, mt, ct
 
 
-def test_2_materials_2d_mms():
+def test_2_materials_2d_mms(tmpdir):
     """
     MMS case for a 2D problem with 2 materials
     adapted from https://festim-vv-report.readthedocs.io/en/v1.0/verification/mms/discontinuity.html
@@ -144,7 +144,9 @@ def test_2_materials_2d_mms():
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
     my_model.exports = [
-        F.VTXSpeciesExport(f"u_{subdomain.id}.bp", field=H, subdomain=subdomain)
+        F.VTXSpeciesExport(
+            tmpdir + f"/u_{subdomain.id}.bp", field=H, subdomain=subdomain
+        )
         for subdomain in my_model.volume_subdomains
     ]
 

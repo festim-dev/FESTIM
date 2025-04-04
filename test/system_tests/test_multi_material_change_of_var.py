@@ -62,7 +62,7 @@ def generate_mesh(n=20):
     return mesh, mt, ct
 
 
-def test_run():
+def test_run(tmpdir):
     my_model = F.HydrogenTransportProblemDiscontinuousChangeVar()
 
     interface_1 = 0.2
@@ -141,14 +141,14 @@ def test_run():
     my_model.settings.stepsize = F.Stepsize(1)
 
     my_model.exports = [
-        F.VTXSpeciesExport(f"u_{field}_var_change.bp", field=field)
+        F.VTXSpeciesExport(tmpdir + f"/u_{field}_var_change.bp", field=field)
         for field in [H, trapped_H]
     ]
     my_model.initialise()
     my_model.run()
 
 
-def test_2_materials_2d_mms():
+def test_2_materials_2d_mms(tmpdir):
     """
     MMS case for a 2D problem with 2 materials
     adapted from https://festim-vv-report.readthedocs.io/en/v1.0/verification/mms/discontinuity.html
@@ -220,7 +220,7 @@ def test_2_materials_2d_mms():
     my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
-    my_model.exports = [F.VTXSpeciesExport(f"u.bp", field=H)]
+    my_model.exports = [F.VTXSpeciesExport(tmpdir + f"/u.bp", field=H)]
 
     my_model.initialise()
     my_model.run()
