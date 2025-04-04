@@ -46,9 +46,9 @@ from .helpers import (
     get_interpolation_points,
 )
 from .hydrogen_transport_problem import (
-    HTransportProblemDiscontinuous,
-    HTransportProblemPenalty,
+    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblem,
+    HydrogenTransportProblemDiscontinuousChangeVar,
 )
 from .initial_condition import (
     InitialCondition,
@@ -64,7 +64,7 @@ from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVa
 from .reaction import Reaction
 from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
-from .species import ImplicitSpecies, Species, SpeciesChangeVar, find_species_from_name
+from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
 from .subdomain.interface import Interface
 from .subdomain.surface_subdomain import SurfaceSubdomain, find_surface_from_id
