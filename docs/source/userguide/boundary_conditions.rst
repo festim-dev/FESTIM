@@ -130,3 +130,32 @@ Surface reactions
 
 Surface reactions on boundary can be defined with the :class:`festim.SurfaceReactionBC` class.
 
+The surface reaction class can be used to impose dissociation and recombination reactions on the surface of the material.
+
+.. testcode:: BCs
+
+    from festim import Species, SurfaceReactionBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+    H = Species(name="Hydrogen")
+
+    my_bc = SurfaceReactionBC(
+        reactant=H,
+        gas_pressure=1e5,
+        k_r0=1,
+        E_kr=0.1,
+        kd_0=1e-5,
+        E_kd=0.1,
+        subdomain=boundary,
+    )
+
+The :class:`festim.SurfaceReactionBC` class has the following required arguments:
+
+* :code:`reactant`: The species that is involved in the reaction.
+* :code:`gas_pressure`: The gas pressure in Pa.
+* :code:`k_r0`: The pre-exponential factor for the reaction rate in ms\ :sup:`-1` or m\ :sup:`4` s\ :sup:`-1`.
+* :code:`E_kr`: The activation energy for the reaction rate in eV.
+* :code:`kd_0`: The pre-exponential factor for the desorption rate in m\ :sup:`-2` s\ :sup:`-1` Pa\ :sup:`-1`.
+* :code:`E_kd`: The activation energy for the desorption rate in eV.
+* :code:`subdomain`: The subdomain where the reaction is applied.
+
