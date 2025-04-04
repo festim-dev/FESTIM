@@ -8,15 +8,91 @@ The boundary conditions (BCs) are essential to FESTIM simulations. They describe
 If no BC is set on a boundary, it is assumed that the flux is null. This is also called a symmetry BC.
 
 ----------------------
+Heat transfer BCs
+----------------------
+
+Some BCs are specific to heat transfer. FESTIM provides a handful of convenience classes making things a bit easier for the users.
+
+Imposing the temperature
+---------------------------
+
+The temperature can be imposed on boundaries with :class:`festim.FixedTemperatureBC`.
+
+.. testcode:: BCs
+
+    from festim import FixedTemperatureBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+
+    my_bc = FixedTemperatureBC(subdomain=boundary, value=10)
+
+The :class:`festim.FixedTemperatureBC` class has two required arguments:
+
+* :code:`subdomain`: the surface subdomain where the fixed temperature is applied.
+* :code:`value`: The value of the fixed temperature in units K.
+
+The ``subdomain`` argument can be a :class:`festim.Subdomain` object or a list of :class:`festim.Subdomain` objects. 
+The ``value`` argument can be a float, integer, function or a fenics object such as :class:`fem.Constant`, :class:`fem.Function`.
+
+To define the temperature as space or time dependent, a function can be passed to the :code:`value` argument:
+
+.. testcode:: BCs
+
+    from festim import FixedTemperatureBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+    
+    my_custom_value = lambda x, t: 10 + x[0]**2 + t
+
+    my_bc = FixedTemperatureBC(subdomain=boundary, value=my_custom_value)
+
+.. note::
+
+    When defining custom functions for values, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
+    Where spatial coordinates x, y, z = use :code:`x[0]`, :code:`x[1]` and :code:`x[2]`.
+    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
+
+Imposing a heat flux
+--------------------------
+
+When a heat flux needs to be imposed on a boundary, use the :class:`festim.HeatFluxBC` class.
+
+.. testcode:: BCs
+
+    from festim import HeatFluxBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+
+    my_flux_bc = HeatFluxBC(subdomain=boundary, value=5)
+
+The :class:`festim.FixedTemperatureBC` class has two required arguments:
+
+* :code:`subdomain`: the surface subdomain where the heat flux is applied.
+* :code:`value`: The value of the heat flux in units W/m2.
+
+As for the fixed temperature boundary condition, the flux can be dependent on space and time:
+
+.. testcode:: BCs
+
+    from festim import HeatFluxBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+
+    my_custom_value = lambda x, t: 2 * x[0] + 10 * t
+
+    my_flux_bc = HeatFluxBC(subdomain=boundary, value=my_custom_value)
+
+----------------------
 Hydrogen transport BCs
 ----------------------
 
 Some BCs are specific to hydrogen transport. FESTIM provides a handful of convenience classes making things a bit easier for the users.
 
+
 Imposing the concentration
 ---------------------------
 
-The concentraion of a defined species can be imposed on boundaries with :class:`festim.FixedConcentrationBC`.
+The concentration of a defined species can be imposed on boundaries with :class:`festim.FixedConcentrationBC`.
 
 .. testcode:: BCs
 
@@ -29,13 +105,13 @@ The concentraion of a defined species can be imposed on boundaries with :class:`
 
 The :class:`festim.FixedConcentrationBC` class has three required arguments:
 
-* :code:`subdomain`: the surface subdomain where the boundary condition is applied.
-* :code:`value`: The value of the boundary condition. It can be a function of space and/or time (H/m3).
+* :code:`subdomain`: the surface subdomain where the fixed concentration is applied.
+* :code:`value`: The value of the fixed concentration in units m-3.
 * :code:`species`: The species for which the concentration is imposed.
 
-The ``subdomain`` argument can be a :class:`festim.Subdomain` object or a list of :class:`festim.Subdomain` objects. 
 The ``species`` argument can be a single :class:`festim.Species` object or a list of :class:`festim.Species` objects.
-The ``value`` argument can be space and time and temperature dependent:
+
+The imposed concentration can be dependent on space, time and temperature:
 
 .. testcode:: BCs
 
@@ -48,11 +124,6 @@ The ``value`` argument can be space and time and temperature dependent:
 
     my_bc = FixedConcentrationBC(subdomain=boundary, value=my_custom_value, species=H)
 
-.. note::
-
-    When defining custom functions, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
-    Where spatial coordinates x, y, z = use :code:`x[0]`, :code:`x[1]` and :code:`x[2]`. 
-    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
 
 Imposing a particle flux
 --------------------------
@@ -66,11 +137,11 @@ When a particle flux needs to be imposed on a boundary, use the :class:`festim.P
     boundary = SurfaceSubdomain(id=1)
     H = Species(name="Hydrogen")
 
-    my_flux_bc = ParticleFluxBC(subdomain=boundary, value=5, species=H)
+    my_flux_bc = ParticleFluxBC(subdomain=boundary, value=2, species=H)
 
 
-As for the fixed concentration boundary conditions, the flux can be dependent on space, time and temperature. 
-But for fluxes, the values can also be dependent on a speices' concentration:
+As for the fixed concentration boundary condition, the flux can be dependent on space, time and temperature. 
+But for particle fluxes, the values can also be dependent on a species' concentration:
 
 .. testcode:: BCs
 
@@ -78,6 +149,7 @@ But for fluxes, the values can also be dependent on a speices' concentration:
 
     boundary = SurfaceSubdomain(id=1)
     H = Species(name="Hydrogen")
+
     my_custom_value = lambda t, c: 10*t**2 + 2*c
 
     my_flux_bc = ParticleFluxBC(
@@ -172,196 +244,3 @@ The :class:`festim.SurfaceReactionBC` class has the following required arguments
 * :code:`kd_0`: The pre-exponential factor for the desorption rate in m\ :sup:`-2` s\ :sup:`-1` Pa\ :sup:`-1`.
 * :code:`E_kd`: The activation energy for the desorption rate in eV.
 * :code:`subdomain`: The subdomain where the reaction is applied.
-
-
-----------------------
-Heat transfer BCs
-----------------------
-
-Some BCs are specific to hydrogen transport. FESTIM provides a handful of convenience classes making things a bit easier for the users.
-
-Imposing the temperature
----------------------------
-
-The temperature can be imposed on boundaries with :class:`festim.FixedTemperatureBC`.
-
-.. testcode:: BCs
-
-    from festim import FixedTemperatureBC, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-
-    my_bc = FixedTemperatureBC(subdomain=boundary, value=10)
-
-The :class:`festim.FixedTemperatureBC` class has two required arguments:
-
-* :code:`subdomain`: the surface subdomain where the boundary condition is applied.
-* :code:`value`: The value of the boundary condition. It can be a function of space and/or time (H/m3).
-
-In the case of 
-
-.. testcode:: BCs
-
-    from festim import FixedConcentrationBC, Species, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-    H = Species(name="Hydrogen")
-
-    my_custom_value = lambda x, t, T: 10 + x[0]**2 + t + T
-
-    my_bc = FixedConcentrationBC(subdomain=boundary, value=my_custom_value, species=H)
-
-.. note::
-
-    When defining custom functions, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
-    Where spatial coordinates x, y, z = use :code:`x[0]`, :code:`x[1]` and :code:`x[2]`. 
-    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
-
-Imposing a particle flux
---------------------------
-
-When a particle flux needs to be imposed on a boundary, use the :class:`festim.ParticleFlux` class.
-
-.. testcode:: BCs
-
-    from festim import ParticleFluxBC, Species, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-    H = Species(name="Hydrogen")
-
-    my_flux_bc = ParticleFluxBC(subdomain=boundary, value=5, species=H)
-
-
-As for the fixed concentration boundary conditions, the flux can be dependent on space, time and temperature. 
-But for fluxes, the values can also be dependent on a speices' concentration:
-
-.. testcode:: BCs
-
-    from festim import ParticleFluxBC, Species, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-    H = Species(name="Hydrogen")
-    my_custom_value = lambda t, c: 10*t**2 + 2*c
-
-    my_flux_bc = ParticleFluxBC(
-        subdomain=boundary,
-        value=my_custom_value,
-        species=H,
-        species_dependent_value={"c": H},
-    )
-
-.. note::
-
-    The :code:`species_dependent_value` arguement requires a dict to be passed, mapping any arguements in the custom function given to value, to any species defined.
-
-    For instance with three species A, B and C, the dict can be defined as:
-    
-    .. testcode:: BCs
-
-        from festim import Species
-
-        A = Species(name="A")
-        B = Species(name="B")
-        C = Species(name="C")
-
-        my_custom_value = lambda c_A, c_B, c_C: 2*c_A + 3*c_B + 4*c_C
-
-        species_dependent_value = {"c_A": A, "c_B": B, "c_C": C}
-
-----------------------
-Heat transfer BCs
-----------------------
-
-Some BCs are specific to heat transfer. FESTIM provides a handful of convenience classes making things a bit easier for the users.
-
-Imposing the temperature
----------------------------
-
-The concentraion of a defined species can be imposed on boundaries with :class:`festim.FixedTemperatureBC`.
-
-.. testcode:: BCs
-
-    from festim import FixedTemperatureBC, Species, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-
-    my_bc = FixedTemperatureBC(subdomain=boundary, value=10)
-
-The :class:`festim.FixedTemperatureBC` class has two required arguments:
-
-* :code:`subdomain`: the surface subdomain where the boundary condition is applied.
-* :code:`value`: The value of the boundary condition. It can be a function of space and/or time (H/m3).
-* :code:`species`: The species for which the concentration is imposed.
-
-The ``subdomain`` argument can be a :class:`festim.Subdomain` object or a list of :class:`festim.Subdomain` objects. 
-The ``species`` argument can be a single :class:`festim.Species` object or a list of :class:`festim.Species` objects.
-The ``value`` argument can be space and time and temperature dependent:
-
-.. testcode:: BCs
-
-    from festim import FixedConcentrationBC, Species, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-    H = Species(name="Hydrogen")
-
-    my_custom_value = lambda x, t, T: 10 + x[0]**2 + t + T
-
-    my_bc = FixedConcentrationBC(subdomain=boundary, value=my_custom_value, species=H)
-
-.. note::
-
-    When defining custom functions, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
-    Where spatial coordinates x, y, z = use :code:`x[0]`, :code:`x[1]` and :code:`x[2]`. 
-    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
-
-Imposing a particle flux
---------------------------
-
-When a particle flux needs to be imposed on a boundary, use the :class:`festim.ParticleFlux` class.
-
-.. testcode:: BCs
-
-    from festim import ParticleFluxBC, Species, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-    H = Species(name="Hydrogen")
-
-    my_flux_bc = ParticleFluxBC(subdomain=boundary, value=5, species=H)
-
-
-As for the fixed concentration boundary conditions, the flux can be dependent on space, time and temperature. 
-But for fluxes, the values can also be dependent on a speices' concentration:
-
-.. testcode:: BCs
-
-    from festim import ParticleFluxBC, Species, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-    H = Species(name="Hydrogen")
-    my_custom_value = lambda t, c: 10*t**2 + 2*c
-
-    my_flux_bc = ParticleFluxBC(
-        subdomain=boundary,
-        value=my_custom_value,
-        species=H,
-        species_dependent_value={"c": H},
-    )
-
-.. note::
-
-    The :code:`species_dependent_value` arguement requires a dict to be passed, mapping any arguements in the custom function given to value, to any species defined.
-
-    For instance with three species A, B and C, the dict can be defined as:
-    
-    .. testcode:: BCs
-
-        from festim import Species
-
-        A = Species(name="A")
-        B = Species(name="B")
-        C = Species(name="C")
-
-        my_custom_value = lambda c_A, c_B, c_C: 2*c_A + 3*c_B + 4*c_C
-
-        species_dependent_value = {"c_A": A, "c_B": B, "c_C": C}
-
