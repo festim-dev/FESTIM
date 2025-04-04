@@ -41,7 +41,7 @@ To define the temperature as space or time dependent, a function can be passed t
     from festim import FixedTemperatureBC, SurfaceSubdomain
 
     boundary = SurfaceSubdomain(id=1)
-    
+
     my_custom_value = lambda x, t: 10 + x[0]**2 + t
 
     my_bc = FixedTemperatureBC(subdomain=boundary, value=my_custom_value)
@@ -68,7 +68,7 @@ When a heat flux needs to be imposed on a boundary, use the :class:`festim.HeatF
 The :class:`festim.FixedTemperatureBC` class has two required arguments:
 
 * :code:`subdomain`: the surface subdomain where the heat flux is applied.
-* :code:`value`: The value of the heat flux in units W/m2.
+* :code:`value`: The value of the heat flux in units W m\ :sup:`-2`.
 
 As for the fixed temperature boundary condition, the flux can be dependent on space and time:
 
@@ -106,7 +106,7 @@ The concentration of a defined species can be imposed on boundaries with :class:
 The :class:`festim.FixedConcentrationBC` class has three required arguments:
 
 * :code:`subdomain`: the surface subdomain where the fixed concentration is applied.
-* :code:`value`: The value of the fixed concentration in units m-3.
+* :code:`value`: The value of the fixed concentration in units m\ :sup:`-3`.
 * :code:`species`: The species for which the concentration is imposed.
 
 The ``species`` argument can be a single :class:`festim.Species` object or a list of :class:`festim.Species` objects.
@@ -139,6 +139,11 @@ When a particle flux needs to be imposed on a boundary, use the :class:`festim.P
 
     my_flux_bc = ParticleFluxBC(subdomain=boundary, value=2, species=H)
 
+The :class:`festim.ParticleFlux` class has three required arguments:
+
+* :code:`subdomain`: the surface subdomain where the particle flux is applied.
+* :code:`value`: The value of the particle flux in units m\ :sup:`-2` s\ :sup:`-1`.
+* :code:`species`: The species for which the particle flux is imposed.
 
 As for the fixed concentration boundary condition, the flux can be dependent on space, time and temperature. 
 But for particle fluxes, the values can also be dependent on a species' concentration:
@@ -161,7 +166,7 @@ But for particle fluxes, the values can also be dependent on a species' concentr
 
 .. note::
 
-    The :code:`species_dependent_value` arguement requires a dict to be passed, mapping any arguements in the custom function given to value, to any species defined.
+    The :code:`species_dependent_value` argument requires a dict to be passed, mapping any arguments in the custom function given to value, to any species defined.
 
     For instance with three species A, B and C, the dict can be defined as:
     
@@ -194,6 +199,14 @@ Impose the concentration of a species as :math:`c_\mathrm{m} = S(T) \sqrt{P}` wh
 
     my_bc = SievertsBC(subdomain=3, S_0=2, E_S=0.1, species=H, pressure=custom_pressure_value)
 
+The :class:`festim.SievertsBC` class has five required arguments:
+
+* :code:`subdomain`: the surface subdomain where the concentration is applied.
+* :code:`S_0`: The pre-exponential factor for the solubility of the contact material in m\ :sup:`-3` Pa\ :sup:`-0.5`.
+* :code:`E_S`: The activation energy for the solubility of the contact material in eV.
+* :code:`species`: The species for which the particle flux is imposed.
+* :code:`pressure`: The gas pressure in Pa.
+
 
 Henry's law of solubility
 --------------------------
@@ -210,6 +223,15 @@ Similarly, the the concentration of a species can be set from Henry's law of sol
     custom_pressure_value = lambda t: 5 * t
 
     my_bc = HenrysBC(subdomain=3, H_0=1.5, E_H=0.2, species=H, pressure=custom_pressure_value)
+
+The :class:`festim.HenrysBC` class has five required arguments:
+
+* :code:`subdomain`: the surface subdomain where the concentration is applied.
+* :code:`H_0`: The pre-exponential factor for the solubility of the contact material in m\ :sup:`-3` Pa\ :sup:`-1`.
+* :code:`E_H`: The activation energy for the solubility of the contact material in eV.
+* :code:`species`: The species for which the particle flux is imposed.
+* :code:`pressure`: The gas pressure in Pa.
+
 
 Surface reactions
 ------------------
