@@ -106,7 +106,7 @@ Impose the mobile concentration of hydrogen as :math:`c_\mathrm{m} = S(T) \sqrt{
 
     custom_pressure_value = lambda t: 2 + t
 
-    my_bc = SievertsBC(surfaces=3, S_0=2, E_S=0.1, species=H, pressure=custom_pressure_value)
+    my_bc = SievertsBC(subdomain=3, S_0=2, E_S=0.1, species=H, pressure=custom_pressure_value)
 
 Henry's law of solubility
 --------------------------
@@ -121,9 +121,9 @@ Similarly, the mobile concentration can be set from Henry's law of solubility :m
     boundary = SurfaceSubdomain(id=1)
     H = Species(name="Hydrogen")
 
-    custom_pressure_value = lambda t: 5 + t
+    custom_pressure_value = lambda t: 5 * t
 
-    my_bc = HenrysBC(surfaces=3, H_0=1.5, E_H=0.2, species=H, pressure=custom_pressure_value)
+    my_bc = HenrysBC(subdomain=3, H_0=1.5, E_H=0.2, species=H, pressure=custom_pressure_value)
 
 Surface reactions
 ------------------
