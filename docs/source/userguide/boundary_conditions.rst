@@ -86,7 +86,6 @@ But for fluxes, the values can also be dependent on a speices' concentration:
 
     my_hydrogen_bc = ParticleFluxBC(subdomain=boundary, value=5, species=H, species_dependent_value={"c": H})
 
-
 ----------------------
 Hydrogen transport BCs
 ----------------------
@@ -109,7 +108,6 @@ Impose the mobile concentration of hydrogen as :math:`c_\mathrm{m} = S(T) \sqrt{
 
     my_bc = SievertsBC(surfaces=3, S_0=2, E_S=0.1, species=H, pressure=custom_pressure_value)
 
-
 Henry's law of solubility
 --------------------------
 
@@ -127,5 +125,8 @@ Similarly, the mobile concentration can be set from Henry's law of solubility :m
 
     my_bc = HenrysBC(surfaces=3, H_0=1.5, E_H=0.2, species=H, pressure=custom_pressure_value)
 
+Surface reactions
+------------------
 
+Surface reactions on boundary can be defined with the :class:`festim.SurfaceReactionBC` class.
 
