@@ -433,7 +433,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         spe_to_D_global_expr = {}  # links species to D expression
 
         for export in self.exports:
-
             if isinstance(export, exports.SurfaceQuantity):
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
