@@ -8,81 +8,6 @@ The boundary conditions (BCs) are essential to FESTIM simulations. They describe
 If no BC is set on a boundary, it is assumed that the flux is null. This is also called a symmetry BC.
 
 ----------------------
-Heat transfer BCs
-----------------------
-
-Some BCs are specific to heat transfer. FESTIM provides a handful of convenience classes making things a bit easier for the users.
-
-Imposing the temperature
----------------------------
-
-The temperature can be imposed on boundaries with :class:`festim.FixedTemperatureBC`.
-
-.. testcode:: BCs
-
-    from festim import FixedTemperatureBC, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-
-    my_bc = FixedTemperatureBC(subdomain=boundary, value=10)
-
-The :class:`festim.FixedTemperatureBC` class has two required arguments:
-
-* :code:`subdomain`: the surface subdomain where the fixed temperature is applied.
-* :code:`value`: The value of the fixed temperature in units K.
-
-The ``subdomain`` argument can be a :class:`festim.Subdomain` object or a list of :class:`festim.Subdomain` objects. 
-The ``value`` argument can be a float, integer, function or a fenics object such as :class:`fem.Constant`, :class:`fem.Function`.
-
-To define the temperature as space or time dependent, a function can be passed to the :code:`value` argument:
-
-.. testcode:: BCs
-
-    from festim import FixedTemperatureBC, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-
-    my_custom_value = lambda x, t: 10 + x[0]**2 + t
-
-    my_bc = FixedTemperatureBC(subdomain=boundary, value=my_custom_value)
-
-.. note::
-
-    When defining custom functions for values, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
-    Where spatial coordinates x, y, z = use :code:`x[0]`, :code:`x[1]` and :code:`x[2]`.
-    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
-
-Imposing a heat flux
---------------------------
-
-When a heat flux needs to be imposed on a boundary, use the :class:`festim.HeatFluxBC` class.
-
-.. testcode:: BCs
-
-    from festim import HeatFluxBC, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-
-    my_flux_bc = HeatFluxBC(subdomain=boundary, value=5)
-
-The :class:`festim.FixedTemperatureBC` class has two required arguments:
-
-* :code:`subdomain`: the surface subdomain where the heat flux is applied.
-* :code:`value`: The value of the heat flux in units W m\ :sup:`-2`.
-
-As for the fixed temperature boundary condition, the flux can be dependent on space and time:
-
-.. testcode:: BCs
-
-    from festim import HeatFluxBC, SurfaceSubdomain
-
-    boundary = SurfaceSubdomain(id=1)
-
-    my_custom_value = lambda x, t: 2 * x[0] + 10 * t
-
-    my_flux_bc = HeatFluxBC(subdomain=boundary, value=my_custom_value)
-
-----------------------
 Hydrogen transport BCs
 ----------------------
 
@@ -266,3 +191,79 @@ The :class:`festim.SurfaceReactionBC` class has the following required arguments
 * :code:`kd_0`: The pre-exponential factor for the desorption rate in m\ :sup:`-2` s\ :sup:`-1` Pa\ :sup:`-1`.
 * :code:`E_kd`: The activation energy for the desorption rate in eV.
 * :code:`subdomain`: The subdomain where the reaction is applied.
+
+
+----------------------
+Heat transfer BCs
+----------------------
+
+Some BCs are specific to heat transfer. FESTIM provides a handful of convenience classes making things a bit easier for the users.
+
+Imposing the temperature
+---------------------------
+
+The temperature can be imposed on boundaries with :class:`festim.FixedTemperatureBC`.
+
+.. testcode:: BCs
+
+    from festim import FixedTemperatureBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+
+    my_bc = FixedTemperatureBC(subdomain=boundary, value=10)
+
+The :class:`festim.FixedTemperatureBC` class has two required arguments:
+
+* :code:`subdomain`: the surface subdomain where the fixed temperature is applied.
+* :code:`value`: The value of the fixed temperature in units K.
+
+The ``subdomain`` argument can be a :class:`festim.Subdomain` object or a list of :class:`festim.Subdomain` objects. 
+The ``value`` argument can be a float, integer, function or a fenics object such as :class:`fem.Constant`, :class:`fem.Function`.
+
+To define the temperature as space or time dependent, a function can be passed to the :code:`value` argument:
+
+.. testcode:: BCs
+
+    from festim import FixedTemperatureBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+
+    my_custom_value = lambda x, t: 10 + x[0]**2 + t
+
+    my_bc = FixedTemperatureBC(subdomain=boundary, value=my_custom_value)
+
+.. note::
+
+    When defining custom functions for values, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
+    Where spatial coordinates x, y, z = use :code:`x[0]`, :code:`x[1]` and :code:`x[2]`.
+    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
+
+Imposing a heat flux
+--------------------------
+
+When a heat flux needs to be imposed on a boundary, use the :class:`festim.HeatFluxBC` class.
+
+.. testcode:: BCs
+
+    from festim import HeatFluxBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+
+    my_flux_bc = HeatFluxBC(subdomain=boundary, value=5)
+
+The :class:`festim.FixedTemperatureBC` class has two required arguments:
+
+* :code:`subdomain`: the surface subdomain where the heat flux is applied.
+* :code:`value`: The value of the heat flux in units W m\ :sup:`-2`.
+
+As for the fixed temperature boundary condition, the flux can be dependent on space and time:
+
+.. testcode:: BCs
+
+    from festim import HeatFluxBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+
+    my_custom_value = lambda x, t: 2 * x[0] + 10 * t
+
+    my_flux_bc = HeatFluxBC(subdomain=boundary, value=my_custom_value)
