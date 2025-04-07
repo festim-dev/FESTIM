@@ -20,6 +20,7 @@ class VolumeSubdomain1D(VolumeSubdomain):
         material (festim.Material): the material of the volume subdomain
 
     Usage:
+        >>> import festim as F
         >>> vol_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1],
         ...     material=F.Material(...))
     """

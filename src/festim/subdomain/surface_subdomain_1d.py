@@ -17,6 +17,7 @@ class SurfaceSubdomain1D(SurfaceSubdomain):
         x (float): the x coordinate of the surface subdomain
 
     Usage:
+        >>> import festim as F
         >>> surf_subdomain = F.SurfaceSubdomain1D(id=1, x=1)
     """
 
