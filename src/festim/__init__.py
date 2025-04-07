@@ -45,10 +45,11 @@ from .helpers import (
     as_mapped_function,
     get_interpolation_points,
 )
+from .problem import ProblemBase
 from .hydrogen_transport_problem import (
-    HTransportProblemDiscontinuous,
-    HTransportProblemPenalty,
+    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblem,
+    HydrogenTransportProblemDiscontinuousChangeVar,
 )
 from .initial_condition import (
     InitialCondition,
@@ -59,12 +60,10 @@ from .material import Material
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
-from .problem import ProblemBase
-from .problem_change_of_var import HydrogenTransportProblemDiscontinuousChangeVar
 from .reaction import Reaction
 from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
-from .species import ImplicitSpecies, Species, SpeciesChangeVar, find_species_from_name
+from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
 from .subdomain.interface import Interface
 from .subdomain.surface_subdomain import SurfaceSubdomain, find_surface_from_id
