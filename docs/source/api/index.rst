@@ -10,3 +10,4 @@ FESTIM API
    boundary_conditions
    exports
    mesh
+   subdomains
