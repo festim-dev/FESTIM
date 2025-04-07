@@ -166,9 +166,9 @@ But for particle fluxes, the values can also be dependent on a species' concentr
 
 .. note::
 
-    The :code:`species_dependent_value` argument requires a dict to be passed, mapping any arguments in the custom function given to value, to any species defined.
+    The :code:`species_dependent_value` argument requires a dictionary to be passed, mapping any arguments in the custom function given to value, to any species defined.
 
-    For instance with three species A, B and C, the dict can be defined as:
+    For instance with three species A, B and C, the dictionary can be defined as:
     
     .. testcode:: BCs
 
@@ -186,7 +186,7 @@ But for particle fluxes, the values can also be dependent on a species' concentr
 Sievert's law of solubility
 ----------------------------
 
-Impose the concentration of a species as :math:`c_\mathrm{m} = S(T) \sqrt{P}` where :math:`S` is the Sievert's solubility and :math:`P` is the partial pressure of hydrogen (see :class:`festim.SievertsBC`).
+Impose the concentration of a species as :math:`c_\mathrm{m} = S(T) \sqrt{P}` where :math:`S` is the Sievert's solubility and :math:`P` is the partial pressure of the species on this surface (see :class:`festim.SievertsBC`).
 
 .. testcode:: BCs
 
@@ -220,9 +220,9 @@ Similarly, the the concentration of a species can be set from Henry's law of sol
     boundary = SurfaceSubdomain(id=1)
     H = Species(name="Hydrogen")
 
-    custom_pressure_value = lambda t: 5 * t
+    pressure_value = lambda t: 5 * t
 
-    my_bc = HenrysBC(subdomain=3, H_0=1.5, E_H=0.2, species=H, pressure=custom_pressure_value)
+    my_bc = HenrysBC(subdomain=3, H_0=1.5, E_H=0.2, species=H, pressure=pressure_value)
 
 The :class:`festim.HenrysBC` class has five required arguments:
 
