@@ -28,14 +28,6 @@ The concentration of a defined species can be imposed on boundaries with :class:
 
     my_bc = FixedConcentrationBC(subdomain=boundary, value=10, species=H)
 
-The :class:`festim.FixedConcentrationBC` class has three required arguments:
-
-* :code:`subdomain`: the surface subdomain where the fixed concentration is applied.
-* :code:`value`: The value of the fixed concentration in units m\ :sup:`-3`.
-* :code:`species`: The species for which the concentration is imposed.
-
-The ``species`` argument can be a single :class:`festim.Species` object or a list of :class:`festim.Species` objects.
-
 The imposed concentration can be dependent on space, time and temperature:
 
 .. testcode:: BCs
@@ -63,12 +55,6 @@ When a particle flux needs to be imposed on a boundary, use the :class:`festim.P
     H = Species(name="Hydrogen")
 
     my_flux_bc = ParticleFluxBC(subdomain=boundary, value=2, species=H)
-
-The :class:`festim.ParticleFlux` class has three required arguments:
-
-* :code:`subdomain`: the surface subdomain where the particle flux is applied.
-* :code:`value`: The value of the particle flux in units m\ :sup:`-2` s\ :sup:`-1`.
-* :code:`species`: The species for which the particle flux is imposed.
 
 As for the fixed concentration boundary condition, the flux can be dependent on space, time and temperature. 
 But for particle fluxes, the values can also be dependent on a species' concentration:
@@ -124,14 +110,6 @@ Impose the concentration of a species as :math:`c_\mathrm{m} = S(T) \sqrt{P}` wh
 
     my_bc = SievertsBC(subdomain=3, S_0=2, E_S=0.1, species=H, pressure=custom_pressure_value)
 
-The :class:`festim.SievertsBC` class has five required arguments:
-
-* :code:`subdomain`: the surface subdomain where the concentration is applied.
-* :code:`S_0`: The pre-exponential factor for the solubility of the contact material in m\ :sup:`-3` Pa\ :sup:`-0.5`.
-* :code:`E_S`: The activation energy for the solubility of the contact material in eV.
-* :code:`species`: The species for which the particle flux is imposed.
-* :code:`pressure`: The gas pressure in Pa.
-
 
 Henry's law of solubility
 --------------------------
@@ -148,14 +126,6 @@ Similarly, the the concentration of a species can be set from Henry's law of sol
     pressure_value = lambda t: 5 * t
 
     my_bc = HenrysBC(subdomain=3, H_0=1.5, E_H=0.2, species=H, pressure=pressure_value)
-
-The :class:`festim.HenrysBC` class has five required arguments:
-
-* :code:`subdomain`: the surface subdomain where the concentration is applied.
-* :code:`H_0`: The pre-exponential factor for the solubility of the contact material in m\ :sup:`-3` Pa\ :sup:`-1`.
-* :code:`E_H`: The activation energy for the solubility of the contact material in eV.
-* :code:`species`: The species for which the particle flux is imposed.
-* :code:`pressure`: The gas pressure in Pa.
 
 
 Surface reactions
@@ -182,16 +152,6 @@ The surface reaction class can be used to impose dissociation and recombination 
         subdomain=boundary,
     )
 
-The :class:`festim.SurfaceReactionBC` class has the following required arguments:
-
-* :code:`reactant`: The species that is involved in the reaction.
-* :code:`gas_pressure`: The gas pressure in Pa.
-* :code:`k_r0`: The pre-exponential factor for the reaction rate in ms\ :sup:`-1` or m\ :sup:`4` s\ :sup:`-1`.
-* :code:`E_kr`: The activation energy for the reaction rate in eV.
-* :code:`kd_0`: The pre-exponential factor for the desorption rate in m\ :sup:`-2` s\ :sup:`-1` Pa\ :sup:`-1`.
-* :code:`E_kd`: The activation energy for the desorption rate in eV.
-* :code:`subdomain`: The subdomain where the reaction is applied.
-
 
 ----------------------
 Heat transfer BCs
@@ -212,13 +172,6 @@ The temperature can be imposed on boundaries with :class:`festim.FixedTemperatur
 
     my_bc = FixedTemperatureBC(subdomain=boundary, value=10)
 
-The :class:`festim.FixedTemperatureBC` class has two required arguments:
-
-* :code:`subdomain`: the surface subdomain where the fixed temperature is applied.
-* :code:`value`: The value of the fixed temperature in units K.
-
-The ``subdomain`` argument can be a :class:`festim.Subdomain` object or a list of :class:`festim.Subdomain` objects. 
-The ``value`` argument can be a float, integer, function or a fenics object such as :class:`fem.Constant`, :class:`fem.Function`.
 
 To define the temperature as space or time dependent, a function can be passed to the :code:`value` argument:
 
@@ -251,10 +204,6 @@ When a heat flux needs to be imposed on a boundary, use the :class:`festim.HeatF
 
     my_flux_bc = HeatFluxBC(subdomain=boundary, value=5)
 
-The :class:`festim.FixedTemperatureBC` class has two required arguments:
-
-* :code:`subdomain`: the surface subdomain where the heat flux is applied.
-* :code:`value`: The value of the heat flux in units W m\ :sup:`-2`.
 
 As for the fixed temperature boundary condition, the flux can be dependent on space and time:
 
