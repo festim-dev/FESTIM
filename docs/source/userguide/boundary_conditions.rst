@@ -1,4 +1,4 @@
-.. _boundary conditions:
+.. _boundary_conditions:
 
 ===================
 Boundary conditions
@@ -11,9 +11,9 @@ All boundary conditions in FESTIM require a surface subdomain.
 The subdomain can be a surface, an edge or a point and can be defined with the :class:`festim.SurfaceSubdomain` class.
 See the :ref:`Surface Subdomains` section for more information on how to define subdomains.
 
-----------------------
+-----------------------
 Hydrogen transport BCs
-----------------------
+-----------------------
 
 Some BCs are specific to hydrogen transport. FESTIM provides a handful of convenience classes making things a bit easier for the users.
 
@@ -45,6 +45,11 @@ The imposed concentration can be dependent on space, time and temperature:
 
     my_bc = FixedConcentrationBC(subdomain=boundary, value=my_custom_value, species=H)
 
+.. note::
+
+    When defining custom functions for values, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
+    Spatial coordinates can be referred to by their indices, such as :code:`x[0]`, :code:`x[1]`, and :code:`x[2]`, regardless of the coordinate system used.
+    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
 
 Imposing a particle flux
 --------------------------
@@ -189,11 +194,6 @@ To define the temperature as space or time dependent, a function can be passed t
 
     my_bc = FixedTemperatureBC(subdomain=boundary, value=my_custom_value)
 
-.. note::
-
-    When defining custom functions for values, only the arguments :code:`x`, :code:`t` and :code:`T` can be defined. 
-    Where spatial coordinates x, y, z = use :code:`x[0]`, :code:`x[1]` and :code:`x[2]`.
-    Time dependence must use :code:`t`, and :code:`T` for temperature dependence.
 
 Imposing a heat flux
 --------------------------
