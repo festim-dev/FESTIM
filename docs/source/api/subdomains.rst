@@ -1,8 +1,8 @@
 .. _subdomains_api:
 
-===================
+==========
 Subdomains
-===================
+==========
 
 .. currentmodule:: festim
 

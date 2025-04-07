@@ -1,8 +1,8 @@
 .. _species_api:
 
-===================
+========
 Species
-===================
+========
 
 .. currentmodule:: festim
 
