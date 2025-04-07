@@ -31,8 +31,7 @@ def test_error_raised_when_wrong_hydrogen_problem_given(object):
 @pytest.mark.parametrize(
     "object",
     [
-        F.HTransportProblemDiscontinuous(),
-        F.HTransportProblemPenalty(),
+        F.HydrogenTransportProblemDiscontinuous(),
         F.HydrogenTransportProblemDiscontinuousChangeVar(),
     ],
 )
@@ -45,9 +44,8 @@ def test_error_raised_when_wrong_type_hydrogen_problem_given(object):
     with pytest.raises(
         NotImplementedError,
         match="Coupled heat transfer - hydrogen transport simulations with "
-        "HydrogenTransportProblemDiscontinuousChangeVar, "
-        "HTransportProblemPenalty or"
-        "HydrogenTransportProblemDiscontinuousChangeVar, "
+        "HydrogenTransportProblemDiscontinuousChangeVar or"
+        "HydrogenTransportProblemDiscontinuous"
         "not currently supported",
     ):
         F.CoupledTransientHeatTransferHydrogenTransport(

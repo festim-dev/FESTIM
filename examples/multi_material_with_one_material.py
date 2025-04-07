@@ -2,7 +2,7 @@ import numpy as np
 
 import festim as F
 
-my_model = F.HTransportProblemDiscontinuous()
+my_model = F.HydrogenTransportProblemDiscontinuous()
 
 
 N = 1500
