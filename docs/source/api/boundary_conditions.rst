@@ -38,6 +38,10 @@ Boundary conditions
     :members:
     :show-inheritance:
 
+.. autoclass:: SurfaceReactionBCpartial
+    :members:
+    :show-inheritance:
+
 .. autoclass:: SurfaceReactionBC
     :members:
     :show-inheritance:
