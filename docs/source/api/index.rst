@@ -6,12 +6,20 @@ FESTIM API
     🔨 This page is under construction. 🔨
 
 
-.. automodule:: festim.boundary_conditions
-    :members:
-    :show-inheritance:
-    :exclude-members: __weakref__
-    :private-members:
-    :inherited-members:
+.. toctree::
+   :maxdepth: 4
+   :caption: Contents:
+
+   subdomains
+   species
+   boundary_conditions
+
+.. .. automodule:: festim.boundary_csonditions
+..   :members:
+..   :show-inheritance:
+..   :exclude-members: __weakref__
+..   :private-members:
+..   :inherited-members:
 
 
 .. .. automodule:: festim.hydrogen_transport_problem
