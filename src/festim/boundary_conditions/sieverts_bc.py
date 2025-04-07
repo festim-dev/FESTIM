@@ -34,12 +34,18 @@ class SievertsBC(F.DirichletBC):
         pressure (float or callable): the pressure at the boundary (Pa)
 
     Usage:
-        >>> from festim import SievertsBC
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=1e5, species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x: 1e5 + x[0], species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda t: 1e5 + t, species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda T: 1e5 + T, species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
+        .. testsetup::
+
+            from festim import SievertsBC, SurfaceSubdomain
+            my_subdomain = SurfaceSubdomain(id=1)
+
+        .. testcode::
+
+            bc = SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=1e5, species="H")
+            bc = SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x: 1e5 + x[0], species="H")
+            bc = SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda t: 1e5 + t, species="H")
+            bc = SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda T: 1e5 + T, species="H")
+            bc = SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
     """
 
     def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
