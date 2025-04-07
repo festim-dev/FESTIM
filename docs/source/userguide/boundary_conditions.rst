@@ -7,6 +7,10 @@ Boundary conditions
 The boundary conditions (BCs) are essential to FESTIM simulations. They describe the mathematical problem at the boundaries of the simulated domain.
 If no BC is set on a boundary, it is assumed that the flux is null. This is also called a symmetry BC.
 
+All boundary conditions in FESTIM require a surface subdomain. 
+The subdomain can be a surface, an edge or a point and can be defined with the :class:`festim.SurfaceSubdomain` class.
+See the :ref:`Surface Subdomains` section for more information on how to define subdomains.
+
 ----------------------
 Hydrogen transport BCs
 ----------------------
@@ -45,7 +49,7 @@ The imposed concentration can be dependent on space, time and temperature:
 Imposing a particle flux
 --------------------------
 
-When a particle flux needs to be imposed on a boundary, use the :class:`festim.ParticleFlux` class.
+When a particle flux needs to be imposed on a boundary, use the :class:`festim.ParticleFluxBC` class.
 
 .. testcode:: BCs
 
