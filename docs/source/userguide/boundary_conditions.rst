@@ -209,7 +209,8 @@ When a heat flux needs to be imposed on a boundary, use the :class:`festim.HeatF
     my_flux_bc = HeatFluxBC(subdomain=boundary, value=5)
 
 
-As for the fixed temperature boundary condition, the flux can be dependent on space and time:
+As for the fixed temperature boundary condition, the flux can be dependent on space and time.
+But for heat fluxes, the values can also be dependent on a temperature:
 
 .. testcode:: BCs
 
@@ -217,6 +218,6 @@ As for the fixed temperature boundary condition, the flux can be dependent on sp
 
     boundary = SurfaceSubdomain(id=1)
 
-    my_custom_value = lambda x, t: 2 * x[0] + 10 * t
+    my_custom_value = lambda x, t, T: 2 * x[0] + 10 * t + T
 
     my_flux_bc = HeatFluxBC(subdomain=boundary, value=my_custom_value)
