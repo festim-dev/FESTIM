@@ -9,7 +9,6 @@ except Exception:
 R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
 
-
 from .advection import AdvectionTerm, VelocityField
 from .boundary_conditions.dirichlet_bc import (
     DirichletBC,
@@ -45,10 +44,9 @@ from .helpers import (
     as_mapped_function,
     get_interpolation_points,
 )
-from .problem import ProblemBase
 from .hydrogen_transport_problem import (
-    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblem,
+    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblemDiscontinuousChangeVar,
 )
 from .initial_condition import (
@@ -60,6 +58,7 @@ from .material import Material
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
+from .problem import ProblemBase
 from .reaction import Reaction
 from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
