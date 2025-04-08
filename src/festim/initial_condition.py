@@ -26,11 +26,18 @@ class InitialCondition:
             fenics format
 
     Usage:
-        >>> from festim import InitialCondition
-        >>> InitialCondition(value=1, species=my_species)
-        >>> InitialCondition(value=lambda x: 1 + x[0], species=my_species)
-        >>> InitialCondition(value=lambda T: 1 + T, species=my_species)
-        >>> InitialCondition(value=lambda x, T: 1 + x[0] + T, species=my_species)
+
+        .. testsetup:: InitialCondition
+
+            from festim import InitialCondition, Species
+            my_species = Species(name='test')
+
+        .. testcode:: InitialCondition
+
+            InitialCondition(value=1, species=my_species)
+            InitialCondition(value=lambda x: 1 + x[0], species=my_species)
+            InitialCondition(value=lambda T: 1 + T, species=my_species)
+            InitialCondition(value=lambda x, T: 1 + x[0] + T, species=my_species)
     """
 
     expr_fenics: Union[Callable, fem.Expression]

@@ -22,3 +22,27 @@ API reference
 .. automodule:: festim.advection
     :members:
     :show-inheritance:
+
+.. automodule:: festim.coupled_heat_hydrogen_problem
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.heat_transfer_problem
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.helpers_discontinuity
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.helpers
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.hydrogen_transport_problem
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.initial_condition
+    :members:
+    :show-inheritance:
