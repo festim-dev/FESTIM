@@ -10,3 +10,7 @@ API reference
 .. automodule:: festim.exports
     :members:
     :show-inheritance:
+
+.. automodule:: festim.mesh
+    :members:
+    :show-inheritance:
