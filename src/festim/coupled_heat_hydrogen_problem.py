@@ -2,10 +2,10 @@ import tqdm.autonotebook
 from dolfinx import fem
 
 from festim.heat_transfer_problem import HeatTransferProblem
-from festim.helpers import as_fenics_constant, nmm_interpolate
+from festim.helpers import nmm_interpolate
 from festim.hydrogen_transport_problem import (
-    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblem,
+    HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblemDiscontinuousChangeVar,
 )
 
@@ -24,29 +24,20 @@ class CoupledTransientHeatTransferHydrogenTransport:
         non_matching_meshes: True if the meshes in the heat_problem and hydrogen_problem
             are not matching
 
-    Examples:
-        .. highlight:: python
-        .. code-block:: python
+    Usage:
+        .. code:: python
 
             import festim as F
 
-            my_heat_transfer_model = F.HeatTransferProblem(
-                mesh=F.Mesh(...),
-                subdomains=[F.Subdomain(...)],
-                ...
-            )
+            my_heat_transfer_model = F.HeatTransferProblem(...)
 
-            my_h_transport_model = F.HydrogenTransportProblem(
-                mesh=F.Mesh(...),
-                subdomains=[F.Subdomain(...)],
-                species=[F.Species(name="H"), F.Species(name="Trap")],
-                ...
-            )
+            my_h_transport_model = F.HydrogenTransportProblem(...)
 
-            coupled_problem = F.CoupledHeatTransferHydrogenTransport(
+            coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
                 heat_problem=my_heat_transfer_model,
                 hydrogen_problem=my_h_transport_model,
             )
+
 
     """
 
