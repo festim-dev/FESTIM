@@ -50,3 +50,11 @@ API reference
 .. automodule:: festim.material
     :members:
     :show-inheritance:
+
+.. automodule:: festim.problem
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.reaction
+    :members:
+    :show-inheritance:
