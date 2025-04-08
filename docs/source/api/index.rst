@@ -18,3 +18,7 @@ API reference
 .. automodule:: festim.subdomain
     :members:
     :show-inheritance:
+
+.. automodule:: festim.advection
+    :members:
+    :show-inheritance:
