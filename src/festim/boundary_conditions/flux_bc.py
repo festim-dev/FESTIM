@@ -159,16 +159,21 @@ class ParticleFluxBC(FluxBCBase):
 
 
     Usage:
-    .. testcode::
 
-        from festim import ParticleFluxBC
+        .. testsetup:: ParticleFluxBC
 
-        ParticleFluxBC(subdomain=my_subdomain, value=1, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2, species="H", species_dependent_value={"c1": species1})
+            from festim import SurfaceSubdomain, ParticleFluxBC, Species
+            my_subdomain = SurfaceSubdomain(id=1)
+            species1 = Species(name="1")
+
+        .. testcode:: ParticleFluxBC
+
+            ParticleFluxBC(subdomain=my_subdomain, value=1, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2, species="H", species_dependent_value={"c1": species1})
     """
 
     def __init__(self, subdomain, value, species, species_dependent_value={}):
@@ -243,13 +248,19 @@ class HeatFluxBC(FluxBCBase):
 
 
     Usage:
-    .. testcode::
 
-        from festim import HeatFluxBC
-        HeatFluxBC(subdomain=my_subdomain, value=1)
-        HeatFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0])
-        HeatFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t)
-        HeatFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t)
+        .. testsetup:: HeatFluxBC
+
+                from festim import SurfaceSubdomain, HeatFluxBC, Species
+                my_subdomain = SurfaceSubdomain(id=1)
+                species1 = Species(name="1")
+
+        .. testcode:: HeatFluxBC
+
+            HeatFluxBC(subdomain=my_subdomain, value=1)
+            HeatFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0])
+            HeatFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t)
+            HeatFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t)
     """
 
     def __init__(self, subdomain, value):
