@@ -17,7 +17,14 @@ class SurfaceSubdomain1D(SurfaceSubdomain):
         x (float): the x coordinate of the surface subdomain
 
     Usage:
-        >>> surf_subdomain = F.SurfaceSubdomain1D(id=1, x=1)
+
+        .. testsetup:: SurfaceSubdomain1D
+
+            from festim import SurfaceSubdomain1D
+
+        .. testcode:: SurfaceSubdomain1D
+
+            SurfaceSubdomain1D(id=1, x=1)
     """
 
     # FIXME: Rename this to _id and use getter/setter
