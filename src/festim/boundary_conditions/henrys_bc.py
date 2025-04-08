@@ -1,15 +1,16 @@
 import ufl
 
-import festim as F
+from festim import k_B
+from festim.boundary_conditions import FixedConcentrationBC
 
 
 def henrys_law(T, H_0, E_H, pressure):
     """Applies the Henry's law to compute the concentration at the boundary"""
-    H = H_0 * ufl.exp(-E_H / F.k_B / T)
+    H = H_0 * ufl.exp(-E_H / k_B / T)
     return H * pressure
 
 
-class HenrysBC(F.DirichletBC):
+class HenrysBC(FixedConcentrationBC):
     """
     Henrys boundary condition class
 

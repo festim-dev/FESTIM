@@ -1,6 +1,6 @@
 from dolfinx import fem
 
-from .surface_quantity import SurfaceQuantity
+from festim.exports.surface_quantity import SurfaceQuantity
 
 
 class AverageSurface(SurfaceQuantity):

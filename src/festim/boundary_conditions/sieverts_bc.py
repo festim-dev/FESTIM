@@ -1,15 +1,16 @@
 import ufl
 
-import festim as F
+from festim import k_B
+from festim.boundary_conditions import FixedConcentrationBC
 
 
 def sieverts_law(T, S_0, E_S, pressure):
     """Applies the Sieverts law to compute the concentration at the boundary"""
-    S = S_0 * ufl.exp(-E_S / F.k_B / T)
+    S = S_0 * ufl.exp(-E_S / k_B / T)
     return S * pressure**0.5
 
 
-class SievertsBC(F.DirichletBC):
+class SievertsBC(FixedConcentrationBC):
     """
     Sieverts boundary condition class
 
