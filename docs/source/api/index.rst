@@ -58,3 +58,15 @@ API reference
 .. automodule:: festim.reaction
     :members:
     :show-inheritance:
+
+.. automodule:: festim.settings
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.source
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.species
+    :members:
+    :show-inheritance:
