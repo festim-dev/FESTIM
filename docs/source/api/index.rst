@@ -70,3 +70,11 @@ API reference
 .. automodule:: festim.species
     :members:
     :show-inheritance:
+
+.. automodule:: festim.stepsize
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.trap
+    :members:
+    :show-inheritance:
