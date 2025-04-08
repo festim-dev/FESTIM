@@ -37,9 +37,17 @@ class Material:
         heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
 
     Usage:
-        >>> my_mat = Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
-    or if several species:
-        >>> my_mat = Material(
+        .. testsetup:: Material
+
+            from festim import Material
+
+        .. testcode:: Material
+
+            # if only one species:
+            Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
+
+            # if several species:
+            Material(
                 D_0={"Species_1": 1.9e-7, "Species_2": 2.0e-7},
                 E_D={"Species_1": 0.2, "Species_2": 0.3},
                 name="my_mat"

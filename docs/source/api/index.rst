@@ -46,3 +46,7 @@ API reference
 .. automodule:: festim.initial_condition
     :members:
     :show-inheritance:
+
+.. automodule:: festim.material
+    :members:
+    :show-inheritance:
