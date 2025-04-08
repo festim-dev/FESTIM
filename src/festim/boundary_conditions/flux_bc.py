@@ -3,6 +3,7 @@ import ufl
 from dolfinx import fem
 
 import festim as F
+from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class FluxBCBase:
@@ -10,8 +11,14 @@ class FluxBCBase:
     Flux boundary condition class
 
     Ensuring the gradient of the solution u at a boundary:
-    -A * grad(u) * n = f
-    where A is some material property (diffusivity for particle flux and thermal conductivity for heat flux), n is the outwards normal vector of the boundary, f is a function of space and time.
+
+    .. math::
+
+        -A \\nabla u \\cdot \\mathbf{n} = f
+
+    where :math:`A` is some material property (diffusivity for particle flux and thermal
+    conductivity for heat flux), :math:`\\mathbf{n}` is the outwards normal vector of
+    the boundary, :math:`f` is a function of space and time.
 
 
     Args:
@@ -30,7 +37,7 @@ class FluxBCBase:
 
     """
 
-    def __init__(self, subdomain, value):
+    def __init__(self, subdomain: SurfaceSubdomain, value):
         self.subdomain = subdomain
         self.value = value
 
@@ -47,10 +54,10 @@ class FluxBCBase:
             self._value_fenics = value
             return
         if not isinstance(
-            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
+            value, fem.Function | fem.Constant | np.ndarray | ufl.core.expr.Expr
         ):
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not {type(value)}"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not {type(value)}"  # noqa: E501
             )
         self._value_fenics = value
 
