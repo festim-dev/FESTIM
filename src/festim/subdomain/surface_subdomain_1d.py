@@ -1,7 +1,7 @@
 import dolfinx.mesh
 import numpy as np
 
-from .surface_subdomain import SurfaceSubdomain
+from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class SurfaceSubdomain1D(SurfaceSubdomain):

@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 from dolfinx.mesh import Mesh, locate_entities
 
-from festim.subdomain import VolumeSubdomain
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class VolumeSubdomain1D(VolumeSubdomain):

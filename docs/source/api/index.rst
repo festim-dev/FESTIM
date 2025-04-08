@@ -14,3 +14,7 @@ API reference
 .. automodule:: festim.mesh
     :members:
     :show-inheritance:
+
+.. automodule:: festim.subdomain
+    :members:
+    :show-inheritance:
