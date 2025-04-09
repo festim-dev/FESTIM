@@ -18,7 +18,6 @@ class Trap(_Species):
         E_p (float): the detrapping rate constant activation energy (eV)
         volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
 
-
     Attributes:
         name (str, optional): a name given to the trap. Defaults to None.
         mobile_species (_Species): the mobile species to be trapped
@@ -31,48 +30,61 @@ class Trap(_Species):
         trap_reaction (_Reaction): The reaction for trapping the mobile conc.
         empty_trap_sites (F.ImplicitSpecies): The implicit species for the empty trap sites
 
-    Usage:
-        >>> import festim as F
-        >>> trap = F.Trap(name="Trap", species=H, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, volume=my_vol)
-        >>> trap.name
-        'Trap'
-        >>> my_model = F.HydorgenTransportProblem()
-        >>> my_model.traps = [trap]
+    Examples:
+
+        .. testsetup:: Trap
+
+            from festim import Trap, Species, VolumeSubdomain, Material, HydrogenTransportProblem
+
+            my_mat = Material(D_0=1, E_D=1, name="test_mat")
+            my_vol = VolumeSubdomain(id=1, material=my_mat)
+            H = Species(name="H")
+
+        .. testcode:: Trap
+
+            trap = Trap(name="Trap", mobile_species=H, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, n=100, volume=my_vol)
+
+            my_model = HydrogenTransportProblem()
+            my_model.traps = [trap]
 
     Notes:
         This convenience class replaces the need to specify an implicit species and
         the associated reaction, thus:
 
-        cm = _Species("mobile")
-        my_trap = F.Trap(
-            name="trapped",
-            mobile_species=cm,
-            k_0=1,
-            E_k=1,
-            p_0=1,
-            E_p=1,
-            n=1,
-            volume=my_vol,
-        )
-        my_model.species = [cm]
-        my_model.traps = [my_trap]
+        .. code:: python
+
+            cm = _Species("mobile")
+            my_trap = F.Trap(
+                name="trapped",
+                mobile_species=cm,
+                k_0=1,
+                E_k=1,
+                p_0=1,
+                E_p=1,
+                n=1,
+                volume=my_vol,
+            )
+            my_model.species = [cm]
+            my_model.traps = [my_trap]
 
         is equivalent to:
 
-        cm = _Species("mobile")
-        ct = _Species("trapped")
-        trap_sites = F.ImplicitSpecies(n=1, others=[ct])
-        trap_reaction = _Reaction(
-            reactant=[cm, trap_sites],
-            product=ct,
-            k_0=1,
-            E_k=1,
-            p_0=1,
-            E_p=1,
-            volume=my_vol,
-        )
-        my_model.species = [cm, ct]
-        my_model.reactions = [trap_reaction]
+        .. code:: python
+
+            cm = _Species("mobile")
+            ct = _Species("trapped")
+            trap_sites = F.ImplicitSpecies(n=1, others=[ct])
+            trap_reaction = _Reaction(
+                reactant=[cm, trap_sites],
+                product=ct,
+                k_0=1,
+                E_k=1,
+                p_0=1,
+                E_p=1,
+                volume=my_vol,
+            )
+            my_model.species = [cm, ct]
+            my_model.reactions = [trap_reaction]
 
 
     """

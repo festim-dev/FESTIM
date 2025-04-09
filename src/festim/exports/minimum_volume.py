@@ -2,7 +2,7 @@ from mpi4py import MPI
 
 import numpy as np
 
-from festim.exports import VolumeQuantity
+from festim.exports.volume_quantity import VolumeQuantity
 
 
 class MinimumVolume(VolumeQuantity):

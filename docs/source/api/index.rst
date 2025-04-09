@@ -1,38 +1,80 @@
-FESTIM API
-==========
-
-.. warning::
-
-    🔨 This page is under construction. 🔨
+#############
+API reference
+#############
 
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+.. automodule:: festim.boundary_conditions
+    :members:
+    :show-inheritance:
 
-   subdomains
-   species
-   boundary_conditions
+.. automodule:: festim.exports
+    :members:
+    :show-inheritance:
 
-.. .. automodule:: festim.boundary_csonditions
-..   :members:
-..   :show-inheritance:
-..   :exclude-members: __weakref__
-..   :private-members:
-..   :inherited-members:
+.. automodule:: festim.mesh
+    :members:
+    :show-inheritance:
 
+.. automodule:: festim.subdomain
+    :members:
+    :show-inheritance:
 
-.. .. automodule:: festim.hydrogen_transport_problem
-..     :members:
-..     :show-inheritance:
-..     :exclude-members: __weakref__
-..     :private-members:
-..     :inherited-members:
+.. automodule:: festim.advection
+    :members:
+    :show-inheritance:
 
+.. automodule:: festim.coupled_heat_hydrogen_problem
+    :members:
+    :show-inheritance:
 
+.. automodule:: festim.heat_transfer_problem
+    :members:
+    :show-inheritance:
 
-.. .. automodule:: festim.heat_transfer_problem
-..     :members:
-..     :show-inheritance:
-..     :exclude-members: __weakref__
-..     :inherited-members:
+.. automodule:: festim.helpers_discontinuity
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.helpers
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.hydrogen_transport_problem
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.initial_condition
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.material
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.problem
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.reaction
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.settings
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.source
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.species
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.stepsize
+    :members:
+    :show-inheritance:
+
+.. automodule:: festim.trap
+    :members:
+    :show-inheritance:

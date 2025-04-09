@@ -5,10 +5,10 @@ import dolfinx.mesh
 import numpy as np
 import ufl
 
-import festim as F
+from festim.mesh.mesh import Mesh
 
 
-class Mesh1D(F.Mesh):
+class Mesh1D(Mesh):
     """
     1D Mesh
 

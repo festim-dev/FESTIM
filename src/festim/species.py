@@ -48,13 +48,16 @@ class Species:
         subdomain_to_function_space (dict): a dictionary mapping subdomains to
             function spaces
 
-    Usage:
-        .. testcode::
+    Examples:
+        :: testsetup:: Species
 
-            from festim import Species, HydrogenTransportProblem
-            species = Species(name="H")
-            my_model = HydrogenTransportProblem()
-            my_model.species.append(species)
+            from festim import Species
+
+        :: testcode:: Species
+
+            Species(name="H")
+            Species(name="Trap", mobile=False)
+
 
     """
 
@@ -226,13 +229,3 @@ def find_species_from_name(name: str, species: list):
         if spe.name == name:
             return spe
     raise ValueError(f"Species {name} not found in list of species")
-
-
-class SpeciesChangeVar(Species):
-    @property
-    def concentration(self):
-        return self._concentration
-
-    @concentration.setter
-    def concentration(self, value):
-        self._concentration = value

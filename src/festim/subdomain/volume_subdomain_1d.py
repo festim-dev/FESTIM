@@ -2,7 +2,7 @@ import numpy as np
 import numpy.typing as npt
 from dolfinx.mesh import Mesh, locate_entities
 
-from festim.subdomain import VolumeSubdomain
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class VolumeSubdomain1D(VolumeSubdomain):
@@ -19,16 +19,16 @@ class VolumeSubdomain1D(VolumeSubdomain):
         borders (list of float): the borders of the volume subdomain
         material (festim.Material): the material of the volume subdomain
 
-    Usage:
-        .. testsetup::
+    Examples:
 
-            import festim as F
-            my_mat = F.Material(D_0=1, E_D=0)
+        .. testsetup:: VolumeSubdomain1D
 
-        .. testcode::
+            from festim import VolumeSubdomain1D, Material
+            my_mat = Material(D_0=1, E_D=1, name="test_mat")
 
-            vol_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+        .. testcode:: VolumeSubdomain1D
 
+            VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
     """
 
     def __init__(self, id, borders, material) -> None:
