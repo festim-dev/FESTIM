@@ -36,7 +36,7 @@ class Material:
         density (float, callable): the density of the material (kg/m3)
         heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
 
-    Usage:
+    Examples:
         .. testsetup:: Material
 
             from festim import Material

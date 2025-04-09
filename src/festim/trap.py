@@ -30,7 +30,7 @@ class Trap(_Species):
         trap_reaction (_Reaction): The reaction for trapping the mobile conc.
         empty_trap_sites (F.ImplicitSpecies): The implicit species for the empty trap sites
 
-    Usage:
+    Examples:
 
         .. testsetup:: Trap
 

@@ -48,7 +48,7 @@ class Species:
         subdomain_to_function_space (dict): a dictionary mapping subdomains to
             function spaces
 
-    Usage:
+    Examples:
         :: testsetup:: Species
 
             from festim import Species

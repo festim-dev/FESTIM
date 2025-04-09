@@ -24,7 +24,7 @@ class CoupledTransientHeatTransferHydrogenTransport:
         non_matching_meshes: True if the meshes in the heat_problem and hydrogen_problem
             are not matching
 
-    Usage:
+    Examples:
         .. code:: python
 
             import festim as F

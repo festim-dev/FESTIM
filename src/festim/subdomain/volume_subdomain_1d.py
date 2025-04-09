@@ -19,7 +19,7 @@ class VolumeSubdomain1D(VolumeSubdomain):
         borders (list of float): the borders of the volume subdomain
         material (festim.Material): the material of the volume subdomain
 
-    Usage:
+    Examples:
 
         .. testsetup:: VolumeSubdomain1D
 

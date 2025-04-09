@@ -30,7 +30,7 @@ class Reaction:
         E_p (float): The backward rate constant activation energy.
         volume (F.VolumeSubdomain1D): The volume subdomain where the reaction takes place.
 
-    Usage:
+    Examples:
 
         :: testsetup:: Reaction
 

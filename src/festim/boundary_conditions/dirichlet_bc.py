@@ -150,7 +150,7 @@ class FixedConcentrationBC(DirichletBCBase):
     Attributes:
         temperature_dependent (bool): True if the value of the bc is temperature dependent
 
-    Usage:
+    Examples:
 
         .. testsetup:: FixedConcentrationBC
 

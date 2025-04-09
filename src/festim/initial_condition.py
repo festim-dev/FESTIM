@@ -25,7 +25,7 @@ class InitialCondition:
         expr_fenics: the value of the initial condition in
             fenics format
 
-    Usage:
+    Examples:
 
         .. testsetup:: InitialCondition
 

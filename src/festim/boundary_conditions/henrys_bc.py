@@ -34,7 +34,7 @@ class HenrysBC(FixedConcentrationBC):
         E_H (float or fem.Constant): the Henrys constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
 
-    Usage:
+    Examples:
 
         .. testsetup:: HenrysBC
 

@@ -34,7 +34,7 @@ class SievertsBC(FixedConcentrationBC):
         E_S (float or fem.Constant): the Sieverts constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
 
-    Usage:
+    Examples:
 
         .. testsetup:: SievertsBC
 

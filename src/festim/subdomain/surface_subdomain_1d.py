@@ -16,7 +16,7 @@ class SurfaceSubdomain1D(SurfaceSubdomain):
         id (int): the id of the surface subdomain
         x (float): the x coordinate of the surface subdomain
 
-    Usage:
+    Examples:
 
         .. testsetup:: SurfaceSubdomain1D
 

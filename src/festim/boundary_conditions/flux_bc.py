@@ -165,7 +165,7 @@ class ParticleFluxBC(FluxBCBase):
             where "name" is the variable name in the callable value and species is a festim.Species object.
 
 
-    Usage:
+    Examples:
 
         .. testsetup:: ParticleFluxBC
 
@@ -254,7 +254,7 @@ class HeatFluxBC(FluxBCBase):
             update the value_fenics
 
 
-    Usage:
+    Examples:
 
         .. testsetup:: HeatFluxBC
 
