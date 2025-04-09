@@ -3,10 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 import ufl
-from dolfinx import fem
-from dolfinx import mesh as _mesh
 import ufl.core
 import ufl.core.expr
+from dolfinx import fem
+from dolfinx import mesh as _mesh
 
 from festim import helpers
 from festim import subdomain as _subdomain
@@ -152,10 +152,13 @@ class FixedConcentrationBC(DirichletBCBase):
 
     Examples:
 
-        .. highlight:: python
-        .. code-block:: python
+        .. testsetup:: FixedConcentrationBC
 
-            from festim import FixedConcentrationBC
+            from festim import FixedConcentrationBC, SurfaceSubdomain
+            my_subdomain = SurfaceSubdomain(id=1)
+
+        .. testcode:: FixedConcentrationBC
+
             FixedConcentrationBC(subdomain=my_subdomain, value=1, species="H")
             FixedConcentrationBC(subdomain=my_subdomain,
                                  value=lambda x: 1 + x[0], species="H")

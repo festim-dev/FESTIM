@@ -30,21 +30,29 @@ class Reaction:
         E_p (float): The backward rate constant activation energy.
         volume (F.VolumeSubdomain1D): The volume subdomain where the reaction takes place.
 
-    Usage:
-        >>> # create two species
-        >>> reactant = [F.Species("A"), F.Species("B")]
+    Examples:
 
-        >>> # create a product species
-        >>> product = F.Species("C")
+        :: testsetup:: Reaction
 
-        >>> # create a reaction between the two species
-        >>> reaction = Reaction(reactant, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3)
-        >>> print(reaction)
-        A + B <--> C
+            from festim import Reaction, Species, ImplicitSpecies
 
-        >>> # compute the reaction term at a given temperature
-        >>> temperature = 300.0
-        >>> reaction_term = reaction.reaction_term(temperature)
+        :: testcode:: Reaction
+
+            # create a volume subdomain
+            # create two species
+            reactant = [F.Species("A"), F.Species("B")]
+
+            # create a product species
+            product = F.Species("C")
+
+            # create a reaction between the two species
+            reaction = Reaction(reactant, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3)
+            print(reaction)
+            # A + B <--> C
+
+            # compute the reaction term at a given temperature
+            temperature = 300.0
+            reaction_term = reaction.reaction_term(temperature)
 
     """
 

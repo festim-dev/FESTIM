@@ -1,7 +1,7 @@
 import warnings
 from pathlib import Path
 
-from dolfinx.fem import Function as _Function
+from dolfinx import fem
 
 from festim.species import Species as _Species
 from festim.subdomain.volume_subdomain import (
@@ -97,7 +97,7 @@ class VTXSpeciesExport(ExportBaseClass):
             )
         self._field = val
 
-    def get_functions(self) -> list[_Function]:
+    def get_functions(self) -> list[fem.Function]:
         """
         Returns list of species for a given subdomain.
         If using legacy mode, return the whole species.

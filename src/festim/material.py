@@ -36,10 +36,18 @@ class Material:
         density (float, callable): the density of the material (kg/m3)
         heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
 
-    Usage:
-        >>> my_mat = Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
-    or if several species:
-        >>> my_mat = Material(
+    Examples:
+        .. testsetup:: Material
+
+            from festim import Material
+
+        .. testcode:: Material
+
+            # if only one species:
+            Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
+
+            # if several species:
+            Material(
                 D_0={"Species_1": 1.9e-7, "Species_2": 2.0e-7},
                 E_D={"Species_1": 0.2, "Species_2": 0.3},
                 name="my_mat"
@@ -71,9 +79,11 @@ class Material:
 
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient
+
         Args:
             species (festim.Species or str, optional): the species we want the pre-exponential
                 factor of the diffusion coefficient of. Only needed if D_0 is a dict.
+
         Returns:
             float: the pre-exponential factor of the diffusion coefficient
         """
@@ -97,9 +107,11 @@ class Material:
 
     def get_E_D(self, species=None):
         """Returns the activation energy of the diffusion coefficient
+
         Args:
             species (festim.Species or str, optional): the species we want the activation
                 energy of the diffusion coefficient of. Only needed if E_D is a dict.
+
         Returns:
             float: the activation energy of the diffusion coefficient
         """
@@ -123,9 +135,11 @@ class Material:
 
     def get_K_S_0(self, species=None) -> float:
         """Returns the pre-exponential factor of the solubility coefficient
+
         Args:
             species: the species we want the pre-exponential
                 factor of the solubility coefficient of. Only needed if K_S_0 is a dict.
+
         Returns:
             the pre-exponential factor of the solubility coefficient
         """
@@ -149,9 +163,11 @@ class Material:
 
     def get_E_K_S(self, species=None) -> float:
         """Returns the activation energy of the solubility coefficient
+
         Args:
             species: the species we want the activation
                 energy of the solubility coefficient of. Only needed if E_K_S is a dict.
+
         Returns:
             the activation energy of the solubility coefficient
         """
@@ -175,12 +191,14 @@ class Material:
 
     def get_diffusion_coefficient(self, mesh, temperature, species=None):
         """Defines the diffusion coefficient
+
         Args:
 
             mesh (dolfinx.mesh.Mesh): the domain mesh
             temperature (dolfinx.fem.Constant): the temperature
             species (festim.Species, optional): the species we want the diffusion
                 coefficient of. Only needed if D_0 and E_D are dicts.
+
         Returns:
             ufl.algebra.Product: the diffusion coefficient
         """
@@ -227,12 +245,14 @@ class Material:
 
     def get_solubility_coefficient(self, mesh, temperature, species=None):
         """Defines the solubility coefficient
+
         Args:
 
             mesh (dolfinx.mesh.Mesh): the domain mesh
             temperature (dolfinx.fem.Constant): the temperature
             species (festim.Species, optional): the species we want the solubility
                 coefficient of. Only needed if K_S_0 and E_K_S are dicts.
+
         Returns:
             ufl.algebra.Product: the solubility coefficient
         """

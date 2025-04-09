@@ -2,10 +2,10 @@ from mpi4py import MPI
 
 import numpy as np
 
-import festim.exports.surface_quantity as sq
+from festim.exports.surface_quantity import SurfaceQuantity
 
 
-class MinimumSurface(sq.SurfaceQuantity):
+class MinimumSurface(SurfaceQuantity):
     """Computes the minimum value of a field on a given surface
 
     Args:

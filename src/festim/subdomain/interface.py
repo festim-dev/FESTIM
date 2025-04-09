@@ -3,7 +3,7 @@ import numpy as np
 from dolfinx.cpp.fem import compute_integration_domains
 from packaging.version import Version
 
-from .volume_subdomain import VolumeSubdomain
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class Interface:

@@ -1,15 +1,16 @@
 import ufl
 
-import festim as F
+from festim import k_B
+from festim.boundary_conditions import FixedConcentrationBC
 
 
 def sieverts_law(T, S_0, E_S, pressure):
     """Applies the Sieverts law to compute the concentration at the boundary"""
-    S = S_0 * ufl.exp(-E_S / F.k_B / T)
+    S = S_0 * ufl.exp(-E_S / k_B / T)
     return S * pressure**0.5
 
 
-class SievertsBC(F.DirichletBC):
+class SievertsBC(FixedConcentrationBC):
     """
     Sieverts boundary condition class
 
@@ -33,13 +34,20 @@ class SievertsBC(F.DirichletBC):
         E_S (float or fem.Constant): the Sieverts constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
 
-    Usage:
-        >>> from festim import SievertsBC
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=1e5, species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x: 1e5 + x[0], species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda t: 1e5 + t, species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda T: 1e5 + T, species="H")
-        >>> SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
+    Examples:
+
+        .. testsetup:: SievertsBC
+
+            from festim import SievertsBC, SurfaceSubdomain
+            my_subdomain = SurfaceSubdomain(id=1)
+
+        .. testcode:: SievertsBC
+
+            SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=1e5, species="H")
+            SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x: 1e5 + x[0], species="H")
+            SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda t: 1e5 + t, species="H")
+            SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda T: 1e5 + T, species="H")
+            SievertsBC(subdomain=my_subdomain, S_0=1e-6, E_S=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
     """
 
     def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
