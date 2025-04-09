@@ -8,7 +8,6 @@ import adios4dolfinx
 import basix
 import dolfinx
 import numpy.typing as npt
-import numpy as np
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
