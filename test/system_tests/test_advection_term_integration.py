@@ -221,9 +221,6 @@ def test_multi_material_with_advection():
 
     u = create_velocity_field()
 
-    writer = dolfinx.io.VTXWriter(MPI.COMM_WORLD, "velocity.bp", u, engine="BP5")
-    writer.write(t=0)
-
     my_model = F.HydrogenTransportProblemDiscontinuous()
     my_model.mesh = F.Mesh(mesh)
     my_model.volume_meshtags = ct
