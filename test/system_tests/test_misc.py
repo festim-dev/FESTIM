@@ -1,6 +1,7 @@
 import dolfinx
 import festim as F
 import numpy as np
+from .test_multi_mat_penalty import generate_mesh
 
 
 def test_petsc_options():
@@ -37,3 +38,50 @@ def test_petsc_options():
 
     my_model.initialise()
     my_model.run()
+
+
+def test_D_global_on_2d_mesh():
+    """
+    Test that the D_global is defined correctly on a 2D mesh with two different
+    materials. The D_global should be defined as a piecewise constant function
+    with two different values, one for each material.
+    """
+    mesh, mt, ct = generate_mesh(20)
+
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(D_0=5.0, E_D=0)
+    material_bottom = F.Material(D_0=1.0, E_D=0)
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [
+        bottom_domain,
+        top_domain,
+        top_surface,
+        bottom_surface,
+    ]
+
+    H = F.Species("H", mobile=True)
+    my_model.species = [H]
+
+    my_model.boundary_conditions = []
+
+    my_model.temperature = 500.0
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    my_model.initialise()
+
+    # run
+
+    D, _ = my_model.define_D_global(species=H)
+
+    # test that there are two values in D
+    assert len(np.unique(D.x.array[:])) == 2
