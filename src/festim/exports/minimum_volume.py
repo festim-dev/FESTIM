@@ -29,6 +29,8 @@ class MinimumVolume(VolumeQuantity):
         solution = self.field.solution
         indices = self.volume.locate_subdomain_entities(solution.function_space.mesh)
 
+        # FIXME: this should only work with CG1
+
         self.value = solution.function_space.mesh.comm.allreduce(
             np.min(self.field.solution.x.array[indices]), op=MPI.MIN
         )

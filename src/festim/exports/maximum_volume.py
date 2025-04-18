@@ -30,6 +30,8 @@ class MaximumVolume(VolumeQuantity):
         solution = self.field.solution
         indices = self.volume.locate_subdomain_entities(solution.function_space.mesh)
 
+        # FIXME: this should only work with CG1
+
         self.value = solution.function_space.mesh.comm.allreduce(
             np.max(self.field.solution.x.array[indices]), op=MPI.MAX
         )
