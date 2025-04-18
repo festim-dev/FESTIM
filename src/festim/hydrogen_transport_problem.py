@@ -493,7 +493,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
-            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh)
+            cell_indices = vol.locate_subdomain_entities_from_tags(self.volume_meshtags)
 
             # replace values of D_0 and E_D by values from the material
             D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
@@ -1714,7 +1714,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             K_S0 = fem.Function(Q0)
             E_KS = fem.Function(Q0)
             for subdomain in self.volume_subdomains:
-                entities = subdomain.locate_subdomain_entities_correct(
+                entities = subdomain.locate_subdomain_entities_from_tags(
                     self.volume_meshtags
                 )
                 K_S0.x.array[entities] = subdomain.material.get_K_S_0(spe)
@@ -1763,7 +1763,9 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         K_S0 = fem.Function(Q0)
         E_KS = fem.Function(Q0)
         for subdomain in self.volume_subdomains:
-            entities = subdomain.locate_subdomain_entities_correct(self.volume_meshtags)
+            entities = subdomain.locate_subdomain_entities_from_tags(
+                self.volume_meshtags
+            )
             K_S0.x.array[entities] = subdomain.material.get_K_S_0(bc.species)
             E_KS.x.array[entities] = subdomain.material.get_E_K_S(bc.species)
 

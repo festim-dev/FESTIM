@@ -44,7 +44,7 @@ class VolumeSubdomain:
         num_cells_local = cell_map.size_local + cell_map.num_ghosts
         return np.arange(num_cells_local, dtype=np.int32)
 
-    def locate_subdomain_entities_correct(self, cell_tags: dolfinx.mesh.MeshTags):
+    def locate_subdomain_entities_from_tags(self, cell_tags: dolfinx.mesh.MeshTags):
         """Locates all cells in subdomain borders within domain
 
         Args:
