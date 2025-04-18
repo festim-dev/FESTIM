@@ -125,9 +125,12 @@ def test_min_max_vol_on_2d_mesh():
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
     max_top = F.MaximumVolume(field=H, volume=top_domain)
     max_bottom = F.MaximumVolume(field=H, volume=bottom_domain)
-    my_model.exports = [max_top, max_bottom]
+    max_top_boundary = F.MaximumSurface(field=H, surface=top_surface)
+    max_bottom_boundary = F.MaximumSurface(field=H, surface=bottom_surface)
+    my_model.exports = [max_top, max_bottom, max_top_boundary, max_bottom_boundary]
 
     my_model.initialise()
     my_model.run()
 
     assert max_top.value != max_bottom.value
+    assert max_top_boundary.value != max_bottom_boundary.value

@@ -31,19 +31,6 @@ class VolumeSubdomain:
         self.id = id
         self.material = material
 
-    def locate_subdomain_entities(self, mesh: dolfinx.mesh.Mesh):
-        """Locates all cells in subdomain borders within domain
-
-        Args:
-            mesh (dolfinx.mesh.Mesh): the mesh of the model
-
-        Returns:
-            entities (np.array): the entities of the subdomain
-        """
-        cell_map = mesh.topology.index_map(mesh.topology.dim)
-        num_cells_local = cell_map.size_local + cell_map.num_ghosts
-        return np.arange(num_cells_local, dtype=np.int32)
-
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
         Creates the following attributes: ``.parent_mesh``, ``.submesh``, ``.submesh_to_mesh``,

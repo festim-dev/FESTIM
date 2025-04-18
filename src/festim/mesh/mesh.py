@@ -88,14 +88,33 @@ class Mesh:
         tags_facets = np.full(num_facets, 0, dtype=np.int32)
 
         for surf in surface_subdomains:
-            # find all facets in subdomain and mark them as surf.id
-            entities = surf.locate_boundary_facet_indices(self._mesh)
-            tags_facets[entities] = surf.id
+            try:
+                # find all facets in subdomain and mark them as surf.id
+                entities = surf.locate_boundary_facet_indices(self._mesh)
+                tags_facets[entities] = surf.id
+            except AttributeError:
+                if len(surface_subdomains) > 1:
+                    raise AttributeError(
+                        "Surface subdomain must have a locate_boundary_facet_indices method if"
+                        " several subdomains are defined"
+                    )
+                self.mesh.topology.create_connectivity(self.fdim, self.fdim + 1)
+                rentities = dolfinx.mesh.exterior_facet_indices(self.mesh.topology)
+
+                tags_facets[rentities] = surf.id
 
         for vol in volume_subdomains:
-            # find all cells in subdomain and mark them as vol.id
-            entities = vol.locate_subdomain_entities(self._mesh)
-            tags_volumes[entities] = vol.id
+            try:
+                # find all cells in subdomain and mark them as vol.id
+                entities = vol.locate_subdomain_entities(self._mesh)
+                tags_volumes[entities] = vol.id
+            except AttributeError:
+                if len(volume_subdomains) > 1:
+                    raise AttributeError(
+                        "Volume subdomain must have a locate_subdomain_entities method if"
+                        " several subdomains are defined"
+                    )
+                tags_volumes[:] = vol.id
 
         volume_meshtags = meshtags(
             self._mesh, self.vdim, mesh_cell_indices, tags_volumes
