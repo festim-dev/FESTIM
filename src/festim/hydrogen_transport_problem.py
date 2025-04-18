@@ -447,7 +447,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # add the global D to the export
                 export.D = D
                 export.D_expr = D_expr
-
+            if isinstance(
+                export,
+                exports.MaximumVolume
+                | exports.MaximumSurface
+                | exports.MinimumVolume
+                | exports.MinimumSurface,
+            ):
+                export.volume_meshtags = self.volume_meshtags
+                export.facet_meshtags = self.facet_meshtags
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 export.t = []
