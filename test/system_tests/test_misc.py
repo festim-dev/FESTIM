@@ -85,3 +85,49 @@ def test_D_global_on_2d_mesh():
 
     # test that there are two values in D
     assert len(np.unique(D.x.array[:])) == 2
+
+
+def test_min_max_vol_on_2d_mesh():
+    """Added test that catches bug #908"""
+    mesh, mt, ct = generate_mesh(10)
+
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_bottom = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+    material_top = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [
+        bottom_domain,
+        top_domain,
+        top_surface,
+        bottom_surface,
+    ]
+
+    H = F.Species("H", mobile=True)
+
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=1, species=H),
+        F.FixedConcentrationBC(bottom_surface, value=0, species=H),
+    ]
+
+    my_model.temperature = 500.0
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    max_top = F.MaximumVolume(field=H, volume=top_domain)
+    max_bottom = F.MaximumVolume(field=H, volume=bottom_domain)
+    my_model.exports = [max_top, max_bottom]
+
+    my_model.initialise()
+    my_model.run()
+
+    assert max_top.value != max_bottom.value
