@@ -1,8 +1,3 @@
-import dolfinx.mesh
-import numpy as np
-import numpy.typing as npt
-
-
 class SurfaceSubdomain:
     """
     Surface subdomain class
@@ -15,23 +10,6 @@ class SurfaceSubdomain:
 
     def __init__(self, id):
         self.id = id
-
-    def locate_boundary_facet_indices(
-        self, mesh: dolfinx.mesh.Mesh
-    ) -> npt.NDArray[np.int32]:
-        """Locates the dof of the surface subdomain within the function space
-        and return the index of the dof
-
-        Args:
-            mesh (dolfinx.mesh.Mesh): the mesh of the simulation
-
-        Returns:
-            index (np.array): the first value in the list of surface facet
-                indices of the subdomain
-        """
-        fdim = mesh.topology.dim - 1
-        mesh.topology.create_connectivity(fdim, fdim + 1)
-        return dolfinx.mesh.exterior_facet_indices(mesh.topology)
 
 
 def find_surface_from_id(id: int, surfaces: list):

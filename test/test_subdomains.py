@@ -189,17 +189,3 @@ def test_volume_subdomain_properties():
 mesh1d = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, nx=1)
 mesh2d = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, nx=1, ny=1)
 mesh3d = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, nx=1, ny=1, nz=1)
-
-
-@pytest.mark.parametrize("mesh,number_facets", [(mesh1d, 2), (mesh2d, 4), (mesh3d, 12)])
-def test_surface_subdomain_default(mesh, number_facets):
-    """Test that the default surface subdomain locates all boundary facets
-
-    Args:
-        mesh (dolfinx.mesh.Mesh): a mesh
-        number_facets (int): the expected number of boundary facets
-    """
-    my_subdomain = F.SurfaceSubdomain(id=1)
-
-    indices = my_subdomain.locate_boundary_facet_indices(mesh)
-    assert len(indices) == number_facets
