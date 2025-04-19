@@ -19,12 +19,12 @@ class AverageVolume(VolumeQuantity):
     def title(self):
         return f"Average {self.field.name} volume {self.volume.id}"
 
-    def compute(self, dx):
+    def compute(self, u, dx, entity_maps=None):
         """
         Computes the average value of solution function within the defined volume
         subdomain, and appends it to the data list
         """
         self.value = fem.assemble_scalar(
-            fem.form(self.field.solution * dx(self.volume.id))
+            fem.form(u * dx(self.volume.id), entity_maps=entity_maps)
         ) / fem.assemble_scalar(fem.form(1 * dx(self.volume.id)))
         self.data.append(self.value)

@@ -1,7 +1,7 @@
 from mpi4py import MPI
 
 import numpy as np
-
+import dolfinx
 from festim.exports.volume_quantity import VolumeQuantity
 
 
@@ -28,9 +28,16 @@ class MaximumVolume(VolumeQuantity):
         subdomain, and appends it to the data list
         """
         solution = self.field.solution
-        indices = self.volume.locate_subdomain_entities(solution.function_space.mesh)
+        entities = self.volume_meshtags.find(self.volume.id)
+
+        V = solution.function_space
+        mesh = V.mesh
+        mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim)
+        dofs = dolfinx.fem.locate_dofs_topological(
+            V=V, entity_dim=mesh.topology.dim, entities=entities
+        )
 
         self.value = solution.function_space.mesh.comm.allreduce(
-            np.max(self.field.solution.x.array[indices]), op=MPI.MAX
+            np.max(self.field.solution.x.array[dofs]), op=MPI.MAX
         )
         self.data.append(self.value)

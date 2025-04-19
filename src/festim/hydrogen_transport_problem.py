@@ -447,7 +447,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # add the global D to the export
                 export.D = D
                 export.D_expr = D_expr
-
+            if isinstance(
+                export,
+                exports.MaximumVolume
+                | exports.MaximumSurface
+                | exports.MinimumVolume
+                | exports.MinimumSurface,
+            ):
+                export.volume_meshtags = self.volume_meshtags
+                export.facet_meshtags = self.facet_meshtags
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 export.t = []
@@ -493,7 +501,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
         for vol in self.volume_subdomains:
-            cell_indices = vol.locate_subdomain_entities(self.mesh.mesh)
+            cell_indices = self.volume_meshtags.find(vol.id)
 
             # replace values of D_0 and E_D by values from the material
             D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
@@ -909,9 +917,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             "Advection terms are not currently accounted for in the "
                             "evaluation of surface flux values"
                         )
-                    export.compute(
-                        self.ds,
-                    )
+                    export.compute(export.field.solution, self.ds)
                 else:
                     export.compute()
                 # update export data
@@ -922,7 +928,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
-                    export.compute(self.dx)
+                    export.compute(u=export.field.solution, dx=self.dx)
                 else:
                     export.compute()
                 # update export data
@@ -1040,6 +1046,21 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for subdomain in self.volume_subdomains:
             self.define_function_spaces(subdomain)
+        # create global DG function spaces of degree 0 and 1
+        element_DG0 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            0,
+            basix.LagrangeVariant.equispaced,
+        )
+        element_DG1 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            1,
+            basix.LagrangeVariant.equispaced,
+        )
+        self.V_DG_0 = fem.functionspace(self.mesh.mesh, element_DG0)
+        self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
 
         self.define_temperature()
         self.convert_source_input_values_to_fenics_objects()
@@ -1481,8 +1502,32 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         f"Export type {type(export)} not implemented for "
                         f"mixed-domain approach"
                     )
-            else:
-                raise NotImplementedError(f"Export type {type(export)} not implemented")
+
+        # compute diffusivity function for surface fluxes
+
+        spe_to_D_global = {}  # links species to global D function
+        spe_to_D_global_expr = {}  # links species to D expression
+
+        for export in self.exports:
+            if isinstance(export, exports.SurfaceQuantity):
+                if export.field in spe_to_D_global:
+                    # if already computed then use the same D
+                    D = spe_to_D_global[export.field]
+                    D_expr = spe_to_D_global_expr[export.field]
+                else:
+                    # compute D and add it to the dict
+                    D, D_expr = self.define_D_global(export.field)
+                    spe_to_D_global[export.field] = D
+                    spe_to_D_global_expr[export.field] = D_expr
+
+                # add the global D to the export
+                export.D = D
+                export.D_expr = D_expr
+
+            # reset the data and time for SurfaceQuantity and VolumeQuantity
+            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+                export.t = []
+                export.data = []
 
     def post_processing(self):
         # update post-processing solutions (for each species in each subdomain)
@@ -1502,8 +1547,54 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             vtxfile.write(float(self.t))
 
         for export in self.exports:
-            if not isinstance(export, exports.VTXSpeciesExport):
-                raise NotImplementedError(f"Export type {type(export)} not implemented")
+            print(export)
+            if isinstance(export, exports.SurfaceQuantity):
+                if isinstance(
+                    export,
+                    exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
+                ):
+                    if len(self.advection_terms) > 0:
+                        warnings.warn(
+                            "Advection terms are not currently accounted for in the "
+                            "evaluation of surface flux values"
+                        )
+                    export_surf = export.surface
+                    export_vol = self.surface_to_volume[export_surf]
+                    submesh_function = (
+                        export.field.subdomain_to_post_processing_solution[export_vol]
+                    )
+                    export.compute(
+                        u=submesh_function,
+                        ds=self.ds,
+                        entity_maps={
+                            sd.submesh: sd.parent_to_submesh
+                            for sd in self.volume_subdomains
+                        },
+                    )
+                else:
+                    export.compute()
+            elif isinstance(export, exports.VolumeQuantity):
+                if isinstance(export, exports.TotalVolume | exports.AverageVolume):
+                    export.compute(
+                        u=export.field.subdomain_to_post_processing_solution[
+                            export_vol
+                        ],
+                        dx=self.dx,
+                        entity_maps={
+                            sd.submesh: sd.parent_to_submesh
+                            for sd in self.volume_subdomains
+                        },
+                    )
+                else:
+                    export.compute()
+
+            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+                # update export data
+                export.t.append(float(self.t))
+
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))
             if isinstance(export, exports.VTXSpeciesExport):
                 if export._checkpoint:
                     raise NotImplementedError(
@@ -1714,9 +1805,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             K_S0 = fem.Function(Q0)
             E_KS = fem.Function(Q0)
             for subdomain in self.volume_subdomains:
-                entities = subdomain.locate_subdomain_entities_correct(
-                    self.volume_meshtags
-                )
+                entities = self.volume_meshtags.find(subdomain.id)
                 K_S0.x.array[entities] = subdomain.material.get_K_S_0(spe)
                 E_KS.x.array[entities] = subdomain.material.get_E_K_S(spe)
 
@@ -1763,7 +1852,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         K_S0 = fem.Function(Q0)
         E_KS = fem.Function(Q0)
         for subdomain in self.volume_subdomains:
-            entities = subdomain.locate_subdomain_entities_correct(self.volume_meshtags)
+            entities = self.volume_meshtags.find(subdomain.id)
             K_S0.x.array[entities] = subdomain.material.get_K_S_0(bc.species)
             E_KS.x.array[entities] = subdomain.material.get_E_K_S(bc.species)
 
