@@ -220,6 +220,10 @@ def test_derived_quantities_multi_mat():
     my_model.exports = [
         F.SurfaceFlux(field=H, surface=top_surface),
         F.SurfaceFlux(field=H, surface=bottom_surface),
+        F.AverageVolume(field=H, volume=bottom_domain),
+        F.AverageVolume(field=H, volume=top_domain),
+        F.TotalVolume(field=H, volume=bottom_domain),
+        F.TotalVolume(field=H, volume=top_domain),
     ]
 
     my_model.initialise()
@@ -227,4 +231,4 @@ def test_derived_quantities_multi_mat():
 
     print("Top surface flux:", my_model.exports[0].data)
     print("Bottom surface flux:", my_model.exports[1].data)
-    assert my_model.exports[0].data == -my_model.exports[1].data
+    assert np.isclose(my_model.exports[0].data[0], -my_model.exports[1].data[0])

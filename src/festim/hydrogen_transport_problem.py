@@ -928,7 +928,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
-                    export.compute(self.dx)
+                    export.compute(u=export.field.solution, dx=self.dx)
                 else:
                     export.compute()
                 # update export data
@@ -1547,6 +1547,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             vtxfile.write(float(self.t))
 
         for export in self.exports:
+            print(export)
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
                     export,
@@ -1572,6 +1573,22 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 else:
                     export.compute()
+            elif isinstance(export, exports.VolumeQuantity):
+                if isinstance(export, exports.TotalVolume | exports.AverageVolume):
+                    export.compute(
+                        u=export.field.subdomain_to_post_processing_solution[
+                            export_vol
+                        ],
+                        dx=self.dx,
+                        entity_maps={
+                            sd.submesh: sd.parent_to_submesh
+                            for sd in self.volume_subdomains
+                        },
+                    )
+                else:
+                    export.compute()
+
+            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 # update export data
                 export.t.append(float(self.t))
 

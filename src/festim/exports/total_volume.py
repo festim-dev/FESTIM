@@ -20,7 +20,7 @@ class TotalVolume(VolumeQuantity):
     def title(self):
         return f"Total {self.field.name} volume {self.volume.id}"
 
-    def compute(self, dx: ufl.Measure):
+    def compute(self, u, dx: ufl.Measure, entity_maps=None):
         """
         Computes the value of the total volume of the field in the volume subdomain
         and appends it to the data list
@@ -29,6 +29,6 @@ class TotalVolume(VolumeQuantity):
             dx (ufl.Measure): volume measure of the model
         """
         self.value = fem.assemble_scalar(
-            fem.form(self.field.solution * dx(self.volume.id))
+            fem.form(u * dx(self.volume.id), entity_maps=entity_maps)
         )
         self.data.append(self.value)
