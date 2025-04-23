@@ -26,16 +26,16 @@ class MinimumSurface(SurfaceQuantity):
         Computes the minimum value of the field on the defined surface
         subdomain, and appends it to the data list
         """
-        solution = self.field.solution
-
+        solution = self.field.post_processing_solution
         entities = self.facet_meshtags.find(self.surface.id)
-        V = solution.function_space
+        if isinstance(solution, dolfinx.fem.Function):
+            V = solution.function_space
+        else:
+            V = self.field.sub_function_space
         mesh = V.mesh
         dofs = dolfinx.fem.locate_dofs_topological(
             V=V, entity_dim=mesh.topology.dim - 1, entities=entities
         )
 
-        self.value = solution.function_space.mesh.comm.allreduce(
-            np.min(solution.x.array[dofs]), op=MPI.MIN
-        )
+        self.value = mesh.comm.allreduce(np.min(solution.x.array[dofs]), op=MPI.MIN)
         self.data.append(self.value)

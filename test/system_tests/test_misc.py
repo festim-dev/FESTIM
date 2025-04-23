@@ -135,10 +135,25 @@ def test_min_max_vol_on_2d_mesh(species):
     max_bottom = F.MaximumVolume(field=H, volume=bottom_domain)
     max_top_boundary = F.MaximumSurface(field=H, surface=top_surface)
     max_bottom_boundary = F.MaximumSurface(field=H, surface=bottom_surface)
-    my_model.exports = [max_top, max_bottom, max_top_boundary, max_bottom_boundary]
+    min_top = F.MinimumVolume(field=H, volume=top_domain)
+    min_bottom = F.MinimumVolume(field=H, volume=bottom_domain)
+    min_top_boundary = F.MinimumSurface(field=H, surface=top_surface)
+    min_bottom_boundary = F.MinimumSurface(field=H, surface=bottom_surface)
+    my_model.exports = [
+        max_top,
+        max_bottom,
+        max_top_boundary,
+        max_bottom_boundary,
+        min_top,
+        min_bottom,
+        min_top_boundary,
+        min_bottom_boundary,
+    ]
 
     my_model.initialise()
     my_model.run()
 
     assert max_top.value != max_bottom.value
     assert max_top_boundary.value != max_bottom_boundary.value
+    assert min_top.value != min_bottom.value
+    assert min_top_boundary.value != min_bottom_boundary.value
