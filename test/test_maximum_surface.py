@@ -28,7 +28,7 @@ def test_maximum_surface_compute_1D():
     c.interpolate(lambda x: (x[0] - 3) ** 2)
 
     my_species = F.Species("H")
-    my_species.solution = c
+    my_species.post_processing_solution = c
 
     my_export = F.MaximumSurface(field=my_species, surface=dummy_surface)
     my_export.D = D
