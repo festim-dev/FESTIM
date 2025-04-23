@@ -33,13 +33,16 @@ class SourceBase:
 
     def __init__(
         self,
-        value: float
-        | int
-        | fem.Constant
-        | np.ndarray
-        | fem.Expression
-        | ufl.core.expr.Expr
-        | fem.Function,
+        value: (
+            float
+            | int
+            | fem.Constant
+            | np.ndarray
+            | fem.Expression
+            | ufl.core.expr.Expr
+            | fem.Function
+            | Value
+        ),
         volume: VolumeSubdomain,
     ):
         self.value = value
@@ -51,7 +54,10 @@ class SourceBase:
 
     @value.setter
     def value(self, value):
-        self._value = Value(value)
+        if isinstance(value, Value):
+            self._value = value
+        else:
+            self._value = Value(value)
 
     @property
     def volume(self):
