@@ -31,7 +31,6 @@ class MinimumSurface(SurfaceQuantity):
         entities = self.facet_meshtags.find(self.surface.id)
         V = solution.function_space
         mesh = V.mesh
-        # mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim - 1)
         dofs = dolfinx.fem.locate_dofs_topological(
             V=V, entity_dim=mesh.topology.dim - 1, entities=entities
         )
