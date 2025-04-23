@@ -149,6 +149,23 @@ def test_min_max_vol_on_2d_mesh(species):
         min_top_boundary,
         min_bottom_boundary,
     ]
+    if len(species) == 2:
+        my_model.boundary_conditions.append(
+            F.FixedConcentrationBC(top_surface, value=0, species=species[1])
+        )
+        my_model.boundary_conditions.append(
+            F.FixedConcentrationBC(bottom_surface, value=1, species=species[1])
+        )
+        my_model.exports += [
+            F.MaximumVolume(field=species[1], volume=top_domain),
+            F.MaximumVolume(field=species[1], volume=bottom_domain),
+            F.MaximumSurface(field=species[1], surface=top_surface),
+            F.MaximumSurface(field=species[1], surface=bottom_surface),
+            F.MinimumVolume(field=species[1], volume=top_domain),
+            F.MinimumVolume(field=species[1], volume=bottom_domain),
+            F.MinimumSurface(field=species[1], surface=top_surface),
+            F.MinimumSurface(field=species[1], surface=bottom_surface),
+        ]
 
     my_model.initialise()
     my_model.run()
@@ -157,3 +174,7 @@ def test_min_max_vol_on_2d_mesh(species):
     assert max_top_boundary.value != max_bottom_boundary.value
     assert min_top.value != min_bottom.value
     assert min_top_boundary.value != min_bottom_boundary.value
+
+    if len(species) == 2:
+        assert my_model.exports[-1].value != my_model.exports[-2].value
+        assert my_model.exports[-1].value != min_bottom_boundary.value
