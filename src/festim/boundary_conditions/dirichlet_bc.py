@@ -254,15 +254,19 @@ class FixedConcentrationBC(DirichletBCBase):
                     )
                     self.value_fenics.interpolate(self.bc_expr)
                 except RuntimeError as e:
+                    # if this fails, it is probably because the temperature is a Function
+                    # from the parent mesh and this is used in a mixed domain problem.
+                    # In this case, we need to interpolate the temperature on the submesh
+
                     submesh = mesh
                     mesh_cell_map = submesh.topology.index_map(submesh.topology.dim)
                     num_cells_on_proc = (
                         mesh_cell_map.size_local + mesh_cell_map.num_ghosts
                     )
                     cells = np.arange(num_cells_on_proc, dtype=np.int32)
-                    V = temperature.function_space
+                    parent_functionspace = temperature.function_space
                     interpolation_data = fem.create_interpolation_data(
-                        function_space, V, cells
+                        function_space, parent_functionspace, cells
                     )
 
                     temperature_sub = fem.Function(function_space)
@@ -271,6 +275,8 @@ class FixedConcentrationBC(DirichletBCBase):
                         cells=cells,
                         interpolation_data=interpolation_data,
                     )
+
+                    # override the kwargs with the temperature_sub
                     kwargs["T"] = temperature_sub
 
                     self.bc_expr = fem.Expression(
