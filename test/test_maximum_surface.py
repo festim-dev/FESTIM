@@ -12,7 +12,15 @@ def test_maximum_surface_compute_1D():
     D = 1.5
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=4)
-    dummy_surface.locate_boundary_facet_indices(mesh=my_mesh.mesh)
+
+    # create mesh tags
+    ft, ct = my_mesh.define_meshtags(
+        surface_subdomains=[dummy_surface],
+        volume_subdomains=[
+            F.VolumeSubdomain1D(id=1, material=F.Material(D_0=1, E_D=0), borders=[0, L])
+        ],
+        interfaces=None,
+    )
 
     # give function to species
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
@@ -20,10 +28,11 @@ def test_maximum_surface_compute_1D():
     c.interpolate(lambda x: (x[0] - 3) ** 2)
 
     my_species = F.Species("H")
-    my_species.solution = c
+    my_species.post_processing_solution = c
 
     my_export = F.MaximumSurface(field=my_species, surface=dummy_surface)
     my_export.D = D
+    my_export.facet_meshtags = ft
 
     # RUN
     my_export.compute()
