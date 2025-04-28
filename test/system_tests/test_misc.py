@@ -181,6 +181,7 @@ def test_min_max_vol_on_2d_mesh(species):
 
 
 def test_temp_dependent_bc_mixed_domain_temperature_as_function():
+    """Test to catch bug 986"""
     mesh, mt, ct = generate_mesh(8)
 
     V = dolfinx.fem.functionspace(mesh, ("CG", 1))
