@@ -1086,6 +1086,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             temperature=self.temperature_fenics,
             function_space=collapsed_V,
             t=self.t,
+            cell_map=volume_subdomain.submesh_to_mesh,
+            parent_mesh=self.mesh.mesh,
         )
 
         volume_subdomain.submesh.topology.create_connectivity(

@@ -7,6 +7,7 @@ import ufl.core
 import ufl.core.expr
 from dolfinx import fem
 from dolfinx import mesh as _mesh
+import basix
 
 from festim import helpers
 from festim import subdomain as _subdomain
@@ -200,6 +201,8 @@ class FixedConcentrationBC(DirichletBCBase):
         temperature: float | fem.Constant,
         t: float | fem.Constant,
         K_S: fem.Function = None,
+        cell_map: np.ndarray = None,
+        parent_mesh: _mesh.Mesh = None,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
         self.value_fenics.
@@ -214,6 +217,10 @@ class FixedConcentrationBC(DirichletBCBase):
             t: the time
             K_S: The solubility of the species. If provided, the value of the boundary condition
                 is divided by K_S (change of variable method).
+            cell_map: The cell map of the submesh to the parent mesh
+                (only needed if T-dependent value is a fem.Function + mixed-domain)
+            parent_mesh: The parent mesh
+                (only needed if T-dependent value is a fem.Function + mixed-domain)
         """
         mesh = function_space.mesh
         x = ufl.SpatialCoordinate(mesh)
@@ -235,7 +242,6 @@ class FixedConcentrationBC(DirichletBCBase):
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:
-                self.value_fenics = fem.Function(function_space)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = t
@@ -243,14 +249,36 @@ class FixedConcentrationBC(DirichletBCBase):
                     kwargs["x"] = x
                 if "T" in arguments:
                     kwargs["T"] = temperature
-
                 # store the expression of the boundary condition
                 # to update the value_fenics later
-                self.bc_expr = fem.Expression(
-                    self.value(**kwargs),
-                    helpers.get_interpolation_points(function_space.element),
-                )
-                self.value_fenics.interpolate(self.bc_expr)
+                try:
+                    self.value_fenics = fem.Function(function_space)
+
+                    self.bc_expr = fem.Expression(
+                        self.value(**kwargs),
+                        helpers.get_interpolation_points(function_space.element),
+                    )
+                    self.value_fenics.interpolate(self.bc_expr)
+                except RuntimeError as e:
+                    # if the temperature is a function from the parent mesh (in a mixed domain problem)
+                    # then using .interpolate(be_expr) will not work
+                    # see https://fenicsproject.discourse.group/t/interpolate-expression-on-submesh-with-parent-mesh-function/17467/6?u=remdelaportemathurin
+                    # instead, we interpolate in an appropriate quadrature space
+                    q_el = basix.ufl.quadrature_element(
+                        mesh.basix_cell(),
+                        temperature.ufl_shape,
+                        degree=3,
+                        scheme="default",
+                    )
+                    Q = fem.functionspace(mesh, q_el)
+                    self.value_fenics = fem.Function(Q)
+                    self.bc_expr = fem.Expression(
+                        self.value(**kwargs),
+                        Q.element.interpolation_points(),
+                    )
+                    self.value_fenics.x.array[:] = self.bc_expr.eval(
+                        parent_mesh, cell_map
+                    ).flatten()
 
         # if K_S is provided, divide the value by K_S (change of variable method)
         if K_S is not None:
