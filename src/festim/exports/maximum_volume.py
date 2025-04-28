@@ -27,17 +27,18 @@ class MaximumVolume(VolumeQuantity):
         Computes the maximum value of solution function within the defined volume
         subdomain, and appends it to the data list
         """
-        solution = self.field.solution
+        solution = self.field.post_processing_solution
         entities = self.volume_meshtags.find(self.volume.id)
 
-        V = solution.function_space
+        if isinstance(solution, dolfinx.fem.Function):
+            V = solution.function_space
+        else:
+            V = self.field.sub_function_space
         mesh = V.mesh
         mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim)
         dofs = dolfinx.fem.locate_dofs_topological(
             V=V, entity_dim=mesh.topology.dim, entities=entities
         )
 
-        self.value = solution.function_space.mesh.comm.allreduce(
-            np.max(self.field.solution.x.array[dofs]), op=MPI.MAX
-        )
+        self.value = mesh.comm.allreduce(np.max(solution.x.array[dofs]), op=MPI.MAX)
         self.data.append(self.value)

@@ -483,7 +483,7 @@ def test_post_processing_update_D_global_2():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: x[0] ** 2 + 100)
-    H.solution = u
+    H.post_processing_solution = u
 
     my_export = F.MaximumSurface(
         field=H,
@@ -563,7 +563,7 @@ def test_post_processing_update_D_global_volume_2():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: x[0] ** 2 + 100)
-    H.solution = u
+    H.post_processing_solution = u
 
     my_export = F.MaximumVolume(field=H, volume=my_vol)
 

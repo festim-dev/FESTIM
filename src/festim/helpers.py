@@ -6,6 +6,7 @@ import numpy as np
 import ufl
 from dolfinx import fem
 from packaging import version
+import dolfinx
 
 
 def as_fenics_constant(
@@ -289,7 +290,12 @@ else:
     get_interpolation_points = lambda element: element.interpolation_points()
 
 
-def nmm_interpolate(f_out: fem.Function, f_in: fem.Function):
+def nmm_interpolate(
+    f_out: fem.Function,
+    f_in: fem.Function,
+    cells: Optional[dolfinx.mesh.meshtags] = None,
+    padding: Optional[float] = 1e-11,
+):
     """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
     another function (f_out) with a mismatching mesh
 
@@ -301,11 +307,13 @@ def nmm_interpolate(f_out: fem.Function, f_in: fem.Function):
     https://fenicsproject.discourse.group/t/gjk-error-in-interpolation-between-non-matching-second-ordered-3d-meshes/16086/6
     """
 
-    dim = f_out.function_space.mesh.topology.dim
-    index_map = f_out.function_space.mesh.topology.index_map(dim)
-    ncells = index_map.size_local + index_map.num_ghosts
-    cells = np.arange(ncells, dtype=np.int32)
+    if cells is None:
+        dim = f_out.function_space.mesh.topology.dim
+        index_map = f_out.function_space.mesh.topology.index_map(dim)
+        ncells = index_map.size_local + index_map.num_ghosts
+        cells = np.arange(ncells, dtype=np.int32)
+
     interpolation_data = fem.create_interpolation_data(
-        f_out.function_space, f_in.function_space, cells, padding=1e-11
+        f_out.function_space, f_in.function_space, cells, padding=padding
     )
     f_out.interpolate_nonmatching(f_in, cells, interpolation_data=interpolation_data)

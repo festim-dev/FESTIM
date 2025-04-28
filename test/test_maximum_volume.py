@@ -26,7 +26,7 @@ def test_maximum_volume_compute_1D():
     c.interpolate(lambda x: (x[0] - 1) ** 2 + 2)
 
     my_species = F.Species("H")
-    my_species.solution = c
+    my_species.post_processing_solution = c
 
     my_export = F.MaximumVolume(field=my_species, volume=dummy_volume)
     my_export.volume_meshtags = ct

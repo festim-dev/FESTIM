@@ -1,6 +1,7 @@
 import dolfinx
 import festim as F
 import numpy as np
+import pytest
 from .test_multi_mat_penalty import generate_mesh
 
 
@@ -87,7 +88,14 @@ def test_D_global_on_2d_mesh():
     assert len(np.unique(D.x.array[:])) == 2
 
 
-def test_min_max_vol_on_2d_mesh():
+@pytest.mark.parametrize(
+    "species",
+    [
+        [F.Species("H", mobile=True)],
+        [F.Species("H", mobile=True), F.Species("D", mobile=True)],
+    ],
+)
+def test_min_max_vol_on_2d_mesh(species):
     """Added test that catches bug #908"""
     mesh, mt, ct = generate_mesh(10)
 
@@ -111,9 +119,9 @@ def test_min_max_vol_on_2d_mesh():
         bottom_surface,
     ]
 
-    H = F.Species("H", mobile=True)
+    H = species[0]
 
-    my_model.species = [H]
+    my_model.species = species
 
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(top_surface, value=1, species=H),
@@ -127,10 +135,46 @@ def test_min_max_vol_on_2d_mesh():
     max_bottom = F.MaximumVolume(field=H, volume=bottom_domain)
     max_top_boundary = F.MaximumSurface(field=H, surface=top_surface)
     max_bottom_boundary = F.MaximumSurface(field=H, surface=bottom_surface)
-    my_model.exports = [max_top, max_bottom, max_top_boundary, max_bottom_boundary]
+    min_top = F.MinimumVolume(field=H, volume=top_domain)
+    min_bottom = F.MinimumVolume(field=H, volume=bottom_domain)
+    min_top_boundary = F.MinimumSurface(field=H, surface=top_surface)
+    min_bottom_boundary = F.MinimumSurface(field=H, surface=bottom_surface)
+    my_model.exports = [
+        max_top,
+        max_bottom,
+        max_top_boundary,
+        max_bottom_boundary,
+        min_top,
+        min_bottom,
+        min_top_boundary,
+        min_bottom_boundary,
+    ]
+    if len(species) == 2:
+        my_model.boundary_conditions.append(
+            F.FixedConcentrationBC(top_surface, value=0, species=species[1])
+        )
+        my_model.boundary_conditions.append(
+            F.FixedConcentrationBC(bottom_surface, value=1, species=species[1])
+        )
+        my_model.exports += [
+            F.MaximumVolume(field=species[1], volume=top_domain),
+            F.MaximumVolume(field=species[1], volume=bottom_domain),
+            F.MaximumSurface(field=species[1], surface=top_surface),
+            F.MaximumSurface(field=species[1], surface=bottom_surface),
+            F.MinimumVolume(field=species[1], volume=top_domain),
+            F.MinimumVolume(field=species[1], volume=bottom_domain),
+            F.MinimumSurface(field=species[1], surface=top_surface),
+            F.MinimumSurface(field=species[1], surface=bottom_surface),
+        ]
 
     my_model.initialise()
     my_model.run()
 
     assert max_top.value != max_bottom.value
     assert max_top_boundary.value != max_bottom_boundary.value
+    assert min_top.value != min_bottom.value
+    assert min_top_boundary.value != min_bottom_boundary.value
+
+    if len(species) == 2:
+        assert my_model.exports[-1].value != my_model.exports[-2].value
+        assert my_model.exports[-1].value != min_bottom_boundary.value

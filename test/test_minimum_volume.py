@@ -26,7 +26,7 @@ def test_minimum_volume_compute_1D():
     c.interpolate(lambda x: (x[0] - 2) ** 2 + 0.5)
 
     my_species = F.Species("H")
-    my_species.solution = c
+    my_species.post_processing_solution = c
 
     my_export = F.MinimumVolume(field=my_species, volume=dummy_volume)
     my_export.volume_meshtags = ct
