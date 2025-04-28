@@ -181,11 +181,11 @@ def test_min_max_vol_on_2d_mesh(species):
 
 
 def test_temp_dependent_bc_mixed_domain_temperature_as_function():
-    mesh, mt, ct = generate_mesh(20)
+    mesh, mt, ct = generate_mesh(8)
 
     V = dolfinx.fem.functionspace(mesh, ("CG", 1))
     T = dolfinx.fem.Function(V)
-    T.interpolate(lambda x: 800.0 + 100 * x[0])
+    T.interpolate(lambda x: 800.0 + 100 * x[0] + x[1])
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
     my_model.mesh = F.Mesh(mesh)
@@ -217,7 +217,7 @@ def test_temp_dependent_bc_mixed_domain_temperature_as_function():
     my_model.species = [H]
 
     my_model.boundary_conditions = [
-        F.FixedConcentrationBC(top_surface, value=lambda T: 1 * T, species=H),
+        F.FixedConcentrationBC(top_surface, value=lambda T: 2 * T, species=H),
         F.FixedConcentrationBC(bottom_surface, value=0, species=H),
     ]
 
@@ -232,26 +232,8 @@ def test_temp_dependent_bc_mixed_domain_temperature_as_function():
     my_model.initialise()
     my_model.run()
 
-    value_bc = my_model.boundary_conditions[0].value_fenics
-    print(type(value_bc))
-
-    # from dolfinx.io import VTXWriter
-    # from mpi4py import MPI
-
-    # writer = VTXWriter(MPI.COMM_WORLD, "bc_value.bp", value_bc, "BP5")
-    # writer.write(0.0)
-
-    import scifem
-
-    with scifem.xdmf.XDMFFile("bc_value.xdmf", [value_bc]) as xdmf:
-        xdmf.write(0.0)
-
-    print(H.subdomain_to_post_processing_solution[top_domain].x.array[:])
-
-    print(H.subdomain_to_post_processing_solution[top_domain].x.array[:].max())
-    print(1 * T.x.array[:].max())
-    print(my_model.temperature_fenics.x.array[:].max())
-    assert np.isclose(
-        H.subdomain_to_post_processing_solution[top_domain].x.array[:].max(),
-        1 * T.x.array[:].max(),
+    expected_value = 2 * T.x.array[:].max()
+    computed_value = (
+        H.subdomain_to_post_processing_solution[top_domain].x.array[:].max()
     )
+    assert np.isclose(computed_value, expected_value)
