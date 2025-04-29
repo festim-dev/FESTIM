@@ -1,9 +1,10 @@
+from typing import Optional
+
 import ufl
 from dolfinx import fem
 
-from typing import Optional
-
-import festim as F
+from festim import k_B
+from festim.helpers import as_fenics_constant
 
 
 class Material:
@@ -120,7 +121,7 @@ class Material:
             float: the activation energy of the diffusion coefficient
         """
 
-        if isinstance(self.E_D, (float, int)):
+        if isinstance(self.E_D, float | int):
             return self.E_D
 
         elif isinstance(self.E_D, dict):
@@ -148,7 +149,7 @@ class Material:
             the pre-exponential factor of the solubility coefficient
         """
 
-        if isinstance(self.K_S_0, (float, int)):
+        if isinstance(self.K_S_0, float | int):
             return self.K_S_0
 
         elif isinstance(self.K_S_0, dict):
@@ -176,7 +177,7 @@ class Material:
             the activation energy of the solubility coefficient
         """
 
-        if isinstance(self.E_K_S, (float, int)):
+        if isinstance(self.E_K_S, float | int):
             return self.E_K_S
 
         elif isinstance(self.E_K_S, dict):
@@ -210,16 +211,16 @@ class Material:
         # D_0 = self.get_D_0(species=species)
         # E_D = self.get_E_D(species=species)
 
-        # D_0 = F.as_fenics_constant(D_0, mesh)
-        # E_D = F.as_fenics_constant(E_D, mesh)
+        # D_0 = as_fenics_constant(D_0, mesh)
+        # E_D = as_fenics_constant(E_D, mesh)
 
-        # return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+        # return D_0 * ufl.exp(-E_D / k_B / temperature)
 
-        if isinstance(self.D_0, (float, int)) and isinstance(self.E_D, (float, int)):
-            D_0 = F.as_fenics_constant(self.D_0, mesh)
-            E_D = F.as_fenics_constant(self.E_D, mesh)
+        if isinstance(self.D_0, float | int) and isinstance(self.E_D, float | int):
+            D_0 = as_fenics_constant(self.D_0, mesh)
+            E_D = as_fenics_constant(self.E_D, mesh)
 
-            return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+            return D_0 * ufl.exp(-E_D / k_B / temperature)
 
         elif isinstance(self.D_0, dict) and isinstance(self.E_D, dict):
             # check D_0 and E_D have the same keys
@@ -231,18 +232,18 @@ class Material:
                 raise ValueError("species must be provided if D_0 and E_D are dicts")
 
             if species in self.D_0:
-                D_0 = F.as_fenics_constant(self.D_0[species], mesh)
+                D_0 = as_fenics_constant(self.D_0[species], mesh)
             elif species.name in self.D_0:
-                D_0 = F.as_fenics_constant(self.D_0[species.name], mesh)
+                D_0 = as_fenics_constant(self.D_0[species.name], mesh)
             else:
                 raise ValueError(f"{species} is not in D_0 keys")
 
             if species in self.E_D:
-                E_D = F.as_fenics_constant(self.E_D[species], mesh)
+                E_D = as_fenics_constant(self.E_D[species], mesh)
             elif species.name in self.E_D:
-                E_D = F.as_fenics_constant(self.E_D[species.name], mesh)
+                E_D = as_fenics_constant(self.E_D[species.name], mesh)
 
-            return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+            return D_0 * ufl.exp(-E_D / k_B / temperature)
 
         else:
             raise ValueError("D_0 and E_D must be either floats or dicts")
@@ -264,18 +265,16 @@ class Material:
         # K_S_0 = self.get_K_S_0(species=species)
         # E_K_S = self.get_E_K_S(species=species)
 
-        # K_S_0 = F.as_fenics_constant(K_S_0, mesh)
-        # E_K_S = F.as_fenics_constant(E_K_S, mesh)
+        # K_S_0 = as_fenics_constant(K_S_0, mesh)
+        # E_K_S = as_fenics_constant(E_K_S, mesh)
 
-        # return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+        # return K_S_0 * ufl.exp(-E_K_S / k_B / temperature)
 
-        if isinstance(self.K_S_0, (float, int)) and isinstance(
-            self.E_K_S, (float, int)
-        ):
-            K_S_0 = F.as_fenics_constant(self.K_S_0, mesh)
-            E_K_S = F.as_fenics_constant(self.E_K_S, mesh)
+        if isinstance(self.K_S_0, float | int) and isinstance(self.E_K_S, float | int):
+            K_S_0 = as_fenics_constant(self.K_S_0, mesh)
+            E_K_S = as_fenics_constant(self.E_K_S, mesh)
 
-            return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+            return K_S_0 * ufl.exp(-E_K_S / k_B / temperature)
 
         elif isinstance(self.K_S_0, dict) and isinstance(self.E_K_S, dict):
             # check D_0 and E_D have the same keys
@@ -289,18 +288,18 @@ class Material:
                 )
 
             if species in self.K_S_0:
-                K_S_0 = F.as_fenics_constant(self.K_S_0[species], mesh)
+                K_S_0 = as_fenics_constant(self.K_S_0[species], mesh)
             elif species.name in self.K_S_0:
-                K_S_0 = F.as_fenics_constant(self.K_S_0[species.name], mesh)
+                K_S_0 = as_fenics_constant(self.K_S_0[species.name], mesh)
             else:
                 raise ValueError(f"{species} is not in K_S_0 keys")
 
             if species in self.E_K_S:
-                E_K_S = F.as_fenics_constant(self.E_K_S[species], mesh)
+                E_K_S = as_fenics_constant(self.E_K_S[species], mesh)
             elif species.name in self.E_K_S:
-                E_K_S = F.as_fenics_constant(self.E_K_S[species.name], mesh)
+                E_K_S = as_fenics_constant(self.E_K_S[species.name], mesh)
 
-            return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+            return K_S_0 * ufl.exp(-E_K_S / k_B / temperature)
 
         else:
             raise ValueError("K_S_0 and E_K_S must be either floats or dicts")
