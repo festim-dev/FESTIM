@@ -1,4 +1,7 @@
 import ufl
+from dolfinx import fem
+
+from typing import Optional
 
 import festim as F
 
@@ -8,33 +11,33 @@ class Material:
     Material class
 
     Args:
-        D_0 (float or dict): the pre-exponential factor of the
+        D_0: the pre-exponential factor of the
             diffusion coefficient (m2/s)
-        E_D (float or dict): the activation energy of the diffusion
+        E_D: the activation energy of the diffusion
             coeficient (eV)
-        K_S_0 (float or dict): the pre-exponential factor of the
+        K_S_0: the pre-exponential factor of the
             solubility coefficient (H/m3/Pa0.5)
-        E_K_S (float or dict): the activation energy of the solubility
+        E_K_S: the activation energy of the solubility
             coeficient (eV)
-        name (str): the name of the material
-        thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
-        density (float, callable): the density of the material (kg/m3)
-        heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
-        solubility_law (str): the solubility law of the material ("sievert" or "henry")
+        name: the name of the material
+        thermal_conductivity: the thermal conductivity of the material (W/m/K)
+        density: the density of the material (kg/m3)
+        heat_capacity: the heat capacity of the material (J/kg/K)
+        solubility_law: the solubility law of the material ("sievert" or "henry")
 
     Attributes:
-        D_0 (float or dict): the pre-exponential factor of the
+        D_0: the pre-exponential factor of the
             diffusion coefficient (m2/s)
-        E_D (float or dict): the activation energy of the diffusion
+        E_D: the activation energy of the diffusion
             coeficient (eV)
-        K_S_0 (float or dict): the pre-exponential factor of the
+        K_S_0: the pre-exponential factor of the
             solubility coefficient (H/m3/Pa0.5)
-        E_K_S (float or dict): the activation energy of the solubility
+        E_K_S: the activation energy of the solubility
             coeficient (eV)
-        name (str): the name of the material
-        thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
-        density (float, callable): the density of the material (kg/m3)
-        heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
+        name: the name of the material
+        thermal_conductivity: the thermal conductivity of the material (W/m/K)
+        density: the density of the material (kg/m3)
+        heat_capacity: the heat capacity of the material (J/kg/K)
 
     Examples:
         .. testsetup:: Material
@@ -56,15 +59,15 @@ class Material:
 
     def __init__(
         self,
-        D_0,
-        E_D,
-        K_S_0=None,
-        E_K_S=None,
-        thermal_conductivity=None,
-        density=None,
-        heat_capacity=None,
-        name=None,
-        solubility_law=None,
+        D_0: Optional[float | int | fem.Function | dict[float, int]] = None,
+        E_D: Optional[float | int | fem.Function | dict[float, int]] = None,
+        K_S_0: Optional[float | int | dict[float, int]] = None,
+        E_K_S: Optional[float | int | dict[float, int]] = None,
+        thermal_conductivity: Optional[float] = None,
+        density: Optional[float] = None,
+        heat_capacity: Optional[float] = None,
+        name: Optional[str] = None,
+        solubility_law: Optional[str] = None,
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
@@ -81,14 +84,15 @@ class Material:
         """Returns the pre-exponential factor of the diffusion coefficient
 
         Args:
-            species (festim.Species or str, optional): the species we want the pre-exponential
-                factor of the diffusion coefficient of. Only needed if D_0 is a dict.
+            species (festim.Species or str, optional): the species we want the
+                pre-exponential factor of the diffusion coefficient of. Only needed if
+                D_0 is a dict.
 
         Returns:
             float: the pre-exponential factor of the diffusion coefficient
         """
 
-        if isinstance(self.D_0, (float, int)):
+        if isinstance(self.D_0, float | int | fem.Function):
             return self.D_0
 
         elif isinstance(self.D_0, dict):
