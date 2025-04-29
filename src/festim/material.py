@@ -25,6 +25,7 @@ class Material:
         density: the density of the material (kg/m3)
         heat_capacity: the heat capacity of the material (J/kg/K)
         solubility_law: the solubility law of the material ("sievert" or "henry")
+        D: the diffusion coefficient of the material (m2/s)
 
     Attributes:
         D_0: the pre-exponential factor of the
@@ -39,6 +40,8 @@ class Material:
         thermal_conductivity: the thermal conductivity of the material (W/m/K)
         density: the density of the material (kg/m3)
         heat_capacity: the heat capacity of the material (J/kg/K)
+        solubility_law: the solubility law of the material ("sievert" or "henry")
+        D: the diffusion coefficient of the material (m2/s)
 
     Examples:
         .. testsetup:: Material
@@ -69,6 +72,7 @@ class Material:
         heat_capacity: Optional[float] = None,
         name: Optional[str] = None,
         solubility_law: Optional[str] = None,
+        D: Optional[fem.Function] = None,
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
@@ -80,6 +84,7 @@ class Material:
         self.heat_capacity = heat_capacity
         self.name = name
         self.solubility_law = solubility_law
+        self.D = D
 
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient
@@ -215,6 +220,10 @@ class Material:
         # E_D = as_fenics_constant(E_D, mesh)
 
         # return D_0 * ufl.exp(-E_D / k_B / temperature)
+
+        if self.D:
+            assert isinstance(self.D, fem.Function)
+            return self.D
 
         if isinstance(self.D_0, float | int) and isinstance(self.E_D, float | int):
             D_0 = as_fenics_constant(self.D_0, mesh)
