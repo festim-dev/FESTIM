@@ -119,8 +119,9 @@ class Material:
         """Returns the activation energy of the diffusion coefficient
 
         Args:
-            species (festim.Species or str, optional): the species we want the activation
-                energy of the diffusion coefficient of. Only needed if E_D is a dict.
+            species (festim.Species or str, optional): the species we want the
+                activation energy of the diffusion coefficient of. Only needed if E_D is
+                a dict.
 
         Returns:
             float: the activation energy of the diffusion coefficient
