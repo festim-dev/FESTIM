@@ -1270,3 +1270,32 @@ def test_not_implemented_error_raised_with_D_as_function():
         ),
     ):
         my_model.define_D_global(H)
+
+
+def test_define_D_global_with_D_as_function():
+    """Test that if a function is given as diffusion coeff of a material, that it is
+    passed to D_global"""
+
+    # BUILD
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D_func = fem.Function(V)
+    D_func.interpolate(lambda x: x[0] * 5.0)
+
+    my_mat = F.Material(D=D_func)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol],
+        species=[F.Species("H")],
+    )
+
+    my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    D, D_expr = my_model.define_D_global(H)
+
+    # TEST
+    assert D_expr is None
+    assert D == D_func
