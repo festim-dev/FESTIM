@@ -35,6 +35,7 @@ from festim import (
 from festim.advection import AdvectionTerm
 from festim.helpers import as_fenics_constant, get_interpolation_points
 from festim.mesh import Mesh
+from festim.exports.vtx import ExportBaseClass
 
 __all__ = ["HydrogenTransportProblemDiscontinuous", "HydrogenTransportProblem"]
 
@@ -177,7 +178,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.traps = traps or []
         self.advection_terms = advection_terms or []
         self.temperature_fenics = None
-        self._vtxfiles: list[dolfinx.io.VTXWriter] = []
+        self._vtx_exports: list[ExportBaseClass] = []
 
         self._element_for_traps = "DG"
         self.petcs_options = petsc_options
@@ -384,18 +385,29 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
+            if isinstance(export, festim.ExportBaseClass):
+                if export.times:
+                    if not self.settings.stepsize.milestones:
+                        self.settings.stepsize.milestones = []
+                    for time in export.times:
+                        if time not in self.settings.stepsize.milestones:
+                            msg = "To ensure that the exports data at the desired times"
+                            msg += "the values in times are added to milestones"
+                            warnings.warn(msg)
+                            self.settings.stepsize.milestones.append(time)
+                    self.settings.stepsize.milestones.sort()
+
             if isinstance(export, festim.VTXTemperatureExport):
                 self._temperature_as_function = (
                     self._get_temperature_field_as_function()
                 )
-                self._vtxfiles.append(
-                    dolfinx.io.VTXWriter(
-                        self._temperature_as_function.function_space.mesh.comm,
-                        export.filename,
-                        self._temperature_as_function,
-                        engine="BP5",
-                    )
+                export.writer = dolfinx.io.VTXWriter(
+                    self._temperature_as_function.function_space.mesh.comm,
+                    export.filename,
+                    self._temperature_as_function,
+                    engine="BP5",
                 )
+                self._vtx_exports.append(export)
                 continue
 
             # if name of species is given then replace with species object
@@ -416,14 +428,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.VTXSpeciesExport):
                 functions = export.get_functions()
                 if not export._checkpoint:
-                    self._vtxfiles.append(
-                        dolfinx.io.VTXWriter(
-                            functions[0].function_space.mesh.comm,
-                            export.filename,
-                            functions,
-                            engine="BP5",
-                        )
+                    export.writer = dolfinx.io.VTXWriter(
+                        functions[0].function_space.mesh.comm,
+                        export.filename,
+                        functions,
+                        engine="BP5",
                     )
+                    self._vtx_exports.append(export)
+
                 else:
                     adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
@@ -960,8 +972,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             name=field.name,
                         )
         # should we move this to problem.ProblemBase?
-        for vtxfile in self._vtxfiles:
-            vtxfile.write(float(self.t))
+        for export in self._vtx_exports:
+            if export.is_it_time_to_export(float(self.t)):
+                export.writer.write(float(self.t))
 
 
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
@@ -1022,7 +1035,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.interfaces = interfaces or []
         self.surface_to_volume = surface_to_volume or {}
-        self._vtxfiles: list[dolfinx.io.VTXWriter] = []
+        self._vtx_exports: list[dolfinx.io.VTXWriter] = []
 
     def initialise(self):
         # check that all species have a list of F.VolumeSubdomain as this is
@@ -1484,7 +1497,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if isinstance(export, exports.VTXSpeciesExport):
                 functions = export.get_functions()
                 if not export._checkpoint:
-                    self._vtxfiles.append(
+                    self._vtx_exports.append(
                         dolfinx.io.VTXWriter(
                             functions[0].function_space.mesh.comm,
                             export.filename,
@@ -1514,7 +1527,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 v0_to_V = species.subdomain_to_collapsed_function_space[subdomain][1]
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
 
-        for vtxfile in self._vtxfiles:
+        for vtxfile in self._vtx_exports:
             vtxfile.write(float(self.t))
 
         for export in self.exports:
@@ -1570,7 +1583,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.post_processing()
 
     def __del__(self):
-        for vtxfile in self._vtxfiles:
+        for vtxfile in self._vtx_exports:
             vtxfile.close()
 
 
