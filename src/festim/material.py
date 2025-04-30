@@ -213,7 +213,7 @@ class Material:
         else:
             raise TypeError("E_K_S must be either a float, int or a dict")
 
-    def get_diffusion_coefficient(self, mesh, temperature, species=None):
+    def get_diffusion_coefficient(self, mesh=None, temperature=None, species=None):
         """Defines the diffusion coefficient
 
         Args:
