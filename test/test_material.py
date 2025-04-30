@@ -228,7 +228,7 @@ def test_get_diffusion_coefficient_returns_function_when_given_to_D():
     my_mat = F.Material(D=D)
     D_out = my_mat.get_diffusion_coefficient()
 
-    assert isinstance(D_out, fem.Function)
+    assert D_out == D
 
 
 def test_error_raised_when_D_and_D_0_given():
