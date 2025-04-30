@@ -502,7 +502,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         # if diffusion coeffient has been given as a function, use that
         if self.volume_subdomains[0].material.D:
-            assert len(self.volume_subdomains) == 1
+            if len(self.volume_subdomains) > 1:
+                raise ValueError(
+                    "Giving the diffusion coefficient as a function is currently "
+                    "only supported for a single volume subdomain case"
+                )
             return self.volume_subdomains[0].material.D, None
 
         D_0 = fem.Function(self.V_DG_0)
