@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from dolfinx import fem
 
 import festim as F
 
@@ -198,3 +199,46 @@ def test_raises_TypeError_when_E_D_is_not_correct_type():
 
     with pytest.raises(TypeError, match="E_D must be either a float, int or a dict"):
         my_mat.get_E_D()
+
+
+@pytest.mark.parametrize(
+    "input_value",
+    [
+        1.0,
+        1,
+        "coucou",
+        lambda T: 1.0 + T,
+    ],
+)
+def test_raises_TypeError_when_D_is_not_correct_type(input_value):
+    """Test that a TypeError is raised when D is not an fem.Function"""
+
+    with pytest.raises(TypeError, match="D must be of type fem.Function"):
+        F.Material(D=input_value)
+
+
+def test_get_diffusion_coefficient_returns_function_when_given_to_D():
+    """Test that the diffusion coefficient is correctly defined when D is a
+    function"""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D = fem.Function(V)
+    D.x.array[:] = 2.0
+
+    my_mat = F.Material(D=D)
+    D_out = my_mat.get_diffusion_coefficient()
+
+    assert D_out == D
+
+
+def test_error_raised_when_D_and_D_0_given():
+    """Test that a value error is raised when both D and D_0 are given"""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D_func = fem.Function(V)
+
+    with pytest.raises(
+        ValueError,
+        match="D_0 and D cannot be set at the same time. Please set only one of them.",
+    ):
+        F.Material(D=D_func, D_0=1)

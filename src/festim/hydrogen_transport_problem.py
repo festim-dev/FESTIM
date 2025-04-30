@@ -497,6 +497,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 for a given species
         """
         assert isinstance(species, _species.Species)
+        # create global D function
+        D = fem.Function(self.V_DG_1)
+
+        # if diffusion coeffient has been given as a function, use that
+        if self.volume_subdomains[0].material.D:
+            if len(self.volume_subdomains) > 1:
+                raise NotImplementedError(
+                    "Giving the diffusion coefficient as a function is currently "
+                    "only supported for a single volume subdomain case"
+                )
+            return self.volume_subdomains[0].material.D, None
 
         D_0 = fem.Function(self.V_DG_0)
         E_D = fem.Function(self.V_DG_0)
@@ -506,9 +517,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
             # replace values of D_0 and E_D by values from the material
             D_0.x.array[cell_indices] = vol.material.get_D_0(species=species)
             E_D.x.array[cell_indices] = vol.material.get_E_D(species=species)
-
-        # create global D function
-        D = fem.Function(self.V_DG_1)
 
         expr = D_0 * ufl.exp(
             -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
