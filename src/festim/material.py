@@ -111,7 +111,7 @@ class Material:
             float: the pre-exponential factor of the diffusion coefficient
         """
 
-        if isinstance(self.D_0, float | int | fem.Function):
+        if isinstance(self.D_0, float | int):
             return self.D_0
 
         elif isinstance(self.D_0, dict):
