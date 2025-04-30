@@ -86,6 +86,11 @@ class Material:
         self.solubility_law = solubility_law
         self.D = D
 
+        if self.D_0 and self.D:
+            raise ValueError(
+                "D_0 and D cannot be set at the same time. Please set only one of them."
+            )
+
     @property
     def D(self):
         return self._D
