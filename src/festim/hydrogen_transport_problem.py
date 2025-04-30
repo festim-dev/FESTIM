@@ -1497,14 +1497,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if isinstance(export, exports.VTXSpeciesExport):
                 functions = export.get_functions()
                 if not export._checkpoint:
-                    self._vtx_exports.append(
-                        dolfinx.io.VTXWriter(
-                            functions[0].function_space.mesh.comm,
-                            export.filename,
-                            functions,
-                            engine="BP5",
-                        )
+                    export.writer = dolfinx.io.VTXWriter(
+                        functions[0].function_space.mesh.comm,
+                        export.filename,
+                        functions,
+                        engine="BP5",
                     )
+                    self._vtx_exports.append(export)
                 else:
                     raise NotImplementedError(
                         f"Export type {type(export)} not implemented for "
@@ -1527,8 +1526,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 v0_to_V = species.subdomain_to_collapsed_function_space[subdomain][1]
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
 
-        for vtxfile in self._vtx_exports:
-            vtxfile.write(float(self.t))
+        for export in self._vtx_exports:
+            if export.is_it_time_to_export(float(self.t)):
+                export.writer.write(float(self.t))
 
         for export in self.exports:
             if not isinstance(export, exports.VTXSpeciesExport):
@@ -1583,8 +1583,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.post_processing()
 
     def __del__(self):
-        for vtxfile in self._vtx_exports:
-            vtxfile.close()
+        for export in self._vtx_exports:
+            export.close()
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
