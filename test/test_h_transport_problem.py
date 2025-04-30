@@ -1235,3 +1235,38 @@ def test_create_flux_values_fenics_multispecies():
     # TEST
     assert np.isclose(float(my_model.boundary_conditions[0].value_fenics), 5)
     assert np.isclose(float(my_model.boundary_conditions[1].value_fenics), 11)
+
+
+def test_not_implemented_error_raised_with_D_as_function():
+    """Test that NotImplementedError is raised when D is a function and more than one
+    volume subdomain has been defined"""
+
+    # BUILD
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D_func = fem.Function(V)
+    D_func.x.array[:] = 7.0
+
+    my_mat = F.Material(D=D_func)
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=my_mat)
+    vol_2 = F.VolumeSubdomain1D(id=1, borders=[0.5, 1], material=my_mat)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol_1, vol_2],
+        species=[F.Species("H")],
+    )
+
+    my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+
+    # TEST
+    with pytest.raises(
+        NotImplementedError,
+        match=(
+            "Giving the diffusion coefficient as a function is currently only "
+            "supported for a single volume subdomain case"
+        ),
+    ):
+        my_model.define_D_global(H)
