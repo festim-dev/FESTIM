@@ -86,6 +86,19 @@ class Material:
         self.solubility_law = solubility_law
         self.D = D
 
+    @property
+    def D(self):
+        return self._D
+
+    @D.setter
+    def D(self, value):
+        if value is None:
+            self._D = None
+        elif isinstance(value, fem.Function):
+            self._D = value
+        else:
+            raise TypeError("D must be of type fem.Function")
+
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient
 
