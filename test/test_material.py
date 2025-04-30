@@ -229,3 +229,16 @@ def test_get_diffusion_coefficient_returns_function_when_given_to_D():
     D_out = my_mat.get_diffusion_coefficient()
 
     assert isinstance(D_out, fem.Function)
+
+
+def test_error_raised_when_D_and_D_0_given():
+    """Test that a value error is raised when both D and D_0 are given"""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D_func = fem.Function(V)
+
+    with pytest.raises(
+        ValueError,
+        match="D_0 and D cannot be set at the same time. Please set only one of them.",
+    ):
+        F.Material(D=D_func, D_0=1)
