@@ -1,18 +1,33 @@
 import warnings
 from pathlib import Path
+from typing import Optional
 
-from dolfinx import fem
+import numpy as np
+from dolfinx import fem, io
 
-from festim.species import Species as _Species
-from festim.subdomain.volume_subdomain import (
-    VolumeSubdomain as _VolumeSubdomain,
-)
+from festim.species import Species
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class ExportBaseClass:
-    _filename: Path | str
+    """Export functions to VTX file
 
-    def __init__(self, filename: str | Path, ext: str) -> None:
+    Args:
+        filename: The name of the output file
+        ext: The file extension
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
+    """
+
+    _filename: Path | str
+    writer: io.VTXWriter
+
+    def __init__(
+        self,
+        filename: str | Path,
+        ext: str,
+        times: Optional[list[float] | list[int] | None] = None,
+    ) -> None:
         name = Path(filename)
         if name.suffix != ext:
             warnings.warn(
@@ -21,15 +36,55 @@ class ExportBaseClass:
             name = name.with_suffix(ext)
 
         self._filename = name
+        if times:
+            self.times = sorted(times)
+        else:
+            self.times = times
 
     @property
     def filename(self):
         return self._filename
 
+    def is_it_time_to_export(self, current_time):
+        """
+        Checks if the exported field should be written to a file or not
+        based on the current time and the times in `export.times`
+
+        Args:
+            current_time (float): the current simulation time
+
+        Returns:
+            bool: True if the exported field should be written to a file, else False
+        """
+
+        if self.times is None:
+            return True
+
+        for time in self.times:
+            if np.isclose(time, current_time, atol=0):
+                return True
+
+        return False
+
 
 class VTXTemperatureExport(ExportBaseClass):
-    def __init__(self, filename: str | Path):
-        super().__init__(filename, ".bp")
+    """Export functions to VTX file
+
+    Args:
+        filename: The name of the output file
+        ext: The file extension
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
+    """
+
+    writer: io.VTXWriter
+
+    def __init__(
+        self,
+        filename: str | Path,
+        times: Optional[list[float] | list[int] | None] = None,
+    ) -> None:
+        super().__init__(filename, ".bp", times)
 
 
 class VTXSpeciesExport(ExportBaseClass):
@@ -37,6 +92,9 @@ class VTXSpeciesExport(ExportBaseClass):
 
     Args:
         filename: The name of the output file
+        ext: The file extension
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
         field: Set of species to export
         subdomain: A field can be defined on multiple domains.
             This arguments specifies what subdomains we export on.
@@ -46,28 +104,30 @@ class VTXSpeciesExport(ExportBaseClass):
             Default is False.
     """
 
-    field: list[_Species]
-    _subdomain: _VolumeSubdomain
+    field: list[Species]
+    _subdomain: VolumeSubdomain
     _checkpoint: bool
+    writer: io.VTXWriter
 
     def __init__(
         self,
         filename: str | Path,
-        field: _Species | list[_Species],
-        subdomain: _VolumeSubdomain = None,
+        field: Species | list[Species],
+        subdomain: VolumeSubdomain = None,
         checkpoint: bool = False,
+        times: Optional[list[float] | list[int] | None] = None,
     ) -> None:
-        super().__init__(filename, ".bp")
+        super().__init__(filename, ".bp", times)
         self.field = field
         self._subdomain = subdomain
         self._checkpoint = checkpoint
 
     @property
-    def field(self) -> list[_Species]:
+    def field(self) -> list[Species]:
         return self._field
 
     @field.setter
-    def field(self, value: _Species | list[_Species]):
+    def field(self, value: Species | list[Species]):
         """
         Update the field to export.
 
@@ -83,12 +143,12 @@ class VTXSpeciesExport(ExportBaseClass):
         # check that all elements of list are festim.Species
         if isinstance(value, list):
             for element in value:
-                if not isinstance(element, (_Species, str)):
+                if not isinstance(element, Species | str):
                     raise TypeError(
                         "field must be of type festim.Species or a list of festim.Species or str"
                     )
             val = value
-        elif isinstance(value, _Species):
+        elif isinstance(value, Species):
             val = [value]
         else:
             raise TypeError(
