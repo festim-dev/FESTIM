@@ -17,6 +17,11 @@ class ExportBaseClass:
         ext: The file extension
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
+
+    Attributes:
+        filename: The name of the output file
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
     """
 
     _filename: Path | str
@@ -45,13 +50,13 @@ class ExportBaseClass:
     def filename(self):
         return self._filename
 
-    def is_it_time_to_export(self, current_time):
+    def is_it_time_to_export(self, current_time: float) -> bool:
         """
         Checks if the exported field should be written to a file or not
         based on the current time and the times in `export.times`
 
         Args:
-            current_time (float): the current simulation time
+            current_time: the current simulation time
 
         Returns:
             bool: True if the exported field should be written to a file, else False
@@ -68,13 +73,18 @@ class ExportBaseClass:
 
 
 class VTXTemperatureExport(ExportBaseClass):
-    """Export functions to VTX file
+    """Export temperature field functions to VTX file
 
     Args:
         filename: The name of the output file
-        ext: The file extension
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
+
+    Attributes:
+        filename: The name of the output file
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
+        writer: The VTXWriter object used to write the file
     """
 
     writer: io.VTXWriter
@@ -88,11 +98,10 @@ class VTXTemperatureExport(ExportBaseClass):
 
 
 class VTXSpeciesExport(ExportBaseClass):
-    """Export functions to VTX file
+    """Export species field functions to VTX file
 
     Args:
         filename: The name of the output file
-        ext: The file extension
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
         field: Set of species to export
@@ -102,6 +111,19 @@ class VTXSpeciesExport(ExportBaseClass):
         checkpoint: If True, the export will be a checkpoint file
             using adios4dolfinx and won't be readable by ParaView.
             Default is False.
+
+    Attributes:
+        filename: The name of the output file
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
+        field: Set of species to export
+        _subdomain: A field can be defined on multiple domains.
+            This arguments specifies what subdomains we export on.
+            If `None` we export on all domains.
+        _checkpoint: If True, the export will be a checkpoint file
+            using adios4dolfinx and won't be readable by ParaView.
+            Default is False.
+        writer: The VTXWriter object used to write the file
     """
 
     field: list[Species]
@@ -131,36 +153,38 @@ class VTXSpeciesExport(ExportBaseClass):
         """
         Update the field to export.
 
-        Note:
-            This also creates a new writer with the updated field.
-
         Args:
             value: The species to export
 
         Raises:
             TypeError: If input field is not a Species or a list of Species
+
+        Note:
+            This also creates a new writer with the updated field.
         """
         # check that all elements of list are festim.Species
         if isinstance(value, list):
             for element in value:
                 if not isinstance(element, Species | str):
                     raise TypeError(
-                        "field must be of type festim.Species or a list of festim.Species or str"
+                        "field must be of type festim.Species or a list of "
+                        "festim.Species or str"
                     )
             val = value
         elif isinstance(value, Species):
             val = [value]
         else:
             raise TypeError(
-                "field must be of type festim.Species or a list of festim.Species or str",
+                "field must be of type festim.Species or a list of festim.Species or "
+                "str",
                 f"got {type(value)}.",
             )
         self._field = val
 
     def get_functions(self) -> list[fem.Function]:
         """
-        Returns list of species for a given subdomain.
-        If using legacy mode, return the whole species.
+        Returns list of species for a given subdomain. If using legacy mode, return the
+        whole species.
         """
 
         legacy_output: bool = False
