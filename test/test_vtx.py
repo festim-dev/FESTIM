@@ -84,7 +84,13 @@ def test_vtx_DG(tmpdir):
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 2
-    assert len(my_model._vtx_exports) == 1
+
+    vtx_exports = []
+    for export in my_model.exports:
+        if isinstance(export, F.ExportBaseClass):
+            vtx_exports.append(export)
+
+    assert len(vtx_exports) == 1
 
 
 @pytest.mark.parametrize("checkpoint", [True, False])
