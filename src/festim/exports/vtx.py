@@ -31,7 +31,7 @@ class ExportBaseClass:
         filename: str | Path,
         ext: str,
         times: Optional[list[float] | list[int] | None] = None,
-    ) -> None:
+    ):
         name = Path(filename)
         if name.suffix != ext:
             warnings.warn(
@@ -92,7 +92,7 @@ class VTXTemperatureExport(ExportBaseClass):
         self,
         filename: str | Path,
         times: Optional[list[float] | list[int] | None] = None,
-    ) -> None:
+    ):
         super().__init__(filename, ".bp", times)
 
 
@@ -128,7 +128,7 @@ class VTXSpeciesExport(ExportBaseClass):
         subdomain: VolumeSubdomain = None,
         checkpoint: bool = False,
         times: Optional[list[float] | list[int] | None] = None,
-    ) -> None:
+    ):
         super().__init__(filename, ".bp", times)
         self.field = field
         self._subdomain = subdomain
