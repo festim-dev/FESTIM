@@ -14,7 +14,6 @@ class ExportBaseClass:
 
     Args:
         filename: The name of the output file
-        ext: The file extension
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
 
@@ -52,8 +51,8 @@ class ExportBaseClass:
 
     def is_it_time_to_export(self, current_time: float) -> bool:
         """
-        Checks if the exported field should be written to a file or not
-        based on the current time and the times in `export.times`
+        Checks if the exported field should be written to a file or not based on the
+        current time and the times in `export.times`
 
         Args:
             current_time: the current simulation time
@@ -105,28 +104,19 @@ class VTXSpeciesExport(ExportBaseClass):
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
         field: Set of species to export
-        subdomain: A field can be defined on multiple domains.
-            This arguments specifies what subdomains we export on.
-            If `None` we export on all domains.
-        checkpoint: If True, the export will be a checkpoint file
-            using adios4dolfinx and won't be readable by ParaView.
-            Default is False.
+        subdomain: A field can be defined on multiple domains. This arguments specifies
+            what subdomains we export on. If `None` we export on all domains.
+        checkpoint: If True, the export will be a checkpoint file using adios4dolfinx
+            and won't be readable by ParaView. Default is False.
 
     Attributes:
         filename: The name of the output file
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
         field: Set of species to export
-        _subdomain: A field can be defined on multiple domains.
-            This arguments specifies what subdomains we export on.
-            If `None` we export on all domains.
-        _checkpoint: If True, the export will be a checkpoint file
-            using adios4dolfinx and won't be readable by ParaView.
-            Default is False.
         writer: The VTXWriter object used to write the file
     """
 
-    field: list[Species]
     _subdomain: VolumeSubdomain
     _checkpoint: bool
     writer: io.VTXWriter
