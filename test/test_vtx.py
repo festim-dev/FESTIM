@@ -116,10 +116,14 @@ def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
-    if checkpoint:
-        assert len(my_model._vtx_exports) == 0
+
+    vtx_exports = []
+    for export in my_model.exports:
+        if isinstance(export, F.ExportBaseClass):
+            vtx_exports.append(export)
+
     else:
-        assert len(my_model._vtx_exports) == 1
+        assert len(vtx_exports) == 1
 
 
 @pytest.mark.parametrize(
@@ -152,7 +156,13 @@ def test_vtx_temperature(T, tmpdir):
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
-    assert len(my_model._vtx_exports) == 1
+
+    vtx_exports = []
+    for export in my_model.exports:
+        if isinstance(export, F.ExportBaseClass):
+            vtx_exports.append(export)
+
+    assert len(vtx_exports) == 1
 
     my_model.run()
 
