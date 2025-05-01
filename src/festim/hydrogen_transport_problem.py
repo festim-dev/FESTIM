@@ -178,7 +178,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.traps = traps or []
         self.advection_terms = advection_terms or []
         self.temperature_fenics = None
-        self._vtx_exports: list[ExportBaseClass] = []
 
         self._element_for_traps = "DG"
         self.petcs_options = petsc_options
@@ -407,7 +406,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self._temperature_as_function,
                     engine="BP5",
                 )
-                self._vtx_exports.append(export)
                 continue
 
             # if name of species is given then replace with species object
@@ -434,7 +432,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         functions,
                         engine="BP5",
                     )
-                    self._vtx_exports.append(export)
 
                 else:
                     adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
@@ -919,13 +916,29 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         species_not_updated.remove(export.field)
 
         for export in self.exports:
-            if (
-                isinstance(export, festim.VTXTemperatureExport)
-                and self.temperature_time_dependent
-            ):
-                self._temperature_as_function.interpolate(
-                    self._get_temperature_field_as_function()
-                )
+            # handle VTX exports
+            if isinstance(export, exports.ExportBaseClass):
+                if export.is_it_time_to_export(float(self.t)):
+                    if isinstance(export, exports.VTXSpeciesExport):
+                        if export._checkpoint:
+                            for field in export.field:
+                                adios4dolfinx.write_function(
+                                    export.filename,
+                                    field.post_processing_solution,
+                                    time=float(self.t),
+                                    name=field.name,
+                                )
+                        else:
+                            export.writer.write(float(self.t))
+                    elif (
+                        isinstance(export, festim.VTXTemperatureExport)
+                        and self.temperature_time_dependent
+                    ):
+                        self._temperature_as_function.interpolate(
+                            self._get_temperature_field_as_function()
+                        )
+                        export.writer.write(float(self.t))
+
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
@@ -961,20 +974,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
-
-            if isinstance(export, exports.VTXSpeciesExport):
-                if export._checkpoint:
-                    for field in export.field:
-                        adios4dolfinx.write_function(
-                            export.filename,
-                            field.post_processing_solution,
-                            time=float(self.t),
-                            name=field.name,
-                        )
-        # should we move this to problem.ProblemBase?
-        for export in self._vtx_exports:
-            if export.is_it_time_to_export(float(self.t)):
-                export.writer.write(float(self.t))
 
 
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
@@ -1035,7 +1034,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.interfaces = interfaces or []
         self.surface_to_volume = surface_to_volume or {}
-        self._vtx_exports: list[dolfinx.io.VTXWriter] = []
 
     def initialise(self):
         # check that all species have a list of F.VolumeSubdomain as this is
@@ -1503,7 +1501,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         functions,
                         engine="BP5",
                     )
-                    self._vtx_exports.append(export)
                 else:
                     raise NotImplementedError(
                         f"Export type {type(export)} not implemented for "
@@ -1526,19 +1523,21 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 v0_to_V = species.subdomain_to_collapsed_function_space[subdomain][1]
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
 
-        for export in self._vtx_exports:
-            if export.is_it_time_to_export(float(self.t)):
-                export.writer.write(float(self.t))
-
         for export in self.exports:
-            if not isinstance(export, exports.VTXSpeciesExport):
-                raise NotImplementedError(f"Export type {type(export)} not implemented")
-            if isinstance(export, exports.VTXSpeciesExport):
-                if export._checkpoint:
+            # handle VTX exports
+            if isinstance(export, exports.ExportBaseClass):
+                if not isinstance(export, exports.VTXSpeciesExport):
                     raise NotImplementedError(
-                        f"Export type {type(export)} not implemented "
-                        f"for mixed-domain approach"
+                        f"Export type {type(export)} not implemented"
                     )
+                if isinstance(export, exports.VTXSpeciesExport):
+                    if export._checkpoint:
+                        raise NotImplementedError(
+                            f"Export type {type(export)} not implemented "
+                            f"for mixed-domain approach"
+                        )
+                if export.is_it_time_to_export(float(self.t)):
+                    export.writer.write(float(self.t))
 
     def iterate(self):
         """Iterates the model for a given time step"""
@@ -1583,8 +1582,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.post_processing()
 
     def __del__(self):
-        for export in self._vtx_exports:
-            export.close()
+        for export in self.exports:
+            if isinstance(export, exports.ExportBaseClass):
+                export.writer.close()
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
