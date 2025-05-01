@@ -396,17 +396,30 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             self.settings.stepsize.milestones.append(time)
                     self.settings.stepsize.milestones.sort()
 
-            if isinstance(export, festim.VTXTemperatureExport):
-                self._temperature_as_function = (
-                    self._get_temperature_field_as_function()
-                )
-                export.writer = dolfinx.io.VTXWriter(
-                    self._temperature_as_function.function_space.mesh.comm,
-                    export.filename,
-                    self._temperature_as_function,
-                    engine="BP5",
-                )
-                continue
+                if isinstance(export, festim.VTXTemperatureExport):
+                    self._temperature_as_function = (
+                        self._get_temperature_field_as_function()
+                    )
+                    export.writer = dolfinx.io.VTXWriter(
+                        self._temperature_as_function.function_space.mesh.comm,
+                        export.filename,
+                        self._temperature_as_function,
+                        engine="BP5",
+                    )
+                    continue
+
+                elif isinstance(export, exports.VTXSpeciesExport):
+                    functions = export.get_functions()
+                    if not export._checkpoint:
+                        export.writer = dolfinx.io.VTXWriter(
+                            functions[0].function_space.mesh.comm,
+                            export.filename,
+                            functions,
+                            engine="BP5",
+                        )
+
+                    else:
+                        adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
@@ -423,18 +436,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
             # Initialize XDMFFile for writer
             if isinstance(export, exports.XDMFExport):
                 export.define_writer(MPI.COMM_WORLD)
-            if isinstance(export, exports.VTXSpeciesExport):
-                functions = export.get_functions()
-                if not export._checkpoint:
-                    export.writer = dolfinx.io.VTXWriter(
-                        functions[0].function_space.mesh.comm,
-                        export.filename,
-                        functions,
-                        engine="BP5",
-                    )
-
-                else:
-                    adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
         # compute diffusivity function for surface fluxes
 
