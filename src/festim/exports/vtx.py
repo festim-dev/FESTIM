@@ -101,19 +101,19 @@ class VTXSpeciesExport(ExportBaseClass):
 
     Args:
         filename: The name of the output file
-        times: if provided, the field will be exported at these timesteps. Otherwise
-            exports at all timesteps. Defaults to None.
         field: Set of species to export
         subdomain: A field can be defined on multiple domains. This arguments specifies
             what subdomains we export on. If `None` we export on all domains.
         checkpoint: If True, the export will be a checkpoint file using adios4dolfinx
             and won't be readable by ParaView. Default is False.
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
 
     Attributes:
         filename: The name of the output file
+        field: Set of species to export
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
-        field: Set of species to export
         writer: The VTXWriter object used to write the file
     """
 
