@@ -8,7 +8,6 @@ import adios4dolfinx
 import basix
 import dolfinx
 import numpy.typing as npt
-import numpy as np
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
@@ -35,7 +34,6 @@ from festim import (
 from festim.advection import AdvectionTerm
 from festim.helpers import as_fenics_constant, get_interpolation_points
 from festim.mesh import Mesh
-from festim.exports.vtx import ExportBaseClass
 
 __all__ = ["HydrogenTransportProblemDiscontinuous", "HydrogenTransportProblem"]
 
@@ -384,14 +382,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
-            if isinstance(export, festim.ExportBaseClass):
+            if isinstance(export, exports.ExportBaseClass):
                 if export.times:
                     if not self.settings.stepsize.milestones:
                         self.settings.stepsize.milestones = []
                     for time in export.times:
                         if time not in self.settings.stepsize.milestones:
                             msg = "To ensure that the exports data at the desired times"
-                            msg += "the values in times are added to milestones"
+                            msg += "the values in export.times are added to milestones"
                             warnings.warn(msg)
                             self.settings.stepsize.milestones.append(time)
                     self.settings.stepsize.milestones.sort()
@@ -401,9 +399,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         self._get_temperature_field_as_function()
                     )
                     export.writer = dolfinx.io.VTXWriter(
-                        self._temperature_as_function.function_space.mesh.comm,
-                        export.filename,
-                        self._temperature_as_function,
+                        comm=self._temperature_as_function.function_space.mesh.comm,
+                        filename=export.filename,
+                        output=self._temperature_as_function,
                         engine="BP5",
                     )
                     continue
@@ -412,9 +410,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     functions = export.get_functions()
                     if not export._checkpoint:
                         export.writer = dolfinx.io.VTXWriter(
-                            functions[0].function_space.mesh.comm,
-                            export.filename,
-                            functions,
+                            comm=functions[0].function_space.mesh.comm,
+                            filename=export.filename,
+                            output=functions,
                             engine="BP5",
                         )
 
