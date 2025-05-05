@@ -195,3 +195,10 @@ def test_vtx_writer_called_only_at_specified_times(tmpdir):
 
         # Check number of write calls
         assert mock_writer_instance.write.call_count == 3
+
+        # Check which times were passed to write
+        actual_times = [
+            call.args[0] for call in mock_writer_instance.write.call_args_list
+        ]
+        expected_times = [5.0, 10.0, 15.0]
+        assert actual_times == expected_times
