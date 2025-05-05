@@ -84,7 +84,13 @@ def test_vtx_DG(tmpdir):
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 2
-    assert len(my_model._vtxfiles) == 1
+
+    vtx_exports = []
+    for export in my_model.exports:
+        if isinstance(export, F.ExportBaseClass):
+            vtx_exports.append(export)
+
+    assert len(vtx_exports) == 1
 
 
 @pytest.mark.parametrize("checkpoint", [True, False])
@@ -110,10 +116,14 @@ def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
-    if checkpoint:
-        assert len(my_model._vtxfiles) == 0
+
+    vtx_exports = []
+    for export in my_model.exports:
+        if isinstance(export, F.ExportBaseClass):
+            vtx_exports.append(export)
+
     else:
-        assert len(my_model._vtxfiles) == 1
+        assert len(vtx_exports) == 1
 
 
 @pytest.mark.parametrize(
@@ -146,7 +156,13 @@ def test_vtx_temperature(T, tmpdir):
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
     my_model.initialise()
-    assert len(my_model._vtxfiles) == 1
+
+    vtx_exports = []
+    for export in my_model.exports:
+        if isinstance(export, F.ExportBaseClass):
+            vtx_exports.append(export)
+
+    assert len(vtx_exports) == 1
 
     my_model.run()
 
@@ -177,3 +193,29 @@ def test_filename_temp_raises_error_when_wrong_type():
     """Test that the filename attribute for VTXTemperature export raises an error if the extension is not .bp"""
     with pytest.raises(TypeError):
         F.VTXTemperatureExport(1)
+
+
+@pytest.mark.parametrize(
+    "input, expected_output",
+    [
+        (2, True),
+        (3, True),
+        (1, True),
+        (-1, False),
+        (0, False),
+        (5, False),
+        (1.5, False),
+    ],
+)
+def test_is_it_time_to_export(tmpdir, input, expected_output):
+    filename = str(tmpdir.join("my_T_export.bp"))
+    my_export = F.ExportBaseClass(times=[1, 2, 3], ext=".bp", filename=filename)
+
+    assert my_export.is_it_time_to_export(input) == expected_output
+
+
+def test_is_it_time_to_export_when_times_not_given(tmpdir):
+    filename = str(tmpdir.join("my_T_export.bp"))
+    my_export = F.ExportBaseClass(ext=".bp", filename=filename)
+
+    assert my_export.is_it_time_to_export(1.0)
