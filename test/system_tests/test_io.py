@@ -157,38 +157,34 @@ def test_vtx_writer_called_only_at_specified_times(tmpdir):
 
     filename = str(tmpdir.join("my_export.bp"))
 
+    my_model = F.HydrogenTransportProblem()
+
+    my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 10, 100))
+
+    H = F.Species("H", mobile=True)
+    my_model.species = [H]
+
+    vol = F.VolumeSubdomain1D(
+        id=1, borders=[0, 10], material=F.Material(D_0=1.0, E_D=0)
+    )
+    left = F.SurfaceSubdomain1D(id=2, x=0)
+    my_model.subdomains = [vol, left]
+    my_model.temperature = 500
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(subdomain=left, value=5.0, species=H),
+    ]
+    my_model.exports = [F.VTXSpeciesExport(filename=filename, field=H, times=[2, 4, 6])]
+    my_model.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-10,
+        transient=True,
+        final_time=6,
+        stepsize=F.Stepsize(initial_value=1),
+    )
+
     with patch("dolfinx.io.VTXWriter") as MockWriter:
         # This is the mock instance of VTXWriter
         mock_writer_instance = MockWriter.return_value
-
-        my_model = F.HydrogenTransportProblem()
-
-        my_mesh = F.Mesh1D(vertices=np.linspace(0, 10, 100))
-        my_model.mesh = my_mesh
-
-        H = F.Species("H", mobile=True)
-        my_model.species = [H]
-
-        my_mat = F.Material(D_0=1.0, E_D=0)
-        vol = F.VolumeSubdomain1D(id=1, borders=[0, 10], material=my_mat)
-        left = F.SurfaceSubdomain1D(id=2, x=0)
-        right = F.SurfaceSubdomain1D(id=3, x=10)
-        my_model.subdomains = [vol, left, right]
-
-        my_model.temperature = 500
-
-        my_model.boundary_conditions = [
-            F.FixedConcentrationBC(subdomain=left, value=5.0, species=H),
-            F.FixedConcentrationBC(subdomain=right, value=0, species=H),
-        ]
-
-        my_export = F.VTXSpeciesExport(filename=filename, field=H, times=[5, 10, 15])
-        my_model.exports = [my_export]
-
-        dt = F.Stepsize(initial_value=1)
-        my_model.settings = F.Settings(
-            atol=1e-10, rtol=1e-10, transient=True, final_time=15, stepsize=dt
-        )
 
         my_model.initialise()
         my_model.run()
@@ -200,5 +196,5 @@ def test_vtx_writer_called_only_at_specified_times(tmpdir):
         actual_times = [
             call.args[0] for call in mock_writer_instance.write.call_args_list
         ]
-        expected_times = [5.0, 10.0, 15.0]
+        expected_times = [2, 4, 6]
         assert actual_times == expected_times
