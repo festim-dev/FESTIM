@@ -36,7 +36,7 @@ def test_total_volume_export_compute():
     )
 
     # RUN
-    my_export.compute(dx=dx)
+    my_export.compute(my_species.solution, dx=dx)
 
     # TEST
     # total = int[0,L] c dx = 2/3 * L^3 + L
