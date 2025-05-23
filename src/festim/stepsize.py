@@ -17,7 +17,7 @@ class Stepsize:
         max_stepsize (float or callable, optional): Maximum stepsize.
             If callable, has to be a function of `t`. Defaults to None.
         milestones (list, optional): list of times by which the simulation must
-            pass. Defaults to None.
+            pass. Defaults to an empty list.
 
 
     Attributes:
@@ -42,7 +42,7 @@ class Stepsize:
         cutback_factor=None,
         target_nb_iterations=None,
         max_stepsize=None,
-        milestones=None,
+        milestones=[],
     ) -> None:
         self.initial_value = initial_value
         self.growth_factor = growth_factor

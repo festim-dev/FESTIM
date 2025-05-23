@@ -384,8 +384,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for export in self.exports:
             if isinstance(export, exports.ExportBaseClass):
                 if export.times:
-                    if not self.settings.stepsize.milestones:
-                        self.settings.stepsize.milestones = []
                     for time in export.times:
                         if time not in self.settings.stepsize.milestones:
                             msg = "To ensure that the exports data at the desired times"
