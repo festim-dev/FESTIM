@@ -947,9 +947,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             "Advection terms are not currently accounted for in the "
                             "evaluation of surface flux values"
                         )
-                    export.compute(
-                        self.ds,
-                    )
+                    export.compute(export.field.solution, self.ds)
                 else:
                     export.compute()
                 # update export data
@@ -960,7 +958,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
-                    export.compute(self.dx)
+                    export.compute(u=export.field.solution, dx=self.dx)
                 else:
                     export.compute()
                 # update export data
@@ -1064,6 +1062,21 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for subdomain in self.volume_subdomains:
             self.define_function_spaces(subdomain)
+        # create global DG function spaces of degree 0 and 1
+        element_DG0 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            0,
+            basix.LagrangeVariant.equispaced,
+        )
+        element_DG1 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            1,
+            basix.LagrangeVariant.equispaced,
+        )
+        self.V_DG_0 = fem.functionspace(self.mesh.mesh, element_DG0)
+        self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
 
         self.define_temperature()
         self.convert_source_input_values_to_fenics_objects()
@@ -1503,8 +1516,32 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         f"Export type {type(export)} not implemented for "
                         f"mixed-domain approach"
                     )
-            else:
-                raise NotImplementedError(f"Export type {type(export)} not implemented")
+
+        # compute diffusivity function for surface fluxes
+
+        spe_to_D_global = {}  # links species to global D function
+        spe_to_D_global_expr = {}  # links species to D expression
+
+        for export in self.exports:
+            if isinstance(export, exports.SurfaceQuantity):
+                if export.field in spe_to_D_global:
+                    # if already computed then use the same D
+                    D = spe_to_D_global[export.field]
+                    D_expr = spe_to_D_global_expr[export.field]
+                else:
+                    # compute D and add it to the dict
+                    D, D_expr = self.define_D_global(export.field)
+                    spe_to_D_global[export.field] = D
+                    spe_to_D_global_expr[export.field] = D_expr
+
+                # add the global D to the export
+                export.D = D
+                export.D_expr = D_expr
+
+            # reset the data and time for SurfaceQuantity and VolumeQuantity
+            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+                export.t = []
+                export.data = []
 
     def post_processing(self):
         # update post-processing solutions (for each species in each subdomain)
@@ -1535,6 +1572,56 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         )
                 if export.is_it_time_to_export(float(self.t)):
                     export.writer.write(float(self.t))
+
+            # handle derived quantities
+            if isinstance(export, exports.SurfaceQuantity):
+                if isinstance(
+                    export,
+                    exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
+                ):
+                    if len(self.advection_terms) > 0:
+                        warnings.warn(
+                            "Advection terms are not currently accounted for in the "
+                            "evaluation of surface flux values"
+                        )
+                    export_surf = export.surface
+                    export_vol = self.surface_to_volume[export_surf]
+                    submesh_function = (
+                        export.field.subdomain_to_post_processing_solution[export_vol]
+                    )
+                    export.compute(
+                        u=submesh_function,
+                        ds=self.ds,
+                        entity_maps={
+                            sd.submesh: sd.parent_to_submesh
+                            for sd in self.volume_subdomains
+                        },
+                    )
+                else:
+                    export.compute()
+
+            elif isinstance(export, exports.VolumeQuantity):
+                if isinstance(export, exports.TotalVolume | exports.AverageVolume):
+                    export.compute(
+                        u=export.field.subdomain_to_post_processing_solution[
+                            export_vol
+                        ],
+                        dx=self.dx,
+                        entity_maps={
+                            sd.submesh: sd.parent_to_submesh
+                            for sd in self.volume_subdomains
+                        },
+                    )
+                else:
+                    export.compute()
+
+            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+                # update export data
+                export.t.append(float(self.t))
+
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))
 
     def iterate(self):
         """Iterates the model for a given time step"""

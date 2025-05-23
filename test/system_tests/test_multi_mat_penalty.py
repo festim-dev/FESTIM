@@ -161,3 +161,74 @@ def test_2_materials_2d_mms(tmpdir):
 
     assert L2_error_top < 1e-3
     assert L2_error_bot < 1e-3
+
+
+def test_derived_quantities_multi_mat():
+    K_S_top = 1.0
+    K_S_bot = 1.0
+    D_top = 2.0
+    D_bot = 1.0
+
+    mesh, mt, ct = generate_mesh(20)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0)
+    material_bottom = F.Material(D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0)
+
+    material_top.solubility_law = "sievert"
+    material_bottom.solubility_law = "sievert"
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [
+        bottom_domain,
+        top_domain,
+        top_surface,
+        bottom_surface,
+    ]
+
+    my_model.interfaces = [
+        F.Interface(5, (bottom_domain, top_domain), penalty_term=1),
+    ]
+    my_model.surface_to_volume = {
+        top_surface: top_domain,
+        bottom_surface: bottom_domain,
+    }
+
+    H = F.Species("H", mobile=True)
+
+    my_model.species = [H]
+
+    for species in my_model.species:
+        species.subdomains = [bottom_domain, top_domain]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=1, species=H),
+        F.FixedConcentrationBC(bottom_surface, value=0, species=H),
+    ]
+
+    my_model.temperature = 500.0
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    my_model.exports = [
+        F.SurfaceFlux(field=H, surface=top_surface),
+        F.SurfaceFlux(field=H, surface=bottom_surface),
+        F.AverageVolume(field=H, volume=bottom_domain),
+        F.AverageVolume(field=H, volume=top_domain),
+        F.TotalVolume(field=H, volume=bottom_domain),
+        F.TotalVolume(field=H, volume=top_domain),
+    ]
+
+    my_model.initialise()
+    my_model.run()
+
+    print("Top surface flux:", my_model.exports[0].data)
+    print("Bottom surface flux:", my_model.exports[1].data)
+    assert np.isclose(my_model.exports[0].data[0], -my_model.exports[1].data[0])

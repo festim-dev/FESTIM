@@ -129,7 +129,7 @@ my_model.boundary_conditions = [
 
 my_model.temperature = lambda x: 400 + 10 * x[1] + 100 * x[0]
 
-my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
+my_model.settings = F.Settings(atol=1e-10, rtol=1e-5, transient=False)
 
 my_model.exports = [
     F.VTXSpeciesExport(f"c_{subdomain.id}.bp", field=H, subdomain=subdomain)
@@ -149,6 +149,7 @@ my_model.run()
 entity_maps = {sd.submesh: sd.parent_to_submesh for sd in my_model.volume_subdomains}
 entity_maps[mesh] = bottom_domain.submesh_to_mesh
 
+ds = ufl.Measure("ds", domain=mesh, subdomain_data=my_model.facet_meshtags)
 ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
 ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
 dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
@@ -189,5 +190,18 @@ form = dolfinx.fem.form(
     )
     * ds_t(id_interface),
     entity_maps={mesh: top_domain.submesh_to_mesh},
+)
+print(dolfinx.fem.assemble_scalar(form))
+
+
+# using submesh function
+u = H.subdomain_to_post_processing_solution[bottom_domain]
+form = dolfinx.fem.form(
+    ufl.dot(
+        D * ufl.grad(u),
+        n_b,
+    )
+    * ds(bottom_surface.id),
+    entity_maps={sd.submesh: sd.parent_to_submesh for sd in my_model.volume_subdomains},
 )
 print(dolfinx.fem.assemble_scalar(form))
