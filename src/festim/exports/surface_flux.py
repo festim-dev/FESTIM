@@ -20,11 +20,13 @@ class SurfaceFlux(SurfaceQuantity):
     def title(self):
         return f"{self.field.name} flux surface {self.surface.id}"
 
-    def compute(self, u, ds, entity_maps=None):
+    def compute(self, u, ds: ufl.Measure, entity_maps=None):
         """Computes the value of the flux at the surface
 
         Args:
-            ds (ufl.Measure): surface measure of the model
+            u: field for which the flux is computed
+            ds: surface measure of the model
+            entity_maps: entity maps relating parent mesh and submesh
         """
 
         # obtain mesh normal from field

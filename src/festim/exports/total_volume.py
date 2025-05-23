@@ -26,7 +26,9 @@ class TotalVolume(VolumeQuantity):
         and appends it to the data list
 
         Args:
-            dx (ufl.Measure): volume measure of the model
+            u: field for which the total volume is computed
+            dx: volume measure of the model
+            entity_maps: entity maps relating parent mesh and submesh
         """
         self.value = fem.assemble_scalar(
             fem.form(u * dx(self.volume.id), entity_maps=entity_maps)
