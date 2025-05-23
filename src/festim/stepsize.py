@@ -42,14 +42,14 @@ class Stepsize:
         cutback_factor=None,
         target_nb_iterations=None,
         max_stepsize=None,
-        milestones=[],
+        milestones=None,
     ) -> None:
         self.initial_value = initial_value
         self.growth_factor = growth_factor
         self.cutback_factor = cutback_factor
         self.target_nb_iterations = target_nb_iterations
         self.max_stepsize = max_stepsize
-        self.milestones = milestones
+        self.milestones = milestones or []
 
         # TODO should this class hold the dt object used in the formulation
 
