@@ -9,6 +9,7 @@ User's Guide
    beginners_guide
    units
    subdomains
+   species
    boundary_conditions
    sources
    temperature
