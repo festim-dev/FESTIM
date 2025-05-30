@@ -1634,7 +1634,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.update_time_dependent_values()
 
         # Solve main problem
-        self.solver.solve()
+        nb_its, converged = self.solver.solve()
 
         # post processing
         self.post_processing()
@@ -1645,7 +1645,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # adapt stepsize
         if self.settings.stepsize.adaptive:
-            raise NotImplementedError("Adaptive stepsize not implemented")
+            new_stepsize = self.settings.stepsize.modify_value(
+                value=self.dt.value, nb_iterations=nb_its, t=self.t.value
+            )
+            self.dt.value = new_stepsize
 
     def run(self):
         if self.settings.transient:
