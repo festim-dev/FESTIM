@@ -59,14 +59,13 @@ class VolumeQuantity:
         """If the filename doesnt exist yet, create it and write the header,
         then append the time and value to the file"""
 
-        if not os.path.isfile(self.filename):
-            if self.filename is not None:
-                if self._first_time_export:
-                    header = ["t(s)", f"{self.title}"]
-                    with open(self.filename, mode="w+", newline="") as file:
-                        writer = csv.writer(file)
-                        writer.writerow(header)
-                    self._first_time_export = False
-                with open(self.filename, mode="a", newline="") as file:
+        if self.filename is not None:
+            if self._first_time_export:
+                header = ["t(s)", f"{self.title}"]
+                with open(self.filename, mode="w+", newline="") as file:
                     writer = csv.writer(file)
-                    writer.writerow([t, self.value])
+                    writer.writerow(header)
+                self._first_time_export = False
+            with open(self.filename, mode="a", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow([t, self.value])
