@@ -1,5 +1,6 @@
 import ufl
 from dolfinx import fem
+from scifem import assemble_scalar
 
 from festim.exports.surface_quantity import SurfaceQuantity
 
@@ -37,7 +38,7 @@ class SurfaceFlux(SurfaceQuantity):
             mesh = u.function_space.mesh
         n = ufl.FacetNormal(mesh)
 
-        self.value = fem.assemble_scalar(
+        self.value = assemble_scalar(
             fem.form(
                 -self.D * ufl.dot(ufl.grad(u), n) * ds(self.surface.id),
                 entity_maps=entity_maps,
