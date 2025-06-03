@@ -28,7 +28,6 @@ class HeatTransferProblem(problem.ProblemBase):
         )
 
         self.initial_condition = initial_condition
-        self._vtxfile: VTXWriter | None = None
 
     @property
     def sources(self):
@@ -49,15 +48,13 @@ class HeatTransferProblem(problem.ProblemBase):
         if not all(
             isinstance(
                 bc,
-                (
-                    boundary_conditions.FixedTemperatureBC,
-                    boundary_conditions.HeatFluxBC,
-                ),
+                boundary_conditions.FixedTemperatureBC | boundary_conditions.HeatFluxBC,
             )
             for bc in value
         ):
             raise TypeError(
-                "boundary_conditions must be a list of festim.FixedTemperatureBC or festim.HeatFluxBC objects"
+                "boundary_conditions must be a list of festim.FixedTemperatureBC "
+                "or festim.HeatFluxBC objects"
             )
         self._boundary_conditions = value
 
@@ -228,7 +225,7 @@ class HeatTransferProblem(problem.ProblemBase):
                     "XDMF export is not implemented yet for heat transfer problems"
                 )
             if isinstance(export, exports.VTXTemperatureExport):
-                self._vtxfile = VTXWriter(
+                export.writer = VTXWriter(
                     self.u.function_space.mesh.comm,
                     export.filename,
                     [self.u],
@@ -242,7 +239,8 @@ class HeatTransferProblem(problem.ProblemBase):
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
                 raise NotImplementedError(
-                    "SurfaceQuantity export is not implemented yet for heat transfer problems"
+                    "SurfaceQuantity export is not implemented yet "
+                    "for heat transfer problems"
                 )
                 export.compute(
                     self.mesh.n,
@@ -257,9 +255,11 @@ class HeatTransferProblem(problem.ProblemBase):
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
 
-        if self._vtxfile is not None:
-            self._vtxfile.write(float(self.t))
+            if isinstance(export, exports.VTXTemperatureExport):
+                if export.is_it_time_to_export(float(self.t)):
+                    export.writer.write(float(self.t))
 
     def __del__(self):
-        if self._vtxfile is not None:
-            self._vtxfile.close()
+        for export in self.exports:
+            if isinstance(export, exports.VTXTemperatureExport):
+                export.writer.close()

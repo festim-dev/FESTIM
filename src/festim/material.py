@@ -1,6 +1,10 @@
-import ufl
+from typing import Optional
 
-import festim as F
+import ufl
+from dolfinx import fem
+
+from festim import k_B
+from festim.helpers import as_fenics_constant
 
 
 class Material:
@@ -8,33 +12,36 @@ class Material:
     Material class
 
     Args:
-        D_0 (float or dict): the pre-exponential factor of the
+        D_0: the pre-exponential factor of the
             diffusion coefficient (m2/s)
-        E_D (float or dict): the activation energy of the diffusion
+        E_D: the activation energy of the diffusion
             coeficient (eV)
-        K_S_0 (float or dict): the pre-exponential factor of the
+        K_S_0: the pre-exponential factor of the
             solubility coefficient (H/m3/Pa0.5)
-        E_K_S (float or dict): the activation energy of the solubility
+        E_K_S: the activation energy of the solubility
             coeficient (eV)
-        name (str): the name of the material
-        thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
-        density (float, callable): the density of the material (kg/m3)
-        heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
-        solubility_law (str): the solubility law of the material ("sievert" or "henry")
+        name: the name of the material
+        thermal_conductivity: the thermal conductivity of the material (W/m/K)
+        density: the density of the material (kg/m3)
+        heat_capacity: the heat capacity of the material (J/kg/K)
+        solubility_law: the solubility law of the material ("sievert" or "henry")
+        D: the diffusion coefficient of the material (m2/s)
 
     Attributes:
-        D_0 (float or dict): the pre-exponential factor of the
+        D_0: the pre-exponential factor of the
             diffusion coefficient (m2/s)
-        E_D (float or dict): the activation energy of the diffusion
+        E_D: the activation energy of the diffusion
             coeficient (eV)
-        K_S_0 (float or dict): the pre-exponential factor of the
+        K_S_0: the pre-exponential factor of the
             solubility coefficient (H/m3/Pa0.5)
-        E_K_S (float or dict): the activation energy of the solubility
+        E_K_S: the activation energy of the solubility
             coeficient (eV)
-        name (str): the name of the material
-        thermal_conductivity (float, callable): the thermal conductivity of the material (W/m/K)
-        density (float, callable): the density of the material (kg/m3)
-        heat_capacity (float, callable): the heat capacity of the material (J/kg/K)
+        name: the name of the material
+        thermal_conductivity: the thermal conductivity of the material (W/m/K)
+        density: the density of the material (kg/m3)
+        heat_capacity: the heat capacity of the material (J/kg/K)
+        solubility_law: the solubility law of the material ("sievert" or "henry")
+        D: the diffusion coefficient of the material (m2/s)
 
     Examples:
         .. testsetup:: Material
@@ -56,15 +63,16 @@ class Material:
 
     def __init__(
         self,
-        D_0,
-        E_D,
-        K_S_0=None,
-        E_K_S=None,
-        thermal_conductivity=None,
-        density=None,
-        heat_capacity=None,
-        name=None,
-        solubility_law=None,
+        D_0: Optional[float | int | fem.Function | dict[float, int]] = None,
+        E_D: Optional[float | int | fem.Function | dict[float, int]] = None,
+        K_S_0: Optional[float | int | dict[float, int]] = None,
+        E_K_S: Optional[float | int | dict[float, int]] = None,
+        thermal_conductivity: Optional[float] = None,
+        density: Optional[float] = None,
+        heat_capacity: Optional[float] = None,
+        name: Optional[str] = None,
+        solubility_law: Optional[str] = None,
+        D: Optional[fem.Function] = None,
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
@@ -76,19 +84,39 @@ class Material:
         self.heat_capacity = heat_capacity
         self.name = name
         self.solubility_law = solubility_law
+        self.D = D
+
+        if self.D_0 and self.D:
+            raise ValueError(
+                "D_0 and D cannot be set at the same time. Please set only one of them."
+            )
+
+    @property
+    def D(self):
+        return self._D
+
+    @D.setter
+    def D(self, value):
+        if value is None:
+            self._D = None
+        elif isinstance(value, fem.Function):
+            self._D = value
+        else:
+            raise TypeError("D must be of type fem.Function")
 
     def get_D_0(self, species=None):
         """Returns the pre-exponential factor of the diffusion coefficient
 
         Args:
-            species (festim.Species or str, optional): the species we want the pre-exponential
-                factor of the diffusion coefficient of. Only needed if D_0 is a dict.
+            species (festim.Species or str, optional): the species we want the
+                pre-exponential factor of the diffusion coefficient of. Only needed if
+                D_0 is a dict.
 
         Returns:
             float: the pre-exponential factor of the diffusion coefficient
         """
 
-        if isinstance(self.D_0, (float, int)):
+        if isinstance(self.D_0, float | int):
             return self.D_0
 
         elif isinstance(self.D_0, dict):
@@ -109,14 +137,15 @@ class Material:
         """Returns the activation energy of the diffusion coefficient
 
         Args:
-            species (festim.Species or str, optional): the species we want the activation
-                energy of the diffusion coefficient of. Only needed if E_D is a dict.
+            species (festim.Species or str, optional): the species we want the
+                activation energy of the diffusion coefficient of. Only needed if E_D is
+                a dict.
 
         Returns:
             float: the activation energy of the diffusion coefficient
         """
 
-        if isinstance(self.E_D, (float, int)):
+        if isinstance(self.E_D, float | int):
             return self.E_D
 
         elif isinstance(self.E_D, dict):
@@ -144,7 +173,7 @@ class Material:
             the pre-exponential factor of the solubility coefficient
         """
 
-        if isinstance(self.K_S_0, (float, int)):
+        if isinstance(self.K_S_0, float | int):
             return self.K_S_0
 
         elif isinstance(self.K_S_0, dict):
@@ -172,7 +201,7 @@ class Material:
             the activation energy of the solubility coefficient
         """
 
-        if isinstance(self.E_K_S, (float, int)):
+        if isinstance(self.E_K_S, float | int):
             return self.E_K_S
 
         elif isinstance(self.E_K_S, dict):
@@ -189,7 +218,7 @@ class Material:
         else:
             raise TypeError("E_K_S must be either a float, int or a dict")
 
-    def get_diffusion_coefficient(self, mesh, temperature, species=None):
+    def get_diffusion_coefficient(self, mesh=None, temperature=None, species=None):
         """Defines the diffusion coefficient
 
         Args:
@@ -206,16 +235,20 @@ class Material:
         # D_0 = self.get_D_0(species=species)
         # E_D = self.get_E_D(species=species)
 
-        # D_0 = F.as_fenics_constant(D_0, mesh)
-        # E_D = F.as_fenics_constant(E_D, mesh)
+        # D_0 = as_fenics_constant(D_0, mesh)
+        # E_D = as_fenics_constant(E_D, mesh)
 
-        # return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+        # return D_0 * ufl.exp(-E_D / k_B / temperature)
 
-        if isinstance(self.D_0, (float, int)) and isinstance(self.E_D, (float, int)):
-            D_0 = F.as_fenics_constant(self.D_0, mesh)
-            E_D = F.as_fenics_constant(self.E_D, mesh)
+        if self.D:
+            assert isinstance(self.D, fem.Function)
+            return self.D
 
-            return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+        if isinstance(self.D_0, float | int) and isinstance(self.E_D, float | int):
+            D_0 = as_fenics_constant(self.D_0, mesh)
+            E_D = as_fenics_constant(self.E_D, mesh)
+
+            return D_0 * ufl.exp(-E_D / k_B / temperature)
 
         elif isinstance(self.D_0, dict) and isinstance(self.E_D, dict):
             # check D_0 and E_D have the same keys
@@ -227,18 +260,18 @@ class Material:
                 raise ValueError("species must be provided if D_0 and E_D are dicts")
 
             if species in self.D_0:
-                D_0 = F.as_fenics_constant(self.D_0[species], mesh)
+                D_0 = as_fenics_constant(self.D_0[species], mesh)
             elif species.name in self.D_0:
-                D_0 = F.as_fenics_constant(self.D_0[species.name], mesh)
+                D_0 = as_fenics_constant(self.D_0[species.name], mesh)
             else:
                 raise ValueError(f"{species} is not in D_0 keys")
 
             if species in self.E_D:
-                E_D = F.as_fenics_constant(self.E_D[species], mesh)
+                E_D = as_fenics_constant(self.E_D[species], mesh)
             elif species.name in self.E_D:
-                E_D = F.as_fenics_constant(self.E_D[species.name], mesh)
+                E_D = as_fenics_constant(self.E_D[species.name], mesh)
 
-            return D_0 * ufl.exp(-E_D / F.k_B / temperature)
+            return D_0 * ufl.exp(-E_D / k_B / temperature)
 
         else:
             raise ValueError("D_0 and E_D must be either floats or dicts")
@@ -260,18 +293,16 @@ class Material:
         # K_S_0 = self.get_K_S_0(species=species)
         # E_K_S = self.get_E_K_S(species=species)
 
-        # K_S_0 = F.as_fenics_constant(K_S_0, mesh)
-        # E_K_S = F.as_fenics_constant(E_K_S, mesh)
+        # K_S_0 = as_fenics_constant(K_S_0, mesh)
+        # E_K_S = as_fenics_constant(E_K_S, mesh)
 
-        # return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+        # return K_S_0 * ufl.exp(-E_K_S / k_B / temperature)
 
-        if isinstance(self.K_S_0, (float, int)) and isinstance(
-            self.E_K_S, (float, int)
-        ):
-            K_S_0 = F.as_fenics_constant(self.K_S_0, mesh)
-            E_K_S = F.as_fenics_constant(self.E_K_S, mesh)
+        if isinstance(self.K_S_0, float | int) and isinstance(self.E_K_S, float | int):
+            K_S_0 = as_fenics_constant(self.K_S_0, mesh)
+            E_K_S = as_fenics_constant(self.E_K_S, mesh)
 
-            return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+            return K_S_0 * ufl.exp(-E_K_S / k_B / temperature)
 
         elif isinstance(self.K_S_0, dict) and isinstance(self.E_K_S, dict):
             # check D_0 and E_D have the same keys
@@ -285,18 +316,18 @@ class Material:
                 )
 
             if species in self.K_S_0:
-                K_S_0 = F.as_fenics_constant(self.K_S_0[species], mesh)
+                K_S_0 = as_fenics_constant(self.K_S_0[species], mesh)
             elif species.name in self.K_S_0:
-                K_S_0 = F.as_fenics_constant(self.K_S_0[species.name], mesh)
+                K_S_0 = as_fenics_constant(self.K_S_0[species.name], mesh)
             else:
                 raise ValueError(f"{species} is not in K_S_0 keys")
 
             if species in self.E_K_S:
-                E_K_S = F.as_fenics_constant(self.E_K_S[species], mesh)
+                E_K_S = as_fenics_constant(self.E_K_S[species], mesh)
             elif species.name in self.E_K_S:
-                E_K_S = F.as_fenics_constant(self.E_K_S[species.name], mesh)
+                E_K_S = as_fenics_constant(self.E_K_S[species.name], mesh)
 
-            return K_S_0 * ufl.exp(-E_K_S / F.k_B / temperature)
+            return K_S_0 * ufl.exp(-E_K_S / k_B / temperature)
 
         else:
             raise ValueError("K_S_0 and E_K_S must be either floats or dicts")
