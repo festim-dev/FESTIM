@@ -531,7 +531,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D.interpolate(D_expr)
         return D, D_expr
 
-    def define_function_spaces(self,element_degree=1):
+    def define_function_spaces(self, element_degree=1):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n. Create global DG function spaces of degree 0 and 1
@@ -1141,7 +1141,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "initial conditions not yet implemented for discontinuous"
             )
 
-    def define_function_spaces(self, subdomain: _subdomain.VolumeSubdomain, element_degree=1):
+    def define_function_spaces(
+        self, subdomain: _subdomain.VolumeSubdomain, element_degree=1
+    ):
         """
         Creates appropriate function space and functions for a given subdomain (submesh)
         based on the number of species existing in this subdomain. Then stores the
