@@ -274,7 +274,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     def initialise(self):
         self.create_species_from_traps()
-        self.define_function_spaces()
+        self.define_function_spaces(element_degree=self.settings.element_degree)
         self.define_meshtags_and_measures()
         self.assign_functions_to_species()
 
@@ -531,13 +531,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D.interpolate(D_expr)
         return D, D_expr
 
-    def define_function_spaces(self):
+    def define_function_spaces(self,element_degree=1):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n. Create global DG function spaces of degree 0 and 1
         for the global diffusion coefficient"""
 
-        degree = self.settings.element_degree
+        degree = element_degree
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
@@ -1141,7 +1141,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "initial conditions not yet implemented for discontinuous"
             )
 
-    def define_function_spaces(self, subdomain: _subdomain.VolumeSubdomain):
+    def define_function_spaces(self, subdomain: _subdomain.VolumeSubdomain, element_degree=1):
         """
         Creates appropriate function space and functions for a given subdomain (submesh)
         based on the number of species existing in this subdomain. Then stores the
@@ -1165,7 +1165,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 unique_species.append(species)
         nb_species = len(unique_species)
 
-        degree = 1
+        degree = element_degree
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             subdomain.submesh.basix_cell(),
