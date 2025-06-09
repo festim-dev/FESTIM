@@ -350,6 +350,21 @@
                 "name": "University of Tsukuba",
                 "path": "images/user_logos/Logo_of_University_of_Tsukuba.png"
             }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                        -3.5350,
+                        50.7361
+                    ]
+            },
+            "properties": {
+                "name": "Exeter University UK",
+                "path": "images/user_logos/Exeter_University_UK.png"
+            }
         }
+        
     ]
 }
