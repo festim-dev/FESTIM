@@ -535,19 +535,23 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n. Create global DG function spaces of degree 0 and 1
-        for the global diffusion coefficient"""
+        for the global diffusion coefficient.
 
-        degree = element_degree
+        Args:
+            element_degree (int, optional): Degree order for finite element.
+                Defaults to 1.
+        """
+
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
-            degree,
+            element_degree,
             basix.LagrangeVariant.equispaced,
         )
         element_DG = basix.ufl.element(
             "DG",
             self.mesh.mesh.basix_cell(),
-            degree,
+            element_degree,
             basix.LagrangeVariant.equispaced,
         )
 
@@ -1154,6 +1158,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         Args:
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
+            element_degree (int, optional): Degree order for finite element.
+                Defaults to 1.
         """
         # get number of species defined in the subdomain
         all_species = [
@@ -1167,11 +1173,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 unique_species.append(species)
         nb_species = len(unique_species)
 
-        degree = element_degree
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             subdomain.submesh.basix_cell(),
-            degree,
+            element_degree,
             basix.LagrangeVariant.equispaced,
         )
         element = basix.ufl.mixed_element([element_CG] * nb_species)
