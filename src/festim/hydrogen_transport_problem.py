@@ -274,7 +274,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
     def initialise(self):
         self.create_species_from_traps()
-        self.define_function_spaces()
+        self.define_function_spaces(element_degree=self.settings.element_degree)
         self.define_meshtags_and_measures()
         self.assign_functions_to_species()
 
@@ -531,25 +531,27 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D.interpolate(D_expr)
         return D, D_expr
 
-    def define_function_spaces(self):
+    def define_function_spaces(self, element_degree=1):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
         function u and u_n. Create global DG function spaces of degree 0 and 1
-        for the global diffusion coefficient"""
+        for the global diffusion coefficient.
 
-        # TODO: expose degree as a property to the user (element_degree ?)
-        # in ProblemBase
-        degree = 1
+        Args:
+            element_degree (int, optional): Degree order for finite element.
+                Defaults to 1.
+        """
+
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             self.mesh.mesh.basix_cell(),
-            degree,
+            element_degree,
             basix.LagrangeVariant.equispaced,
         )
         element_DG = basix.ufl.element(
             "DG",
             self.mesh.mesh.basix_cell(),
-            degree,
+            element_degree,
             basix.LagrangeVariant.equispaced,
         )
 
@@ -1143,7 +1145,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "initial conditions not yet implemented for discontinuous"
             )
 
-    def define_function_spaces(self, subdomain: _subdomain.VolumeSubdomain):
+    def define_function_spaces(
+        self, subdomain: _subdomain.VolumeSubdomain, element_degree=1
+    ):
         """
         Creates appropriate function space and functions for a given subdomain (submesh)
         based on the number of species existing in this subdomain. Then stores the
@@ -1154,6 +1158,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         Args:
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
+            element_degree (int, optional): Degree order for finite element.
+                Defaults to 1.
         """
         # get number of species defined in the subdomain
         all_species = [
@@ -1167,11 +1173,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 unique_species.append(species)
         nb_species = len(unique_species)
 
-        degree = 1
         element_CG = basix.ufl.element(
             basix.ElementFamily.P,
             subdomain.submesh.basix_cell(),
-            degree,
+            element_degree,
             basix.LagrangeVariant.equispaced,
         )
         element = basix.ufl.mixed_element([element_CG] * nb_species)

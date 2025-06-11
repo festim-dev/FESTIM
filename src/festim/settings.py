@@ -14,6 +14,8 @@ class Settings:
         transient (bool, optional): Whether the simulation is transient or not.
         final_time (float, optional): Final time for a transient simulation.
             Defaults to None
+        element_degree (int, optional): Degree order for finite element.
+            Defaults to 1.
         stepsize (festim.Stepsize, optional): stepsize for a transient
             simulation. Defaults to None
         convergence_criterion: resiudal or incremental (for Newton solver)
@@ -24,6 +26,7 @@ class Settings:
         max_iterations (int): Maximum number of iterations for the solver.
         transient (bool): Whether the simulation is transient or not.
         final_time (float): Final time for a transient simulation.
+        element_degree (int): Degree order for finite element.
         stepsize (festim.Stepsize): stepsize for a transient
             simulation.
         convergence_criterion: resiudal or incremental (for Newton solver)
@@ -37,6 +40,7 @@ class Settings:
         max_iterations=30,
         transient=True,
         final_time=None,
+        element_degree=1,
         stepsize=None,
         convergence_criterion: Literal["residual", "incremental"] = "residual",
     ) -> None:
@@ -45,6 +49,7 @@ class Settings:
         self.max_iterations = max_iterations
         self.transient = transient
         self.final_time = final_time
+        self.element_degree = element_degree
         self.stepsize = stepsize
         self.convergence_criterion = convergence_criterion
 
