@@ -2,6 +2,34 @@
 Installation
 ============
 
+Operating System Requirements
+----------------------------
+FESTIM's compatibility is dependent on FEniCS, which supports:
+
+- **Linux**: Fully supported
+- **macOS**: Fully supported
+- **Windows**: Not directly supported, but available through:
+  - Windows Subsystem for Linux (WSL) - recommended approach
+  - Docker containers
+
+.. note::
+    If you're using Windows, please follow the WSL installation instructions below or use the Docker approach.
+
+Windows Subsystem for Linux
+----------------------------
+In order to use the conda distribution on Windows, 
+use the `Windows Subsystem for Linux <https://learn.microsoft.com/en-us/windows/wsl/install>`_. 
+
+.. tip::
+    You can install `WSL <https://learn.microsoft.com/en-us/windows/wsl/install>`_ by running
+    :code:`wsl --install` on a command prompt window.
+    To launch into WSL, simply enter :code:`wsl`.
+
+    `Visual Studio Code <https://code.visualstudio.com/>`_ is the recommended IDE to 
+    use with Windows due to the 
+    `WSL extension <https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl>`_.
+
+
 Installing FESTIM with Conda
 ----------------------------
 
@@ -21,7 +49,7 @@ FESTIM can be installed with Anaconda on MacOs and Linux::
 
     conda create -n festim-env
     conda activate festim-env       
-    conda install -c conda-forge festim
+    conda install -c conda-forge festim==1.4
 
 .. tip::
 
@@ -44,20 +72,6 @@ FESTIM can be installed with Anaconda on MacOs and Linux::
     To uninstall FESTIM, run::
 
         conda uninstall festim
-
-Windows Subsystem for Linux
-----------------------------
-In order to use the Anaconda distribution on Windows, 
-use the `Windows Subsystem for Linux <https://learn.microsoft.com/en-us/windows/wsl/install>`_. 
-
-.. tip::
-    You can install `WSL <https://learn.microsoft.com/en-us/windows/wsl/install>`_ by running
-    :code:`wsl --install` on a command prompt window.
-    To launch into WSL, simply enter :code:`wsl`.
-
-    `Visual Studio Code <https://code.visualstudio.com/>`_ is the recommended IDE to 
-    use with Windows due to the 
-    `WSL extension <https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl>`_.
 
 
 Installing FESTIM with pip
@@ -116,5 +130,5 @@ Install it with Conda::
 
     conda create -n festim-env
     conda activate festim-env       
-    conda install -c conda-forge festim=2.0a0
+    conda install -c conda-forge festim==2.0a4
 
