@@ -107,12 +107,6 @@ html_theme_options = {
     "path_to_docs": "./docs/source",
     "icon_links": [
         {
-            "name": "PyPI",
-            "url": "https://pypi.org/project/FESTIM/",
-            "icon": "https://img.shields.io/pypi/dw/festim",
-            "type": "url",
-        },
-        {
             "name": "Support Forum",
             "url": "https://festim.discourse.group/",
             "icon": "fa-brands fa-discourse",
