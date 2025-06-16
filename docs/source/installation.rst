@@ -9,7 +9,8 @@ FESTIM's compatibility is dependent on FEniCS, which supports:
 - **Linux**: Fully supported
 - **macOS**: Fully supported
 - **Windows**: Not directly supported, but available through:
-  - Windows Subsystem for Linux (WSL) - recommended approach
+
+  - Windows Subsystem for Linux (WSL) (recommended approach)
   - Docker containers
 
 .. note::
