@@ -172,8 +172,6 @@ class ProblemBase:
                 else:
                     linear_solver = "petsc"
 
-                # TODO find option for max iterations
-
                 petsc_options = {
                     "snes_type": "newtonls",
                     "snes_linesearch_type": "none",
@@ -182,6 +180,7 @@ class ProblemBase:
                     # TODO : make atol and rtol callable
                     "snes_atol": self.settings.atol,
                     "snes_rtol": self.settings.rtol,
+                    "snes_max_it": self.settings.max_iterations,
                     "ksp_type": "preonly",
                     "pc_type": "lu",
                     "pc_factor_mat_solver_type": linear_solver,
