@@ -32,16 +32,25 @@ class SurfaceSubdomain:
         self.id = id
         self.locator = locator
 
-    def locate_boundary_facet_indices(self, mesh):
+    def locate_boundary_facet_indices(self, mesh: dolfinx.mesh.Mesh) -> np.ndarray:
+        """Locate boundary facets of the subdomain in the mesh.
+
+        Args:
+            mesh: a dolfinx mesh object
+
+        Raises:
+            ValueError: if no locator function is provided
+
+        Returns:
+            the list of entities (facets) that belong to the subdomain
+        """
         if self.locator is None:
             raise ValueError(
                 "No locator function provided for locating boundary facets."
             )
 
         return dolfinx.mesh.locate_entities_boundary(
-            mesh,
-            mesh.topology.dim - 1,
-            self.locator,
+            mesh, mesh.topology.dim - 1, self.locator
         )
 
 
