@@ -192,6 +192,14 @@ class ProblemBase:
             self.solver = NonlinearProblem(
                 self.formulation, self.u, bcs=self.bc_forms, petsc_options=petsc_options
             )
+            # Delete PETSc options post setting them, ref:
+            # https://gitlab.com/petsc/petsc/-/issues/1201
+            snes = self.solver.solver
+            prefix = snes.getOptionsPrefix()
+            opts = PETSc.Options()
+            for k in petsc_options.keys():
+                del opts[f"{prefix}{k}"]
+
 
     def run(self):
         """Runs the model"""
