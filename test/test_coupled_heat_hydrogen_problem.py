@@ -79,14 +79,14 @@ def test_initial_dt_values_are_the_same():
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=0.5, final_time=5),
+        settings=F.Settings(atol=1, rtol=0.9999, transient=True, stepsize=0.5, final_time=5),
     )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
         species=[test_H],
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1.5, final_time=5),
+        settings=F.Settings(atol=1, rtol=0.9999, transient=True, stepsize=1.5, final_time=5),
     )
 
     test_coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
