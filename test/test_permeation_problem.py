@@ -114,7 +114,6 @@ def test_permeation_problem(mesh_size=1001):
         opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
         snes.setFromOptions()
 
-
     my_model.run()
 
     times = outgassing_flux.t
@@ -209,6 +208,7 @@ def test_permeation_problem_multi_volume(tmp_path):
     my_model.initialise()
 
     if Version(dolfinx.__version__) == Version("0.9.0"):
+        my_model.solver.convergence_criterion = "incremental"
         ksp = my_model.solver.krylov_solver
         opts = PETSc.Options()
         option_prefix = ksp.getOptionsPrefix()
@@ -228,7 +228,6 @@ def test_permeation_problem_multi_volume(tmp_path):
         opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
         snes.setFromOptions()
 
-    
     my_model.run()
 
     times = outgassing_flux.t
