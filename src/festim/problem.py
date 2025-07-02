@@ -200,7 +200,6 @@ class ProblemBase:
             for k in petsc_options.keys():
                 del opts[f"{prefix}{k}"]
 
-
     def run(self):
         """Runs the model"""
 
