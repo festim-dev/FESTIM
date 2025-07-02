@@ -7,6 +7,7 @@ from packaging.version import Version
 import festim as F
 import dolfinx
 
+
 def relative_error_computed_to_analytical(
     D, permeability, computed_flux, L, times, P_up
 ):
