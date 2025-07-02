@@ -818,7 +818,7 @@ def test_create_initial_conditions_ValueError_raised_when_not_transient():
         subdomains=[my_vol],
         species=[H],
         initial_conditions=[F.InitialCondition(value=1.0, species=H)],
-        settings=F.Settings(atol=1, rtol=1, transient=False),
+        settings=F.Settings(atol=1, rtol=0.9999, transient=False),
     )
 
     with pytest.raises(
@@ -851,7 +851,7 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
         subdomains=[vol_subdomain],
         species=[H],
         initial_conditions=[F.InitialCondition(value=input_value, species=H)],
-        settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
+        settings=F.Settings(atol=1, rtol=0.9999, final_time=2, stepsize=1),
     )
 
     # RUN
@@ -881,7 +881,7 @@ def test_create_species_from_trap():
         n=1,
         volume=my_vol,
     )
-    my_settings = F.Settings(atol=1, rtol=1, transient=False)
+    my_settings = F.Settings(atol=1, rtol=0.9999, transient=False)
     my_model = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=[my_vol],
@@ -932,7 +932,7 @@ def test_create_initial_conditions_value_fenics_multispecies(
             F.InitialCondition(value=input_value_2, species=D),
             F.InitialCondition(value=input_value_1, species=H),
         ],
-        settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
+        settings=F.Settings(atol=1, rtol=0.9999, final_time=2, stepsize=1),
     )
 
     # RUN
