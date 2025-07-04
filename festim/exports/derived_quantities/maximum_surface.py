@@ -1,5 +1,5 @@
 from festim import SurfaceQuantity
-import fenics as f
+from dolfin import MPI
 import numpy as np
 
 
@@ -46,16 +46,22 @@ class MaximumSurface(SurfaceQuantity):
     def compute(self, surface_markers):
         """Maximum of f over subdomains facets marked with self.surface"""
         V = self.function.function_space()
-
+        mesh = surface_markers.mesh()
         dm = V.dofmap()
 
-        subd_dofs = np.unique(
-            np.hstack(
-                [
-                    dm.cell_dofs(c.index())
-                    for c in f.SubsetIterator(surface_markers, self.surface)
-                ]
-            )
+        facets = surface_markers.where_equal(self.surface)
+        entity_closure_dofs = np.array(
+            dm.entity_closure_dofs(mesh, mesh.topology().dim() - 1, facets),
+            dtype=np.int32,
         )
+        local_dofs = entity_closure_dofs < len(self.function.vector().get_local())
+        if len(local_dofs) == 0:
+            local_max = -np.inf
+        else:
+            local_max = np.max(
+                self.function.vector().get_local()[entity_closure_dofs[local_dofs]]
+            )
 
-        return np.max(self.function.vector().get_local()[subd_dofs])
+        global_max = MPI.max(mesh.mpi_comm(), local_max)
+
+        return global_max
