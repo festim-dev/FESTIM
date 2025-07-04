@@ -2,6 +2,7 @@ from festim import MaximumSurface
 import fenics as f
 import numpy as np
 import pytest
+from dolfin import MPI
 
 
 @pytest.mark.parametrize("field,surface", [("solute", 1), ("T", 2)])
@@ -27,9 +28,10 @@ class TestCompute:
 
     c = f.interpolate(f.Expression("x[0]", degree=1), V)
 
-    left = f.CompiledSubDomain("x[0] < 0.5")
-    surface_markers = f.MeshFunction("size_t", mesh, 1, 1)
-    left.mark(surface_markers, 2)
+    surface_markers = f.MeshFunction("size_t", mesh, 0, 0)
+
+    right = f.CompiledSubDomain("near(x[0], 1) && on_boundary")
+    right.mark(surface_markers, 1)
 
     dx = f.Measure("dx", domain=mesh, subdomain_data=surface_markers)
 
@@ -38,17 +40,23 @@ class TestCompute:
     my_max.function = c
     my_max.dx = dx
 
-    def test_minimum(self):
+    def test_maximum(self):
         dm = self.V.dofmap()
-        subd_dofs = np.unique(
-            np.hstack(
-                [
-                    dm.cell_dofs(c.index())
-                    for c in f.SubsetIterator(self.surface_markers, self.surface)
-                ]
-            )
+        facets = self.surface_markers.where_equal(self.surface)
+        entity_closure_dofs = np.array(
+            dm.entity_closure_dofs(self.mesh, self.mesh.topology().dim() - 1, facets),
+            dtype=np.int32,
         )
-        expected = np.max(self.c.vector().get_local()[subd_dofs])
+        local_dofs = entity_closure_dofs < len(self.c.vector().get_local())
+        if len(local_dofs) == 0:
+            local_max = -np.inf
+        else:
+            local_max = np.max(
+                self.c.vector().get_local()[entity_closure_dofs[local_dofs]]
+            )
+
+        expected = MPI.max(self.mesh.mpi_comm(), local_max)
 
         produced = self.my_max.compute(self.surface_markers)
+
         assert produced == expected

@@ -905,3 +905,46 @@ def test_error_with_multiple_1d_domains_no_borders():
         match="borders attributes need to be set for multiple 1D domains",
     ):
         my_model.initialise()
+
+
+@pytest.mark.parametrize("mesh", [f.UnitIntervalMesh(10), f.UnitSquareMesh(10, 10)])
+def test_error_surface_quantities(mesh):
+    """Test to catch #983"""
+
+    model = F.Simulation(log_level=20)
+
+    model.materials = F.Material(id=1, D_0=1, E_D=0)
+
+    mesh = mesh
+
+    volume_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim())
+    surface_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+
+    surface_markers.set_all(0)
+
+    left = f.CompiledSubDomain("near(x[0], 0) && on_boundary")
+    left.mark(surface_markers, 1)
+    right = f.CompiledSubDomain("near(x[0], 1) && on_boundary")
+    right.mark(surface_markers, 2)
+
+    model.mesh = F.Mesh(
+        mesh, volume_markers=volume_markers, surface_markers=surface_markers
+    )
+
+    model.materials = F.Material(id=1, D_0=1, E_D=1)
+
+    model.T = F.x + F.y * (mesh.topology().dim() - 1)
+
+    model.exports = F.DerivedQuantities(
+        [
+            F.MinimumSurface(field="T", surface=1),
+            F.MaximumSurface(field="T", surface=2),
+        ]
+    )
+
+    model.settings = F.Settings(
+        transient=False, absolute_tolerance=1e10, relative_tolerance=1e-10
+    )
+
+    model.initialise()
+    model.run()
