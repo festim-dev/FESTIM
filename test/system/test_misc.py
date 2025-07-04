@@ -911,7 +911,7 @@ def test_error_with_multiple_1d_domains_no_borders():
 def test_error_surface_quantities(mesh):
     """Test to catch #983"""
 
-    model = F.Simulation(log_level=20)
+    model = F.Simulation()
 
     model.materials = F.Material(id=1, D_0=1, E_D=0)
 
@@ -939,6 +939,8 @@ def test_error_surface_quantities(mesh):
         [
             F.MinimumSurface(field="T", surface=1),
             F.MaximumSurface(field="T", surface=2),
+            F.MinimumSurface(field="T", surface=3),
+            F.MaximumSurface(field="T", surface=4),
         ]
     )
 
