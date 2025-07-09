@@ -312,3 +312,25 @@ def test_compute_spherical(r0, radius):
     computed_value = float(my_flux.value)
 
     assert np.isclose(computed_value, expected_value)
+
+
+def test_surf_flux_cylindrical_allow_meshes():
+    """A simple test to check cylindrical meshes are the only
+    meshes allowed when using AverageVolumeCylindrical"""
+
+    H = F.Species("H")
+    surf = F.SurfaceSubdomain(id=3)
+    my_export = F.SurfaceFluxCylindrical(H, surf)
+
+    assert my_export.allowed_meshes == ["cylindrical"]
+
+
+def test_surf_flux_spherical_allow_meshes():
+    """A simple test to check cylindrical meshes are the only
+    meshes allowed when using AverageVolumeCylindrical"""
+
+    H = F.Species("H")
+    surf = F.SurfaceSubdomain(id=5)
+    my_export = F.SurfaceFluxSpherical(H, surf)
+
+    assert my_export.allowed_meshes == ["spherical"]
