@@ -2,11 +2,17 @@ import os
 
 from mpi4py import MPI
 
+import basix
 import numpy as np
 import pytest
 import ufl
 from dolfinx import fem
-from dolfinx.mesh import create_rectangle, locate_entities, meshtags
+from dolfinx.mesh import (
+    create_mesh,
+    create_rectangle,
+    locate_entities,
+    meshtags,
+)
 
 import festim as F
 
@@ -200,9 +206,9 @@ def test_polar_range_spherical(polar_range):
         F.SurfaceFluxSpherical("solute", 1, polar_range=polar_range)
 
 
-@pytest.mark.parametrize("radius", [2, 3])
-@pytest.mark.parametrize("r0", [0, 2])
-@pytest.mark.parametrize("height", [2, 3])
+@pytest.mark.parametrize("radius", [2, 3, 2.5])
+@pytest.mark.parametrize("r0", [0, 2, 1.5])
+@pytest.mark.parametrize("height", [2, 3, 5.8])
 def test_compute_cylindrical(r0, radius, height):
     """
     Test that SurfaceFluxCylindrical computes the flux correctly on a hollow cylinder
@@ -247,6 +253,60 @@ def test_compute_cylindrical(r0, radius, height):
     u.interpolate(u_expr)
 
     expected_value = -2 * np.pi * D_value * z1 * (r1**2 - r0**2)
+
+    my_flux.compute(u=u, ds=ds)
+    computed_value = float(my_flux.value)
+
+    assert np.isclose(computed_value, expected_value)
+
+
+@pytest.mark.parametrize("radius", [2, 3, 4.5])
+@pytest.mark.parametrize("r0", [0, 2, 1.4])
+def test_compute_spherical(r0, radius):
+    """
+    Test that SurfaceFluxSpherical computes the flux correctly on a hollow sphere
+    """
+    r1 = r0 + radius
+
+    vertices = np.linspace(r0, r1, 100)
+    gdim, shape, degree = 1, "interval", 1
+    domain = ufl.Mesh(basix.ufl.element("Lagrange", shape, degree, shape=(gdim,)))
+    mesh_points = np.reshape(vertices, (len(vertices), 1))
+    indexes = np.arange(mesh_points.shape[0])
+    cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
+    mesh_fenics = create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
+    fdim = mesh_fenics.topology.dim - 1
+
+    class OuterSurface(F.SurfaceSubdomain):
+        def locate_boundary_facet_indices(self, mesh):
+            fdim = mesh.topology.dim - 1
+            indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[0], r1))
+            return indices
+
+    outer_surface = OuterSurface(id=1)
+
+    # define mesh ds measure
+    num_facets = mesh_fenics.topology.index_map(0).size_local
+    mesh_facet_indices = np.arange(num_facets, dtype=np.int32)
+    tags_facets = np.full(num_facets, 0, dtype=np.int32)
+    entities = outer_surface.locate_boundary_facet_indices(mesh_fenics)
+    tags_facets[entities] = outer_surface.id
+    facet_meshtags = meshtags(mesh_fenics, fdim, mesh_facet_indices, tags_facets)
+
+    ds = ufl.Measure("ds", domain=mesh_fenics, subdomain_data=facet_meshtags)
+
+    H = F.Species("H")
+
+    D_value = 2
+    my_flux = F.SurfaceFluxSpherical(field=H, surface=outer_surface)
+    my_flux.D = F.as_fenics_constant(value=D_value, mesh=mesh_fenics)
+
+    u_expr = lambda x: x[0] ** 2
+    V = fem.functionspace(mesh_fenics, ("Lagrange", 2))
+    u = fem.Function(V)
+    u.interpolate(u_expr)
+
+    expected_value = -8 * np.pi * D_value * r1**3
 
     my_flux.compute(u=u, ds=ds)
     computed_value = float(my_flux.value)
