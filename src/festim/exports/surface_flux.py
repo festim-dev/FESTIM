@@ -166,11 +166,12 @@ class SurfaceFluxSpherical(SurfaceFlux):
         filename: name of the file to which the surface flux is exported
         azimuth_range: Range of the azimuthal angle (phi) needs to be between 0 and 2
             pi. Defaults to (0, 2 * np.pi).
-        polar_range: Range of the polar angle (theta) needs to be between - pi and pi.
-            Defaults to (-np.pi, np.pi).
+        polar_range: Range of the polar angle (theta) needs to be between 0 and pi.
+            Defaults to (0, np.pi).
     """
 
     azimuth_range: tuple[float, float] | None
+    polar_range: tuple[float, float] | None
 
     def __init__(
         self,
@@ -178,7 +179,7 @@ class SurfaceFluxSpherical(SurfaceFlux):
         surface,
         filename: str | None = None,
         azimuth_range=(0, 2 * np.pi),
-        polar_range=(-np.pi, np.pi),
+        polar_range=(0, np.pi),
     ) -> None:
         super().__init__(field=field, surface=surface, filename=filename)
         self.azimuth_range = azimuth_range
@@ -194,8 +195,8 @@ class SurfaceFluxSpherical(SurfaceFlux):
 
     @polar_range.setter
     def polar_range(self, value):
-        if value[0] < -np.pi or value[1] > np.pi:
-            raise ValueError("Polar range must be between - pi and pi")
+        if value[0] < 0 or value[1] > np.pi:
+            raise ValueError("Polar range must be between 0 and pi")
         self._polar_range = value
 
     @property
@@ -204,8 +205,8 @@ class SurfaceFluxSpherical(SurfaceFlux):
 
     @azimuth_range.setter
     def azimuth_range(self, value):
-        if value[0] < 0 or value[1] > np.pi:
-            raise ValueError("Azimuthal range must be between 0 and pi")
+        if value[0] < 0 or value[1] > 2 * np.pi:
+            raise ValueError("Azimuthal range must be between 0 and 2 pi")
         self._azimuth_range = value
 
     def compute(self, u, ds: ufl.Measure, entity_maps=None):
@@ -236,8 +237,8 @@ class SurfaceFluxSpherical(SurfaceFlux):
                 entity_maps=entity_maps,
             )
         )
-        self.value *= (self.polar_range[1] - self.polar_range[0]) * (
-            -np.cos(self.azimuth_range[1]) + np.cos(self.azimuth_range[0])
-        )
+        dphi = self.azimuth_range[1] - self.azimuth_range[0]
+        dtheta = -np.cos(self.polar_range[1]) + np.cos(self.polar_range[0])
+        self.value *= dphi * dtheta
 
         self.data.append(self.value)
