@@ -94,8 +94,10 @@ class SurfaceFluxCylindrical(SurfaceFlux):
 
     azimuth_range: tuple[float, float] | None
 
-    def __init__(self, field, surface, azimuth_range=(0, 2 * np.pi)) -> None:
-        super().__init__(field=field, surface=surface)
+    def __init__(
+        self, field, surface, filename: str | None = None, azimuth_range=(0, 2 * np.pi)
+    ) -> None:
+        super().__init__(field=field, surface=surface, filename=filename)
         self.azimuth_range = azimuth_range
 
     @property
@@ -171,9 +173,14 @@ class SurfaceFluxSpherical(SurfaceFlux):
     azimuth_range: tuple[float, float] | None
 
     def __init__(
-        self, field, surface, azimuth_range=(0, 2 * np.pi), polar_range=(-np.pi, np.pi)
+        self,
+        field,
+        surface,
+        filename: str | None = None,
+        azimuth_range=(0, 2 * np.pi),
+        polar_range=(-np.pi, np.pi),
     ) -> None:
-        super().__init__(field=field, surface=surface)
+        super().__init__(field=field, surface=surface, filename=filename)
         self.azimuth_range = azimuth_range
         self.polar_range = polar_range
 
