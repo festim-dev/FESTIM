@@ -417,6 +417,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     else:
                         adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
+            elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+                # raise warning if the derived quantities don't match the type of mesh
+                # eg. SurfaceFlux is used with cylindrical mesh
+                if self.mesh.coordinate_system not in export.allowed_meshes:
+                    warnings.warn(
+                        f"{type(export)} may not work as intended for "
+                        f"{self.mesh.coordinate_system} meshes"
+                    )
+
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
