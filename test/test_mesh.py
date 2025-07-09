@@ -184,3 +184,25 @@ def test_create_1D_mesh_parallel(cluster):
     query = cluster[:].apply_async(create_mesh)
     query.wait()
     assert query.successful(), query.error
+
+
+def test_attr_error_with_2D_mesh_in_spherical():
+    """Test that an AttributeError is raised when trying to access vdim or fdim on a 2D
+    mesh in spherical coordinates"""
+
+    with pytest.raises(
+        AttributeError,
+        match="spherical coordinates can be used for one-dimensional domains only",
+    ):
+        F.Mesh(mesh=mesh_2D, coordinate_system="spherical")
+
+
+def test_attr_error_with_3D_mesh_in_cylindrical():
+    """Test that an AttributeError is raised when trying to access vdim or fdim on a 2D
+    mesh in spherical coordinates"""
+
+    with pytest.raises(
+        AttributeError,
+        match="cylindrical coordinates cannot be used for 3D domains",
+    ):
+        F.Mesh(mesh=mesh_3D, coordinate_system="cylindrical")
