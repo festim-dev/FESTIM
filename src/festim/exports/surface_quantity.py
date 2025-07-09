@@ -8,19 +8,30 @@ class SurfaceQuantity:
     """Export SurfaceQuantity
 
     Args:
-        field (festim.Species): species for which the surface flux is computed
-        surface (festim.SurfaceSubdomain1D): surface subdomain
-        filename (str, optional): name of the file to which the surface flux is exported
+        field: species for which the surface flux is computed
+        surface: surface subdomain
+        filename: name of the file to which the surface flux is exported
 
     Attributes:
-        field (festim.Species): species for which the surface flux is computed
-        surface (festim.SurfaceSubdomain): surface subdomain
-        filename (str): name of the file to which the surface flux is exported
-        t (list): list of time values
-        data (list): list of values of the surface quantity
+        field: species for which the surface flux is computed
+        surface: surface subdomain
+        filename: name of the file to which the surface flux is exported
+        t: list of time values
+        data: list of values of the surface quantity
+        allowed_meshes: list of allowed meshes for the export
     """
 
-    def __init__(self, field, surface, filename: str | None = None) -> None:
+    field: Species
+    surface: SurfaceSubdomain
+    filename: str | None
+
+    t: list[float]
+    data: list[float]
+    allowed_meshes: list[str]
+
+    def __init__(
+        self, field: Species, surface: SurfaceSubdomain, filename: str | None = None
+    ) -> None:
         self.field = field
         self.surface = surface
         self.filename = filename
@@ -64,6 +75,10 @@ class SurfaceQuantity:
             raise TypeError("field must be of type festim.Species")
 
         self._field = value
+
+    @property
+    def allowed_meshes(self):
+        return ["cartesian", "cylindrical", "spherical"]
 
     def write(self, t):
         """If the filename doesnt exist yet, create it and write the header,
