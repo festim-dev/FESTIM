@@ -47,6 +47,8 @@ class Mesh:
             )
         self.coordinate_system = coordinate_system
 
+        self.check_mesh_dim_coords()
+
     @property
     def mesh(self):
         return self._mesh
@@ -170,3 +172,16 @@ class Mesh:
         )
 
         return facet_meshtags, volume_meshtags
+
+    def check_mesh_dim_coords(self):
+        """Checks if the used coordinates can be applied for geometry with the specified
+        dimensions"""
+
+        if self.coordinate_system == "spherical" and self.vdim != 1:
+            raise AttributeError(
+                "spherical coordinates can be used for one-dimensional domains only"
+            )
+        if self.coordinate_system == "cylindrical" and self.vdim > 2:
+            raise AttributeError(
+                "cylindrical coordinates cannot be used for 3D domains"
+            )
