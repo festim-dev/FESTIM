@@ -163,3 +163,36 @@ def test_surface_setter_raises_TypeError():
             field=F.Species("H"),
             surface="1",
         )
+
+
+@pytest.mark.parametrize(
+    "azimuth_range", [(-1, np.pi), (0, 3 * np.pi), (-1, 3 * np.pi)]
+)
+def test_azimuthal_range_cylindrical(azimuth_range):
+    """
+    Tests that an error is raised when the azimuthal range is out of bounds
+    """
+    with pytest.raises(ValueError):
+        F.SurfaceFluxCylindrical("solute", 1, azimuth_range=azimuth_range)
+
+
+@pytest.mark.parametrize(
+    "azimuth_range", [(-1, np.pi), (0, 3 * np.pi), (-1, 3 * np.pi)]
+)
+def test_azimuthal_range_spherical(azimuth_range):
+    """
+    Tests that an error is raised when the azimuthal range is out of bounds
+    """
+    with pytest.raises(ValueError):
+        F.SurfaceFluxSpherical("solute", 1, azimuth_range=azimuth_range)
+
+
+@pytest.mark.parametrize(
+    "polar_range", [(0, 2 * np.pi), (-2 * np.pi, 0), (-2 * np.pi, 3 * np.pi)]
+)
+def test_polar_range_spherical(polar_range):
+    """
+    Tests that an error is raised when the polar range is out of bounds
+    """
+    with pytest.raises(ValueError):
+        F.SurfaceFluxSpherical("solute", 1, polar_range=polar_range)

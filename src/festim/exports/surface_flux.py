@@ -102,6 +102,16 @@ class SurfaceFluxCylindrical(SurfaceFlux):
     def allowed_meshes(self):
         return ["cylindrical"]
 
+    @property
+    def azimuth_range(self):
+        return self._azimuth_range
+
+    @azimuth_range.setter
+    def azimuth_range(self, value):
+        if value[0] < 0 or value[1] > 2 * np.pi:
+            raise ValueError("Azimuthal range must be between 0 and 2*pi")
+        self._azimuth_range = value
+
     def compute(self, u, ds: ufl.Measure, entity_maps=None):
         """Computes the value of the flux at the cylindrical surface
 
@@ -170,6 +180,26 @@ class SurfaceFluxSpherical(SurfaceFlux):
     @property
     def allowed_meshes(self):
         return ["spherical"]
+
+    @property
+    def polar_range(self):
+        return self._polar_range
+
+    @polar_range.setter
+    def polar_range(self, value):
+        if value[0] < -np.pi or value[1] > np.pi:
+            raise ValueError("Polar range must be between - pi and pi")
+        self._polar_range = value
+
+    @property
+    def azimuth_range(self):
+        return self._azimuth_range
+
+    @azimuth_range.setter
+    def azimuth_range(self, value):
+        if value[0] < 0 or value[1] > np.pi:
+            raise ValueError("Azimuthal range must be between 0 and pi")
+        self._azimuth_range = value
 
     def compute(self, u, ds: ufl.Measure, entity_maps=None):
         """Computes the value of the flux at the spherical surface
