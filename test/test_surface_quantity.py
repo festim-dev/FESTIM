@@ -1,10 +1,12 @@
 import os
 
+from mpi4py import MPI
+
 import numpy as np
 import pytest
 import ufl
 from dolfinx import fem
-from dolfinx.mesh import meshtags
+from dolfinx.mesh import create_rectangle, locate_entities, meshtags
 
 import festim as F
 
@@ -196,3 +198,57 @@ def test_polar_range_spherical(polar_range):
     """
     with pytest.raises(ValueError):
         F.SurfaceFluxSpherical("solute", 1, polar_range=polar_range)
+
+
+@pytest.mark.parametrize("radius", [2, 3])
+@pytest.mark.parametrize("r0", [0, 2])
+@pytest.mark.parametrize("height", [2, 3])
+def test_compute_cylindrical(r0, radius, height):
+    """
+    Test that SurfaceFluxCylindrical computes the flux correctly on a hollow cylinder
+    """
+    # creating a mesh with FEniCS
+    r1 = r0 + radius
+    z0 = 0
+    z1 = z0 + height
+    mesh_fenics = create_rectangle(
+        MPI.COMM_WORLD, np.array([[r0, z0], [r1, z1]]), [10, 10]
+    )
+    mesh_fenics.topology.create_connectivity(2, 1)
+    mesh_fenics.topology.create_connectivity(1, 2)
+
+    class TopSurface(F.SurfaceSubdomain):
+        def locate_boundary_facet_indices(self, mesh):
+            fdim = mesh.topology.dim - 1
+            indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[1], z1))
+            return indices
+
+    top_surface = TopSurface(id=1)
+
+    # define mesh ds measure
+    num_facets = mesh_fenics.topology.index_map(1).size_local
+    mesh_facet_indices = np.arange(num_facets, dtype=np.int32)
+    tags_facets = np.full(num_facets, 0, dtype=np.int32)
+    entities = top_surface.locate_boundary_facet_indices(mesh_fenics)
+    tags_facets[entities] = top_surface.id
+    facet_meshtags = meshtags(mesh_fenics, 1, mesh_facet_indices, tags_facets)
+
+    ds = ufl.Measure("ds", domain=mesh_fenics, subdomain_data=facet_meshtags)
+
+    H = F.Species("H")
+
+    D_value = 2
+    my_flux = F.SurfaceFluxCylindrical(field=H, surface=top_surface)
+    my_flux.D = F.as_fenics_constant(value=D_value, mesh=mesh_fenics)
+
+    V = fem.functionspace(mesh_fenics, ("Lagrange", 2))
+    u_expr = lambda x: x[0] ** 2 + x[1] ** 2
+    u = fem.Function(V)
+    u.interpolate(u_expr)
+
+    expected_value = -2 * np.pi * D_value * z1 * (r1**2 - r0**2)
+
+    my_flux.compute(u=u, ds=ds)
+    computed_value = float(my_flux.value)
+
+    assert np.isclose(computed_value, expected_value)
