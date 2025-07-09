@@ -775,9 +775,24 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self.mesh.mesh, self.temperature_fenics, spe
                 )
                 if spe.mobile:
-                    self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
-                        vol.id
-                    )
+                    if self.mesh.coordinate_system == "cartesian":
+                        self.formulation += ufl.dot(
+                            D * ufl.grad(u), ufl.grad(v)
+                        ) * self.dx(vol.id)
+                    elif self.mesh.coordinate_system == "cylindrical":
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        self.formulation += (
+                            r
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                            * self.dx(vol.id)
+                        )
+                    elif self.mesh.coordinate_system == "spherical":
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        self.formulation += (
+                            r**2
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                            * self.dx(vol.id)
+                        )
 
                 if self.settings.transient:
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
