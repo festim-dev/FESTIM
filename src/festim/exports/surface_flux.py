@@ -72,7 +72,7 @@ class SurfaceFlux(SurfaceQuantity):
         self.data.append(self.value)
 
 
-class SurfaceFluxCylinder(SurfaceFlux):
+class SurfaceFluxCylindrical(SurfaceFlux):
     """Object to compute the flux J of a field u through a surface
     J = integral(-prop * grad(u) . n ds)
     where prop is the property of the field (D, thermal conductivity, etc)
