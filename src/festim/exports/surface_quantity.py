@@ -18,7 +18,6 @@ class SurfaceQuantity:
         filename: name of the file to which the surface flux is exported
         t: list of time values
         data: list of values of the surface quantity
-        allowed_meshes: list of allowed meshes for the export
     """
 
     field: Species
@@ -27,7 +26,6 @@ class SurfaceQuantity:
 
     t: list[float]
     data: list[float]
-    allowed_meshes: list[str]
 
     def __init__(
         self, field: Species, surface: SurfaceSubdomain, filename: str | None = None
@@ -75,10 +73,6 @@ class SurfaceQuantity:
             raise TypeError("field must be of type festim.Species")
 
         self._field = value
-
-    @property
-    def allowed_meshes(self):
-        return ["cartesian", "cylindrical", "spherical"]
 
     def write(self, t):
         """If the filename doesnt exist yet, create it and write the header,

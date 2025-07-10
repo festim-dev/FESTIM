@@ -418,11 +418,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
             elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
-                # raise warning if the derived quantities don't match the type of mesh
-                # eg. SurfaceFlux is used with cylindrical mesh
-                if self.mesh.coordinate_system not in export.allowed_meshes:
-                    warnings.warn(
-                        f"{type(export)} may not work as intended for "
+                # raise not implemented error if the derived quantity don't match the
+                # type of mesh eg. SurfaceFlux is used with cylindrical mesh
+                if "cartesian" not in self.mesh.coordinate_system:
+                    raise NotImplementedError(
+                        f"{type(export)} is not implemented for "
                         f"{self.mesh.coordinate_system} meshes"
                     )
 
