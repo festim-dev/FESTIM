@@ -15,6 +15,7 @@ from dolfinx.mesh import (
 )
 
 import festim as F
+from festim.helpers import get_interpolation_points
 
 
 def test_surface_flux_export_compute():
@@ -334,3 +335,92 @@ def test_surf_flux_spherical_allow_meshes():
     my_export = F.SurfaceFluxSpherical(H, surf)
 
     assert my_export.allowed_meshes == ["spherical"]
+
+
+def test_compute_cylindrical_multispecies():
+    """
+    Test that SurfaceFluxCylindrical computes the flux correctly in a multispecies
+    case with a hollow cylindrical mesh.
+    """
+    r0, r1 = 2, 6
+    z0, z1 = 1, 8
+
+    # creating a mesh with FEniCS
+    mesh_fenics = create_rectangle(
+        MPI.COMM_WORLD, np.array([[r0, z0], [r1, z1]]), [10, 10]
+    )
+    mesh_fenics.topology.create_connectivity(2, 1)
+    mesh_fenics.topology.create_connectivity(1, 2)
+
+    class TopSurface(F.SurfaceSubdomain):
+        def locate_boundary_facet_indices(self, mesh):
+            fdim = mesh.topology.dim - 1
+            indices = locate_entities(mesh, fdim, lambda x: np.isclose(x[1], z1))
+            return indices
+
+    top_surface = TopSurface(id=1)
+
+    # define mesh ds measure
+    num_facets = mesh_fenics.topology.index_map(1).size_local
+    mesh_facet_indices = np.arange(num_facets, dtype=np.int32)
+    tags_facets = np.full(num_facets, 0, dtype=np.int32)
+    entities = top_surface.locate_boundary_facet_indices(mesh_fenics)
+    tags_facets[entities] = top_surface.id
+    facet_meshtags = meshtags(mesh_fenics, 1, mesh_facet_indices, tags_facets)
+
+    ds = ufl.Measure("ds", domain=mesh_fenics, subdomain_data=facet_meshtags)
+
+    H = F.Species("H")
+    D = F.Species("D")
+
+    D_value = 3
+    my_flux_1 = F.SurfaceFluxCylindrical(field=H, surface=top_surface)
+    my_flux_2 = F.SurfaceFluxCylindrical(field=D, surface=top_surface)
+    diff = F.as_fenics_constant(value=D_value, mesh=mesh_fenics)
+    my_flux_1.D = diff
+    my_flux_2.D = diff
+
+    element_CG = basix.ufl.element(
+        basix.ElementFamily.P,
+        mesh_fenics.basix_cell(),
+        2,
+        basix.LagrangeVariant.equispaced,
+    )
+    mixed_ele = basix.ufl.mixed_element([element_CG, element_CG])
+    V = fem.functionspace(mesh_fenics, mixed_ele)
+
+    u_expr = lambda x: x[0] ** 2 + x[1] ** 2
+    v_expr = lambda x: 2 * x[0] ** 2 + 3 * x[1] ** 2
+    x = ufl.SpatialCoordinate(mesh_fenics)
+    kwargs = {}
+    kwargs["x"] = x
+    u_collapsed_function_space, u_ = V.sub(0).collapse()
+    v_collapsed_function_space, v_ = V.sub(1).collapse()
+    expr_fenics_u = fem.Expression(
+        u_expr(**kwargs),
+        get_interpolation_points(u_collapsed_function_space.element),
+    )
+    expr_fenics_v = fem.Expression(
+        v_expr(**kwargs),
+        get_interpolation_points(v_collapsed_function_space.element),
+    )
+    main_func = fem.Function(V)
+    main_func.sub(0).interpolate(expr_fenics_u)
+    main_func.sub(1).interpolate(expr_fenics_v)
+
+    expected_value_1 = -2 * np.pi * D_value * z1 * (r1**2 - r0**2)
+    expected_value_2 = -18 * np.pi * z1 * (r1**2 - r0**2)
+
+    H.sub_function_space = V.sub(0)
+    D.sub_function_space = V.sub(1)
+    sub_solutions = list(ufl.split(main_func))
+    u_solution = sub_solutions[0]
+    v_solution = sub_solutions[1]
+
+    my_flux_1.compute(u=u_solution, ds=ds)
+    my_flux_2.compute(u=v_solution, ds=ds)
+    computed_value_1 = float(my_flux_1.value)
+    computed_value_2 = float(my_flux_2.value)
+
+    assert np.isclose(computed_value_1, expected_value_1)
+    assert np.isclose(computed_value_2, expected_value_2)
