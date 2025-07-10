@@ -1282,7 +1282,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 form += ((u - u_n) / self.dt) * v * self.dx(subdomain.id)
 
             if spe.mobile:
-                form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * self.dx(subdomain.id)
+                if self.mesh.coordinate_system == "cartesian":
+                    form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
+                        subdomain.id
+                    )
+                elif self.mesh.coordinate_system == "cylindrical":
+                    r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                    form += (
+                        r
+                        * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                        * self.dx(subdomain.id)
+                    )
+                elif self.mesh.coordinate_system == "spherical":
+                    r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                    form += (
+                        r**2
+                        * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                        * self.dx(subdomain.id)
+                    )
 
         # add reaction terms
         for reaction in self.reactions:
