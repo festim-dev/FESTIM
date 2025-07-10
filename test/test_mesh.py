@@ -184,3 +184,35 @@ def test_create_1D_mesh_parallel(cluster):
     query = cluster[:].apply_async(create_mesh)
     query.wait()
     assert query.successful(), query.error
+
+
+@pytest.mark.parametrize("mesh", [mesh_2D, mesh_3D])
+def test_attr_error_with_incompitable_mesh_in_spherical(mesh):
+    """Test that an AttributeError is raised when trying to use an incompatible mesh
+    with a spherical coordinate system"""
+
+    with pytest.raises(
+        AttributeError,
+        match="spherical coordinates can be used for one-dimensional domains only",
+    ):
+        F.Mesh(mesh=mesh, coordinate_system="spherical")
+
+
+def test_attr_error_with_3D_mesh_in_cylindrical():
+    """Test that an AttributeError is raised when trying to use an incompatible mesh
+    with a cylindrical coordinate system"""
+
+    with pytest.raises(
+        AttributeError,
+        match="cylindrical coordinates cannot be used for 3D domains",
+    ):
+        F.Mesh(mesh=mesh_3D, coordinate_system="cylindrical")
+
+
+@pytest.mark.parametrize("system", ["cyl", "cart", 1.0, "coucou", mesh_1D])
+def test_coordinate_system_setter(system):
+    with pytest.raises(
+        ValueError,
+        match="coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'",
+    ):
+        F.Mesh(mesh=mesh_3D, coordinate_system=system)

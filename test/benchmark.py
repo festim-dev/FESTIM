@@ -1,3 +1,4 @@
+import tempfile
 import time
 
 from mpi4py import MPI
@@ -32,7 +33,6 @@ from ufl import (
     exp,
     grad,
 )
-import tempfile
 
 
 def fenics_test_permeation_problem(mesh_size=1001):
@@ -202,10 +202,8 @@ def test_festim_vs_fenics_permeation_benchmark():
     if diff < threshold:
         raise ValueError(
             f"festim is {
-                np.abs(diff):.1%
-            } slower than fenics, current acceptable threshold of {
-                np.abs(threshold):.1%
-            }"
+                np.abs(diff):.1%} slower than fenics, current acceptable threshold of {
+                np.abs(threshold):.1%}"
         )
     else:
         print(f"avg relative diff between festim and fenics {diff:.1%}")

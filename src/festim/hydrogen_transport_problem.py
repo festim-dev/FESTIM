@@ -417,6 +417,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     else:
                         adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
+            elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+                # raise not implemented error if the derived quantity don't match the
+                # type of mesh eg. SurfaceFlux is used with cylindrical mesh
+                if "cartesian" not in self.mesh.coordinate_system:
+                    raise NotImplementedError(
+                        f"Derived quantity exports are not implemented for "
+                        f"{self.mesh.coordinate_system} meshes"
+                    )
+
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
@@ -775,9 +784,24 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self.mesh.mesh, self.temperature_fenics, spe
                 )
                 if spe.mobile:
-                    self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
-                        vol.id
-                    )
+                    if self.mesh.coordinate_system == "cartesian":
+                        self.formulation += ufl.dot(
+                            D * ufl.grad(u), ufl.grad(v)
+                        ) * self.dx(vol.id)
+                    elif self.mesh.coordinate_system == "cylindrical":
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        self.formulation += (
+                            r
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                            * self.dx(vol.id)
+                        )
+                    elif self.mesh.coordinate_system == "spherical":
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        self.formulation += (
+                            r**2
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                            * self.dx(vol.id)
+                        )
 
                 if self.settings.transient:
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
