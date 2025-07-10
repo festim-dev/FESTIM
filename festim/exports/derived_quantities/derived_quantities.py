@@ -1,6 +1,8 @@
 from festim import (
     MinimumVolume,
     MaximumVolume,
+    MinimumSurface,
+    MaximumSurface,
     DerivedQuantity,
 )
 import fenics as f
@@ -106,6 +108,7 @@ class DerivedQuantities(list):
 
     def assign_measures_to_quantities(self, dx, ds):
         self.volume_markers = dx.subdomain_data()
+        self.surface_markers = ds.subdomain_data()
         for quantity in self:
             quantity.dx = dx
             quantity.ds = ds
@@ -129,6 +132,8 @@ class DerivedQuantities(list):
         for quantity in self:
             if isinstance(quantity, (MaximumVolume, MinimumVolume)):
                 value = quantity.compute(self.volume_markers)
+            elif isinstance(quantity, (MaximumSurface, MinimumSurface)):
+                value = quantity.compute(self.surface_markers)
             else:
                 value = quantity.compute()
 
