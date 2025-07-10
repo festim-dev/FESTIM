@@ -915,8 +915,6 @@ def test_error_surface_quantities(mesh):
 
     model.materials = F.Material(id=1, D_0=1, E_D=0)
 
-    mesh = mesh
-
     volume_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim())
     surface_markers = f.MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
 
