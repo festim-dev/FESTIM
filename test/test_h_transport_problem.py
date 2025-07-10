@@ -1299,3 +1299,33 @@ def test_define_D_global_with_D_as_function():
     # TEST
     assert D_expr is None
     assert D == D_func
+
+
+@pytest.mark.parametrize("coord_sys", ["cylindrical", "spherical"])
+def test_exports_cyl_sph_coord_system_raise_not_implemented(coord_sys):
+    """Test that NotImplementedError is raised when trying to use exports in a
+    cylindrical or spherical coordinate system"""
+
+    # BUILD
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11), coordinate_system=coord_sys)
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    surf = F.SurfaceSubdomain1D(id=2, x=1)
+    H = F.Species("H")
+
+    my_export = F.TotalVolume(field=H, volume=my_vol)
+    my_export_2 = F.TotalSurface(field=H, surface=surf)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[my_vol, surf],
+        species=[H],
+        exports=[my_export, my_export_2],
+    )
+
+    # TEST
+    with pytest.raises(
+        NotImplementedError,
+        match=f"Derived quantity exports are not implemented for {coord_sys} meshes",
+    ):
+        my_model.initialise_exports()

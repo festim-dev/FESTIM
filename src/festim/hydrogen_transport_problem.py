@@ -422,7 +422,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # type of mesh eg. SurfaceFlux is used with cylindrical mesh
                 if "cartesian" not in self.mesh.coordinate_system:
                     raise NotImplementedError(
-                        f"{type(export)} is not implemented for "
+                        f"Derived quantity exports are not implemented for "
                         f"{self.mesh.coordinate_system} meshes"
                     )
 
