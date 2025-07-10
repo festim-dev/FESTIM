@@ -88,8 +88,8 @@ class SurfaceFluxCylindrical(SurfaceFlux):
         field: species for which the surface flux is computed
         surface: surface subdomain
         filename: name of the file to which the surface flux is exported
-        azimuth_range: Range of the azimuthal angle
-            (theta) needs to be between 0 and 2 pi. Defaults to (0, 2 * np.pi).
+        azimuth_range: Range of the azimuthal angle (theta) needs to be between 0 and
+            2 pi. Defaults to (0, 2 * np.pi).
     """
 
     azimuth_range: tuple[float, float] | None
