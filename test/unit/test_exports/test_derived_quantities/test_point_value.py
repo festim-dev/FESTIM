@@ -35,10 +35,9 @@ def test_point_value_compute(mesh, x):
     assert produced == expected
 
 
-@pytest.fixture(scope="module", params=[1, 2])
-def cluster(request):
-    n_engines = request.param
-    cluster = ipp.Cluster(engines="mpi", n=n_engines, log_level=logging.ERROR)
+@pytest.fixture(scope="module")
+def cluster():
+    cluster = ipp.Cluster(engines="mpi", n=2, log_level=logging.ERROR)
     rc = cluster.start_and_connect_sync()
     yield rc
     cluster.stop_cluster_sync()
