@@ -17,7 +17,7 @@ class PointValue(DerivedQuantity):
         title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
-        self.functiontion (dolfin.self.functiontion.self.functiontion.self.functiontion): the solution self.functiontion of
+        function (dolfin.function.function.Function): the solution function of
             the field
 
     .. note::
