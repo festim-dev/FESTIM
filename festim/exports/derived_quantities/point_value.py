@@ -1,4 +1,6 @@
 from festim import DerivedQuantity
+from mpi4py import MPI as pyMPI
+import numpy as np
 
 
 class PointValue(DerivedQuantity):
@@ -15,7 +17,7 @@ class PointValue(DerivedQuantity):
         title (str): the title of the derived quantity
         show_units (bool): show the units in the title in the derived quantities
             file
-        function (dolfin.function.function.Function): the solution function of
+        self.functiontion (dolfin.self.functiontion.self.functiontion.self.functiontion): the solution self.functiontion of
             the field
 
     .. note::
@@ -23,7 +25,7 @@ class PointValue(DerivedQuantity):
 
     """
 
-    def __init__(self, field: str or int, x: int or float or tuple or list) -> None:
+    def __init__(self, field: str | int, x: int | float | tuple | list) -> None:
         super().__init__(field=field)
         # make sure x is an iterable
         if not hasattr(x, "__iter__"):
@@ -46,5 +48,18 @@ class PointValue(DerivedQuantity):
             return quantity_title
 
     def compute(self):
-        """The value at the point"""
-        return self.function(self.x)
+        """Evaluates the value of a function at the given point"""
+
+        # Handles the RuntimeError due to mesh partitioning
+        try:
+            value_local = self.function(self.x)
+        except RuntimeError:
+            value_local = np.inf * np.ones(self.function.value_shape())
+
+        mesh = self.function.function_space().mesh()
+        comm = mesh.mpi_comm()
+
+        value_global = np.zeros_like(value_local)
+        comm.Allreduce(value_local, value_global, op=pyMPI.MIN)
+
+        return value_global
