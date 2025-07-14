@@ -2,6 +2,7 @@ from festim import MaximumSurface
 import fenics as f
 import numpy as np
 import pytest
+from dolfin import MPI
 
 
 @pytest.mark.parametrize("field,surface", [("solute", 1), ("T", 2)])
@@ -19,17 +20,18 @@ def test_title(field, surface):
     assert my_max.title == f"Maximum {field} surface {surface} ({my_max.export_unit})"
 
 
-class TestCompute:
+def test_compute_maximum():
     """Test that the maximum surface export computes the correct value"""
 
-    mesh = f.UnitIntervalMesh(10)
+    mesh = f.UnitSquareMesh(10, 10)
     V = f.FunctionSpace(mesh, "P", 1)
 
-    c = f.interpolate(f.Expression("x[0]", degree=1), V)
+    c = f.interpolate(f.Expression("x[0] + x[1]", degree=1), V)
 
-    left = f.CompiledSubDomain("x[0] < 0.5")
-    surface_markers = f.MeshFunction("size_t", mesh, 1, 1)
-    left.mark(surface_markers, 2)
+    surface_markers = f.MeshFunction("size_t", mesh, 1, 0)
+
+    right = f.CompiledSubDomain("near(x[0], 1) && on_boundary")
+    right.mark(surface_markers, 1)
 
     dx = f.Measure("dx", domain=mesh, subdomain_data=surface_markers)
 
@@ -38,17 +40,8 @@ class TestCompute:
     my_max.function = c
     my_max.dx = dx
 
-    def test_minimum(self):
-        dm = self.V.dofmap()
-        subd_dofs = np.unique(
-            np.hstack(
-                [
-                    dm.cell_dofs(c.index())
-                    for c in f.SubsetIterator(self.surface_markers, self.surface)
-                ]
-            )
-        )
-        expected = np.max(self.c.vector().get_local()[subd_dofs])
+    produced = my_max.compute(surface_markers)
 
-        produced = self.my_max.compute(self.surface_markers)
-        assert produced == expected
+    expected = 2.0
+
+    assert produced == expected
