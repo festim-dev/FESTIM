@@ -49,6 +49,12 @@ def test_point_value_compute_parallel(cluster):
     def compute_value():
         from festim import PointValue
         import fenics as f
+        import coverage
+        import os
+
+        # Initiate coverage tracking for each subprocess
+        cov = coverage.Coverage(data_suffix=f"mpi_{os.getpid()}")
+        cov.start()
 
         mesh = f.UnitSquareMesh(10, 10)
         mesh.bounding_box_tree()
@@ -61,6 +67,9 @@ def test_point_value_compute_parallel(cluster):
         my_value.function = c
 
         my_value.compute()
+
+        cov.stop()
+        cov.save()
 
     query = cluster[:].apply_async(compute_value)
     query.wait()
