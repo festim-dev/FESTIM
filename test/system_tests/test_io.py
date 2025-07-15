@@ -136,8 +136,8 @@ def test_VTXExport_times_added_to_milestones(tmpdir):
     ]
     my_model.temperature = 100
     my_model.settings = F.Settings(
-        atol=1e0,
-        rtol=1e0,
+        atol=0.999,
+        rtol=0.999,
         final_time=4,
         transient=True,
         stepsize=F.Stepsize(initial_value=3),
