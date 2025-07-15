@@ -250,7 +250,7 @@ class ProblemBase:
         if Version(dolfinx.__version__) == Version("0.9.0"):
             nb_its, converged = self.solver.solve(self.u)
         elif Version(dolfinx.__version__) > Version("0.9.0"):
-            _, converged, nb_its = self.solver.solve()
+            _, _, converged, nb_its = self.solver.solve()
 
         # post processing
         self.post_processing()
