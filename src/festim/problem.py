@@ -190,7 +190,11 @@ class ProblemBase:
                 petsc_options = self.petsc_options
 
             self.solver = NonlinearProblem(
-                self.formulation, self.u, bcs=self.bc_forms, petsc_options=petsc_options
+                self.formulation,
+                self.u,
+                bcs=self.bc_forms,
+                petsc_options=petsc_options,
+                petsc_options_prefix="festim_solver",
             )
             # Delete PETSc options post setting them, ref:
             # https://gitlab.com/petsc/petsc/-/issues/1201
