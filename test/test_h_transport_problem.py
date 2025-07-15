@@ -165,7 +165,9 @@ def test_iterate():
         problem = fem.petsc.NonlinearProblem(form, my_model.u, bcs=[])
         my_model.solver = nls.petsc.NewtonSolver(MPI.COMM_WORLD, problem)
     elif Version(dolfinx.__version__) > Version("0.9.0"):
-        problem = fem.petsc.NonlinearProblem(form, my_model.u, bcs=[])
+        problem = fem.petsc.NonlinearProblem(
+            form, my_model.u, bcs=[], petsc_options_prefix="festim_solver"
+        )
         my_model.solver = problem
 
     my_model.t = fem.Constant(mesh, 0.0)
