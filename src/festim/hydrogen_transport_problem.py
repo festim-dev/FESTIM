@@ -12,6 +12,7 @@ import tqdm.autonotebook
 import ufl
 from dolfinx import fem
 from scifem import BlockedNewtonSolver
+import numpy as np
 
 import festim.boundary_conditions
 import festim.problem
@@ -971,6 +972,18 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
+            if isinstance(export, exports.Profile1DExport):
+                if export._dofs is None:
+                    index = self.species.index(export.field)
+                    V0, export._dofs = self.u.function_space.sub(index).collapse()
+                    coords = V0.tabulate_dof_coordinates()[:, 0]
+                    export._sort_coords = np.argsort(coords)
+                    x = coords[export._sort_coords]
+                    export.x = x
+
+                c = self.u.x.array[export._dofs][export._sort_coords]
+
+                export.data.append(c)
 
 
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
@@ -1627,6 +1640,27 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
+
+            elif isinstance(export, exports.Profile1DExport):
+                assert (
+                    export.subdomain
+                ), "Profile1DExport requires a subdomain to be set"
+                # will implement it for multidomain when #962 is fixed
+                raise NotImplementedError(
+                    "Profile1DExport not implemented for HydrogenTransportProblemDiscontinuous"
+                )
+                u = export.subdomain.u
+                if export._dofs is None:
+                    index = self.species.index(export.field)
+                    V0, export._dofs = u.function_space.sub(index).collapse()
+                    coords = V0.tabulate_dof_coordinates()[:, 0]
+                    export._sort_coords = np.argsort(coords)
+                    x = coords[export._sort_coords]
+                    export.x = x
+
+                c = u.x.array[export._dofs][export._sort_coords]
+
+                export.data.append(c)
 
     def iterate(self):
         """Iterates the model for a given time step"""
