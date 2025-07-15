@@ -8,6 +8,7 @@ import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
 from petsc4py import PETSc
+import dolfinx
 
 import festim as F
 from festim.mesh.mesh import Mesh as _Mesh
@@ -15,6 +16,7 @@ from festim.source import SourceBase as _SourceBase
 from festim.subdomain.volume_subdomain import (
     VolumeSubdomain as _VolumeSubdomain,
 )
+from packaging.version import Version
 
 
 class ProblemBase:
@@ -118,38 +120,85 @@ class ProblemBase:
 
     def create_solver(self):
         """Creates the solver of the model"""
-        problem = fem.petsc.NonlinearProblem(
-            self.formulation,
-            self.u,
-            bcs=self.bc_forms,
-        )
-        self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
-        self.solver.atol = (
-            self.settings.atol
-            if not callable(self.settings.rtol)
-            else self.settings.rtol(float(self.t))
-        )
-        self.solver.rtol = (
-            self.settings.rtol
-            if not callable(self.settings.rtol)
-            else self.settings.rtol(float(self.t))
-        )
-        self.solver.max_it = self.settings.max_iterations
 
-        ksp = self.solver.krylov_solver
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            problem = fem.petsc.NonlinearProblem(
+                self.formulation,
+                self.u,
+                bcs=self.bc_forms,
+            )
+            self.solver = NewtonSolver(MPI.COMM_WORLD, problem)
 
-        if self.petsc_options is None:
-            ksp.setType("preonly")
-            ksp.getPC().setType("lu")
-            ksp.getPC().setFactorSolverType("mumps")
-            ksp.setErrorIfNotConverged(True)
-        else:
-            # Set PETSc options
+            self.solver.atol = (
+                self.settings.atol
+                if not callable(self.settings.rtol)
+                else self.settings.rtol(float(self.t))
+            )
+            self.solver.rtol = (
+                self.settings.rtol
+                if not callable(self.settings.rtol)
+                else self.settings.rtol(float(self.t))
+            )
+            self.solver.max_it = self.settings.max_iterations
+
+            ksp = self.solver.krylov_solver
+
+            if self.petsc_options is None:
+                ksp.setType("preonly")
+                ksp.getPC().setType("lu")
+                ksp.getPC().setFactorSolverType("mumps")
+                ksp.setErrorIfNotConverged(True)
+            else:
+                # Set PETSc options
+                opts = PETSc.Options()
+                option_prefix = ksp.getOptionsPrefix()
+                for k, v in self.petsc_options.items():
+                    opts[f"{option_prefix}{k}"] = v
+                ksp.setFromOptions()
+
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            from dolfinx.fem.petsc import NonlinearProblem
+
+            if self.petsc_options is None:
+                # taken from https://github.com/FEniCS/dolfinx/blob/5fcb988c5b0f46b8f9183bc844d8f533a2130d6a/python/demo/demo_cahn-hilliard.py#L279C1-L286C28
+                use_superlu = (
+                    PETSc.IntType == np.int64
+                )  # or PETSc.ScalarType == np.complex64
+                sys = PETSc.Sys()  # type: ignore
+                if sys.hasExternalPackage("mumps") and not use_superlu:
+                    linear_solver = "mumps"
+                elif sys.hasExternalPackage("superlu_dist"):
+                    linear_solver = "superlu_dist"
+                else:
+                    linear_solver = "petsc"
+
+                petsc_options = {
+                    "snes_type": "newtonls",
+                    "snes_linesearch_type": "none",
+                    "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps)
+                    * 1e-2,
+                    # TODO : make atol and rtol callable
+                    "snes_atol": self.settings.atol,
+                    "snes_rtol": self.settings.rtol,
+                    "snes_max_it": self.settings.max_iterations,
+                    "ksp_type": "preonly",
+                    "pc_type": "lu",
+                    "pc_factor_mat_solver_type": linear_solver,
+                    "snes_monitor": None,
+                }
+            else:
+                petsc_options = self.petsc_options
+
+            self.solver = NonlinearProblem(
+                self.formulation, self.u, bcs=self.bc_forms, petsc_options=petsc_options
+            )
+            # Delete PETSc options post setting them, ref:
+            # https://gitlab.com/petsc/petsc/-/issues/1201
+            snes = self.solver.solver
+            prefix = snes.getOptionsPrefix()
             opts = PETSc.Options()
-            option_prefix = ksp.getOptionsPrefix()
-            for k, v in self.petsc_options.items():
-                opts[f"{option_prefix}{k}"] = v
-            ksp.setFromOptions()
+            for k in petsc_options.keys():
+                del opts[f"{prefix}{k}"]
 
     def run(self):
         """Runs the model"""
@@ -169,7 +218,10 @@ class ProblemBase:
                 self.progress_bar.close()
         else:
             # Solve steady-state
-            self.solver.solve(self.u)
+            if Version(dolfinx.__version__) == Version("0.9.0"):
+                self.solver.solve(self.u)
+            elif Version(dolfinx.__version__) > Version("0.9.0"):
+                self.solver.solve()
             self.post_processing()
 
     def iterate(self):
@@ -191,7 +243,10 @@ class ProblemBase:
         self.update_time_dependent_values()
 
         # solve main problem
-        nb_its, converged = self.solver.solve(self.u)
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            nb_its, converged = self.solver.solve(self.u)
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            _, converged, nb_its = self.solver.solve()
 
         # post processing
         self.post_processing()
