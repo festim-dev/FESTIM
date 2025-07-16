@@ -1642,9 +1642,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.Profile1DExport):
-                assert (
-                    export.subdomain
-                ), "Profile1DExport requires a subdomain to be set"
+                assert export.subdomain, (
+                    "Profile1DExport requires a subdomain to be set"
+                )
                 # will implement it for multidomain when #962 is fixed
                 raise NotImplementedError(
                     "Profile1DExport not implemented for HydrogenTransportProblemDiscontinuous"
