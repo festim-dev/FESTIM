@@ -1364,95 +1364,98 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             h_1 = 2 * cr(res[1])
 
             all_mobile_species = [spe for spe in self.species if spe.mobile]
-            if len(all_mobile_species) > 1:
-                raise NotImplementedError("Multiple mobile species not implemented")
-            H = all_mobile_species[0]
-            v_b = H.subdomain_to_test_function[subdomain_0](res[0])
-            v_t = H.subdomain_to_test_function[subdomain_1](res[1])
 
-            u_b = H.subdomain_to_solution[subdomain_0](res[0])
-            u_t = H.subdomain_to_solution[subdomain_1](res[1])
+            for H in all_mobile_species:
+                v_b = H.subdomain_to_test_function[subdomain_0](res[0])
+                v_t = H.subdomain_to_test_function[subdomain_1](res[1])
 
-            K_b = subdomain_0.material.get_solubility_coefficient(
-                self.mesh.mesh, self.temperature_fenics(res[0]), H
-            )
-            K_t = subdomain_1.material.get_solubility_coefficient(
-                self.mesh.mesh, self.temperature_fenics(res[1]), H
-            )
+                u_b = H.subdomain_to_solution[subdomain_0](res[0])
+                u_t = H.subdomain_to_solution[subdomain_1](res[1])
 
-            if self.method_interface == "penalty":
-                if (
-                    subdomain_0.material.solubility_law
-                    == subdomain_1.material.solubility_law
-                ):
-                    left = u_b / K_b
-                    right = u_t / K_t
-                else:
-                    if subdomain_0.material.solubility_law == "henry":
+                K_b = subdomain_0.material.get_solubility_coefficient(
+                    self.mesh.mesh, self.temperature_fenics(res[0]), H
+                )
+                K_t = subdomain_1.material.get_solubility_coefficient(
+                    self.mesh.mesh, self.temperature_fenics(res[1]), H
+                )
+
+                if self.method_interface == "penalty":
+                    if (
+                        subdomain_0.material.solubility_law
+                        == subdomain_1.material.solubility_law
+                    ):
                         left = u_b / K_b
-                    elif subdomain_0.material.solubility_law == "sievert":
-                        left = (u_b / K_b) ** 2
-                    else:
-                        raise ValueError(
-                            f"Unknown material law {subdomain_0.material.solubility_law}"
-                        )
-
-                    if subdomain_1.material.solubility_law == "henry":
                         right = u_t / K_t
-                    elif subdomain_1.material.solubility_law == "sievert":
-                        right = (u_t / K_t) ** 2
                     else:
-                        raise ValueError(
-                            f"Unknown material law {subdomain_1.material.solubility_law}"
-                        )
+                        if subdomain_0.material.solubility_law == "henry":
+                            left = u_b / K_b
+                        elif subdomain_0.material.solubility_law == "sievert":
+                            left = (u_b / K_b) ** 2
+                        else:
+                            raise ValueError(
+                                f"Unknown material law {subdomain_0.material.solubility_law}"
+                            )
 
-                equality = right - left
+                        if subdomain_1.material.solubility_law == "henry":
+                            right = u_t / K_t
+                        elif subdomain_1.material.solubility_law == "sievert":
+                            right = (u_t / K_t) ** 2
+                        else:
+                            raise ValueError(
+                                f"Unknown material law {subdomain_1.material.solubility_law}"
+                            )
 
-                F_0 = (
-                    interface.penalty_term
-                    * ufl.inner(equality, v_b)
-                    * dInterface(interface.id)
-                )
-                F_1 = (
-                    -interface.penalty_term
-                    * ufl.inner(equality, v_t)
-                    * dInterface(interface.id)
-                )
+                    equality = right - left
 
-                subdomain_0.F += F_0
-                subdomain_1.F += F_1
+                    F_0 = (
+                        interface.penalty_term
+                        * ufl.inner(equality, v_b)
+                        * dInterface(interface.id)
+                    )
+                    F_1 = (
+                        -interface.penalty_term
+                        * ufl.inner(equality, v_t)
+                        * dInterface(interface.id)
+                    )
 
-            elif self.method_interface == "nietsche":
-                F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
-                    interface.id
-                ) - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_0) * dInterface(
-                    interface.id
-                )
+                    subdomain_0.F += F_0
+                    subdomain_1.F += F_1
 
-                F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
-                    interface.id
-                ) - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_0) * dInterface(
-                    interface.id
-                )
-                F_0 += (
-                    2
-                    * gamma
-                    / (h_0 + h_1)
-                    * (u_b / K_b - u_t / K_t)
-                    * v_b
-                    * dInterface(interface.id)
-                )
-                F_1 += (
-                    -2
-                    * gamma
-                    / (h_0 + h_1)
-                    * (u_b / K_b - u_t / K_t)
-                    * v_t
-                    * dInterface(interface.id)
-                )
+                elif self.method_interface == "nietsche":
+                    F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
+                        interface.id
+                    ) - 0.5 * mixed_term(
+                        v_b, (u_b / K_b - u_t / K_t), n_0
+                    ) * dInterface(
+                        interface.id
+                    )
 
-                subdomain_0.F += F_0
-                subdomain_1.F += F_1
+                    F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
+                        interface.id
+                    ) - 0.5 * mixed_term(
+                        v_t, (u_b / K_b - u_t / K_t), n_0
+                    ) * dInterface(
+                        interface.id
+                    )
+                    F_0 += (
+                        2
+                        * gamma
+                        / (h_0 + h_1)
+                        * (u_b / K_b - u_t / K_t)
+                        * v_b
+                        * dInterface(interface.id)
+                    )
+                    F_1 += (
+                        -2
+                        * gamma
+                        / (h_0 + h_1)
+                        * (u_b / K_b - u_t / K_t)
+                        * v_t
+                        * dInterface(interface.id)
+                    )
+
+                    subdomain_0.F += F_0
+                    subdomain_1.F += F_1
 
         J = []
         # this is the symbolic differentiation of the Jacobian
