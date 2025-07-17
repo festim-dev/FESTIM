@@ -186,6 +186,17 @@ def test_volume_subdomain_properties():
         assert isinstance(subdomain, F.SurfaceSubdomain)
 
 
+def test_subdomain_with_custom_locator():
+    mesh = mesh2d
+    subdomain1 = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 0))
+    subdomain2 = F.SurfaceSubdomain(id=1, locator=lambda x: np.full(x.shape[1], True))
+
+    for subdomain in [subdomain1, subdomain2]:
+        # Check that the subdomain can be located
+        entities = subdomain.locate_boundary_facet_indices(mesh)
+        assert len(entities) > 0
+
+
 mesh1d = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, nx=1)
 mesh2d = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, nx=1, ny=1)
 mesh3d = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, nx=1, ny=1, nz=1)

@@ -66,8 +66,11 @@ from .source import HeatSource, ParticleSource, SourceBase
 from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
 from .subdomain.interface import Interface
-from .subdomain.surface_subdomain import SurfaceSubdomain, find_surface_from_id
-from .subdomain.surface_subdomain_1d import SurfaceSubdomain1D
+from .subdomain.surface_subdomain import (
+    SurfaceSubdomain,
+    SurfaceSubdomain1D,
+    find_surface_from_id,
+)
 from .subdomain.volume_subdomain import VolumeSubdomain, find_volume_from_id
 from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
 from .trap import Trap
