@@ -1010,6 +1010,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 else:
                     c = self.u.x.array[export._dofs]
                 export.data.append(c)
+                export.t.append(float(self.t))
 
 
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
@@ -1691,6 +1692,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 c = u.x.array[export._dofs][export._sort_coords]
 
                 export.data.append(c)
+                export.t.append(float(self.t))
 
     def iterate(self):
         """Iterates the model for a given time step"""

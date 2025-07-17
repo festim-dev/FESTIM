@@ -1,8 +1,10 @@
 import festim as F
 import numpy as np
+import pytest
 
 
-def test_profile():
+@pytest.mark.parametrize("times", [None, [2, 5], [5]])
+def test_profile(times):
     my_model = F.HydrogenTransportProblem()
 
     protium = F.Species("H")
@@ -41,8 +43,8 @@ def test_profile():
     my_model.settings.stepsize = F.Stepsize(1)
 
     my_model.exports = [
-        F.Profile1DExport(protium),
-        F.Profile1DExport(deuterium),
+        F.Profile1DExport(protium, times=times),
+        F.Profile1DExport(deuterium, times=times),
     ]
 
     my_model.initialise()
@@ -50,8 +52,12 @@ def test_profile():
 
     assert my_model.exports[0].x is not None
     assert my_model.exports[1].x is not None
-    assert len(my_model.exports[0].data) > 0
-    assert len(my_model.exports[1].data) > 0
+    if times is None:
+        assert len(my_model.exports[0].data) > 0
+        assert len(my_model.exports[1].data) > 0
+    else:
+        assert len(my_model.exports[0].data) == len(times)
+        assert len(my_model.exports[1].data) == len(times)
 
 
 def test_profile_single_species():
