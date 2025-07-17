@@ -256,7 +256,9 @@ class HeatTransferProblem(problem.ProblemBase):
                 export.write(float(self.t))
 
             if isinstance(export, exports.VTXTemperatureExport):
-                if export.is_it_time_to_export(float(self.t)):
+                if helpers.is_it_time_to_export(
+                    current_time=float(self.t), times=export.times
+                ):
                     export.writer.write(float(self.t))
 
     def __del__(self):

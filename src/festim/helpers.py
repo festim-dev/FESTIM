@@ -317,3 +317,29 @@ def nmm_interpolate(
         f_out.function_space, f_in.function_space, cells, padding=padding
     )
     f_out.interpolate_nonmatching(f_in, cells, interpolation_data=interpolation_data)
+
+
+def is_it_time_to_export(
+    times: list | None, current_time: float, atol=0, rtol=1.0e-5
+) -> bool:
+    """
+    Checks if the exported field should be written to a file or not based on the
+    current time and the times in `export.times`
+
+    Args:
+        current_time: the current simulation time
+        atol: absolute tolerance for time comparison
+        rtol: relative tolerance for time comparison
+        times: the times at which the field should be exported, if None, returns True
+
+    Returns:
+        bool: True if the exported field should be written to a file, else False
+    """
+    if times is None:
+        return True
+
+    for time in times:
+        if np.isclose(time, current_time, atol=atol, rtol=rtol):
+            return True
+
+    return False

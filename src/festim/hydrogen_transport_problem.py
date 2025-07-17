@@ -33,7 +33,11 @@ from festim import (
     subdomain as _subdomain,
 )
 from festim.advection import AdvectionTerm
-from festim.helpers import as_fenics_constant, get_interpolation_points
+from festim.helpers import (
+    as_fenics_constant,
+    get_interpolation_points,
+    is_it_time_to_export,
+)
 from festim.mesh import Mesh
 
 __all__ = ["HydrogenTransportProblemDiscontinuous", "HydrogenTransportProblem"]
@@ -918,7 +922,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         for export in self.exports:
             # handle VTX exports
             if isinstance(export, exports.ExportBaseClass):
-                if export.is_it_time_to_export(float(self.t)):
+                if is_it_time_to_export(current_time=float(self.t), times=export.times):
                     if isinstance(export, exports.VTXSpeciesExport):
                         if export._checkpoint:
                             for field in export.field:
@@ -1605,7 +1609,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             f"Export type {type(export)} not implemented "
                             f"for mixed-domain approach"
                         )
-                if export.is_it_time_to_export(float(self.t)):
+                if is_it_time_to_export(current_time=float(self.t), times=export.times):
                     export.writer.write(float(self.t))
 
             # handle derived quantities
