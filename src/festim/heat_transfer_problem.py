@@ -236,6 +236,12 @@ class HeatTransferProblem(problem.ProblemBase):
         """Post processes the model"""
 
         for export in self.exports:
+            # skip if it isn't time to export
+            if hasattr(export, "times"):
+                if not helpers.is_it_time_to_export(
+                    current_time=float(self.t), times=export.times
+                ):
+                    continue
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
                 raise NotImplementedError(
@@ -256,8 +262,7 @@ class HeatTransferProblem(problem.ProblemBase):
                 export.write(float(self.t))
 
             if isinstance(export, exports.VTXTemperatureExport):
-                if export.is_it_time_to_export(float(self.t)):
-                    export.writer.write(float(self.t))
+                export.writer.write(float(self.t))
 
     def __del__(self):
         for export in self.exports:

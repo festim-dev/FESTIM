@@ -49,27 +49,6 @@ class ExportBaseClass:
     def filename(self):
         return self._filename
 
-    def is_it_time_to_export(self, current_time: float) -> bool:
-        """
-        Checks if the exported field should be written to a file or not based on the
-        current time and the times in `export.times`
-
-        Args:
-            current_time: the current simulation time
-
-        Returns:
-            bool: True if the exported field should be written to a file, else False
-        """
-
-        if self.times is None:
-            return True
-
-        for time in self.times:
-            if np.isclose(time, current_time, atol=0):
-                return True
-
-        return False
-
 
 class VTXTemperatureExport(ExportBaseClass):
     """Export temperature field functions to VTX file

@@ -33,7 +33,11 @@ from festim import (
     subdomain as _subdomain,
 )
 from festim.advection import AdvectionTerm
-from festim.helpers import as_fenics_constant, get_interpolation_points
+from festim.helpers import (
+    as_fenics_constant,
+    get_interpolation_points,
+    is_it_time_to_export,
+)
 from festim.mesh import Mesh
 
 __all__ = ["HydrogenTransportProblemDiscontinuous", "HydrogenTransportProblem"]
@@ -916,28 +920,34 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         species_not_updated.remove(export.field)
 
         for export in self.exports:
+            # skip if it isn't time to export
+            if hasattr(export, "times"):
+                if not is_it_time_to_export(
+                    current_time=float(self.t), times=export.times
+                ):
+                    continue
+
             # handle VTX exports
             if isinstance(export, exports.ExportBaseClass):
-                if export.is_it_time_to_export(float(self.t)):
-                    if isinstance(export, exports.VTXSpeciesExport):
-                        if export._checkpoint:
-                            for field in export.field:
-                                adios4dolfinx.write_function(
-                                    export.filename,
-                                    field.post_processing_solution,
-                                    time=float(self.t),
-                                    name=field.name,
-                                )
-                        else:
-                            export.writer.write(float(self.t))
-                    elif (
-                        isinstance(export, festim.VTXTemperatureExport)
-                        and self.temperature_time_dependent
-                    ):
-                        self._temperature_as_function.interpolate(
-                            self._get_temperature_field_as_function()
-                        )
+                if isinstance(export, exports.VTXSpeciesExport):
+                    if export._checkpoint:
+                        for field in export.field:
+                            adios4dolfinx.write_function(
+                                export.filename,
+                                field.post_processing_solution,
+                                time=float(self.t),
+                                name=field.name,
+                            )
+                    else:
                         export.writer.write(float(self.t))
+                elif (
+                    isinstance(export, festim.VTXTemperatureExport)
+                    and self.temperature_time_dependent
+                ):
+                    self._temperature_as_function.interpolate(
+                        self._get_temperature_field_as_function()
+                    )
+                    export.writer.write(float(self.t))
 
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
@@ -1000,6 +1010,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 else:
                     c = self.u.x.array[export._dofs]
                 export.data.append(c)
+                export.t.append(float(self.t))
 
 
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
@@ -1593,6 +1604,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
 
         for export in self.exports:
+            # skip if it isn't time to export
+            if hasattr(export, "times"):
+                if not is_it_time_to_export(
+                    current_time=float(self.t), times=export.times
+                ):
+                    continue
             # handle VTX exports
             if isinstance(export, exports.ExportBaseClass):
                 if not isinstance(export, exports.VTXSpeciesExport):
@@ -1605,8 +1622,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             f"Export type {type(export)} not implemented "
                             f"for mixed-domain approach"
                         )
-                if export.is_it_time_to_export(float(self.t)):
-                    export.writer.write(float(self.t))
+                export.writer.write(float(self.t))
 
             # handle derived quantities
             if isinstance(export, exports.SurfaceQuantity):
@@ -1676,6 +1692,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 c = u.x.array[export._dofs][export._sort_coords]
 
                 export.data.append(c)
+                export.t.append(float(self.t))
 
     def iterate(self):
         """Iterates the model for a given time step"""

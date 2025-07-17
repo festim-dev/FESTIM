@@ -297,3 +297,28 @@ def test_velocity_field_convert_input_error_when_callable_doesnt_return_fem_func
         match=f"A time dependent advection field should return an fem.Function, not a <class 'ufl.algebra.Product'>",
     ):
         test_value.convert_input_value(function_space=test_function_space, t=t)
+
+
+@pytest.mark.parametrize(
+    "input, expected_output",
+    [
+        (2, True),
+        (3, True),
+        (1, True),
+        (-1, False),
+        (0, False),
+        (5, False),
+        (1.5, False),
+    ],
+)
+def test_is_it_time_to_export(input, expected_output):
+    times = [1, 2, 3]
+    assert (
+        F.helpers.is_it_time_to_export(current_time=input, times=times)
+        == expected_output
+    )
+
+
+def test_is_it_time_to_export_when_times_not_given():
+    times = None
+    assert F.helpers.is_it_time_to_export(current_time=1.0, times=times)
