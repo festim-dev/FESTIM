@@ -972,17 +972,33 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
+
             if isinstance(export, exports.Profile1DExport):
+                # TODO this could be simplified if we always have a mixed element
+                # (even with only one element)
+
+                # computing dofs at each time step is costly so storing it in the export
                 if export._dofs is None:
-                    index = self.species.index(export.field)
-                    V0, export._dofs = self.u.function_space.sub(index).collapse()
-                    coords = V0.tabulate_dof_coordinates()[:, 0]
-                    export._sort_coords = np.argsort(coords)
-                    x = coords[export._sort_coords]
+                    # if multispecies then we have a mixed function space
+                    # (mixed element)
+                    if self.multispecies:
+                        index = self.species.index(export.field)
+                        V0, export._dofs = self.u.function_space.sub(index).collapse()
+                        coords = V0.tabulate_dof_coordinates()[:, 0]
+                        export._sort_coords = np.argsort(coords)
+                        x = coords[export._sort_coords]
+                    # if not multispecies then we have a single function space
+                    else:
+                        coords = self.u.function_space.tabulate_dof_coordinates()[:, 0]
+                        export._sort_coords = np.argsort(coords)
+                        x = coords[export._sort_coords]
+
                     export.x = x
 
-                c = self.u.x.array[export._dofs][export._sort_coords]
-
+                if self.multispecies:
+                    c = self.u.x.array[export._dofs][export._sort_coords]
+                else:
+                    c = self.u.x.array[export._dofs]
                 export.data.append(c)
 
 
