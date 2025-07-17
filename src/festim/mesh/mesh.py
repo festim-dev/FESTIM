@@ -108,10 +108,10 @@ class Mesh:
                 # find all cells in subdomain and mark them as vol.id
                 entities = vol.locate_subdomain_entities(self._mesh)
                 tags_volumes[entities] = vol.id
-            except AttributeError:
+            except ValueError:
                 if len(volume_subdomains) > 1:
-                    raise AttributeError(
-                        "Volume subdomain must have a locate_subdomain_entities method if"
+                    raise ValueError(
+                        "Volume subdomain must have a locator if"
                         " several subdomains are defined"
                     )
                 tags_volumes[:] = vol.id
