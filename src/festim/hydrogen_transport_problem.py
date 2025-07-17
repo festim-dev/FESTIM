@@ -920,28 +920,34 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         species_not_updated.remove(export.field)
 
         for export in self.exports:
+            # skip if it isn't time to export
+            if hasattr(export, "times"):
+                if not is_it_time_to_export(
+                    current_time=float(self.t), times=export.times
+                ):
+                    continue
+
             # handle VTX exports
             if isinstance(export, exports.ExportBaseClass):
-                if is_it_time_to_export(current_time=float(self.t), times=export.times):
-                    if isinstance(export, exports.VTXSpeciesExport):
-                        if export._checkpoint:
-                            for field in export.field:
-                                adios4dolfinx.write_function(
-                                    export.filename,
-                                    field.post_processing_solution,
-                                    time=float(self.t),
-                                    name=field.name,
-                                )
-                        else:
-                            export.writer.write(float(self.t))
-                    elif (
-                        isinstance(export, festim.VTXTemperatureExport)
-                        and self.temperature_time_dependent
-                    ):
-                        self._temperature_as_function.interpolate(
-                            self._get_temperature_field_as_function()
-                        )
+                if isinstance(export, exports.VTXSpeciesExport):
+                    if export._checkpoint:
+                        for field in export.field:
+                            adios4dolfinx.write_function(
+                                export.filename,
+                                field.post_processing_solution,
+                                time=float(self.t),
+                                name=field.name,
+                            )
+                    else:
                         export.writer.write(float(self.t))
+                elif (
+                    isinstance(export, festim.VTXTemperatureExport)
+                    and self.temperature_time_dependent
+                ):
+                    self._temperature_as_function.interpolate(
+                        self._get_temperature_field_as_function()
+                    )
+                    export.writer.write(float(self.t))
 
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
@@ -1597,6 +1603,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 collapsed_function.x.array[:] = u.x.array[v0_to_V]
 
         for export in self.exports:
+            # skip if it isn't time to export
+            if hasattr(export, "times"):
+                if not is_it_time_to_export(
+                    current_time=float(self.t), times=export.times
+                ):
+                    continue
             # handle VTX exports
             if isinstance(export, exports.ExportBaseClass):
                 if not isinstance(export, exports.VTXSpeciesExport):
@@ -1609,8 +1621,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             f"Export type {type(export)} not implemented "
                             f"for mixed-domain approach"
                         )
-                if is_it_time_to_export(current_time=float(self.t), times=export.times):
-                    export.writer.write(float(self.t))
+                export.writer.write(float(self.t))
 
             # handle derived quantities
             if isinstance(export, exports.SurfaceQuantity):
