@@ -28,7 +28,7 @@ class SurfaceSubdomain:
     id: int
     locator: Callable
 
-    def __init__(self, id: int, locator: Callable = None):
+    def __init__(self, id: int, locator: Callable | None = None):
         self.id = id
         self.locator = locator
 
