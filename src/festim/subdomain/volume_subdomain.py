@@ -1,5 +1,7 @@
 import dolfinx
+from dolfinx.mesh import Mesh, locate_entities
 import numpy as np
+from typing import Callable
 
 from festim.helpers_discontinuity import transfer_meshtags_to_submesh
 from festim.material import Material
@@ -27,9 +29,10 @@ class VolumeSubdomain:
     u_n: dolfinx.fem.Function
     material: Material
 
-    def __init__(self, id, material):
+    def __init__(self, id, material, locator: Callable | None = None):
         self.id = id
         self.material = material
+        self.locator = locator
 
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
@@ -65,6 +68,21 @@ class VolumeSubdomain:
         self.ft, self.facet_to_parent = transfer_meshtags_to_submesh(
             mesh, tag, self.submesh, self.v_map, self.submesh_to_mesh
         )
+
+    def locate_subdomain_entities(self, mesh: Mesh) -> np.NDArray[np.int32]:
+        """Locates all cells in subdomain borders within domain
+
+        Args:
+            mesh: the mesh of the model
+
+        Returns:
+            entities: the entities of the subdomain
+        """
+        if self.locator is None:
+            raise ValueError("No locator function provided for locating cells.")
+
+        entities = locate_entities(mesh, mesh.topology.dim, self.locator)
+        return entities
 
 
 def find_volume_from_id(id: int, volumes: list):
