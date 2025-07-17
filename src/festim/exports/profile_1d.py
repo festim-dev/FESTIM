@@ -22,7 +22,7 @@ class Profile1DExport:
     x: np.ndarray
     data: list
     field: Species
-    subdomain: VolumeSubdomain
+    subdomain: VolumeSubdomain | None
     _dofs: np.ndarray
     _sort_coords: np.ndarray
 
