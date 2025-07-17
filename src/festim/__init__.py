@@ -71,6 +71,9 @@ from .subdomain.surface_subdomain import (
     SurfaceSubdomain1D,
     find_surface_from_id,
 )
-from .subdomain.volume_subdomain import VolumeSubdomain, find_volume_from_id
-from .subdomain.volume_subdomain_1d import VolumeSubdomain1D
+from .subdomain.volume_subdomain import (
+    VolumeSubdomain,
+    VolumeSubdomain1D,
+    find_volume_from_id,
+)
 from .trap import Trap
