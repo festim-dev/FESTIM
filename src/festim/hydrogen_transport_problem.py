@@ -990,6 +990,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     surface_to_volume: dict
     method_interface: str = "penalty"
+    subdomain_to_species: dict
 
     def __init__(
         self,
@@ -1044,6 +1045,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.interfaces = interfaces or []
         self.surface_to_volume = surface_to_volume or {}
+        self.subdomain_to_species = {}  # maps subdomain to species defined in it
 
     def initialise(self):
         # check that all species have a list of F.VolumeSubdomain as this is
@@ -1175,13 +1177,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 Defaults to 1.
         """
         # get number of species defined in the subdomain
-        all_species = [
+        self.subdomain_to_species[subdomain] = [
             species for species in self.species if subdomain in species.subdomains
         ]
 
         # instead of using the set function we use a list to keep the order
         unique_species = []
-        for species in all_species:
+        for species in self.subdomain_to_species[subdomain]:
             if species not in unique_species:
                 unique_species.append(species)
         nb_species = len(unique_species)
@@ -1377,7 +1379,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             h_1 = 2 * cr(res[1])
 
             all_mobile_species = [spe for spe in self.species if spe.mobile]
-
+            # TODO only do this if the species in defined in both domains of the interface?
             for H in all_mobile_species:
                 v_b = H.subdomain_to_test_function[subdomain_0](res[0])
                 v_t = H.subdomain_to_test_function[subdomain_1](res[1])
@@ -1645,16 +1647,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.Profile1DExport):
-                assert export.subdomain, (
-                    "Profile1DExport requires a subdomain to be set"
-                )
-                # will implement it for multidomain when #962 is fixed
-                raise NotImplementedError(
-                    "Profile1DExport not implemented for HydrogenTransportProblemDiscontinuous"
-                )
+                assert (
+                    export.subdomain
+                ), "Profile1DExport requires a subdomain to be set"
                 u = export.subdomain.u
                 if export._dofs is None:
-                    index = self.species.index(export.field)
+                    index = self.subdomain_to_species[export.subdomain].index(
+                        export.field
+                    )
                     V0, export._dofs = u.function_space.sub(index).collapse()
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
