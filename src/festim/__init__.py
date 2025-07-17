@@ -29,6 +29,7 @@ from .exports.maximum_surface import MaximumSurface
 from .exports.maximum_volume import MaximumVolume
 from .exports.minimum_surface import MinimumSurface
 from .exports.minimum_volume import MinimumVolume
+from .exports.profile_1d import Profile1DExport
 from .exports.surface_flux import SurfaceFlux
 from .exports.surface_quantity import SurfaceQuantity
 from .exports.total_surface import TotalSurface

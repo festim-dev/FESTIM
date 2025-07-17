@@ -12,6 +12,7 @@ import tqdm.autonotebook
 import ufl
 from dolfinx import fem
 from scifem import BlockedNewtonSolver
+import numpy as np
 
 import festim.boundary_conditions
 import festim.problem
@@ -971,12 +972,25 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.write(t=float(self.t))
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
+            if isinstance(export, exports.Profile1DExport):
+                if export._dofs is None:
+                    index = self.species.index(export.field)
+                    V0, export._dofs = self.u.function_space.sub(index).collapse()
+                    coords = V0.tabulate_dof_coordinates()[:, 0]
+                    export._sort_coords = np.argsort(coords)
+                    x = coords[export._sort_coords]
+                    export.x = x
+
+                c = self.u.x.array[export._dofs][export._sort_coords]
+
+                export.data.append(c)
 
 
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     surface_to_volume: dict
     method_interface: str = "penalty"
+    subdomain_to_species: dict
 
     def __init__(
         self,
@@ -1031,6 +1045,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.interfaces = interfaces or []
         self.surface_to_volume = surface_to_volume or {}
+        self.subdomain_to_species = {}  # maps subdomain to species defined in it
 
     def initialise(self):
         # check that all species have a list of F.VolumeSubdomain as this is
@@ -1162,13 +1177,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 Defaults to 1.
         """
         # get number of species defined in the subdomain
-        all_species = [
+        self.subdomain_to_species[subdomain] = [
             species for species in self.species if subdomain in species.subdomains
         ]
 
         # instead of using the set function we use a list to keep the order
         unique_species = []
-        for species in all_species:
+        for species in self.subdomain_to_species[subdomain]:
             if species not in unique_species:
                 unique_species.append(species)
         nb_species = len(unique_species)
@@ -1364,7 +1379,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             h_1 = 2 * cr(res[1])
 
             all_mobile_species = [spe for spe in self.species if spe.mobile]
-
+            # TODO only do this if the species in defined in both domains of the interface?
             for H in all_mobile_species:
                 v_b = H.subdomain_to_test_function[subdomain_0](res[0])
                 v_t = H.subdomain_to_test_function[subdomain_1](res[1])
@@ -1426,17 +1441,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         interface.id
                     ) - 0.5 * mixed_term(
                         v_b, (u_b / K_b - u_t / K_t), n_0
-                    ) * dInterface(
-                        interface.id
-                    )
+                    ) * dInterface(interface.id)
 
                     F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
                         interface.id
                     ) - 0.5 * mixed_term(
                         v_t, (u_b / K_b - u_t / K_t), n_0
-                    ) * dInterface(
-                        interface.id
-                    )
+                    ) * dInterface(interface.id)
                     F_0 += (
                         2
                         * gamma
@@ -1630,6 +1641,25 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
+
+            elif isinstance(export, exports.Profile1DExport):
+                assert export.subdomain, (
+                    "Profile1DExport requires a subdomain to be set"
+                )
+                u = export.subdomain.u
+                if export._dofs is None:
+                    index = self.subdomain_to_species[export.subdomain].index(
+                        export.field
+                    )
+                    V0, export._dofs = u.function_space.sub(index).collapse()
+                    coords = V0.tabulate_dof_coordinates()[:, 0]
+                    export._sort_coords = np.argsort(coords)
+                    x = coords[export._sort_coords]
+                    export.x = x
+
+                c = u.x.array[export._dofs][export._sort_coords]
+
+                export.data.append(c)
 
     def iterate(self):
         """Iterates the model for a given time step"""
