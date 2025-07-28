@@ -758,11 +758,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
             )
 
             # assign to previous solution of species
+
+            entities = self.volume_meshtags.find(condition.volume.id)
             if not self.multispecies:
-                condition.species.prev_solution.interpolate(condition.expr_fenics)
+                condition.species.prev_solution.interpolate(
+                    condition.expr_fenics, cells0=entities
+                )
             else:
                 idx = self.species.index(condition.species)
-                self.u_n.sub(idx).interpolate(condition.expr_fenics)
+                self.u_n.sub(idx).interpolate(condition.expr_fenics, cells0=entities)
 
     def create_formulation(self):
         """Creates the formulation of the model"""
