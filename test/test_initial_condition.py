@@ -15,10 +15,11 @@ test_mesh = F.Mesh1D(np.linspace(0, 1, 100))
 
 def test_init():
     """Test that the attributes are set correctly"""
-    # create an InitialCondition object
+    # create an InitialConcentration object
     value = 1.0
     species = F.Species("test")
-    init_cond = F.InitialCondition(value=value, species=species)
+    vol = F.VolumeSubdomain(id=1, material=dummy_mat)
+    init_cond = F.InitialConcentration(value=value, species=species, volume=vol)
 
     # check that the attributes are set correctly
     assert init_cond.value == value
@@ -41,6 +42,8 @@ def test_create_value_fenics(input_value, expected_type):
 
     # BUILD
 
+    vol = F.VolumeSubdomain(id=1, material=dummy_mat)
+
     # give function to species
     V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     c = fem.Function(V)
@@ -48,7 +51,9 @@ def test_create_value_fenics(input_value, expected_type):
     my_species = F.Species("test")
     my_species.prev_solution = c
 
-    init_cond = F.InitialCondition(value=input_value, species=my_species)
+    init_cond = F.InitialConcentration(
+        value=input_value, species=my_species, volume=vol
+    )
 
     T = fem.Constant(test_mesh.mesh, 10.0)
 
@@ -62,6 +67,8 @@ def test_create_value_fenics(input_value, expected_type):
 def test_warning_raised_when_giving_time_as_arg():
     """Test that a warning is raised if the value is given with t in its arguments"""
 
+    vol = F.VolumeSubdomain(id=1, material=dummy_mat)
+
     # give function to species
     V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     my_species = F.Species("test")
@@ -69,7 +76,7 @@ def test_warning_raised_when_giving_time_as_arg():
 
     my_value = lambda t: 1.0 + t
 
-    init_cond = F.InitialCondition(value=my_value, species=my_species)
+    init_cond = F.InitialConcentration(value=my_value, species=my_species, volume=vol)
 
     T = fem.Constant(test_mesh.mesh, 10.0)
 
@@ -87,9 +94,11 @@ def test_warning_raised_when_giving_time_as_arg_initial_temperature():
     my_species = F.Species("test")
     my_species.prev_solution = fem.Function(V)
 
+    vol = F.VolumeSubdomain(id=1, material=dummy_mat)
+
     my_value = lambda t: 1.0 + t
 
-    init_cond = F.InitialTemperature(value=my_value)
+    init_cond = F.InitialTemperature(value=my_value, volume=vol)
 
     with pytest.raises(
         ValueError, match="Initial condition cannot be a function of time."
@@ -118,7 +127,9 @@ def test_create_value_fenics_initial_temperature(input_value, expected_type):
     my_species = F.Species("test")
     my_species.prev_solution = c
 
-    init_cond = F.InitialTemperature(value=input_value)
+    vol = F.VolumeSubdomain(id=1, material=dummy_mat)
+
+    init_cond = F.InitialTemperature(value=input_value, volume=vol)
 
     # RUN
     init_cond.create_expr_fenics(test_mesh.mesh, V)
@@ -156,14 +167,16 @@ def test_checkpointing_single_species(tmpdir):
     my_problem.species = [H]
     my_problem.mesh = F.Mesh(mesh)
 
+    mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
+    vol = F.VolumeSubdomain(id=0, material=mat)
+    my_problem.subdomains = [vol]
+
     function_initial_value = F.read_function_from_file(
         filename=filename, name="my_function", timestamp=0.2
     )
     my_problem.initial_conditions = [
-        F.InitialCondition(value=function_initial_value, species=H)
+        F.InitialConcentration(value=function_initial_value, species=H, volume=vol)
     ]
-    mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
-    my_problem.subdomains = [F.VolumeSubdomain(id=0, material=mat)]
 
     my_problem.temperature = 300
 
@@ -212,26 +225,30 @@ def test_checkpointing_multiple_species(tmpdir):
     my_problem.species = [H, D]
     my_problem.mesh = F.Mesh(mesh)
 
+    mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
+    vol = F.VolumeSubdomain(id=0, material=mat)
+    my_problem.subdomains = [vol]
+
     my_problem.initial_conditions = [
-        F.InitialCondition(
+        F.InitialConcentration(
             value=F.read_function_from_file(
                 filename=filename,
                 name="my_function1",
                 timestamp=0.2,
             ),
             species=H,
+            volume=vol,
         ),
-        F.InitialCondition(
+        F.InitialConcentration(
             value=F.read_function_from_file(
                 filename=filename,
                 name="my_function2",
                 timestamp=0.3,
             ),
             species=D,
+            volume=vol,
         ),
     ]
-    mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
-    my_problem.subdomains = [F.VolumeSubdomain(id=0, material=mat)]
 
     my_problem.temperature = 300
 
