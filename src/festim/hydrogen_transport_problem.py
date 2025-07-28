@@ -758,7 +758,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
             )
 
             # assign to previous solution of species
-
             entities = self.volume_meshtags.find(condition.volume.id)
             if not self.multispecies:
                 condition.species.prev_solution.interpolate(
@@ -1110,6 +1109,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for subdomain in self.volume_subdomains:
             self.define_function_spaces(subdomain)
+
         # create global DG function spaces of degree 0 and 1
         element_DG0 = basix.ufl.element(
             "DG",
@@ -1186,9 +1186,23 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         return form
 
     def create_initial_conditions(self):
-        if self.initial_conditions:
-            raise NotImplementedError(
-                "initial conditions not yet implemented for discontinuous"
+        """For each intial condition, create the value_fenics and assign it to
+        the previous solution of the condition's species"""
+
+        for condition in self.initial_conditions:
+            V = condition.species.subdomain_to_function_space[condition.volume]
+
+            condition.create_expr_fenics(
+                mesh=self.mesh.mesh,
+                temperature=self.temperature_fenics,
+                function_space=V,
+            )
+
+            # assign to previous solution of species
+            entities = self.volume_meshtags.find(condition.volume.id)
+            idx = self.species.index(condition.species)
+            condition.volume.u_n.sub(idx).interpolate(
+                condition.expr_fenics, cells0=entities
             )
 
     def define_function_spaces(
