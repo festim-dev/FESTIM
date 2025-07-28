@@ -1,52 +1,120 @@
+from collections.abc import Callable
+from typing import Union
+
+import mpi4py.MPI as MPI
+
+import adios4dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
-import mpi4py.MPI as MPI
-import adios4dolfinx
-
-from typing import Union, Callable
 
 from festim.helpers import get_interpolation_points
+from festim.species import Species
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
-# TODO rename this to InitialConcentration and create a new base class
-class InitialCondition:
+class InitialConditionBase:
+    """
+    Base initial condition class
+
+    Args:
+        value: the value of the initial condition.
+        volume: the volume subdomain where the initial condition is applied
+
+    Attributes:
+        value: the value of the initial condition.
+        volume: the volume subdomain where the initial condition is applied
+    """
+
+    value: (
+        float
+        | int
+        | fem.Constant
+        | np.ndarray
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+    )
+    volume: VolumeSubdomain
+
+    def __init__(
+        self,
+        value: (
+            float
+            | int
+            | fem.Constant
+            | np.ndarray
+            | fem.Expression
+            | ufl.core.expr.Expr
+            | fem.Function
+        ),
+        volume: VolumeSubdomain,
+    ):
+        self.value = value
+        self.volume = volume
+
+    @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, value):
+        # check that volume is festim.VolumeSubdomain
+        if not isinstance(value, VolumeSubdomain):
+            raise TypeError("volume must be of type festim.VolumeSubdomain")
+        self._volume = value
+
+
+class InitialConcentration(InitialConditionBase):
     """
     Initial condition class
 
     Args:
-        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition.
-            If a fem.Function is passed, the mesh of the function needs to match the mesh of the problem.
-        species (festim.Species): the species to which the condition is applied
+        value: the value of the initial condition.
+        species: the species to which the condition is applied
+        volume: the volume subdomain where the initial condition is applied
 
     Attributes:
-        value (float, int, fem.Constant, fem.Function, or callable): the value of the initial condition
-        species (festim.Species): the species to which the source is applied
-        expr_fenics: the value of the initial condition in
-            fenics format
+        value: the value of the initial condition.
+        species: the species to which the condition is applied
+        volume: the volume subdomain where the initial condition is applied
+        expr_fenics: the value of the initial condition in fenics expr format
 
     Examples:
 
-        .. testsetup:: InitialCondition
+        .. testsetup:: InitialConcentration
 
-            from festim import InitialCondition, Species
+            from festim import InitialConcentration, Species
             my_species = Species(name='test')
 
-        .. testcode:: InitialCondition
+        .. testcode:: InitialConcentration
 
-            InitialCondition(value=1, species=my_species)
-            InitialCondition(value=lambda x: 1 + x[0], species=my_species)
-            InitialCondition(value=lambda T: 1 + T, species=my_species)
-            InitialCondition(value=lambda x, T: 1 + x[0] + T, species=my_species)
+            InitialConcentration(value=1, species=my_species)
+            InitialConcentration(value=lambda x: 1 + x[0], species=my_species)
+            InitialConcentration(value=lambda T: 1 + T, species=my_species)
+            InitialConcentration(value=lambda x, T: 1 + x[0] + T, species=my_species)
     """
 
     expr_fenics: Union[Callable, fem.Expression]
 
-    def __init__(self, value, species):
-        self.value = value
+    def __init__(self, value, volume, species: Species):
+        super().__init__(value=value, volume=volume)
+
         self.species = species
 
         self.expr_fenics = None
+
+    @property
+    def species(self):
+        return self._species
+
+    @species.setter
+    def species(self, value):
+        # check that species is festim.Species or list of festim.Species
+        if not isinstance(value, Species):
+            raise TypeError("species must be of type festim.Species")
+
+        self._species = value
 
     def create_expr_fenics(self, mesh, temperature, function_space):
         """Creates the expr_fenics of the initial condition.
@@ -61,7 +129,7 @@ class InitialCondition:
         """
         x = ufl.SpatialCoordinate(mesh)
 
-        if isinstance(self.value, (int, float)):
+        if isinstance(self.value, int | float):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
         elif isinstance(self.value, fem.Function):
             self.expr_fenics = self.value
