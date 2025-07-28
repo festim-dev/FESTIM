@@ -85,9 +85,9 @@ class InitialConcentration(InitialConditionBase):
 
         .. testsetup:: InitialConcentration
 
-            from festim import InitialConcentration, Species
+            from festim import InitialConcentration, Species, Material
             my_species = Species(name='test')
-            dummy_mat = F.Material(D_0=1, E_D=0.1)
+            dummy_mat = Material(D_0=1, E_D=0.1)
             my_vol = VolumeSubdomain(id=1, material=dummy_mat)
 
         .. testcode:: InitialConcentration
@@ -188,8 +188,8 @@ class InitialTemperature(InitialConditionBase):
 
         .. testsetup:: InitialTemperature
 
-            from festim import InitialConcentration, Species
-            dummy_mat = F.Material(D_0=1, E_D=0.1)
+            from festim import InitialConcentration, Species, Material
+            dummy_mat = Material(D_0=1, E_D=0.1)
             my_vol = VolumeSubdomain(id=1, material=dummy_mat)
 
         .. testcode:: InitialTemperature
