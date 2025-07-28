@@ -1,9 +1,10 @@
 from collections.abc import Callable
 from typing import Union
 
-import mpi4py.MPI as MPI
+from mpi4py import MPI
 
 import adios4dolfinx
+import dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
@@ -67,15 +68,15 @@ class InitialConditionBase:
 
 class InitialConcentration(InitialConditionBase):
     """
-    Initial condition class
+    Initial concentration class
 
     Args:
-        value: the value of the initial condition.
+        value: the value of the initial concentration of a given species.
         species: the species to which the condition is applied
         volume: the volume subdomain where the initial condition is applied
 
     Attributes:
-        value: the value of the initial condition.
+        value: the value of the initial concentration of a given species.
         species: the species to which the condition is applied
         volume: the volume subdomain where the initial condition is applied
         expr_fenics: the value of the initial condition in fenics expr format
@@ -86,16 +87,31 @@ class InitialConcentration(InitialConditionBase):
 
             from festim import InitialConcentration, Species
             my_species = Species(name='test')
+            dummy_mat = F.Material(D_0=1, E_D=0.1)
+            my_vol = VolumeSubdomain(id=1, material=dummy_mat)
 
         .. testcode:: InitialConcentration
 
-            InitialConcentration(value=1, species=my_species)
-            InitialConcentration(value=lambda x: 1 + x[0], species=my_species)
-            InitialConcentration(value=lambda T: 1 + T, species=my_species)
-            InitialConcentration(value=lambda x, T: 1 + x[0] + T, species=my_species)
+            InitialConcentration(value=1, species=my_species, volume=my_vol)
+            InitialConcentration(
+                value=lambda x: 1 + x[0],
+                species=my_species,
+                volume=my_vol
+            )
+            InitialConcentration(
+                value=lambda T: 1 + T,
+                species=my_species,
+                volume=my_vol
+            )
+            InitialConcentration(
+                value=lambda x, T: 1 + x[0] + T,
+                species=my_species,
+                volume=my_vol
+            )
     """
 
     expr_fenics: Union[Callable, fem.Expression]
+    species: Species
 
     def __init__(self, value, volume, species: Species):
         super().__init__(value=value, volume=volume)
@@ -116,16 +132,22 @@ class InitialConcentration(InitialConditionBase):
 
         self._species = value
 
-    def create_expr_fenics(self, mesh, temperature, function_space):
+    def create_expr_fenics(
+        self,
+        mesh: dolfinx.mesh.Mesh,
+        temperature: fem.Function | fem.Constant,
+        function_space: fem.functionspace,
+    ):
         """Creates the expr_fenics of the initial condition.
-        If the value is a float or int, a function is created with an array with
-        the shape of the mesh and all set to the value.
-        Otherwise, it is converted to a fem.Expression.
+
+        If the value is a float or int, a function is created with an array with the
+        shape of the mesh and all set to the value. Otherwise, it is converted to a
+        fem.Expression.
 
         Args:
-            mesh (dolfinx.mesh.Mesh) : the mesh
-            temperature (float): the temperature
-            function_space(dolfinx.fem.FunctionSpaceBase): the function space of the species
+            mesh: the mesh
+            temperature: the temperature
+            function_space: the function space of the species
         """
         x = ufl.SpatialCoordinate(mesh)
 
@@ -149,24 +171,57 @@ class InitialConcentration(InitialConditionBase):
             )
 
 
-class InitialTemperature:
-    def __init__(self, value) -> None:
-        self.value = value
+class InitialTemperature(InitialConditionBase):
+    """
+    Initial temperature class
+
+    Args:
+        value: the value of the initial temperature
+        volume: the volume subdomain where the initial condition is applied
+
+    Attributes:
+        value: the value of the initial temperature
+        volume: the volume subdomain where the initial condition is applied
+        expr_fenics: the value of the initial condition in fenics expr format
+
+    Examples:
+
+        .. testsetup:: InitialTemperature
+
+            from festim import InitialConcentration, Species
+            dummy_mat = F.Material(D_0=1, E_D=0.1)
+            my_vol = VolumeSubdomain(id=1, material=dummy_mat)
+
+        .. testcode:: InitialTemperature
+
+            InitialTemperature(value=1, volume=my_vol)
+            InitialTemperature(value=lambda x: 1 + x[0], volume=my_vol)
+            InitialTemperature(value=lambda x, t: 1 + x[0] + t, volume=my_vol)
+    """
+
+    def __init__(self, value, volume):
+        super().__init__(value=value, volume=volume)
+
         self.expr_fenics = None
 
-    def create_expr_fenics(self, mesh, function_space):
+    def create_expr_fenics(
+        self,
+        mesh: dolfinx.mesh.Mesh,
+        function_space: fem.functionspace,
+    ):
         """Creates the expr_fenics of the initial condition.
-        If the value is a float or int, a function is created with an array with
-        the shape of the mesh and all set to the value.
-        Otherwise, it is converted to a fem.Expression.
+
+        If the value is a float or int, a function is created with an array with the
+        shape of the mesh and all set to the value. Otherwise, it is converted to a
+        fem.Expression.
 
         Args:
-            mesh (dolfinx.mesh.Mesh) : the mesh
-            function_space(dolfinx.fem.FunctionSpace): the function space of the species
+            mesh: the mesh
+            function_space: the function space of the species
         """
         x = ufl.SpatialCoordinate(mesh)
 
-        if isinstance(self.value, (int, float)):
+        if isinstance(self.value, int | float):
             self.expr_fenics = lambda x: np.full(x.shape[1], self.value)
         elif isinstance(self.value, fem.Function):
             self.expr_fenics = self.value
