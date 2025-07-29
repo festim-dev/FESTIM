@@ -8,9 +8,6 @@ import types
 from festim.helpers_discontinuity import transfer_meshtags_to_submesh
 from festim.material import Material
 
-# Check the version of dolfinx
-dolfinx_version = dolfinx.__version__
-
 # Define the appropriate method based on the version
 try:
     from dolfinx.mesh import EntityMap
