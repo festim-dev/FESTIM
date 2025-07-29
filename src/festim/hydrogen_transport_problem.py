@@ -1392,10 +1392,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         n = ufl.FacetNormal(mesh)
         cr = ufl.Circumradius(mesh)
+        try:
+            from dolfinx.mesh import EntityMap
 
-        entity_maps = {
-            sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
-        }
+            entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+        except ImportError:
+            entity_maps = {
+                sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
+            }
         for interface in self.interfaces:
             gamma = interface.penalty_term
 
@@ -1532,8 +1536,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.solver.max_iterations = self.settings.max_iterations
         self.solver.convergence_criterion = self.settings.convergence_criterion
-        self.solver.atol = self.settings.atol
-        self.solver.rtol = self.settings.rtol
+        self.solver.atol = (
+            self.settings.atol
+            if not callable(self.settings.rtol)
+            else self.settings.rtol(float(self.t))
+        )
+        self.solver.rtol = (
+            self.settings.rtol
+            if not callable(self.settings.rtol)
+            else self.settings.rtol(float(self.t))
+        )
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
