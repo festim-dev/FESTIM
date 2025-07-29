@@ -1652,28 +1652,40 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     submesh_function = (
                         export.field.subdomain_to_post_processing_solution[export_vol]
                     )
-                    export.compute(
-                        u=submesh_function,
-                        ds=self.ds,
-                        entity_maps={
+                    try:
+                        from dolfinx.mesh import EntityMap  # noqa: F401
+
+                        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+                    except ImportError:
+                        entity_maps = {
                             sd.submesh: sd.parent_to_submesh
                             for sd in self.volume_subdomains
-                        },
+                        }
+
+                    export.compute(
+                        u=submesh_function, ds=self.ds, entity_maps=entity_maps
                     )
                 else:
                     export.compute()
 
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
+                    try:
+                        from dolfinx.mesh import EntityMap  # noqa: F401
+
+                        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+                    except ImportError:
+                        entity_maps = {
+                            sd.submesh: sd.parent_to_submesh
+                            for sd in self.volume_subdomains
+                        }
+
                     export.compute(
                         u=export.field.subdomain_to_post_processing_solution[
                             export_vol
                         ],
                         dx=self.dx,
-                        entity_maps={
-                            sd.submesh: sd.parent_to_submesh
-                            for sd in self.volume_subdomains
-                        },
+                        entity_maps=entity_maps,
                     )
                 else:
                     export.compute()
