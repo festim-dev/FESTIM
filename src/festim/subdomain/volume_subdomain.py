@@ -7,6 +7,16 @@ from typing import Callable
 from festim.helpers_discontinuity import transfer_meshtags_to_submesh
 from festim.material import Material
 
+from packaging import version
+
+# Check the version of dolfinx
+dolfinx_version = dolfinx.__version__
+
+# Define the appropriate method based on the version
+if version.parse(dolfinx_version) > version.parse("0.9.0"):
+    entity_map_type = dolfinx.mesh.EntityMap
+else:
+    entity_map_type = np.ndarray
 
 class VolumeSubdomain:
     """
@@ -19,10 +29,11 @@ class VolumeSubdomain:
 
     id: int
     submesh: dolfinx.mesh.Mesh
-    submesh_to_mesh: np.ndarray
+    submesh_to_mesh: "entity_map_type"
     parent_mesh: dolfinx.mesh.Mesh
-    parent_to_submesh: np.ndarray
-    v_map: np.ndarray
+    parent_to_submesh: "entity_map_type"
+    v_map: "entity_map_type"
+    n_map: np.ndarray
     facet_to_parent: np.ndarray
     ft: dolfinx.mesh.MeshTags
     padded: bool
@@ -50,17 +61,17 @@ class VolumeSubdomain:
         self.parent_mesh = (
             mesh  # NOTE: it doesn't seem like we use this attribute anywhere
         )
-        self.submesh, self.submesh_to_mesh, self.v_map = dolfinx.mesh.create_submesh(
-            mesh, marker.dim, marker.find(self.id)
-        )[0:3]
-        num_cells_local = (
-            mesh.topology.index_map(marker.dim).size_local
-            + mesh.topology.index_map(marker.dim).num_ghosts
+        entities = marker.find(self.id)
+        self.submesh, self.submesh_to_mesh, self.v_map, self.n_map = dolfinx.mesh.create_submesh(
+            mesh, marker.dim, entities
         )
-        self.parent_to_submesh = np.full(num_cells_local, -1, dtype=np.int32)
-        self.parent_to_submesh[self.submesh_to_mesh] = np.arange(
-            len(self.submesh_to_mesh), dtype=np.int32
+        self.parent_to_submesh = self.submesh_to_mesh.sub_topology_to_topology(
+            entities=marker.find(self.id), inverse=True
         )
+        self.v_map = self.v_map.sub_topology_to_topology(
+            entities=marker.find(self.id), inverse=False
+        )
+
         self.padded = False
 
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
