@@ -1202,7 +1202,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             entities = self.volume_meshtags.find(condition.volume.id)
             idx = self.species.index(condition.species)
             condition.volume.u_n.sub(idx).interpolate(
-                condition.expr_fenics, cells0=entities
+                condition.expr_fenics, cells1=entities
             )
 
     def define_function_spaces(
