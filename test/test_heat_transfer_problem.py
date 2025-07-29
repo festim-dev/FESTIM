@@ -183,13 +183,17 @@ def test_heat_transfer_transient(tmpdir):
     mat.density = density
     mat.heat_capacity = heat_capacity
 
+    vol = F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat)
+
     my_problem.subdomains = [
         left,
         right,
-        F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat),
+        vol,
     ]
     # NOTE: it's good to check that without the IC the solution is not the exact one
-    my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
+    my_problem.initial_condition = F.InitialTemperature(
+        lambda x: exact_solution(x, 0), volume=vol
+    )
 
     my_problem.boundary_conditions = [
         F.FixedTemperatureBC(subdomain=left, value=exact_solution),
@@ -306,14 +310,14 @@ def test_sympify(tmpdir):
     mat.density = density
     mat.heat_capacity = heat_capacity
 
-    my_problem.subdomains = [
-        left,
-        right,
-        F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat),
-    ]
+    vol = F.VolumeSubdomain1D(id=1, borders=[2, 3], material=mat)
+
+    my_problem.subdomains = [left, right, vol]
 
     # NOTE: it's good to check that without the IC the solution is not the exact one
-    my_problem.initial_condition = F.InitialTemperature(lambda x: exact_solution(x, 0))
+    my_problem.initial_condition = F.InitialTemperature(
+        lambda x: exact_solution(x, 0), volume=vol
+    )
 
     my_problem.boundary_conditions = [
         F.FixedTemperatureBC(subdomain=left, value=exact_solution),
@@ -513,7 +517,9 @@ def test_initial_condition():
 
     my_problem.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
 
-    my_problem.initial_condition = F.InitialTemperature(100)
+    my_problem.initial_condition = F.InitialTemperature(
+        value=100, volume=volume_subdomain
+    )
 
     with pytest.raises(
         ValueError,

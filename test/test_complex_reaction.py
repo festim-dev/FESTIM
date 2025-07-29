@@ -111,8 +111,8 @@ def model_test_reaction(stepsize=1, k=350e-4, p=120e-4, c_A_0=1):
     # -------- Initial conditions --------- #
 
     my_model.initial_conditions = [
-        F.InitialCondition(value=c_A_0, species=species_A),
-        F.InitialCondition(value=c_A_0, species=species_B),
+        F.InitialConcentration(value=c_A_0, species=species_A, volume=my_subdomain),
+        F.InitialConcentration(value=c_A_0, species=species_B, volume=my_subdomain),
     ]
 
     # -------- Exports --------- #
