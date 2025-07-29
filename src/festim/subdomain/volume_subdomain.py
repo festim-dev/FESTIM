@@ -1,13 +1,13 @@
+from collections.abc import Callable
+
 import dolfinx
-from dolfinx.mesh import Mesh, locate_entities
 import numpy as np
+from dolfinx.mesh import Mesh, locate_entities
 from numpy import typing as npt
-from typing import Callable
+from packaging import version
 
 from festim.helpers_discontinuity import transfer_meshtags_to_submesh
 from festim.material import Material
-
-from packaging import version
 
 # Check the version of dolfinx
 dolfinx_version = dolfinx.__version__
@@ -17,6 +17,7 @@ if version.parse(dolfinx_version) > version.parse("0.9.0"):
     entity_map_type = dolfinx.mesh.EntityMap
 else:
     entity_map_type = np.ndarray
+
 
 class VolumeSubdomain:
     """
@@ -62,8 +63,8 @@ class VolumeSubdomain:
             mesh  # NOTE: it doesn't seem like we use this attribute anywhere
         )
         entities = marker.find(self.id)
-        self.submesh, self.submesh_to_mesh, self.v_map, self.n_map = dolfinx.mesh.create_submesh(
-            mesh, marker.dim, entities
+        self.submesh, self.submesh_to_mesh, self.v_map, self.n_map = (
+            dolfinx.mesh.create_submesh(mesh, marker.dim, entities)
         )
         self.parent_to_submesh = self.submesh_to_mesh.sub_topology_to_topology(
             entities=marker.find(self.id), inverse=True

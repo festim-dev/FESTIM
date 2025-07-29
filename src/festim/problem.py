@@ -1,14 +1,15 @@
 from typing import Any
 
 from mpi4py import MPI
+from petsc4py import PETSc
 
+import dolfinx
 import numpy as np
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
-from petsc4py import PETSc
-import dolfinx
+from packaging.version import Version
 
 import festim as F
 from festim.mesh.mesh import Mesh as _Mesh
@@ -16,7 +17,6 @@ from festim.source import SourceBase as _SourceBase
 from festim.subdomain.volume_subdomain import (
     VolumeSubdomain as _VolumeSubdomain,
 )
-from packaging.version import Version
 
 
 class ProblemBase:
@@ -254,7 +254,6 @@ class ProblemBase:
             converged_reason = self.solver.solver.getConvergedReason()
             assert converged_reason > 0
             nb_its = self.solver.solver.getIterationNumber()
-
 
         # post processing
         self.post_processing()
