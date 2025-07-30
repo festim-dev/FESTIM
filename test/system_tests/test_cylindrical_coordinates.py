@@ -199,7 +199,7 @@ def test_run_MMS_cylindrical_mixed_domain_one_subdomain():
 
     u_exact = lambda x: 1 + x[0] ** 2
 
-    # f = -4 * 2  # if we set -4 * 2 (doubling it then it works)
+    f = -4 * 2  # if we set -4 * 2 (doubling it then it works)
 
     mat_1 = F.Material(D_0=2.0, E_D=0, K_S_0=1, E_K_S=0, solubility_law="sievert")
 
