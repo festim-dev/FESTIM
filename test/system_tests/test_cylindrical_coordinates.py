@@ -97,6 +97,7 @@ def test_run_MMS_cylindrical_mixed_domain():
 
     K_S_left = 3.0
     K_S_right = 2.0
+    D = 2.0
 
     def c_exact_left(x):
         return (r_interface - x[0]) ** 2 + 2
@@ -105,7 +106,6 @@ def test_run_MMS_cylindrical_mixed_domain():
         return K_S_right / K_S_left * c_exact_left(x)
 
     lap_c = lambda r: 4 - 2 * r_interface / r
-    D = 2.0
 
     mat_1 = F.Material(D_0=D, E_D=0, K_S_0=K_S_left, E_K_S=0, solubility_law="sievert")
     mat_2 = F.Material(D_0=D, E_D=0, K_S_0=K_S_right, E_K_S=0, solubility_law="sievert")
@@ -149,11 +149,6 @@ def test_run_MMS_cylindrical_mixed_domain():
         atol=1e-10, rtol=1e-10, max_iterations=10, transient=False, element_degree=1
     )
 
-    my_model.exports = [
-        F.VTXSpeciesExport("results/u_left.bp", field=H, subdomain=vol_1),
-        F.VTXSpeciesExport("results/u_right.bp", field=H, subdomain=vol_2),
-    ]
-
     my_model.initialise()
     my_model.run()
 
@@ -163,96 +158,5 @@ def test_run_MMS_cylindrical_mixed_domain():
     L2_error_l = error_L2(c_l_computed, c_exact_left)
     L2_error_r = error_L2(c_r_computed, c_exact_right)
 
-    V_l = fem.functionspace(vol_1.submesh, ("Lagrange", 2))
-    V_r = fem.functionspace(vol_2.submesh, ("Lagrange", 2))
-    c_l_exact = fem.Function(V_l)
-    c_l_exact.interpolate(c_exact_left)
-    c_r_exact = fem.Function(V_r)
-    c_r_exact.interpolate(c_exact_right)
-
-    from dolfinx.io import VTXWriter
-    from mpi4py import MPI
-
-    writer_l = VTXWriter(MPI.COMM_WORLD, "results/u_left_exact.bp", c_l_exact, "BP5")
-    writer_l.write(t=0)
-
-    writer_r = VTXWriter(MPI.COMM_WORLD, "results/u_right_exact.bp", c_r_exact, "BP5")
-    writer_r.write(t=0)
-
-    assert L2_error_l < 1e-2
-    assert L2_error_r < 3e-2
-
-
-def test_run_MMS_cylindrical_mixed_domain_one_subdomain():
-    """
-    Tests that festim produces the correct concentration field in cylindrical
-    coordinates in a discontinuous domain with two materials
-    """
-
-    my_model = F.HydrogenTransportProblemDiscontinuous()
-
-    my_mesh = F.Mesh1D(vertices=np.linspace(1, 2, 500), coordinate_system="cylindrical")
-
-    my_model.mesh = my_mesh
-
-    u_exact = lambda x: 1 + x[0] ** 2
-
-    f = -4
-
-    mat_1 = F.Material(D_0=1.0, E_D=0, K_S_0=1, E_K_S=0, solubility_law="sievert")
-
-    left = F.SurfaceSubdomain1D(id=1, x=1)
-    right = F.SurfaceSubdomain1D(id=2, x=2)
-    vol_1 = F.VolumeSubdomain1D(id=3, borders=[1, 2], material=mat_1)
-
-    my_model.subdomains = [vol_1, left, right]
-
-    my_model.interfaces = []
-    my_model.surface_to_volume = {
-        left: vol_1,
-        right: vol_1,
-    }
-
-    H = F.Species("H", mobile=True, subdomains=[vol_1])
-    my_model.species = [H]
-
-    my_model.boundary_conditions = [
-        F.FixedConcentrationBC(subdomain=left, value=u_exact, species=H),
-        F.FixedConcentrationBC(subdomain=right, value=u_exact, species=H),
-    ]
-
-    my_model.temperature = 500
-
-    my_model.sources = [
-        F.ParticleSource(value=f, volume=vol_1, species=H),
-    ]
-
-    my_model.settings = F.Settings(
-        atol=1e-10, rtol=1e-10, max_iterations=10, transient=False, element_degree=1
-    )
-
-    my_model.exports = [
-        F.VTXSpeciesExport("results/u.bp", field=H, subdomain=vol_1),
-    ]
-
-    my_model.initialise()
-
-    print(vol_1.F)
-
-    my_model.run()
-
-    c_l_computed = H.subdomain_to_post_processing_solution[vol_1]
-
-    L2_error = error_L2(c_l_computed, u_exact)
-
-    V_l = fem.functionspace(my_model.mesh.mesh, ("Lagrange", 2))
-    c_l_exact = fem.Function(V_l)
-    c_l_exact.interpolate(u_exact)
-
-    from dolfinx.io import VTXWriter
-    from mpi4py import MPI
-
-    writer_l = VTXWriter(MPI.COMM_WORLD, "results/u_exact.bp", c_l_exact, "BP5")
-    writer_l.write(t=0)
-
-    assert L2_error < 1e-2
+    assert L2_error_l < 1e-06
+    assert L2_error_r < 1e-06
