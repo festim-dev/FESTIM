@@ -34,6 +34,13 @@ class Interface:
 
     def pad_parent_maps(self):
         """Workaround to make sparsity-pattern work without skips"""
+        try:
+            # No padding needed for latest version of DOLFINx
+            from dolfinx.mesh import EntityMap  # noqa: F401
+
+            return
+        except ImportError:
+            pass
 
         if Version(dolfinx.__version__) == Version("0.9.0"):
             args = (
@@ -68,7 +75,7 @@ class Interface:
         Returns
             integration_data: Integration data for interior facets
         """
-        assert (not self.subdomains[0].padded) and (not self.subdomains[1].padded)
+
         mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
 
         if Version(dolfinx.__version__) == Version("0.9.0"):
@@ -89,8 +96,23 @@ class Interface:
 
         ordered_integration_data = integration_data.reshape(-1, 4).copy()
 
-        mapped_cell_0 = self.subdomains[0].parent_to_submesh[integration_data[0::4]]
-        mapped_cell_1 = self.subdomains[0].parent_to_submesh[integration_data[2::4]]
+        try:
+            # No padding needed for latest version of DOLFINx
+            from dolfinx.mesh import EntityMap  # noqa: F401
+
+            mapped_cell_0 = self.subdomains[0].cell_map.sub_topology_to_topology(
+                integration_data[0::4], inverse=True
+            )
+            mapped_cell_1 = self.subdomains[0].cell_map.sub_topology_to_topology(
+                integration_data[2::4], inverse=True
+            )
+            legacy_entity_map = False
+
+        except ImportError:
+            assert (not self.subdomains[0].padded) and (not self.subdomains[1].padded)
+            mapped_cell_0 = self.subdomains[0].parent_to_submesh[integration_data[0::4]]
+            mapped_cell_1 = self.subdomains[0].parent_to_submesh[integration_data[2::4]]
+            legacy_entity_map = True
 
         switch = mapped_cell_1 > mapped_cell_0
         # Order restriction on one side
@@ -100,9 +122,14 @@ class Interface:
             ]
 
         # Check that other restriction lies in other interface
-        domain1_cell = self.subdomains[1].parent_to_submesh[
-            ordered_integration_data[:, 2]
-        ]
+        if legacy_entity_map:
+            domain1_cell = self.subdomains[1].parent_to_submesh[
+                ordered_integration_data[:, 2]
+            ]
+        else:
+            domain1_cell = self.subdomains[1].cell_map.sub_topology_to_topology(
+                ordered_integration_data[:, 2], inverse=True
+            )
         assert (domain1_cell >= 0).all()
 
         return (self.id, ordered_integration_data.reshape(-1))

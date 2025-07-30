@@ -49,7 +49,9 @@ class Mesh1D(Mesh):
         domain = ufl.Mesh(
             basix.ufl.element(basix.ElementFamily.P, "interval", degree, shape=(1,))
         )
-        return dolfinx.mesh.create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
+        return dolfinx.mesh.create_mesh(
+            comm=MPI.COMM_WORLD, cells=cells, x=mesh_points, e=domain
+        )
 
     def check_borders(self, volume_subdomains):
         """Checks that the borders of the subdomain are within the domain
