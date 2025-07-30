@@ -80,9 +80,9 @@ def create_velocity_field():
         return values
 
     mesh2, mt2, ct2 = generate_mesh(n=10)
-    submesh, submesh_to_mesh, v_map = dolfinx.mesh.create_submesh(
-        mesh2, ct2.dim, ct2.find(4)
-    )[0:3]
+    submesh, cell_map, v_map = dolfinx.mesh.create_submesh(mesh2, ct2.dim, ct2.find(4))[
+        0:3
+    ]
     v_cg = basix.ufl.element(
         "Lagrange", submesh.topology.cell_name(), 2, shape=(submesh.geometry.dim,)
     )

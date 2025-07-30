@@ -1412,10 +1412,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         n = ufl.FacetNormal(mesh)
         cr = ufl.Circumradius(mesh)
+        try:
+            from dolfinx.mesh import EntityMap
 
-        entity_maps = {
-            sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
-        }
+            entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+        except ImportError:
+            entity_maps = {
+                sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
+            }
         for interface in self.interfaces:
             gamma = interface.penalty_term
 
@@ -1488,13 +1492,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         interface.id
                     ) - 0.5 * mixed_term(
                         v_b, (u_b / K_b - u_t / K_t), n_0
-                    ) * dInterface(interface.id)
+                    ) * dInterface(
+                        interface.id
+                    )
 
                     F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
                         interface.id
                     ) - 0.5 * mixed_term(
                         v_t, (u_b / K_b - u_t / K_t), n_0
-                    ) * dInterface(interface.id)
+                    ) * dInterface(
+                        interface.id
+                    )
                     F_0 += (
                         2
                         * gamma
@@ -1552,8 +1560,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
         self.solver.max_iterations = self.settings.max_iterations
         self.solver.convergence_criterion = self.settings.convergence_criterion
-        self.solver.atol = self.settings.atol
-        self.solver.rtol = self.settings.rtol
+        self.solver.atol = (
+            self.settings.atol
+            if not callable(self.settings.rtol)
+            else self.settings.rtol(float(self.t))
+        )
+        self.solver.rtol = (
+            self.settings.rtol
+            if not callable(self.settings.rtol)
+            else self.settings.rtol(float(self.t))
+        )
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
@@ -1660,28 +1676,40 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     submesh_function = (
                         export.field.subdomain_to_post_processing_solution[export_vol]
                     )
-                    export.compute(
-                        u=submesh_function,
-                        ds=self.ds,
-                        entity_maps={
+                    try:
+                        from dolfinx.mesh import EntityMap  # noqa: F401
+
+                        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+                    except ImportError:
+                        entity_maps = {
                             sd.submesh: sd.parent_to_submesh
                             for sd in self.volume_subdomains
-                        },
+                        }
+
+                    export.compute(
+                        u=submesh_function, ds=self.ds, entity_maps=entity_maps
                     )
                 else:
                     export.compute()
 
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
+                    try:
+                        from dolfinx.mesh import EntityMap  # noqa: F401
+
+                        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+                    except ImportError:
+                        entity_maps = {
+                            sd.submesh: sd.parent_to_submesh
+                            for sd in self.volume_subdomains
+                        }
+
                     export.compute(
                         u=export.field.subdomain_to_post_processing_solution[
                             export_vol
                         ],
                         dx=self.dx,
-                        entity_maps={
-                            sd.submesh: sd.parent_to_submesh
-                            for sd in self.volume_subdomains
-                        },
+                        entity_maps=entity_maps,
                     )
                 else:
                     export.compute()
@@ -1695,9 +1723,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.Profile1DExport):
-                assert export.subdomain, (
-                    "Profile1DExport requires a subdomain to be set"
-                )
+                assert (
+                    export.subdomain
+                ), "Profile1DExport requires a subdomain to be set"
                 u = export.subdomain.u
                 if export._dofs is None:
                     index = self.subdomain_to_species[export.subdomain].index(
