@@ -65,3 +65,92 @@ def test_run_MMS_spherical():
     L2_error = error_L2(computed_solution, u_exact)
 
     assert L2_error < 1e-6
+
+
+def test_run_MMS_spherical_mixed_domain():
+    """
+    Tests that festim produces the correct concentration field in spherical
+    coordinates in a discontinuous domain with two materials
+    """
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    r_interface = 1.5
+    left_domain = np.linspace(1, r_interface, num=1000)
+    right_domain = np.linspace(r_interface, r_interface + 1, num=1000)
+
+    vertices = np.concatenate(
+        [
+            left_domain,
+            right_domain,
+        ]
+    )
+    my_mesh = F.Mesh1D(vertices=vertices, coordinate_system="spherical")
+
+    my_model.mesh = my_mesh
+
+    K_S_left = 2.0
+    K_S_right = 3.0
+    D = 2.0
+
+    def c_exact_left(x):
+        return (r_interface - x[0]) ** 2 + 1.2
+
+    def c_exact_right(x):
+        return K_S_right / K_S_left * c_exact_left(x)
+
+    lap_c = lambda r: -(4 * r_interface / r) + 6
+
+    mat_1 = F.Material(D_0=D, E_D=0, K_S_0=K_S_left, E_K_S=0, solubility_law="sievert")
+    mat_2 = F.Material(D_0=D, E_D=0, K_S_0=K_S_right, E_K_S=0, solubility_law="sievert")
+
+    left = F.SurfaceSubdomain1D(id=1, x=left_domain[0])
+    right = F.SurfaceSubdomain1D(id=2, x=right_domain[-1])
+    vol_1 = F.VolumeSubdomain1D(
+        id=3, borders=[left_domain[0], left_domain[-1]], material=mat_1
+    )
+    vol_2 = F.VolumeSubdomain1D(
+        id=4, borders=[right_domain[0], right_domain[-1]], material=mat_2
+    )
+
+    my_model.subdomains = [vol_1, vol_2, left, right]
+
+    my_model.interfaces = [F.Interface(5, (vol_1, vol_2), penalty_term=1e5)]
+    my_model.surface_to_volume = {
+        left: vol_1,
+        right: vol_2,
+    }
+
+    H = F.Species("H", mobile=True, subdomains=[vol_1, vol_2])
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(subdomain=left, value=c_exact_left, species=H),
+        F.FixedConcentrationBC(subdomain=right, value=c_exact_right, species=H),
+    ]
+
+    my_model.temperature = 500
+
+    f_left = lambda x: -D * lap_c(x[0])
+    f_right = lambda x: -D * K_S_right / K_S_left * lap_c(x[0])
+
+    my_model.sources = [
+        F.ParticleSource(value=f_left, volume=vol_1, species=H),
+        F.ParticleSource(value=f_right, volume=vol_2, species=H),
+    ]
+
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, max_iterations=10, transient=False, element_degree=2
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+    c_l_computed = H.subdomain_to_post_processing_solution[vol_1]
+    c_r_computed = H.subdomain_to_post_processing_solution[vol_2]
+
+    L2_error_l = error_L2(c_l_computed, c_exact_left)
+    L2_error_r = error_L2(c_r_computed, c_exact_right)
+
+    assert L2_error_l < 1e-06
+    assert L2_error_r < 1e-06
