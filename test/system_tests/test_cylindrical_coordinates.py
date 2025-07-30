@@ -81,8 +81,9 @@ def test_run_MMS_cylindrical_mixed_domain():
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
 
-    left_domain = np.linspace(0.5, 1, num=1000)
-    right_domain = np.linspace(1, 1.5, num=1000)
+    r_interface = 2
+    left_domain = np.linspace(1, r_interface, num=1000)
+    right_domain = np.linspace(r_interface, r_interface + 1, num=1000)
 
     vertices = np.concatenate(
         [
@@ -94,21 +95,20 @@ def test_run_MMS_cylindrical_mixed_domain():
 
     my_model.mesh = my_mesh
 
-    K_S_left = 2.0
+    K_S_left = 3.0
     K_S_right = 2.0
 
     def c_exact_left(x):
-        return (x[0] - 1) ** 2 + 0.5
+        return (r_interface - x[0]) ** 2 + 2
 
     def c_exact_right(x):
         return K_S_right / K_S_left * c_exact_left(x)
 
-    mat_1 = F.Material(
-        D_0=2.0, E_D=0, K_S_0=K_S_left, E_K_S=0, solubility_law="sievert"
-    )
-    mat_2 = F.Material(
-        D_0=2.0, E_D=0, K_S_0=K_S_right, E_K_S=0, solubility_law="sievert"
-    )
+    lap_c = lambda r: 4 - 2 * r_interface / r
+    D = 2.0
+
+    mat_1 = F.Material(D_0=D, E_D=0, K_S_0=K_S_left, E_K_S=0, solubility_law="sievert")
+    mat_2 = F.Material(D_0=D, E_D=0, K_S_0=K_S_right, E_K_S=0, solubility_law="sievert")
 
     left = F.SurfaceSubdomain1D(id=1, x=left_domain[0])
     right = F.SurfaceSubdomain1D(id=2, x=right_domain[-1])
@@ -121,7 +121,7 @@ def test_run_MMS_cylindrical_mixed_domain():
 
     my_model.subdomains = [vol_1, vol_2, left, right]
 
-    my_model.interfaces = [F.Interface(5, (vol_1, vol_2), penalty_term=1e5)]
+    my_model.interfaces = [F.Interface(5, (vol_1, vol_2), penalty_term=100)]
     my_model.surface_to_volume = {
         left: vol_1,
         right: vol_2,
@@ -137,8 +137,8 @@ def test_run_MMS_cylindrical_mixed_domain():
 
     my_model.temperature = 500
 
-    f_left = -4
-    f_right = -16
+    f_left = lambda x: -D * lap_c(x[0])
+    f_right = lambda x: -D * K_S_right / K_S_left * lap_c(x[0])
 
     my_model.sources = [
         F.ParticleSource(value=f_left, volume=vol_1, species=H),
@@ -163,10 +163,8 @@ def test_run_MMS_cylindrical_mixed_domain():
     L2_error_l = error_L2(c_l_computed, c_exact_left)
     L2_error_r = error_L2(c_r_computed, c_exact_right)
 
-    left_mesh = F.Mesh1D(vertices=left_domain)
-    V_l = fem.functionspace(left_mesh.mesh, ("Lagrange", 2))
-    right_mesh = F.Mesh1D(vertices=right_domain)
-    V_r = fem.functionspace(right_mesh.mesh, ("Lagrange", 2))
+    V_l = fem.functionspace(vol_1.submesh, ("Lagrange", 2))
+    V_r = fem.functionspace(vol_2.submesh, ("Lagrange", 2))
     c_l_exact = fem.Function(V_l)
     c_l_exact.interpolate(c_exact_left)
     c_r_exact = fem.Function(V_r)
@@ -199,9 +197,9 @@ def test_run_MMS_cylindrical_mixed_domain_one_subdomain():
 
     u_exact = lambda x: 1 + x[0] ** 2
 
-    f = -4 * 2  # if we set -4 * 2 (doubling it then it works)
+    f = -4
 
-    mat_1 = F.Material(D_0=2.0, E_D=0, K_S_0=1, E_K_S=0, solubility_law="sievert")
+    mat_1 = F.Material(D_0=1.0, E_D=0, K_S_0=1, E_K_S=0, solubility_law="sievert")
 
     left = F.SurfaceSubdomain1D(id=1, x=1)
     right = F.SurfaceSubdomain1D(id=2, x=2)
