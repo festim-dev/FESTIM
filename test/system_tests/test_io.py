@@ -69,21 +69,23 @@ def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
     my_model2.temperature = 500
 
     my_model2.initial_conditions = [
-        F.InitialCondition(
+        F.InitialConcentration(
             value=F.read_function_from_file(
                 filename=tmpdir + "/out_checkpoint.bp",
                 name="H",
                 timestamp=10,
             ),
             species=H,
+            volume=vol,
         ),
-        F.InitialCondition(
+        F.InitialConcentration(
             value=F.read_function_from_file(
                 filename=tmpdir + "/out_checkpoint.bp",
                 name="D",
                 timestamp=10,
             ),
             species=D,
+            volume=vol,
         ),
     ]
 

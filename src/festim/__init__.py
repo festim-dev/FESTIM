@@ -51,7 +51,8 @@ from .hydrogen_transport_problem import (
     HydrogenTransportProblemDiscontinuousChangeVar,
 )
 from .initial_condition import (
-    InitialCondition,
+    InitialConditionBase,
+    InitialConcentration,
     InitialTemperature,
     read_function_from_file,
 )
