@@ -43,7 +43,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     mesh_points = np.reshape(indices, (len(indices), 1))
     indexes = np.arange(mesh_points.shape[0])
     cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
-    my_mesh = create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
+    my_mesh = create_mesh(comm=MPI.COMM_WORLD, cells=cells, x=mesh_points, e=domain)
     fdim = my_mesh.topology.dim - 1
     vdim = my_mesh.topology.dim
     n = FacetNormal(my_mesh)

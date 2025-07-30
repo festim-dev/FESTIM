@@ -120,10 +120,10 @@ class Mesh:
                 # find all facets in subdomain and mark them as surf.id
                 entities = surf.locate_boundary_facet_indices(self._mesh)
                 tags_facets[entities] = surf.id
-            except AttributeError:
+            except ValueError:
                 if len(surface_subdomains) > 1:
-                    raise AttributeError(
-                        "Surface subdomain must have a locate_boundary_facet_indices method if"
+                    raise ValueError(
+                        "Surface subdomain must have a locator attribute if"
                         " several subdomains are defined"
                     )
                 self.mesh.topology.create_connectivity(self.fdim, self.fdim + 1)
@@ -136,10 +136,10 @@ class Mesh:
                 # find all cells in subdomain and mark them as vol.id
                 entities = vol.locate_subdomain_entities(self._mesh)
                 tags_volumes[entities] = vol.id
-            except AttributeError:
+            except ValueError:
                 if len(volume_subdomains) > 1:
-                    raise AttributeError(
-                        "Volume subdomain must have a locate_subdomain_entities method if"
+                    raise ValueError(
+                        "Volume subdomain must have a locator if"
                         " several subdomains are defined"
                     )
                 tags_volumes[:] = vol.id

@@ -823,7 +823,9 @@ def test_create_initial_conditions_ValueError_raised_when_not_transient():
         temperature=10,
         subdomains=[my_vol],
         species=[H],
-        initial_conditions=[F.InitialCondition(value=1.0, species=H)],
+        initial_conditions=[
+            F.InitialConcentration(value=1.0, species=H, volume=my_vol)
+        ],
         settings=F.Settings(atol=1, rtol=0.9999, transient=False),
     )
 
@@ -856,7 +858,9 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
         temperature=10,
         subdomains=[vol_subdomain],
         species=[H],
-        initial_conditions=[F.InitialCondition(value=input_value, species=H)],
+        initial_conditions=[
+            F.InitialConcentration(value=input_value, species=H, volume=vol_subdomain)
+        ],
         settings=F.Settings(atol=1, rtol=0.9999, final_time=2, stepsize=1),
     )
 
@@ -935,8 +939,12 @@ def test_create_initial_conditions_value_fenics_multispecies(
         subdomains=[vol_subdomain],
         species=[H, D],
         initial_conditions=[
-            F.InitialCondition(value=input_value_2, species=D),
-            F.InitialCondition(value=input_value_1, species=H),
+            F.InitialConcentration(
+                value=input_value_2, species=D, volume=vol_subdomain
+            ),
+            F.InitialConcentration(
+                value=input_value_1, species=H, volume=vol_subdomain
+            ),
         ],
         settings=F.Settings(atol=1, rtol=0.9999, final_time=2, stepsize=1),
     )

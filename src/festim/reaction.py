@@ -6,7 +6,7 @@ from ufl.core.expr import Expr
 from festim import k_B as _k_B
 from festim.species import ImplicitSpecies as _ImplicitSpecies
 from festim.species import Species as _Species
-from festim.subdomain.volume_subdomain_1d import VolumeSubdomain1D as VS1D
+from festim.subdomain.volume_subdomain import VolumeSubdomain1D as VS1D
 
 
 class Reaction:

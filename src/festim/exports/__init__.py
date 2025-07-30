@@ -4,6 +4,7 @@ from .maximum_surface import MaximumSurface
 from .maximum_volume import MaximumVolume
 from .minimum_surface import MinimumSurface
 from .minimum_volume import MinimumVolume
+from .profile_1d import Profile1DExport
 from .surface_flux import SurfaceFlux
 from .surface_quantity import SurfaceQuantity
 from .total_surface import TotalSurface
@@ -20,6 +21,7 @@ __all__ = [
     "MaximumVolume",
     "MinimumSurface",
     "MinimumVolume",
+    "Profile1DExport",
     "SurfaceFlux",
     "SurfaceQuantity",
     "TotalSurface",

@@ -119,14 +119,16 @@ def test_dts_always_the_same():
         settings=F.Settings(
             atol=1, rtol=0.9999, transient=True, stepsize=dt, final_time=1
         ),
-        initial_condition=F.InitialTemperature(500),
+        initial_condition=F.InitialTemperature(value=500, volume=test_subdomains[0]),
     )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
         species=[test_H],
-        initial_conditions=[F.InitialCondition(value=10, species=test_H)],
+        initial_conditions=[
+            F.InitialConcentration(value=10, species=test_H, volume=test_subdomains[0])
+        ],
         settings=F.Settings(
             atol=1, rtol=0.9999, transient=True, stepsize=0.1, final_time=1
         ),
