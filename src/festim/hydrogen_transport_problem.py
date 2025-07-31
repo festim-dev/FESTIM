@@ -424,7 +424,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 # raise not implemented error if the derived quantity don't match the
                 # type of mesh eg. SurfaceFlux is used with cylindrical mesh
-                if "cartesian" not in self.mesh.coordinate_system:
+                if self.mesh.coordinate_system != "cartesian":
                     raise NotImplementedError(
                         f"Derived quantity exports are not implemented for "
                         f"{self.mesh.coordinate_system} meshes"

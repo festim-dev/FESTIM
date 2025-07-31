@@ -181,7 +181,7 @@ class Mesh:
             raise AttributeError(
                 "spherical coordinates can be used for one-dimensional domains only"
             )
-        if self.coordinate_system == "cylindrical" and self.vdim > 2:
+        if self.coordinate_system == "cylindrical" and self.vdim == 3:
             raise AttributeError(
                 "cylindrical coordinates cannot be used for 3D domains"
             )
