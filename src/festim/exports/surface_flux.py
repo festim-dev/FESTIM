@@ -3,25 +3,42 @@ from dolfinx import fem
 from scifem import assemble_scalar
 
 from festim.exports.surface_quantity import SurfaceQuantity
+from festim.species import Species
+from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class SurfaceFlux(SurfaceQuantity):
     """Computes the flux of a field on a given surface
 
     Args:
-        field (festim.Species): species for which the surface flux is computed
-        surface (festim.SurfaceSubdomain1D): surface subdomain
-        filename (str, optional): name of the file to which the surface flux is exported
+        field: species for which the surface flux is computed
+        surface: surface subdomain
+        filename: name of the file to which the surface flux is exported
 
     Attributes:
         see `festim.SurfaceQuantity`
     """
 
+    field: Species
+    surface: SurfaceSubdomain
+    filename: str
+
+    title: str
+    value: float
+    data: list[float]
+
     @property
     def title(self):
         return f"{self.field.name} flux surface {self.surface.id}"
 
-    def compute(self, u, ds: ufl.Measure, entity_maps=None):
+    def __init__(
+        self, field: Species, surface: SurfaceSubdomain, filename: str | None = None
+    ) -> None:
+        super().__init__(field=field, surface=surface, filename=filename)
+
+    def compute(
+        self, u: fem.Function | ufl.indexed.Indexed, ds: ufl.Measure, entity_maps=None
+    ):
         """Computes the value of the flux at the surface
 
         Args:

@@ -1,3 +1,4 @@
+import tempfile
 import time
 
 from mpi4py import MPI
@@ -32,7 +33,6 @@ from ufl import (
     exp,
     grad,
 )
-import tempfile
 
 
 def fenics_test_permeation_problem(mesh_size=1001):

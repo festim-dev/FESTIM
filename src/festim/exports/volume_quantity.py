@@ -1,26 +1,33 @@
 import csv
-import os
 
-from festim import species
+from festim.species import Species
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class VolumeQuantity:
     """Export VolumeQuantity
 
     Args:
-        field (festim.Species): species for which the volume quantity is computed
-        volume (festim.VolumeSubdomain): volume subdomain
-        filename (str, optional): name of the file to which the volume quantity is exported
+        field: species for which the volume quantity is computed
+        volume: volume subdomain
+        filename: name of the file to which the volume quantity is exported
 
     Attributes:
-        field (festim.Species): species for which the volume quantity is computed
-        volume (festim.VolumeSubdomain): volume subdomain
-        filename (str): name of the file to which the volume quantity is exported
-        t (list): list of time values
-        data (list): list of values of the volume quantity
+        field: species for which the volume quantity is computed
+        volume: volume subdomain
+        filename: name of the file to which the volume quantity is exported
+        t: list of time values
+        data: list of values of the volume quantity
     """
 
-    def __init__(self, field, volume, filename: str = None) -> None:
+    field: Species
+    volume: VolumeSubdomain
+    filename: str | None
+
+    t: list[float]
+    data: list[float]
+
+    def __init__(self, field, volume, filename: str | None = None) -> None:
         self.field = field
         self.volume = volume
         self.filename = filename
@@ -50,7 +57,7 @@ class VolumeQuantity:
     @field.setter
     def field(self, value):
         # check that field is festim.Species
-        if not isinstance(value, (species.Species, str)):
+        if not isinstance(value, Species | str):
             raise TypeError("field must be of type festim.Species")
 
         self._field = value

@@ -421,6 +421,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     else:
                         adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
+            elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+                # raise not implemented error if the derived quantity don't match the
+                # type of mesh eg. SurfaceFlux is used with cylindrical mesh
+                if self.mesh.coordinate_system != "cartesian":
+                    raise NotImplementedError(
+                        f"Derived quantity exports are not implemented for "
+                        f"{self.mesh.coordinate_system} meshes"
+                    )
+
             # if name of species is given then replace with species object
             if isinstance(export.field, list):
                 for idx, field in enumerate(export.field):
@@ -784,9 +793,24 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self.mesh.mesh, self.temperature_fenics, spe
                 )
                 if spe.mobile:
-                    self.formulation += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
-                        vol.id
-                    )
+                    if self.mesh.coordinate_system == "cartesian":
+                        self.formulation += ufl.dot(
+                            D * ufl.grad(u), ufl.grad(v)
+                        ) * self.dx(vol.id)
+                    elif self.mesh.coordinate_system == "cylindrical":
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        self.formulation += (
+                            r
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                            * self.dx(vol.id)
+                        )
+                    elif self.mesh.coordinate_system == "spherical":
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        self.formulation += (
+                            r**2
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                            * self.dx(vol.id)
+                        )
 
                 if self.settings.transient:
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
@@ -1319,7 +1343,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 form += ((u - u_n) / self.dt) * v * self.dx(subdomain.id)
 
             if spe.mobile:
-                form += ufl.inner(D * ufl.grad(u), ufl.grad(v)) * self.dx(subdomain.id)
+                if self.mesh.coordinate_system == "cartesian":
+                    form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
+                        subdomain.id
+                    )
+                elif self.mesh.coordinate_system == "cylindrical":
+                    r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                    form += (
+                        r
+                        * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                        * self.dx(subdomain.id)
+                    )
+                elif self.mesh.coordinate_system == "spherical":
+                    r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                    form += (
+                        r**2
+                        * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                        * self.dx(subdomain.id)
+                    )
 
         # add reaction terms
         for reaction in self.reactions:
