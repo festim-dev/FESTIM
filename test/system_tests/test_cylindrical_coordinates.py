@@ -1,7 +1,5 @@
 import numpy as np
 
-from dolfinx import fem
-
 import festim as F
 
 from .tools import error_L2
@@ -48,10 +46,6 @@ def test_run_MMS_cylindrical():
         transient=False,
     )
 
-    my_exports = [
-        F.VTXSpeciesExport("results/single_domain_u.bp", field=H, subdomain=my_vol),
-    ]
-
     my_sim = F.HydrogenTransportProblem(
         mesh=my_mesh,
         species=[H, D],
@@ -60,7 +54,6 @@ def test_run_MMS_cylindrical():
         temperature=my_temp,
         sources=my_sources,
         settings=my_settings,
-        exports=my_exports,
     )
 
     my_sim.initialise()
