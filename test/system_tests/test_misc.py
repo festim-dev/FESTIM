@@ -226,10 +226,6 @@ def test_temp_dependent_bc_mixed_domain_temperature_as_function():
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
 
-    my_model.exports = [
-        F.VTXSpeciesExport(field=H, filename="species.bp", subdomain=top_domain),
-    ]
-
     my_model.initialise()
     my_model.run()
 
