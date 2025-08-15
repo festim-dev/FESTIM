@@ -391,7 +391,7 @@ def test_initial_condition_discontinuous():
 
 
 def test_initial_condition_continuous_multimaterial():
-    """Test the initial condition in multimaterial continous case that the condition is
+    """Test the initial condition in multi-material continous case that the condition is
     only appilied in the correct volume subdomain"""
 
     my_model = F.HydrogenTransportProblem()
@@ -430,5 +430,6 @@ def test_initial_condition_continuous_multimaterial():
 
     my_model.initialise()
 
-    # assert not all values in test_spe1 are equal to initial condition value
+    # assert value of spe1 is not all the same across the domain
+
     assert not np.allclose(my_model.u_n.x.array[:], intial_cond_value)
