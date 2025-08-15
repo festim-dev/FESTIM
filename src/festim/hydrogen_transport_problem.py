@@ -774,7 +774,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 function_to_interpolate_on = self.u_n.sub(idx)
 
             function_to_interpolate_on.interpolate(
-                condition.expr_fenics, cells1=entities
+                condition.expr_fenics, cells0=entities
             )
 
     def create_formulation(self):
