@@ -371,14 +371,65 @@ def test_initial_condition_discontinuous():
 
     my_model.initialise()
 
-    u_n0, un_0_to_un = vol1.u_n.function_space.sub(0).collapse()
-    u_n1, un_1_to_un = vol2.u_n.function_space.sub(1).collapse()
+    spe1_left, spe1_to_vol1 = vol1.u_n.function_space.sub(0).collapse()
+    spe2_left, spe2_to_vol1 = vol1.u_n.function_space.sub(1).collapse()
+    spe1_right, spe1_to_vol2 = vol2.u_n.function_space.sub(0).collapse()
+    spe2_right, spe2_to_vol2 = vol2.u_n.function_space.sub(1).collapse()
 
-    prev_solution_D = vol1.u_n.x.array[un_0_to_un]
-    prev_solution_T = vol2.u_n.x.array[un_1_to_un]
+    prev_solution_spe1_left = vol1.u_n.x.array[spe1_to_vol1]
+    prev_solution_spe2_left = vol1.u_n.x.array[spe2_to_vol1]
+    prev_solution_spe1_right = vol2.u_n.x.array[spe1_to_vol2]
+    prev_solution_spe2_right = vol2.u_n.x.array[spe2_to_vol2]
 
     # Test all values in vol1 u_n are equal to initial condition value and
     # all values in vol2 u_n are equal to initial condition value
 
-    assert np.allclose(prev_solution_D, intial_cond_value)
-    assert np.allclose(prev_solution_T, intial_cond_value)
+    assert np.allclose(prev_solution_spe1_left, intial_cond_value)
+    assert np.allclose(prev_solution_spe2_left, 0)
+    assert np.allclose(prev_solution_spe1_right, 0)
+    assert np.allclose(prev_solution_spe2_right, intial_cond_value)
+
+
+def test_initial_condition_continuous_multimaterial():
+    """Test the initial condition in multi-material continous case that the condition is
+    only appilied in the correct volume subdomain"""
+
+    my_model = F.HydrogenTransportProblem()
+
+    vertices_left = np.linspace(0, 0.5, 500)
+    vertices_right = np.linspace(0.5, 1, 500)
+    vertices = np.concatenate((vertices_left, vertices_right))
+    my_model.mesh = F.Mesh1D(vertices)
+
+    left_surf = F.SurfaceSubdomain1D(id=1, x=0)
+    right_surf = F.SurfaceSubdomain1D(id=2, x=1)
+
+    # assumes the same diffusivity for all species
+    material_left = F.Material(D_0=1e-01, E_D=0, K_S_0=1, E_K_S=0)
+    material_right = F.Material(D_0=1e-01, E_D=0, K_S_0=1, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=material_left)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=material_right)
+    my_model.subdomains = [vol1, vol2, left_surf, right_surf]
+
+    spe1 = F.Species("1", mobile=True)
+    my_model.species = [spe1]
+
+    my_model.temperature = 300
+
+    intial_cond_value = 100
+
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=intial_cond_value, species=spe1, volume=vol1),
+    ]
+
+    dt = F.Stepsize(0.1)
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, final_time=5, transient=True, stepsize=dt
+    )
+
+    my_model.initialise()
+
+    # assert value of spe1 is not all the same across the domain
+
+    assert not np.allclose(my_model.u_n.x.array[:], intial_cond_value)
