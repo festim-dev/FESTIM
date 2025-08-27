@@ -143,22 +143,160 @@ Surface reactions
 Surface reactions on boundary can be defined with the :class:`festim.SurfaceReactionBC` class.
 
 The surface reaction class can be used to impose dissociation and recombination reactions on the surface of the material.
+A reaction is defined by specifying the reactants, products, and forward/backward rate constants. For example:
+
 
 .. testcode:: BCs
 
     from festim import Species, SurfaceReactionBC, SurfaceSubdomain
 
     boundary = SurfaceSubdomain(id=1)
-    H = Species(name="Hydrogen")
+    A = Species("A")
+    B = Species("B")
+    C = Species("C")
 
     my_bc = SurfaceReactionBC(
-        reactant=[H],
+        reactant=[A, B],
+        product=[C],
         gas_pressure=1e5,
         k_r0=1,
         E_kr=0.1,
         k_d0=1e-5,
         E_kd=0.1,
         subdomain=boundary,
+    )
+
+The net reaction rate is:
+
+.. math::
+    R = K_r c_A c_B - K_d c_C
+
+where :math:`K_r` and :math:`K_d` are the temperature-dependent forward and backward rate constants, respectively, and :math:`c_A`, :math:`c_B`, and :math:`c_C` are the concentrations of species A, B, and C at the surface.
+From this FESTIM automatically applies the corresponding fluxes as Neumann boundary conditions (see :class:`festim.ParticleFluxBC`).
+
+Recombination and Dissociation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Hydrogen recombination/dissociation can be modelled as:
+
+.. math::
+    \mathrm{H + H} \overset{K_r}{\underset{K_d}{\rightleftharpoons}} \mathrm{H_2}
+
+If the partial pressure of :math:`\mathrm{H}_2` is known or assumed constant, the product species does not need to be included explicitly, and the flux simplifies to:
+
+.. math::
+    \mathbf{J}_{\mathrm{H}} \cdot \mathbf{n} = K_r c_{\mathrm{H}}^2 - K_d P_{\mathrm{H_2}}
+
+Both rate coefficients can follow Arrhenius laws.
+
+.. testcode:: BCs
+
+    from festim import Species, SurfaceReactionBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+    H = Species("H")
+
+    my_bc = SurfaceReactionBC(
+        reactant=[H, H],
+        gas_pressure=1e5,
+        k_r0=1,
+        E_kr=0.1,
+        k_d0=1e-5,
+        E_kd=0.1,
+        subdomain=boundary,
+    )
+
+Multiple isoptopes
+~~~~~~~~~~~~~~~~~~~
+
+Surface reactions can involve multiple hydrogen isotopes, enabling the modelling of more complex interactions between species. 
+For example, in a system with both mobile hydrogen and tritium, various molecular recombination pathways may occur at the surface, resulting in the formation of :math:`\mathrm{H_2}`, :math:`\mathrm{T_2}`, and :math:`\mathrm{HT}`:
+
+.. math::
+    \mathrm{H + H} \rightleftharpoons \mathrm{H_2}, \quad
+    \mathrm{T + T} \rightleftharpoons \mathrm{T_2}, \quad
+    \mathrm{H + T} \rightleftharpoons \mathrm{HT}
+
+.. testcode:: BCs
+
+    from festim import Species, SurfaceReactionBC, SurfaceSubdomain
+
+    boundary = SurfaceSubdomain(id=1)
+    H = Species("H")
+    T = Species("T")
+
+    reac1 = SurfaceReactionBC(
+        surface=1,
+        reactant=[H, H],
+        gas_pressure=1e6,
+        k_r0=1.0,
+        E_kr=0.1,
+        k_d0=0.5,
+        E_kd=0.1,
+        subdomain=boundary,
+    )
+    reac2 = SurfaceReactionBC(
+        surface=1,
+        reactant=[T, T],
+        gas_pressure=1e6,
+        k_r0=1.0,
+        E_kr=0.1,
+        k_d0=0.5,
+        E_kd=0.1,
+        subdomain=boundary,
+    )
+    reac3 = SurfaceReactionBC(
+        surface=1,
+        reactant=[H, T],
+        gas_pressure=1e6,
+        k_r0=1.0,
+        E_kr=0.1,
+        k_d0=0.5,
+        E_kd=0.1,
+        subdomain=boundary,
+    )
+
+
+Exchange Reactions
+~~~~~~~~~~~~~~~~~~~
+
+Certain isotopic exchange processes can also be approximated, e.g.:
+
+.. math::
+    \mathrm{T + H_2} \rightleftharpoons \mathrm{H} + \mathrm{HT}
+
+If the :math:`\mathrm{H}_2` concentration is assumed much larger than :math:`\mathrm{HT}`, this reduces to a first-order process in :math:`\mathrm{T}`. 
+Such fluxes can be implemented using :class:`festim.ParticleFluxBC` with user-defined expressions.
+
+.. testcode:: BCs
+
+    import ufl
+    from festim import ParticleFluxBC, Species, SurfaceSubdomain, VolumeSubdomain, k_B
+
+    boundary = SurfaceSubdomain(id=1)
+    volume = VolumeSubdomain(id=1)
+    tritium = Species("tritium")
+    Kr_0 = 1.0
+    E_Kr = 0.1
+
+
+    def my_custom_recombination_flux(c, T):
+        Kr_0_custom = 1.0
+        E_Kr_custom = 0.5  # eV
+        h2_conc = 1e25  # assumed constant H2 concentration in
+
+        recombination_flux = (
+            -(Kr_0 * ufl.exp(-E_Kr / (k_B * T))) * c**2
+            - (Kr_0_custom * ufl.exp(-E_Kr_custom / (k_B * T))) * h2_conc * c
+        )
+        return recombination_flux
+
+
+    my_custom_flux = ParticleFluxBC(
+        value=my_custom_recombination_flux,
+        subdomain=boundary,
+        species_dependent_value={"c": tritium},
+        species=tritium,
     )
 
 
