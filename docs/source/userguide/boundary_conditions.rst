@@ -157,7 +157,6 @@ A reaction is defined by specifying the reactants, products, and forward/backwar
 
     my_bc = SurfaceReactionBC(
         reactant=[A, B],
-        product=[C],
         gas_pressure=1e5,
         k_r0=1,
         E_kr=0.1,
@@ -226,7 +225,6 @@ For example, in a system with both mobile hydrogen and tritium, various molecula
     T = Species("T")
 
     reac1 = SurfaceReactionBC(
-        surface=1,
         reactant=[H, H],
         gas_pressure=1e6,
         k_r0=1.0,
@@ -236,7 +234,6 @@ For example, in a system with both mobile hydrogen and tritium, various molecula
         subdomain=boundary,
     )
     reac2 = SurfaceReactionBC(
-        surface=1,
         reactant=[T, T],
         gas_pressure=1e6,
         k_r0=1.0,
@@ -246,7 +243,6 @@ For example, in a system with both mobile hydrogen and tritium, various molecula
         subdomain=boundary,
     )
     reac3 = SurfaceReactionBC(
-        surface=1,
         reactant=[H, T],
         gas_pressure=1e6,
         k_r0=1.0,
@@ -271,10 +267,18 @@ Such fluxes can be implemented using :class:`festim.ParticleFluxBC` with user-de
 .. testcode:: BCs
 
     import ufl
-    from festim import ParticleFluxBC, Species, SurfaceSubdomain, VolumeSubdomain, k_B
+    from festim import (
+        Material,
+        ParticleFluxBC,
+        Species,
+        SurfaceSubdomain,
+        VolumeSubdomain,
+        k_B,
+    )
 
     boundary = SurfaceSubdomain(id=1)
-    volume = VolumeSubdomain(id=1)
+    my_mat = Material(D_0=1, E_D=0.1)
+    volume = VolumeSubdomain(id=1, material=my_mat)
     tritium = Species("tritium")
     Kr_0 = 1.0
     E_Kr = 0.1
