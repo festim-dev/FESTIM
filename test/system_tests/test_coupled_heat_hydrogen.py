@@ -54,7 +54,9 @@ def test_MMS_coupled_problem():
             F.FixedTemperatureBC(subdomain=right_sub, value=exact_T_solution),
         ],
         sources=[F.HeatSource(value=mms_T_source, volume=test_vol_sub)],
-        initial_condition=F.InitialTemperature(lambda x: exact_T_solution(x, 0)),
+        initial_condition=F.InitialTemperature(
+            value=lambda x: exact_T_solution(x, 0), volume=test_vol_sub
+        ),
         settings=F.Settings(
             atol=1e-10,
             rtol=1e-10,
@@ -135,8 +137,14 @@ def test_MMS_coupled_problem():
             )
         ],
         initial_conditions=[
-            F.InitialCondition(value=exact_mobile_intial_cond, species=test_mobile),
-            F.InitialCondition(value=exact_trapped_intial_cond, species=test_trapped),
+            F.InitialConcentration(
+                value=exact_mobile_intial_cond, species=test_mobile, volume=test_vol_sub
+            ),
+            F.InitialConcentration(
+                value=exact_trapped_intial_cond,
+                species=test_trapped,
+                volume=test_vol_sub,
+            ),
         ],
         sources=[
             F.ParticleSource(
@@ -228,7 +236,9 @@ def test_coupled_problem_non_matching_mesh():
             F.FixedTemperatureBC(subdomain=right_sub, value=exact_T_solution),
         ],
         sources=[F.HeatSource(value=mms_T_source, volume=test_vol_sub)],
-        initial_condition=F.InitialTemperature(lambda x: exact_T_solution(x, 0)),
+        initial_condition=F.InitialTemperature(
+            lambda x: exact_T_solution(x, 0), volume=test_vol_sub
+        ),
         settings=F.Settings(
             atol=1e-10,
             rtol=1e-10,
@@ -264,8 +274,10 @@ def test_coupled_problem_non_matching_mesh():
         ],
         species=[test_mobile],
         initial_conditions=[
-            F.InitialCondition(
-                value=lambda x: exact_mobile_solution(x, t=0), species=test_mobile
+            F.InitialConcentration(
+                value=lambda x: exact_mobile_solution(x, t=0),
+                species=test_mobile,
+                volume=test_vol_sub,
             ),
         ],
         sources=[

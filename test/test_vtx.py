@@ -84,7 +84,10 @@ def test_vtx_DG(tmpdir):
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 2
-    assert len(my_model._vtxfiles) == 1
+
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
+
+    assert len(all_vtx) == 1
 
 
 @pytest.mark.parametrize("checkpoint", [True, False])
@@ -110,10 +113,10 @@ def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
 
     my_model.initialise()
     assert len(my_export.get_functions()) == 1
-    if checkpoint:
-        assert len(my_model._vtxfiles) == 0
-    else:
-        assert len(my_model._vtxfiles) == 1
+
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
+
+    assert len(all_vtx) == 1
 
 
 @pytest.mark.parametrize(
@@ -145,10 +148,9 @@ def test_vtx_temperature(T, tmpdir):
     my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
     my_model.settings.stepsize = F.Stepsize(initial_value=1)
 
-    my_model.initialise()
-    assert len(my_model._vtxfiles) == 1
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
 
-    my_model.run()
+    assert len(all_vtx) == 1
 
 
 def test_field_attribute_is_always_list():

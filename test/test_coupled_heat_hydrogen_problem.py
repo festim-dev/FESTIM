@@ -79,14 +79,18 @@ def test_initial_dt_values_are_the_same():
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=0.5, final_time=5),
+        settings=F.Settings(
+            atol=1, rtol=0.9999, transient=True, stepsize=0.5, final_time=5
+        ),
     )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
         species=[test_H],
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1.5, final_time=5),
+        settings=F.Settings(
+            atol=1, rtol=0.9999, transient=True, stepsize=1.5, final_time=5
+        ),
     )
 
     test_coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
@@ -112,16 +116,22 @@ def test_dts_always_the_same():
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=dt, final_time=1),
-        initial_condition=F.InitialTemperature(500),
+        settings=F.Settings(
+            atol=1, rtol=0.9999, transient=True, stepsize=dt, final_time=1
+        ),
+        initial_condition=F.InitialTemperature(value=500, volume=test_subdomains[0]),
     )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
         species=[test_H],
-        initial_conditions=[F.InitialCondition(value=10, species=test_H)],
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=0.1, final_time=1),
+        initial_conditions=[
+            F.InitialConcentration(value=10, species=test_H, volume=test_subdomains[0])
+        ],
+        settings=F.Settings(
+            atol=1, rtol=0.9999, transient=True, stepsize=0.1, final_time=1
+        ),
     )
 
     test_coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
@@ -145,14 +155,18 @@ def test_error_raised_when_final_times_not_the_same():
     test_heat_problem = F.HeatTransferProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=10),
+        settings=F.Settings(
+            atol=1, rtol=0.9999, transient=True, stepsize=1, final_time=10
+        ),
     )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=test_subdomains,
         species=[test_H],
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=5),
+        settings=F.Settings(
+            atol=1, rtol=0.9999, transient=True, stepsize=1, final_time=5
+        ),
     )
 
     test_coupled_problem = F.CoupledTransientHeatTransferHydrogenTransport(
@@ -173,11 +187,13 @@ def test_error_raised_when_both_problems_not_transient():
     set to transient"""
 
     test_heat_problem = F.HeatTransferProblem(
-        settings=F.Settings(atol=1, rtol=1, transient=False),
+        settings=F.Settings(atol=1, rtol=0.9999, transient=False),
     )
 
     test_hydrogen_problem = F.HydrogenTransportProblem(
-        settings=F.Settings(atol=1, rtol=1, transient=True, stepsize=1, final_time=4),
+        settings=F.Settings(
+            atol=1, rtol=0.9999, transient=True, stepsize=1, final_time=4
+        ),
     )
 
     with pytest.raises(

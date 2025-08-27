@@ -119,7 +119,9 @@ def test_1_mobile_MMS_transient():
     ]
 
     init_value = lambda x: 1 + ufl.sin(2 * ufl.pi * x[0])
-    my_model.initial_conditions = [F.InitialCondition(value=init_value, species=H)]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=init_value, species=H, volume=vol)
+    ]
 
     f = lambda x, t: 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x, t)))
     my_model.sources = [F.ParticleSource(value=f, volume=vol, species=H)]
