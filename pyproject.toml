@@ -30,7 +30,7 @@ requires-python = ">=3.6"
 dynamic = ["version"]
 
 [project.optional-dependencies]
-tests = ["pytest>=5.4.3"]
+tests = ["pytest>=5.4.3", "ipyparallel"]
 
 [project.urls]
 Repository = "https://github.com/festim-dev/FESTIM"
