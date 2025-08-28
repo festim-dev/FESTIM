@@ -19,7 +19,7 @@ jobs:
       shell: bash -l {0}
       run: |
         # conda upgrade --strict-channel-priority -c conda-forge --all
-        conda install -c conda-forge fenics numpy=1.24
+        conda install -c conda-forge fenics numpy=1.24 "python>=3.10"
 
     - name: Install dependencies
       shell: bash -l {0}
