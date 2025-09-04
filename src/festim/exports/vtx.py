@@ -162,7 +162,7 @@ class VTXSpeciesExport(ExportBaseClass):
                 legacy_output = True
                 break
         if legacy_output:
-            return [field.sub_function for field in self._field]
+            return [field.post_processing_solution for field in self._field]
         else:
             if self._subdomain is None:
                 raise ValueError("Subdomain must be specified")
