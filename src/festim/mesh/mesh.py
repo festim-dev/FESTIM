@@ -110,7 +110,7 @@ class Mesh:
         elif isinstance(value, str):
             self._coordinate_system = CoordinateSystem.from_string(value)
         else:
-            raise TypeError("coordinate_system must be of type str or CoordinateSystem")
+            raise ValueError("coordinate_system must be of type str or CoordinateSystem")
 
     @property
     def vdim(self):
