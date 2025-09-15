@@ -236,7 +236,7 @@ def test_derived_quantities_multi_mat():
 
 def test_penalty_multispecies():
     my_model = F.HydrogenTransportProblemDiscontinuous()
-    my_model.method_interface = F.penalty
+    my_model.method_interface = "penalty"
 
     protium = F.Species("H")
     deuterium = F.Species("D")
