@@ -291,7 +291,7 @@ else:
 def nmm_interpolate(
     f_out: fem.Function,
     f_in: fem.Function,
-    cells: dolfinx.mesh.meshtags | None = None,
+    cells: dolfinx.mesh.MeshTags | None = None,
     padding: float | None = 1e-11,
 ):
     """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
