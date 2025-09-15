@@ -17,12 +17,12 @@ from scifem import BlockedNewtonSolver
 import festim.boundary_conditions
 import festim.problem
 from festim import (
-    SolubilityLaw,
     boundary_conditions,
     exports,
     k_B,
     problem,
 )
+from festim.material import SolubilityLaw
 from festim import (
     reaction as _reaction,
 )
@@ -39,7 +39,7 @@ from festim.helpers import (
     get_interpolation_points,
     is_it_time_to_export,
 )
-from festim.mesh import CoordinateSystem, Mesh
+from .mesh import CoordinateSystem, Mesh
 
 __all__ = [
     "HydrogenTransportProblem",

@@ -6,6 +6,7 @@ import ufl
 from dolfinx.mesh import Mesh as dolfinx_Mesh
 from dolfinx.mesh import meshtags
 
+__all__= ["CoordinateSystem", "Mesh"]
 
 class CoordinateSystem(Enum):
     CARTESIAN = 10
