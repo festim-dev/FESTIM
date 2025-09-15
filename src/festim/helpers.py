@@ -34,7 +34,7 @@ def as_fenics_constant(
 
 def as_mapped_function(
     value: Callable,
-    function_space: fem.functionspace | None = None,
+    function_space: fem.FunctionSpace | None = None,
     t: fem.Constant | None = None,
     temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
 ) -> ufl.core.expr.Expr:
