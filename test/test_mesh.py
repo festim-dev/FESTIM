@@ -212,8 +212,12 @@ def test_attr_error_with_3D_mesh_in_cylindrical():
 
 @pytest.mark.parametrize("system", ["cyl", "cart", 1.0, "coucou", mesh_1D])
 def test_coordinate_system_setter(system):
+    if isinstance(system, str):
+        err_msg = "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"
+    else:
+        err_msg = "coordinate_system must be of type str or CoordinateSystem"
     with pytest.raises(
         ValueError,
-        match="coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'",
+        match=err_msg,
     ):
         F.Mesh(mesh=mesh_3D, coordinate_system=system)
