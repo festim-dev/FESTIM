@@ -119,7 +119,6 @@ class Material:
                 "D_0 and D cannot be set at the same time. Please set only one of them."
             )
 
-
     @property
     def solubility_law(self):
         return self._solubility_law

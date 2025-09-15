@@ -452,7 +452,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
                     raise NotImplementedError(
                         f"Derived quantity exports are not implemented for "
-                        f"{str(self.mesh.coordinate_system)} meshes"
+                        f"{self.mesh.coordinate_system!s} meshes"
                     )
 
             # if name of species is given then replace with species object
