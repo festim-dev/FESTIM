@@ -22,7 +22,6 @@ from festim import (
     k_B,
     problem,
 )
-from festim.material import SolubilityLaw
 from festim import (
     reaction as _reaction,
 )
@@ -39,6 +38,8 @@ from festim.helpers import (
     get_interpolation_points,
     is_it_time_to_export,
 )
+from festim.material import SolubilityLaw
+
 from .mesh import CoordinateSystem, Mesh
 
 __all__ = [
