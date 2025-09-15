@@ -29,6 +29,16 @@ class CoordinateSystem(Enum):
                 "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"
             )
 
+    def __str__(self):
+        if self == CoordinateSystem.CARTESIAN:
+            return "cartesian"
+        elif self == CoordinateSystem.CYLINDRICAL:
+            return "cylindrical"
+        elif self == CoordinateSystem.SPHERICAL:
+            return "spherical"
+        else:
+            raise ValueError("Invalid CoordinateSystem value")
+
 
 class Mesh:
     """
