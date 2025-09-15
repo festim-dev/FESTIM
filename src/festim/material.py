@@ -109,15 +109,29 @@ class Material:
         self.heat_capacity = heat_capacity
         self.name = name
         if isinstance(solubility_law, str):
-            self.solubility_law = SolubilityLaw.from_string(solubility_law)
+            self._solubility_law = SolubilityLaw.from_string(solubility_law)
         else:
-            self.solubility_law = solubility_law
+            self._solubility_law = solubility_law
         self.D = D
 
         if self.D_0 and self.D:
             raise ValueError(
                 "D_0 and D cannot be set at the same time. Please set only one of them."
             )
+
+
+    @property
+    def solubility_law(self):
+        return self._solubility_law
+
+    @solubility_law.setter
+    def solubility_law(self, value):
+        if isinstance(value, SolubilityLaw):
+            self._coordinate_system = value
+        elif isinstance(value, str):
+            self._coordinate_system = SolubilityLaw.from_string(value)
+        else:
+            raise ValueError(f"Could not set solubility law {value=}")
 
     @property
     def D(self):
