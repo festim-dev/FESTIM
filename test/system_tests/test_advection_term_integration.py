@@ -1,11 +1,11 @@
 from mpi4py import MPI
 
 import basix
+import dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
-from dolfinx.mesh import create_unit_square, locate_entities_boundary
-import dolfinx
+from dolfinx.mesh import create_unit_square
 
 import festim as F
 

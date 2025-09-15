@@ -253,7 +253,7 @@ class FixedConcentrationBC(DirichletBCBase):
                         helpers.get_interpolation_points(function_space.element),
                     )
                     self.value_fenics.interpolate(self.bc_expr)
-                except RuntimeError as e:
+                except RuntimeError:
                     # if this fails, it is probably because the temperature is a Function
                     # from the parent mesh and this is used in a mixed domain problem.
                     # In this case, we need to interpolate the temperature on the submesh

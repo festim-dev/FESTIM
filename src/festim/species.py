@@ -1,11 +1,12 @@
+from typing import Union
+
+import ufl
+from dolfinx import fem
+
+from festim.helpers import as_fenics_constant
 from festim.subdomain.volume_subdomain import (
     VolumeSubdomain as _VolumeSubdomain,
 )
-from festim.helpers import as_fenics_constant
-
-from typing import List, Union
-import ufl
-from dolfinx import fem
 
 
 class Species:
@@ -131,7 +132,7 @@ class ImplicitSpecies:
     def __init__(
         self,
         n: Union[float, callable],
-        others: List[Species] = None,
+        others: list[Species] = None,
         name: str = None,
     ) -> None:
         self.name = name

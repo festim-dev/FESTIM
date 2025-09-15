@@ -31,10 +31,6 @@ API reference
     :members:
     :show-inheritance:
 
-.. automodule:: festim.helpers_discontinuity
-    :members:
-    :show-inheritance:
-
 .. automodule:: festim.helpers
     :members:
     :show-inheritance:

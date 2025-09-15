@@ -1,5 +1,6 @@
 import warnings
 from collections.abc import Callable
+from enum import Enum
 
 from mpi4py import MPI
 
@@ -16,6 +17,7 @@ from scifem import BlockedNewtonSolver
 import festim.boundary_conditions
 import festim.problem
 from festim import (
+    SolubilityLaw,
     boundary_conditions,
     exports,
     k_B,
@@ -37,9 +39,31 @@ from festim.helpers import (
     get_interpolation_points,
     is_it_time_to_export,
 )
-from festim.mesh import Mesh
+from festim.mesh import CoordinateSystem, Mesh
 
-__all__ = ["HydrogenTransportProblem", "HydrogenTransportProblemDiscontinuous"]
+__all__ = [
+    "HydrogenTransportProblem",
+    "HydrogenTransportProblemDiscontinuous",
+    "InterfaceMethod",
+]
+
+
+class InterfaceMethod(Enum):
+    """How to couple interfaces for discontinuous problems."""
+
+    nitsche = 10
+    penalty = 20
+
+    @classmethod
+    def from_string(cls, s: str):
+        """Can be removed with Python 3.11+."""
+        s = s.lower()
+        if s == "nitsche":
+            return cls.nitsche
+        elif s == "penalty":
+            return cls.penalty
+        else:
+            raise ValueError("interface_method must be one of 'nitsche' or 'penalty'")
 
 
 class HydrogenTransportProblem(problem.ProblemBase):
@@ -424,7 +448,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 # raise not implemented error if the derived quantity don't match the
                 # type of mesh eg. SurfaceFlux is used with cylindrical mesh
-                if self.mesh.coordinate_system != "cartesian":
+                if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
                     raise NotImplementedError(
                         f"Derived quantity exports are not implemented for "
                         f"{self.mesh.coordinate_system} meshes"
@@ -793,24 +817,29 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self.mesh.mesh, self.temperature_fenics, spe
                 )
                 if spe.mobile:
-                    if self.mesh.coordinate_system == "cartesian":
-                        self.formulation += ufl.dot(
-                            D * ufl.grad(u), ufl.grad(v)
-                        ) * self.dx(vol.id)
-                    elif self.mesh.coordinate_system == "cylindrical":
-                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                        self.formulation += (
-                            r
-                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
-                            * self.dx(vol.id)
-                        )
-                    elif self.mesh.coordinate_system == "spherical":
-                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                        self.formulation += (
-                            r**2
-                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
-                            * self.dx(vol.id)
-                        )
+                    match self.mesh.coordinate_system:
+                        case CoordinateSystem.CARTESIAN:
+                            self.formulation += ufl.dot(
+                                D * ufl.grad(u), ufl.grad(v)
+                            ) * self.dx(vol.id)
+                        case CoordinateSystem.CYLINDRICAL:
+                            r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                            self.formulation += (
+                                r
+                                * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                                * self.dx(vol.id)
+                            )
+                        case CoordinateSystem.SPHERICAL:
+                            r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                            self.formulation += (
+                                r**2
+                                * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                                * self.dx(vol.id)
+                            )
+                        case _:
+                            raise NotImplementedError(
+                                f"Unknown coordinate system {self.mesh.coordinate_system}"
+                            )
 
                 if self.settings.transient:
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
@@ -1044,7 +1073,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     surface_to_volume: dict
-    method_interface: str = "penalty"
+    _method_interface: InterfaceMethod = InterfaceMethod.penalty
     subdomain_to_species: dict
 
     def __init__(
@@ -1165,6 +1194,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
+
+    @property
+    def method_interface(self):
+        return self._method_interface
+
+    @method_interface.setter
+    def method_interface(self, value):
+        if isinstance(value, InterfaceMethod):
+            self._method_interface = value
+        elif isinstance(value, str):
+            self._method_interface = InterfaceMethod.from_string(value)
+        else:
+            raise TypeError("method_interface must be of type str or InterfaceMethod")
 
     def create_dirichletbc_form(self, bc: boundary_conditions.FixedConcentrationBC):
         """
@@ -1343,24 +1385,29 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 form += ((u - u_n) / self.dt) * v * self.dx(subdomain.id)
 
             if spe.mobile:
-                if self.mesh.coordinate_system == "cartesian":
-                    form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
-                        subdomain.id
-                    )
-                elif self.mesh.coordinate_system == "cylindrical":
-                    r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                    form += (
-                        r
-                        * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
-                        * self.dx(subdomain.id)
-                    )
-                elif self.mesh.coordinate_system == "spherical":
-                    r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                    form += (
-                        r**2
-                        * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
-                        * self.dx(subdomain.id)
-                    )
+                match self.mesh.coordinate_system:
+                    case CoordinateSystem.CARTESIAN:
+                        form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
+                            subdomain.id
+                        )
+                    case CoordinateSystem.CYLINDRICAL:
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        form += (
+                            r
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                            * self.dx(subdomain.id)
+                        )
+                    case CoordinateSystem.SPHERICAL:
+                        r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                        form += (
+                            r**2
+                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                            * self.dx(subdomain.id)
+                        )
+                    case _:
+                        raise ValueError(
+                            f"Unsupported coordinate system {self.mesh.coordinate_system}"
+                        )
 
         # add reaction terms
         for reaction in self.reactions:
@@ -1486,82 +1533,87 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     self.mesh.mesh, self.temperature_fenics(res[1]), H
                 )
 
-                if self.method_interface == "penalty":
-                    if (
-                        subdomain_0.material.solubility_law
-                        == subdomain_1.material.solubility_law
-                    ):
-                        left = u_b / K_b
-                        right = u_t / K_t
-                    else:
-                        if subdomain_0.material.solubility_law == "henry":
+                match self.method_interface:
+                    case InterfaceMethod.penalty:
+                        if (
+                            subdomain_0.material.solubility_law
+                            == subdomain_1.material.solubility_law
+                        ):
                             left = u_b / K_b
-                        elif subdomain_0.material.solubility_law == "sievert":
-                            left = (u_b / K_b) ** 2
-                        else:
-                            raise ValueError(
-                                f"Unknown material law "
-                                f"{subdomain_0.material.solubility_law}"
-                            )
-
-                        if subdomain_1.material.solubility_law == "henry":
                             right = u_t / K_t
-                        elif subdomain_1.material.solubility_law == "sievert":
-                            right = (u_t / K_t) ** 2
                         else:
-                            raise ValueError(
-                                f"Unknown material law "
-                                f"{subdomain_1.material.solubility_law}"
-                            )
+                            match subdomain_0.material.solubility_law:
+                                case SolubilityLaw.HENRY:
+                                    left = u_b / K_b
+                                case SolubilityLaw.SIEVERT:
+                                    left = (u_b / K_b) ** 2
+                                case _:
+                                    raise ValueError(
+                                        "Unsupported material law "
+                                        + f"{subdomain_0.material.solubility_law}"
+                                    )
 
-                    equality = right - left
+                            match subdomain_1.material.solubility_law:
+                                case SolubilityLaw.HENRY:
+                                    right = u_t / K_t
+                                case SolubilityLaw.SIEVERT:
+                                    right = (u_t / K_t) ** 2
+                                case _:
+                                    raise ValueError(
+                                        f"Unsupported material law "
+                                        f"{subdomain_1.material.solubility_law}"
+                                    )
 
-                    F_0 = (
-                        interface.penalty_term
-                        * ufl.inner(equality, v_b)
-                        * dInterface(interface.id)
-                    )
-                    F_1 = (
-                        -interface.penalty_term
-                        * ufl.inner(equality, v_t)
-                        * dInterface(interface.id)
-                    )
+                        equality = right - left
 
-                    subdomain_0.F += F_0
-                    subdomain_1.F += F_1
+                        F_0 = (
+                            interface.penalty_term
+                            * ufl.inner(equality, v_b)
+                            * dInterface(interface.id)
+                        )
+                        F_1 = (
+                            -interface.penalty_term
+                            * ufl.inner(equality, v_t)
+                            * dInterface(interface.id)
+                        )
 
-                elif self.method_interface == "nietsche":
-                    F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
-                        interface.id
-                    ) - 0.5 * mixed_term(
-                        v_b, (u_b / K_b - u_t / K_t), n_0
-                    ) * dInterface(interface.id)
+                        subdomain_0.F += F_0
+                        subdomain_1.F += F_1
+                    case InterfaceMethod.nitsche:
+                        F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
+                            interface.id
+                        ) - 0.5 * mixed_term(
+                            v_b, (u_b / K_b - u_t / K_t), n_0
+                        ) * dInterface(interface.id)
 
-                    F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
-                        interface.id
-                    ) - 0.5 * mixed_term(
-                        v_t, (u_b / K_b - u_t / K_t), n_0
-                    ) * dInterface(interface.id)
-                    F_0 += (
-                        2
-                        * gamma
-                        / (h_0 + h_1)
-                        * (u_b / K_b - u_t / K_t)
-                        * v_b
-                        * dInterface(interface.id)
-                    )
-                    F_1 += (
-                        -2
-                        * gamma
-                        / (h_0 + h_1)
-                        * (u_b / K_b - u_t / K_t)
-                        * v_t
-                        * dInterface(interface.id)
-                    )
+                        F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
+                            interface.id
+                        ) - 0.5 * mixed_term(
+                            v_t, (u_b / K_b - u_t / K_t), n_0
+                        ) * dInterface(interface.id)
+                        F_0 += (
+                            2
+                            * gamma
+                            / (h_0 + h_1)
+                            * (u_b / K_b - u_t / K_t)
+                            * v_b
+                            * dInterface(interface.id)
+                        )
+                        F_1 += (
+                            -2
+                            * gamma
+                            / (h_0 + h_1)
+                            * (u_b / K_b - u_t / K_t)
+                            * v_t
+                            * dInterface(interface.id)
+                        )
 
-                    subdomain_0.F += F_0
-                    subdomain_1.F += F_1
-
+                        subdomain_0.F += F_0
+                        subdomain_1.F += F_1
+                    case _:
+                        raise ValueError(
+                            f"Unknown interface method {self.method_interface}"
+                        )
         J = []
         # this is the symbolic differentiation of the Jacobian
         for subdomain1 in self.volume_subdomains:

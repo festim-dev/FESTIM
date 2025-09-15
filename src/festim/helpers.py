@@ -1,12 +1,10 @@
 from collections.abc import Callable
-from typing import Optional
 
 import dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
 from packaging import version
-import dolfinx
 
 
 def as_fenics_constant(
@@ -36,9 +34,9 @@ def as_fenics_constant(
 
 def as_mapped_function(
     value: Callable,
-    function_space: Optional[fem.functionspace] = None,
-    t: Optional[fem.Constant] = None,
-    temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
+    function_space: fem.functionspace | None = None,
+    t: fem.Constant | None = None,
+    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
 ) -> ufl.core.expr.Expr:
     """Maps a user given callable function to the mesh, time or temperature within
     festim as needed
@@ -71,8 +69,8 @@ def as_mapped_function(
 def as_fenics_interp_expr_and_function(
     value: Callable,
     function_space: dolfinx.fem.function.FunctionSpace,
-    t: Optional[fem.Constant] = None,
-    temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
+    t: fem.Constant | None = None,
+    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
 ) -> tuple[fem.Expression, fem.Function]:
     """Takes a user given callable function, maps the function to the mesh, time or
     temperature within festim as needed. Then creates the fenics interpolation
@@ -203,10 +201,10 @@ class Value:
 
     def convert_input_value(
         self,
-        function_space: Optional[dolfinx.fem.function.FunctionSpace] = None,
-        t: Optional[fem.Constant] = None,
-        temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
-        up_to_ufl_expr: Optional[bool] = False,
+        function_space: dolfinx.fem.function.FunctionSpace | None = None,
+        t: fem.Constant | None = None,
+        temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
+        up_to_ufl_expr: bool | None = False,
     ):
         """Converts a user given value to a relevent fenics object depending
         on the type of the value provided
@@ -293,8 +291,8 @@ else:
 def nmm_interpolate(
     f_out: fem.Function,
     f_in: fem.Function,
-    cells: Optional[dolfinx.mesh.meshtags] = None,
-    padding: Optional[float] = 1e-11,
+    cells: dolfinx.mesh.meshtags | None = None,
+    padding: float | None = 1e-11,
 ):
     """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
     another function (f_out) with a mismatching mesh

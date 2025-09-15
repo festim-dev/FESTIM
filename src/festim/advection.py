@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from typing import Optional
 
 import basix
 import ufl
@@ -123,7 +122,7 @@ class VelocityField(Value):
     def convert_input_value(
         self,
         function_space: fem.FunctionSpace,
-        t: Optional[fem.Constant] = None,
+        t: fem.Constant | None = None,
     ):
         """Converts a user given value to a relevent fenics object
 

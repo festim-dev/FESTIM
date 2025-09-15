@@ -1,7 +1,8 @@
-from festim.boundary_conditions import ParticleFluxBC
-from festim import k_B
-from dolfinx import fem
 import ufl
+from dolfinx import fem
+
+from festim import k_B
+from festim.boundary_conditions import ParticleFluxBC
 
 
 class SurfaceReactionBCpartial(ParticleFluxBC):

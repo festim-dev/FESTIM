@@ -1,6 +1,7 @@
 from mpi4py import MPI
-import numpy as np
+
 import dolfinx
+import numpy as np
 
 from festim.exports.volume_quantity import VolumeQuantity
 

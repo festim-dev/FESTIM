@@ -1,7 +1,9 @@
 import dolfinx
-import festim as F
 import numpy as np
 import pytest
+
+import festim as F
+
 from .test_multi_mat_penalty import generate_mesh
 
 

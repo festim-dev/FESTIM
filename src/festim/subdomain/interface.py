@@ -25,7 +25,7 @@ class Interface:
         Args:
             id (int): the tag of the interface subdomain in the parent meshtags
             subdomains (list[F.VolumeSubdomain]): the subdomains sharing this interface
-            penalty_term (float, optional): Penalty term in the Nietsche DG formulation.
+            penalty_term (float, optional): Penalty term in the Nitsche DG formulation.
                 Needs to be "sufficiently large". Defaults to 10.0.
         """
         self.id = id

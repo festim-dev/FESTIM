@@ -1,6 +1,7 @@
+from collections.abc import Callable
+
 import dolfinx
 import numpy as np
-from typing import Callable
 
 
 class SurfaceSubdomain:

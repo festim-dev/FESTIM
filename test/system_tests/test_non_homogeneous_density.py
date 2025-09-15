@@ -1,9 +1,10 @@
-import festim as F
-import ufl
+import basix
+import dolfinx.fem as fem
 import numpy as np
 import pytest
-import dolfinx.fem as fem
-import basix
+import ufl
+
+import festim as F
 
 step_function_space = lambda x: ufl.conditional(ufl.gt(x[0], 0.5), 10, 0.0)
 step_function_time_non_homogeneous = lambda x, t: ufl.conditional(

@@ -1,11 +1,12 @@
+import types
 from collections.abc import Callable
 
 import dolfinx
 import numpy as np
 from dolfinx.mesh import Mesh, locate_entities
 from numpy import typing as npt
-import types
-from festim.helpers_discontinuity import transfer_meshtags_to_submesh
+from scifem.mesh import transfer_meshtags_to_submesh
+
 from festim.material import Material
 
 # Define the appropriate method based on the version
@@ -80,7 +81,7 @@ class VolumeSubdomain:
         # Transfer meshtags to submesh
         assert self.submesh is not None, "Need to call create_subdomain first"
         self.ft, self.facet_to_parent = transfer_meshtags_to_submesh(
-            mesh, tag, self.submesh, self.v_map, self.cell_map
+            tag, self.submesh, self.v_map, self.cell_map
         )
 
     def locate_subdomain_entities(self, mesh: Mesh) -> npt.NDArray[np.int32]:

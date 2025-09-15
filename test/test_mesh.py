@@ -177,6 +177,7 @@ def test_create_1D_mesh_parallel(cluster):
 
     def create_mesh():
         import numpy as np
+
         import festim as F
 
         F.Mesh1D(vertices=np.linspace(0, 1, num=1001))
