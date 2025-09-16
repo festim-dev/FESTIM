@@ -184,7 +184,7 @@ class ProblemBase:
                     "ksp_type": "preonly",
                     "pc_type": "lu",
                     "pc_factor_mat_solver_type": linear_solver,
-                    # "snes_monitor": None,
+                    "snes_monitor": None,
                 }
             else:
                 petsc_options = self.petsc_options

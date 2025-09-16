@@ -58,7 +58,7 @@ class Mesh:
     """
 
     mesh: dolfinx.mesh.Mesh
-    coordinate_system: CoordinateSystem
+    _coordinate_system: CoordinateSystem
 
     vdim: int
     fdim: int
@@ -80,10 +80,6 @@ class Mesh:
             self._mesh.topology.create_connectivity(
                 self._mesh.topology.dim - 1, self._mesh.topology.dim
             )
-        # NOTE: Can be removed when Python 3.11+ is used
-        if isinstance(coordinate_system, str):
-            self.coordinate_system = CoordinateSystem.from_string(coordinate_system)
-        else:
             self.coordinate_system = coordinate_system
 
         self.check_mesh_dim_coords()

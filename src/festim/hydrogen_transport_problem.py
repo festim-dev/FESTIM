@@ -839,7 +839,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             )
                         case _:
                             raise NotImplementedError(
-                                f"Unknown coordinate system {self.mesh.coordinate_system}"
+                                f"Unknown coordinate system {self.mesh.coordinate_system!s}"
                             )
 
                 if self.settings.transient:
