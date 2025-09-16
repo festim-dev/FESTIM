@@ -1,4 +1,5 @@
 import numpy as np
+
 from festim.species import Species
 from festim.subdomain import VolumeSubdomain
 

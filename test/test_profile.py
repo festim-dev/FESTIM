@@ -1,6 +1,7 @@
-import festim as F
 import numpy as np
 import pytest
+
+import festim as F
 
 
 @pytest.mark.parametrize("times", [None, [2, 5], [5]])

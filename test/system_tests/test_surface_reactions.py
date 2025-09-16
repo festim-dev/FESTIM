@@ -1,8 +1,8 @@
-import festim as F
-import numpy as np
-
-import ufl
 import dolfinx.fem as fem
+import numpy as np
+import ufl
+
+import festim as F
 
 
 # TODO add this to the festim package

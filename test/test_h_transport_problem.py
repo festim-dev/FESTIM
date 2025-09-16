@@ -7,6 +7,7 @@ import tqdm.autonotebook
 import ufl
 from dolfinx import default_scalar_type, fem, nls
 from packaging.version import Version
+
 import festim as F
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))

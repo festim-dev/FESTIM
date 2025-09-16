@@ -1,11 +1,12 @@
 from types import LambdaType
 
+from mpi4py import MPI
+
+import adios4dolfinx
+import dolfinx
 import numpy as np
 import pytest
 from dolfinx import fem
-import dolfinx
-from mpi4py import MPI
-import adios4dolfinx
 
 import festim as F
 

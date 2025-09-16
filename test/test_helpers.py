@@ -1,6 +1,5 @@
 from mpi4py import MPI
 
-import basix
 import dolfinx.mesh
 import numpy as np
 import pytest
@@ -294,7 +293,7 @@ def test_velocity_field_convert_input_error_when_callable_doesnt_return_fem_func
 
     with pytest.raises(
         ValueError,
-        match=f"A time dependent advection field should return an fem.Function, not a <class 'ufl.algebra.Product'>",
+        match="A time dependent advection field should return an fem.Function, not a <class 'ufl.algebra.Product'>",
     ):
         test_value.convert_input_value(function_space=test_function_space, t=t)
 

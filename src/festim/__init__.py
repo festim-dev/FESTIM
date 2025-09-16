@@ -35,7 +35,7 @@ from .exports.surface_quantity import SurfaceQuantity
 from .exports.total_surface import TotalSurface
 from .exports.total_volume import TotalVolume
 from .exports.volume_quantity import VolumeQuantity
-from .exports.vtx import VTXSpeciesExport, VTXTemperatureExport, ExportBaseClass
+from .exports.vtx import ExportBaseClass, VTXSpeciesExport, VTXTemperatureExport
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (
@@ -49,14 +49,15 @@ from .hydrogen_transport_problem import (
     HydrogenTransportProblem,
     HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblemDiscontinuousChangeVar,
+    InterfaceMethod,
 )
 from .initial_condition import (
-    InitialConditionBase,
     InitialConcentration,
+    InitialConditionBase,
     InitialTemperature,
     read_function_from_file,
 )
-from .material import Material
+from .material import Material, SolubilityLaw
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF

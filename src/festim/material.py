@@ -1,10 +1,31 @@
-from typing import Optional
+from enum import Enum
 
 import ufl
 from dolfinx import fem
 
 from festim import k_B
 from festim.helpers import as_fenics_constant
+
+
+class SolubilityLaw(Enum):
+    SIEVERT = 10
+    HENRY = 20
+    NONE = 30
+
+    @classmethod
+    def from_string(cls, s: str):
+        """Can be removed with Python 3.11+."""
+        s = s.lower()
+        if s == "sievert":
+            return cls.SIEVERT
+        elif s == "henry":
+            return cls.HENRY
+        elif s == "none":
+            return cls.NONE
+        else:
+            raise ValueError(
+                "solubility_law must be one of 'sievert', 'henry', or 'none'"
+            )
 
 
 class Material:
@@ -24,7 +45,10 @@ class Material:
         thermal_conductivity: the thermal conductivity of the material (W/m/K)
         density: the density of the material (kg/m3)
         heat_capacity: the heat capacity of the material (J/kg/K)
-        solubility_law: the solubility law of the material ("sievert" or "henry")
+        solubility_law: the solubility law of the material (SIEVERT, HENRY or NONE).
+            For single material problems one can use NONE. This does not work for
+            multi-material problems
+
         D: the diffusion coefficient of the material (m2/s)
 
     Attributes:
@@ -40,8 +64,9 @@ class Material:
         thermal_conductivity: the thermal conductivity of the material (W/m/K)
         density: the density of the material (kg/m3)
         heat_capacity: the heat capacity of the material (J/kg/K)
-        solubility_law: the solubility law of the material ("sievert" or "henry")
-        D: the diffusion coefficient of the material (m2/s)
+        solubility_law: the solubility law of the material (SIEVERT, HENRY or NONE).
+            For single material problems one can use NONE. This does not work for
+            multi-material problems
 
     Examples:
         .. testsetup:: Material
@@ -63,16 +88,16 @@ class Material:
 
     def __init__(
         self,
-        D_0: Optional[float | int | fem.Function | dict[float, int]] = None,
-        E_D: Optional[float | int | fem.Function | dict[float, int]] = None,
-        K_S_0: Optional[float | int | dict[float, int]] = None,
-        E_K_S: Optional[float | int | dict[float, int]] = None,
-        thermal_conductivity: Optional[float] = None,
-        density: Optional[float] = None,
-        heat_capacity: Optional[float] = None,
-        name: Optional[str] = None,
-        solubility_law: Optional[str] = None,
-        D: Optional[fem.Function] = None,
+        D_0: float | int | fem.Function | dict[float, int] | None = None,
+        E_D: float | int | fem.Function | dict[float, int] | None = None,
+        K_S_0: float | int | dict[float, int] | None = None,
+        E_K_S: float | int | dict[float, int] | None = None,
+        thermal_conductivity: float | None = None,
+        density: float | None = None,
+        heat_capacity: float | None = None,
+        name: str | None = None,
+        solubility_law: SolubilityLaw | str = SolubilityLaw.NONE,
+        D: fem.Function | None = None,
     ) -> None:
         self.D_0 = D_0
         self.E_D = E_D
@@ -90,6 +115,19 @@ class Material:
             raise ValueError(
                 "D_0 and D cannot be set at the same time. Please set only one of them."
             )
+
+    @property
+    def solubility_law(self):
+        return self._solubility_law
+
+    @solubility_law.setter
+    def solubility_law(self, value):
+        if isinstance(value, SolubilityLaw):
+            self._solubility_law = value
+        elif isinstance(value, str):
+            self._solubility_law = SolubilityLaw.from_string(value)
+        else:
+            raise ValueError(f"Could not set solubility law {value=}")
 
     @property
     def D(self):

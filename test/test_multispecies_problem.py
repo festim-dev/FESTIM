@@ -1,11 +1,12 @@
 from petsc4py import PETSc
 
+import dolfinx
 import numpy as np
 from dolfinx.fem import Constant
-from ufl import exp
 from packaging.version import Version
+from ufl import exp
+
 import festim as F
-import dolfinx
 
 
 def relative_error_computed_to_analytical(

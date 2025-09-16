@@ -1,4 +1,4 @@
-from typing import Optional, Union, List
+from typing import Union
 
 from ufl import exp
 from ufl.core.expr import Expr
@@ -62,7 +62,7 @@ class Reaction:
         k_0: float,
         E_k: float,
         volume: VS1D,
-        product: Optional[Union[_Species, list[_Species]]] = [],
+        product: Union[_Species, list[_Species]] | None = [],
         p_0: float = None,
         E_p: float = None,
     ) -> None:
@@ -114,8 +114,8 @@ class Reaction:
     def reaction_term(
         self,
         temperature,
-        reactant_concentrations: List = None,
-        product_concentrations: List = None,
+        reactant_concentrations: list = None,
+        product_concentrations: list = None,
     ) -> Expr:
         """Compute the reaction term at a given temperature.
 

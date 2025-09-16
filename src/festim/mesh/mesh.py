@@ -1,8 +1,43 @@
+from enum import Enum
+
 import dolfinx
 import numpy as np
 import ufl
 from dolfinx.mesh import Mesh as dolfinx_Mesh
 from dolfinx.mesh import meshtags
+
+__all__ = ["CoordinateSystem", "Mesh"]
+
+
+class CoordinateSystem(Enum):
+    CARTESIAN = 10
+    CYLINDRICAL = 20
+    SPHERICAL = 30
+
+    @classmethod
+    def from_string(cls, s: str):
+        """Can be removed with Python 3.11+."""
+        s = s.lower()
+        if s == "cartesian":
+            return cls.CARTESIAN
+        elif s == "cylindrical":
+            return cls.CYLINDRICAL
+        elif s == "spherical":
+            return cls.SPHERICAL
+        else:
+            raise ValueError(
+                "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"
+            )
+
+    def __str__(self):
+        if self == CoordinateSystem.CARTESIAN:
+            return "cartesian"
+        elif self == CoordinateSystem.CYLINDRICAL:
+            return "cylindrical"
+        elif self == CoordinateSystem.SPHERICAL:
+            return "spherical"
+        else:
+            raise ValueError("Invalid CoordinateSystem value")
 
 
 class Mesh:
@@ -23,7 +58,7 @@ class Mesh:
     """
 
     mesh: dolfinx.mesh.Mesh
-    coordinate_system: str | None
+    _coordinate_system: CoordinateSystem
 
     vdim: int
     fdim: int
@@ -32,7 +67,7 @@ class Mesh:
     def __init__(
         self,
         mesh: dolfinx_Mesh | None = None,
-        coordinate_system: str | None = "cartesian",
+        coordinate_system: str | CoordinateSystem = CoordinateSystem.CARTESIAN,
     ):
         self.mesh = mesh
         if self._mesh is not None:
@@ -45,7 +80,7 @@ class Mesh:
             self._mesh.topology.create_connectivity(
                 self._mesh.topology.dim - 1, self._mesh.topology.dim
             )
-        self.coordinate_system = coordinate_system
+            self.coordinate_system = coordinate_system
 
         self.check_mesh_dim_coords()
 
@@ -66,12 +101,13 @@ class Mesh:
 
     @coordinate_system.setter
     def coordinate_system(self, value):
-        if value in ["cartesian", "cylindrical", "spherical"]:
+        if isinstance(value, CoordinateSystem):
             self._coordinate_system = value
+        elif isinstance(value, str):
+            self._coordinate_system = CoordinateSystem.from_string(value)
         else:
             raise ValueError(
-                "coordinate_system must be one of 'cartesian', "
-                "'cylindrical', or 'spherical'"
+                "coordinate_system must be of type str or CoordinateSystem"
             )
 
     @property
@@ -177,11 +213,11 @@ class Mesh:
         """Checks if the used coordinates can be applied for geometry with the specified
         dimensions"""
 
-        if self.coordinate_system == "spherical" and self.vdim != 1:
+        if self.coordinate_system == CoordinateSystem.SPHERICAL and self.vdim != 1:
             raise AttributeError(
                 "spherical coordinates can be used for one-dimensional domains only"
             )
-        if self.coordinate_system == "cylindrical" and self.vdim == 3:
+        if self.coordinate_system == CoordinateSystem.CYLINDRICAL and self.vdim == 3:
             raise AttributeError(
                 "cylindrical coordinates cannot be used for 3D domains"
             )

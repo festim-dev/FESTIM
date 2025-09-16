@@ -1,9 +1,10 @@
 from mpi4py import MPI
 
+import basix
 import dolfinx
 import dolfinx.fem.petsc
 import numpy as np
-import basix
+
 import festim as F
 
 

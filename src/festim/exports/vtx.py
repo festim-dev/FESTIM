@@ -1,8 +1,6 @@
 import warnings
 from pathlib import Path
-from typing import Optional
 
-import numpy as np
 from dolfinx import fem, io
 
 from festim.species import Species
@@ -30,7 +28,7 @@ class ExportBaseClass:
         self,
         filename: str | Path,
         ext: str,
-        times: Optional[list[float] | list[int] | None] = None,
+        times: list[float] | list[int] | None | None = None,
     ):
         name = Path(filename)
         if name.suffix != ext:
@@ -70,7 +68,7 @@ class VTXTemperatureExport(ExportBaseClass):
     def __init__(
         self,
         filename: str | Path,
-        times: Optional[list[float] | list[int] | None] = None,
+        times: list[float] | list[int] | None | None = None,
     ):
         super().__init__(filename, ".bp", times)
 
@@ -106,7 +104,7 @@ class VTXSpeciesExport(ExportBaseClass):
         field: Species | list[Species],
         subdomain: VolumeSubdomain = None,
         checkpoint: bool = False,
-        times: Optional[list[float] | list[int] | None] = None,
+        times: list[float] | list[int] | None | None = None,
     ):
         super().__init__(filename, ".bp", times)
         self.field = field
