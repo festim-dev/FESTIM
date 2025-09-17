@@ -103,7 +103,7 @@ html_theme_options = {
     "repository_url": "https://github.com/festim-dev/FESTIM",
     "use_repository_button": True,
     "use_edit_page_button": True,
-    "repository_branch": "main",
+    "repository_branch": "fenicsx",
     "path_to_docs": "./docs/source",
     "icon_links": [
         {
