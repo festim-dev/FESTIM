@@ -1629,10 +1629,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         subdomain_a.F += F_a
                         subdomain_b.F += F_b
                     case InterfaceMethod.nitsche:
-                        F_0 = -0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dInterface(
+                        F_0 = -0.5 * mixed_term((u_0 + u_1), v_0, n_0) * dInterface(
                             interface.id
                         ) - 0.5 * mixed_term(
-                            v_1, (u_0 / K_0 - u_1 / K_1), n_0
+                            v_0, (u_0 / K_0 - u_1 / K_1), n_0
                         ) * dInterface(interface.id)
 
                         F_1 = +0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dInterface(
@@ -1645,7 +1645,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             * gamma
                             / (h_0 + h_1)
                             * (u_0 / K_0 - u_1 / K_1)
-                            * v_1
+                            * v_0
                             * dInterface(interface.id)
                         )
                         F_1 += (
