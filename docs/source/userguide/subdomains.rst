@@ -139,7 +139,7 @@ Integration with HTM
 
 H-transport-materials (HTM) is a Python database of hydrogen transport properties. Using HTM helps prevent copy-paste errors and ensures consistency across simulations by using standardised property values.
 
-HTM can be easily `integrated with FESTIM <https://github.com/festim-dev/FESTIM-workshop/blob/main/tasks/task08.ipynb>`_.
+HTM can be easily `integrated with FESTIM <https://festim-workshop.readthedocs.io/en/latest/content/task09.html>`_.
 
 .. note::
 
