@@ -1551,13 +1551,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             # use other one for B
                             match subdomain_0.material.solubility_law:
                                 case SolubilityLaw.SIEVERT:
-                                    u_a, u_a_untraced, v_a, K_a = (
+                                    u_a, u_a_unrestricted, v_a, K_a = (
                                         u_0,
                                         u_0_unrestricted,
                                         v_0,
                                         K_0,
                                     )
-                                    u_b, u_b_untraced, v_b, K_b = (
+                                    u_b, u_b_unrestricted, v_b, K_b = (
                                         u_1,
                                         u_1_unrestricted,
                                         v_1,
@@ -1566,13 +1566,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                                     subdomain_a = subdomain_0
                                     subdomain_b = subdomain_1
                                 case SolubilityLaw.HENRY:
-                                    u_a, u_a_untraced, v_a, K_a = (
+                                    u_a, u_a_unrestricted, v_a, K_a = (
                                         u_1,
                                         u_1_unrestricted,
                                         v_1,
                                         K_1,
                                     )
-                                    u_b, u_b_untraced, v_b, K_b = (
+                                    u_b, u_b_unrestricted, v_b, K_b = (
                                         u_0,
                                         u_0_unrestricted,
                                         v_0,
@@ -1583,13 +1583,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                             n_sorption = 0.5
                         else:
-                            u_a, u_a_untraced, v_a, K_a = (
+                            u_a, u_a_unrestricted, v_a, K_a = (
                                 u_0,
                                 u_0_unrestricted,
                                 v_0,
                                 K_0,
                             )
-                            u_b, u_b_untraced, v_b, K_b = (
+                            u_b, u_b_unrestricted, v_b, K_b = (
                                 u_1,
                                 u_1_unrestricted,
                                 v_1,
@@ -1607,8 +1607,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         u_b_padded = ufl.conditional(cond_b, u_b, tol)
                         equation = u_a - K_a * (u_b_padded / K_b) ** n_sorption
 
-                        deq_du_a = ufl.inner(ufl.diff(equation, u_a_untraced)[0], v_a)
-                        deq_du_b = ufl.inner(ufl.diff(equation, u_b_untraced)[0], v_b)
+                        deq_du_a = ufl.inner(
+                            ufl.diff(equation, u_a_unrestricted)[0], v_a
+                        )
+                        deq_du_b = ufl.inner(
+                            ufl.diff(equation, u_b_unrestricted)[0], v_b
+                        )
                         F_a = (
                             interface.penalty_term
                             * equation
