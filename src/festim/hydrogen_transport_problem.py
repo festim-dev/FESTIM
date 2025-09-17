@@ -1527,6 +1527,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 u_0 = H.subdomain_to_solution[subdomain_0](res[0])
                 u_1 = H.subdomain_to_solution[subdomain_1](res[1])
 
+                u_0_unrestricted = H.subdomain_to_solution[subdomain_0].ufl_operands[0]
+                u_1_unrestricted = H.subdomain_to_solution[subdomain_1].ufl_operands[0]
+
                 K_0 = subdomain_0.material.get_solubility_coefficient(
                     self.mesh.mesh, self.temperature_fenics(res[0]), H
                 )
@@ -1536,13 +1539,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                 match self.method_interface:
                     case InterfaceMethod.penalty:
-
-                        def tr_a(v):
-                            return v("+")
-
-                        def tr_b(v):
-                            return v("-")
-
                         # Add penalty term for alpha/2 * equation**2 dGamma
                         # omega_A is Sieverts
                         # omeaga_B is Henry
@@ -1555,68 +1551,103 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             # use other one for B
                             match subdomain_0.material.solubility_law:
                                 case SolubilityLaw.SIEVERT:
-                                    u_a, v_a, K_a = u_0, v_0, K_0
-                                    u_b, v_b, K_b = u_1, v_1, K_1
+                                    u_a, u_a_untraced, v_a, K_a = (
+                                        u_0,
+                                        u_0_unrestricted,
+                                        v_0,
+                                        K_0,
+                                    )
+                                    u_b, u_b_untraced, v_b, K_b = (
+                                        u_1,
+                                        u_1_unrestricted,
+                                        v_1,
+                                        K_1,
+                                    )
+                                    subdomain_a = subdomain_0
+                                    subdomain_b = subdomain_1
                                 case SolubilityLaw.HENRY:
-                                    u_a, v_a, K_a = u_1, v_1, K_1
-                                    u_b, v_b, K_b = u_0, v_0, K_0
+                                    u_a, u_a_untraced, v_a, K_a = (
+                                        u_1,
+                                        u_1_unrestricted,
+                                        v_1,
+                                        K_1,
+                                    )
+                                    u_b, u_b_untraced, v_b, K_b = (
+                                        u_0,
+                                        u_0_unrestricted,
+                                        v_0,
+                                        K_0,
+                                    )
+                                    subdomain_a = subdomain_1
+                                    subdomain_b = subdomain_0
 
                             n_sorption = 0.5
                         else:
-                            u_a, v_a, K_a = u_0, v_0, K_0
-                            u_b, v_b, K_b = u_1, v_1, K_1
+                            u_a, u_a_untraced, v_a, K_a = (
+                                u_0,
+                                u_0_unrestricted,
+                                v_0,
+                                K_0,
+                            )
+                            u_b, u_b_untraced, v_b, K_b = (
+                                u_1,
+                                u_1_unrestricted,
+                                v_1,
+                                K_1,
+                            )
                             n_sorption = 1
 
                         tol = dolfinx.fem.Constant(
                             mesh, 1e2 * np.finfo(dolfinx.default_scalar_type).eps
                         )
-                        cond_b = ufl.gt(abs(tr_b(u_b)), tol)
-                        u_b_padded = ufl.conditional(cond_b, tr_b(u_b), tol)
-                        equation = tr_a(u_a) - K_a * (u_b_padded / K_b) ** n_sorption
-                        deq_du_a = ufl.diff(equation, u_a) * tr_a(v_a)
-                        deq_du_b = ufl.diff(equation, u_b) * tr_b(v_b)
 
-                        F_0 = (
+                        cond_b = ufl.gt(abs(u_b), tol)
+                        u_b_padded = ufl.conditional(cond_b, u_b, tol)
+                        equation = u_a - K_a * (u_b_padded / K_b) ** n_sorption
+
+                        deq_du_a = ufl.inner(ufl.diff(equation, u_a_untraced)[0], v_a)
+                        deq_du_b = ufl.inner(ufl.diff(equation, u_b_untraced)[0], v_b)
+                        F_a = (
                             interface.penalty_term
                             * equation
                             * deq_du_a
                             * dInterface(interface.id)
                         )
-                        F_1 = (
-                            -interface.penalty_term
+                        F_b = (
+                            interface.penalty_term
                             * equation
                             * deq_du_b
                             * dInterface(interface.id)
                         )
 
-                        subdomain_0.F += F_0
-                        subdomain_1.F += F_1
+                        subdomain_a.F += F_a
+                        subdomain_b.F += F_b
                     case InterfaceMethod.nitsche:
-                        F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
+                        F_0 = -0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dInterface(
                             interface.id
                         ) - 0.5 * mixed_term(
-                            v_b, (u_b / K_b - u_t / K_t), n_0
+                            v_1, (u_0 / K_0 - u_1 / K_1), n_0
                         ) * dInterface(interface.id)
 
-                        F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
+                        F_1 = +0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dInterface(
                             interface.id
                         ) - 0.5 * mixed_term(
-                            v_t, (u_b / K_b - u_t / K_t), n_0
+                            v_1, (u_0 / K_0 - u_1 / K_1), n_0
                         ) * dInterface(interface.id)
                         F_0 += (
                             2
                             * gamma
                             / (h_0 + h_1)
-                            * (u_b / K_b - u_t / K_t)
-                            * v_b
+                            * (u_0 / K_0 - u_1 / K_1)
+                            * v_1
                             * dInterface(interface.id)
                         )
                         F_1 += (
                             -2
                             * gamma
                             / (h_0 + h_1)
-                            * (u_b / K_b - u_t / K_t)
-                            * v_t
+                            * (u_0 / K_0 - u_1 / K_1)
+                            * v_1
                             * dInterface(interface.id)
                         )
 
