@@ -1596,6 +1596,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                                 K_1,
                             )
                             n_sorption = 1
+                            subdomain_a = subdomain_0
+                            subdomain_b = subdomain_1
 
                         tol = dolfinx.fem.Constant(
                             mesh, 1e2 * np.finfo(dolfinx.default_scalar_type).eps
