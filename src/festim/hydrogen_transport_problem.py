@@ -1930,7 +1930,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def __del__(self):
         for export in self.exports:
             if isinstance(export, exports.ExportBaseClass):
-                export.writer.close()
+                if hasattr(export, "writer") and export.writer is not None:
+                    export.writer.close()
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):

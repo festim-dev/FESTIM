@@ -236,3 +236,12 @@ def test_temp_dependent_bc_mixed_domain_temperature_as_function():
         H.subdomain_to_post_processing_solution[top_domain].x.array[:].max()
     )
     assert np.isclose(computed_value, expected_value)
+
+
+def test_del():
+    """Test that deleting a model with exports works fine (no segfault)"""
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    H = F.Species("H")
+    my_model.exports = [F.VTXSpeciesExport(filename="h.bp", field=H)]
+
+    my_model.__del__()
