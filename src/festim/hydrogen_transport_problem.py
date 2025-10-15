@@ -814,10 +814,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
             v = spe.test_function
 
             for vol in self.volume_subdomains:
-                D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, spe
-                )
                 if spe.mobile:
+                    D = vol.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, spe
+                    )
                     match self.mesh.coordinate_system:
                         case CoordinateSystem.CARTESIAN:
                             self.formulation += ufl.dot(
