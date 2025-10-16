@@ -248,7 +248,7 @@ def test_del():
 
 
 def test_multispecies_with_immobile():
-    """test to catch bug 1035, that the diffusion coefficent for a non-mobile species
+    """test to catch bug 1036, that the diffusion coefficent for a non-mobile species
     is not requested in the dict given to material"""
 
     my_model = F.HydrogenTransportProblem()
