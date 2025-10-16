@@ -245,3 +245,42 @@ def test_del():
     my_model.exports = [F.VTXSpeciesExport(filename="h.bp", field=H)]
 
     my_model.__del__()
+
+
+def test_multispecies_with_immobile():
+    """test to catch bug 1035, that the diffusion coefficent for a non-mobile species
+    is not requested in the dict given to material"""
+
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=50))
+
+    H = F.Species("H")
+    D = F.Species("D")
+    trap = F.Species("trap", mobile=False)
+    trapping_site = F.ImplicitSpecies(n=100, others=[H])
+    my_model.species = [H, trap]
+
+    my_mat = F.Material(
+        D_0={H: 1, D: 1},
+        E_D={H: 0, D: 0},
+    )
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    my_model.subdomains = [vol]
+
+    my_model.reactions = [
+        F.Reaction(
+            reactant=[H, trapping_site],
+            k_0=1,
+            E_k=0,
+            p_0=1,
+            E_p=0,
+            product=[trap],
+            volume=vol,
+        )
+    ]
+
+    my_model.temperature = 500
+
+    my_model.settings = F.Settings(transient=False, atol=1e-10, rtol=1e-10)
+
+    my_model.initialise()
