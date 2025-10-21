@@ -18,12 +18,9 @@ from dolfinx.fem import (
     locate_dofs_geometrical,
     locate_dofs_topological,
 )
-from dolfinx.fem.petsc import (
-    NonlinearProblem,
-)
+from dolfinx.fem.petsc import NonlinearProblem
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import create_mesh, locate_entities, meshtags
-from dolfinx.nls.petsc import NewtonSolver
 from test_permeation_problem import test_permeation_problem
 from ufl import (
     FacetNormal,
@@ -131,26 +128,19 @@ def fenics_test_permeation_problem(mesh_size=1001):
         "snes_monitor": None,
     }
 
-    problem = NonlinearProblem(
+    solver = NonlinearProblem(
         F,
         u,
         bcs=bcs,
         petsc_options=petsc_options,
         petsc_options_prefix="festim_solver",
     )
-    solver = NewtonSolver(MPI.COMM_WORLD, problem)
 
-    solver.convergence_criterion = "incremental"
-    solver.rtol = 1e-10
-    solver.atol = 1e10
-    solver.report = True
-    ksp = solver.krylov_solver
+    snes = solver.solver
+    prefix = snes.getOptionsPrefix()
     opts = PETSc.Options()
-    option_prefix = ksp.getOptionsPrefix()
-    opts[f"{option_prefix}ksp_type"] = "cg"
-    opts[f"{option_prefix}pc_type"] = "gamg"
-    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-    ksp.setFromOptions()
+    for k in petsc_options.keys():
+        del opts[f"{prefix}{k}"]
 
     temp_dir = tempfile.TemporaryDirectory()
     mobile_xdmf = XDMFFile(
