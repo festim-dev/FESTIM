@@ -124,7 +124,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
         "snes_max_it": 30,
         "ksp_type": "preonly",
         "pc_type": "lu",
-        "pc_factor_mat_solver_type": "petsc",
+        "pc_factor_mat_solver_type": "mumps",
         "snes_monitor": None,
     }
 
