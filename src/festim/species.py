@@ -2,6 +2,7 @@ from typing import Union
 
 import ufl
 from dolfinx import fem
+from ufl.argument import Argument
 
 from festim.helpers import as_fenics_constant
 from festim.subdomain.volume_subdomain import (
@@ -14,40 +15,35 @@ class Species:
     Hydrogen species class for H transport simulation.
 
     Args:
-        name (str, optional): a name given to the species. Defaults to None.
-        mobile (bool, optional): whether the species is mobile or not.
-            Defaults to True.
-        subdomain (F.VolumeSubdomain, optional): the volume subdomain where the
-            species is. Defaults to None.
+        name: a name given to the species. Defaults to None.
+        mobile: whether the species is mobile or not. Defaults to True.
+        subdomain: the volume subdomain where the species is. Defaults to None.
 
     Attributes:
-        name (str): a name given to the species.
-        mobile (bool): whether the species is mobile or not.
-        solution (dolfinx.fem.Function): the solution for the current timestep
-        prev_solution (dolfinx.fem.Function): the solution for the previous
-            timestep
-        test_function (ufl.Argument): the testfunction associated with this
-            species
-        sub_function_space (dolfinx.fem.function.FunctionSpaceBase): the
-            subspace of the function space
-        collapsed_function_space (dolfinx.fem.function.FunctionSpaceBase): the
-            collapsed function space for a species in the function space. In
-            case single species case, this is None.
-        post_processing_solution (dolfinx.fem.Function): the solution for post
-            processing
-        concentration (dolfinx.fem.Function): the concentration of the species
-        subdomains (F.VolumeSubdomain): the volume subdomains where the species is
-        subdomain_to_solution (dict): a dictionary mapping subdomains to solutions
-        subdomain_to_prev_solution (dict): a dictionary mapping subdomains to
-            previous solutions
-        subdomain_to_test_function (dict): a dictionary mapping subdomains to
-            test functions
-        subdomain_to_post_processing_solution (dict): a dictionary mapping
-            subdomains to post processing solutions
-        subdomain_to_collapsed_function_space (dict): a dictionary mapping
-            subdomains to collapsed function spaces
-        subdomain_to_function_space (dict): a dictionary mapping subdomains to
-            function spaces
+        name: a name given to the species.
+        mobile: whether the species is mobile or not.
+        solution: the solution for the current timestep
+        prev_solution: the solution for the previous timestep
+        test_function: the testfunction associated with this species
+        sub_function: the sub function of the species in case of multiple species in
+            the same function space
+        sub_function_space: the subspace of the function space
+        collapsed_function_space: the collapsed function space for a species in the
+            function space. In case single species case, this is None.
+        map_sub_to_main_solution: the mapping from the sub solution dofs to the main
+            solution dofs
+        post_processing_solution: the solution for post processing
+        concentration: the concentration of the species
+        subdomains: the volume subdomains where the species is
+        subdomain_to_solution: a dictionary mapping subdomains to solutions
+        subdomain_to_prev_solution: a dictionary mapping subdomains to previous
+            solutions
+        subdomain_to_test_function: a dictionary mapping subdomains to test functions
+        subdomain_to_post_processing_solution: a dictionary mapping subdomains to post
+            processing solutions
+        subdomain_to_collapsed_function_space: a dictionary mapping subdomains to
+            collapsed function spaces
+        subdomain_to_function_space: a dictionary mapping subdomains to function spaces
 
     Examples:
         :: testsetup:: Species
@@ -62,6 +58,17 @@ class Species:
 
     """
 
+    name: str | None
+    mobile: bool
+    solution: fem.Function | None
+    prev_solution: fem.Function | None
+    test_function: ufl.argument.Argument | None
+    sub_function_space: fem.function.FunctionSpace | None
+    collapsed_function_space: fem.function.FunctionSpace | None
+    map_sub_to_main_solution: list | None
+    post_processing_solution: fem.Function | None
+    concentration: fem.Function | None
+
     subdomains: list[_VolumeSubdomain] | _VolumeSubdomain
     subdomain_to_solution: dict
     subdomain_to_prev_solution: dict
@@ -70,16 +77,17 @@ class Species:
     subdomain_to_collapsed_function_space: dict
     subdomain_to_function_space: dict
 
-    def __init__(self, name: str = None, mobile=True, subdomains=None) -> None:
+    def __init__(self, name: str | None = None, mobile=True, subdomains=None) -> None:
         self.name = name
         self.mobile = mobile
         self.solution = None
         self.prev_solution = None
         self.test_function = None
-        self.sub_function_space = None
-        self.post_processing_solution = None
-        self.collapsed_function_space = None
         self.sub_function = None
+        self.sub_function_space = None
+        self.collapsed_function_space = None
+        self.map_sub_to_main_solution = None
+        self.post_processing_solution = None
 
         self.subdomains = subdomains
         self.subdomain_to_solution = {}
