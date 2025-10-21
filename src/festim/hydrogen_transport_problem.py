@@ -958,15 +958,18 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if advec_term.velocity.explicit_time_dependent:
                 advec_term.velocity.update(t=t)
 
-    def post_processing(self):
-        """Post processes the model"""
-
+    def update_solutions(self):
         # update post-processing for mixed function space
         if self.multispecies:
             for spe in self.species:
                 spe.post_processing_solution.x.array[:] = self.u.x.array[
                     spe.map_sub_to_main_solution
                 ]
+
+    def post_processing(self):
+        """Post processes the model"""
+
+        self.update_solutions()
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
@@ -2064,15 +2067,13 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 spe.dg_expr
             )  # NOTE: do we need this line since it's in initialise?
 
-    def post_processing(self):
+    def update_solutions(self):
         # need to compute c = theta * K_S
         # this expression is stored in species.dg_expr
         for spe in self.species:
             if not spe.mobile:
                 continue
             spe.post_processing_solution.interpolate(spe.dg_expr)
-
-        super().post_processing()
 
     def create_dirichletbc_form(self, bc: festim.FixedConcentrationBC):
         """Creates a dirichlet boundary condition form
