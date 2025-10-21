@@ -814,10 +814,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
             v = spe.test_function
 
             for vol in self.volume_subdomains:
-                D = vol.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, spe
-                )
                 if spe.mobile:
+                    D = vol.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, spe
+                    )
                     match self.mesh.coordinate_system:
                         case CoordinateSystem.CARTESIAN:
                             self.formulation += ufl.dot(
@@ -1384,13 +1384,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             u_n = spe.subdomain_to_prev_solution[subdomain]
             v = spe.subdomain_to_test_function[subdomain]
 
-            D = subdomain.material.get_diffusion_coefficient(
-                self.mesh.mesh, self.temperature_fenics, spe
-            )
             if self.settings.transient:
                 form += ((u - u_n) / self.dt) * v * self.dx(subdomain.id)
 
             if spe.mobile:
+                D = subdomain.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature_fenics, spe
+                )
                 match self.mesh.coordinate_system:
                     case CoordinateSystem.CARTESIAN:
                         form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
