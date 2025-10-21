@@ -2,7 +2,6 @@ from typing import Union
 
 import ufl
 from dolfinx import fem
-from ufl.argument import Argument
 
 from festim.helpers import as_fenics_constant
 from festim.subdomain.volume_subdomain import (
@@ -69,7 +68,7 @@ class Species:
     post_processing_solution: fem.Function | None
     concentration: fem.Function | None
 
-    subdomains: list[_VolumeSubdomain] | _VolumeSubdomain
+    subdomains: list[_VolumeSubdomain] | _VolumeSubdomain | None
     subdomain_to_solution: dict
     subdomain_to_prev_solution: dict
     subdomain_to_test_function: dict
@@ -77,7 +76,12 @@ class Species:
     subdomain_to_collapsed_function_space: dict
     subdomain_to_function_space: dict
 
-    def __init__(self, name: str | None = None, mobile=True, subdomains=None) -> None:
+    def __init__(
+        self,
+        name: str | None = None,
+        mobile: bool = True,
+        subdomains: list[_VolumeSubdomain] | _VolumeSubdomain | None = None,
+    ) -> None:
         self.name = name
         self.mobile = mobile
         self.solution = None
@@ -123,25 +127,31 @@ class ImplicitSpecies:
     c = n - others
 
     Args:
-        n (Union[float, callable]): the total concentration of the species
-        others (list[Species]): the list of species from which the implicit
-            species concentration is computed (c = n - others)
-        name (str, optional): a name given to the species. Defaults to None.
+        n: the total concentration of the species
+        others: the list of species from which the implicit species concentration is
+            computed (c = n - others)
+        name: a name given to the species. Defaults to None.
 
     Attributes:
-        name (str): a name given to the species.
-        n (float): the total concentration of the species
-        others (list[Species]): the list of species from which the implicit
-            species concentration is computed (c = n - others)
-        concentration (form): the concentration of the species
+        n: the total concentration of the species
+        others: the list of species from which the implicit species concentration is
+            computed (c = n - others)
+        name: a name given to the species. Defaults to None.
+        concentration: the concentration of the species
         value_fenics: the total concentration as a fenics object
     """
+
+    n: Union[float, callable]
+    others: list[Species] | None
+    name: str | None
+    concentration: ufl.form.Form
+    value_fenics: fem.Constant | ufl.core.expr.Expr
 
     def __init__(
         self,
         n: Union[float, callable],
-        others: list[Species] = None,
-        name: str = None,
+        others: list[Species] | None = None,
+        name: str | None = None,
     ) -> None:
         self.name = name
         self.n = n
@@ -177,10 +187,10 @@ class ImplicitSpecies:
         """
         x = ufl.SpatialCoordinate(mesh)
 
-        if isinstance(self.n, (int, float)):
+        if isinstance(self.n, int | float):
             self.value_fenics = as_fenics_constant(mesh=mesh, value=self.n)
 
-        elif isinstance(self.n, (fem.Function, ufl.core.expr.Expr)):
+        elif isinstance(self.n, fem.Function | ufl.core.expr.Expr):
             self.value_fenics = self.n
 
         elif callable(self.n):
@@ -188,9 +198,10 @@ class ImplicitSpecies:
 
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 # only t is an argument
-                if not isinstance(self.n(t=float(t)), (float, int)):
+                if not isinstance(self.n(t=float(t)), float | int):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {type(self.n(t=float(t)))} "
+                        "self.value should return a float or an int, not "
+                        f"{type(self.n(t=float(t)))}"
                     )
                 self.value_fenics = as_fenics_constant(
                     mesh=mesh, value=self.n(t=float(t))
@@ -210,7 +221,7 @@ class ImplicitSpecies:
         Args:
             t (float): the time
         """
-        if isinstance(self.n, (fem.Function, ufl.core.expr.Expr)):
+        if isinstance(self.n, fem.Function | ufl.core.expr.Expr):
             return
 
         if callable(self.n):
