@@ -20,7 +20,7 @@ jobs:
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
-        conda install -c conda-forge fenics-dolfinx=0.9.0 scifem adios4dolfinx
+        conda install -c conda-forge fenics-dolfinx=0.10.0 scifem adios4dolfinx
 
     - name: Install local package and dependencies
       shell: bash -l {0}
