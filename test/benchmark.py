@@ -158,7 +158,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
         progress.update(float(dt))
         t += float(dt)
 
-        solver.solve(u)
+        _ = solver.solve()
 
         mobile_xdmf.write_function(u, t)
 
