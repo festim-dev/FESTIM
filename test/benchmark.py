@@ -5,6 +5,7 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 import basix
+import dolfinx
 import numpy as np
 import tqdm.autonotebook
 from dolfinx.fem import (
@@ -116,8 +117,29 @@ def fenics_test_permeation_problem(mesh_size=1001):
     F = dot(D * grad(u), grad(v)) * dx(1)
     F += ((u - u_n) / dt) * v * dx(1)
 
-    problem = NonlinearProblem(F, u, bcs=bcs)
+    petsc_options = {
+        "snes_type": "newtonls",
+        "snes_linesearch_type": "none",
+        "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps) * 1e-2,
+        # TODO : make atol and rtol callable
+        "snes_atol": 1e10,
+        "snes_rtol": 1e-10,
+        "snes_max_it": 30,
+        "ksp_type": "preonly",
+        "pc_type": "lu",
+        "pc_factor_mat_solver_type": "petsc",
+        "snes_monitor": None,
+    }
+
+    problem = NonlinearProblem(
+        F,
+        u,
+        bcs=bcs,
+        petsc_options=petsc_options,
+        petsc_options_prefix="festim_solver",
+    )
     solver = NewtonSolver(MPI.COMM_WORLD, problem)
+
     solver.convergence_criterion = "incremental"
     solver.rtol = 1e-10
     solver.atol = 1e10
