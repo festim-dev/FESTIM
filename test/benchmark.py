@@ -119,13 +119,12 @@ def fenics_test_permeation_problem(mesh_size=1001):
         "snes_linesearch_type": "none",
         "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps) * 1e-2,
         # TODO : make atol and rtol callable
-        "snes_atol": 1e10,
+        "snes_atol": 1e-10,
         "snes_rtol": 1e-10,
         "snes_max_it": 30,
         "ksp_type": "preonly",
         "pc_type": "lu",
         "pc_factor_mat_solver_type": "mumps",
-        "snes_monitor": None,
     }
 
     solver = NonlinearProblem(
