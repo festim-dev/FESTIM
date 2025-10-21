@@ -964,8 +964,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
         # update post-processing for mixed function space
         if self.multispecies:
             for spe in self.species:
-                pp_sol = spe.sub_function.collapse()
-                spe.post_processing_solution.x.array[:] = pp_sol.x.array[:]
+                spe.post_processing_solution.x.array[:] = self.u.x.array[
+                    spe.map_sub_to_main_solution
+                ]
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
