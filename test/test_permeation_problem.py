@@ -83,8 +83,8 @@ def test_permeation_problem(mesh_size=1001):
     ]
 
     my_model.settings = F.Settings(
-        atol=0,
-        rtol=0,
+        atol=1e10,
+        rtol=1e-10,
         max_iterations=30,
         final_time=50,
     )
