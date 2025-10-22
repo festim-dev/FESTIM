@@ -6,6 +6,7 @@ import pytest
 import ufl
 from dolfinx.fem import Function, functionspace
 from dolfinx.mesh import create_unit_cube
+from ufl.indexed import Indexed
 
 import festim as F
 
@@ -22,7 +23,7 @@ def test_assign_functions_to_species():
         mesh=mesh,
         species=[
             F.Species(name="H"),
-            # F.Species(name="Trap"),
+            F.Species(name="Trap"),
         ],
     )
     model.define_function_spaces()
@@ -32,9 +33,9 @@ def test_assign_functions_to_species():
         assert spe.solution is not None
         assert spe.prev_solution is not None
         assert spe.test_function is not None
-        assert isinstance(spe.solution, dolfinx.fem.Function)
-        assert isinstance(spe.prev_solution, dolfinx.fem.Function)
-        assert isinstance(spe.test_function, ufl.Argument)
+        assert isinstance(spe.solution, ufl.indexed.Indexed)
+        assert isinstance(spe.prev_solution, ufl.indexed.Indexed)
+        assert isinstance(spe.test_function, ufl.indexed.Indexed)
 
 
 def test_species_repr_and_str():
