@@ -12,7 +12,7 @@ import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
-from scifem import BlockedNewtonSolver
+from packaging.version import Version
 
 import festim.boundary_conditions
 import festim.problem
@@ -41,6 +41,11 @@ from festim.helpers import (
 from festim.material import SolubilityLaw
 
 from .mesh import CoordinateSystem, Mesh
+
+if Version(dolfinx.__version__) > Version("0.9.0"):
+    from dolfinx.fem.petsc import NonlinearProblem
+else:
+    from scifem import BlockedNewtonSolver
 
 __all__ = [
     "HydrogenTransportProblem",
@@ -106,7 +111,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
             model
         formulation (ufl.form.Form): the formulation of the model
         solver (dolfinx.nls.newton.NewtonSolver): the solver of the model
-        multispecies (bool): True if the model has more than one species.
         temperature_fenics (fem.Constant or fem.Function): the
             temperature of the model as a fenics object (fem.Constant or
             fem.Function).
@@ -255,10 +259,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
             return "t" in arguments
         else:
             return False
-
-    @property
-    def multispecies(self):
-        return len(self.species) > 1
 
     @property
     def species(self) -> list[_species.Species]:
@@ -569,15 +569,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D.interpolate(D_expr)
         return D, D_expr
 
-    def define_function_spaces(self, element_degree=1):
-        """Creates the function space of the model, creates a mixed element if
-        model is multispecies. Creates the main solution and previous solution
-        function u and u_n. Create global DG function spaces of degree 0 and 1
-        for the global diffusion coefficient.
+    def define_function_spaces(self, element_degree: int = 1):
+        """Creates the function space of the modelw with a mixed element. Creates the
+        main solution and previous solution function u and u_n. Create global DG
+        function spaces of degree 0 and 1 for the global diffusion coefficient.
 
         Args:
-            element_degree (int, optional): Degree order for finite element.
-                Defaults to 1.
+            element_degree: Degree order for finite element. Defaults to 1.
         """
 
         element_CG = basix.ufl.element(
@@ -593,19 +591,16 @@ class HydrogenTransportProblem(problem.ProblemBase):
             basix.LagrangeVariant.equispaced,
         )
 
-        if not self.multispecies:
-            element = element_CG
-        else:
-            elements = []
-            for spe in self.species:
-                if isinstance(spe, _species.Species):
-                    if spe.mobile:
-                        elements.append(element_CG)
-                    elif self._element_for_traps == "DG":
-                        elements.append(element_DG)
-                    else:
-                        elements.append(element_CG)
-            element = basix.ufl.mixed_element(elements)
+        elements = []
+        for spe in self.species:
+            if isinstance(spe, _species.Species):
+                if spe.mobile:
+                    elements.append(element_CG)
+                elif self._element_for_traps == "DG":
+                    elements.append(element_DG)
+                else:
+                    elements.append(element_CG)
+        element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
 
@@ -629,22 +624,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.u_n = fem.Function(self.function_space)
 
     def assign_functions_to_species(self):
-        """Creates the solution, prev solution, test function and
-        post-processing solution for each species, if model is multispecies,
-        created a collapsed function space for each species"""
+        """Creates the solution, prev solution, test function and post-processing
+        solution for each species, as well as a collapsed function space for each
+        species"""
 
-        if not self.multispecies:
-            sub_solutions = [self.u]
-            sub_prev_solution = [self.u_n]
-            sub_test_functions = [ufl.TestFunction(self.function_space)]
-            self.species[0].sub_function_space = self.function_space
-            self.species[0].post_processing_solution = self.u
-            self.species[0].sub_function = self.u
-        else:
-            sub_solutions = list(ufl.split(self.u))
-            sub_prev_solution = list(ufl.split(self.u_n))
-            sub_test_functions = list(ufl.TestFunctions(self.function_space))
+        sub_solutions = list(ufl.split(self.u))
+        sub_prev_solution = list(ufl.split(self.u_n))
+        sub_test_functions = list(ufl.TestFunctions(self.function_space))
 
+<<<<<<< HEAD
             for idx, spe in enumerate(self.species):
                 spe.sub_function_space = self.function_space.sub(idx)
                 spe.sub_function = self.u.sub(
@@ -654,6 +642,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 spe.collapsed_function_space, spe.map_sub_to_main_solution = (
                     self.function_space.sub(idx).collapse()
                 )
+=======
+        for idx, spe in enumerate(self.species):
+            spe.sub_function_space = self.function_space.sub(idx)
+            spe.sub_function = self.u.sub(idx)  # TODO add this to discontinuous class
+            spe.post_processing_solution = self.u.sub(idx).collapse()
+            spe.collapsed_function_space, _ = self.function_space.sub(idx).collapse()
+>>>>>>> 048917f1 (only use mixed space)
 
         for idx, spe in enumerate(self.species):
             spe.solution = sub_solutions[idx]
@@ -695,19 +690,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 the boundary condition for modifying linear systems.
         """
         # create value_fenics
-        if not self.multispecies:
-            function_space_value = bc.species.sub_function_space
-        else:
-            function_space_value = bc.species.collapsed_function_space
-
         bc.create_value(
             temperature=self.temperature_fenics,
-            function_space=function_space_value,
+            function_space=bc.species.collapsed_function_space,
             t=self.t,
         )
 
         # get dofs
-        if self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
+        if isinstance(bc.value_fenics, (fem.Function)):
             function_space_dofs = (
                 bc.species.sub_function_space,
                 bc.species.collapsed_function_space,
@@ -721,16 +711,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
         )
 
         # create form
-        if not self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
-            # no need to pass the functionspace since value_fenics is already a Function
-            function_space_form = None
-        else:
-            function_space_form = bc.species.sub_function_space
-
         form = fem.dirichletbc(
             value=bc.value_fenics,
             dofs=bc_dofs,
-            V=function_space_form,
+            V=bc.species.sub_function_space,
         )
 
         return form
@@ -779,10 +763,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             function_space_value = None
             if callable(condition.value):
                 # if bc.value is a callable then need to provide a functionspace
-                if not self.multispecies:
-                    function_space_value = condition.species.sub_function_space
-                else:
-                    function_space_value = condition.species.collapsed_function_space
+                function_space_value = condition.species.collapsed_function_space
 
             condition.create_expr_fenics(
                 mesh=self.mesh.mesh,
@@ -792,11 +773,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             # assign to previous solution of species
             entities = self.volume_meshtags.find(condition.volume.id)
-            if not self.multispecies:
-                function_to_interpolate_on = condition.species.prev_solution
-            else:
-                idx = self.species.index(condition.species)
-                function_to_interpolate_on = self.u_n.sub(idx)
+            idx = self.species.index(condition.species)
+            function_to_interpolate_on = self.u_n.sub(idx)
 
             function_to_interpolate_on.interpolate(
                 condition.expr_fenics, cells0=entities
@@ -962,6 +940,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """Updates the post-processing solutions of each species"""
 
         # update post-processing for mixed function space
+<<<<<<< HEAD
         if self.multispecies:
             for spe in self.species:
                 spe.post_processing_solution.x.array[:] = self.u.x.array[
@@ -972,6 +951,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """Post processes the model"""
 
         self.update_post_processing_solutions()
+=======
+        for spe in self.species:
+            spe.post_processing_solution = spe.sub_function.collapse()
+>>>>>>> 048917f1 (only use mixed space)
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
@@ -1054,27 +1037,25 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
                 # computing dofs at each time step is costly so storing it in the export
                 if export._dofs is None:
-                    # if multispecies then we have a mixed function space
-                    # (mixed element)
-                    if self.multispecies:
-                        index = self.species.index(export.field)
-                        V0, export._dofs = self.u.function_space.sub(index).collapse()
-                        coords = V0.tabulate_dof_coordinates()[:, 0]
-                        export._sort_coords = np.argsort(coords)
-                        x = coords[export._sort_coords]
-                    # if not multispecies then we have a single function space
-                    else:
-                        coords = self.u.function_space.tabulate_dof_coordinates()[:, 0]
-                        export._sort_coords = np.argsort(coords)
-                        x = coords[export._sort_coords]
+                    index = self.species.index(export.field)
+                    V0, export._dofs = self.u.function_space.sub(index).collapse()
+                    coords = V0.tabulate_dof_coordinates()[:, 0]
+                    export._sort_coords = np.argsort(coords)
+                    x = coords[export._sort_coords]
 
                     export.x = x
 
+<<<<<<< HEAD
                 if self.multispecies:
                     c = self.u.x.array[export._dofs][export._sort_coords]
                 else:
                     c = self.u.x.array[export._dofs]
                 export.data.append(c.copy())
+=======
+                c = self.u.x.array[export._dofs][export._sort_coords]
+
+                export.data.append(c)
+>>>>>>> 048917f1 (only use mixed space)
                 export.t.append(float(self.t))
 
 
@@ -1655,13 +1636,23 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_solver(self):
-        self.solver = BlockedNewtonSolver(
-            self.forms,
-            [subdomain.u for subdomain in self.volume_subdomains],
-            J=self.J,
-            bcs=self.bc_forms,
-            petsc_options=self.petsc_options,
-        )
+        if Version(dolfinx.__version__) > Version("0.9.0"):
+            self.solver = NonlinearProblem(
+                F=self.forms,
+                u=[subdomain.u for subdomain in self.volume_subdomains],
+                J=self.J,
+                bcs=self.bc_forms,
+                petsc_options=self.petsc_options,
+                petsc_options_prefix="festim_solver",
+            )
+        else:
+            self.solver = BlockedNewtonSolver(
+                self.forms,
+                [subdomain.u for subdomain in self.volume_subdomains],
+                J=self.J,
+                bcs=self.bc_forms,
+                petsc_options=self.petsc_options,
+            )
         self.solver.max_iterations = self.settings.max_iterations
         self.solver.convergence_criterion = self.settings.convergence_criterion
         self.solver.atol = (
@@ -2085,12 +2076,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             dolfinx.fem.bcs.DirichletBC: A representation of
                 the boundary condition for modifying linear systems.
         """
-        # create value_fenics
-        if not self.multispecies:
-            function_space_value = bc.species.sub_function_space
-        else:
-            function_space_value = bc.species.collapsed_function_space
-
         # create K_S function
         Q0 = fem.functionspace(self.mesh.mesh, ("DG", 0))
         K_S0 = fem.Function(Q0)
@@ -2102,15 +2087,16 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
         K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
 
+        # create value_fenics
         bc.create_value(
             temperature=self.temperature_fenics,
-            function_space=function_space_value,
+            function_space=bc.species.collapsed_function_space,
             t=self.t,
             K_S=K_S,
         )
 
         # get dofs
-        if self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
+        if isinstance(bc.value_fenics, fem.Function):
             function_space_dofs = (
                 bc.species.sub_function_space,
                 bc.species.collapsed_function_space,
@@ -2124,7 +2110,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         )
 
         # create form
-        if not self.multispecies and isinstance(bc.value_fenics, (fem.Function)):
+        if isinstance(bc.value_fenics, fem.Function):
             # no need to pass the functionspace since value_fenics is already a Function
             function_space_form = None
         else:
