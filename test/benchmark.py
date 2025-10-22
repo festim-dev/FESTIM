@@ -109,7 +109,6 @@ def fenics_test_permeation_problem(mesh_size=1001):
 
     dt = 1 / 20
     final_time = 50
-    num_steps = int(final_time / dt)
 
     F = dot(D * grad(u), grad(v)) * dx(1)
     F += ((u - u_n) / dt) * v * dx(1)
@@ -117,14 +116,12 @@ def fenics_test_permeation_problem(mesh_size=1001):
     petsc_options = {
         "snes_type": "newtonls",
         "snes_linesearch_type": "none",
-        "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps) * 1e-2,
-        # TODO : make atol and rtol callable
-        "snes_atol": 1e-10,
-        "snes_rtol": 1e-10,
+        "snes_stol": 1e-8,
+        "snes_atol": 0,
+        "snes_rtol": 0,
         "snes_max_it": 30,
-        "ksp_type": "preonly",
-        "pc_type": "lu",
-        "pc_factor_mat_solver_type": "mumps",
+        "ksp_type": "cg",
+        "pc_type": "gamg",
     }
 
     solver = NonlinearProblem(
@@ -134,12 +131,6 @@ def fenics_test_permeation_problem(mesh_size=1001):
         petsc_options=petsc_options,
         petsc_options_prefix="festim_solver",
     )
-
-    snes = solver.solver
-    prefix = snes.getOptionsPrefix()
-    opts = PETSc.Options()
-    for k in petsc_options.keys():
-        del opts[f"{prefix}{k}"]
 
     temp_dir = tempfile.TemporaryDirectory()
     mobile_xdmf = XDMFFile(
