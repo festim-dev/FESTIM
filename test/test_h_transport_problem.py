@@ -460,6 +460,7 @@ def test_post_processing_update_D_global():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -510,6 +511,7 @@ def test_post_processing_update_D_global_2():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -547,6 +549,7 @@ def test_post_processing_update_D_global_volume_1():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -584,6 +587,7 @@ def test_post_processing_update_D_global_volume_2():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -867,9 +871,9 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
 
     # RUN
     my_model.initialise()
-
+    prev_solution = my_model.u_n.sub(0)
     assert np.isclose(
-        my_model.species[0].prev_solution.x.petsc_vec.array[-1],
+        prev_solution.x.petsc_vec.array[-1],
         expected_value,
     )
 
