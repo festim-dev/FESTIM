@@ -924,12 +924,16 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if advec_term.velocity.explicit_time_dependent:
                 advec_term.velocity.update(t=t)
 
+    def update_post_processing_solution(self):
+        """Updates the post-processing solution of each species"""
+
+        for spe in self.species:
+            spe.post_processing_solution = spe.sub_function.collapse()
+
     def post_processing(self):
         """Post processes the model"""
 
-        # update post-processing for mixed function space
-        for spe in self.species:
-            spe.post_processing_solution = spe.sub_function.collapse()
+        self.update_post_processing_solution()
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
@@ -2027,15 +2031,14 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 spe.dg_expr
             )  # NOTE: do we need this line since it's in initialise?
 
-    def post_processing(self):
+    def update_post_processing_solution(self):
         # need to compute c = theta * K_S
         # this expression is stored in species.dg_expr
+
         for spe in self.species:
             if not spe.mobile:
                 continue
             spe.post_processing_solution.interpolate(spe.dg_expr)
-
-        super().post_processing()
 
     def create_dirichletbc_form(self, bc: festim.FixedConcentrationBC):
         """Creates a dirichlet boundary condition form
@@ -2081,16 +2084,10 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         )
 
         # create form
-        if isinstance(bc.value_fenics, fem.Function):
-            # no need to pass the functionspace since value_fenics is already a Function
-            function_space_form = None
-        else:
-            function_space_form = bc.species.sub_function_space
-
         form = fem.dirichletbc(
             value=bc.value_fenics,
             dofs=bc_dofs,
-            V=function_space_form,
+            V=bc.species.sub_function_space,
         )
 
         return form
