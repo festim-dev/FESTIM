@@ -936,6 +936,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if advec_term.velocity.explicit_time_dependent:
                 advec_term.velocity.update(t=t)
 
+<<<<<<< HEAD
     def update_post_processing_solutions(self):
         """Updates the post-processing solutions of each species"""
 
@@ -946,15 +947,26 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 spe.post_processing_solution.x.array[:] = self.u.x.array[
                     spe.map_sub_to_main_solution
                 ]
+=======
+    def update_post_processing_solution(self):
+        """Updates the post-processing solution of each species"""
+
+        for spe in self.species:
+            spe.post_processing_solution = spe.sub_function.collapse()
+>>>>>>> 9d77566b (fixes for cov method)
 
     def post_processing(self):
         """Post processes the model"""
 
+<<<<<<< HEAD
         self.update_post_processing_solutions()
 =======
         for spe in self.species:
             spe.post_processing_solution = spe.sub_function.collapse()
 >>>>>>> 048917f1 (only use mixed space)
+=======
+        self.update_post_processing_solution()
+>>>>>>> 9d77566b (fixes for cov method)
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
@@ -2057,10 +2069,15 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 spe.dg_expr
             )  # NOTE: do we need this line since it's in initialise?
 
+<<<<<<< HEAD
     def update_post_processing_solutions(self):
         """Updates the post-processing solutions after each time step"""
+=======
+    def update_post_processing_solution(self):
+>>>>>>> 9d77566b (fixes for cov method)
         # need to compute c = theta * K_S
         # this expression is stored in species.dg_expr
+
         for spe in self.species:
             if not spe.mobile:
                 continue
@@ -2110,16 +2127,10 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         )
 
         # create form
-        if isinstance(bc.value_fenics, fem.Function):
-            # no need to pass the functionspace since value_fenics is already a Function
-            function_space_form = None
-        else:
-            function_space_form = bc.species.sub_function_space
-
         form = fem.dirichletbc(
             value=bc.value_fenics,
             dofs=bc_dofs,
-            V=function_space_form,
+            V=bc.species.sub_function_space,
         )
 
         return form
