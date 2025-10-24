@@ -50,6 +50,10 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
     my_export.temperature_field = my_model.temperature_fenics
     my_export.compute(ds)
 
+    my_model.exports = [my_export]
+    my_model.initialise()
+    my_model.run()
+
     # TEST
     assert np.isclose(my_export.value, expected_values)
 
