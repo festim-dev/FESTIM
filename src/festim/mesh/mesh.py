@@ -1,8 +1,43 @@
+from enum import Enum
+
 import dolfinx
 import numpy as np
 import ufl
 from dolfinx.mesh import Mesh as dolfinx_Mesh
 from dolfinx.mesh import meshtags
+
+__all__ = ["CoordinateSystem", "Mesh"]
+
+
+class CoordinateSystem(Enum):
+    CARTESIAN = 10
+    CYLINDRICAL = 20
+    SPHERICAL = 30
+
+    @classmethod
+    def from_string(cls, s: str):
+        """Can be removed with Python 3.11+."""
+        s = s.lower()
+        if s == "cartesian":
+            return cls.CARTESIAN
+        elif s == "cylindrical":
+            return cls.CYLINDRICAL
+        elif s == "spherical":
+            return cls.SPHERICAL
+        else:
+            raise ValueError(
+                "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"
+            )
+
+    def __str__(self):
+        if self == CoordinateSystem.CARTESIAN:
+            return "cartesian"
+        elif self == CoordinateSystem.CYLINDRICAL:
+            return "cylindrical"
+        elif self == CoordinateSystem.SPHERICAL:
+            return "spherical"
+        else:
+            raise ValueError("Invalid CoordinateSystem value")
 
 
 class Mesh:
@@ -10,7 +45,9 @@ class Mesh:
     Mesh class
 
     Args:
-        mesh The mesh. Defaults to None.
+        mesh: The mesh. Defaults to None.
+        coordinate_system: the coordinate system of the mesh ("cartesian",
+            "cylindrical", "spherical"). Defaults to "cartesian".
 
     Attributes:
         mesh The mesh
@@ -20,9 +57,18 @@ class Mesh:
             of the mesh.
     """
 
-    _mesh: dolfinx.mesh.Mesh
+    mesh: dolfinx.mesh.Mesh
+    _coordinate_system: CoordinateSystem
 
-    def __init__(self, mesh: dolfinx_Mesh | None = None):
+    vdim: int
+    fdim: int
+    n: ufl.FacetNormal
+
+    def __init__(
+        self,
+        mesh: dolfinx_Mesh | None = None,
+        coordinate_system: str | CoordinateSystem = CoordinateSystem.CARTESIAN,
+    ):
         self.mesh = mesh
         if self._mesh is not None:
             # create cell to facet connectivity
@@ -34,6 +80,9 @@ class Mesh:
             self._mesh.topology.create_connectivity(
                 self._mesh.topology.dim - 1, self._mesh.topology.dim
             )
+            self.coordinate_system = coordinate_system
+
+        self.check_mesh_dim_coords()
 
     @property
     def mesh(self):
@@ -45,6 +94,21 @@ class Mesh:
             self._mesh = value
         else:
             raise TypeError("Mesh must be of type dolfinx.mesh.Mesh")
+
+    @property
+    def coordinate_system(self):
+        return self._coordinate_system
+
+    @coordinate_system.setter
+    def coordinate_system(self, value):
+        if isinstance(value, CoordinateSystem):
+            self._coordinate_system = value
+        elif isinstance(value, str):
+            self._coordinate_system = CoordinateSystem.from_string(value)
+        else:
+            raise ValueError(
+                "coordinate_system must be of type str or CoordinateSystem"
+            )
 
     @property
     def vdim(self):
@@ -88,14 +152,33 @@ class Mesh:
         tags_facets = np.full(num_facets, 0, dtype=np.int32)
 
         for surf in surface_subdomains:
-            # find all facets in subdomain and mark them as surf.id
-            entities = surf.locate_boundary_facet_indices(self._mesh)
-            tags_facets[entities] = surf.id
+            try:
+                # find all facets in subdomain and mark them as surf.id
+                entities = surf.locate_boundary_facet_indices(self._mesh)
+                tags_facets[entities] = surf.id
+            except ValueError:
+                if len(surface_subdomains) > 1:
+                    raise ValueError(
+                        "Surface subdomain must have a locator attribute if"
+                        " several subdomains are defined"
+                    )
+                self.mesh.topology.create_connectivity(self.fdim, self.fdim + 1)
+                rentities = dolfinx.mesh.exterior_facet_indices(self.mesh.topology)
+
+                tags_facets[rentities] = surf.id
 
         for vol in volume_subdomains:
-            # find all cells in subdomain and mark them as vol.id
-            entities = vol.locate_subdomain_entities(self._mesh)
-            tags_volumes[entities] = vol.id
+            try:
+                # find all cells in subdomain and mark them as vol.id
+                entities = vol.locate_subdomain_entities(self._mesh)
+                tags_volumes[entities] = vol.id
+            except ValueError:
+                if len(volume_subdomains) > 1:
+                    raise ValueError(
+                        "Volume subdomain must have a locator if"
+                        " several subdomains are defined"
+                    )
+                tags_volumes[:] = vol.id
 
         volume_meshtags = meshtags(
             self._mesh, self.vdim, mesh_cell_indices, tags_volumes
@@ -125,3 +208,16 @@ class Mesh:
         )
 
         return facet_meshtags, volume_meshtags
+
+    def check_mesh_dim_coords(self):
+        """Checks if the used coordinates can be applied for geometry with the specified
+        dimensions"""
+
+        if self.coordinate_system == CoordinateSystem.SPHERICAL and self.vdim != 1:
+            raise AttributeError(
+                "spherical coordinates can be used for one-dimensional domains only"
+            )
+        if self.coordinate_system == CoordinateSystem.CYLINDRICAL and self.vdim == 3:
+            raise AttributeError(
+                "cylindrical coordinates cannot be used for 3D domains"
+            )

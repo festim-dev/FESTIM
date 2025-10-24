@@ -30,7 +30,7 @@ def test_average_volume_compute_1D():
     my_export = F.AverageVolume(field=my_species, volume=dummy_volume)
 
     # RUN
-    my_export.compute(dx)
+    my_export.compute(my_species.solution, dx)
 
     # TEST
     expected_value = 3.5

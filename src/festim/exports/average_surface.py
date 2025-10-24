@@ -1,6 +1,7 @@
 from dolfinx import fem
+from scifem import assemble_scalar
 
-from .surface_quantity import SurfaceQuantity
+from festim.exports.surface_quantity import SurfaceQuantity
 
 
 class AverageSurface(SurfaceQuantity):
@@ -25,7 +26,7 @@ class AverageSurface(SurfaceQuantity):
         subdomain, and appends it to the data list
         """
 
-        self.value = fem.assemble_scalar(
+        self.value = assemble_scalar(
             fem.form(self.field.solution * ds(self.surface.id))
-        ) / fem.assemble_scalar(fem.form(1 * ds(self.surface.id)))
+        ) / assemble_scalar(fem.form(1 * ds(self.surface.id)))
         self.data.append(self.value)

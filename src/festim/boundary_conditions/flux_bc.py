@@ -3,6 +3,7 @@ import ufl
 from dolfinx import fem
 
 import festim as F
+from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class FluxBCBase:
@@ -10,8 +11,14 @@ class FluxBCBase:
     Flux boundary condition class
 
     Ensuring the gradient of the solution u at a boundary:
-    -A * grad(u) * n = f
-    where A is some material property (diffusivity for particle flux and thermal conductivity for heat flux), n is the outwards normal vector of the boundary, f is a function of space and time.
+
+    .. math::
+
+        -A \\nabla u \\cdot \\mathbf{n} = f
+
+    where :math:`A` is some material property (diffusivity for particle flux and thermal
+    conductivity for heat flux), :math:`\\mathbf{n}` is the outwards normal vector of
+    the boundary, :math:`f` is a function of space and time.
 
 
     Args:
@@ -30,7 +37,7 @@ class FluxBCBase:
 
     """
 
-    def __init__(self, subdomain, value):
+    def __init__(self, subdomain: SurfaceSubdomain, value):
         self.subdomain = subdomain
         self.value = value
 
@@ -47,10 +54,10 @@ class FluxBCBase:
             self._value_fenics = value
             return
         if not isinstance(
-            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
+            value, fem.Function | fem.Constant | np.ndarray | ufl.core.expr.Expr
         ):
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not {type(value)}"
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not {type(value)}"  # noqa: E501
             )
         self._value_fenics = value
 
@@ -158,17 +165,22 @@ class ParticleFluxBC(FluxBCBase):
             where "name" is the variable name in the callable value and species is a festim.Species object.
 
 
-    Usage:
-    .. testcode::
+    Examples:
 
-        from festim import ParticleFluxBC
+        .. testsetup:: ParticleFluxBC
 
-        ParticleFluxBC(subdomain=my_subdomain, value=1, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
-        ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2, species="H", species_dependent_value={"c1": species1})
+            from festim import SurfaceSubdomain, ParticleFluxBC, Species
+            my_subdomain = SurfaceSubdomain(id=1)
+            species1 = Species(name="1")
+
+        .. testcode:: ParticleFluxBC
+
+            ParticleFluxBC(subdomain=my_subdomain, value=1, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2, species="H", species_dependent_value={"c1": species1})
     """
 
     def __init__(self, subdomain, value, species, species_dependent_value={}):
@@ -242,14 +254,20 @@ class HeatFluxBC(FluxBCBase):
             update the value_fenics
 
 
-    Usage:
-    .. testcode::
+    Examples:
 
-        from festim import HeatFluxBC
-        HeatFluxBC(subdomain=my_subdomain, value=1)
-        HeatFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0])
-        HeatFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t)
-        HeatFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t)
+        .. testsetup:: HeatFluxBC
+
+                from festim import SurfaceSubdomain, HeatFluxBC, Species
+                my_subdomain = SurfaceSubdomain(id=1)
+                species1 = Species(name="1")
+
+        .. testcode:: HeatFluxBC
+
+            HeatFluxBC(subdomain=my_subdomain, value=1)
+            HeatFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0])
+            HeatFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t)
+            HeatFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t)
     """
 
     def __init__(self, subdomain, value):

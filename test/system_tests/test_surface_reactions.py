@@ -1,8 +1,8 @@
-import festim as F
-import numpy as np
-
-import ufl
 import dolfinx.fem as fem
+import numpy as np
+import ufl
+
+import festim as F
 
 
 # TODO add this to the festim package
@@ -14,7 +14,7 @@ class FluxFromSurfaceReaction(F.SurfaceFlux):
         )
         self.reaction = reaction.flux_bcs[0]
 
-    def compute(self, ds):
+    def compute(self, u, ds, entity_maps=None):
         self.value = fem.assemble_scalar(
             fem.form(self.reaction.value_fenics * ds(self.surface.id))
         )

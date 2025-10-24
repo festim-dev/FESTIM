@@ -1,7 +1,8 @@
 import ufl
 from dolfinx import fem
+from scifem import assemble_scalar
 
-from .surface_quantity import SurfaceQuantity
+from festim.exports.surface_quantity import SurfaceQuantity
 
 
 class TotalSurface(SurfaceQuantity):
@@ -28,7 +29,7 @@ class TotalSurface(SurfaceQuantity):
         Args:
             ds (ufl.Measure): surface measure of the model
         """
-        self.value = fem.assemble_scalar(
+        self.value = assemble_scalar(
             fem.form(self.field.solution * ds(self.surface.id))
         )
         self.data.append(self.value)

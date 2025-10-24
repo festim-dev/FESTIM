@@ -1,7 +1,8 @@
 import ufl
 from dolfinx import fem
+from scifem import assemble_scalar
 
-from .volume_quantity import VolumeQuantity
+from festim.exports.volume_quantity import VolumeQuantity
 
 
 class TotalVolume(VolumeQuantity):
@@ -20,15 +21,17 @@ class TotalVolume(VolumeQuantity):
     def title(self):
         return f"Total {self.field.name} volume {self.volume.id}"
 
-    def compute(self, dx: ufl.Measure):
+    def compute(self, u, dx: ufl.Measure, entity_maps=None):
         """
         Computes the value of the total volume of the field in the volume subdomain
         and appends it to the data list
 
         Args:
-            dx (ufl.Measure): volume measure of the model
+            u: field for which the total volume is computed
+            dx: volume measure of the model
+            entity_maps: entity maps relating parent mesh and submesh
         """
-        self.value = fem.assemble_scalar(
-            fem.form(self.field.solution * dx(self.volume.id))
+        self.value = assemble_scalar(
+            fem.form(u * dx(self.volume.id), entity_maps=entity_maps)
         )
         self.data.append(self.value)

@@ -1,11 +1,12 @@
 from mpi4py import MPI
 
+import dolfinx
 import numpy as np
 
-import festim.exports.surface_quantity as sq
+from festim.exports.surface_quantity import SurfaceQuantity
 
 
-class MaximumSurface(sq.SurfaceQuantity):
+class MaximumSurface(SurfaceQuantity):
     """Computes the maximum value of a field on a given surface
 
     Args:
@@ -26,12 +27,17 @@ class MaximumSurface(sq.SurfaceQuantity):
         Computes the maximum value of the field on the defined surface
         subdomain, and appends it to the data list
         """
-        solution = self.field.solution
-        indices = self.surface.locate_boundary_facet_indices(
-            solution.function_space.mesh
+        solution = self.field.post_processing_solution
+        entities = self.facet_meshtags.find(self.surface.id)
+        if isinstance(solution, dolfinx.fem.Function):
+            V = solution.function_space
+        else:
+            V = self.field.sub_function_space
+        mesh = V.mesh
+
+        dofs = dolfinx.fem.locate_dofs_topological(
+            V=V, entity_dim=mesh.topology.dim - 1, entities=entities
         )
 
-        self.value = solution.function_space.mesh.comm.allreduce(
-            np.max(self.field.solution.x.array[indices]), op=MPI.MAX
-        )
+        self.value = mesh.comm.allreduce(np.max(solution.x.array[dofs]), op=MPI.MAX)
         self.data.append(self.value)

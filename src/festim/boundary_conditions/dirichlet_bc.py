@@ -3,10 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 import ufl
-from dolfinx import fem
-from dolfinx import mesh as _mesh
 import ufl.core
 import ufl.core.expr
+from dolfinx import fem
+from dolfinx import mesh as _mesh
 
 from festim import helpers
 from festim import subdomain as _subdomain
@@ -152,10 +152,13 @@ class FixedConcentrationBC(DirichletBCBase):
 
     Examples:
 
-        .. highlight:: python
-        .. code-block:: python
+        .. testsetup:: FixedConcentrationBC
 
-            from festim import FixedConcentrationBC
+            from festim import FixedConcentrationBC, SurfaceSubdomain
+            my_subdomain = SurfaceSubdomain(id=1)
+
+        .. testcode:: FixedConcentrationBC
+
             FixedConcentrationBC(subdomain=my_subdomain, value=1, species="H")
             FixedConcentrationBC(subdomain=my_subdomain,
                                  value=lambda x: 1 + x[0], species="H")
@@ -232,7 +235,6 @@ class FixedConcentrationBC(DirichletBCBase):
                     mesh=mesh, value=self.value(t=float(t))
                 )
             else:
-                self.value_fenics = fem.Function(function_space)
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = t
@@ -241,13 +243,47 @@ class FixedConcentrationBC(DirichletBCBase):
                 if "T" in arguments:
                     kwargs["T"] = temperature
 
-                # store the expression of the boundary condition
-                # to update the value_fenics later
-                self.bc_expr = fem.Expression(
-                    self.value(**kwargs),
-                    helpers.get_interpolation_points(function_space.element),
-                )
-                self.value_fenics.interpolate(self.bc_expr)
+                try:
+                    self.value_fenics = fem.Function(function_space)
+
+                    # store the expression of the boundary condition
+                    # to update the value_fenics later
+                    self.bc_expr = fem.Expression(
+                        self.value(**kwargs),
+                        helpers.get_interpolation_points(function_space.element),
+                    )
+                    self.value_fenics.interpolate(self.bc_expr)
+                except RuntimeError:
+                    # if this fails, it is probably because the temperature is a Function
+                    # from the parent mesh and this is used in a mixed domain problem.
+                    # In this case, we need to interpolate the temperature on the submesh
+
+                    submesh = mesh
+                    mesh_cell_map = submesh.topology.index_map(submesh.topology.dim)
+                    num_cells_on_proc = (
+                        mesh_cell_map.size_local + mesh_cell_map.num_ghosts
+                    )
+                    cells = np.arange(num_cells_on_proc, dtype=np.int32)
+                    parent_functionspace = temperature.function_space
+                    interpolation_data = fem.create_interpolation_data(
+                        function_space, parent_functionspace, cells
+                    )
+
+                    temperature_sub = fem.Function(function_space)
+                    temperature_sub.interpolate_nonmatching(
+                        temperature,
+                        cells=cells,
+                        interpolation_data=interpolation_data,
+                    )
+
+                    # override the kwargs with the temperature_sub
+                    kwargs["T"] = temperature_sub
+
+                    self.bc_expr = fem.Expression(
+                        self.value(**kwargs),
+                        helpers.get_interpolation_points(function_space.element),
+                    )
+                    self.value_fenics.interpolate(self.bc_expr)
 
         # if K_S is provided, divide the value by K_S (change of variable method)
         if K_S is not None:

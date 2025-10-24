@@ -88,7 +88,7 @@ def test_2_materials_2d_mms(tmpdir):
 
     mesh, mt, ct = generate_mesh(100)
 
-    my_model = F.HTransportProblemPenalty()
+    my_model = F.HydrogenTransportProblemDiscontinuous()
     my_model.mesh = F.Mesh(mesh)
     my_model.volume_meshtags = ct
     my_model.facet_meshtags = mt
@@ -161,3 +161,141 @@ def test_2_materials_2d_mms(tmpdir):
 
     assert L2_error_top < 1e-3
     assert L2_error_bot < 1e-3
+
+
+def test_derived_quantities_multi_mat():
+    K_S_top = 1.0
+    K_S_bot = 1.0
+    D_top = 2.0
+    D_bot = 1.0
+
+    mesh, mt, ct = generate_mesh(20)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh)
+    my_model.volume_meshtags = ct
+    my_model.facet_meshtags = mt
+
+    material_top = F.Material(D_0=D_top, E_D=0, K_S_0=K_S_top, E_K_S=0)
+    material_bottom = F.Material(D_0=D_bot, E_D=0, K_S_0=K_S_bot, E_K_S=0)
+
+    material_top.solubility_law = "sievert"
+    material_bottom.solubility_law = "sievert"
+
+    top_domain = F.VolumeSubdomain(4, material=material_top)
+    bottom_domain = F.VolumeSubdomain(3, material=material_bottom)
+
+    top_surface = F.SurfaceSubdomain(id=1)
+    bottom_surface = F.SurfaceSubdomain(id=2)
+    my_model.subdomains = [
+        bottom_domain,
+        top_domain,
+        top_surface,
+        bottom_surface,
+    ]
+
+    my_model.interfaces = [
+        F.Interface(5, (bottom_domain, top_domain), penalty_term=1),
+    ]
+    my_model.surface_to_volume = {
+        top_surface: top_domain,
+        bottom_surface: bottom_domain,
+    }
+
+    H = F.Species("H", mobile=True)
+
+    my_model.species = [H]
+
+    for species in my_model.species:
+        species.subdomains = [bottom_domain, top_domain]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(top_surface, value=1, species=H),
+        F.FixedConcentrationBC(bottom_surface, value=0, species=H),
+    ]
+
+    my_model.temperature = 500.0
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    my_model.exports = [
+        F.SurfaceFlux(field=H, surface=top_surface),
+        F.SurfaceFlux(field=H, surface=bottom_surface),
+        F.AverageVolume(field=H, volume=bottom_domain),
+        F.AverageVolume(field=H, volume=top_domain),
+        F.TotalVolume(field=H, volume=bottom_domain),
+        F.TotalVolume(field=H, volume=top_domain),
+    ]
+
+    my_model.initialise()
+    my_model.run()
+
+    print("Top surface flux:", my_model.exports[0].data)
+    print("Bottom surface flux:", my_model.exports[1].data)
+    assert np.isclose(my_model.exports[0].data[0], -my_model.exports[1].data[0])
+
+
+def test_penalty_multispecies():
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.method_interface = "penalty"
+
+    protium = F.Species("H")
+    deuterium = F.Species("D")
+    tritium = F.Species("T")
+    my_model.species = [
+        protium,
+        deuterium,
+        tritium,
+    ]
+
+    vertices_left = np.linspace(0, 0.5, 50)
+    vertices_right = np.linspace(0.5, 1, 50)
+    vertices = np.concatenate((vertices_left, vertices_right))
+
+    my_model.mesh = F.Mesh1D(vertices)
+
+    left_surf = F.SurfaceSubdomain1D(id=1, x=0)
+    right_surf = F.SurfaceSubdomain1D(id=2, x=1)
+
+    # assumes the same diffusivity for all species
+    material_left = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+    material_right = F.Material(D_0=1, E_D=0, K_S_0=2, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=material_left)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=material_right)
+
+    my_model.interfaces = [
+        F.Interface(id=3, subdomains=[vol1, vol2], penalty_term=1000)
+    ]
+
+    my_model.subdomains = [vol1, vol2, left_surf, right_surf]
+
+    for spe in my_model.species:
+        spe.subdomains = [vol1, vol2]
+
+    my_model.surface_to_volume = {
+        left_surf: vol1,
+        right_surf: vol2,
+    }
+
+    my_model.boundary_conditions = [
+        # Protium BCs
+        F.FixedConcentrationBC(left_surf, value=10, species=protium),
+        F.FixedConcentrationBC(right_surf, value=0, species=protium),
+        # Deuterium BCs
+        F.FixedConcentrationBC(left_surf, value=5, species=deuterium),
+        F.FixedConcentrationBC(right_surf, value=0, species=deuterium),
+        # Tritium BCs
+        F.FixedConcentrationBC(left_surf, value=0, species=tritium),
+        F.FixedConcentrationBC(right_surf, value=2, species=tritium),
+    ]
+
+    my_model.temperature = 300
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=100)
+
+    my_model.settings.stepsize = F.Stepsize(1)
+
+    my_model.exports = []
+
+    my_model.initialise()
+    my_model.run()

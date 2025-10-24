@@ -4,7 +4,7 @@ import mpi4py
 
 from dolfinx.io import XDMFFile
 
-from festim.species import Species as _Species
+from festim.species import Species
 
 from .vtx import ExportBaseClass
 
@@ -25,7 +25,7 @@ class XDMFExport(ExportBaseClass):
     _filename: Path
     _writer: XDMFFile | None
 
-    def __init__(self, filename: str | Path, field: list[_Species] | _Species) -> None:
+    def __init__(self, filename: str | Path, field: list[Species] | Species) -> None:
         # Initializes the writer
         self._writer = None
         super().__init__(filename, ".xdmf")
@@ -33,20 +33,20 @@ class XDMFExport(ExportBaseClass):
         self._mesh_written = False
 
     @property
-    def field(self) -> list[_Species]:
+    def field(self) -> list[Species]:
         return self._field
 
     @field.setter
-    def field(self, value: _Species | list[_Species]):
+    def field(self, value: Species | list[Species]):
         # check that field is festim.Species or list of festim.Species
         if isinstance(value, list):
             for element in value:
-                if not isinstance(element, _Species):
+                if not isinstance(element, Species):
                     raise TypeError(
                         f"Each element in the list must be a species, got {type(element)}."
                     )
             val = value
-        elif isinstance(value, _Species):
+        elif isinstance(value, Species):
             val = [value]
         else:
             raise TypeError(

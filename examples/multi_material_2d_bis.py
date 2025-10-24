@@ -63,7 +63,7 @@ def generate_mesh():
 
 mesh, mt, ct = generate_mesh()
 
-my_model = F.HTransportProblemDiscontinuous()
+my_model = F.HydrogenTransportProblemDiscontinuous()
 my_model.mesh = F.Mesh(mesh)
 my_model.volume_meshtags = ct
 my_model.facet_meshtags = mt
@@ -129,7 +129,7 @@ my_model.boundary_conditions = [
 
 my_model.temperature = lambda x: 400 + 10 * x[1] + 100 * x[0]
 
-my_model.settings = F.Settings(atol=None, rtol=1e-5, transient=False)
+my_model.settings = F.Settings(atol=1e-10, rtol=1e-5, transient=False)
 
 my_model.exports = [
     F.VTXSpeciesExport(f"c_{subdomain.id}.bp", field=H, subdomain=subdomain)
@@ -146,9 +146,9 @@ my_model.run()
 
 
 # derived quantities
-entity_maps = {sd.submesh: sd.parent_to_submesh for sd in my_model.volume_subdomains}
-entity_maps[mesh] = bottom_domain.submesh_to_mesh
 
+
+ds = ufl.Measure("ds", domain=mesh, subdomain_data=my_model.facet_meshtags)
 ds_b = ufl.Measure("ds", domain=bottom_domain.submesh, subdomain_data=bottom_domain.ft)
 ds_t = ufl.Measure("ds", domain=top_domain.submesh, subdomain_data=top_domain.ft)
 dx_b = ufl.Measure("dx", domain=bottom_domain.submesh)
@@ -163,9 +163,20 @@ print(dolfinx.fem.assemble_scalar(form))
 form = dolfinx.fem.form(bottom_domain.u.sub(1) * dx_b)
 print(dolfinx.fem.assemble_scalar(form))
 
+# Check for DOLFINx version compatibility
+try:
+    from dolfinx.mesh import EntityMap  # noqa: F401
+
+    legacy_entity_map = False
+    entity_map_wrapper = lambda e_map: list(e_map.values())
+except ImportError:
+    legacy_entity_map = True
+    entity_map_wrapper = lambda e_map: e_map
+
+
 form = dolfinx.fem.form(
     my_model.temperature_fenics * dx_b,
-    entity_maps={mesh: bottom_domain.submesh_to_mesh},
+    entity_maps=entity_map_wrapper({mesh: bottom_domain.cell_map}),
 )
 print(dolfinx.fem.assemble_scalar(form))
 
@@ -173,13 +184,14 @@ D = bottom_domain.material.get_diffusion_coefficient(
     my_model.mesh.mesh, my_model.temperature_fenics, H
 )
 id_interface = 5
+
 form = dolfinx.fem.form(
     ufl.dot(
         D * ufl.grad(bottom_domain.u.sub(0)),
         n_b,
     )
     * ds_b(id_interface),
-    entity_maps={mesh: bottom_domain.submesh_to_mesh},
+    entity_maps=entity_map_wrapper({mesh: bottom_domain.cell_map}),
 )
 print(dolfinx.fem.assemble_scalar(form))
 form = dolfinx.fem.form(
@@ -188,6 +200,26 @@ form = dolfinx.fem.form(
         n_t,
     )
     * ds_t(id_interface),
-    entity_maps={mesh: top_domain.submesh_to_mesh},
+    entity_maps=entity_map_wrapper({mesh: top_domain.cell_map}),
+)
+print(dolfinx.fem.assemble_scalar(form))
+
+
+# using submesh function
+u = H.subdomain_to_post_processing_solution[bottom_domain]
+if legacy_entity_map:
+    entity_maps = {
+        sd.submesh: sd.parent_to_submesh for sd in my_model.volume_subdomains
+    }
+else:
+    entity_maps = [sd.cell_map for sd in my_model.volume_subdomains]
+
+form = dolfinx.fem.form(
+    ufl.dot(
+        D * ufl.grad(u),
+        n_b,
+    )
+    * ds(bottom_surface.id),
+    entity_maps=entity_maps,
 )
 print(dolfinx.fem.assemble_scalar(form))

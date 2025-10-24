@@ -1,11 +1,10 @@
-import numpy as np
 from mpi4py import MPI
 
 import dolfinx
-from dolfinx import fem
 import dolfinx.fem.petsc
 import numpy as np
 import ufl
+from dolfinx import fem
 
 import festim as F
 
@@ -103,8 +102,8 @@ def test_run(tmpdir):
         right_surface,
     ]
 
-    H = F.SpeciesChangeVar("H", mobile=True)
-    trapped_H = F.SpeciesChangeVar("H_trapped", mobile=False)
+    H = F.Species("H", mobile=True)
+    trapped_H = F.Species("H_trapped", mobile=False)
     empty_trap = F.ImplicitSpecies(n=0.5, others=[trapped_H])
 
     my_model.species = [H, trapped_H]
@@ -193,7 +192,7 @@ def test_2_materials_2d_mms(tmpdir):
         bottom_surface,
     ]
 
-    H = F.SpeciesChangeVar("H", mobile=True)
+    H = F.Species("H", mobile=True)
 
     my_model.species = [H]
 
@@ -220,7 +219,7 @@ def test_2_materials_2d_mms(tmpdir):
     my_model.temperature = 500.0  # lambda x: 300 + 10 * x[1] + 100 * x[0]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
-    my_model.exports = [F.VTXSpeciesExport(tmpdir + f"/u.bp", field=H)]
+    my_model.exports = [F.VTXSpeciesExport(tmpdir + "/u.bp", field=H)]
 
     my_model.initialise()
     my_model.run()

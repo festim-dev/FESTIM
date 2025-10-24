@@ -1,15 +1,16 @@
 import ufl
 
-import festim as F
+from festim import k_B
+from festim.boundary_conditions import FixedConcentrationBC
 
 
 def henrys_law(T, H_0, E_H, pressure):
     """Applies the Henry's law to compute the concentration at the boundary"""
-    H = H_0 * ufl.exp(-E_H / F.k_B / T)
+    H = H_0 * ufl.exp(-E_H / k_B / T)
     return H * pressure
 
 
-class HenrysBC(F.DirichletBC):
+class HenrysBC(FixedConcentrationBC):
     """
     Henrys boundary condition class
 
@@ -33,13 +34,20 @@ class HenrysBC(F.DirichletBC):
         E_H (float or fem.Constant): the Henrys constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
 
-    Usage:
-        >>> from festim import HenrysBC
-        >>> HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=1e5, species="H")
-        >>> HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda x: 1e5 + x[0], species="H")
-        >>> HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda t: 1e5 + t, species="H")
-        >>> HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda T: 1e5 + T, species="H")
-        >>> HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
+    Examples:
+
+        .. testsetup:: HenrysBC
+
+            from festim import HenrysBC, SurfaceSubdomain
+            my_subdomain = SurfaceSubdomain(id=1)
+
+        .. testcode:: HenrysBC
+
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=1e5, species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda x: 1e5 + x[0], species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda t: 1e5 + t, species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda T: 1e5 + T, species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
     """
 
     def __init__(self, subdomain, H_0, E_H, pressure, species) -> None:

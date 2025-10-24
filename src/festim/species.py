@@ -1,11 +1,12 @@
+from typing import Union
+
+import ufl
+from dolfinx import fem
+
+from festim.helpers import as_fenics_constant
 from festim.subdomain.volume_subdomain import (
     VolumeSubdomain as _VolumeSubdomain,
 )
-from festim.helpers import as_fenics_constant
-
-from typing import List, Union
-import ufl
-from dolfinx import fem
 
 
 class Species:
@@ -48,13 +49,16 @@ class Species:
         subdomain_to_function_space (dict): a dictionary mapping subdomains to
             function spaces
 
-    Usage:
-        >>> from festim import Species, HTransportProblem
-        >>> species = Species(name="H")
-        >>> species.name
-        'H'
-        >>> my_model = HTransportProblem()
-        >>> my_model.species.append(species)
+    Examples:
+        :: testsetup:: Species
+
+            from festim import Species
+
+        :: testcode:: Species
+
+            Species(name="H")
+            Species(name="Trap", mobile=False)
+
 
     """
 
@@ -128,7 +132,7 @@ class ImplicitSpecies:
     def __init__(
         self,
         n: Union[float, callable],
-        others: List[Species] = None,
+        others: list[Species] = None,
         name: str = None,
     ) -> None:
         self.name = name
@@ -226,13 +230,3 @@ def find_species_from_name(name: str, species: list):
         if spe.name == name:
             return spe
     raise ValueError(f"Species {name} not found in list of species")
-
-
-class SpeciesChangeVar(Species):
-    @property
-    def concentration(self):
-        return self._concentration
-
-    @concentration.setter
-    def concentration(self, value):
-        self._concentration = value

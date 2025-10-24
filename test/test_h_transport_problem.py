@@ -6,6 +6,7 @@ import pytest
 import tqdm.autonotebook
 import ufl
 from dolfinx import default_scalar_type, fem, nls
+from packaging.version import Version
 
 import festim as F
 
@@ -161,8 +162,14 @@ def test_iterate():
         my_model.u - my_model.u_n
     ) / my_model.dt * v * ufl.dx - source_value * v * ufl.dx
 
-    problem = fem.petsc.NonlinearProblem(form, my_model.u, bcs=[])
-    my_model.solver = nls.petsc.NewtonSolver(MPI.COMM_WORLD, problem)
+    if Version(dolfinx.__version__) == Version("0.9.0"):
+        problem = fem.petsc.NonlinearProblem(form, my_model.u, bcs=[])
+        my_model.solver = nls.petsc.NewtonSolver(MPI.COMM_WORLD, problem)
+    elif Version(dolfinx.__version__) > Version("0.9.0"):
+        problem = fem.petsc.NonlinearProblem(
+            form, my_model.u, bcs=[], petsc_options_prefix="festim_solver"
+        )
+        my_model.solver = problem
 
     my_model.t = fem.Constant(mesh, 0.0)
 
@@ -483,7 +490,7 @@ def test_post_processing_update_D_global_2():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: x[0] ** 2 + 100)
-    H.solution = u
+    H.post_processing_solution = u
 
     my_export = F.MaximumSurface(
         field=H,
@@ -563,7 +570,7 @@ def test_post_processing_update_D_global_volume_2():
     V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: x[0] ** 2 + 100)
-    H.solution = u
+    H.post_processing_solution = u
 
     my_export = F.MaximumVolume(field=H, volume=my_vol)
 
@@ -817,8 +824,10 @@ def test_create_initial_conditions_ValueError_raised_when_not_transient():
         temperature=10,
         subdomains=[my_vol],
         species=[H],
-        initial_conditions=[F.InitialCondition(value=1.0, species=H)],
-        settings=F.Settings(atol=1, rtol=1, transient=False),
+        initial_conditions=[
+            F.InitialConcentration(value=1.0, species=H, volume=my_vol)
+        ],
+        settings=F.Settings(atol=1, rtol=0.9999, transient=False),
     )
 
     with pytest.raises(
@@ -850,8 +859,10 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
         temperature=10,
         subdomains=[vol_subdomain],
         species=[H],
-        initial_conditions=[F.InitialCondition(value=input_value, species=H)],
-        settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
+        initial_conditions=[
+            F.InitialConcentration(value=input_value, species=H, volume=vol_subdomain)
+        ],
+        settings=F.Settings(atol=1, rtol=0.9999, final_time=2, stepsize=1),
     )
 
     # RUN
@@ -881,7 +892,7 @@ def test_create_species_from_trap():
         n=1,
         volume=my_vol,
     )
-    my_settings = F.Settings(atol=1, rtol=1, transient=False)
+    my_settings = F.Settings(atol=1, rtol=0.9999, transient=False)
     my_model = F.HydrogenTransportProblem(
         mesh=test_mesh,
         subdomains=[my_vol],
@@ -929,10 +940,14 @@ def test_create_initial_conditions_value_fenics_multispecies(
         subdomains=[vol_subdomain],
         species=[H, D],
         initial_conditions=[
-            F.InitialCondition(value=input_value_2, species=D),
-            F.InitialCondition(value=input_value_1, species=H),
+            F.InitialConcentration(
+                value=input_value_2, species=D, volume=vol_subdomain
+            ),
+            F.InitialConcentration(
+                value=input_value_1, species=H, volume=vol_subdomain
+            ),
         ],
-        settings=F.Settings(atol=1, rtol=1, final_time=2, stepsize=1),
+        settings=F.Settings(atol=1, rtol=0.9999, final_time=2, stepsize=1),
     )
 
     # RUN
@@ -1235,3 +1250,97 @@ def test_create_flux_values_fenics_multispecies():
     # TEST
     assert np.isclose(float(my_model.boundary_conditions[0].value_fenics), 5)
     assert np.isclose(float(my_model.boundary_conditions[1].value_fenics), 11)
+
+
+def test_not_implemented_error_raised_with_D_as_function():
+    """Test that NotImplementedError is raised when D is a function and more than one
+    volume subdomain has been defined"""
+
+    # BUILD
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D_func = fem.Function(V)
+    D_func.x.array[:] = 7.0
+
+    my_mat = F.Material(D=D_func)
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=my_mat)
+    vol_2 = F.VolumeSubdomain1D(id=1, borders=[0.5, 1], material=my_mat)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol_1, vol_2],
+        species=[F.Species("H")],
+    )
+
+    my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+
+    # TEST
+    with pytest.raises(
+        NotImplementedError,
+        match=(
+            "Giving the diffusion coefficient as a function is currently only "
+            "supported for a single volume subdomain case"
+        ),
+    ):
+        my_model.define_D_global(H)
+
+
+def test_define_D_global_with_D_as_function():
+    """Test that if a function is given as diffusion coeff of a material, that it is
+    passed to D_global"""
+
+    # BUILD
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D_func = fem.Function(V)
+    D_func.interpolate(lambda x: x[0] * 5.0)
+
+    my_mat = F.Material(D=D_func)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol],
+        species=[F.Species("H")],
+    )
+
+    my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    D, D_expr = my_model.define_D_global(H)
+
+    # TEST
+    assert D_expr is None
+    assert D == D_func
+
+
+@pytest.mark.parametrize("coord_sys", ["cylindrical", "spherical"])
+def test_exports_cyl_sph_coord_system_raise_not_implemented(coord_sys):
+    """Test that NotImplementedError is raised when trying to use exports in a
+    cylindrical or spherical coordinate system"""
+
+    # BUILD
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11), coordinate_system=coord_sys)
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    surf = F.SurfaceSubdomain1D(id=2, x=1)
+    H = F.Species("H")
+
+    my_export = F.TotalVolume(field=H, volume=my_vol)
+    my_export_2 = F.TotalSurface(field=H, surface=surf)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[my_vol, surf],
+        species=[H],
+        exports=[my_export, my_export_2],
+    )
+
+    # TEST
+    with pytest.raises(
+        NotImplementedError,
+        match=f"Derived quantity exports are not implemented for {coord_sys} meshes",
+    ):
+        my_model.initialise_exports()

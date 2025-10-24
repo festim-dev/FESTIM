@@ -1,9 +1,10 @@
 from mpi4py import MPI
 
+import basix
 import dolfinx
 import dolfinx.fem.petsc
 import numpy as np
-import basix
+
 import festim as F
 
 
@@ -80,9 +81,9 @@ def create_velocity_field():
         return values
 
     mesh2, mt2, ct2 = generate_mesh(n=10)
-    submesh, submesh_to_mesh, v_map = dolfinx.mesh.create_submesh(
-        mesh2, ct2.dim, ct2.find(4)
-    )[0:3]
+    submesh, cell_map, v_map = dolfinx.mesh.create_submesh(mesh2, ct2.dim, ct2.find(4))[
+        0:3
+    ]
     v_cg = basix.ufl.element(
         "Lagrange", submesh.topology.cell_name(), 2, shape=(submesh.geometry.dim,)
     )
@@ -97,7 +98,7 @@ u = create_velocity_field()
 writer = dolfinx.io.VTXWriter(MPI.COMM_WORLD, "velocity.bp", u, engine="BP5")
 writer.write(t=0)
 
-my_model = F.HTransportProblemDiscontinuous()
+my_model = F.HydrogenTransportProblemDiscontinuous()
 my_model.mesh = F.Mesh(mesh)
 my_model.volume_meshtags = ct
 my_model.facet_meshtags = mt

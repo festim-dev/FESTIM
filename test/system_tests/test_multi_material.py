@@ -87,7 +87,8 @@ def test_2_materials_2d_mms(tmpdir):
 
     mesh, mt, ct = generate_mesh(100)
 
-    my_model = F.HTransportProblemDiscontinuous()
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.method_interface = "nitsche"
     my_model.mesh = F.Mesh(mesh)
     my_model.volume_meshtags = ct
     my_model.facet_meshtags = mt
@@ -165,7 +166,7 @@ def test_2_materials_2d_mms(tmpdir):
 
 # TODO make this a MMS case
 def test_1_material_discontinuous_version(tmpdir):
-    my_model = F.HTransportProblemDiscontinuous()
+    my_model = F.HydrogenTransportProblemDiscontinuous()
 
     N = 1500
     vertices = np.linspace(0, 1, num=N)
@@ -232,7 +233,7 @@ def test_1_material_discontinuous_version(tmpdir):
 
 
 def test_3_materials_transient(tmpdir):
-    my_model = F.HTransportProblemDiscontinuous()
+    my_model = F.HydrogenTransportProblemDiscontinuous()
 
     interface_1 = 0.5
     interface_2 = 0.7
@@ -340,7 +341,9 @@ def test_3_materials_transient(tmpdir):
 def test_2_mats_particle_flux_bc(tmpdir):
     mesh, mt, ct = generate_mesh()
 
-    my_model = F.HTransportProblemDiscontinuous()
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.method_interface = "nitsche"
+
     my_model.mesh = F.Mesh(mesh)
     my_model.volume_meshtags = ct
     my_model.facet_meshtags = mt

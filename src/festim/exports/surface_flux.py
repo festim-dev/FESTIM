@@ -1,45 +1,64 @@
 import ufl
 from dolfinx import fem
+from scifem import assemble_scalar
 
-from .surface_quantity import SurfaceQuantity
+from festim.exports.surface_quantity import SurfaceQuantity
+from festim.species import Species
+from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class SurfaceFlux(SurfaceQuantity):
     """Computes the flux of a field on a given surface
 
     Args:
-        field (festim.Species): species for which the surface flux is computed
-        surface (festim.SurfaceSubdomain1D): surface subdomain
-        filename (str, optional): name of the file to which the surface flux is exported
+        field: species for which the surface flux is computed
+        surface: surface subdomain
+        filename: name of the file to which the surface flux is exported
 
     Attributes:
         see `festim.SurfaceQuantity`
     """
 
+    field: Species
+    surface: SurfaceSubdomain
+    filename: str
+
+    title: str
+    value: float
+    data: list[float]
+
     @property
     def title(self):
         return f"{self.field.name} flux surface {self.surface.id}"
 
-    def compute(self, ds):
+    def __init__(
+        self, field: Species, surface: SurfaceSubdomain, filename: str | None = None
+    ) -> None:
+        super().__init__(field=field, surface=surface, filename=filename)
+
+    def compute(
+        self, u: fem.Function | ufl.indexed.Indexed, ds: ufl.Measure, entity_maps=None
+    ):
         """Computes the value of the flux at the surface
 
         Args:
-            ds (ufl.Measure): surface measure of the model
+            u: field for which the flux is computed
+            ds: surface measure of the model
+            entity_maps: entity maps relating parent mesh and submesh
         """
 
         # obtain mesh normal from field
         # if case multispecies, solution is an index, use sub_function_space
-        if isinstance(self.field.solution, ufl.indexed.Indexed):
+        if isinstance(u, ufl.indexed.Indexed):
             mesh = self.field.sub_function_space.mesh
         else:
-            mesh = self.field.solution.function_space.mesh
+            mesh = u.function_space.mesh
         n = ufl.FacetNormal(mesh)
 
-        self.value = fem.assemble_scalar(
+        self.value = assemble_scalar(
             fem.form(
-                -self.D
-                * ufl.dot(ufl.grad(self.field.solution), n)
-                * ds(self.surface.id)
+                -self.D * ufl.dot(ufl.grad(u), n) * ds(self.surface.id),
+                entity_maps=entity_maps,
             )
         )
         self.data.append(self.value)

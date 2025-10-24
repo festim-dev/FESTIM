@@ -1,3 +1,4 @@
+import tempfile
 import time
 
 from mpi4py import MPI
@@ -32,7 +33,6 @@ from ufl import (
     exp,
     grad,
 )
-import tempfile
 
 
 def fenics_test_permeation_problem(mesh_size=1001):
@@ -43,7 +43,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     mesh_points = np.reshape(indices, (len(indices), 1))
     indexes = np.arange(mesh_points.shape[0])
     cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
-    my_mesh = create_mesh(MPI.COMM_WORLD, cells, mesh_points, domain)
+    my_mesh = create_mesh(comm=MPI.COMM_WORLD, cells=cells, x=mesh_points, e=domain)
     fdim = my_mesh.topology.dim - 1
     vdim = my_mesh.topology.dim
     n = FacetNormal(my_mesh)
@@ -200,13 +200,11 @@ def test_festim_vs_fenics_permeation_benchmark():
     diff = (fenics_time - festim_time) / fenics_time
     threshold = -0.1
     if diff < threshold:
-        raise ValueError(
-            f"festim is {
-                np.abs(diff):.1%
-            } slower than fenics, current acceptable threshold of {
-                np.abs(threshold):.1%
-            }"
+        msg = (
+            f"festim is {np.abs(diff):.1%} slower than fenics, "
+            f"current acceptable threshold of {np.abs(threshold):.1%}"
         )
+        raise ValueError(msg)
     else:
         print(f"avg relative diff between festim and fenics {diff:.1%}")
 

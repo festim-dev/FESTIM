@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from typing import Optional
 
 import dolfinx
 import numpy as np
@@ -35,9 +34,9 @@ def as_fenics_constant(
 
 def as_mapped_function(
     value: Callable,
-    function_space: Optional[fem.functionspace] = None,
-    t: Optional[fem.Constant] = None,
-    temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
+    function_space: fem.FunctionSpace | None = None,
+    t: fem.Constant | None = None,
+    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
 ) -> ufl.core.expr.Expr:
     """Maps a user given callable function to the mesh, time or temperature within
     festim as needed
@@ -70,8 +69,8 @@ def as_mapped_function(
 def as_fenics_interp_expr_and_function(
     value: Callable,
     function_space: dolfinx.fem.function.FunctionSpace,
-    t: Optional[fem.Constant] = None,
-    temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
+    t: fem.Constant | None = None,
+    temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
 ) -> tuple[fem.Expression, fem.Function]:
     """Takes a user given callable function, maps the function to the mesh, time or
     temperature within festim as needed. Then creates the fenics interpolation
@@ -202,10 +201,10 @@ class Value:
 
     def convert_input_value(
         self,
-        function_space: Optional[dolfinx.fem.function.FunctionSpace] = None,
-        t: Optional[fem.Constant] = None,
-        temperature: Optional[fem.Function | fem.Constant | ufl.core.expr.Expr] = None,
-        up_to_ufl_expr: Optional[bool] = False,
+        function_space: dolfinx.fem.function.FunctionSpace | None = None,
+        t: fem.Constant | None = None,
+        temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
+        up_to_ufl_expr: bool | None = False,
     ):
         """Converts a user given value to a relevent fenics object depending
         on the type of the value provided
@@ -289,7 +288,12 @@ else:
     get_interpolation_points = lambda element: element.interpolation_points()
 
 
-def nmm_interpolate(f_out: fem.Function, f_in: fem.Function):
+def nmm_interpolate(
+    f_out: fem.Function,
+    f_in: fem.Function,
+    cells: dolfinx.mesh.MeshTags | None = None,
+    padding: float | None = 1e-11,
+):
     """Non Matching Mesh Interpolate: interpolate one function (f_in) from one mesh into
     another function (f_out) with a mismatching mesh
 
@@ -301,11 +305,39 @@ def nmm_interpolate(f_out: fem.Function, f_in: fem.Function):
     https://fenicsproject.discourse.group/t/gjk-error-in-interpolation-between-non-matching-second-ordered-3d-meshes/16086/6
     """
 
-    dim = f_out.function_space.mesh.topology.dim
-    index_map = f_out.function_space.mesh.topology.index_map(dim)
-    ncells = index_map.size_local + index_map.num_ghosts
-    cells = np.arange(ncells, dtype=np.int32)
+    if cells is None:
+        dim = f_out.function_space.mesh.topology.dim
+        index_map = f_out.function_space.mesh.topology.index_map(dim)
+        ncells = index_map.size_local + index_map.num_ghosts
+        cells = np.arange(ncells, dtype=np.int32)
+
     interpolation_data = fem.create_interpolation_data(
-        f_out.function_space, f_in.function_space, cells, padding=1e-11
+        f_out.function_space, f_in.function_space, cells, padding=padding
     )
     f_out.interpolate_nonmatching(f_in, cells, interpolation_data=interpolation_data)
+
+
+def is_it_time_to_export(
+    times: list | None, current_time: float, atol=0, rtol=1.0e-5
+) -> bool:
+    """
+    Checks if the exported field should be written to a file or not based on the
+    current time and the times in `export.times`
+
+    Args:
+        current_time: the current simulation time
+        atol: absolute tolerance for time comparison
+        rtol: relative tolerance for time comparison
+        times: the times at which the field should be exported, if None, returns True
+
+    Returns:
+        bool: True if the exported field should be written to a file, else False
+    """
+    if times is None:
+        return True
+
+    for time in times:
+        if np.isclose(time, current_time, atol=atol, rtol=rtol):
+            return True
+
+    return False

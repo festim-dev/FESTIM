@@ -1,3 +1,5 @@
-__all__ = ["Mesh"]
+from .mesh import CoordinateSystem, Mesh
+from .mesh_1d import Mesh1D
+from .mesh_from_xdmf import MeshFromXDMF
 
-from .mesh import Mesh
+__all__ = ["CoordinateSystem", "Mesh", "Mesh1D", "MeshFromXDMF"]
