@@ -99,3 +99,32 @@ def test_title_generation(tmp_path, value):
     expected_title = "Temperature surface 35"
 
     assert title[1] == expected_title
+
+
+def test_not_implemented_error_raised_with_multiple_volume_domains():
+    """Test that NotImplementedError is raised for problems with multiple volume domains."""
+
+    # BUILD
+    L = 1.0
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, L, num=101))
+
+    my_mat = F.Material(D_0=1, E_D=1)
+    dummy_surface = F.SurfaceSubdomain1D(id=1, x=L)
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=my_mat)
+    vol_2 = F.VolumeSubdomain1D(id=1, borders=[0.5, L], material=my_mat)
+
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol_1, vol_2],
+        species=[F.Species("H")],
+    )
+
+    my_model.initialise_exports()
+
+    my_model.exports = [F.AverageSurfaceTemperature(surface=dummy_surface)]
+
+    # TEST
+    with pytest.raises(NotImplementedError):
+        my_model.initialise_exports()
