@@ -1142,7 +1142,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     "in 'subdomains' attribute for discontinuous problem"
                 )
             if not isinstance(spe.subdomains, list):
-                raise TypeError("subdomains attribute should be list")
+                raise TypeError("subdomains attribute in Species should be list")
 
         self.define_meshtags_and_measures()
 
