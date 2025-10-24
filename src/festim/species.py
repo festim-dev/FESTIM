@@ -14,40 +14,35 @@ class Species:
     Hydrogen species class for H transport simulation.
 
     Args:
-        name (str, optional): a name given to the species. Defaults to None.
-        mobile (bool, optional): whether the species is mobile or not.
-            Defaults to True.
-        subdomain (F.VolumeSubdomain, optional): the volume subdomain where the
-            species is. Defaults to None.
+        name: a name given to the species. Defaults to None.
+        mobile: whether the species is mobile or not. Defaults to True.
+        subdomain: the volume subdomain where the species is. Defaults to None.
 
     Attributes:
-        name (str): a name given to the species.
-        mobile (bool): whether the species is mobile or not.
-        solution (dolfinx.fem.Function): the solution for the current timestep
-        prev_solution (dolfinx.fem.Function): the solution for the previous
-            timestep
-        test_function (ufl.Argument): the testfunction associated with this
-            species
-        sub_function_space (dolfinx.fem.function.FunctionSpaceBase): the
-            subspace of the function space
-        collapsed_function_space (dolfinx.fem.function.FunctionSpaceBase): the
-            collapsed function space for a species in the function space. In
-            case single species case, this is None.
-        post_processing_solution (dolfinx.fem.Function): the solution for post
-            processing
-        concentration (dolfinx.fem.Function): the concentration of the species
-        subdomains (F.VolumeSubdomain): the volume subdomains where the species is
-        subdomain_to_solution (dict): a dictionary mapping subdomains to solutions
-        subdomain_to_prev_solution (dict): a dictionary mapping subdomains to
-            previous solutions
-        subdomain_to_test_function (dict): a dictionary mapping subdomains to
-            test functions
-        subdomain_to_post_processing_solution (dict): a dictionary mapping
-            subdomains to post processing solutions
-        subdomain_to_collapsed_function_space (dict): a dictionary mapping
-            subdomains to collapsed function spaces
-        subdomain_to_function_space (dict): a dictionary mapping subdomains to
-            function spaces
+        name: a name given to the species.
+        mobile: whether the species is mobile or not.
+        solution: the solution for the current timestep
+        prev_solution: the solution for the previous timestep
+        test_function: the testfunction associated with this species
+        sub_function: the sub function of the species in case of multiple species in
+            the same function space
+        sub_function_space: the subspace of the function space
+        collapsed_function_space: the collapsed function space for a species in the
+            function space. In case single species case, this is None.
+        map_sub_to_main_solution: the mapping from the sub solution dofs to the main
+            solution dofs
+        post_processing_solution: the solution for post processing
+        concentration: the concentration of the species
+        subdomains: the volume subdomains where the species is
+        subdomain_to_solution: a dictionary mapping subdomains to solutions
+        subdomain_to_prev_solution: a dictionary mapping subdomains to previous
+            solutions
+        subdomain_to_test_function: a dictionary mapping subdomains to test functions
+        subdomain_to_post_processing_solution: a dictionary mapping subdomains to post
+            processing solutions
+        subdomain_to_collapsed_function_space: a dictionary mapping subdomains to
+            collapsed function spaces
+        subdomain_to_function_space: a dictionary mapping subdomains to function spaces
 
     Examples:
         :: testsetup:: Species
@@ -62,7 +57,18 @@ class Species:
 
     """
 
-    subdomains: list[_VolumeSubdomain] | _VolumeSubdomain
+    name: str | None
+    mobile: bool
+    solution: fem.Function | None
+    prev_solution: fem.Function | None
+    test_function: ufl.argument.Argument | None
+    sub_function_space: fem.function.FunctionSpace | None
+    collapsed_function_space: fem.function.FunctionSpace | None
+    map_sub_to_main_solution: list | None
+    post_processing_solution: fem.Function | None
+    concentration: fem.Function | None
+
+    subdomains: list[_VolumeSubdomain] | _VolumeSubdomain | None
     subdomain_to_solution: dict
     subdomain_to_prev_solution: dict
     subdomain_to_test_function: dict
@@ -70,16 +76,22 @@ class Species:
     subdomain_to_collapsed_function_space: dict
     subdomain_to_function_space: dict
 
-    def __init__(self, name: str = None, mobile=True, subdomains=None) -> None:
+    def __init__(
+        self,
+        name: str | None = None,
+        mobile: bool = True,
+        subdomains: list[_VolumeSubdomain] | _VolumeSubdomain | None = None,
+    ) -> None:
         self.name = name
         self.mobile = mobile
         self.solution = None
         self.prev_solution = None
         self.test_function = None
-        self.sub_function_space = None
-        self.post_processing_solution = None
-        self.collapsed_function_space = None
         self.sub_function = None
+        self.sub_function_space = None
+        self.collapsed_function_space = None
+        self.map_sub_to_main_solution = None
+        self.post_processing_solution = None
 
         self.subdomains = subdomains
         self.subdomain_to_solution = {}
@@ -115,25 +127,31 @@ class ImplicitSpecies:
     c = n - others
 
     Args:
-        n (Union[float, callable]): the total concentration of the species
-        others (list[Species]): the list of species from which the implicit
-            species concentration is computed (c = n - others)
-        name (str, optional): a name given to the species. Defaults to None.
+        n: the total concentration of the species
+        others: the list of species from which the implicit species concentration is
+            computed (c = n - others)
+        name: a name given to the species. Defaults to None.
 
     Attributes:
-        name (str): a name given to the species.
-        n (float): the total concentration of the species
-        others (list[Species]): the list of species from which the implicit
-            species concentration is computed (c = n - others)
-        concentration (form): the concentration of the species
+        n: the total concentration of the species
+        others: the list of species from which the implicit species concentration is
+            computed (c = n - others)
+        name: a name given to the species. Defaults to None.
+        concentration: the concentration of the species
         value_fenics: the total concentration as a fenics object
     """
+
+    n: Union[float, callable]
+    others: list[Species] | None
+    name: str | None
+    concentration: ufl.form.Form
+    value_fenics: fem.Constant | ufl.core.expr.Expr
 
     def __init__(
         self,
         n: Union[float, callable],
-        others: list[Species] = None,
-        name: str = None,
+        others: list[Species] | None = None,
+        name: str | None = None,
     ) -> None:
         self.name = name
         self.n = n
@@ -169,10 +187,10 @@ class ImplicitSpecies:
         """
         x = ufl.SpatialCoordinate(mesh)
 
-        if isinstance(self.n, (int, float)):
+        if isinstance(self.n, int | float):
             self.value_fenics = as_fenics_constant(mesh=mesh, value=self.n)
 
-        elif isinstance(self.n, (fem.Function, ufl.core.expr.Expr)):
+        elif isinstance(self.n, fem.Function | ufl.core.expr.Expr):
             self.value_fenics = self.n
 
         elif callable(self.n):
@@ -180,9 +198,10 @@ class ImplicitSpecies:
 
             if "t" in arguments and "x" not in arguments and "T" not in arguments:
                 # only t is an argument
-                if not isinstance(self.n(t=float(t)), (float, int)):
+                if not isinstance(self.n(t=float(t)), float | int):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {type(self.n(t=float(t)))} "
+                        "self.value should return a float or an int, not "
+                        f"{type(self.n(t=float(t)))}"
                     )
                 self.value_fenics = as_fenics_constant(
                     mesh=mesh, value=self.n(t=float(t))
@@ -202,7 +221,7 @@ class ImplicitSpecies:
         Args:
             t (float): the time
         """
-        if isinstance(self.n, (fem.Function, ufl.core.expr.Expr)):
+        if isinstance(self.n, fem.Function | ufl.core.expr.Expr):
             return
 
         if callable(self.n):
