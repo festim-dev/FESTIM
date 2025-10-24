@@ -958,7 +958,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if advec_term.velocity.explicit_time_dependent:
                 advec_term.velocity.update(t=t)
 
-    def update_solutions(self):
+    def update_post_processing_solutions(self):
+        """Updates the post-processing solutions of each species"""
+
         # update post-processing for mixed function space
         if self.multispecies:
             for spe in self.species:
@@ -969,7 +971,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
     def post_processing(self):
         """Post processes the model"""
 
-        self.update_solutions()
+        self.update_post_processing_solutions()
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
@@ -2067,7 +2069,8 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 spe.dg_expr
             )  # NOTE: do we need this line since it's in initialise?
 
-    def update_solutions(self):
+    def update_post_processing_solutions(self):
+        """Updates the post-processing solutions after each time step"""
         # need to compute c = theta * K_S
         # this expression is stored in species.dg_expr
         for spe in self.species:
