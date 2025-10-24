@@ -26,7 +26,7 @@ jobs:
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
-        conda install -c conda-forge fenics-dolfinx=${{ matrix.dolfinx }} adios4dolfinx
+        conda install -c conda-forge fenics-dolfinx=${{ matrix.dolfinx }} scifem adios4dolfinx
 
     - name: Install local package and dependencies
       shell: bash -l {0}
