@@ -1136,6 +1136,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
         for spe in self.species:
+            if not spe.subdomains:
+                raise ValueError(
+                    f"Species {spe.name} must have a list of subdomains defined "
+                    "in 'subdomains' attribute for discontinuous problem"
+                )
             if not isinstance(spe.subdomains, list):
                 raise TypeError("subdomains attribute should be list")
 
