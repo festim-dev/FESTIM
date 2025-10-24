@@ -480,6 +480,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
+                if isinstance(export, exports.AverageSurfaceTemperature):
+                    continue
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
                     D = spe_to_D_global[export.field]
@@ -1018,7 +1020,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if isinstance(
                     export,
                     exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
-                    exports.AverageSurfaceTemperature,
                 ):
                     if len(self.advection_terms) > 0:
                         warnings.warn(
@@ -1026,6 +1027,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             "evaluation of surface flux values"
                         )
                     export.compute(export.field.solution, self.ds)
+                elif isinstance(export, exports.AverageSurfaceTemperature):
+                    export.compute(self.ds)
                 else:
                     export.compute()
                 # update export data

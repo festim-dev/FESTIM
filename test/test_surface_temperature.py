@@ -21,36 +21,43 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
     # BUILD
     L = 6.0
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
-    dummy_surface = F.SurfaceSubdomain1D(id=1, x=6)
+    dummy_surface = F.SurfaceSubdomain1D(id=1, x=L)
     dummy_volume = F.VolumeSubdomain1D(
-        id=1, borders=[0, L], material=F.Material(D_0=1, E_D=1, name="dummy")
+        id=1, borders=(0.0, L), material=F.Material(D_0=1, E_D=1, name="dummy")
     )
+
     facet_meshtags, temp = my_mesh.define_meshtags(
         surface_subdomains=[dummy_surface], volume_subdomains=[dummy_volume]
     )
-
     ds = ufl.Measure("ds", domain=my_mesh.mesh, subdomain_data=facet_meshtags)
 
+    dt = F.Stepsize(initial_value=1)
+    settings = F.Settings(atol=1e05, rtol=1e-10, stepsize=dt, final_time=10)
     my_model = F.HydrogenTransportProblem(
-        mesh=my_mesh,
-        temperature=T_function,
+        mesh=my_mesh, temperature=T_function, settings=settings
     )
-    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+
+    my_model.species = [F.Species("H")]
+    my_model.subdomains = [
+        dummy_surface,
+        dummy_volume,
+    ]
+
+    my_model.t = fem.Constant(my_mesh.mesh, 0.0)
     dt = fem.Constant(my_mesh.mesh, 1.0)
 
     my_model.define_temperature()
     my_model.initialise_exports()
 
+    my_export = F.AverageSurfaceTemperature(surface=dummy_surface)
+    my_export.temperature_field = my_model.temperature_fenics
+    my_model.exports = [my_export]
+
     # RUN
-    for i in range(3):
+    for _ in range(3):
         my_model.t.value += dt.value
         my_model.update_time_dependent_values()
 
-    my_export = F.AverageSurfaceTemperature(surface=dummy_surface)
-    my_export.temperature_field = my_model.temperature_fenics
-    my_export.compute(ds)
-
-    my_model.exports = [my_export]
     my_model.initialise()
     my_model.run()
 
