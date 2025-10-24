@@ -1692,25 +1692,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
 
         # compute diffusivity function for surface fluxes
-
-        spe_to_D_global = {}  # links species to global D function
-        spe_to_D_global_expr = {}  # links species to D expression
-
+        # for the discontinuous case, we don't use D_global as in
+        # HydrogenTransportProblem
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
-                if export.field in spe_to_D_global:
-                    # if already computed then use the same D
-                    D = spe_to_D_global[export.field]
-                    D_expr = spe_to_D_global_expr[export.field]
-                else:
-                    # compute D and add it to the dict
-                    D, D_expr = self.define_D_global(export.field)
-                    spe_to_D_global[export.field] = D
-                    spe_to_D_global_expr[export.field] = D_expr
+                volume = self.surface_to_volume[export.surface]
+                D = volume.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature_fenics, export.field
+                )
+                # NOTE: maybe we need to make sure there are no functionspace clashes?
 
-                # add the global D to the export
                 export.D = D
-                export.D_expr = D_expr
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
