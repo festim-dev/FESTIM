@@ -47,7 +47,6 @@ def test_surface_temperature_compute_1D(T_function, expected_values):
     dt = fem.Constant(my_mesh.mesh, 1.0)
 
     my_model.define_temperature()
-    my_model.initialise_exports()
 
     my_export = F.AverageSurfaceTemperature(surface=dummy_surface)
     my_export.temperature_field = my_model.temperature_fenics
@@ -101,7 +100,7 @@ def test_title_generation(tmp_path, value):
     assert title[1] == expected_title
 
 
-def test_not_implemented_error_raised_with_multiple_volume_domains():
+def test_not_implemented_error_raised_with_initialise_exports_multiple_subdomains():
     """Test that NotImplementedError is raised for problems with multiple volume domains."""
 
     # BUILD
@@ -117,11 +116,9 @@ def test_not_implemented_error_raised_with_multiple_volume_domains():
     my_model = F.HydrogenTransportProblemDiscontinuous(
         mesh=test_mesh,
         temperature=10,
-        subdomains=[vol_1, vol_2],
+        subdomains=[dummy_surface, vol_1, vol_2],
         species=[F.Species("H")],
     )
-
-    my_model.initialise_exports()
 
     my_model.exports = [F.AverageSurfaceTemperature(surface=dummy_surface)]
 
