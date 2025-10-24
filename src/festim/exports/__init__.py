@@ -31,4 +31,5 @@ __all__ = [
     "VTXTemperatureExport",
     "VolumeQuantity",
     "XDMFExport",
+    "AverageSurfaceTemperature",
 ]
