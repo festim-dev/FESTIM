@@ -1608,13 +1608,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             interface.id
                         ) - 0.5 * mixed_term(
                             v_b, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
+                        ) * dInterface(
+                            interface.id
+                        )
 
                         F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
                             interface.id
                         ) - 0.5 * mixed_term(
                             v_t, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
+                        ) * dInterface(
+                            interface.id
+                        )
                         F_0 += (
                             2
                             * gamma
@@ -1719,6 +1723,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # HydrogenTransportProblem
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
+                if isinstance(export, exports.AverageSurfaceTemperature):
+                    raise NotImplementedError(
+                        f"Export type {type(export)} not implemented for "
+                        f"mixed-domain approach"
+                    )
                 volume = self.surface_to_volume[export.surface]
                 D = volume.material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature_fenics, export.field
@@ -1830,9 +1839,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.Profile1DExport):
-                assert export.subdomain, (
-                    "Profile1DExport requires a subdomain to be set"
-                )
+                assert (
+                    export.subdomain
+                ), "Profile1DExport requires a subdomain to be set"
                 u = export.subdomain.u
                 if export._dofs is None:
                     index = self.subdomain_to_species[export.subdomain].index(
