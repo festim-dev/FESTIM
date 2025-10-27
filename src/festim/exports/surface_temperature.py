@@ -8,16 +8,22 @@ class AverageSurfaceTemperature(SurfaceQuantity):
     """Exports the average temperature on a given surface.
 
     Args:
-        surface (int or festim.SurfaceSubdomain): the surface subdomain
-        filename (str, optional): name of the file to which the average surface temperature is exported
+        surface: the surface subdomain
+        filename: name of the file to which the average surface temperature is exported
 
     Attributes:
-        temperature_field (fem.Constant or fem.Function): the temperature field
+        temperature_field: the temperature field
         surface (int or festim.SurfaceSubdomain): the surface subdomain
         filename (str): name of the file to which the surface temperature is exported
         t (list): list of time values
         data (list): list of average temperature values on the surface
     """
+    
+    surface: int | SurfaceSubdomain
+    filename: str | None
+    
+    temperature_field: fem.Constant | fem.Function
+
 
     def __init__(self, surface, filename: str = None) -> None:
         self.surface = surface
