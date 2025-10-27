@@ -10,6 +10,8 @@ from packaging.version import Version
 
 import festim as F
 
+from festim import k_B
+
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
@@ -1252,7 +1254,7 @@ def test_create_flux_values_fenics_multispecies():
     assert np.isclose(float(my_model.boundary_conditions[1].value_fenics), 11)
 
 
-def test_not_implemented_error_raised_with_D_as_function():
+def test_D_as_function_multiple_subdomains():
     """Test that if a function is given as diffusion coeff of a material for multiple subdomain case,
     that it is passed to D_global_mult"""
 
@@ -1278,11 +1280,55 @@ def test_not_implemented_error_raised_with_D_as_function():
 
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
-    D1 = my_model.define_D_mult_subdomains(H, vol_1)
-    D2 = my_model.define_D_mult_subdomains(H, vol_2)
+    D1 = my_model.define_D_mult_subdomains(
+        species=H,
+        volume=vol_1,
+    )
+    D2 = my_model.define_D_mult_subdomains(
+        species=H,
+        volume=vol_2,
+    )
 
     assert D1 == D_func1
     assert D2 == D_func2
+
+
+def test_D_not_function_multiple_subdomains():
+    """Test that if a float or int is given as diffusion coeff of a material for multiple subdomain case,
+    that it is passed to D_global_mult and defined correctly"""
+
+    # BUILD
+    test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    D_01 = 5
+    D_02 = 7
+
+    my_mat1 = F.Material(D_0=D_01, E_D=1)
+    my_mat2 = F.Material(D_0=D_02, E_D=1)
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=my_mat1)
+    vol_2 = F.VolumeSubdomain1D(id=1, borders=[0.5, 1], material=my_mat2)
+    H = F.Species("H")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[vol_1, vol_2],
+        species=[F.Species("H")],
+    )
+
+    my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
+    D1 = my_model.define_D_mult_subdomains(
+        species=H, volume=vol_1, mesh=test_mesh.mesh, temperature=my_model.temperature
+    )
+    D2 = my_model.define_D_mult_subdomains(
+        species=H, volume=vol_2, mesh=test_mesh.mesh, temperature=my_model.temperature
+    )
+
+    D_analytical_1 = D_01 * np.exp(-1 / F.k_B / my_model.temperature)
+    D_analytical_2 = D_02 * np.exp(-1 / F.k_B / my_model.temperature)
+
+    assert np.isclose(float(D1), D_analytical_1)
+    assert np.isclose(float(D2), D_analytical_2)
 
 
 def test_define_D_global_with_D_as_function():
