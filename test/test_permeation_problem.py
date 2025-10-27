@@ -100,7 +100,6 @@ def test_permeation_problem(mesh_size=1001):
         option_prefix = ksp.getOptionsPrefix()
         opts[f"{option_prefix}ksp_type"] = "cg"
         opts[f"{option_prefix}pc_type"] = "gamg"
-        opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
         ksp.setFromOptions()
     elif Version(dolfinx.__version__) > Version("0.9.0"):
         snes = my_model.solver.solver
@@ -109,9 +108,9 @@ def test_permeation_problem(mesh_size=1001):
         opts[f"{option_prefix}snes_atol"] = 0
         opts[f"{option_prefix}snes_rtol"] = 0
         opts[f"{option_prefix}snes_stol"] = 1e-8
+        opts[f"{option_prefix}snes_max_it"] = 30
         opts[f"{option_prefix}ksp_type"] = "cg"
         opts[f"{option_prefix}pc_type"] = "gamg"
-        opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
         snes.setFromOptions()
 
     my_model.run()

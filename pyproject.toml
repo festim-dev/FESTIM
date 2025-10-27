@@ -32,8 +32,8 @@ lint = ["ruff", "mypy"]
 docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]
 
 [project.urls]
-Homepage = "https://github.com/RemDelaporteMathurin/FESTIM"
-Issues = "https://github.com/RemDelaporteMathurin/FESTIM/issues"
+Homepage = "https://github.com/festim-dev/FESTIM"
+Issues = "https://github.com/festim-dev/FESTIM/issues"
 
 
 [tool.setuptools_scm]

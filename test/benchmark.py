@@ -5,6 +5,7 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 import basix
+import dolfinx
 import numpy as np
 import tqdm.autonotebook
 from dolfinx.fem import (
@@ -17,12 +18,9 @@ from dolfinx.fem import (
     locate_dofs_geometrical,
     locate_dofs_topological,
 )
-from dolfinx.fem.petsc import (
-    NonlinearProblem,
-)
+from dolfinx.fem.petsc import NonlinearProblem
 from dolfinx.io import XDMFFile
 from dolfinx.mesh import create_mesh, locate_entities, meshtags
-from dolfinx.nls.petsc import NewtonSolver
 from test_permeation_problem import test_permeation_problem
 from ufl import (
     FacetNormal,
@@ -111,24 +109,28 @@ def fenics_test_permeation_problem(mesh_size=1001):
 
     dt = 1 / 20
     final_time = 50
-    num_steps = int(final_time / dt)
 
     F = dot(D * grad(u), grad(v)) * dx(1)
     F += ((u - u_n) / dt) * v * dx(1)
 
-    problem = NonlinearProblem(F, u, bcs=bcs)
-    solver = NewtonSolver(MPI.COMM_WORLD, problem)
-    solver.convergence_criterion = "incremental"
-    solver.rtol = 1e-10
-    solver.atol = 1e10
-    solver.report = True
-    ksp = solver.krylov_solver
-    opts = PETSc.Options()
-    option_prefix = ksp.getOptionsPrefix()
-    opts[f"{option_prefix}ksp_type"] = "cg"
-    opts[f"{option_prefix}pc_type"] = "gamg"
-    opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-    ksp.setFromOptions()
+    petsc_options = {
+        "snes_type": "newtonls",
+        "snes_linesearch_type": "none",
+        "snes_stol": 1e-8,
+        "snes_atol": 0,
+        "snes_rtol": 0,
+        "snes_max_it": 30,
+        "ksp_type": "cg",
+        "pc_type": "gamg",
+    }
+
+    solver = NonlinearProblem(
+        F,
+        u,
+        bcs=bcs,
+        petsc_options=petsc_options,
+        petsc_options_prefix="festim_solver",
+    )
 
     temp_dir = tempfile.TemporaryDirectory()
     mobile_xdmf = XDMFFile(
@@ -146,7 +148,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
         progress.update(float(dt))
         t += float(dt)
 
-        solver.solve(u)
+        _ = solver.solve()
 
         mobile_xdmf.write_function(u, t)
 

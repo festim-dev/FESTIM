@@ -3,11 +3,12 @@ on: [pull_request, push]
 
 jobs:
   run-tests:
+    name: run-tests (fenics-dolfinx ${{ matrix.container_version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        container_version: [v0.9.0, nightly]
+        container_version: [v0.9.0, v0.10.0, nightly]
     container: dolfinx/dolfinx:${{ matrix.container_version }}
     steps:
         - name: Checkout code

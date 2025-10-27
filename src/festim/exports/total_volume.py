@@ -1,5 +1,4 @@
 import ufl
-from dolfinx import fem
 from scifem import assemble_scalar
 
 from festim.exports.volume_quantity import VolumeQuantity
@@ -31,7 +30,5 @@ class TotalVolume(VolumeQuantity):
             dx: volume measure of the model
             entity_maps: entity maps relating parent mesh and submesh
         """
-        self.value = assemble_scalar(
-            fem.form(u * dx(self.volume.id), entity_maps=entity_maps)
-        )
+        self.value = assemble_scalar(u * dx(self.volume.id), entity_maps=entity_maps)
         self.data.append(self.value)
