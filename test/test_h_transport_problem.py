@@ -1259,12 +1259,15 @@ def test_not_implemented_error_raised_with_D_as_function():
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
     V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
-    D_func = fem.Function(V)
-    D_func.x.array[:] = 7.0
+    D_func1 = fem.Function(V)
+    D_func1.x.array[:] = 7.0
+    D_func2 = fem.Function(V)
+    D_func2.x.array[:] = 1.0
 
-    my_mat = F.Material(D=D_func)
-    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=my_mat)
-    vol_2 = F.VolumeSubdomain1D(id=1, borders=[0.5, 1], material=my_mat)
+    my_mat1 = F.Material(D=D_func1)
+    my_mat2 = F.Material(D=D_func2)
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=my_mat1)
+    vol_2 = F.VolumeSubdomain1D(id=1, borders=[0.5, 1], material=my_mat2)
     H = F.Species("H")
     my_model = F.HydrogenTransportProblem(
         mesh=test_mesh,
@@ -1275,7 +1278,11 @@ def test_not_implemented_error_raised_with_D_as_function():
 
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
-    D = my_model.define_D_mult_subdomains(H, vol_1)
+    D1 = my_model.define_D_mult_subdomains(H, vol_1)
+    D2 = my_model.define_D_mult_subdomains(H, vol_2)
+
+    assert D1 == D_func1
+    assert D2 == D_func2
 
 
 def test_define_D_global_with_D_as_function():

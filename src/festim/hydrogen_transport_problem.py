@@ -546,11 +546,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         # if diffusion coeffient has been given as a function, use that
         if self.volume_subdomains[0].material.D:
-            if len(self.volume_subdomains) > 1:
-                raise NotImplementedError(
-                    "Giving the diffusion coefficient as a function is currently "
-                    "only supported for a single volume subdomain case"
-                )
+            # if len(self.volume_subdomains) > 1:
+            #     raise NotImplementedError(
+            #         "Giving the diffusion coefficient as a function is currently "
+            #         "only supported for a single volume subdomain case"
+            #     )
             return self.volume_subdomains[0].material.D, None
 
         D_0 = fem.Function(self.V_DG_0)
@@ -586,16 +586,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
         assert isinstance(species, _species.Species)
 
         # if diffusion coeffient has been given as a function, use that
-        global_D = {}
         if volume.material.D:
-            global_D[volume.id] = volume.material.D
+            D = volume.material.D
         else:
-            global_D[volume.id] = (
-                volume.material.volume.material.get_diffusion_coefficient(
-                    self.mesh, self.temperature, self.field
-                )
+            D = volume.material.volume.material.get_diffusion_coefficient(
+                self.mesh, self.temperature, self.field
             )
-        return global_D
+        return D
 
     def define_function_spaces(self, element_degree=1):
         """Creates the function space of the model, creates a mixed element if
