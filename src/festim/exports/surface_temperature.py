@@ -2,6 +2,7 @@ import csv
 from dolfinx import fem
 import ufl
 from .surface_quantity import SurfaceQuantity
+from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class AverageSurfaceTemperature(SurfaceQuantity):
@@ -18,12 +19,11 @@ class AverageSurfaceTemperature(SurfaceQuantity):
         t (list): list of time values
         data (list): list of average temperature values on the surface
     """
-    
+
     surface: int | SurfaceSubdomain
     filename: str | None
-    
-    temperature_field: fem.Constant | fem.Function
 
+    temperature_field: fem.Constant | fem.Function
 
     def __init__(self, surface, filename: str = None) -> None:
         self.surface = surface
@@ -46,12 +46,10 @@ class AverageSurfaceTemperature(SurfaceQuantity):
         """
         temperature_field = self.temperature_field
 
-        surface_integral = fem.assemble_scalar(
+        self.value = fem.assemble_scalar(
             fem.form(temperature_field * ds(self.surface.id))
-        )  # integral over surface
-
-        surface_area = fem.assemble_scalar(fem.form(1 * ds(self.surface.id)))
-
-        self.value = surface_integral / surface_area  # avg temp
+        ) / fem.assemble_scalar(
+            fem.form(1 * ds(self.surface.id))
+        )  # integral over surface / surface area
 
         self.data.append(self.value)
