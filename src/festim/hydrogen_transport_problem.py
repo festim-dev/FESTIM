@@ -12,7 +12,7 @@ import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
-from packaging.version import Version
+from scifem import BlockedNewtonSolver
 
 import festim.boundary_conditions
 import festim.problem
@@ -41,11 +41,6 @@ from festim.helpers import (
 from festim.material import SolubilityLaw
 
 from .mesh import CoordinateSystem, Mesh
-
-if Version(dolfinx.__version__) > Version("0.9.0"):
-    from dolfinx.fem.petsc import NonlinearProblem
-else:
-    from scifem import BlockedNewtonSolver
 
 __all__ = [
     "HydrogenTransportProblem",
@@ -1648,29 +1643,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_solver(self):
-        if Version(dolfinx.__version__) > Version("0.9.0"):
-            self.solver = NonlinearProblem(
-                F=self.forms,
-                u=[subdomain.u for subdomain in self.volume_subdomains],
-                J=self.J,
-                bcs=self.bc_forms,
-                petsc_options=self.petsc_options,
-                petsc_options_prefix="festim_solver",
-            )
-        else:
-            self.solver = BlockedNewtonSolver(
-                self.forms,
-                [subdomain.u for subdomain in self.volume_subdomains],
-                J=self.J,
-                bcs=self.bc_forms,
-                petsc_options=self.petsc_options,
-            )
+        self.solver = BlockedNewtonSolver(
+            self.forms,
+            [subdomain.u for subdomain in self.volume_subdomains],
+            J=self.J,
+            bcs=self.bc_forms,
+            petsc_options=self.petsc_options,
+        )
         self.solver.max_iterations = self.settings.max_iterations
         self.solver.convergence_criterion = self.settings.convergence_criterion
         self.solver.atol = (
             self.settings.atol
-            if not callable(self.settings.rtol)
-            else self.settings.rtol(float(self.t))
+            if not callable(self.settings.atol)
+            else self.settings.atol(float(self.t))
         )
         self.solver.rtol = (
             self.settings.rtol
