@@ -27,6 +27,6 @@ class AverageSurface(SurfaceQuantity):
         """
 
         self.value = assemble_scalar(
-            fem.form(self.field.solution * ds(self.surface.id))
-        ) / assemble_scalar(fem.form(1 * ds(self.surface.id)))
+            self.field.solution * ds(self.surface.id)
+        ) / assemble_scalar(1 * ds(self.surface.id))
         self.data.append(self.value)

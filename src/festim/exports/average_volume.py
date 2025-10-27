@@ -26,6 +26,6 @@ class AverageVolume(VolumeQuantity):
         subdomain, and appends it to the data list
         """
         self.value = assemble_scalar(
-            fem.form(u * dx(self.volume.id), entity_maps=entity_maps)
-        ) / assemble_scalar(fem.form(1 * dx(self.volume.id)))
+            u * dx(self.volume.id), entity_maps=entity_maps
+        ) / assemble_scalar(1 * dx(self.volume.id))
         self.data.append(self.value)

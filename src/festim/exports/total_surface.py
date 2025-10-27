@@ -29,7 +29,5 @@ class TotalSurface(SurfaceQuantity):
         Args:
             ds (ufl.Measure): surface measure of the model
         """
-        self.value = assemble_scalar(
-            fem.form(self.field.solution * ds(self.surface.id))
-        )
+        self.value = assemble_scalar(self.field.solution * ds(self.surface.id))
         self.data.append(self.value)
