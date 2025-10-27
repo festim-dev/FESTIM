@@ -636,7 +636,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
             spe.sub_function_space = self.function_space.sub(idx)
             spe.sub_function = self.u.sub(idx)  # TODO add this to discontinuous class
             spe.post_processing_solution = self.u.sub(idx).collapse()
-            spe.collapsed_function_space, _ = self.function_space.sub(idx).collapse()
+            spe.collapsed_function_space, spe.map_sub_to_main_solution = (
+                self.function_space.sub(idx).collapse()
+            )
 
         for idx, spe in enumerate(self.species):
             spe.solution = sub_solutions[idx]
@@ -924,16 +926,18 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if advec_term.velocity.explicit_time_dependent:
                 advec_term.velocity.update(t=t)
 
-    def update_post_processing_solution(self):
-        """Updates the post-processing solution of each species"""
+    def update_post_processing_solutions(self):
+        """Updates the post-processing solutions of each species"""
 
         for spe in self.species:
-            spe.post_processing_solution = spe.sub_function.collapse()
+            spe.post_processing_solution.x.array[:] = self.u.x.array[
+                spe.map_sub_to_main_solution
+            ]
 
     def post_processing(self):
         """Post processes the model"""
 
-        self.update_post_processing_solution()
+        self.update_post_processing_solutions()
 
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
@@ -1095,8 +1099,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
         for spe in self.species:
+            if not spe.subdomains:
+                raise ValueError(
+                    f"Species {spe.name} must have a list of subdomains defined "
+                    "in 'subdomains' attribute for discontinuous problem"
+                )
             if not isinstance(spe.subdomains, list):
-                raise TypeError("subdomains attribute should be list")
+                raise TypeError("subdomains attribute in Species should be list")
 
         self.define_meshtags_and_measures()
 
@@ -1661,25 +1670,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
 
         # compute diffusivity function for surface fluxes
-
-        spe_to_D_global = {}  # links species to global D function
-        spe_to_D_global_expr = {}  # links species to D expression
-
+        # for the discontinuous case, we don't use D_global as in
+        # HydrogenTransportProblem
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
-                if export.field in spe_to_D_global:
-                    # if already computed then use the same D
-                    D = spe_to_D_global[export.field]
-                    D_expr = spe_to_D_global_expr[export.field]
-                else:
-                    # compute D and add it to the dict
-                    D, D_expr = self.define_D_global(export.field)
-                    spe_to_D_global[export.field] = D
-                    spe_to_D_global_expr[export.field] = D_expr
+                volume = self.surface_to_volume[export.surface]
+                D = volume.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature_fenics, export.field
+                )
+                # NOTE: maybe we need to make sure there are no functionspace clashes?
 
-                # add the global D to the export
                 export.D = D
-                export.D_expr = D_expr
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
@@ -2031,7 +2032,8 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 spe.dg_expr
             )  # NOTE: do we need this line since it's in initialise?
 
-    def update_post_processing_solution(self):
+    def update_post_processing_solutions(self):
+        """Updates the post-processing solutions after each time step"""
         # need to compute c = theta * K_S
         # this expression is stored in species.dg_expr
 
