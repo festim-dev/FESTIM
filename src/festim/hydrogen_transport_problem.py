@@ -590,7 +590,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             D = volume.material.D
         else:
             D = volume.material.volume.material.get_diffusion_coefficient(
-                self.mesh, self.temperature, self.field
+                mesh, temperature, field
             )
         return D
 
