@@ -1253,8 +1253,8 @@ def test_create_flux_values_fenics_multispecies():
 
 
 def test_not_implemented_error_raised_with_D_as_function():
-    """Test that NotImplementedError is raised when D is a function and more than one
-    volume subdomain has been defined"""
+    """Test that if a function is given as diffusion coeff of a material for multiple subdomain case,
+    that it is passed to D_global_mult"""
 
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
@@ -1275,16 +1275,7 @@ def test_not_implemented_error_raised_with_D_as_function():
 
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
-
-    # TEST
-    with pytest.raises(
-        NotImplementedError,
-        match=(
-            "Giving the diffusion coefficient as a function is currently only "
-            "supported for a single volume subdomain case"
-        ),
-    ):
-        my_model.define_D_global(H)
+    D = my_model.define_D_mult_subdomains(H, vol_1)
 
 
 def test_define_D_global_with_D_as_function():

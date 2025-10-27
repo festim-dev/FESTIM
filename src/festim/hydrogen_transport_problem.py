@@ -569,6 +569,34 @@ class HydrogenTransportProblem(problem.ProblemBase):
         D.interpolate(D_expr)
         return D, D_expr
 
+    def define_D_mult_subdomains(
+        self, species, volume, mesh=None, temperature=None, field=None
+    ):
+        """Defines the global diffusion coefficient for a given species
+
+        Args:
+            species (F.Species): the species
+            volume (F.VolumeSubdomain): the volume
+
+        Returns:
+            dolfinx.fem.Function, dolfinx.fem.Expression: the global diffusion
+                coefficient and the expression of the global diffusion coefficient
+                for a given species
+        """
+        assert isinstance(species, _species.Species)
+
+        # if diffusion coeffient has been given as a function, use that
+        global_D = {}
+        if volume.material.D:
+            global_D[volume.id] = volume.material.D
+        else:
+            global_D[volume.id] = (
+                volume.material.volume.material.get_diffusion_coefficient(
+                    self.mesh, self.temperature, self.field
+                )
+            )
+        return global_D
+
     def define_function_spaces(self, element_degree=1):
         """Creates the function space of the model, creates a mixed element if
         model is multispecies. Creates the main solution and previous solution
@@ -1597,13 +1625,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             interface.id
                         ) - 0.5 * mixed_term(
                             v_b, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
+                        ) * dInterface(
+                            interface.id
+                        )
 
                         F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
                             interface.id
                         ) - 0.5 * mixed_term(
                             v_t, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
+                        ) * dInterface(
+                            interface.id
+                        )
                         F_0 += (
                             2
                             * gamma
@@ -1706,12 +1738,26 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # compute diffusivity function for surface fluxes
         # for the discontinuous case, we don't use D_global as in
         # HydrogenTransportProblem
+
+        vol_to_D_global = {}
+
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
                 volume = self.surface_to_volume[export.surface]
-                D = volume.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, export.field
-                )
+                if volume.id in vol_to_D_global:
+                    D = vol_to_D_global[volume.id]
+                else:
+                    D = self.define_D_mult_subdomains(
+                        species=export.field,
+                        volume=volume,
+                        mesh=self.mesh.mesh,
+                        temperature=self.temperature_fenics,
+                    )
+                    vol_to_D_global[volume.id] = D
+
+                #    D = volume.material.get_diffusion_coefficient(
+                #         self.mesh.mesh, self.temperature_fenics, export.field
+                #     )
                 # NOTE: maybe we need to make sure there are no functionspace clashes?
 
                 export.D = D
@@ -1819,9 +1865,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.Profile1DExport):
-                assert export.subdomain, (
-                    "Profile1DExport requires a subdomain to be set"
-                )
+                assert (
+                    export.subdomain
+                ), "Profile1DExport requires a subdomain to be set"
                 u = export.subdomain.u
                 if export._dofs is None:
                     index = self.subdomain_to_species[export.subdomain].index(
