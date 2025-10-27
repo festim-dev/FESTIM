@@ -1,4 +1,3 @@
-from dolfinx import fem
 from scifem import assemble_scalar
 
 from festim.exports.surface_quantity import SurfaceQuantity

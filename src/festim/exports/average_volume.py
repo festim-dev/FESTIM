@@ -1,4 +1,3 @@
-from dolfinx import fem
 from scifem import assemble_scalar
 
 from festim.exports.volume_quantity import VolumeQuantity
