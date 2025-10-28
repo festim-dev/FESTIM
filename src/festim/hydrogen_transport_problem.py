@@ -672,17 +672,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
             spe.test_function = sub_test_functions[idx]
 
     def define_boundary_conditions(self):
-        # @jhdark this all_bcs could be a property
-        # I just don't want to modify self.boundary_conditions
+        """Defines the boundary conditions of the model"""
 
-        # create all_bcs which includes all flux bcs from SurfaceReactionBC
-        all_bcs = self.boundary_conditions.copy()
-        for bc in self.boundary_conditions:
-            if isinstance(bc, boundary_conditions.SurfaceReactionBC):
-                all_bcs += bc.flux_bcs
-                all_bcs.remove(bc)
-
-        for bc in all_bcs:
+        for bc in self.all_bcs:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 bc.species = _species.find_species_from_name(bc.species, self.species)
@@ -1384,6 +1376,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         advec_term.velocity.convert_input_value(
                             function_space=V, t=self.t
                         )
+
+    def define_boundary_conditions(self):
+        for bc in self.all_bcs:
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
+                subdomain = self.surface_to_volume[bc.subdomain]
+                bc.species.solution = bc.species.subdomain_to_solution[subdomain]
+
+        super().define_boundary_conditions()
 
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """
