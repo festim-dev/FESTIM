@@ -301,6 +301,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
         else:
             raise TypeError("value must be of type dolfinx.mesh.MeshTags")
 
+    @property
+    def all_bcs(self):
+        """Returns all boundary conditions, including fluxes from surface reactions"""
+        all_boundary_conditions = []
+        for bc in self.boundary_conditions:
+            if isinstance(bc, boundary_conditions.SurfaceReactionBC):
+                all_boundary_conditions.extend(bc.flux_bcs)
+            else:
+                all_boundary_conditions.append(bc)
+        return all_boundary_conditions
+
     def initialise(self):
         self.create_species_from_traps()
         self.define_function_spaces(element_degree=self.settings.element_degree)
