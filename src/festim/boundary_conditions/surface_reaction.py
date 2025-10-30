@@ -58,9 +58,22 @@ class SurfaceReactionBCpartial(ParticleFluxBC):
         else:
             gas_pressure = self.gas_pressure
 
-        product_of_reactants = self.reactant[0].concentration
+        # initialise with the concentration of the first reactant
+        if self.reactant[0].concentration:
+            product_of_reactants = self.reactant[0].concentration
+        else:  # probably used in HydrogenTransportProblemDiscontinuous
+            product_of_reactants = self.reactant[0].subdomain_to_solution[
+                self._volume_subdomain
+            ]
+
+        # then compute the product of the concentrations of the other reactants
         for reactant in self.reactant[1:]:
-            product_of_reactants *= reactant.concentration
+            if reactant.concentration:
+                product_of_reactants *= reactant.concentration
+            else:  # probably used in HydrogenTransportProblemDiscontinuous
+                product_of_reactants *= reactant.subdomain_to_solution[
+                    self._volume_subdomain
+                ]
 
         self.value_fenics = kd * gas_pressure - kr * product_of_reactants
 

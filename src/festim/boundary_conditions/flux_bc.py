@@ -187,6 +187,7 @@ class ParticleFluxBC(FluxBCBase):
         super().__init__(subdomain=subdomain, value=value)
         self.species = species
         self.species_dependent_value = species_dependent_value
+        self._volume_subdomain = None
 
     def create_value_fenics(self, mesh, temperature, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
@@ -227,7 +228,12 @@ class ParticleFluxBC(FluxBCBase):
                     kwargs["T"] = temperature
 
                 for name, species in self.species_dependent_value.items():
-                    kwargs[name] = species.concentration
+                    if species.concentration:
+                        kwargs[name] = species.concentration
+                    else:  # probably in discontinuous case
+                        kwargs[name] = species.subdomain_to_solution[
+                            self._volume_subdomain
+                        ]
 
                 self.value_fenics = self.value(**kwargs)
 
