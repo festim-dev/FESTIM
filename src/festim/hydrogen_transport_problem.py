@@ -1380,8 +1380,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def define_boundary_conditions(self):
         for bc in self.all_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                subdomain = self.surface_to_volume[bc.subdomain]
-                bc.species.solution = bc.species.subdomain_to_solution[subdomain]
+                bc._volume_subdomain = self.surface_to_volume[bc.subdomain]
 
         super().define_boundary_conditions()
 
