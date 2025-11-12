@@ -73,10 +73,11 @@ def test_callable_for_value():
 
     my_model.define_function_spaces()
     my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.function_space, T, t)
+    bc.create_value(species.collapsed_function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -116,10 +117,11 @@ def test_value_callable_x_t_T():
 
     my_model.define_function_spaces()
     my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
-    bc.create_value(my_model.function_space, T, t)
+    bc.create_value(species.collapsed_function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)
@@ -205,12 +207,13 @@ def test_callable_x_only():
 
     my_model.define_function_spaces()
     my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
 
     T = fem.Constant(my_model.mesh.mesh, 550.0)
     t = fem.Constant(my_model.mesh.mesh, 0.0)
 
     # TEST
-    bc.create_value(my_model.function_space, T, t)
+    bc.create_value(species.collapsed_function_space, T, t)
 
     # check that the value_fenics attribute is set correctly
     assert isinstance(bc.value_fenics, fem.Function)

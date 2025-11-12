@@ -186,7 +186,7 @@ def test_checkpointing_single_species(tmpdir):
     my_problem.initialise()
 
     # test that the initial condition is correct
-    u_prev = H.prev_solution
+    u_prev = my_problem.u_n.sub(0)
     np.testing.assert_allclose(u_ref.x.array, u_prev.x.array, atol=1e-14)
 
 

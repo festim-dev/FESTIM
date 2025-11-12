@@ -460,6 +460,7 @@ def test_post_processing_update_D_global():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -510,6 +511,7 @@ def test_post_processing_update_D_global_2():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -547,6 +549,7 @@ def test_post_processing_update_D_global_volume_1():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -584,6 +587,7 @@ def test_post_processing_update_D_global_volume_2():
     )
 
     my_model.define_function_spaces()
+    my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
     my_model.t = fem.Constant(my_model.mesh.mesh, 1.0)
     my_model.define_temperature()
@@ -867,9 +871,9 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
 
     # RUN
     my_model.initialise()
-
+    prev_solution = my_model.u_n.sub(0)
     assert np.isclose(
-        my_model.species[0].prev_solution.x.petsc_vec.array[-1],
+        prev_solution.x.petsc_vec.array[-1],
         expected_value,
     )
 
@@ -1344,3 +1348,28 @@ def test_exports_cyl_sph_coord_system_raise_not_implemented(coord_sys):
         match=f"Derived quantity exports are not implemented for {coord_sys} meshes",
     ):
         my_model.initialise_exports()
+
+
+def test_traps_with_CG_elements():
+    """Test that when creating species from traps, if the element for traps is set to
+    CG, the created species has a CG element as well"""
+
+    # BUILD
+    my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
+    my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    trap = F.Species(name="trap1", mobile=False)
+
+    my_model = F.HydrogenTransportProblem(
+        mesh=my_mesh,
+        subdomains=[my_vol],
+        species=[trap],
+    )
+
+    my_model._element_for_traps = "CG"
+
+    my_model.create_species_from_traps()
+    my_model.define_function_spaces(element_degree=1)
+
+    # TEST
+    assert my_model.function_space.sub(0).element.basix_element.discontinuous is False
