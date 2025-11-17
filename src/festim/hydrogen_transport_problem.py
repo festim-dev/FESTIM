@@ -1074,7 +1074,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     c = self.u.x.array[export._dofs][export._sort_coords]
                 else:
                     c = self.u.x.array[export._dofs]
-                export.data.append(c)
+                export.data.append(c.copy())
                 export.t.append(float(self.t))
 
 
@@ -1835,7 +1835,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                 c = u.x.array[export._dofs][export._sort_coords]
 
-                export.data.append(c)
+                export.data.append(c.copy())
                 export.t.append(float(self.t))
 
     def iterate(self):
