@@ -181,6 +181,7 @@ class ProblemBase:
                     "snes_atol": self.settings.atol,
                     "snes_rtol": self.settings.rtol,
                     "snes_max_it": self.settings.max_iterations,
+                    "snes_divergence_tolerance": "PETSC_UNLIMITED",
                     "ksp_type": "preonly",
                     "pc_type": "lu",
                     "pc_factor_mat_solver_type": linear_solver,
