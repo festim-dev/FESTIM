@@ -251,7 +251,9 @@ class ProblemBase:
         elif Version(dolfinx.__version__) > Version("0.9.0"):
             _ = self.solver.solve()
             converged_reason = self.solver.solver.getConvergedReason()
-            assert converged_reason > 0
+            assert converged_reason > 0, (
+                f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."
+            )
             nb_its = self.solver.solver.getIterationNumber()
 
         # post processing
