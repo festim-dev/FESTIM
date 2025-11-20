@@ -1010,9 +1010,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.write(float(self.t))
 
             if isinstance(export, exports.Profile1DExport):
-                # TODO this could be simplified if we always have a mixed element
-                # (even with only one element)
-
                 # computing dofs at each time step is costly so storing it in the export
                 if export._dofs is None:
                     index = self.species.index(export.field)
