@@ -1318,12 +1318,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for advec_term in self.advection_terms:
             if isinstance(advec_term, AdvectionTerm):
                 for spe in advec_term.species:
-                    for subdomain in spe.subdomains:
-                        V = spe.subdomain_to_function_space[subdomain]
-
-                        advec_term.velocity.convert_input_value(
-                            function_space=V, t=self.t
-                        )
+                    V = spe.subdomain_to_function_space[advec_term.subdomain]
+                    advec_term.velocity.convert_input_value(function_space=V, t=self.t)
 
     def define_boundary_conditions(self):
         for bc in self._unpacked_bcs:
@@ -1436,7 +1432,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 conc = spe.subdomain_to_solution[subdomain]
 
                 vel = adv_term.velocity.fenics_object
-
+                # print(vel.x.array)
                 form += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
                     subdomain.id
                 )
