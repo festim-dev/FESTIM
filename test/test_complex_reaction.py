@@ -174,3 +174,43 @@ def test_reaction(k, p, c_A_0):
     model = model_test_reaction(stepsize=0.5, k=k, p=p, c_A_0=c_A_0)
     error = compute_error(model)
     assert error < 1e-2
+
+
+def test_surface_reaction_in_discontinuous_case():
+    """Test the SurfaceReactionBC in a discontinuous problem setup"""
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=1000))
+
+    material = F.Material(D_0=1e-2, E_D=0, K_S_0=2.0, E_K_S=0)
+    subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=material)
+    left_surface = F.SurfaceSubdomain1D(id=1, x=0)
+    right_surface = F.SurfaceSubdomain1D(id=2, x=1)
+
+    my_model.subdomains = [subdomain, left_surface, right_surface]
+    my_model.surface_to_volume = {
+        right_surface: subdomain,
+        left_surface: subdomain,
+    }
+
+    H = F.Species("H", mobile=True, subdomains=[subdomain])
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(left_surface, value=100, species=H),
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=1,
+            k_r0=1,
+            E_kr=0.2,
+            k_d0=0,
+            E_kd=0,
+            subdomain=right_surface,
+        ),
+    ]
+
+    my_model.temperature = 500
+
+    my_model.settings = F.Settings(atol=1e-5, rtol=1e-5, transient=False)
+
+    my_model.initialise()
