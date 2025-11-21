@@ -3,33 +3,29 @@ title: FESTIM
 message: 'If you use this software, please cite it as below.'
 type: software
 authors:
-  - given-names: Rémi
-    family-names: Delaporte-Mathurin
-    email: rdelaportemathurin@gmail.com
-    orcid: 'https://orcid.org/0000-0003-1064-8882'
-  - given-names: James
-    family-names: Dark
+  - name: The FESTIM contributors
 
-repository-code: 'https://github.com/RemDelaporteMathurin/FESTIM'
-version: 0.8.1
+repository-code: 'https://github.com/festim-dev/FESTIM'
 preferred-citation:
   authors:
     - given-names: Rémi
       family-names: Delaporte-Mathurin
+    - given-names: James
+      family-names: Dark
+    - given-names: Gabriele
+      family-names: Ferrero
     - given-names: Etienne
       family-names: Hodille
-    - given-names: Jonathan
-      family-names: Mougenot
-    - given-names: Yann
-      family-names: Charles
-    - given-names: Christian
-      family-names: Grisolia
-  title: "Finite element analysis of hydrogen retention in ITER plasma facing components using FESTIM"
+    - given-names: Vladimir
+      family-names: Kulagin
+    - given-names: Samuele
+      family-names: Meschini
+  title: "FESTIM: An open-source code for hydrogen transport simulations"
   type: article
-  year: 2019
-  doi: 10.1016/j.nme.2019.100709
-  url: "http://www.sciencedirect.com/science/article/pii/S2352179119300547"
-  issn: 2352-1791
-  volume: 21
-  pages: 100709
-  journal: "Nuclear Materials and Energy"
+  year: 2024
+  doi: 10.1016/j.ijhydene.2024.03.184
+  url: "https://doi.org/10.1016/j.ijhydene.2024.03.184"
+  issn: 0360-3199
+  volume: 63
+  pages: 786-802
+  journal: "International Journal of Hydrogen Energy"
