@@ -297,7 +297,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             raise TypeError("value must be of type dolfinx.mesh.MeshTags")
 
     @property
-    def all_bcs(self):
+    def _unpacked_bcs(self):
         """Returns all boundary conditions, including fluxes from surface reactions"""
         all_boundary_conditions = []
         for bc in self.boundary_conditions:
@@ -654,7 +654,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
     def define_boundary_conditions(self):
         """Defines the boundary conditions of the model"""
 
-        for bc in self.all_bcs:
+        for bc in self._unpacked_bcs:
             if isinstance(bc.species, str):
                 # if name of species is given then replace with species object
                 bc.species = _species.find_species_from_name(bc.species, self.species)
@@ -1326,7 +1326,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         )
 
     def define_boundary_conditions(self):
-        for bc in self.all_bcs:
+        for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 bc._volume_subdomain = self.surface_to_volume[bc.subdomain]
 
