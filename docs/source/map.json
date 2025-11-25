@@ -364,7 +364,20 @@
                 "name": "Exeter University UK",
                 "path": "images/user_logos/Exeter_University_UK.png"
             }
+        },
+        {
+            "type": "Feature",
+            "geometry": {
+                "type": "Point",
+                "coordinates": [
+                    -77.6260033,
+                    43.1305531
+                ]
+            },
+            "properties": {
+                "name": "University of Rochester",
+                "path": "images/user_logos/University_of_Rochester.png"
+            }
         }
-        
     ]
 }
