@@ -1147,6 +1147,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.define_temperature()
         self.convert_source_input_values_to_fenics_objects()
         self.convert_advection_term_to_fenics_objects()
+        self.define_boundary_conditions()
         self.create_flux_values_fenics()
         self.create_initial_conditions()
 
@@ -1154,7 +1155,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.create_subdomain_formulation(subdomain)
             subdomain.u.name = f"u_{subdomain.id}"
 
-        self.define_boundary_conditions()
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
@@ -1408,7 +1408,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
 
         # add fluxes
-        for bc in self.boundary_conditions:
+        for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 # check that the bc is applied on a surface
                 # belonging to this subdomain
@@ -1551,13 +1551,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             interface.id
                         ) - 0.5 * mixed_term(
                             v_b, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
+                        ) * dInterface(
+                            interface.id
+                        )
 
                         F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
                             interface.id
                         ) - 0.5 * mixed_term(
                             v_t, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
+                        ) * dInterface(
+                            interface.id
+                        )
                         F_0 += (
                             2
                             * gamma
@@ -1631,7 +1635,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
-        for bc in self.boundary_conditions:
+        for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 volume_subdomain = self.surface_to_volume[bc.subdomain]
                 bc.create_value_fenics(
@@ -1773,9 +1777,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.write(t=float(self.t))
 
             elif isinstance(export, exports.Profile1DExport):
-                assert export.subdomain, (
-                    "Profile1DExport requires a subdomain to be set"
-                )
+                assert (
+                    export.subdomain
+                ), "Profile1DExport requires a subdomain to be set"
                 u = export.subdomain.u
                 if export._dofs is None:
                     index = self.subdomain_to_species[export.subdomain].index(
@@ -1908,7 +1912,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             )
 
         # add fluxes
-        for bc in self.boundary_conditions:
+        for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 self.formulation -= (
                     bc.value_fenics

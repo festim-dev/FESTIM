@@ -1373,3 +1373,93 @@ def test_traps_with_CG_elements():
 
     # TEST
     assert my_model.function_space.sub(0).element.basix_element.discontinuous is False
+
+
+def test_surface_reaction_BC_discontinuous():
+    """Test that surface reaction BC conserves flux"""
+
+    # TODO: clean this up
+    # BUILD
+    model_probe = F.HydrogenTransportProblemDiscontinuous()
+
+    probe_thick = 1
+    breeder_thick = 1
+
+    probe = F.Material(
+        D_0=1,
+        E_D=0,
+        K_S_0=1,
+        E_K_S=0,
+    )
+    breeder = F.Material(D_0=1, E_D=0, K_S_0=2, E_K_S=0)
+
+    volume_breeder = F.VolumeSubdomain1D(
+        id=1, borders=[0, breeder_thick], material=breeder
+    )
+    volume_probe = F.VolumeSubdomain1D(
+        id=2,
+        borders=[breeder_thick, breeder_thick + probe_thick],
+        material=probe,
+    )
+
+    vertices_left = np.linspace(0, breeder_thick, num=1000, endpoint=False)
+    vertices_right = np.linspace(breeder_thick, breeder_thick + probe_thick, num=1000)
+    vertices = np.concatenate([vertices_left, vertices_right])
+    model_probe.mesh = F.Mesh1D(vertices)
+
+    inlet = F.SurfaceSubdomain1D(id=3, x=0)
+    outlet = F.SurfaceSubdomain1D(id=4, x=breeder_thick + probe_thick)
+
+    model_probe.subdomains = [
+        volume_breeder,
+        volume_probe,
+        inlet,
+        outlet,
+    ]
+
+    model_probe.surface_to_volume = {
+        inlet: volume_breeder,
+        outlet: volume_probe,
+    }
+
+    model_probe.method_interface = F.InterfaceMethod.nitsche
+    model_probe.interfaces = [
+        F.Interface(id=5, subdomains=[volume_breeder, volume_probe], penalty_term=10),
+    ]
+
+    H = F.Species("H", subdomains=model_probe.volume_subdomains)
+    model_probe.species = [H]
+
+    model_probe.temperature = 600
+
+    model_probe.boundary_conditions = [
+        F.FixedConcentrationBC(
+            subdomain=inlet,
+            value=1,
+            species=H,
+        ),
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=0,
+            k_r0=1,
+            E_kr=0,
+            k_d0=0,
+            E_kd=0,
+            subdomain=outlet,
+        ),
+    ]
+    permeation_flux = F.SurfaceFlux(field=H, surface=outlet)
+    inlet_flux = F.SurfaceFlux(field=H, surface=inlet)
+    model_probe.exports = [permeation_flux, inlet_flux]
+
+    model_probe.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-09,
+        transient=False,
+    )
+
+    model_probe.initialise()
+    model_probe.run()
+
+    # TEST
+    assert np.isclose(permeation_flux.data[-1], -inlet_flux.data[-1], rtol=1e-5)
