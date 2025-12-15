@@ -1373,3 +1373,87 @@ def test_traps_with_CG_elements():
 
     # TEST
     assert my_model.function_space.sub(0).element.basix_element.discontinuous is False
+
+
+def test_surface_reaction_BC_discontinuous():
+    """Test that surface reaction BC conserves flux"""
+
+    # BUILD
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    right_mat = F.Material(
+        D_0=1,
+        E_D=0,
+        K_S_0=1,
+        E_K_S=0,
+    )
+    left_mat = F.Material(D_0=1, E_D=0, K_S_0=2, E_K_S=0)
+
+    left_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=left_mat)
+    right_vol = F.VolumeSubdomain1D(
+        id=2,
+        borders=[1, 2],
+        material=right_mat,
+    )
+
+    vertices_left = np.linspace(0, 1, num=1000, endpoint=False)
+    vertices_right = np.linspace(1, 2, num=1000)
+    vertices = np.concatenate([vertices_left, vertices_right])
+    my_model.mesh = F.Mesh1D(vertices)
+
+    inlet = F.SurfaceSubdomain1D(id=3, x=0)
+    outlet = F.SurfaceSubdomain1D(id=4, x=2)
+
+    my_model.subdomains = [
+        left_vol,
+        right_vol,
+        inlet,
+        outlet,
+    ]
+
+    my_model.surface_to_volume = {
+        inlet: left_vol,
+        outlet: right_vol,
+    }
+
+    my_model.method_interface = F.InterfaceMethod.nitsche
+    my_model.interfaces = [
+        F.Interface(id=5, subdomains=[left_vol, right_vol], penalty_term=10),
+    ]
+
+    H = F.Species("H", subdomains=my_model.volume_subdomains)
+    my_model.species = [H]
+
+    my_model.temperature = 600
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(
+            subdomain=inlet,
+            value=1,
+            species=H,
+        ),
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=0,
+            k_r0=1,
+            E_kr=0,
+            k_d0=0,
+            E_kd=0,
+            subdomain=outlet,
+        ),
+    ]
+    permeation_flux = F.SurfaceFlux(field=H, surface=outlet)
+    inlet_flux = F.SurfaceFlux(field=H, surface=inlet)
+    my_model.exports = [permeation_flux, inlet_flux]
+
+    my_model.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-09,
+        transient=False,
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+    # TEST
+    assert np.isclose(permeation_flux.data[-1], -inlet_flux.data[-1], rtol=1e-5)
