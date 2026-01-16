@@ -34,7 +34,7 @@ class AverageSurface(SurfaceQuantity):
             entity_maps: entity maps relating parent mesh and submesh
         """
 
-        self.value = assemble_scalar(
-            u.solution * ds(self.surface.id)
-        ) / assemble_scalar(1 * ds(self.surface.id))
+        self.value = assemble_scalar(u * ds(self.surface.id)) / assemble_scalar(
+            1 * ds(self.surface.id)
+        )
         self.data.append(self.value)
