@@ -33,7 +33,7 @@ def test_total_surface_compute_1D():
     my_export.D = D
 
     # RUN
-    my_export.compute(ds)
+    my_export.compute(u=c, ds=ds)
 
     # TEST
     expected_value = 4.0
