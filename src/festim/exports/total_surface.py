@@ -1,4 +1,5 @@
 import ufl
+from dolfinx import fem
 from scifem import assemble_scalar
 
 from festim.exports.surface_quantity import SurfaceQuantity
@@ -20,13 +21,20 @@ class TotalSurface(SurfaceQuantity):
     def title(self):
         return f"Total {self.field.name} surface {self.surface.id}"
 
-    def compute(self, ds: ufl.Measure):
+    def compute(
+        self, u: fem.Function | ufl.indexed.Indexed, ds: ufl.Measure, entity_maps=None
+    ):
         """
         Computes the total value of the field on the defined surface
         subdomain, and appends it to the data list
 
         Args:
-            ds (ufl.Measure): surface measure of the model
+            u: field for which the total value is computed
+            ds: surface measure of the model
+            entity_maps: entity maps relating parent mesh and submesh
         """
-        self.value = assemble_scalar(self.field.solution * ds(self.surface.id))
+
+        self.value = assemble_scalar(
+            fem.form(u * ds(self.surface.id), entity_maps=entity_maps)
+        )
         self.data.append(self.value)
