@@ -11,7 +11,8 @@ class AverageSurface(SurfaceQuantity):
     Args:
         field (festim.Species): species for which the average surface is computed
         surface (festim.SurfaceSubdomain): surface subdomain
-        filename (str, optional): name of the file to which the average surface is exported
+        filename (str, optional): name of the file to which the average surface is
+            exported
 
     Attributes:
         see `festim.SurfaceQuantity`
