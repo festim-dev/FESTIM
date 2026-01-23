@@ -24,7 +24,7 @@ If you're having an issue, the best way to find help is to join the `FESTIM disc
 Install FESTIM
 --------------
 
-Follow the :ref:`installation instructions<Installation>` to install FESTIM on your computer.
+Follow the :ref:`installation instructions<Install>` to install FESTIM on your computer.
 
 ------------------------
 Your first FESTIM script

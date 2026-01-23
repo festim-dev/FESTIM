@@ -1,9 +1,9 @@
-============
-Installation
-============
+=======
+Install
+=======
 
 Operating System Requirements
-----------------------------
+-----------------------------
 FESTIM's compatibility is dependent on FEniCS, which supports:
 
 - **Linux**: Fully supported
