@@ -107,8 +107,6 @@ html_context = {
 }
 
 html_theme_options = {
-    "repository_url": "https://github.com/festim-dev/FESTIM",
-    "use_repository_button": True,
     "use_edit_page_button": True,
     "logo": {
         "image_light": "images/festim logo.png",
