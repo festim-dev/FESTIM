@@ -87,9 +87,7 @@ Contents
    :maxdepth: 1
 
    installation
-   examples
-   theory
    userguide/index
-   devguide/index
    api/festim
-   publications
+   devguide/index
+   theory

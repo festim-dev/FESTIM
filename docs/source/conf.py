@@ -112,23 +112,39 @@ html_theme_options = {
         "image_light": "images/festim logo.png",
         "image_dark": "images/festim logo dark.png",
     },
+    "external_links": [
+        {
+            "name": "Tutorials",
+            "url": "https://festim-workshop.readthedocs.io/",
+        },
+        {
+            "name": "V&V",
+            "url": "https://festim-vv-report.readthedocs.io/en/latest/",
+        },
+    ],
     "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/festim-dev/FESTIM",
+            "icon": "fa-brands fa-github fa-fw",
+            "type": "fontawesome",
+        },
         {
             "name": "Support Forum",
             "url": "https://festim.discourse.group/",
-            "icon": "fa-brands fa-discourse",
+            "icon": "fa-brands fa-discourse fa-fw",
         },
         {
             "name": "Slack",
             "url": "https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g",
-            "icon": "fa-brands fa-slack",
+            "icon": "fa-brands fa-slack fa-fw",
         },
     ],
+    "header_links_before_dropdown": 7,
 }
 
 html_sidebars = {
     "**": [
-        "search-field",
         "sidebar-nav-bs",
     ],
 }
