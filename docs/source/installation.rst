@@ -1,5 +1,5 @@
 ============
-Installation
+Install
 ============
 
 Operating System Requirements

@@ -95,16 +95,21 @@ bibtex_bibfiles = ["bibliography/references.bib"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_book_theme"
+html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_css_files = ["style.css"]
+
+html_context = {
+    "github_user": "festim-dev",
+    "github_repo": "FESTIM",
+    "github_version": "main",
+    "doc_path": "docs/source",
+}
 
 html_theme_options = {
     "repository_url": "https://github.com/festim-dev/FESTIM",
     "use_repository_button": True,
     "use_edit_page_button": True,
-    "repository_branch": "main",
-    "path_to_docs": "./docs/source",
     "icon_links": [
         {
             "name": "Support Forum",
@@ -117,17 +122,12 @@ html_theme_options = {
             "icon": "fa-brands fa-slack",
         },
     ],
-    "article_header_end": [
-        "navbar-icon-links",
-        "article-header-buttons",
-    ],
 }
 
 html_sidebars = {
     "**": [
-        "navbar-logo",
-        "search-button-field",
-        "sbt-sidebar-nav",
+        "search-field",
+        "sidebar-nav-bs",
     ],
 }
 

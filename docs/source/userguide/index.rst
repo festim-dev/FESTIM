@@ -1,5 +1,5 @@
 ============
-User's Guide
+Usage
 ============
 
 .. toctree::
