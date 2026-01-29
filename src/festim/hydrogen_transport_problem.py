@@ -1090,6 +1090,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.surface_to_volume = surface_to_volume or {}
         self.subdomain_to_species = {}  # maps subdomain to species defined in it
 
+    @property
+    def method_interface(self):
+        return self._method_interface
+
+    @method_interface.setter
+    def method_interface(self, value):
+        if isinstance(value, InterfaceMethod):
+            self._method_interface = value
+        elif isinstance(value, str):
+            self._method_interface = InterfaceMethod.from_string(value)
+        else:
+            raise TypeError("method_interface must be of type str or InterfaceMethod")
+
     def initialise(self):
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
@@ -1158,19 +1171,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.create_formulation()
         self.create_solver()
         self.initialise_exports()
-
-    @property
-    def method_interface(self):
-        return self._method_interface
-
-    @method_interface.setter
-    def method_interface(self, value):
-        if isinstance(value, InterfaceMethod):
-            self._method_interface = value
-        elif isinstance(value, str):
-            self._method_interface = InterfaceMethod.from_string(value)
-        else:
-            raise TypeError("method_interface must be of type str or InterfaceMethod")
 
     def create_dirichletbc_form(self, bc: boundary_conditions.FixedConcentrationBC):
         """
