@@ -1172,6 +1172,26 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.create_solver()
         self.initialise_exports()
 
+    def define_temperature(self):
+        super().define_temperature()
+
+        # pass temperature function to each subdomain
+        if isinstance(self.temperature_fenics, fem.Function):
+            for subdomain in self.volume_subdomains:
+                element_CG = basix.ufl.element(
+                    basix.ElementFamily.P,
+                    subdomain.submesh.basix_cell(),
+                    1,  # could expose?
+                    basix.LagrangeVariant.equispaced,
+                )
+                V = dolfinx.fem.functionspace(subdomain.submesh, element_CG)
+                sub_T = dolfinx.fem.Function(V)
+                from festim.helpers import nmm_interpolate
+
+                nmm_interpolate(f_out=sub_T, f_in=self.temperature_fenics)
+
+                subdomain.sub_T = sub_T
+
     def create_dirichletbc_form(self, bc: boundary_conditions.FixedConcentrationBC):
         """
         Creates the ``value_fenics`` attribute for a given
@@ -1190,8 +1210,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         sub_V = bc.species.subdomain_to_function_space[volume_subdomain]
         collapsed_V, _ = sub_V.collapse()
 
+        # in the discontinuous case, if the temperature is given as a function
+        # then we can't use the temperature on the parent mesh
+        # see issue #1007
+        if isinstance(self.temperature_fenics, fem.Function):
+            temp = volume_subdomain.sub_T
+        else:
+            temp = self.temperature_fenics
+
         bc.create_value(
-            temperature=self.temperature_fenics,
+            temperature=temp,
             function_space=collapsed_V,
             t=self.t,
         )
