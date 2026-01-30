@@ -3,6 +3,7 @@ from collections.abc import Callable
 from enum import Enum
 
 from mpi4py import MPI
+from petsc4py import PETSc
 
 import adios4dolfinx
 import basix
@@ -12,6 +13,8 @@ import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
+from dolfinx.nls.petsc import NewtonSolver
+from packaging.version import Version
 from scifem import BlockedNewtonSolver
 
 import festim.boundary_conditions
@@ -1636,25 +1639,78 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_solver(self):
-        self.solver = BlockedNewtonSolver(
-            self.forms,
-            [subdomain.u for subdomain in self.volume_subdomains],
-            J=self.J,
-            bcs=self.bc_forms,
-            petsc_options=self.petsc_options,
-        )
-        self.solver.max_iterations = self.settings.max_iterations
-        self.solver.convergence_criterion = self.settings.convergence_criterion
-        self.solver.atol = (
-            self.settings.atol
-            if not callable(self.settings.atol)
-            else self.settings.atol(float(self.t))
-        )
-        self.solver.rtol = (
-            self.settings.rtol
-            if not callable(self.settings.rtol)
-            else self.settings.rtol(float(self.t))
-        )
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            self.solver = BlockedNewtonSolver(
+                self.forms,
+                [subdomain.u for subdomain in self.volume_subdomains],
+                J=self.J,
+                bcs=self.bc_forms,
+                petsc_options=self.petsc_options,
+            )
+            self.solver.max_iterations = self.settings.max_iterations
+            self.solver.convergence_criterion = self.settings.convergence_criterion
+            self.solver.atol = (
+                self.settings.atol
+                if not callable(self.settings.atol)
+                else self.settings.atol(float(self.t))
+            )
+            self.solver.rtol = (
+                self.settings.rtol
+                if not callable(self.settings.rtol)
+                else self.settings.rtol(float(self.t))
+            )
+
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            from dolfinx.fem.petsc import NonlinearProblem
+
+            if self.petsc_options is None:
+                # taken from https://github.com/FEniCS/dolfinx/blob/5fcb988c5b0f46b8f9183bc844d8f533a2130d6a/python/demo/demo_cahn-hilliard.py#L279C1-L286C28
+                use_superlu = (
+                    PETSc.IntType == np.int64
+                )  # or PETSc.ScalarType == np.complex64
+                sys = PETSc.Sys()  # type: ignore
+                if sys.hasExternalPackage("mumps") and not use_superlu:
+                    linear_solver = "mumps"
+                elif sys.hasExternalPackage("superlu_dist"):
+                    linear_solver = "superlu_dist"
+                else:
+                    linear_solver = "petsc"
+
+                petsc_options = {
+                    "snes_type": "newtonls",
+                    "snes_linesearch_type": "none",
+                    "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps)
+                    * 1e-2,
+                    # TODO : make atol and rtol callable
+                    "snes_atol": self.settings.atol,
+                    "snes_rtol": self.settings.rtol,
+                    "snes_max_it": self.settings.max_iterations,
+                    "snes_divergence_tolerance": "PETSC_UNLIMITED",
+                    "ksp_type": "preonly",
+                    "pc_type": "lu",
+                    "snes_monitor": None,
+                    "ksp_monitor": None,
+                    "pc_factor_mat_solver_type": linear_solver,
+                }
+            else:
+                petsc_options = self.petsc_options
+
+            self.solver = NonlinearProblem(
+                self.forms,
+                [subdomain.u for subdomain in self.volume_subdomains],
+                bcs=self.bc_forms,
+                J=self.J,
+                petsc_options=petsc_options,
+                petsc_options_prefix="festim_solver",
+            )
+
+            # Delete PETSc options post setting them, ref:
+            # https://gitlab.com/petsc/petsc/-/issues/1201
+            snes = self.solver.solver
+            prefix = snes.getOptionsPrefix()
+            opts = PETSc.Options()
+            for k in petsc_options.keys():
+                del opts[f"{prefix}{k}"]
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
