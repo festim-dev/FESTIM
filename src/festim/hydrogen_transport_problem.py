@@ -206,7 +206,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.temperature_fenics = None
 
         self._element_for_traps = "DG"
-        self.petcs_options = petsc_options
 
         self._temperature_as_function = None
 
