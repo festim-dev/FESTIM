@@ -1,7 +1,7 @@
 .. _developers_guide:
 
 =================
-Developer's Guide
+Contributing
 =================
 
 ------------------
@@ -106,7 +106,7 @@ Click `here <https://www.atlassian.com/continuous-delivery/continuous-integratio
 
 All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/main/test>`_ at the root of the FESTIM repository.
 
-You need to have the right dependencies installed to test your code (see :ref:`installation<Installation>`).
+You need to have the right dependencies installed to test your code (see :ref:`Install<Install>`).
 
 .. note::
 
