@@ -6,7 +6,7 @@ dependencies:
   - fenics-dolfinx
   - matplotlib==3.7.1
   - pip>=20.1
-  - sphinx<8 # sphinxcontrib-images is not compatible with sphinx 8
+  - sphinx
   - folium
   - numpy==1.24
   - tqdm
@@ -14,7 +14,6 @@ dependencies:
   - adios4dolfinx
   - sphinx-design
   - sphinxcontrib-bibtex
-  - sphinxcontrib-images
   - sympy
   - sphinx-book-theme
   - sphinx-copybutton
