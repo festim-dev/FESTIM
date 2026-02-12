@@ -1712,15 +1712,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 if isinstance(export, exports.VTXSpeciesExport):
                     if export._checkpoint:
-                        post_processing_solution = export.field[
-                            0
-                        ].subdomain_to_post_processing_solution[export._subdomain]
-                        adios4dolfinx.write_function(
-                            export.filename,
-                            post_processing_solution,
-                            time=float(self.t),
-                            name=export.field[0].name,
-                        )
+                        for species in export.field:
+                            post_processing_solution = (
+                                species.subdomain_to_post_processing_solution[
+                                    export._subdomain
+                                ]
+                            )
+                            adios4dolfinx.write_function(
+                                export.filename,
+                                post_processing_solution,
+                                time=float(self.t),
+                                name=species.name,
+                            )
                     else:
                         export.writer.write(float(self.t))
 
