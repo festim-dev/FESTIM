@@ -37,6 +37,7 @@ from festim.helpers import (
     as_fenics_constant,
     get_interpolation_points,
     is_it_time_to_export,
+    nmm_interpolate,
 )
 from festim.material import SolubilityLaw
 
@@ -1221,20 +1222,27 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         the previous solution of the condition's species"""
 
         for condition in self.initial_conditions:
-            V = condition.species.subdomain_to_function_space[condition.volume]
-
-            condition.create_expr_fenics(
-                mesh=self.mesh.mesh,
-                temperature=self.temperature_fenics,
-                function_space=V,
-            )
-
-            # assign to previous solution of species
-            entities = self.volume_meshtags.find(condition.volume.id)
             idx = self.species.index(condition.species)
-            condition.volume.u_n.sub(idx).interpolate(
-                condition.expr_fenics, cells1=entities
-            )
+
+            # if the value given is a function, then directly interpolate it on the
+            # previous solution of the species
+            if isinstance(condition.value, fem.Function):
+                nmm_interpolate(condition.volume.u_n.sub(idx), condition.value)
+
+            else:
+                V = condition.species.subdomain_to_function_space[condition.volume]
+
+                condition.create_expr_fenics(
+                    mesh=self.mesh.mesh,
+                    temperature=self.temperature_fenics,
+                    function_space=V,
+                )
+
+                # assign to previous solution of species
+                entities = self.volume_meshtags.find(condition.volume.id)
+                condition.volume.u_n.sub(idx).interpolate(
+                    condition.expr_fenics, cells1=entities
+                )
 
     def define_function_spaces(
         self, subdomain: _subdomain.VolumeSubdomain, element_degree=1
@@ -1652,9 +1660,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         engine="BP5",
                     )
                 else:
-                    raise NotImplementedError(
-                        f"Export type {type(export)} not implemented for "
-                        f"mixed-domain approach"
+                    adios4dolfinx.write_mesh(
+                        export.filename,
+                        mesh=functions[0].function_space.mesh,
                     )
 
         # compute diffusivity function for surface fluxes
@@ -1704,11 +1712,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
                 if isinstance(export, exports.VTXSpeciesExport):
                     if export._checkpoint:
-                        raise NotImplementedError(
-                            f"Export type {type(export)} not implemented "
-                            f"for mixed-domain approach"
+                        post_processing_solution = export.field[
+                            0
+                        ].subdomain_to_post_processing_solution[export._subdomain]
+                        adios4dolfinx.write_function(
+                            export.filename,
+                            post_processing_solution,
+                            time=float(self.t),
+                            name=export.field[0].name,
                         )
-                export.writer.write(float(self.t))
+                    else:
+                        export.writer.write(float(self.t))
 
             # handle derived quantities
             if isinstance(export, exports.SurfaceQuantity):
