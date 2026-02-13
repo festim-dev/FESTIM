@@ -360,13 +360,10 @@ def convergenceTest(snes, it, norms):
     if it > max_its:
         return snes.ConvergedReason.DIVERGED_MAX_IT
     elif f < atol and it > 0:
-        print("Here atol", flush=True)
         return snes.ConvergedReason.CONVERGED_FNORM_ABS
     elif f / _residual0 < rtol:
-        print(f"Here rtol {f / _residual0} with rtol = {rtol}", flush=True)
         return snes.ConvergedReason.CONVERGED_FNORM_RELATIVE
     elif gnorm < stol and it > 0:
-        print("Here stol", flush=True)
         return snes.ConvergedReason.CONVERGED_SNORM_RELATIVE
     else:
         return snes.ConvergedReason.ITERATING
@@ -386,7 +383,7 @@ def SnesMonitor(snes, iter, rnorm):
             relative_residual = rnorm / _residual0
 
         dolfinx.log.log(
-            dolfinx.log.LogLevel.DEBUG,
+            dolfinx.log.LogLevel.INFO,
             f"SNES {iter=} ; {rnorm=:.5e} ({atol=:.5e}) ; {relative_residual=:.5e} ({rtol=:.5e}) ; {stepsize_rel=:.5e} ({stol=:.5e})",
         )
 
@@ -395,6 +392,6 @@ def SnesMonitor(snes, iter, rnorm):
 
 
 def KSPMonitor(ksp, iter, rnorm):
-    dolfinx.log.log(dolfinx.log.LogLevel.INFO, f"{iter}, {_residual0=}")
+    dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"{iter}, {_residual0=}")
     if MPI.COMM_WORLD.rank == 0:
         dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=} {rnorm=:.5e}")
