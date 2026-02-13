@@ -79,7 +79,7 @@ The following is a workflow using the python API to make a mesh that can be dire
 
 Here we will walk through GMSH's usage when creating a monoblock subsection consisting of tungsten surrounding a tube of CuCrZr
 
-.. thumbnail:: ../images/gmsh_tut_1.png
+.. figure:: ../images/gmsh_tut_1.png
     :width: 400
     :align: center
 
@@ -205,7 +205,7 @@ At any point, the GMSH GUI can be opened by running the line
 after synchronizing the model.
 Running this command at this stage will open the GUI, displaying something that looks like this:
 
-.. thumbnail:: ../images/gmsh_tut_2.png
+.. figure:: ../images/gmsh_tut_2.png
     :width: 400
     :align: center
 
@@ -226,13 +226,13 @@ GMSH assigns the surface labels cyclically when performing the extrusion, so the
 After opening the GUI, again after synchronising and using `gmsh.fltk.run()`, go into 'Tools' then 'Options', and ensure that 'Surfaces' is checked under 'Geometry'.
 This will make the surfaces are visible and selectable in the visualisation.
 
-.. thumbnail:: ../images/gmsh_tut_3.png
+.. figure:: ../images/gmsh_tut_3.png
     :width: 400
     :align: center
 
 We can then hover our mouse over each surface to see its information. For example, we can see that the front tungsten surface is defined as Plane 7, and borders the volume 1. 
 
-.. thumbnail:: ../images/gmsh_tut_4.png
+.. figure:: ../images/gmsh_tut_4.png
     :width: 400
     :align: center
 
@@ -379,7 +379,7 @@ A FESTIM simulation can then be run:
 
 This produces the following visualisation in Paraview:
 
-.. thumbnail:: ../images/gmsh_tut_5.png
+.. figure:: ../images/gmsh_tut_5.png
     :width: 400
     :align: center
 
@@ -395,13 +395,13 @@ Building the geometry in SALOME
 1. Open SALOME and create a new study.
 2. Activate the Geometry module
 
-.. thumbnail:: ../images/salome_guide_1.png
+.. figure:: ../images/salome_guide_1.png
     :width: 400
     :align: center
 
 3. Create a first square by clicking "Create rectangular face". Keep the default parameters. Click "Apply and Close"
 
-.. thumbnail:: ../images/salome_guide_2.png
+.. figure:: ../images/salome_guide_2.png
     :width: 400
     :align: center
 
@@ -409,26 +409,26 @@ Building the geometry in SALOME
 
 5. Translate the second square by clicking "Operations/Transformation/Translation"
 
-.. thumbnail:: ../images/salome_guide_3.png
+.. figure:: ../images/salome_guide_3.png
     :width: 400
     :align: center
 
 6. Make sure Face 2 is selected. Enter 100 for the Dx value. Click "Apply and Close"
 
-.. thumbnail:: ../images/salome_guide_4.png
+.. figure:: ../images/salome_guide_4.png
     :width: 400
     :align: center
 
 7. Create a compound by clicking "New Entity/Build/Compound" make sure Face_1 and Translation_1 are selected then click "Apply and Close".
 
-.. thumbnail:: ../images/salome_guide_5.png
+.. figure:: ../images/salome_guide_5.png
     :width: 400
     :align: center
 
 8. Create a group "New Entity/Group/Create group". In Shape Type, select the 2D surface. Name the group "left_volume". Make sure Compound_1 is selected.
 Click on the left square and click "Add" (2 should appear in the white window). Click "Apply and Close".
 
-.. thumbnail:: ../images/salome_guide_6.png
+.. figure:: ../images/salome_guide_6.png
     :width: 400
     :align: center
 
@@ -436,19 +436,19 @@ Click on the left square and click "Add" (2 should appear in the white window). 
 
 10. Create another group "left_boundary" but this time in Shape Type select the 1D curve. Click on the left edge of the left square and click "Add". Click "Apply and Close".
 
-.. thumbnail:: ../images/salome_guide_7.png
+.. figure:: ../images/salome_guide_7.png
     :width: 400
     :align: center
 
 11. Repeat the operation to create a group "right_boundary" with the right edge of the right square. Your study should look like:
 
-.. thumbnail:: ../images/salome_guide_8.png
+.. figure:: ../images/salome_guide_8.png
     :width: 400
     :align: center
 
 12. Click on "Mesh" to activate the mesh module.
 
-.. thumbnail:: ../images/salome_guide_9.png
+.. figure:: ../images/salome_guide_9.png
     :width: 400
     :align: center
 
@@ -456,13 +456,13 @@ Click on the left square and click "Add" (2 should appear in the white window). 
 
 14. Make sure Compound_1 is selected in "Geometry". Under the 2D tab, select "NETGEN 1D-2D" as algorithm.
 
-.. thumbnail:: ../images/salome_guide_10.png
+.. figure:: ../images/salome_guide_10.png
     :width: 400
     :align: center
 
 15. Next to "Hypothesis" click on the gear symbol. Select "NETGEN 2D Simple Parameters". Click Ok. Click "Apply and Close".
 
-.. thumbnail:: ../images/salome_guide_11.png
+.. figure:: ../images/salome_guide_11.png
     :width: 400
     :align: center
 
@@ -470,7 +470,7 @@ Click on the left square and click "Add" (2 should appear in the white window). 
 
 16. Export the mesh to MED by right clicking on Mesh_1 in the Object Browser, then Export/MED file. Choose a location where you want to write your MED file and click Save.
 
-.. thumbnail:: ../images/salome_guide_12.png
+.. figure:: ../images/salome_guide_12.png
     :width: 400
     :align: center
 
@@ -548,7 +548,7 @@ Here, the left volume is tagged with ID 6, the right boundary is tagged with ID 
 
 18. Inspect the produced XDMF files with Paraview using the XDMF3 S reader. The file mesh_domains.xdmf should look like:
 
-.. thumbnail:: ../images/salome_guide_13.png
+.. figure:: ../images/salome_guide_13.png
     :width: 400
     :align: center
 
@@ -587,7 +587,7 @@ Here, the left volume is tagged with ID 6, the right boundary is tagged with ID 
 
 20. The simulation should run without errors. The solute field can be visualised with Paraview.
 
-.. thumbnail:: ../images/salome_guide_14.png
+.. figure:: ../images/salome_guide_14.png
     :width: 400
     :align: center
 
@@ -600,13 +600,13 @@ If you have a CAD model, you can export it to a mesh with SALOME.
 2. Activate the Geometry module
 3. Import STEP file by clicking "File/Import/STEP"
 
-.. thumbnail:: ../images/salome_guide_cad_1.png
+.. figure:: ../images/salome_guide_cad_1.png
     :width: 400
     :align: center
 
 4. By clicking "Fit to selection" you can see the imported geometry:
 
-.. thumbnail:: ../images/salome_guide_cad_2.png
+.. figure:: ../images/salome_guide_cad_2.png
     :width: 400
     :align: center
 

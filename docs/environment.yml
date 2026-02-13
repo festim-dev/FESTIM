@@ -16,4 +16,3 @@ dependencies:
   - sphinxcontrib-bibtex
   - sphinx-copybutton
   - pillow
-  - sphinxcontrib-images

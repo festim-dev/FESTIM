@@ -59,7 +59,6 @@ extensions = [
     "sphinx_design",
     "sphinxcontrib.bibtex",
     "matplotlib.sphinxext.plot_directive",
-    "sphinxcontrib.images",
 ]
 
 suppress_warnings = ["autosectionlabel.*"]
