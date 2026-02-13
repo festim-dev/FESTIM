@@ -384,7 +384,7 @@ def SnesMonitor(snes, iter, rnorm):
 
         dolfinx.log.log(
             dolfinx.log.LogLevel.INFO,
-            f"SNES {iter=} ; {rnorm=:.5e} ({atol=:.5e}) ; {relative_residual=:.5e} ({rtol=:.5e}) ; {stepsize_rel=:.5e} ({stol=:.5e})",
+            f"SNES {iter=} ; {rnorm=:.5e} ({atol=}) ; {relative_residual=:.5e} ({rtol=}) ; {stepsize_rel=:.5e} ({stol=:.5e})",
         )
 
         # Update previous xnorm
@@ -392,6 +392,6 @@ def SnesMonitor(snes, iter, rnorm):
 
 
 def KSPMonitor(ksp, iter, rnorm):
-    dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"{iter}, {_residual0=}")
+    dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=}, {_residual0=:.5e}")
     if MPI.COMM_WORLD.rank == 0:
         dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=} {rnorm=:.5e}")
