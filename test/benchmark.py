@@ -5,7 +5,6 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 import basix
-import dolfinx
 import numpy as np
 import tqdm.autonotebook
 from dolfinx.fem import (
