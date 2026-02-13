@@ -83,13 +83,13 @@ def test_permeation_problem(mesh_size=1001):
     ]
 
     my_model.settings = F.Settings(
-        atol=1e10,
+        atol=1e2,
         rtol=1e-10,
         max_iterations=30,
         final_time=50,
     )
 
-    my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
+    my_model.settings.stepsize = F.Stepsize(initial_value=0.3)
 
     my_model.initialise()
 
@@ -101,17 +101,6 @@ def test_permeation_problem(mesh_size=1001):
         opts[f"{option_prefix}ksp_type"] = "cg"
         opts[f"{option_prefix}pc_type"] = "gamg"
         ksp.setFromOptions()
-    elif Version(dolfinx.__version__) > Version("0.9.0"):
-        snes = my_model.solver.solver
-        opts = PETSc.Options()
-        option_prefix = snes.getOptionsPrefix()
-        opts[f"{option_prefix}snes_atol"] = 0
-        opts[f"{option_prefix}snes_rtol"] = 0
-        opts[f"{option_prefix}snes_stol"] = 1e-8
-        opts[f"{option_prefix}snes_max_it"] = 30
-        opts[f"{option_prefix}ksp_type"] = "cg"
-        opts[f"{option_prefix}pc_type"] = "gamg"
-        snes.setFromOptions()
 
     my_model.run()
 

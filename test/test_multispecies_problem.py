@@ -84,12 +84,12 @@ def test_multispecies_permeation_problem():
         ),
     ]
     my_model.settings = F.Settings(
-        atol=1e10,
+        atol=1e2,
         rtol=1e-10,
         max_iterations=30,
         final_time=10,
     )
-    my_model.settings.stepsize = F.Stepsize(initial_value=1 / 20)
+    my_model.settings.stepsize = F.Stepsize(initial_value=0.08)
 
     outgassing_flux_spe_1 = F.SurfaceFlux(
         field=spe_1,
@@ -124,17 +124,7 @@ def test_multispecies_permeation_problem():
         opts[f"{option_prefix}pc_type"] = "gamg"
         opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
         ksp.setFromOptions()
-    elif Version(dolfinx.__version__) > Version("0.9.0"):
-        snes = my_model.solver.solver
-        opts = PETSc.Options()
-        option_prefix = snes.getOptionsPrefix()
-        opts[f"{option_prefix}snes_atol"] = 0
-        opts[f"{option_prefix}snes_rtol"] = 0
-        opts[f"{option_prefix}snes_stol"] = 1e-8
-        opts[f"{option_prefix}ksp_type"] = "cg"
-        opts[f"{option_prefix}pc_type"] = "gamg"
-        opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-        snes.setFromOptions()
+
     my_model.run()
 
     times = outgassing_flux_spe_1.t
