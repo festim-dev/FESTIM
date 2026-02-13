@@ -44,6 +44,9 @@ from .helpers import (
     as_fenics_interp_expr_and_function,
     as_mapped_function,
     get_interpolation_points,
+    KSPMonitor,
+    convergenceTest,
+    SnesMonitor,
 )
 from .hydrogen_transport_problem import (
     HydrogenTransportProblem,
