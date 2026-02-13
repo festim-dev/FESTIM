@@ -35,7 +35,7 @@ jobs:
           retry_count: 3
           
           # A comma separated links to exclude during URL checks
-          exclude_urls: https://www.lspm.cnrs.fr/en/home/, https://www.theses.fr/2022PA131054
+          exclude_urls: https://www.lspm.cnrs.fr/en/home/,https://www.theses.fr/2022PA131054
 
           # A comma separated patterns to exclude during URL checks
           exclude_patterns:
