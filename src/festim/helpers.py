@@ -359,7 +359,8 @@ def convergenceTest(snes, it, norms):
         _residual0 = f
     if it > max_its:
         return snes.ConvergedReason.DIVERGED_MAX_IT
-    elif f < atol and it > 0:
+    elif f < atol:
+        # elif f < atol and it > 0:
         return snes.ConvergedReason.CONVERGED_FNORM_ABS
     elif f / _residual0 < rtol:
         return snes.ConvergedReason.CONVERGED_FNORM_RELATIVE
