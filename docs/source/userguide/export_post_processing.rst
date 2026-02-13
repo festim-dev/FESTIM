@@ -70,13 +70,13 @@ The file can then be opened in Paraview or any other software that can read XDMF
 
 - Open the XDMF file then select the reader Xdmf3 Reader S
 
-.. thumbnail:: ../images/paraview_guide_1.png
+.. figure:: ../images/paraview_guide_1.png
     :width: 400
     :align: center
 
 - Edit the colour map and rescale the colourbar to present the proper view of results
 
-.. thumbnail:: ../images/paraview_guide_2.png
+.. figure:: ../images/paraview_guide_2.png
     :width: 400
     :align: center
 

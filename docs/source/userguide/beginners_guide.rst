@@ -31,7 +31,7 @@ Your first FESTIM script
 ------------------------
 
 
-Follow `this tutorial <https://github.com/festim-dev/FESTIM-workshop/blob/main/tasks/task01.ipynb>`_ to learn how
+Follow `this tutorial <https://festim-workshop.readthedocs.io/en/latest/content/task01.html>`_ to learn how
 to run a simple 1D diffusion problem in steady state with an homogeneous temperature, a volumetric source of hydrogen,
 and the concentration fixed at zero at boundaries.
 

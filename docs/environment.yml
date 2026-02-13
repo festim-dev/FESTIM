@@ -3,6 +3,8 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - setuptools<82
+  - wheel<0.45
   - fenics
   - python>=3.10
   - matplotlib==3.7.1
@@ -16,4 +18,3 @@ dependencies:
   - sphinxcontrib-bibtex
   - sphinx-copybutton
   - pillow
-  - sphinxcontrib-images

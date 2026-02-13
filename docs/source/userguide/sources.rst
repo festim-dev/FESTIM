@@ -43,7 +43,7 @@ Hydrogen implanted in a material can be simulated by a Gaussian-shaped volumetri
             ),
         ]
 
-This class is used in `this tutorial <https://github.com/festim-dev/FESTIM-workshop/blob/main/tasks/task02.ipynb>`_.
+This class is used in `this tutorial <https://festim-workshop.readthedocs.io/en/latest/content/task02.html>`_.
 
 
 Radioactive decay
