@@ -40,6 +40,9 @@ from festim.helpers import (
     as_fenics_constant,
     get_interpolation_points,
     is_it_time_to_export,
+    SnesMonitor,
+    KSPMonitor,
+    convergenceTest,
 )
 from festim.material import SolubilityLaw
 
@@ -1688,9 +1691,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     "snes_divergence_tolerance": "PETSC_UNLIMITED",
                     "ksp_type": "preonly",
                     "pc_type": "lu",
-                    "snes_monitor": None,
-                    "ksp_monitor": None,
                     "pc_factor_mat_solver_type": linear_solver,
+                    "snes_error_if_not_converged": True,
+                    "ksp_error_if_not_converged": True,
                 }
             else:
                 petsc_options = self.petsc_options
@@ -1703,6 +1706,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 petsc_options=petsc_options,
                 petsc_options_prefix="festim_solver",
             )
+
+            self.solver.solver.setMonitor(SnesMonitor)
+            self.solver.solver.getKSP().setMonitor(KSPMonitor)
+            self.solver.solver.setConvergenceTest(convergenceTest)
 
             # Delete PETSc options post setting them, ref:
             # https://gitlab.com/petsc/petsc/-/issues/1201
