@@ -620,6 +620,6 @@ If you have a CAD model, you can export it to a mesh with SALOME.
 Meshes from FEniCS
 ------------------
 
-See the `FEniCS documentation <https://fenicsproject.org/olddocs/dolfin/latest/python/demos/built-in-meshes/demo_built-in-meshes.py.html>`_ for more built-in meshes.
+See the `FEniCS documentation <https://olddocs.fenicsproject.org/dolfin/latest/python/demos/built-in-meshes/demo_built-in-meshes.py.html>`_ for more built-in meshes.
 
 
