@@ -243,47 +243,19 @@ class FixedConcentrationBC(DirichletBCBase):
                 if "T" in arguments:
                     kwargs["T"] = temperature
 
-                try:
-                    self.value_fenics = fem.Function(function_space)
+                self.value_fenics = fem.Function(function_space)
 
-                    # store the expression of the boundary condition
-                    # to update the value_fenics later
-                    self.bc_expr = fem.Expression(
-                        self.value(**kwargs),
-                        helpers.get_interpolation_points(function_space.element),
-                    )
-                    self.value_fenics.interpolate(self.bc_expr)
-                except RuntimeError:
-                    # if this fails, it is probably because the temperature is a Function
-                    # from the parent mesh and this is used in a mixed domain problem.
-                    # In this case, we need to interpolate the temperature on the submesh
+                # store the expression of the boundary condition
+                # to update the value_fenics later
+                assert isinstance(self.value(**kwargs), ufl.core.expr.Expr), (
+                    f"{type(self.value(**kwargs))}"
+                )
+                self.bc_expr = fem.Expression(
+                    self.value(**kwargs),
+                    helpers.get_interpolation_points(function_space.element),
+                )
 
-                    submesh = mesh
-                    mesh_cell_map = submesh.topology.index_map(submesh.topology.dim)
-                    num_cells_on_proc = (
-                        mesh_cell_map.size_local + mesh_cell_map.num_ghosts
-                    )
-                    cells = np.arange(num_cells_on_proc, dtype=np.int32)
-                    parent_functionspace = temperature.function_space
-                    interpolation_data = fem.create_interpolation_data(
-                        function_space, parent_functionspace, cells
-                    )
-
-                    temperature_sub = fem.Function(function_space)
-                    temperature_sub.interpolate_nonmatching(
-                        temperature,
-                        cells=cells,
-                        interpolation_data=interpolation_data,
-                    )
-
-                    # override the kwargs with the temperature_sub
-                    kwargs["T"] = temperature_sub
-
-                    self.bc_expr = fem.Expression(
-                        self.value(**kwargs),
-                        helpers.get_interpolation_points(function_space.element),
-                    )
-                    self.value_fenics.interpolate(self.bc_expr)
+                self.value_fenics.interpolate(self.bc_expr)
 
         # if K_S is provided, divide the value by K_S (change of variable method)
         if K_S is not None:
