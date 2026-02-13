@@ -1,5 +1,7 @@
 from collections.abc import Callable
 
+from mpi4py import MPI
+
 import dolfinx
 import numpy as np
 import ufl
@@ -341,3 +343,56 @@ def is_it_time_to_export(
             return True
 
     return False
+
+
+_residual0 = 0
+_prev_xnorm = 0
+
+
+def convergenceTest(snes, it, norms):
+    global _residual0
+    xnorm, gnorm, f = norms  # ||x_k||, ||x_k-x_k-1||, ||F(x_k)||
+
+    rtol, atol, stol, max_its = snes.getTolerances()
+
+    if it == 0:
+        _residual0 = f
+    if it > max_its:
+        return snes.ConvergedReason.DIVERGED_MAX_IT
+    elif f < atol:
+        # elif f < atol and it > 0:
+        return snes.ConvergedReason.CONVERGED_FNORM_ABS
+    elif f / _residual0 < rtol:
+        return snes.ConvergedReason.CONVERGED_FNORM_RELATIVE
+    elif gnorm < stol and it > 0:
+        return snes.ConvergedReason.CONVERGED_SNORM_RELATIVE
+    else:
+        return snes.ConvergedReason.ITERATING
+
+
+def SnesMonitor(snes, iter, rnorm):
+    global _prev_xnorm
+    if MPI.COMM_WORLD.rank == 0:
+        rtol, atol, stol, max_its = snes.getTolerances()
+        x = snes.getSolution()
+        xnorm = x.norm()
+
+        stepsize_rel = abs(xnorm - _prev_xnorm) / xnorm if iter > 0 else float("inf")
+        if iter == 0:
+            relative_residual = float("inf")
+        else:
+            relative_residual = rnorm / _residual0
+
+        dolfinx.log.log(
+            dolfinx.log.LogLevel.INFO,
+            f"SNES {iter=} ; {rnorm=:.5e} ({atol=}) ; {relative_residual=:.5e} ({rtol=}) ; {stepsize_rel=:.5e} ({stol=:.5e})",
+        )
+
+        # Update previous xnorm
+        _prev_xnorm = xnorm
+
+
+def KSPMonitor(ksp, iter, rnorm):
+    dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=}, {_residual0=:.5e}")
+    if MPI.COMM_WORLD.rank == 0:
+        dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=} {rnorm=:.5e}")

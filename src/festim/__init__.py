@@ -39,10 +39,13 @@ from .exports.vtx import ExportBaseClass, VTXSpeciesExport, VTXTemperatureExport
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (
+    KSPMonitor,
+    SnesMonitor,
     Value,
     as_fenics_constant,
     as_fenics_interp_expr_and_function,
     as_mapped_function,
+    convergenceTest,
     get_interpolation_points,
 )
 from .hydrogen_transport_problem import (
