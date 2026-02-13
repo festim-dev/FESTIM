@@ -54,7 +54,7 @@ Moreover, users can rapidly get started with FESTIM thanks to its python API.
             :link: api/festim
             :link-type: doc
 
-FESTIM was originally developed at the `Institute for Magnetic Fusion Research (IRFM) <https://irfm.cea.fr/en/index.php>`_ and the `Process and Materials Sciences Laboratory (LSPM) <https://www.lspm.cnrs.fr/en/home/>`_.
+FESTIM was originally developed at the `Institute for Magnetic Fusion Research (IRFM) <https://irfm.cea.fr/en/index.php>`_ and the `Process and Materials Sciences Laboratory (LSPM) <https://www.lspm.cnrs.fr>`_.
 Various research institutions and private companies now contribute actively to FESTIM's development.
 For more information, feel free to ask questions on the `FESTIM Discourse Page <https://festim.discourse.group/>`_.
 
