@@ -3,6 +3,7 @@ from collections.abc import Callable
 from enum import Enum
 
 from mpi4py import MPI
+from petsc4py import PETSc
 
 import adios4dolfinx
 import basix
@@ -12,6 +13,8 @@ import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
+from dolfinx.nls.petsc import NewtonSolver
+from packaging.version import Version
 from scifem import BlockedNewtonSolver
 
 import festim.boundary_conditions
@@ -206,7 +209,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.temperature_fenics = None
 
         self._element_for_traps = "DG"
-        self.petcs_options = petsc_options
 
         self._temperature_as_function = None
 
@@ -1090,6 +1092,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.surface_to_volume = surface_to_volume or {}
         self.subdomain_to_species = {}  # maps subdomain to species defined in it
 
+    @property
+    def method_interface(self):
+        return self._method_interface
+
+    @method_interface.setter
+    def method_interface(self, value):
+        if isinstance(value, InterfaceMethod):
+            self._method_interface = value
+        elif isinstance(value, str):
+            self._method_interface = InterfaceMethod.from_string(value)
+        else:
+            raise TypeError("method_interface must be of type str or InterfaceMethod")
+
     def initialise(self):
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
@@ -1159,18 +1174,25 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.create_solver()
         self.initialise_exports()
 
-    @property
-    def method_interface(self):
-        return self._method_interface
+    def define_temperature(self):
+        super().define_temperature()
 
-    @method_interface.setter
-    def method_interface(self, value):
-        if isinstance(value, InterfaceMethod):
-            self._method_interface = value
-        elif isinstance(value, str):
-            self._method_interface = InterfaceMethod.from_string(value)
-        else:
-            raise TypeError("method_interface must be of type str or InterfaceMethod")
+        # pass temperature function to each subdomain
+        if isinstance(self.temperature_fenics, fem.Function):
+            for subdomain in self.volume_subdomains:
+                element_CG = basix.ufl.element(
+                    basix.ElementFamily.P,
+                    subdomain.submesh.basix_cell(),
+                    1,  # could expose?
+                    basix.LagrangeVariant.equispaced,
+                )
+                V = dolfinx.fem.functionspace(subdomain.submesh, element_CG)
+                sub_T = dolfinx.fem.Function(V)
+                from festim.helpers import nmm_interpolate
+
+                nmm_interpolate(f_out=sub_T, f_in=self.temperature_fenics)
+
+                subdomain.sub_T = sub_T
 
     def create_dirichletbc_form(self, bc: boundary_conditions.FixedConcentrationBC):
         """
@@ -1190,8 +1212,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         sub_V = bc.species.subdomain_to_function_space[volume_subdomain]
         collapsed_V, _ = sub_V.collapse()
 
+        # in the discontinuous case, if the temperature is given as a function
+        # then we can't use the temperature on the parent mesh
+        # see issue #1007
+        if isinstance(self.temperature_fenics, fem.Function):
+            temp = volume_subdomain.sub_T
+        else:
+            temp = self.temperature_fenics
+
         bc.create_value(
-            temperature=self.temperature_fenics,
+            temperature=temp,
             function_space=collapsed_V,
             t=self.t,
         )
@@ -1609,25 +1639,78 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_solver(self):
-        self.solver = BlockedNewtonSolver(
-            self.forms,
-            [subdomain.u for subdomain in self.volume_subdomains],
-            J=self.J,
-            bcs=self.bc_forms,
-            petsc_options=self.petsc_options,
-        )
-        self.solver.max_iterations = self.settings.max_iterations
-        self.solver.convergence_criterion = self.settings.convergence_criterion
-        self.solver.atol = (
-            self.settings.atol
-            if not callable(self.settings.atol)
-            else self.settings.atol(float(self.t))
-        )
-        self.solver.rtol = (
-            self.settings.rtol
-            if not callable(self.settings.rtol)
-            else self.settings.rtol(float(self.t))
-        )
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            self.solver = BlockedNewtonSolver(
+                self.forms,
+                [subdomain.u for subdomain in self.volume_subdomains],
+                J=self.J,
+                bcs=self.bc_forms,
+                petsc_options=self.petsc_options,
+            )
+            self.solver.max_iterations = self.settings.max_iterations
+            self.solver.convergence_criterion = self.settings.convergence_criterion
+            self.solver.atol = (
+                self.settings.atol
+                if not callable(self.settings.atol)
+                else self.settings.atol(float(self.t))
+            )
+            self.solver.rtol = (
+                self.settings.rtol
+                if not callable(self.settings.rtol)
+                else self.settings.rtol(float(self.t))
+            )
+
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            from dolfinx.fem.petsc import NonlinearProblem
+
+            if self.petsc_options is None:
+                # taken from https://github.com/FEniCS/dolfinx/blob/5fcb988c5b0f46b8f9183bc844d8f533a2130d6a/python/demo/demo_cahn-hilliard.py#L279C1-L286C28
+                use_superlu = (
+                    PETSc.IntType == np.int64
+                )  # or PETSc.ScalarType == np.complex64
+                sys = PETSc.Sys()  # type: ignore
+                if sys.hasExternalPackage("mumps") and not use_superlu:
+                    linear_solver = "mumps"
+                elif sys.hasExternalPackage("superlu_dist"):
+                    linear_solver = "superlu_dist"
+                else:
+                    linear_solver = "petsc"
+
+                petsc_options = {
+                    "snes_type": "newtonls",
+                    "snes_linesearch_type": "none",
+                    "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps)
+                    * 1e-2,
+                    # TODO : make atol and rtol callable
+                    "snes_atol": self.settings.atol,
+                    "snes_rtol": self.settings.rtol,
+                    "snes_max_it": self.settings.max_iterations,
+                    "snes_divergence_tolerance": "PETSC_UNLIMITED",
+                    "ksp_type": "preonly",
+                    "pc_type": "lu",
+                    "snes_monitor": None,
+                    "ksp_monitor": None,
+                    "pc_factor_mat_solver_type": linear_solver,
+                }
+            else:
+                petsc_options = self.petsc_options
+
+            self.solver = NonlinearProblem(
+                self.forms,
+                [subdomain.u for subdomain in self.volume_subdomains],
+                bcs=self.bc_forms,
+                J=self.J,
+                petsc_options=petsc_options,
+                petsc_options_prefix="festim_solver",
+            )
+
+            # Delete PETSc options post setting them, ref:
+            # https://gitlab.com/petsc/petsc/-/issues/1201
+            snes = self.solver.solver
+            prefix = snes.getOptionsPrefix()
+            opts = PETSc.Options()
+            for k in petsc_options.keys():
+                del opts[f"{prefix}{k}"]
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute"""
@@ -1803,7 +1886,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.update_time_dependent_values()
 
         # Solve main problem
-        nb_its, converged = self.solver.solve()
+        if Version(dolfinx.__version__) == Version("0.9.0"):
+            nb_its, converged = self.solver.solve()
+        elif Version(dolfinx.__version__) > Version("0.9.0"):
+            _ = self.solver.solve()
+            converged_reason = self.solver.solver.getConvergedReason()
+            assert converged_reason > 0, (
+                f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."
+            )
+            nb_its = self.solver.solver.getIterationNumber()
 
         # post processing
         self.post_processing()
