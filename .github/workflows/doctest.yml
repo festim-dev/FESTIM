@@ -38,7 +38,7 @@ jobs:
           exclude_urls: https://www.lspm.cnrs.fr/en/home/
 
           # A comma separated patterns to exclude during URL checks
-          exclude_patterns:
+          exclude_patterns: https://theses.fr/
   
           # choose if the force pass or not
           force_pass : false
