@@ -299,7 +299,7 @@ introducing hydrogen surface species :math:`c_\mathrm{s}\,[\mathrm{m}^{-2}]`.
 
 Evolution of hydrogen surface concentration is determined by the atomic flux balance at the surface, as sketched in the simplified energy diagram below.
 
-.. thumbnail:: images/potential_diagram.png
+.. figure:: images/potential_diagram.png
     :align: center
     :width: 800
 
