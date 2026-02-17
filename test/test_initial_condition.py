@@ -434,3 +434,104 @@ def test_initial_condition_continuous_multimaterial():
     # assert value of spe1 is not all the same across the domain
 
     assert not np.allclose(my_model.u_n.x.array[:], intial_cond_value)
+
+
+def test_initial_condition_mixed_domain():
+    """Test the initial condition in a multi-material discontinous case"""
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    vertices_left = np.linspace(0, 0.5, 500)
+    vertices_right = np.linspace(0.5, 1, 500)
+    vertices = np.concatenate((vertices_left, vertices_right))
+    my_model.mesh = F.Mesh1D(vertices)
+
+    # assumes the same diffusivity for all species
+    material_left = F.Material(D_0=1e-01, E_D=0, K_S_0=1, E_K_S=0)
+    material_right = F.Material(D_0=1e-01, E_D=0, K_S_0=2, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=material_left)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=material_right)
+    my_model.subdomains = [vol1, vol2]
+
+    spe1 = F.Species("1", mobile=True, subdomains=[vol1, vol2])
+    my_model.species = [spe1]
+
+    my_model.temperature = 300
+
+    intial_cond_value = 100
+    V = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    u = fem.Function(V)
+    u.x.array[:] = intial_cond_value
+
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=u, species=spe1, volume=vol1),
+    ]
+
+    dt = F.Stepsize(0.1)
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, final_time=5, transient=True, stepsize=dt
+    )
+
+    my_model.initialise()
+
+    # assert value of spe1 in vol1
+    left_spe1_un = vol1.u.sub(0)
+
+    assert not np.allclose(left_spe1_un.x.array[:], intial_cond_value)
+
+
+def test_initial_condition_mixed_domain_multispecies():
+    """Test the initial condition in a multispecies multi-material discontinous case"""
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    vertices_left = np.linspace(0, 0.5, 500)
+    vertices_right = np.linspace(0.5, 1, 500)
+    vertices = np.concatenate((vertices_left, vertices_right))
+    my_model.mesh = F.Mesh1D(vertices)
+
+    # assumes the same diffusivity for all species
+    material_left = F.Material(D_0=1e-01, E_D=0, K_S_0=1, E_K_S=0)
+    material_right = F.Material(D_0=1e-01, E_D=0, K_S_0=2, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=material_left)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=material_right)
+    my_model.subdomains = [vol1, vol2]
+
+    spe1 = F.Species("1", mobile=True, subdomains=[vol1, vol2])
+    spe2 = F.Species("2", mobile=True, subdomains=[vol1, vol2])
+    my_model.species = [spe1, spe2]
+
+    my_model.temperature = 300
+
+    intial_cond_value_1 = 100
+    intial_cond_value_2 = 200
+    V = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    u = fem.Function(V)
+    u.x.array[:] = intial_cond_value_1
+
+    V2 = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    u2 = fem.Function(V2)
+    u2.x.array[:] = intial_cond_value_2
+
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=u, species=spe1, volume=vol1),
+        F.InitialConcentration(value=u2, species=spe2, volume=vol1),
+    ]
+
+    dt = F.Stepsize(0.1)
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, final_time=5, transient=True, stepsize=dt
+    )
+
+    my_model.initialise()
+
+    spe1_left, spe1_to_vol1 = vol1.u_n.function_space.sub(0).collapse()
+    spe2_left, spe2_to_vol1 = vol1.u_n.function_space.sub(1).collapse()
+
+    prev_solution_spe1_left = vol1.u_n.x.array[spe1_to_vol1]
+    prev_solution_spe2_left = vol1.u_n.x.array[spe2_to_vol1]
+
+    assert np.allclose(prev_solution_spe1_left, intial_cond_value_1)
+    assert np.allclose(prev_solution_spe2_left, intial_cond_value_2)
