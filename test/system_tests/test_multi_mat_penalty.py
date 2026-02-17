@@ -71,13 +71,11 @@ def test_2_materials_2d_mms(tmpdir):
     K_S_bot = 6.0
     D_top = 2.0
     D_bot = 5.0
-    c_exact_top_ufl = (
-        lambda x: 3
-        + ufl.sin(ufl.pi * (2 * x[1] + 0.5))
-        + 0.1 * ufl.cos(2 * ufl.pi * x[0])
+    c_exact_top_ufl = lambda x: (
+        3 + ufl.sin(ufl.pi * (2 * x[1] + 0.5)) + 0.1 * ufl.cos(2 * ufl.pi * x[0])
     )
-    c_exact_top_np = (
-        lambda x: 3 + np.sin(np.pi * (2 * x[1] + 0.5)) + 0.1 * np.cos(2 * np.pi * x[0])
+    c_exact_top_np = lambda x: (
+        3 + np.sin(np.pi * (2 * x[1] + 0.5)) + 0.1 * np.cos(2 * np.pi * x[0])
     )
 
     def c_exact_bot_ufl(x):

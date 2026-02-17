@@ -71,15 +71,15 @@ def test_2_materials_2d_mms(tmpdir):
     K_S_bot = 6.0
     D_top = 2.0
     D_bot = 5.0
-    c_exact_top_ufl = (
-        lambda x: 1 + ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
+    c_exact_top_ufl = lambda x: (
+        1 + ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
     )
 
     def c_exact_bot_ufl(x):
         return K_S_bot / K_S_top * c_exact_top_ufl(x)
 
-    c_exact_top_np = (
-        lambda x: 1 + np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
+    c_exact_top_np = lambda x: (
+        1 + np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
     )
 
     def c_exact_bot_np(x):
@@ -126,15 +126,11 @@ def test_2_materials_2d_mms(tmpdir):
         F.FixedConcentrationBC(bottom_surface, value=c_exact_bot_ufl, species=H),
     ]
 
-    source_top_val = (
-        lambda x: 8
-        * ufl.pi**2
-        * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
+    source_top_val = lambda x: (
+        8 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
     )
-    source_bottom_val = (
-        lambda x: 40
-        * ufl.pi**2
-        * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
+    source_bottom_val = lambda x: (
+        40 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
     )
     my_model.sources = [
         F.ParticleSource(volume=top_domain, species=H, value=source_top_val),
