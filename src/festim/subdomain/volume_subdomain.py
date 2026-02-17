@@ -3,6 +3,7 @@ from collections.abc import Callable
 
 import dolfinx
 import numpy as np
+from dolfinx import fem
 from dolfinx.mesh import Mesh, locate_entities
 from numpy import typing as npt
 from scifem.mesh import transfer_meshtags_to_submesh
@@ -23,8 +24,20 @@ class VolumeSubdomain:
     Volume subdomain class
 
     Args:
-        id (int): the id of the volume subdomain
-        material (festim.Material): the material assigned to the subdomain
+        id: the id of the volume subdomain
+        submesh: the submesh of the volume subdomain
+        cell_map: the cell map of the volume subdomain
+        parent_mesh: the parent mesh of the volume subdomain
+        parent_to_submesh: the parent to submesh map of the volume subdomain
+        v_map: the vertex map of the volume subdomain
+        n_map: the normal map of the volume subdomain
+        facet_to_parent: the facet to parent map of the volume subdomain
+        ft: the facet meshtags of the volume subdomain
+        padded: whether the subdomain is padded (for 0.9 compatibility)
+        u: the solution function of the subdomain
+        u_n: the previous solution function of the subdomain
+        material: the material assigned to the subdomain
+        sub_T: the sub temperature field in the subdomain
     """
 
     id: int
@@ -40,6 +53,7 @@ class VolumeSubdomain:
     u: dolfinx.fem.Function
     u_n: dolfinx.fem.Function
     material: Material
+    sub_T: fem.Function | float
 
     def __init__(self, id, material, locator: Callable | None = None):
         self.id = id

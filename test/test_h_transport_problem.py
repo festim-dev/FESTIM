@@ -1457,3 +1457,45 @@ def test_surface_reaction_BC_discontinuous():
 
     # TEST
     assert np.isclose(permeation_flux.data[-1], -inlet_flux.data[-1], rtol=1e-5)
+
+
+def test_temperature_as_function_in_discontinuous():
+    """Test that a discontinuous problem can be initialised with a temperature field
+    given as a function"""
+
+    # BUILD
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[1, 2], material=mat)
+
+    vertices_left = np.linspace(0, 1, num=100, endpoint=False)
+    vertices_right = np.linspace(1, 2, num=100)
+    vertices = np.concatenate([vertices_left, vertices_right])
+    my_model.mesh = F.Mesh1D(vertices)
+    my_model.mesh = F.Mesh1D(vertices)
+
+    my_model.subdomains = [vol1, vol2]
+
+    my_model.method_interface = F.InterfaceMethod.penalty
+    my_model.interfaces = [
+        F.Interface(id=5, subdomains=[vol1, vol2], penalty_term=100),
+    ]
+
+    H = F.Species("H", subdomains=my_model.volume_subdomains)
+    my_model.species = [H]
+
+    V = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    u = fem.Function(V)
+    u.interpolate(lambda x: 100 + x[0])
+    u.x.array[:] = 100
+    my_model.temperature = u
+
+    my_model.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-09,
+        transient=False,
+    )
+
+    my_model.initialise()
