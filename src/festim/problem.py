@@ -185,6 +185,8 @@ class ProblemBase:
                     "ksp_type": "preonly",
                     "pc_type": "lu",
                     "pc_factor_mat_solver_type": linear_solver,
+                    "snes_error_if_not_converged": True,
+                    "ksp_error_if_not_converged": True,
                 }
             else:
                 petsc_options = self.petsc_options
@@ -196,6 +198,10 @@ class ProblemBase:
                 petsc_options=petsc_options,
                 petsc_options_prefix="festim_solver",
             )
+
+            self.solver.solver.setMonitor(F.helpers.SnesMonitor)
+            self.solver.solver.getKSP().setMonitor(F.helpers.KSPMonitor)
+            self.solver.solver.setConvergenceTest(F.helpers.convergenceTest)
             # Delete PETSc options post setting them, ref:
             # https://gitlab.com/petsc/petsc/-/issues/1201
             snes = self.solver.solver

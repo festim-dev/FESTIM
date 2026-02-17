@@ -19,8 +19,8 @@ We are simply solving a set of equations using the finite element method, and ar
 Solver doesn't converge
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The first thing to check is the details of the Newton solver iterations.
-To do so, you must set the ``log_level`` to ``20`` (default is ``40``).
+The first thing to check is the details of the SNES Newton solver iterations.
+To do so, you must set the ``log_level`` to ``INFO`` or ``DEBUG``.
 This will provide more information during the solving stage.
 
 .. testcode::
