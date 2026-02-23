@@ -324,7 +324,11 @@ def is_it_time_to_export(
 ) -> bool:
     """
     Checks if the exported field should be written to a file or not based on the
-    current time and the times in `export.times`
+    current time and the times in `export.times'
+    
+    After a successful match, the corresponding time is removed from the list to
+    prevent multiple exports for the same target time.
+
 
     Args:
         current_time: the current simulation time
@@ -337,12 +341,14 @@ def is_it_time_to_export(
     """
     if times is None:
         return True
-
-    for time in times:
+    
+    for i, time in enumerate(times):
         if np.isclose(time, current_time, atol=atol, rtol=rtol):
+            times.pop(i)  # consume the time so it is not exported again
             return True
 
     return False
+
 
 
 _residual0 = 0
