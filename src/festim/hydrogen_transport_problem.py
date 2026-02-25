@@ -1679,6 +1679,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             else:
                 petsc_options = self.petsc_options
 
+            if (
+                "snes_atol" in petsc_options
+                or "snes_rtol" in petsc_options
+                or "snes_max_it" in petsc_options
+            ):
+                warnings.warn(
+                    "You have set one of the following PETSc options: snes_atol, "
+                    "snes_rtol or snes_max_it. These options will be overwritten by "
+                    "the values in festim.Settings (atol, rtol and max_iterations) to "
+                    "ensure consistency between different versions of dolfinx. If you "
+                    "want to set these options manually, please set them in "
+                    "festim.Settings and not in the petsc_options dictionary."
+                )
             petsc_options.update(
                 {
                     "snes_atol": self.settings.atol,
