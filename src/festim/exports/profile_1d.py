@@ -45,7 +45,7 @@ class Profile1DExport:
         self.t = []
         self.x = None
         self.subdomain = subdomain
-        self.times = times
+        self.times = times.copy() if times is not None else None
 
         self._dofs = None
         self._sort_coords = None
