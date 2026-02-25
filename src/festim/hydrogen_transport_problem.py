@@ -1674,32 +1674,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         elif Version(dolfinx.__version__) > Version("0.9.0"):
             from dolfinx.fem.petsc import NonlinearProblem
 
-            petsc_options = festim.problem.get_default_petsc_options()
-
-            # Update default PETSc options with user-provided options, if any
-            if self.petsc_options:
-                petsc_options.update(self.petsc_options)
-
-            if (
-                "snes_atol" in self.petsc_options
-                or "snes_rtol" in self.petsc_options
-                or "snes_max_it" in self.petsc_options
-            ):
-                warnings.warn(
-                    "You have set one of the following PETSc options: snes_atol, "
-                    "snes_rtol or snes_max_it. These options will be overwritten by "
-                    "the values in festim.Settings (atol, rtol and max_iterations) to "
-                    "ensure consistency between different versions of dolfinx. If you "
-                    "want to set these options manually, please set them in "
-                    "festim.Settings and not in the petsc_options dictionary."
-                )
-            petsc_options.update(
-                {
-                    "snes_atol": self.settings.atol,
-                    "snes_rtol": self.settings.rtol,
-                    "snes_max_it": self.settings.max_iterations,
-                }
-            )
+            petsc_options = self.get_petsc_options()
 
             self.solver = NonlinearProblem(
                 self.forms,
