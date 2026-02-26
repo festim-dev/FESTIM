@@ -26,6 +26,11 @@ jobs:
         run: |
           python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
 
+      - name: Install curl
+        run: |
+          apt-get update
+          apt-get install -y curl
+
       - name: Upload to codecov
         uses: codecov/codecov-action@v5
         with:
