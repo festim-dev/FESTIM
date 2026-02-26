@@ -173,7 +173,7 @@ def test_checkpointing_single_species(tmpdir):
     my_problem.subdomains = [vol]
 
     function_initial_value = F.read_function_from_file(
-        filename=filename, name="my_function", timestamp=0.2
+        filename=filename, name="my_function", timestamp=0.2, mesh=mesh
     )
     my_problem.initial_conditions = [
         F.InitialConcentration(value=function_initial_value, species=H, volume=vol)
@@ -236,6 +236,7 @@ def test_checkpointing_multiple_species(tmpdir):
                 filename=filename,
                 name="my_function1",
                 timestamp=0.2,
+                mesh=mesh
             ),
             species=H,
             volume=vol,
@@ -245,6 +246,7 @@ def test_checkpointing_multiple_species(tmpdir):
                 filename=filename,
                 name="my_function2",
                 timestamp=0.3,
+                mesh=mesh
             ),
             species=D,
             volume=vol,

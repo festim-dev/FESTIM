@@ -1,9 +1,11 @@
 import logging
 import os
-
+import pytest
 from mpi4py import MPI
 
-import ipyparallel as ipp
+
+ipp = pytest.importorskip("ipyparallel")
+
 import numpy as np
 import pytest
 from dolfinx import mesh as fenics_mesh

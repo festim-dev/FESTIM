@@ -240,7 +240,7 @@ class InitialTemperature(InitialConditionBase):
 
 
 def read_function_from_file(
-    filename: str, name: str, timestamp: int | float, family="P", order: int = 1
+    filename: str, name: str, timestamp: int | float, family="P", order: int = 1, mesh: dolfinx.mesh.Mesh|None = None
 ) -> fem.Function:
     """
     Read a function from a file
@@ -255,6 +255,7 @@ def read_function_from_file(
         timestamp: the timestamp of the function
         family: the family of the function space
         order: the order of the function space
+        mesh: Mesh to create input space on.
 
     Returns:
         the function
@@ -268,4 +269,14 @@ def read_function_from_file(
         name=name,
         time=timestamp,
     )
-    return u_in
+    if mesh is None:
+        return u_in
+    else:
+        V = fem.functionspace(mesh, (family, order))
+        u = fem.Function(V)
+        num_cells = mesh.topology.index_map(mesh.topology.dim).size_local
+        cells = np.arange(num_cells, dtype=np.int32)
+        padding = 1e2 * np.finfo(mesh.geometry.x.dtype).eps
+        idata = fem.create_interpolation_data(V, V_in, cells=cells, padding=padding)
+        u.interpolate_nonmatching(u_in, cells, idata)
+        return u
