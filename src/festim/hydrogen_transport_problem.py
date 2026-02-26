@@ -2142,7 +2142,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 continue
             spe.post_processing_solution.interpolate(spe.dg_expr)
 
-    def create_dirichletbc_form(self, bc: festim.FixedConcentrationBC):
+    def create_dirichletbc_form(self, bc: boundary_conditions.FixedConcentrationBC):
         """Creates a dirichlet boundary condition form
 
         Args:
