@@ -74,7 +74,7 @@ def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
                 filename=tmpdir + "/out_checkpoint.bp",
                 name="H",
                 timestamp=10,
-                mesh=mesh
+                mesh=mesh,
             ),
             species=H,
             volume=vol,
@@ -84,7 +84,7 @@ def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
                 filename=tmpdir + "/out_checkpoint.bp",
                 name="D",
                 timestamp=10,
-                mesh=mesh
+                mesh=mesh,
             ),
             species=D,
             volume=vol,

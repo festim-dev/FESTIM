@@ -1,8 +1,9 @@
 import logging
 import os
-import pytest
+
 from mpi4py import MPI
 
+import pytest
 
 ipp = pytest.importorskip("ipyparallel")
 

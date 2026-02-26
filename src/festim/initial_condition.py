@@ -240,7 +240,12 @@ class InitialTemperature(InitialConditionBase):
 
 
 def read_function_from_file(
-    filename: str, name: str, timestamp: int | float, family="P", order: int = 1, mesh: dolfinx.mesh.Mesh|None = None
+    filename: str,
+    name: str,
+    timestamp: int | float,
+    family="P",
+    order: int = 1,
+    mesh: dolfinx.mesh.Mesh | None = None,
 ) -> fem.Function:
     """
     Read a function from a file

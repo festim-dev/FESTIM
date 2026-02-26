@@ -13,12 +13,9 @@ import numpy.typing as npt
 import tqdm.autonotebook
 import ufl
 from dolfinx import fem
-from dolfinx.nls.petsc import NewtonSolver
 from packaging.version import Version
 from scifem import BlockedNewtonSolver
 
-import festim.boundary_conditions
-import festim.problem
 from festim import (
     boundary_conditions,
     exports,
@@ -37,12 +34,12 @@ from festim import (
 )
 from festim.advection import AdvectionTerm
 from festim.helpers import (
+    KSPMonitor,
+    SnesMonitor,
     as_fenics_constant,
+    convergenceTest,
     get_interpolation_points,
     is_it_time_to_export,
-    SnesMonitor,
-    KSPMonitor,
-    convergenceTest,
     nmm_interpolate,
 )
 from festim.material import SolubilityLaw
@@ -433,7 +430,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             self.settings.stepsize.milestones.append(time)
                     self.settings.stepsize.milestones.sort()
 
-                if isinstance(export, festim.VTXTemperatureExport):
+                if isinstance(export, exports.VTXTemperatureExport):
                     self._temperature_as_function = (
                         self._get_temperature_field_as_function()
                     )
@@ -819,7 +816,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for reaction in self.reactions:
             for reactant in reaction.reactant:
-                if isinstance(reactant, festim.species.Species):
+                if isinstance(reactant, _species.Species):
                     self.formulation += (
                         reaction.reaction_term(self.temperature_fenics)
                         * reactant.test_function
@@ -976,7 +973,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     else:
                         export.writer.write(float(self.t))
                 elif (
-                    isinstance(export, festim.VTXTemperatureExport)
+                    isinstance(export, exports.VTXTemperatureExport)
                     and self.temperature_time_dependent
                 ):
                     self._temperature_as_function.interpolate(
@@ -1422,14 +1419,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if reaction.volume != subdomain:
                 continue
             for species in reaction.reactant + reaction.product:
-                if isinstance(species, festim.species.Species):
+                if isinstance(species, _species.Species):
                     # TODO remove
                     # temporarily overide the solution to the one of the subdomain
                     species.solution = species.subdomain_to_solution[subdomain]
 
             # reactant
             for reactant in reaction.reactant:
-                if isinstance(reactant, festim.species.Species):
+                if isinstance(reactant, _species.Species):
                     form += (
                         reaction.reaction_term(self.temperature_fenics)
                         * reactant.subdomain_to_test_function[subdomain]
@@ -2093,7 +2090,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
         # add reaction term to formulation
         # reactant
         for reactant in reaction.reactant:
-            if isinstance(reactant, festim.species.Species):
+            if isinstance(reactant, _species.Species):
                 self.formulation += (
                     reaction_term * reactant.test_function * self.dx(reaction.volume.id)
                 )
@@ -2123,7 +2120,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                 K_S0.x.array[entities] = subdomain.material.get_K_S_0(spe)
                 E_KS.x.array[entities] = subdomain.material.get_E_K_S(spe)
 
-            K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
+            K_S = K_S0 * ufl.exp(-E_KS / (k_B * self.temperature_fenics))
 
             theta = spe.solution
 
@@ -2164,7 +2161,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             K_S0.x.array[entities] = subdomain.material.get_K_S_0(bc.species)
             E_KS.x.array[entities] = subdomain.material.get_E_K_S(bc.species)
 
-        K_S = K_S0 * ufl.exp(-E_KS / (festim.k_B * self.temperature_fenics))
+        K_S = K_S0 * ufl.exp(-E_KS / (k_B * self.temperature_fenics))
 
         # create value_fenics
         bc.create_value(

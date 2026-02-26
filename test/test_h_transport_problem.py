@@ -1366,7 +1366,7 @@ def test_traps_with_CG_elements():
         species=[trap],
     )
 
-    my_model._element_for_traps = "CG"
+    my_model._element_for_traps = "Lagrange"
 
     my_model.create_species_from_traps()
     my_model.define_function_spaces(element_degree=1)
@@ -1486,7 +1486,7 @@ def test_temperature_as_function_in_discontinuous():
     H = F.Species("H", subdomains=my_model.volume_subdomains)
     my_model.species = [H]
 
-    V = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_model.mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.interpolate(lambda x: 100 + x[0])
     u.x.array[:] = 100
