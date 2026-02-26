@@ -11,19 +11,23 @@ jobs:
         container_version: [v0.9.0, v0.10.0, nightly]
     container: dolfinx/dolfinx:${{ matrix.container_version }}
     steps:
-        - name: Checkout code
-          uses: actions/checkout@v2
-      
-        - name: Install local package and dependencies
-          run: |
-            pip install .[test]
+      - name: Checkout code
+        uses: actions/checkout@v6
 
-        - name: Run tests
-          run: |
-            python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+      - name: Install local package and dependencies
+        run: |
+          pip install .[test]
 
-        - name: Upload to codecov
-          uses: codecov/codecov-action@v4
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
-            files: ./coverage.xml
+      - name: Overload adios4dolfinx
+        if: ${{ matrix.container_version == 'nightly' }}
+        run: python3 -m pip install git+https://github.com/jorgensd/adios4dolfinx.git
+
+      - name: Run tests
+        run: |
+          python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
