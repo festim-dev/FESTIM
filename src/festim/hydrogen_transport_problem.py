@@ -861,9 +861,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         * self.ds(flux_bc.subdomain.id)
                     )
 
+        # add advection terms
         for adv_term in self.advection_terms:
-            # create vector functionspace based on the elements in the mesh
-
             for species in adv_term.species:
                 conc = species.solution
                 v = species.test_function
@@ -874,19 +873,20 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 )
                 self.formulation += advection_term
 
-            for bc in self.boundary_conditions:
-                if isinstance(bc, boundary_conditions.OutflowBC):
-                    for species in bc.species:
-                        conc = species.solution
-                        v = species.test_function
-                        vel = bc.velocity.fenics_object
+        # add outflow term for outflow bcs in advection diffusion cases
+        for bc in self.boundary_conditions:
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                for species in bc.species:
+                    conc = species.solution
+                    v = species.test_function
+                    vel = bc.velocity.fenics_object
 
-                        outflow_term = (
-                            ufl.inner(vel * conc, self.mesh.n)
-                            * v
-                            * self.ds(bc.subdomain.id)
-                        )
-                        self.formulation += outflow_term
+                    outflow_term = (
+                        ufl.inner(vel * conc, self.mesh.n)
+                        * v
+                        * self.ds(bc.subdomain.id)
+                    )
+                    self.formulation += outflow_term
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
