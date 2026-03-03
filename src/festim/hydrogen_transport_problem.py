@@ -1009,11 +1009,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export,
                     exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
                 ):
-                    if len(self.advection_terms) > 0:
-                        warnings.warn(
-                            "Advection terms are not currently accounted for in the "
-                            "evaluation of surface flux values"
-                        )
                     export.compute(export.field.solution, self.ds)
                 else:
                     export.compute()
