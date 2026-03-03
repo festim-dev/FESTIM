@@ -861,20 +861,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         * self.ds(flux_bc.subdomain.id)
                     )
 
-        # add advection terms
-        for adv_term in self.advection_terms:
-            for species in adv_term.species:
-                conc = species.solution
-                v = species.test_function
-                vel = adv_term.velocity.fenics_object
-
-                advection_term = -ufl.inner(vel * conc, ufl.grad(v)) * self.dx(
-                    adv_term.subdomain.id
-                )
-                self.formulation += advection_term
-
-        # add outflow term for outflow bcs in advection diffusion cases
-        for bc in self.boundary_conditions:
+            # add outflow term for outflow bcs in advection diffusion cases
             if isinstance(bc, boundary_conditions.OutflowBC):
                 for species in bc.species:
                     conc = species.solution
@@ -887,6 +874,18 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         * self.ds(bc.subdomain.id)
                     )
                     self.formulation += outflow_term
+
+        # add advection terms
+        for adv_term in self.advection_terms:
+            for species in adv_term.species:
+                conc = species.solution
+                v = species.test_function
+                vel = adv_term.velocity.fenics_object
+
+                advection_term = -ufl.inner(vel * conc, ufl.grad(v)) * self.dx(
+                    adv_term.subdomain.id
+                )
+                self.formulation += advection_term
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
