@@ -733,6 +733,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 function_space=self.function_space, t=self.t
             )
 
+        for bc in self.boundary_conditions:
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                bc.velocity.convert_input_value(
+                    function_space=self.function_space, t=self.t
+                )
+
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
         for bc in self.boundary_conditions:
