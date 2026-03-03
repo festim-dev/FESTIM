@@ -4,7 +4,6 @@ from dolfinx import fem
 from festim import subdomain as _subdomain
 from festim.advection import VelocityField
 from festim.species import Species
-from festim.subdomain import VolumeSubdomain
 
 
 class OutflowBC:
@@ -34,7 +33,7 @@ class OutflowBC:
         subdomain: _subdomain.SurfaceSubdomain,
     ):
         self.subdomain = subdomain
-        self.velocity_field = velocity
+        self.velocity = velocity
         self.species = species
 
     @property
@@ -83,9 +82,21 @@ class OutflowBC:
     def subdomain(self, value):
         if value is None:
             self._subdomain = value
-        elif isinstance(value, VolumeSubdomain):
+        elif isinstance(value, _subdomain.SurfaceSubdomain):
             self._subdomain = value
         else:
             raise TypeError(
-                f"Subdomain must be a festim.Subdomain object, not {type(value)}"
+                f"Subdomain must be a festim.SurfaceSubdomain object, not {type(value)}"
             )
+
+    @property
+    def time_dependent(self):
+        if self.velocity is None:
+            raise TypeError("Value must be given to determine if its time dependent")
+        if isinstance(self.velocity, fem.Constant):
+            return False
+        if callable(self.velocity):
+            arguments = self.velocity.__code__.co_varnames
+            return "t" in arguments
+        else:
+            return False
