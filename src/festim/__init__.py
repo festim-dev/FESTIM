@@ -24,6 +24,7 @@ from .boundary_conditions.surface_reaction import SurfaceReactionBC
 from .coupled_heat_hydrogen_problem import (
     CoupledTransientHeatTransferHydrogenTransport,
 )
+from .exports.advection_flux import Advection_flux
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
 from .exports.maximum_surface import MaximumSurface
