@@ -151,18 +151,22 @@ class VelocityField(Value):
                     f", not a {type(vel)}"
                 )
 
-        # create vector function space and function
-        v_cg = basix.ufl.element(
-            "Lagrange",
-            function_space.mesh.topology.cell_name(),
-            1,
-            shape=(function_space.mesh.topology.dim,),
-        )
-        self.vector_function_space = fem.functionspace(function_space.mesh, v_cg)
-        self.fenics_object = fem.Function(self.vector_function_space)
+        # check if mesh in value is same as mesh in function space, if not raise ValueError
+        if vel.function_space.mesh == function_space.mesh:
+            self.fenics_object = vel
+        else:
+            # create vector function space and function
+            v_cg = basix.ufl.element(
+                "Lagrange",
+                function_space.mesh.topology.cell_name(),
+                1,
+                shape=(function_space.mesh.topology.dim,),
+            )
+            self.vector_function_space = fem.functionspace(function_space.mesh, v_cg)
+            self.fenics_object = fem.Function(self.vector_function_space)
 
-        # interpolate input value into fenics object function
-        nmm_interpolate(self.fenics_object, vel)
+            # interpolate input value into fenics object function
+            nmm_interpolate(self.fenics_object, vel)
 
     def update(self, t: fem.Constant):
         """Updates the velocity field
