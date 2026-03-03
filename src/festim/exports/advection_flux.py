@@ -25,7 +25,13 @@ class Advection_flux(SurfaceFlux):
     surface: SurfaceSubdomain
     velocity_field: fem.Function
 
-    def __init__(self, field, surface, filename, velocity_field):
+    def __init__(
+        self,
+        field: Species,
+        surface: SurfaceSubdomain,
+        velocity_field: fem.Function,
+        filename: str | None = None,
+    ):
         super().__init__(field=field, surface=surface, filename=filename)
 
         self.velocity_field = velocity_field
@@ -41,7 +47,7 @@ class Advection_flux(SurfaceFlux):
             ds (ufl.Measure): surface measure of the model
         """
 
-        mesh = ds.ufl_domain
+        mesh = ds.ufl_domain()
         n = ufl.FacetNormal(mesh)
 
         surface_flux = assemble_scalar(
