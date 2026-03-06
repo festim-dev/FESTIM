@@ -1863,7 +1863,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                     export.compute(
                         u=export.field.subdomain_to_post_processing_solution[
-                            export_vol
+                            export.volume
                         ],
                         dx=self.dx,
                         entity_maps=entity_maps,
