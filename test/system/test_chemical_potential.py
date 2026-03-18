@@ -127,16 +127,9 @@ def test_run_MMS_chemical_pot(tmpdir):
     dt = 0.1 / 50
     for h in sizes:
         error_max_u = run(h)
-        msg = (
-            "Maximum error on u is:"
-            + str(error_max_u)
-            + "\n \
-            with h = "
-            + str(h)
-            + "\n \
-            with dt = "
-            + str(dt)
-        )
+        msg = "Maximum error on u is:" + str(error_max_u) + "\n \
+            with h = " + str(h) + "\n \
+            with dt = " + str(dt)
         print(msg)
         assert error_max_u < tol_u
 

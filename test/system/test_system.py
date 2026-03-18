@@ -280,19 +280,10 @@ def test_run_MMS(tmpdir):
     dt = 0.1 / 50
     for h in sizes:
         error_max_u, error_max_v = run(h)
-        msg = (
-            "Maximum error on u is:"
-            + str(error_max_u)
-            + "\n \
-            Maximum error on v is:"
-            + str(error_max_v)
-            + "\n \
-            with h = "
-            + str(h)
-            + "\n \
-            with dt = "
-            + str(dt)
-        )
+        msg = "Maximum error on u is:" + str(error_max_u) + "\n \
+            Maximum error on v is:" + str(error_max_v) + "\n \
+            with h = " + str(h) + "\n \
+            with dt = " + str(dt)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
 
@@ -406,19 +397,10 @@ def test_run_MMS_chemical_pot(tmpdir):
     dt = 0.1 / 50
     for h in sizes:
         error_max_u, error_max_v = run(h)
-        msg = (
-            "Maximum error on u is:"
-            + str(error_max_u)
-            + "\n \
-            Maximum error on v is:"
-            + str(error_max_v)
-            + "\n \
-            with h = "
-            + str(h)
-            + "\n \
-            with dt = "
-            + str(dt)
-        )
+        msg = "Maximum error on u is:" + str(error_max_u) + "\n \
+            Maximum error on v is:" + str(error_max_v) + "\n \
+            with h = " + str(h) + "\n \
+            with dt = " + str(dt)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
 
@@ -569,13 +551,8 @@ def test_run_MMS_soret(tmpdir):
     sizes = [1 / 1000, 1 / 2000]
     for h in sizes:
         error_max_u = run(h)
-        msg = (
-            "L2 error on u is:"
-            + str(error_max_u)
-            + "\n \
-            with h = "
-            + str(h)
-        )
+        msg = "L2 error on u is:" + str(error_max_u) + "\n \
+            with h = " + str(h)
         print(msg)
         assert error_max_u < tol_u
 
@@ -691,16 +668,9 @@ def test_run_MMS_steady_state(tmpdir):
     sizes = [1 / 1000, 1 / 2000]
     for h in sizes:
         error_max_u, error_max_v = run(h)
-        msg = (
-            "Maximum error on u is:"
-            + str(error_max_u)
-            + "\n \
-            Maximum error on v is:"
-            + str(error_max_v)
-            + "\n \
-            with h = "
-            + str(h)
-        )
+        msg = "Maximum error on u is:" + str(error_max_u) + "\n \
+            Maximum error on v is:" + str(error_max_v) + "\n \
+            with h = " + str(h)
         print(msg)
         assert error_max_u < tol_u and error_max_v < tol_v
 
@@ -1211,13 +1181,8 @@ def test_MMS_decay_with_trap():
 
     tol_u = 1e-10
     tol_v = 1e-7
-    msg = (
-        "Maximum error on u is:"
-        + str(error_max_u)
-        + "\n \
-        Maximum error on v is:"
-        + str(error_max_v)
-    )
+    msg = "Maximum error on u is:" + str(error_max_u) + "\n \
+        Maximum error on v is:" + str(error_max_v)
     print(msg)
     assert error_max_u < tol_u and error_max_v < tol_v
 
@@ -1235,10 +1200,8 @@ def test_MMS_surface_kinetics():
     k_sb = 2 * n_IS / n_surf
 
     exact_solution_cm = lambda x, t: 1 + 2 * x**2 + x + 2 * t
-    exact_solution_cs = (
-        lambda t: n_surf
-        * (3 * (1 + 2 * t) + 2 * lambda_IS - D)
-        / (2 * n_IS + 1 + 2 * t)
+    exact_solution_cs = lambda t: (
+        n_surf * (3 * (1 + 2 * t) + 2 * lambda_IS - D) / (2 * n_IS + 1 + 2 * t)
     )
     solute_source = 2 * (1 - 2 * D)
 
