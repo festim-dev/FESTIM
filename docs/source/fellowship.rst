@@ -103,3 +103,23 @@ October\* - Programme starts
 December\* - Programme ends
 
 *Programme dates are flexible*
+
+---------
+Apply
+---------
+
+Ready to apply to the FESTIM Fellowship Programme?
+
+.. raw:: html
+
+   <a href="https://forms.gle/fMJr262vXDh9r71y7" target="_blank" style="
+      display:inline-block;
+      background-color:#F7B000;
+      color:#000000;
+      padding:12px 22px;
+      border-radius:8px;
+      text-decoration:none;
+      font-weight:600;
+      margin-top:8px;">
+      Apply here
+   </a>
