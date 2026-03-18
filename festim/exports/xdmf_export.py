@@ -3,7 +3,6 @@ from festim import Export
 import fenics as f
 import numpy as np
 
-
 field_to_label = {
     "solute": "mobile_concentration",
     "T": "temperature",
