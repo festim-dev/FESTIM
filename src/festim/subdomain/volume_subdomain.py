@@ -55,10 +55,17 @@ class VolumeSubdomain:
     material: Material
     sub_T: fem.Function | float
 
-    def __init__(self, id, material, locator: Callable | None = None):
+    def __init__(
+            self,
+            id,
+            material,
+            locator: Callable | None = None,
+            name: str | None = None
+        ):
         self.id = id
         self.material = material
         self.locator = locator
+        self.name = name
 
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
