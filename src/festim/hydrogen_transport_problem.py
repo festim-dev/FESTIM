@@ -1427,7 +1427,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     # temporarily overide the solution to the one of the subdomain
                     species.solution = species.subdomain_to_solution[subdomain]
 
-
             # reactant
             for reactant in reaction.reactant:
                 if isinstance(reactant, festim.species.Species):
