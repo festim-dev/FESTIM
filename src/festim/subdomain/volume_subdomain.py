@@ -67,6 +67,19 @@ class VolumeSubdomain:
         self.locator = locator
         self.name = name
 
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value is None:
+            self._name = None
+        elif isinstance(value, str):
+            self._name = value
+        else:
+            raise TypeError("Name must a string")
+
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
         Creates the following attributes: ``.parent_mesh``, ``.submesh``, ``.cell_map``,
