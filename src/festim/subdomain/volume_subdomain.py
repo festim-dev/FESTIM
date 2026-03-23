@@ -78,7 +78,7 @@ class VolumeSubdomain:
         elif isinstance(value, str):
             self._name = value
         else:
-            raise TypeError("Name must a string")
+            raise TypeError("Name must be a string")
 
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
