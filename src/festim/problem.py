@@ -5,7 +5,7 @@ from petsc4py import PETSc
 
 import dolfinx
 import numpy as np
-import tqdm.autonotebook
+import tqdm.auto
 import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
@@ -34,7 +34,7 @@ class ProblemBase:
     exports: list[Any]
     subdomains: list[_VolumeSubdomain]
     show_progress_bar: bool
-    progress_bar: None | tqdm.autonotebook.tqdm
+    progress_bar: None | tqdm.auto.tqdm
 
     def __init__(
         self,
@@ -216,7 +216,7 @@ class ProblemBase:
         if self.settings.transient:
             # Solve transient
             if self.show_progress_bar:
-                self.progress_bar = tqdm.autonotebook.tqdm(
+                self.progress_bar = tqdm.auto.tqdm(
                     desc=f"Solving {self.__class__.__name__}",
                     total=self.settings.final_time,
                     unit_scale=True,

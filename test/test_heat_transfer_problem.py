@@ -5,7 +5,7 @@ import mpi4py.MPI as MPI
 import dolfinx
 import numpy as np
 import pytest
-import tqdm.autonotebook
+import tqdm.auto
 import ufl
 from dolfinx import fem
 from dolfinx.io import XDMFFile
@@ -552,7 +552,7 @@ def test_adaptive_timestepping_grows():
 
     my_model.initialise()
 
-    my_model.progress_bar = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.auto.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
@@ -586,7 +586,7 @@ def test_adaptive_timestepping_shrinks():
 
     my_model.initialise()
 
-    my_model.progress_bar = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.auto.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
