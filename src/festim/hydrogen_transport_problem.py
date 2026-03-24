@@ -193,6 +193,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         traps=None,
         advection_terms=None,
         petsc_options=None,
+        element_immobile: str = "CG",
     ):
         super().__init__(
             mesh=mesh,
@@ -212,7 +213,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.advection_terms = advection_terms or []
         self.temperature_fenics = None
 
-        self._element_for_traps = "DG"
+        self._element_immobile = element_immobile
 
         self._temperature_as_function = None
 
@@ -612,10 +613,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(spe, _species.Species):
                 if spe.mobile:
                     elements.append(element_CG)
-                elif self._element_for_traps == "DG":
+                elif self._element_immobile == "DG":
                     elements.append(element_DG)
-                else:
+                elif self._element_immobile == "CG":
                     elements.append(element_CG)
+                else:
+                    raise ValueError(
+                        f"element_immobile should be either 'DG' or 'CG', not "
+                        f"{self._element_immobile!r}"
+                    )
         element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
