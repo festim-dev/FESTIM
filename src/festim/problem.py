@@ -35,6 +35,7 @@ class ProblemBase:
     subdomains: list[_VolumeSubdomain]
     show_progress_bar: bool
     progress_bar: None | tqdm.auto.tqdm
+    timesteps: list[float]
 
     def __init__(
         self,
@@ -64,6 +65,7 @@ class ProblemBase:
         self.bc_forms = []
         self.show_progress_bar = True
         self.petsc_options = petsc_options
+        self._timesteps = []
 
     @property
     def volume_subdomains(self):
@@ -76,6 +78,10 @@ class ProblemBase:
     @property
     def dt(self):
         return self._dt
+
+    @property
+    def timesteps(self):
+        return self._timesteps
 
     def define_meshtags_and_measures(self):
         """Defines the facet and volume meshtags of the model which are used
@@ -236,6 +242,8 @@ class ProblemBase:
 
     def iterate(self):
         """Iterates the model for a given time step"""
+        self._timesteps.append(float(self.t))
+
         if self.show_progress_bar:
             self.progress_bar.update(
                 min(self.dt.value, abs(self.settings.final_time - self.t.value))
