@@ -483,6 +483,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.XDMFExport):
                 export.define_writer(MPI.COMM_WORLD)
 
+            # clean data for profile1D export
+            if isinstance(export, exports.Profile1DExport):
+                export.data = []
+                export.t = []
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
