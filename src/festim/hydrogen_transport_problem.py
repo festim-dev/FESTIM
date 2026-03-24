@@ -1421,21 +1421,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for reaction in self.reactions:
             if reaction.volume != subdomain:
                 continue
-            list_of_species_to_override = reaction.reactant + reaction.product
 
-            # check if we have implicit species:
-            for reactant in reaction.reactant:
-                if isinstance(reactant, festim.species.ImplicitSpecies):
-                    for other_spe in reactant.others:
-                        if other_spe not in list_of_species_to_override:
-                            list_of_species_to_override.append(other_spe)
-
-            for species in list_of_species_to_override:
-                if isinstance(species, festim.species.Species):
-                    # TODO remove
-                    # temporarily overide the solution to the one of the subdomain
-                    species.solution = species.subdomain_to_solution[subdomain]
-
+            self.override_solution_attributes(reaction, subdomain)
             # reactant
             for reactant in reaction.reactant:
                 if isinstance(reactant, festim.species.Species):
@@ -1657,6 +1644,31 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 "cffi_libraries": ["m"],
             },
         )
+
+    def override_solution_attributes(
+        self, reaction: _reaction.Reaction, subdomain: _subdomain.VolumeSubdomain
+    ):
+        """
+        Reaction.reaction_term() relies on the .solution attribute of the species
+        however, in the discontinuous class, this attribute doesn't really make sense
+        since there is one solution per subdomain.
+        Therefore we temporarily override the .solution attribute based on the reactants,
+        products, and `others` if there are implicit species
+        """
+        list_of_species_to_override = reaction.reactant + reaction.product
+
+        # check if we have implicit species:
+        for reactant in reaction.reactant:
+            if isinstance(reactant, festim.species.ImplicitSpecies):
+                for other_spe in reactant.others:
+                    if other_spe not in list_of_species_to_override:
+                        list_of_species_to_override.append(other_spe)
+
+        for species in list_of_species_to_override:
+            if isinstance(species, festim.species.Species):
+                # TODO remove
+                # temporarily overide the solution to the one of the subdomain
+                species.solution = species.subdomain_to_solution[subdomain]
 
     def create_solver(self):
         if Version(dolfinx.__version__) == Version("0.9.0"):
