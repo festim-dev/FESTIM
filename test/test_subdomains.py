@@ -200,3 +200,17 @@ def test_subdomain_with_custom_locator():
 mesh1d = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, nx=1)
 mesh2d = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, nx=1, ny=1)
 mesh3d = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, nx=1, ny=1, nz=1)
+
+
+def test_name_attribute():
+    subdomain = F.VolumeSubdomain(id=1, material=None, name="coucou")
+
+    assert subdomain.name == "coucou"
+
+
+def test_name_setter():
+    """Makes sure that a type error is raised when the name type variable is not
+    a string"""
+
+    with pytest.raises(TypeError, match="Name must be a string"):
+        F.VolumeSubdomain(id=1, material=None, name=1)
