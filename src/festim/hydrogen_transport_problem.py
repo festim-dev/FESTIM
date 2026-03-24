@@ -1421,7 +1421,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for reaction in self.reactions:
             if reaction.volume != subdomain:
                 continue
-            for species in reaction.reactant + reaction.product:
+            list_of_species_to_override = reaction.reactant + reaction.product
+
+            # check if we have implicit species:
+            for reactant in reaction.reactant:
+                if isinstance(reactant, festim.species.ImplicitSpecies):
+                    for other_spe in reactant.others:
+                        if other_spe not in list_of_species_to_override:
+                            list_of_species_to_override.append(other_spe)
+
+            for species in list_of_species_to_override:
                 if isinstance(species, festim.species.Species):
                     # TODO remove
                     # temporarily overide the solution to the one of the subdomain
