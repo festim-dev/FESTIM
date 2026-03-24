@@ -395,69 +395,53 @@ def test_product_setter_raise_error_E_p_no_product():
         reaction.reaction_term(temperature=500)
 
 
-def test_override_solution_attributes():
+# BUILD
+mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+
+vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
+vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
+my_model = F.HydrogenTransportProblemDiscontinuous()
+my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
+
+my_model.subdomains = [vol1, vol2]
+
+spe1 = F.Species("spe1", subdomains=my_model.volume_subdomains)
+spe2 = F.Species("spe2", subdomains=my_model.volume_subdomains)
+spe3 = F.Species("spe2", subdomains=my_model.volume_subdomains)
+spe4 = F.Species("spe4", mobile=False, subdomains=my_model.volume_subdomains)
+spe5 = F.Species("spe5", subdomains=my_model.volume_subdomains)
+empty_traps = F.ImplicitSpecies(n=1, others=[spe4], name="implicit_species")
+
+my_model.species = [spe1, spe2, spe3, spe4, spe5]
+
+reac1 = F.Reaction(reactant=[empty_traps, spe1], product=[], k_0=1, E_k=0, volume=vol1)
+reac2 = F.Reaction(
+    reactant=[empty_traps, spe2], product=[spe5], k_0=1, E_k=0, volume=vol2
+)
+
+my_model.define_meshtags_and_measures()
+for subdomain in my_model.volume_subdomains:
+    subdomain.create_subdomain(my_model.mesh.mesh, my_model.volume_meshtags)
+    subdomain.transfer_meshtag(my_model.mesh.mesh, my_model.facet_meshtags)
+
+for subdomain in my_model.volume_subdomains:
+    my_model.define_function_spaces(subdomain)
+
+
+@pytest.mark.parametrize("reaction", [reac1, reac2])
+def test_override_solution_attributes(reaction):
     """
     Tests the HydrogenTransportProblemDiscontinuous.override_solution_attributes method
     Checks that the .solution attribute is the expected one based on the volume of the
     reaction
     """
 
-    # BUILD
-    mat = F.Material(
-        D_0=1,
-        E_D=0,
-        K_S_0=1,
-        E_K_S=0,
-    )
+    # RUN
+    my_model.override_solution_attributes(reaction)
 
-    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
-    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
-    my_model = F.HydrogenTransportProblemDiscontinuous()
-    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
-
-    my_model.subdomains = [vol1, vol2]
-
-    spe1 = F.Species("spe1", subdomains=my_model.volume_subdomains)
-    spe2 = F.Species("spe2", subdomains=my_model.volume_subdomains)
-    spe3 = F.Species("spe2", subdomains=my_model.volume_subdomains)
-    spe4 = F.Species("spe4", mobile=False, subdomains=my_model.volume_subdomains)
-    spe5 = F.Species("spe5", subdomains=my_model.volume_subdomains)
-
-    empty_traps = F.ImplicitSpecies(n=1, others=[spe4], name="implicit_species")
-
-    my_model.species = [spe1, spe2, spe3, spe4, spe5]
-
-    reac1 = F.Reaction(
-        reactant=[empty_traps, spe1],
-        product=[],
-        k_0=1,
-        E_k=0,
-        volume=vol1,
-    )
-    reac2 = F.Reaction(
-        reactant=[empty_traps, spe2],
-        product=[spe5],
-        k_0=1,
-        E_k=0,
-        volume=vol2,
-    )
-
-    my_model.define_meshtags_and_measures()
-    for subdomain in my_model.volume_subdomains:
-        subdomain.create_subdomain(my_model.mesh.mesh, my_model.volume_meshtags)
-        subdomain.transfer_meshtag(my_model.mesh.mesh, my_model.facet_meshtags)
-
-    for subdomain in my_model.volume_subdomains:
-        my_model.define_function_spaces(subdomain)
-
-    # RUN & TEST
-    for reaction in [reac1, reac2]:
-        # RUN
-        my_model.override_solution_attributes(reaction)
-
-        # TEST
-        relevant_species = reaction.reactant + reaction.product + empty_traps.others
-        for species in relevant_species:
-            if isinstance(species, F.Species):
-                expected_solution = species.subdomain_to_solution[reaction.volume]
-                assert species.solution == expected_solution
+    # TEST
+    relevant_species = reaction.reactant + reaction.product + empty_traps.others
+    for species in relevant_species:
+        if isinstance(species, F.Species):
+            expected_solution = species.subdomain_to_solution[reaction.volume]
+            assert species.solution == expected_solution
