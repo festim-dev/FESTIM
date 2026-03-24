@@ -1422,6 +1422,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if reaction.volume != subdomain:
                 continue
 
+            # TODO remove
+            # temporarily overide the solution to the one of the subdomain
             self.override_solution_attributes(reaction)
             # reactant
             for reactant in reaction.reactant:
@@ -1664,8 +1666,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for species in list_of_species_to_override:
             if isinstance(species, festim.species.Species):
-                # TODO remove
-                # temporarily overide the solution to the one of the subdomain
                 species.solution = species.subdomain_to_solution[reaction.volume]
 
     def create_solver(self):
