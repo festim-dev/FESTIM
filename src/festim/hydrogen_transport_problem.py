@@ -1422,7 +1422,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if reaction.volume != subdomain:
                 continue
 
-            self.override_solution_attributes(reaction, subdomain)
+            self.override_solution_attributes(reaction)
             # reactant
             for reactant in reaction.reactant:
                 if isinstance(reactant, festim.species.Species):
@@ -1645,9 +1645,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             },
         )
 
-    def override_solution_attributes(
-        self, reaction: _reaction.Reaction, subdomain: _subdomain.VolumeSubdomain
-    ):
+    def override_solution_attributes(self, reaction: _reaction.Reaction):
         """
         Reaction.reaction_term() relies on the .solution attribute of the species
         however, in the discontinuous class, this attribute doesn't really make sense
@@ -1668,7 +1666,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if isinstance(species, festim.species.Species):
                 # TODO remove
                 # temporarily overide the solution to the one of the subdomain
-                species.solution = species.subdomain_to_solution[subdomain]
+                species.solution = species.subdomain_to_solution[reaction.volume]
 
     def create_solver(self):
         if Version(dolfinx.__version__) == Version("0.9.0"):
