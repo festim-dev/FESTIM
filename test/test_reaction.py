@@ -4,6 +4,7 @@ import pytest
 from dolfinx.fem import Function, functionspace
 from dolfinx.mesh import create_unit_cube
 from ufl import exp
+import numpy as np
 
 import festim as F
 
@@ -392,3 +393,55 @@ def test_product_setter_raise_error_E_p_no_product():
             volume=my_vol,
         )
         reaction.reaction_term(temperature=500)
+
+
+def test_override_solution_attributes():
+
+    # BUILD
+    tungsten = F.Material(
+        D_0=1,
+        E_D=0,
+        K_S_0=1,
+        E_K_S=0,
+    )
+
+    vol = F.VolumeSubdomain1D(id=6, borders=[0, 1], material=tungsten)
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
+
+    my_model.subdomains = [vol]
+
+    Deuterium = F.Species("D", subdomains=my_model.volume_subdomains)
+    trapped_T = F.Species(
+        "T_trapped", mobile=False, subdomains=my_model.volume_subdomains
+    )
+
+    empty_traps = F.ImplicitSpecies(n=1, others=[trapped_T], name="implicit_species")
+
+    my_model.species = [trapped_T, Deuterium]
+
+    my_reaction = F.Reaction(
+        reactant=[empty_traps, Deuterium],
+        product=[],
+        k_0=1,
+        E_k=0,
+        volume=vol,
+    )
+    my_model.reactions = [my_reaction]
+
+    my_model.temperature = 300
+
+    my_model.settings = F.Settings(
+        transient=False,
+        atol=1e-8,
+        rtol=1e-10,
+    )
+
+    my_model.initialise()
+
+    # RUN
+    my_model.override_solution_attributes(my_reaction, subdomain=vol)
+
+    # TEST
+    for species in [trapped_T, Deuterium]:
+        assert species.solution == species.subdomain_to_solution[vol]
