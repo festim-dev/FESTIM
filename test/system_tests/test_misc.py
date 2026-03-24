@@ -332,3 +332,4 @@ def test_implicit_species_bug_reaction():
     )
 
     my_model.initialise()
+    my_model.run()
