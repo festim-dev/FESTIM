@@ -10,9 +10,9 @@ authors = [
 dynamic = ["version"]
 name = "FESTIM"
 description = "Finite element simulations of hydrogen transport"
-readme = "README/md"
+readme = "README.md"
 requires-python = ">=3.9"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
 dependencies = ["tqdm", "scifem>=0.2.13", "adios4dolfinx"]
 classifiers = [
     "Natural Language :: English",
@@ -22,7 +22,6 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
-    "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
 
