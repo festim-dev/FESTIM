@@ -358,12 +358,3 @@ def test_timesteps():
 
     expected_timesteps = np.linspace(0, 10, num=10, endpoint=False)
     assert np.allclose(my_model.timesteps, expected_timesteps)
-
-
-def test_wrong_element_for_immobile_species():
-    """Test that an error is raised when an immobile species is defined on a subdomain
-    with an element that is incorrect"""
-    my_model = F.HydrogenTransportProblem()
-
-    with pytest.raises(ValueError, match="element_immobile should be in"):
-        my_model.element_immobile = "coucou"

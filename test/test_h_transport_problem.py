@@ -1499,3 +1499,58 @@ def test_temperature_as_function_in_discontinuous():
     )
 
     my_model.initialise()
+
+
+def test_wrong_element_for_immobile_species():
+    """Test that an error is raised when an immobile species is defined on a subdomain
+    with an element that is incorrect"""
+    my_model = F.HydrogenTransportProblem()
+
+    with pytest.raises(ValueError, match="element_immobile should be in"):
+        my_model.element_immobile = "coucou"
+
+
+@pytest.mark.parametrize(
+    "element_type, expected_element", [("CG", "CG"), ("DG", "DG"), ("P", "CG")]
+)
+def test_element_for_immobile_species(element_type, expected_element):
+    """Test that the element for immobile species is correctly set when the user sets
+    it to CG or DG"""
+    my_model = F.HydrogenTransportProblem()
+
+    my_model.element_immobile = element_type
+    assert my_model.element_immobile == expected_element
+
+
+def test_nb_dofs_dg_or_cg():
+    """Test that the number of dofs is different when using CG or DG elements for
+    immobile species"""
+
+    # BUILD
+    my_model = F.HydrogenTransportProblem()
+
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+
+    vertices = np.linspace(0, 1, num=11)
+    my_model.mesh = F.Mesh1D(vertices)
+
+    my_model.subdomains = [vol]
+
+    H = F.Species("H", subdomains=my_model.volume_subdomains, mobile=False)
+    my_model.species = [H]
+
+    my_model.temperature = 600
+
+    # CG case
+    my_model.element_immobile = "CG"
+    my_model.define_function_spaces()
+    nb_dofs_cg = my_model.function_space.sub(0).dofmap.index_map.size_global
+
+    # DG case
+    my_model.element_immobile = "DG"
+    my_model.define_function_spaces()
+    nb_dofs_dg = my_model.function_space.sub(0).dofmap.index_map.size_global
+
+    # TEST
+    assert nb_dofs_dg > nb_dofs_cg
