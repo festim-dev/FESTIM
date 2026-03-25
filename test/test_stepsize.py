@@ -201,3 +201,12 @@ def test_get_max_stepsize(t, expected_value):
     my_stepsize.max_stepsize = lambda t: 10 if t < 1000 else None
 
     assert my_stepsize.get_max_stepsize(t) == expected_value
+
+
+def test_milestones_without_adaptivity_raises_error():
+    """Checks that setting milestones without adaptivity raises an error"""
+
+    with pytest.raises(
+        ValueError, match="Milestones are only relevant if the stepsize is adaptive."
+    ):
+        F.Stepsize(initial_value=2, milestones=[1, 2, 3])
