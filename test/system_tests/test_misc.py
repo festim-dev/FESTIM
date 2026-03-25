@@ -333,3 +333,37 @@ def test_implicit_species_bug_reaction():
 
     my_model.initialise()
     my_model.run()
+
+
+def test_timesteps():
+    """Test that the timesteps are correctly saved in the model"""
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=50))
+
+    H = F.Species("H")
+    my_model.species = [H]
+
+    my_mat = F.Material(D_0=1, E_D=0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    my_model.subdomains = [vol]
+
+    my_model.temperature = 500
+
+    my_model.settings = F.Settings(
+        transient=True, atol=1e-10, rtol=1e-10, final_time=10, stepsize=1
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+    expected_timesteps = np.linspace(0, 10, num=10, endpoint=False)
+    assert np.allclose(my_model.timesteps, expected_timesteps)
+
+
+def test_wrong_element_for_immobile_species():
+    """Test that an error is raised when an immobile species is defined on a subdomain
+    with an element that is incorrect"""
+    my_model = F.HydrogenTransportProblem()
+
+    with pytest.raises(ValueError, match="element_immobile should be in"):
+        my_model.element_immobile = "coucou"

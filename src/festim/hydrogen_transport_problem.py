@@ -314,6 +314,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 all_boundary_conditions.append(bc)
         return all_boundary_conditions
 
+    @property
+    def element_immobile(self):
+        return self._element_immobile
+
+    @element_immobile.setter
+    def element_immobile(self, value):
+        allowed_values = ["DG", "CG", "P"]
+        if value not in allowed_values:
+            raise ValueError(f"element_immobile should be in {allowed_values}")
+        if value == "P":
+            value = "CG"
+        self._element_immobile = value
+
     def initialise(self):
         self.create_species_from_traps()
         self.define_function_spaces(element_degree=self.settings.element_degree)
@@ -613,15 +626,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(spe, _species.Species):
                 if spe.mobile:
                     elements.append(element_CG)
-                elif self._element_immobile == "DG":
-                    elements.append(element_DG)
-                elif self._element_immobile == "CG":
-                    elements.append(element_CG)
                 else:
-                    raise ValueError(
-                        f"element_immobile should be either 'DG' or 'CG', not "
-                        f"{self._element_immobile!r}"
-                    )
+                    match self._element_immobile:
+                        case "DG":
+                            elements.append(element_DG)
+                        case "CG":
+                            elements.append(element_CG)
+
         element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
