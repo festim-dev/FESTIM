@@ -6,7 +6,7 @@ from petsc4py import PETSc
 
 import basix
 import numpy as np
-import tqdm.autonotebook
+import tqdm.auto
 from dolfinx.fem import (
     Constant,
     Function,
@@ -140,7 +140,7 @@ def fenics_test_permeation_problem(mesh_size=1001):
     flux_values = []
     times = []
     t = 0
-    progress = tqdm.autonotebook.tqdm(
+    progress = tqdm.auto.tqdm(
         desc="Solving H transport problem", total=final_time, unit_scale=True
     )
     while t < final_time:

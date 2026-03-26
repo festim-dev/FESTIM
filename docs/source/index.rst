@@ -44,9 +44,9 @@ Moreover, users can rapidly get started with FESTIM thanks to its python API.
             :link: https://festim-vv-report.readthedocs.io/en/latest/
 
       .. grid-item::
-         .. card:: API reference
-            :img-top: images/icons/keyboard-svgrepo-com.svg
-            :link: api/index
+         .. card:: Fellowship
+            :img-top: images/icons/graph-up-svgrepo-com.svg
+            :link: fellowship
             :link-type: doc
 
 FESTIM was originally developed at the `Institute for Magnetic Fusion Research (IRFM) <https://irfm.cea.fr/en/index.php>`_ and the `Process and Materials Sciences Laboratory (LSPM) <https://www.lspm.cnrs.fr/en/home/>`_.
@@ -88,3 +88,4 @@ Contents
    devguide/index
    api/index
    publications
+   fellowship

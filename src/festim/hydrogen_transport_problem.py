@@ -10,7 +10,7 @@ import basix
 import dolfinx
 import numpy as np
 import numpy.typing as npt
-import tqdm.autonotebook
+import tqdm.auto
 import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
@@ -193,6 +193,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         traps=None,
         advection_terms=None,
         petsc_options=None,
+        element_immobile: str = "CG",
     ):
         super().__init__(
             mesh=mesh,
@@ -212,7 +213,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.advection_terms = advection_terms or []
         self.temperature_fenics = None
 
-        self._element_for_traps = "DG"
+        self._element_immobile = element_immobile
 
         self._temperature_as_function = None
 
@@ -312,6 +313,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
             else:
                 all_boundary_conditions.append(bc)
         return all_boundary_conditions
+
+    @property
+    def element_immobile(self):
+        return self._element_immobile
+
+    @element_immobile.setter
+    def element_immobile(self, value):
+        allowed_values = ["DG", "CG", "P"]
+        if value not in allowed_values:
+            raise ValueError(f"element_immobile should be in {allowed_values}")
+        if value == "P":
+            value = "CG"
+        self._element_immobile = value
 
     def initialise(self):
         self.create_species_from_traps()
@@ -483,6 +497,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.XDMFExport):
                 export.define_writer(MPI.COMM_WORLD)
 
+            # clean data for profile1D export
+            if isinstance(export, exports.Profile1DExport):
+                export.data = []
+                export.t = []
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
@@ -608,10 +626,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(spe, _species.Species):
                 if spe.mobile:
                     elements.append(element_CG)
-                elif self._element_for_traps == "DG":
-                    elements.append(element_DG)
                 else:
-                    elements.append(element_CG)
+                    match self._element_immobile:
+                        case "DG":
+                            elements.append(element_DG)
+                        case "CG":
+                            elements.append(element_CG)
+
         element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
@@ -1435,12 +1456,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for reaction in self.reactions:
             if reaction.volume != subdomain:
                 continue
-            for species in reaction.reactant + reaction.product:
-                if isinstance(species, festim.species.Species):
-                    # TODO remove
-                    # temporarily overide the solution to the one of the subdomain
-                    species.solution = species.subdomain_to_solution[subdomain]
 
+            # TODO remove
+            # temporarily overide the solution to the one of the subdomain
+            self.override_solution_attributes(reaction)
             # reactant
             for reactant in reaction.reactant:
                 if isinstance(reactant, festim.species.Species):
@@ -1663,6 +1682,27 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             },
         )
 
+    def override_solution_attributes(self, reaction: _reaction.Reaction):
+        """
+        Reaction.reaction_term() relies on the .solution attribute of the species
+        however, in the discontinuous class, this attribute doesn't really make sense
+        since there is one solution per subdomain.
+        Therefore we temporarily override the .solution attribute based on the reactants,
+        products, and `others` if there are implicit species
+        """
+        list_of_species_to_override = reaction.reactant + reaction.product
+
+        # check if we have implicit species:
+        for reactant in reaction.reactant:
+            if isinstance(reactant, festim.species.ImplicitSpecies):
+                for other_spe in reactant.others:
+                    if other_spe not in list_of_species_to_override:
+                        list_of_species_to_override.append(other_spe)
+
+        for species in list_of_species_to_override:
+            if isinstance(species, festim.species.Species):
+                species.solution = species.subdomain_to_solution[reaction.volume]
+
     def create_solver(self):
         if Version(dolfinx.__version__) == Version("0.9.0"):
             self.solver = BlockedNewtonSolver(
@@ -1877,7 +1917,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                     export.compute(
                         u=export.field.subdomain_to_post_processing_solution[
-                            export_vol
+                            export.volume
                         ],
                         dx=self.dx,
                         entity_maps=entity_maps,
@@ -1952,7 +1992,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         if self.settings.transient:
             # Solve transient
             if self.show_progress_bar:
-                self.progress_bar = tqdm.autonotebook.tqdm(
+                self.progress_bar = tqdm.auto.tqdm(
                     desc=f"Solving {self.__class__.__name__}",
                     total=self.settings.final_time,
                     unit_scale=True,

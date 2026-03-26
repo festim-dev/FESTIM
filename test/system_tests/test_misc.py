@@ -284,3 +284,77 @@ def test_multispecies_with_immobile():
     my_model.settings = F.Settings(transient=False, atol=1e-10, rtol=1e-10)
 
     my_model.initialise()
+
+
+def test_implicit_species_bug_reaction():
+    """
+    This test catches the bug described in issue #1084
+    """
+    tungsten = F.Material(
+        D_0=1,
+        E_D=0,
+        K_S_0=1,
+        E_K_S=0,
+    )
+
+    W_volume = F.VolumeSubdomain1D(id=6, borders=[0, 1], material=tungsten)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
+
+    my_model.subdomains = [W_volume]
+
+    Deuterium = F.Species("D", subdomains=my_model.volume_subdomains)
+    trapped_T = F.Species(
+        "T_trapped", mobile=False, subdomains=my_model.volume_subdomains
+    )
+
+    empty_traps = F.ImplicitSpecies(n=1, others=[trapped_T], name="implicit_species")
+
+    my_model.species = [trapped_T, Deuterium]
+
+    my_model.reactions = [
+        F.Reaction(
+            reactant=[empty_traps, Deuterium],
+            product=[],
+            k_0=1,
+            E_k=0,
+            volume=W_volume,
+        ),
+    ]
+
+    my_model.temperature = 300
+
+    my_model.settings = F.Settings(
+        transient=False,
+        atol=1e-8,
+        rtol=1e-10,
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+
+def test_timesteps():
+    """Test that the timesteps are correctly saved in the model"""
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=50))
+
+    H = F.Species("H")
+    my_model.species = [H]
+
+    my_mat = F.Material(D_0=1, E_D=0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    my_model.subdomains = [vol]
+
+    my_model.temperature = 500
+
+    my_model.settings = F.Settings(
+        transient=True, atol=1e-10, rtol=1e-10, final_time=10, stepsize=1
+    )
+
+    my_model.initialise()
+    my_model.run()
+
+    expected_timesteps = np.linspace(0, 10, num=10, endpoint=False)
+    assert np.allclose(my_model.timesteps, expected_timesteps)
