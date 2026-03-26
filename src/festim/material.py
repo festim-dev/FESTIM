@@ -116,6 +116,10 @@ class Material:
                 "D_0 and D cannot be set at the same time. Please set only one of them."
             )
 
+        # raise error if D_0 and D are both None
+        if self.D_0 is None and self.D is None:
+            raise ValueError("D_0 and D cannot both be None. Please set one of them.")
+
     @property
     def solubility_law(self):
         return self._solubility_law
