@@ -77,11 +77,11 @@ Fellows are expected to:
 - Dedicate at least 25% of their time to the programme
 - Actively engage with the FESTIM team and participate in discussions
 - Use their project as a basis for developing deeper FESTIM expertise
-- Fellows will present their work in a final seminar.
+- Present their work in a final seminar
 
 By the end of the fellowship, Fellows should have achieved at least one of the following:
 
-- Significant progress on a complex application case, resulting in a robust and reproducible simulation setup that can be developed further after the fellowship
+- Significant progress on a complex application case, resulting in a robust and reproducible simulation setup
 - A contribution to the FESTIM codebase (feature, improvement, or fix)
 - A validation or verification case
 - Integration of FESTIM into a broader modelling framework
@@ -90,7 +90,11 @@ By the end of the fellowship, Fellows should have achieved at least one of the f
 Funding
 --------
 
-Fellows are supported by their home organisation or employer. Limited support for travel or on-site participation may be available for students and academics. The programme does not provide a stipend.
+Fellows are supported by their home organisation or employer. The programme does not provide a stipend.
+
+On-site participation at the MIT Plasma Science and Fusion Center (PSFC) is available for all Fellows.
+
+For participants from academia, limited support for travel and on-site participation may be available.
 
 ----------
 Key Dates 
