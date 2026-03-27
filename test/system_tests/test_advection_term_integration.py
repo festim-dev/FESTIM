@@ -324,16 +324,16 @@ def test_flux_conservation_advection():
 
     my_model.settings = F.Settings(transient=False, atol=1e-10, rtol=1e-10)
 
-    advection_flux_top = F.Advectionflux(
+    advection_flux_top = F.AdvectionFlux(
         velocity_field=velocity_field, field=test_H, surface=top
     )
-    advection_flux_right = F.Advectionflux(
+    advection_flux_right = F.AdvectionFlux(
         velocity_field=velocity_field, field=test_H, surface=right
     )
-    advection_flux_left = F.Advectionflux(
+    advection_flux_left = F.AdvectionFlux(
         velocity_field=velocity_field, field=test_H, surface=left
     )
-    advection_flux_bottom = F.Advectionflux(
+    advection_flux_bottom = F.AdvectionFlux(
         velocity_field=velocity_field, field=test_H, surface=bottom
     )
     my_model.exports = [
