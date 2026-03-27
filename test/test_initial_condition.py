@@ -173,7 +173,7 @@ def test_checkpointing_single_species(tmpdir):
     my_problem.subdomains = [vol]
 
     function_initial_value = F.read_function_from_file(
-        filename=filename, name="my_function", timestamp=0.2
+        filename=filename, name="my_function", timestamp=0.2, mesh=mesh
     )
     my_problem.initial_conditions = [
         F.InitialConcentration(value=function_initial_value, species=H, volume=vol)
@@ -233,18 +233,14 @@ def test_checkpointing_multiple_species(tmpdir):
     my_problem.initial_conditions = [
         F.InitialConcentration(
             value=F.read_function_from_file(
-                filename=filename,
-                name="my_function1",
-                timestamp=0.2,
+                filename=filename, name="my_function1", timestamp=0.2, mesh=mesh
             ),
             species=H,
             volume=vol,
         ),
         F.InitialConcentration(
             value=F.read_function_from_file(
-                filename=filename,
-                name="my_function2",
-                timestamp=0.3,
+                filename=filename, name="my_function2", timestamp=0.3, mesh=mesh
             ),
             species=D,
             volume=vol,
@@ -460,7 +456,7 @@ def test_initial_condition_mixed_domain():
     my_model.temperature = 300
 
     intial_cond_value = 100
-    V = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_model.mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.x.array[:] = intial_cond_value
 
@@ -507,11 +503,11 @@ def test_initial_condition_mixed_domain_multispecies():
 
     intial_cond_value_1 = 100
     intial_cond_value_2 = 200
-    V = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    V = fem.functionspace(my_model.mesh.mesh, ("Lagrange", 1))
     u = fem.Function(V)
     u.x.array[:] = intial_cond_value_1
 
-    V2 = fem.functionspace(my_model.mesh.mesh, ("CG", 1))
+    V2 = fem.functionspace(my_model.mesh.mesh, ("Lagrange", 1))
     u2 = fem.Function(V2)
     u2.x.array[:] = intial_cond_value_2
 

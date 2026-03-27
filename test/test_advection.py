@@ -9,7 +9,7 @@ from dolfinx import fem
 import festim as F
 
 test_mesh_1d = F.Mesh1D(vertices=np.linspace(0, 1, 100))
-test_functionspace = fem.functionspace(test_mesh_1d.mesh, ("CG", 1))
+test_functionspace = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
 
 
 @pytest.mark.parametrize(
