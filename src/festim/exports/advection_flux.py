@@ -7,7 +7,7 @@ from festim.species import Species
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
-class Advection_flux(SurfaceFlux):
+class AdvectionFlux(SurfaceFlux):
     """Computes the advective flux of a field on a given surface
 
     Args:
