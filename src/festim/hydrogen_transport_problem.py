@@ -1714,37 +1714,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         elif Version(dolfinx.__version__) > Version("0.9.0"):
             from dolfinx.fem.petsc import NonlinearProblem
 
-            if self.petsc_options is None:
-                # taken from https://github.com/FEniCS/dolfinx/blob/5fcb988c5b0f46b8f9183bc844d8f533a2130d6a/python/demo/demo_cahn-hilliard.py#L279C1-L286C28
-                use_superlu = (
-                    PETSc.IntType == np.int64
-                )  # or PETSc.ScalarType == np.complex64
-                sys = PETSc.Sys()  # type: ignore
-                if sys.hasExternalPackage("mumps") and not use_superlu:
-                    linear_solver = "mumps"
-                elif sys.hasExternalPackage("superlu_dist"):
-                    linear_solver = "superlu_dist"
-                else:
-                    linear_solver = "petsc"
-
-                petsc_options = {
-                    "snes_type": "newtonls",
-                    "snes_linesearch_type": "none",
-                    "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps)
-                    * 1e-2,
-                    # TODO : make atol and rtol callable
-                    "snes_atol": self.settings.atol,
-                    "snes_rtol": self.settings.rtol,
-                    "snes_max_it": self.settings.max_iterations,
-                    "snes_divergence_tolerance": "PETSC_UNLIMITED",
-                    "ksp_type": "preonly",
-                    "pc_type": "lu",
-                    "pc_factor_mat_solver_type": linear_solver,
-                    "snes_error_if_not_converged": True,
-                    "ksp_error_if_not_converged": True,
-                }
-            else:
-                petsc_options = self.petsc_options
+            petsc_options = self.get_petsc_options()
 
             self.solver = NonlinearProblem(
                 self.forms,
