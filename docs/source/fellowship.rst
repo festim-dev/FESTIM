@@ -102,29 +102,21 @@ Key Dates
 
 **Summer cohort**:
 ^^^^^^^^^^^^^^^^^^^
-April 1st - Applications open
-
-April 30th - Application deadline
-
-May 18th - Application decision notice
-
-June 15th\* - Programme starts
-
-August 14th\* - Programme ends
+- 1st April - Applications open  
+- 30th April - Application deadline  
+- 18th May - Decisions released  
+- 15th June* - Programme starts  
+- 14th August* - Programme ends  
 
 **Fall cohort**:
 ^^^^^^^^^^^^^^^^^
-April - Applications open
+- April - Applications open  
+- August - Application deadline  
+- August - Decisions released  
+- October* - Programme starts  
+- December* - Programme ends  
 
-August - Application deadline
-
-August - Application decision notice
-
-October\* - Programme starts
-
-December\* - Programme ends
-
-*Programme dates are flexible*
+*\*Programme dates are flexible*
 
 ---------
 Apply
