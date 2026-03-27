@@ -9,16 +9,23 @@ from festim.species import Species
 class OutflowBC:
     """
     Outflow boundary condition class
-    
+
+    dot(velocity, n) * u * v * ds
+
+    This term allows the species to flow across the boundary due to advection. It arises
+    from integrating the conservative form of the advection term by parts in the weak
+    formulation.
 
     Args:
         velocity: The velocity field at the outflow boundary condition
-        species: The species for which the outflow boundary condition is applied, can be a list of species or a single species
+        species: The species for which the outflow boundary condition is applied, can be
+            a list of species or a single species
         subdomain: The surface subdomain where the boundary condition is applied
 
     Attributes:
         velocity: The velocity field at the outflow boundary condition
-        species: The species for which the outflow boundary condition is applied, can be a list of species or a single species
+        species: The species for which the outflow boundary condition is applied, can be
+            a list of species or a single species
         subdomain: The surface subdomain where the boundary condition is applied
 
     """
