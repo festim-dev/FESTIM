@@ -1677,13 +1677,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # check if we have implicit species:
         for reactant in reaction.reactant:
-            if isinstance(reactant, festim.species.ImplicitSpecies):
+            if isinstance(reactant, _species.ImplicitSpecies):
                 for other_spe in reactant.others:
                     if other_spe not in list_of_species_to_override:
                         list_of_species_to_override.append(other_spe)
 
         for species in list_of_species_to_override:
-            if isinstance(species, festim.species.Species):
+            if isinstance(species, _species.Species):
                 species.solution = species.subdomain_to_solution[reaction.volume]
 
     def create_solver(self):
