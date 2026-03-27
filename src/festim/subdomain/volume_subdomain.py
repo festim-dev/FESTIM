@@ -55,10 +55,26 @@ class VolumeSubdomain:
     material: Material
     sub_T: fem.Function | float
 
-    def __init__(self, id, material, locator: Callable | None = None):
+    def __init__(
+        self, id, material, locator: Callable | None = None, name: str | None = None
+    ):
         self.id = id
         self.material = material
         self.locator = locator
+        self.name = name
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        if value is None:
+            self._name = None
+        elif isinstance(value, str):
+            self._name = value
+        else:
+            raise TypeError("Name must be a string")
 
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
