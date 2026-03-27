@@ -1,4 +1,4 @@
-import tqdm.autonotebook
+import tqdm.auto
 from dolfinx import fem
 
 from festim.heat_transfer_problem import HeatTransferProblem
@@ -152,7 +152,7 @@ class CoupledTransientHeatTransferHydrogenTransport:
 
     def run(self):
         if self.hydrogen_problem.show_progress_bar:
-            self.hydrogen_problem.progress_bar = tqdm.autonotebook.tqdm(
+            self.hydrogen_problem.progress_bar = tqdm.auto.tqdm(
                 desc=f"Solving {self.__class__.__name__}",
                 total=self.hydrogen_problem.settings.final_time,
                 unit_scale=True,

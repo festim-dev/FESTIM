@@ -14,6 +14,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Configure git safe directory
+        run: |
+          git config --global --add safe.directory '*'
+
       - name: Install local package and dependencies
         run: |
           pip install .[test]
