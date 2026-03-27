@@ -10,6 +10,7 @@ import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
 from packaging.version import Version
+import warnings
 
 import festim as F
 from festim.mesh.mesh import Mesh as _Mesh
@@ -124,6 +125,45 @@ class ProblemBase:
                 form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
 
+    def get_petsc_options(self) -> dict[str, Any]:
+        """
+        Gets the PETSc options to pass to the NewtonProblem solver. Default
+        options are updated with user-provided options, if any.
+
+        Returns:
+            the petsc options to pass to the NewtonProblem solver.
+        """
+        petsc_options = get_default_petsc_options()
+
+        # Update default PETSc options with user-provided options, if any
+        if self.petsc_options:
+            petsc_options.update(self.petsc_options)
+
+        if self.petsc_options:
+            if (
+                "snes_atol" in self.petsc_options
+                or "snes_rtol" in self.petsc_options
+                or "snes_max_it" in self.petsc_options
+            ):
+                warnings.warn(
+                    "You have set one of the following PETSc options: snes_atol, "
+                    "snes_rtol or snes_max_it. These options will be overwritten by "
+                    "the values in festim.Settings (atol, rtol and max_iterations) to "
+                    "ensure consistency between different versions of dolfinx. If you "
+                    "want to set these options manually, please set them in "
+                    "festim.Settings and not in the petsc_options dictionary."
+                )
+
+        petsc_options.update(
+            {
+                "snes_atol": self.settings.atol,
+                "snes_rtol": self.settings.rtol,
+                "snes_max_it": self.settings.max_iterations,
+            }
+        )
+
+        return petsc_options
+
     def create_solver(self):
         """Creates the solver of the model"""
 
@@ -165,38 +205,7 @@ class ProblemBase:
         elif Version(dolfinx.__version__) > Version("0.9.0"):
             from dolfinx.fem.petsc import NonlinearProblem
 
-            if self.petsc_options is None:
-                # taken from https://github.com/FEniCS/dolfinx/blob/5fcb988c5b0f46b8f9183bc844d8f533a2130d6a/python/demo/demo_cahn-hilliard.py#L279C1-L286C28
-                use_superlu = (
-                    PETSc.IntType == np.int64
-                )  # or PETSc.ScalarType == np.complex64
-                sys = PETSc.Sys()  # type: ignore
-                if sys.hasExternalPackage("mumps") and not use_superlu:
-                    linear_solver = "mumps"
-                elif sys.hasExternalPackage("superlu_dist"):
-                    linear_solver = "superlu_dist"
-                else:
-                    linear_solver = "petsc"
-
-                petsc_options = {
-                    "snes_type": "newtonls",
-                    "snes_linesearch_type": "none",
-                    "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps)
-                    * 1e-2,
-                    # TODO : make atol and rtol callable
-                    "snes_atol": self.settings.atol,
-                    "snes_rtol": self.settings.rtol,
-                    "snes_max_it": self.settings.max_iterations,
-                    "snes_divergence_tolerance": "PETSC_UNLIMITED",
-                    "ksp_type": "preonly",
-                    "pc_type": "lu",
-                    "pc_factor_mat_solver_type": linear_solver,
-                    "snes_error_if_not_converged": True,
-                    "ksp_error_if_not_converged": True,
-                }
-            else:
-                petsc_options = self.petsc_options
-
+            petsc_options = self.get_petsc_options()
             self.solver = NonlinearProblem(
                 self.formulation,
                 self.u,
@@ -293,3 +302,31 @@ class ProblemBase:
         for source in self.sources:
             if source.value.explicit_time_dependent:
                 source.value.update(t=t)
+
+
+# DEFAULT PETSC OPTIONS
+
+# taken from https://github.com/FEniCS/dolfinx/blob/5fcb988c5b0f46b8f9183bc844d8f533a2130d6a/python/demo/demo_cahn-hilliard.py#L279C1-L286C28
+use_superlu = PETSc.IntType == np.int64  # or PETSc.ScalarType == np.complex64
+sys = PETSc.Sys()  # type: ignore
+if sys.hasExternalPackage("mumps") and not use_superlu:
+    linear_solver = "mumps"
+elif sys.hasExternalPackage("superlu_dist"):
+    linear_solver = "superlu_dist"
+else:
+    linear_solver = "petsc"
+_DEFAULT_PETSC_OPTS = {
+    "snes_type": "newtonls",
+    "snes_linesearch_type": "none",
+    "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps) * 1e-2,
+    "snes_divergence_tolerance": "PETSC_UNLIMITED",
+    "ksp_type": "preonly",
+    "pc_type": "lu",
+    "pc_factor_mat_solver_type": linear_solver,
+    "snes_error_if_not_converged": True,
+    "ksp_error_if_not_converged": True,
+}
+
+
+def get_default_petsc_options():
+    return _DEFAULT_PETSC_OPTS.copy()
