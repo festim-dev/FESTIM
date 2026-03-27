@@ -124,18 +124,71 @@ The programme is organised in cohorts throughout the year:
 Apply
 ---------
 
-Ready to apply to the FESTIM Fellowship Programme?
+Interested in the FESTIM Fellowship Programme?
+
+Apply now using the form below:
 
 .. raw:: html
 
-   <a href="https://forms.gle/fMJr262vXDh9r71y7" target="_blank" style="
-      display:inline-block;
-      background-color:#F7B000;
-      color:#000000;
-      padding:12px 22px;
-      border-radius:8px;
-      text-decoration:none;
-      font-weight:600;
-      margin-top:8px;">
-      Apply here
-   </a>
+   <div style="text-align: center;">
+      <a href="https://forms.gle/fMJr262vXDh9r71y7" target="_blank" style="
+         display:inline-block;
+         background-color:#F7B000;
+         color:#000000;
+         padding:12px 22px;
+         border-radius:8px;
+         text-decoration:none;
+         font-weight:600;
+         margin-top:8px;">
+         Apply here
+      </a>
+   </div>
+
+
+---------
+FAQ's
+---------
+
+.. dropdown:: How much interaction will I have with the FESTIM team?
+   :color: light
+   :open:
+
+   All Fellows are welcome to join the weekly MIT-FESTIM meeting and will have at least one hour of dedicated time with the lead developers each week.
+
+   Fellows participating on site have access to dedicated office space near the development team and are encouraged to interact on a daily basis.
+
+.. dropdown:: Can I participate alongside a full-time role?
+   :color: light
+
+   Yes, provided you can dedicate at least 25% of your time to the programme.
+
+.. dropdown:: Where does the fellowship take place?
+   :color: light
+
+   Fellows may participate remotely or on site at the MIT Plasma Science and Fusion Center (PSFC).
+
+.. dropdown:: How long does the programme last?
+   :color: light
+
+   The suggested duration is 10 weeks. However, this time can be very flexible and can be adapted depending on the project and availability.
+
+.. dropdown:: Are there any costs involved?
+   :color: light
+
+   There are no programme fees.
+
+   For Fellows participating on site, the main costs are travel to and from MIT and accommodation. These are typically supported by the Fellow’s home organisation or employer.
+
+   For participants from academia, limited funding may be available to support some of these costs. Applicants are encouraged to contact us for further information.
+
+   Remote participation does not involve any direct costs. Remote Fellows may also have the option to visit MIT during the programme, subject to the same funding arrangements.
+
+.. dropdown:: What makes a strong application?
+   :color: light
+
+   A clear, well-defined project, prior hands-on experience with FESTIM, and a strong motivation to develop advanced capability.
+
+.. dropdown:: Can this lead to collaboration or publications?
+   :color: light
+
+   In some cases, fellowship projects may contribute to ongoing research and lead to collaboration or publication, depending on the project.
