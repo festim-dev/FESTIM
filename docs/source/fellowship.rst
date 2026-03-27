@@ -192,3 +192,13 @@ FAQ's
    :color: light
 
    In some cases, fellowship projects may contribute to ongoing research and lead to collaboration or publication, depending on the project.
+
+
+.. admonition:: Still have questions?
+   :class: info
+
+
+   If you have further questions about the programme, or would like to discuss whether your project is a good fit before applying, please contact:
+
+   - James Dark: darkj385@mit.edu
+   - Rémi Delaporte-Mathurin: remidm@mit.edu
