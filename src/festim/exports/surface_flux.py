@@ -47,12 +47,8 @@ class SurfaceFlux(SurfaceQuantity):
             entity_maps: entity maps relating parent mesh and submesh
         """
 
-        # obtain mesh normal from field
-        # if case multispecies, solution is an index, use sub_function_space
-        if isinstance(u, ufl.indexed.Indexed):
-            mesh = self.field.sub_function_space.mesh
-        else:
-            mesh = u.function_space.mesh
+        # obtain mesh normal from integration domain
+        mesh = ds.ufl_domain()
         n = ufl.FacetNormal(mesh)
 
         self.value = assemble_scalar(

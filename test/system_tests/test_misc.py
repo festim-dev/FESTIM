@@ -186,7 +186,7 @@ def test_temp_dependent_bc_mixed_domain_temperature_as_function():
     """Test to catch bug 986"""
     mesh, mt, ct = generate_mesh(8)
 
-    V = dolfinx.fem.functionspace(mesh, ("CG", 1))
+    V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
     T = dolfinx.fem.Function(V)
     T.interpolate(lambda x: 800.0 + 100 * x[0] + x[1])
 

@@ -3,7 +3,10 @@ import os
 
 from mpi4py import MPI
 
-import ipyparallel as ipp
+import pytest
+
+ipp = pytest.importorskip("ipyparallel")
+
 import numpy as np
 import pytest
 from dolfinx import mesh as fenics_mesh
