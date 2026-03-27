@@ -47,25 +47,25 @@ We are looking for applicants who want to develop advanced capability in FESTIM 
 How the programme works
 ----------------------------
 
-Each Fellow proposes a focused project, which forms the core of their fellowship work. This project serves as a practical framework for exploring FESTIM's capabilities in depth.
+Each Fellow proposes a focused project, which forms the core of their fellowship work. This project provides a practical framework for exploring FESTIM in depth through a real application.
 
-Rather than following a fixed curriculum, Fellows learn through direct application of FESTIM to their own problem, supported by regular interaction with the development team. This includes:
+Rather than following a fixed curriculum, the programme is structured around guided, project-based learning. Fellows work closely with the FESTIM development team, with regular interaction that includes:
 
 - Technical discussions and working sessions
 - Guidance on simulation setup, structure, and troubleshooting
 - Exposure to advanced features and best practices
 - Opportunities to engage with related research at the PSFC
 
-Fellows may participate remotely or in person. The typical duration is 10 weeks, although this is flexible.
+Fellows may participate remotely or in person. The typical duration is 10 weeks, although this is flexible and can be adapted depending on the project and availability.
 
 ---------------
 What you gain
 ---------------
 
-- A deeper, working understanding of FESTIM and its capabilities
-- The ability to develop and manage more complex simulation cases
-- Confidence in structuring, troubleshooting, and extending FESTIM models
-- Direct interaction with the FESTIM development team
+- A strong, working understanding of FESTIM and how to use it effectively in real applications
+- The ability to develop, structure, and manage complex simulation cases
+- Confidence in troubleshooting and extending FESTIM models
+- Direct collaboration with the FESTIM development team
 - Connections with researchers working on related topics
 
 ------------------
