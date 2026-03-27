@@ -8,22 +8,23 @@ from festim.species import Species
 
 class OutflowBC:
     """
-    Dirichlet boundary condition class
-    u = value
+    Outflow boundary condition class
+    
 
     Args:
+        velocity: The velocity field at the outflow boundary condition
+        species: The species for which the outflow boundary condition is applied, can be a list of species or a single species
         subdomain: The surface subdomain where the boundary condition is applied
-        value: The value of the boundary condition
 
     Attributes:
+        velocity: The velocity field at the outflow boundary condition
+        species: The species for which the outflow boundary condition is applied, can be a list of species or a single species
         subdomain: The surface subdomain where the boundary condition is applied
-        value: The value of the boundary condition
-        value_fenics: The value of the boundary condition in fenics format
-        bc_expr: The expression of the boundary condition that is used to
-            update the `value_fenics`
 
     """
 
+    velocity: VelocityField
+    species: list[Species]
     subdomain: _subdomain.SurfaceSubdomain
 
     def __init__(
