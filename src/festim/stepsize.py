@@ -51,6 +51,12 @@ class Stepsize:
         self.max_stepsize = max_stepsize
         self.milestones = milestones or []
 
+        if milestones and (growth_factor is None or cutback_factor is None):
+            raise ValueError(
+                "Milestones are only relevant if the stepsize is adaptive. "
+                "Please provide growth and cutback factors."
+            )
+
         # TODO should this class hold the dt object used in the formulation
 
     @property

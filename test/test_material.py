@@ -242,3 +242,13 @@ def test_error_raised_when_D_and_D_0_given():
         match="D_0 and D cannot be set at the same time. Please set only one of them.",
     ):
         F.Material(D=D_func, D_0=1)
+
+
+def test_error_raised_when_D_and_D_0_both_None():
+    """Test that a value error is raised when both D and D_0 are None"""
+
+    with pytest.raises(
+        ValueError,
+        match="D_0 and D cannot both be None. Please set one of them.",
+    ):
+        F.Material()

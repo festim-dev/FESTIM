@@ -10,7 +10,7 @@ import basix
 import dolfinx
 import numpy as np
 import numpy.typing as npt
-import tqdm.autonotebook
+import tqdm.auto
 import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
@@ -193,6 +193,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         traps=None,
         advection_terms=None,
         petsc_options=None,
+        element_immobile: str = "CG",
     ):
         super().__init__(
             mesh=mesh,
@@ -212,7 +213,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self.advection_terms = advection_terms or []
         self.temperature_fenics = None
 
-        self._element_for_traps = "DG"
+        self._element_immobile = element_immobile
 
         self._temperature_as_function = None
 
@@ -312,6 +313,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
             else:
                 all_boundary_conditions.append(bc)
         return all_boundary_conditions
+
+    @property
+    def element_immobile(self):
+        return self._element_immobile
+
+    @element_immobile.setter
+    def element_immobile(self, value):
+        allowed_values = ["DG", "CG", "P"]
+        if value not in allowed_values:
+            raise ValueError(f"element_immobile should be in {allowed_values}")
+        if value == "P":
+            value = "CG"
+        self._element_immobile = value
 
     def initialise(self):
         self.create_species_from_traps()
@@ -483,6 +497,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(export, exports.XDMFExport):
                 export.define_writer(MPI.COMM_WORLD)
 
+            # clean data for profile1D export
+            if isinstance(export, exports.Profile1DExport):
+                export.data = []
+                export.t = []
         # compute diffusivity function for surface fluxes
 
         spe_to_D_global = {}  # links species to global D function
@@ -608,10 +626,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
             if isinstance(spe, _species.Species):
                 if spe.mobile:
                     elements.append(element_CG)
-                elif self._element_for_traps == "DG":
-                    elements.append(element_DG)
                 else:
-                    elements.append(element_CG)
+                    match self._element_immobile:
+                        case "DG":
+                            elements.append(element_DG)
+                        case "CG":
+                            elements.append(element_CG)
+
         element = basix.ufl.mixed_element(elements)
 
         self.function_space = fem.functionspace(self.mesh.mesh, element)
@@ -1693,37 +1714,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         elif Version(dolfinx.__version__) > Version("0.9.0"):
             from dolfinx.fem.petsc import NonlinearProblem
 
-            if self.petsc_options is None:
-                # taken from https://github.com/FEniCS/dolfinx/blob/5fcb988c5b0f46b8f9183bc844d8f533a2130d6a/python/demo/demo_cahn-hilliard.py#L279C1-L286C28
-                use_superlu = (
-                    PETSc.IntType == np.int64
-                )  # or PETSc.ScalarType == np.complex64
-                sys = PETSc.Sys()  # type: ignore
-                if sys.hasExternalPackage("mumps") and not use_superlu:
-                    linear_solver = "mumps"
-                elif sys.hasExternalPackage("superlu_dist"):
-                    linear_solver = "superlu_dist"
-                else:
-                    linear_solver = "petsc"
-
-                petsc_options = {
-                    "snes_type": "newtonls",
-                    "snes_linesearch_type": "none",
-                    "snes_stol": np.sqrt(np.finfo(dolfinx.default_real_type).eps)
-                    * 1e-2,
-                    # TODO : make atol and rtol callable
-                    "snes_atol": self.settings.atol,
-                    "snes_rtol": self.settings.rtol,
-                    "snes_max_it": self.settings.max_iterations,
-                    "snes_divergence_tolerance": "PETSC_UNLIMITED",
-                    "ksp_type": "preonly",
-                    "pc_type": "lu",
-                    "pc_factor_mat_solver_type": linear_solver,
-                    "snes_error_if_not_converged": True,
-                    "ksp_error_if_not_converged": True,
-                }
-            else:
-                petsc_options = self.petsc_options
+            petsc_options = self.get_petsc_options()
 
             self.solver = NonlinearProblem(
                 self.forms,
@@ -1957,7 +1948,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         if self.settings.transient:
             # Solve transient
             if self.show_progress_bar:
-                self.progress_bar = tqdm.autonotebook.tqdm(
+                self.progress_bar = tqdm.auto.tqdm(
                     desc=f"Solving {self.__class__.__name__}",
                     total=self.settings.final_time,
                     unit_scale=True,

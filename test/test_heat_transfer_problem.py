@@ -5,7 +5,7 @@ import mpi4py.MPI as MPI
 import dolfinx
 import numpy as np
 import pytest
-import tqdm.autonotebook
+import tqdm.auto
 import ufl
 from dolfinx import fem
 from dolfinx.io import XDMFFile
@@ -77,7 +77,7 @@ def test_MMS_1():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
-    mat = F.Material(D_0=None, E_D=None)
+    mat = F.Material(D_0=1, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
 
     my_problem.subdomains = [
@@ -127,7 +127,7 @@ def test_MMS_T_dependent_thermal_cond():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
-    mat = F.Material(D_0=None, E_D=None)
+    mat = F.Material(D_0=1, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
 
     my_problem.subdomains = [
@@ -178,7 +178,7 @@ def test_heat_transfer_transient(tmpdir):
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(2, 3, 2000))
     left = F.SurfaceSubdomain1D(id=1, x=2)
     right = F.SurfaceSubdomain1D(id=2, x=3)
-    mat = F.Material(D_0=None, E_D=None)
+    mat = F.Material(D_0=1, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
     mat.density = density
     mat.heat_capacity = heat_capacity
@@ -243,7 +243,7 @@ def test_MES():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 3000))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
-    mat = F.Material(D_0=None, E_D=None)
+    mat = F.Material(D_0=1, E_D=None)
     mat.thermal_conductivity = 2
 
     volume_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
@@ -305,7 +305,7 @@ def test_sympify(tmpdir):
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(2, 3, 2100))
     left = F.SurfaceSubdomain1D(id=1, x=2)
     right = F.SurfaceSubdomain1D(id=2, x=3)
-    mat = F.Material(D_0=None, E_D=None)
+    mat = F.Material(D_0=1, E_D=None)
     mat.thermal_conductivity = thermal_conductivity
     mat.density = density
     mat.heat_capacity = heat_capacity
@@ -487,7 +487,7 @@ def test_raise_error_non_unique_vol_ids():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
-    mat = F.Material(D_0=None, E_D=None)
+    mat = F.Material(D_0=1, E_D=None)
     mat.thermal_conductivity = 1
 
     my_problem.subdomains = [
@@ -509,7 +509,7 @@ def test_initial_condition():
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 3000))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
-    mat = F.Material(D_0=None, E_D=None)
+    mat = F.Material(D_0=1, E_D=None)
     mat.thermal_conductivity = 2
 
     volume_subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
@@ -552,7 +552,7 @@ def test_adaptive_timestepping_grows():
 
     my_model.initialise()
 
-    my_model.progress_bar = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.auto.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
@@ -586,7 +586,7 @@ def test_adaptive_timestepping_shrinks():
 
     my_model.initialise()
 
-    my_model.progress_bar = tqdm.autonotebook.tqdm(
+    my_model.progress_bar = tqdm.auto.tqdm(
         desc="Solving H transport problem",
         total=my_model.settings.final_time,
         unit_scale=True,
