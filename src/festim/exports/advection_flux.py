@@ -13,9 +13,9 @@ class AdvectionFlux(SurfaceFlux):
     Args:
         field: species for which the advective flux is computed
         surface: surface subdomain
+        velocity_field: velocity field for which the advective flux is computed
         filename: name of the file to which the advective flux is
             exported
-        velocity_field: velocity field for which the advective flux is computed
 
     Attributes:
         see `festim.SurfaceFlux`

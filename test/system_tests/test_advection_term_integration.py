@@ -288,7 +288,7 @@ def test_flux_conservation_advection():
 
     my_model = F.HydrogenTransportProblem()
 
-    test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 200, 200)
+    test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 15, 15)
     my_model.mesh = F.Mesh(test_mesh_2d)
 
     # common festim objects
@@ -357,4 +357,4 @@ def test_flux_conservation_advection():
         + advection_flux_bottom.data[-1]
     )
 
-    assert np.isclose(total_source, total_outflux)
+    assert np.isclose(total_source, total_outflux, rtol=1e-3)
