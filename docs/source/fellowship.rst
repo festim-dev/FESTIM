@@ -100,6 +100,8 @@ For participants from academia, limited support for travel and on-site participa
 Key Dates 
 ----------
 
+The programme is organised in cohorts throughout the year:
+
 **Summer cohort**:
 ^^^^^^^^^^^^^^^^^^^
 - 1st April - Applications open  
