@@ -208,21 +208,17 @@ class Interface:
                 mesh, temperature(res[1]), spe
             )
 
-            match method:
-                case InterfaceMethod.penalty:
-                    F_0, F_1 = self.penalty_method(
-                        dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
-                    )
+            method_to_function = {
+                InterfaceMethod.penalty: self.penalty_method,
+                InterfaceMethod.nitsche: self.nitsche_method,
+            }
+            try:
+                F_0, F_1 = method_to_function[method](
+                    dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
+                )
+            except KeyError:
+                raise ValueError(f"Unknown interface method {method}")
 
-                case InterfaceMethod.nitsche:
-                    F_0, F_1 = self.nitsche_method(
-                        dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
-                    )
-
-                case _:
-                    raise ValueError(
-                        f"Unknown interface method {self.method_interface}"
-                    )
             subdomain_0.F += F_0
             subdomain_1.F += F_1
 
