@@ -434,6 +434,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         a string, find species object in self.species"""
 
         for export in self.exports:
+            if isinstance(export, exports.AverageSurfaceTemperature):
+                continue
             if isinstance(export, exports.ExportBaseClass):
                 if export.times:
                     for time in export.times:
@@ -505,6 +507,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
+                if isinstance(export, exports.AverageSurfaceTemperature):
+                    continue
                 if export.field in spe_to_D_global:
                     # if already computed then use the same D
                     D = spe_to_D_global[export.field]
@@ -518,6 +522,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # add the global D to the export
                 export.D = D
                 export.D_expr = D_expr
+
+            if isinstance(export, exports.AverageSurfaceTemperature):
+                export.temperature_field = self.temperature_fenics
+
             if isinstance(
                 export,
                 exports.MaximumVolume
@@ -1014,6 +1022,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             "evaluation of surface flux values"
                         )
                     export.compute(export.field.solution, self.ds)
+                elif isinstance(export, exports.AverageSurfaceTemperature):
+                    export.compute(self.ds)
                 else:
                     export.compute()
                 # update export data
@@ -1022,6 +1032,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
+
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
                     export.compute(u=export.field.solution, dx=self.dx)
@@ -1767,6 +1778,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # HydrogenTransportProblem
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
+                if isinstance(export, exports.AverageSurfaceTemperature):
+                    raise NotImplementedError(
+                        f"Export type {type(export)} not implemented for "
+                        f"mixed-domain approach"
+                    )
                 volume = self.surface_to_volume[export.surface]
                 D = volume.material.get_diffusion_coefficient(
                     self.mesh.mesh, self.temperature_fenics, export.field
