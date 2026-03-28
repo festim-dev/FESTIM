@@ -164,8 +164,27 @@ class Interface:
     # TODO this should be a method of a subclass of Interface since we want to support
     # other types of interfaces in the future
     def set_formulation(
-        self, dInterface, method: InterfaceMethod, species: list["Species"], temperature
+        self,
+        dInterface: ufl.Measure,  # NOTE should this be called dS?
+        method: InterfaceMethod,
+        species: list["Species"],
+        temperature,
     ):
+        """
+        Generates the interface formulation for all `species` and store the forms in
+        the `.F` attribute of the subdomains.
+
+        Args:
+            dInterface: the measure corresponding to the interface, with the correct
+                integration data
+            method: the method to use to enforce the interface conditions
+            species: the species for which the interface conditions should be applied.
+                Must be defined in both subdomains of the interface.
+            temperature: the temperature for the interface conditions
+
+        Raises:
+            ValueError: if the interface method is unknown
+        """
 
         subdomain_0, subdomain_1 = self.subdomains
         res = self.restriction
