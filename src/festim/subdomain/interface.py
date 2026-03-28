@@ -195,28 +195,28 @@ class Interface:
                 f"Species {spe.name} must be defined in both subdomains of the "
                 "interface for the interface conditions to be applied"
             )
-            v_b = spe.subdomain_to_test_function[subdomain_0](res[0])
-            v_t = spe.subdomain_to_test_function[subdomain_1](res[1])
+            v_0 = spe.subdomain_to_test_function[subdomain_0](res[0])
+            v_1 = spe.subdomain_to_test_function[subdomain_1](res[1])
 
-            u_b = spe.subdomain_to_solution[subdomain_0](res[0])
-            u_t = spe.subdomain_to_solution[subdomain_1](res[1])
+            u_0 = spe.subdomain_to_solution[subdomain_0](res[0])
+            u_1 = spe.subdomain_to_solution[subdomain_1](res[1])
 
-            K_b = subdomain_0.material.get_solubility_coefficient(
+            K_0 = subdomain_0.material.get_solubility_coefficient(
                 mesh, temperature(res[0]), spe
             )
-            K_t = subdomain_1.material.get_solubility_coefficient(
+            K_1 = subdomain_1.material.get_solubility_coefficient(
                 mesh, temperature(res[1]), spe
             )
 
             match method:
                 case InterfaceMethod.penalty:
                     F_0, F_1 = self.penalty_method(
-                        dInterface, (u_b, u_t), (K_b, K_t), (v_b, v_t)
+                        dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
                     )
 
                 case InterfaceMethod.nitsche:
                     F_0, F_1 = self.nitsche_method(
-                        dInterface, (u_b, u_t), (K_b, K_t), (v_b, v_t)
+                        dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
                     )
 
                 case _:
@@ -265,9 +265,9 @@ class Interface:
         return F_0, F_1
 
     def nitsche_method(self, dInterface, us, Ks, vs):
-        u_b, u_t = us
-        K_b, K_t = Ks
-        v_b, v_t = vs
+        u_0, u_1 = us
+        K_0, K_1 = Ks
+        v_0, v_1 = vs
 
         def mixed_term(u, v, n):
             return ufl.dot(ufl.grad(u), n) * v
@@ -279,26 +279,28 @@ class Interface:
         h_0 = 2 * cr(res[0])
         h_1 = 2 * cr(res[1])
         gamma = self.penalty_term
-        F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
+        F_0 = -0.5 * mixed_term((u_0 + u_1), v_0, n_0) * dInterface(
             self.id
-        ) - 0.5 * mixed_term(v_b, (u_b / K_b - u_t / K_t), n_0) * dInterface(self.id)
+        ) - 0.5 * mixed_term(v_0, (u_0 / K_0 - u_1 / K_1), n_0) * dInterface(self.id)
 
-        F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
+        F_1 = +0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dInterface(
             self.id
-        ) - 0.5 * mixed_term(v_t, (u_b / K_b - u_t / K_t), n_0) * dInterface(self.id)
+        ) - 0.5 * mixed_term(v_1, (u_0 / K_0 - u_1 / K_1), n_0) * dInterface(self.id)
         F_0 += (
             2
             * gamma
             / (h_0 + h_1)
-            * (u_b / K_b - u_t / K_t)
-            * v_b
+            * (u_0 / K_0 - u_1 / K_1)
+            * v_0
             * dInterface(self.id)
         )
         F_1 += (
             -2
             * gamma
             / (h_0 + h_1)
-            * (u_b / K_b - u_t / K_t)
-            * v_t
+            * (u_0 / K_0 - u_1 / K_1)
+            * v_1
             * dInterface(self.id)
         )
+
+        return F_0, F_1
