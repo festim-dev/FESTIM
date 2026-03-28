@@ -300,3 +300,34 @@ class Interface:
         )
 
         return F_0, F_1
+
+
+class ContactResistance(Interface):
+    def __init__(
+        self,
+        id: int,
+        subdomains: list[VolumeSubdomain],
+        contact_resistance: float,
+        penalty_term: float = 10.0,
+    ):
+        self.contact_resistance = contact_resistance
+        super().__init__(id, subdomains, penalty_term)
+
+    def set_formulation(self, dInterface, method, species, temperature):
+        subdomain_0, subdomain_1 = self.subdomains
+        res = self.restriction
+
+        for spe in species:
+            assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
+                f"Species {spe.name} must be defined in both subdomains of the "
+                "interface for the interface conditions to be applied"
+            )
+            v_0 = spe.subdomain_to_test_function[subdomain_0](res[0])
+            v_1 = spe.subdomain_to_test_function[subdomain_1](res[1])
+
+            u_0 = spe.subdomain_to_solution[subdomain_0](res[0])
+            u_1 = spe.subdomain_to_solution[subdomain_1](res[1])
+            F0 = -(u_1 - u_0) / self.contact_resistance * v_0 * dInterface(self.id)
+            F1 = (u_1 - u_0) / self.contact_resistance * v_1 * dInterface(self.id)
+            subdomain_0.F += F0
+            subdomain_1.F += F1
