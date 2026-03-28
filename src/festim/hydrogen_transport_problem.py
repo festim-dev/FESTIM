@@ -1513,20 +1513,22 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         h_1 = 2 * cr(res[1])
 
         all_mobile_species = [spe for spe in self.species if spe.mobile]
-        # TODO only do this if the species in defined in both domains of the
-        # interface?
-        for H in all_mobile_species:
-            v_b = H.subdomain_to_test_function[subdomain_0](res[0])
-            v_t = H.subdomain_to_test_function[subdomain_1](res[1])
+        for spe in all_mobile_species:
+            assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
+                f"Species {spe.name} must be defined in both subdomains of the "
+                "interface for the interface conditions to be applied"
+            )
+            v_b = spe.subdomain_to_test_function[subdomain_0](res[0])
+            v_t = spe.subdomain_to_test_function[subdomain_1](res[1])
 
-            u_b = H.subdomain_to_solution[subdomain_0](res[0])
-            u_t = H.subdomain_to_solution[subdomain_1](res[1])
+            u_b = spe.subdomain_to_solution[subdomain_0](res[0])
+            u_t = spe.subdomain_to_solution[subdomain_1](res[1])
 
             K_b = subdomain_0.material.get_solubility_coefficient(
-                self.mesh.mesh, self.temperature_fenics(res[0]), H
+                self.mesh.mesh, self.temperature_fenics(res[0]), spe
             )
             K_t = subdomain_1.material.get_solubility_coefficient(
-                self.mesh.mesh, self.temperature_fenics(res[1]), H
+                self.mesh.mesh, self.temperature_fenics(res[1]), spe
             )
 
             match self.method_interface:
