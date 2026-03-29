@@ -10,6 +10,11 @@ from festim.subdomain.surface_subdomain import SurfaceSubdomain
 class AdvectionFlux(SurfaceFlux):
     """Computes the advective flux of a field on a given surface
 
+    Advective flux is computed as the sum of the diffusive flux and the advective flux
+    at the surface:
+
+    J = ∫-D (∇u · n) ds + ∫(u · n) ds
+
     Args:
         field: species for which the advective flux is computed
         surface: surface subdomain
@@ -18,7 +23,11 @@ class AdvectionFlux(SurfaceFlux):
             exported
 
     Attributes:
-        see `festim.SurfaceFlux`
+        field: species for which the advective flux is computed
+        surface: surface subdomain
+        velocity_field: velocity field for which the advective flux is computed
+        filename: name of the file to which the advective flux is
+            exported
     """
 
     field: Species
