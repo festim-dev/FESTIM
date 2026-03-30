@@ -13,6 +13,8 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 if TYPE_CHECKING:
     from festim.species import Species
 
+from abc import ABC, abstractmethod
+
 
 class InterfaceMethod(Enum):
     """How to couple interfaces for discontinuous problems."""
@@ -32,14 +34,7 @@ class InterfaceMethod(Enum):
             raise ValueError("interface_method must be one of 'nitsche' or 'penalty'")
 
 
-class Interface:
-    id: int
-    subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
-    parent_mesh: dolfinx.mesh.Mesh
-    mt: dolfinx.mesh.MeshTags
-    restriction: list[str, str] = ("+", "-")
-    padded: bool
-
+class InterfaceBase(ABC):
     def __init__(
         self,
         id: int,
@@ -161,15 +156,34 @@ class Interface:
 
         return (self.id, ordered_integration_data.reshape(-1))
 
-    # TODO this should be a method of a subclass of Interface since we want to support
-    # other types of interfaces in the future
-    def set_formulation(
+    @abstractmethod
+    def get_formulation(
         self,
         dInterface: ufl.Measure,  # NOTE should this be called dS?
         method: InterfaceMethod,
         species: list["Species"],
         temperature,
-    ):
+    ) -> tuple[ufl.Form, ufl.Form]:
+        pass
+
+
+class Interface(InterfaceBase):
+    id: int
+    subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
+    parent_mesh: dolfinx.mesh.Mesh
+    mt: dolfinx.mesh.MeshTags
+    restriction: list[str, str] = ("+", "-")
+    padded: bool
+
+    # TODO this should be a method of a subclass of Interface since we want to support
+    # other types of interfaces in the future
+    def get_formulation(
+        self,
+        dInterface: ufl.Measure,  # NOTE should this be called dS?
+        method: InterfaceMethod,
+        species: list["Species"],
+        temperature,
+    ) -> tuple[ufl.Form, ufl.Form]:
         """
         Generates the interface formulation for all `species` and store the forms in
         the `.F` attribute of the subdomains.
@@ -216,11 +230,9 @@ class Interface:
                 F_0, F_1 = method_to_function[method](
                     dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
                 )
+                return F_0, F_1
             except KeyError:
                 raise ValueError(f"Unknown interface method {method}")
-
-            subdomain_0.F += F_0
-            subdomain_1.F += F_1
 
     def penalty_method(self, dInterface, us, Ks, vs):
         subdomain_0, subdomain_1 = self.subdomains
