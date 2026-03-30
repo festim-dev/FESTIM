@@ -225,37 +225,29 @@ class Interface(InterfaceBase):
 
         subdomain_0, subdomain_1 = self.subdomains
         F_0, F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
+        method_to_function = {
+            InterfaceMethod.penalty: self.penalty_method,
+            InterfaceMethod.nitsche: self.nitsche_method,
+        }
+        if method not in method_to_function:
+            raise ValueError(f"Unknown interface method {method}")
 
         for spe in species:
             assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
                 f"Species {spe.name} must be defined in both subdomains of the "
                 "interface for the interface conditions to be applied"
             )
-            v_0, v_1 = self.vs(spe)
-            u_0, u_1 = self.us(spe)
-
-            K_0, K_1 = self.Ks(spe, temperature)
-
-            method_to_function = {
-                InterfaceMethod.penalty: self.penalty_method,
-                InterfaceMethod.nitsche: self.nitsche_method,
-            }
-            try:
-                _F_0, _F_1 = method_to_function[method](
-                    dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
-                )
-                F_0 += _F_0
-                F_1 += _F_1
-            except KeyError:
-                raise ValueError(f"Unknown interface method {method}")
+            _F_0, _F_1 = method_to_function[method](dInterface, spe, temperature)
+            F_0 += _F_0
+            F_1 += _F_1
 
         return F_0, F_1
 
-    def penalty_method(self, dInterface, us, Ks, vs):
+    def penalty_method(self, dInterface, species, temperature):
         subdomain_0, subdomain_1 = self.subdomains
-        u_0, u_1 = us
-        v_0, v_1 = vs
-        K_0, K_1 = Ks
+        u_0, u_1 = self.us(species)
+        v_0, v_1 = self.vs(species)
+        K_0, K_1 = self.Ks(species, temperature)
         if subdomain_0.material.solubility_law == subdomain_1.material.solubility_law:
             left = u_0 / K_0
             right = u_1 / K_1
@@ -289,10 +281,10 @@ class Interface(InterfaceBase):
 
         return F_0, F_1
 
-    def nitsche_method(self, dInterface, us, Ks, vs):
-        u_0, u_1 = us
-        K_0, K_1 = Ks
-        v_0, v_1 = vs
+    def nitsche_method(self, dInterface, species, temperature):
+        u_0, u_1 = self.us(species)
+        K_0, K_1 = self.Ks(species, temperature)
+        v_0, v_1 = self.vs(species)
 
         def mixed_term(u, v, n):
             return ufl.dot(ufl.grad(u), n) * v
