@@ -198,7 +198,7 @@ class Interface(InterfaceBase):
     def get_formulation(
         self,
         dS: ufl.Measure,
-        method: InterfaceMethod,
+        method: InterfaceMethod,  # TODO this only makes sense for conservation of chemical potential
         species: list["Species"],
         temperature,
     ) -> tuple[ufl.Form, ufl.Form]:
@@ -274,8 +274,8 @@ class Interface(InterfaceBase):
 
         equality = right - left
 
-        F_0 = self.penalty_term * ufl.inner(equality, v_0) * dS
-        F_1 = -self.penalty_term * ufl.inner(equality, v_1) * dS
+        F_0 = self.penalty_term * ufl.inner(equality, v_0) * dS(self.id)
+        F_1 = -self.penalty_term * ufl.inner(equality, v_1) * dS(self.id)
 
         return F_0, F_1
 
@@ -318,7 +318,7 @@ class ContactResistance(InterfaceBase):
         self.contact_resistance = contact_resistance
         super().__init__(id, subdomains, penalty_term)
 
-    def get_formulation(self, dInterface, method, species, temperature=None):
+    def get_formulation(self, dS, method, species, temperature=None):
         subdomain_0, subdomain_1 = self.subdomains
         res = self.restriction
         _F_0, _F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
@@ -333,8 +333,8 @@ class ContactResistance(InterfaceBase):
 
             u_0 = spe.subdomain_to_solution[subdomain_0](res[0])
             u_1 = spe.subdomain_to_solution[subdomain_1](res[1])
-            F0 = -(u_1 - u_0) / self.contact_resistance * v_0 * dInterface(self.id)
-            F1 = (u_1 - u_0) / self.contact_resistance * v_1 * dInterface(self.id)
+            F0 = -(u_1 - u_0) / self.contact_resistance * v_0 * dS(self.id)
+            F1 = (u_1 - u_0) / self.contact_resistance * v_1 * dS(self.id)
             _F_0 += F0
             _F_1 += F1
 
