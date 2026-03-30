@@ -187,6 +187,14 @@ class Interface(InterfaceBase):
     restriction: list[str, str] = ("+", "-")
     padded: bool
 
+    def Ks(self, species: "Species", temperature):
+        return tuple(
+            subdomain.material.get_solubility_coefficient(
+                self.parent_mesh, temperature(self.restriction[i]), species
+            )
+            for i, subdomain in enumerate(self.subdomains)
+        )
+
     # TODO this should be a method of a subclass of Interface since we want to support
     # other types of interfaces in the future
     def get_formulation(
@@ -217,8 +225,6 @@ class Interface(InterfaceBase):
 
         subdomain_0, subdomain_1 = self.subdomains
         F_0, F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
-        res = self.restriction
-        mesh = dInterface.ufl_domain()
 
         for spe in species:
             assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
@@ -228,12 +234,7 @@ class Interface(InterfaceBase):
             v_0, v_1 = self.vs(spe)
             u_0, u_1 = self.us(spe)
 
-            K_0 = subdomain_0.material.get_solubility_coefficient(
-                mesh, temperature(res[0]), spe
-            )
-            K_1 = subdomain_1.material.get_solubility_coefficient(
-                mesh, temperature(res[1]), spe
-            )
+            K_0, K_1 = self.Ks(spe, temperature)
 
             method_to_function = {
                 InterfaceMethod.penalty: self.penalty_method,
