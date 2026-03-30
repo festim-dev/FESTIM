@@ -335,6 +335,7 @@ class ContactResistance(InterfaceBase):
     def get_formulation(self, dInterface, method, species, temperature=None):
         subdomain_0, subdomain_1 = self.subdomains
         res = self.restriction
+        _F_0, _F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
 
         for spe in species:
             assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
@@ -348,5 +349,7 @@ class ContactResistance(InterfaceBase):
             u_1 = spe.subdomain_to_solution[subdomain_1](res[1])
             F0 = -(u_1 - u_0) / self.contact_resistance * v_0 * dInterface(self.id)
             F1 = (u_1 - u_0) / self.contact_resistance * v_1 * dInterface(self.id)
+            _F_0 += F0
+            _F_1 += F1
 
-        return F0, F1
+        return _F_0, _F_1
