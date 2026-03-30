@@ -196,11 +196,15 @@ class Interface(InterfaceBase):
                 Must be defined in both subdomains of the interface.
             temperature: the temperature for the interface conditions
 
+        Returns:
+            the forms to be added to the subdomains of the interface
+
         Raises:
             ValueError: if the interface method is unknown
         """
 
         subdomain_0, subdomain_1 = self.subdomains
+        F_0, F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
         res = self.restriction
         mesh = dInterface.ufl_domain()
 
@@ -227,12 +231,15 @@ class Interface(InterfaceBase):
                 InterfaceMethod.nitsche: self.nitsche_method,
             }
             try:
-                F_0, F_1 = method_to_function[method](
+                _F_0, _F_1 = method_to_function[method](
                     dInterface, (u_0, u_1), (K_0, K_1), (v_0, v_1)
                 )
-                return F_0, F_1
+                F_0 += _F_0
+                F_1 += _F_1
             except KeyError:
                 raise ValueError(f"Unknown interface method {method}")
+
+        return F_0, F_1
 
     def penalty_method(self, dInterface, us, Ks, vs):
         subdomain_0, subdomain_1 = self.subdomains
