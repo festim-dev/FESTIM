@@ -1504,12 +1504,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         all_mobile_species = [spe for spe in self.species if spe.mobile]
         for interface in self.interfaces:
-            interface.set_formulation(
+            F_0, F_1 = interface.get_formulation(
                 dInterface,
                 method=self.method_interface,
                 species=all_mobile_species,
                 temperature=self.temperature_fenics,
             )
+            subdomain_0, subdomain_1 = interface.subdomains
+            subdomain_0.F += F_0
+            subdomain_1.F += F_1
 
         J = []
         # this is the symbolic differentiation of the Jacobian
