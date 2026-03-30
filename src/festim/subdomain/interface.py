@@ -156,6 +156,18 @@ class InterfaceBase(ABC):
 
         return (self.id, ordered_integration_data.reshape(-1))
 
+    def us(self, species: "Species"):
+        return tuple(
+            species.subdomain_to_solution[subdomain](res)
+            for subdomain, res in zip(self.subdomains, self.restriction)
+        )
+
+    def vs(self, species: "Species"):
+        return tuple(
+            species.subdomain_to_test_function[subdomain](res)
+            for subdomain, res in zip(self.subdomains, self.restriction)
+        )
+
     @abstractmethod
     def get_formulation(
         self,
@@ -213,11 +225,8 @@ class Interface(InterfaceBase):
                 f"Species {spe.name} must be defined in both subdomains of the "
                 "interface for the interface conditions to be applied"
             )
-            v_0 = spe.subdomain_to_test_function[subdomain_0](res[0])
-            v_1 = spe.subdomain_to_test_function[subdomain_1](res[1])
-
-            u_0 = spe.subdomain_to_solution[subdomain_0](res[0])
-            u_1 = spe.subdomain_to_solution[subdomain_1](res[1])
+            v_0, v_1 = self.vs(spe)
+            u_0, u_1 = self.us(spe)
 
             K_0 = subdomain_0.material.get_solubility_coefficient(
                 mesh, temperature(res[0]), spe
