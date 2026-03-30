@@ -200,7 +200,7 @@ class Interface(InterfaceBase):
     def get_formulation(
         self,
         dS: ufl.Measure,
-        method: InterfaceMethod,
+        method: InterfaceMethod,  # TODO this only makes sense for conservation of chemical potential
         species: list["Species"],
         temperature,
     ) -> tuple[ufl.Form, ufl.Form]:
