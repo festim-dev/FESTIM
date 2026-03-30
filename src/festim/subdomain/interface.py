@@ -162,7 +162,7 @@ class InterfaceBase(ABC):
         dInterface: ufl.Measure,  # NOTE should this be called dS?
         method: InterfaceMethod,
         species: list["Species"],
-        temperature,
+        temperature=None,
     ) -> tuple[ufl.Form, ufl.Form]:
         pass
 
@@ -314,7 +314,7 @@ class Interface(InterfaceBase):
         return F_0, F_1
 
 
-class ContactResistance(Interface):
+class ContactResistance(InterfaceBase):
     def __init__(
         self,
         id: int,
@@ -325,7 +325,7 @@ class ContactResistance(Interface):
         self.contact_resistance = contact_resistance
         super().__init__(id, subdomains, penalty_term)
 
-    def set_formulation(self, dInterface, method, species, temperature):
+    def get_formulation(self, dInterface, method, species, temperature=None):
         subdomain_0, subdomain_1 = self.subdomains
         res = self.restriction
 
@@ -341,5 +341,5 @@ class ContactResistance(Interface):
             u_1 = spe.subdomain_to_solution[subdomain_1](res[1])
             F0 = -(u_1 - u_0) / self.contact_resistance * v_0 * dInterface(self.id)
             F1 = (u_1 - u_0) / self.contact_resistance * v_1 * dInterface(self.id)
-            subdomain_0.F += F0
-            subdomain_1.F += F1
+
+        return F0, F1
