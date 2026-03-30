@@ -195,11 +195,9 @@ class Interface(InterfaceBase):
             for i, subdomain in enumerate(self.subdomains)
         )
 
-    # TODO this should be a method of a subclass of Interface since we want to support
-    # other types of interfaces in the future
     def get_formulation(
         self,
-        dInterface: ufl.Measure,  # NOTE should this be called dS?
+        dS: ufl.Measure,
         method: InterfaceMethod,
         species: list["Species"],
         temperature,
@@ -209,7 +207,7 @@ class Interface(InterfaceBase):
         the `.F` attribute of the subdomains.
 
         Args:
-            dInterface: the measure corresponding to the interface, with the correct
+            dS: the measure corresponding to the interface, with the correct
                 integration data
             method: the method to use to enforce the interface conditions
             species: the species for which the interface conditions should be applied.
@@ -237,13 +235,13 @@ class Interface(InterfaceBase):
                 f"Species {spe.name} must be defined in both subdomains of the "
                 "interface for the interface conditions to be applied"
             )
-            _F_0, _F_1 = method_to_function[method](dInterface, spe, temperature)
+            _F_0, _F_1 = method_to_function[method](dS, spe, temperature)
             F_0 += _F_0
             F_1 += _F_1
 
         return F_0, F_1
 
-    def penalty_method(self, dInterface, species, temperature):
+    def penalty_method(self, dS, species, temperature):
         subdomain_0, subdomain_1 = self.subdomains
         u_0, u_1 = self.us(species)
         v_0, v_1 = self.vs(species)
@@ -276,12 +274,12 @@ class Interface(InterfaceBase):
 
         equality = right - left
 
-        F_0 = self.penalty_term * ufl.inner(equality, v_0) * dInterface(self.id)
-        F_1 = -self.penalty_term * ufl.inner(equality, v_1) * dInterface(self.id)
+        F_0 = self.penalty_term * ufl.inner(equality, v_0) * dS
+        F_1 = -self.penalty_term * ufl.inner(equality, v_1) * dS
 
         return F_0, F_1
 
-    def nitsche_method(self, dInterface, species, temperature):
+    def nitsche_method(self, dS, species, temperature):
         u_0, u_1 = self.us(species)
         K_0, K_1 = self.Ks(species, temperature)
         v_0, v_1 = self.vs(species)
@@ -290,35 +288,21 @@ class Interface(InterfaceBase):
             return ufl.dot(ufl.grad(u), n) * v
 
         res = self.restriction
-        n = ufl.FacetNormal(dInterface.ufl_domain())
-        cr = ufl.Circumradius(dInterface.ufl_domain())
+        n = ufl.FacetNormal(dS.ufl_domain())
+        cr = ufl.Circumradius(dS.ufl_domain())
         n_0 = n(res[0])
         h_0 = 2 * cr(res[0])
         h_1 = 2 * cr(res[1])
         gamma = self.penalty_term
-        F_0 = -0.5 * mixed_term((u_0 + u_1), v_0, n_0) * dInterface(
-            self.id
-        ) - 0.5 * mixed_term(v_0, (u_0 / K_0 - u_1 / K_1), n_0) * dInterface(self.id)
+        F_0 = -0.5 * mixed_term((u_0 + u_1), v_0, n_0) * dS(self.id) - 0.5 * mixed_term(
+            v_0, (u_0 / K_0 - u_1 / K_1), n_0
+        ) * dS(self.id)
 
-        F_1 = +0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dInterface(
-            self.id
-        ) - 0.5 * mixed_term(v_1, (u_0 / K_0 - u_1 / K_1), n_0) * dInterface(self.id)
-        F_0 += (
-            2
-            * gamma
-            / (h_0 + h_1)
-            * (u_0 / K_0 - u_1 / K_1)
-            * v_0
-            * dInterface(self.id)
-        )
-        F_1 += (
-            -2
-            * gamma
-            / (h_0 + h_1)
-            * (u_0 / K_0 - u_1 / K_1)
-            * v_1
-            * dInterface(self.id)
-        )
+        F_1 = +0.5 * mixed_term((u_0 + u_1), v_1, n_0) * dS(self.id) - 0.5 * mixed_term(
+            v_1, (u_0 / K_0 - u_1 / K_1), n_0
+        ) * dS(self.id)
+        F_0 += 2 * gamma / (h_0 + h_1) * (u_0 / K_0 - u_1 / K_1) * v_0 * dS(self.id)
+        F_1 += -2 * gamma / (h_0 + h_1) * (u_0 / K_0 - u_1 / K_1) * v_1 * dS(self.id)
 
         return F_0, F_1
 
