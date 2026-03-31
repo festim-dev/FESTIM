@@ -251,8 +251,9 @@ class Interface(InterfaceBase):
             InterfaceMethod.penalty: self.penalty_method,
             InterfaceMethod.nitsche: self.nitsche_method,
         }
-        if self.method not in method_to_function:
-            raise ValueError(f"Unknown interface method {self.method}")
+        assert self.method in method_to_function, (
+            f"Unknown interface method {self.method}"
+        )
 
         for spe in species:
             assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
