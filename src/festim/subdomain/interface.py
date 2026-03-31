@@ -17,14 +17,31 @@ from abc import ABC, abstractmethod
 
 
 class InterfaceMethod(Enum):
-    """How to couple interfaces for discontinuous problems."""
+    """Methods for enforcing interface continuity in discontinuous problems.
+
+    Attributes:
+        nitsche: Nitsche's method - a stabilized discontinuous Galerkin approach
+            that uses average gradients and penalty stabilization.
+        penalty: Pure penalty method - enforces continuity through a penalty term
+            scaled by the penalty_term parameter.
+    """
 
     nitsche = 10
     penalty = 20
 
     @classmethod
-    def from_string(cls, s: str):
-        """Can be removed with Python 3.11+."""
+    def from_string(cls, s: str) -> "InterfaceMethod":
+        """Convert string to InterfaceMethod enum.
+
+        Args:
+            s: String representation ('nitsche' or 'penalty').
+
+        Returns:
+            InterfaceMethod: The corresponding enum value.
+
+        Raises:
+            ValueError: If string is not 'nitsche' or 'penalty'.
+        """
         s = s.lower()
         if s == "nitsche":
             return cls.nitsche
@@ -35,24 +52,34 @@ class InterfaceMethod(Enum):
 
 
 class InterfaceBase(ABC):
+    """Abstract base class for interfaces between subdomains.
+
+    Provides common functionality for handling interfaces in discontinuous
+    finite element problems, including integration data computation and
+    restriction handling.
+    """
+
     def __init__(
         self,
         id: int,
         subdomains: list[VolumeSubdomain],
     ):
-        """Class representing an interface between two subdomains.
+        """Initialize an interface between two subdomains.
 
         Args:
-            id (int): the tag of the interface subdomain in the parent meshtags
-            subdomains (list[F.VolumeSubdomain]): the subdomains sharing this interface
-            penalty_term (float, optional): Penalty term in the Nitsche DG formulation.
-                Needs to be "sufficiently large". Defaults to 10.0.
+            id: Tag of the interface subdomain in the parent mesh tags.
+            subdomains: The subdomains sharing this interface.
         """
         self.id = id
         self.subdomains = tuple(subdomains)
 
     def pad_parent_maps(self):
-        """Workaround to make sparsity-pattern work without skips"""
+        """Pad parent-to-submesh maps for correct sparsity pattern.
+
+        This is a workaround to ensure the sparsity pattern is correct when
+        assembling forms with interface integrals. It pads the mapping between
+        parent mesh cells and submesh cells for DOLFINx versions that require it.
+        """
         try:
             # No padding needed for latest version of DOLFINx
             from dolfinx.mesh import EntityMap  # noqa: F401
@@ -87,15 +114,19 @@ class InterfaceBase(ABC):
             self.subdomains[i].padded = True
 
     def compute_mapped_interior_facet_data(self, mesh):
-        """
-        Compute integration data for interface integrals.
-        We define the first domain on an interface as the "+" restriction,
-        meaning that we must sort all integration entities in this order
+        """Compute integration data for interface integrals.
 
-        Returns
-            integration_data: Integration data for interior facets
-        """
+        This method computes the mapping between physical facets on the interface
+        and the corresponding cells in each subdomain. It ensures that restrictions
+        are ordered consistently with the first subdomain on the "+" side.
 
+        Args:
+            mesh: The parent mesh.
+
+        Returns:
+            tuple: A tuple of (interface_id, flattened_integration_data) where
+                integration_data contains the mapped cell and facet indices.
+        """
         mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
 
         if Version(dolfinx.__version__) == Version("0.9.0"):
@@ -155,12 +186,28 @@ class InterfaceBase(ABC):
         return (self.id, ordered_integration_data.reshape(-1))
 
     def us(self, species: "Species"):
+        """Get solution fields restricted to each side of the interface.
+
+        Args:
+            species: The species for which to get solution fields.
+
+        Returns:
+            tuple: Solution fields (u_0, u_1) restricted to ("+", "-") sides.
+        """
         return tuple(
             species.subdomain_to_solution[subdomain](res)
             for subdomain, res in zip(self.subdomains, self.restriction)
         )
 
     def vs(self, species: "Species"):
+        """Get test functions restricted to each side of the interface.
+
+        Args:
+            species: The species for which to get test functions.
+
+        Returns:
+            tuple: Test functions (v_0, v_1) restricted to ("+", "-") sides.
+        """
         return tuple(
             species.subdomain_to_test_function[subdomain](res)
             for subdomain, res in zip(self.subdomains, self.restriction)
@@ -169,15 +216,46 @@ class InterfaceBase(ABC):
     @abstractmethod
     def get_formulation(
         self,
-        dInterface: ufl.Measure,  # NOTE should this be called dS?
+        dS: ufl.Measure,
         method: InterfaceMethod,
         species: list["Species"],
         temperature,
     ) -> tuple[ufl.Form, ufl.Form]:
+        """Generate variational forms for interface conditions.
+
+        Args:
+            dS: Integration measure for the interface.
+            method: The method to enforce interface conditions.
+            species: List of species for which to compute interface conditions.
+            temperature: Temperature field or function for temperature-dependent laws.
+
+        Returns:
+            Variational forms for each subdomain.
+        """
         pass
 
 
 class Interface(InterfaceBase):
+    """Represents an interface between two subdomains with discontinuous solutions.
+
+    This class handles the coupling of solutions across an interface between two
+    volume subdomains using either penalty or Nitsche methods. It manages the
+    exchange of boundary conditions and enforces continuity across the interface.
+
+    Attributes:
+        id: Tag of the interface subdomain in the parent mesh tags.
+        subdomains: The two subdomains
+            sharing this interface.
+        parent_mesh: The parent mesh containing the interface.
+        mt: Mesh tags for the parent mesh.
+        restriction: FEniCS restriction operators for each side
+            of the interface, defaults to ("+", "-").
+        padded: Whether the parent-to-submesh maps have been padded.
+        method: The method used to enforce interface conditions
+            (penalty or Nitsche).
+        penalty_term: Penalty parameter for the interface formulation.
+    """
+
     id: int
     subdomains: tuple[VolumeSubdomain, VolumeSubdomain]
     parent_mesh: dolfinx.mesh.Mesh
@@ -193,16 +271,40 @@ class Interface(InterfaceBase):
         penalty_term: float = 10.0,
         method: InterfaceMethod = InterfaceMethod.penalty,
     ):
+        """Initialize an interface between two subdomains.
+
+        Args:
+            id: Tag of the interface subdomain in the parent mesh tags.
+            subdomains: A list of exactly two subdomains that share this interface.
+            penalty_term: Penalty parameter for the interface formulation.
+                Must be sufficiently large. Defaults to 10.0.
+            method: The method to enforce interface conditions.
+                Defaults to InterfaceMethod.penalty.
+        """
         super().__init__(id, subdomains)
         self.penalty_term = penalty_term
         self.method = method
 
     @property
-    def method(self):
+    def method(self) -> InterfaceMethod:
+        """Get the interface coupling method.
+
+        Returns:
+            InterfaceMethod: The current interface method (penalty or Nitsche).
+        """
         return self._method
 
     @method.setter
-    def method(self, value):
+    def method(self, value: InterfaceMethod | str) -> None:
+        """Set the interface coupling method.
+
+        Args:
+            value: The method to use. Can be an InterfaceMethod enum value
+                or a string ('penalty' or 'nitsche').
+
+        Raises:
+            TypeError: If value is neither an InterfaceMethod nor a string.
+        """
         if isinstance(value, InterfaceMethod):
             self._method = value
         elif isinstance(value, str):
@@ -211,6 +313,18 @@ class Interface(InterfaceBase):
             raise TypeError("method_interface must be of type str or InterfaceMethod")
 
     def Ks(self, species: "Species", temperature):
+        """Get solubility coefficients for both sides of the interface.
+
+        Computes the solubility coefficient at the interface temperature for each
+        subdomain's material.
+
+        Args:
+            species: The species for which to compute solubility.
+            temperature: A function that returns temperature at given restrictions.
+
+        Returns:
+            Solubility coefficients (K_0, K_1) for subdomains 0 and 1.
+        """
         return tuple(
             subdomain.material.get_solubility_coefficient(
                 self.parent_mesh, temperature(self.restriction[i]), species
@@ -218,31 +332,26 @@ class Interface(InterfaceBase):
             for i, subdomain in enumerate(self.subdomains)
         )
 
-    # TODO this should be a method of a subclass of Interface since we want to support
-    # other types of interfaces in the future
     def get_formulation(
         self,
         dS: ufl.Measure,
         species: list["Species"],
         temperature,
     ) -> tuple[ufl.Form, ufl.Form]:
-        """
-        Generates the interface formulation for all `species` and store the forms in
-        the `.F` attribute of the subdomains.
+        """Generate the interface formulation for all species.
 
         Args:
-            dS: the measure corresponding to the interface, with the correct
-                integration data
-            method: the method to use to enforce the interface conditions
-            species: the species for which the interface conditions should be applied.
+            dS: Integration measure for the interface, with correct integration data.
+            species: Species for which interface conditions should be applied.
                 Must be defined in both subdomains of the interface.
-            temperature: the temperature for the interface conditions
+            temperature: Temperature field/function for temperature-dependent laws.
 
         Returns:
-            the forms to be added to the subdomains of the interface
+            Variational forms to be added to each subdomain.
 
         Raises:
-            ValueError: if the interface method is unknown
+            AssertionError: If the interface method is unknown or species is not
+                defined in both subdomains.
         """
 
         subdomain_0, subdomain_1 = self.subdomains
@@ -267,6 +376,20 @@ class Interface(InterfaceBase):
         return F_0, F_1
 
     def penalty_method(self, dS, species, temperature):
+        """Generate interface formulation using the penalty method.
+
+        The penalty method enforces interface continuity through a penalty term:
+        penalty_term * (u_1/K_1 - u_0/K_0) applied symmetrically to both sides.
+        Handles different solubility laws (Henry vs Sievert) on each side.
+
+        Args:
+            dS: Integration measure for the interface.
+            species: The species for which to compute the interface form.
+            temperature: A function returning temperature at given restrictions.
+
+        Returns:
+            Variational forms for subdomains 0 and 1.
+        """
         subdomain_0, subdomain_1 = self.subdomains
         u_0, u_1 = self.us(species)
         v_0, v_1 = self.vs(species)
@@ -305,6 +428,23 @@ class Interface(InterfaceBase):
         return F_0, F_1
 
     def nitsche_method(self, dS, species, temperature):
+        """Generate interface formulation using the Nitsche method.
+
+        The Nitsche method is a stabilized discontinuous Galerkin approach that
+        enforces interface continuity through a combination of:
+        - Average gradient terms
+        - Jump-based penalty stabilization
+
+        This method is more stable for certain problems compared to pure penalty.
+
+        Args:
+            dS: Integration measure for the interface.
+            species: The species for which to compute the interface form.
+            temperature: A function returning temperature at given restrictions.
+
+        Returns:
+            Variational forms for subdomains 0 and 1.
+        """
         u_0, u_1 = self.us(species)
         K_0, K_1 = self.Ks(species, temperature)
         v_0, v_1 = self.vs(species)
