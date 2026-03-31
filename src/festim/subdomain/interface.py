@@ -39,7 +39,6 @@ class InterfaceBase(ABC):
         self,
         id: int,
         subdomains: list[VolumeSubdomain],
-        penalty_term: float = 10.0,
     ):
         """Class representing an interface between two subdomains.
 
@@ -51,7 +50,6 @@ class InterfaceBase(ABC):
         """
         self.id = id
         self.subdomains = tuple(subdomains)
-        self.penalty_term = penalty_term
 
     def pad_parent_maps(self):
         """Workaround to make sparsity-pattern work without skips"""
@@ -186,6 +184,31 @@ class Interface(InterfaceBase):
     mt: dolfinx.mesh.MeshTags
     restriction: list[str, str] = ("+", "-")
     padded: bool
+    method: InterfaceMethod
+
+    def __init__(
+        self,
+        id: int,
+        subdomains: list[VolumeSubdomain],
+        penalty_term: float = 10.0,
+        method: InterfaceMethod = InterfaceMethod.penalty,
+    ):
+        super().__init__(id, subdomains)
+        self.penalty_term = penalty_term
+        self.method = method
+
+    @property
+    def method(self):
+        return self._method
+
+    @method.setter
+    def method(self, value):
+        if isinstance(value, InterfaceMethod):
+            self._method = value
+        elif isinstance(value, str):
+            self._method = InterfaceMethod.from_string(value)
+        else:
+            raise TypeError("method_interface must be of type str or InterfaceMethod")
 
     def Ks(self, species: "Species", temperature):
         return tuple(
@@ -200,7 +223,6 @@ class Interface(InterfaceBase):
     def get_formulation(
         self,
         dS: ufl.Measure,
-        method: InterfaceMethod,  # TODO this only makes sense for conservation of chemical potential
         species: list["Species"],
         temperature,
     ) -> tuple[ufl.Form, ufl.Form]:
@@ -229,15 +251,15 @@ class Interface(InterfaceBase):
             InterfaceMethod.penalty: self.penalty_method,
             InterfaceMethod.nitsche: self.nitsche_method,
         }
-        if method not in method_to_function:
-            raise ValueError(f"Unknown interface method {method}")
+        if self.method not in method_to_function:
+            raise ValueError(f"Unknown interface method {self.method}")
 
         for spe in species:
             assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
                 f"Species {spe.name} must be defined in both subdomains of the "
                 "interface for the interface conditions to be applied"
             )
-            _F_0, _F_1 = method_to_function[method](dS, spe, temperature)
+            _F_0, _F_1 = method_to_function[self.method](dS, spe, temperature)
             F_0 += _F_0
             F_1 += _F_1
 
