@@ -1098,6 +1098,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     @property
     def method_interface(self):
+        # deprecation warning
+        warnings.warn(
+            "The method_interface attribute of the Problem class is deprecated, "
+            "please use the method_interface attribute of each interface instead",
+            DeprecationWarning,
+        )
         return self._method_interface
 
     @method_interface.setter
@@ -1112,6 +1118,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             raise TypeError("method_interface must be of type str or InterfaceMethod")
 
     def initialise(self):
+        # if method_interface is given as an attribute of Problem class, then pass it to
+        # each interface and raise a deprecation warning
+        if hasattr(self, "method_interface"):
+            warnings.warn(
+                "The method_interface attribute of the Problem class is deprecated, "
+                "please set the method_interface attribute of each interface instead",
+                DeprecationWarning,
+            )
+            for interface in self.interfaces:
+                interface.method = self.method_interface
+
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
         for spe in self.species:
@@ -1506,7 +1523,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for interface in self.interfaces:
             F_0, F_1 = interface.get_formulation(
                 dInterface,
-                method=self.method_interface,
                 species=all_mobile_species,
                 temperature=self.temperature_fenics,
             )
