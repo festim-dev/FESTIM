@@ -336,12 +336,11 @@ class ContactResistance(InterfaceBase):
         id: int,
         subdomains: list[VolumeSubdomain],
         contact_resistance: float,
-        penalty_term: float = 10.0,
     ):
         self.contact_resistance = contact_resistance
-        super().__init__(id, subdomains, penalty_term)
+        super().__init__(id, subdomains)
 
-    def get_formulation(self, dS, method, species, temperature=None):
+    def get_formulation(self, dS, species, temperature=None):
         subdomain_0, subdomain_1 = self.subdomains
         res = self.restriction
         _F_0, _F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
