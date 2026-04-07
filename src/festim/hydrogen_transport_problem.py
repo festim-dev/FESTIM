@@ -1,6 +1,5 @@
 import warnings
 from collections.abc import Callable
-from enum import Enum
 
 from mpi4py import MPI
 from petsc4py import PETSc
@@ -49,26 +48,7 @@ from .mesh import CoordinateSystem, Mesh
 __all__ = [
     "HydrogenTransportProblem",
     "HydrogenTransportProblemDiscontinuous",
-    "InterfaceMethod",
 ]
-
-
-class InterfaceMethod(Enum):
-    """How to couple interfaces for discontinuous problems."""
-
-    nitsche = 10
-    penalty = 20
-
-    @classmethod
-    def from_string(cls, s: str):
-        """Can be removed with Python 3.11+."""
-        s = s.lower()
-        if s == "nitsche":
-            return cls.nitsche
-        elif s == "penalty":
-            return cls.penalty
-        else:
-            raise ValueError("interface_method must be one of 'nitsche' or 'penalty'")
 
 
 class HydrogenTransportProblem(problem.ProblemBase):
@@ -1056,7 +1036,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
 class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     interfaces: list[_subdomain.Interface]
     surface_to_volume: dict
-    _method_interface: InterfaceMethod = InterfaceMethod.penalty
+    _method_interface: _subdomain.interface.InterfaceMethod = (
+        _subdomain.interface.InterfaceMethod.penalty
+    )
     subdomain_to_species: dict
 
     def __init__(
@@ -1116,18 +1098,37 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     @property
     def method_interface(self):
+        # deprecation warning
+        warnings.warn(
+            "The method_interface attribute of the Problem class is deprecated, "
+            "please use the method_interface attribute of each interface instead",
+            DeprecationWarning,
+        )
         return self._method_interface
 
     @method_interface.setter
     def method_interface(self, value):
-        if isinstance(value, InterfaceMethod):
+        if isinstance(value, _subdomain.interface.InterfaceMethod):
             self._method_interface = value
         elif isinstance(value, str):
-            self._method_interface = InterfaceMethod.from_string(value)
+            self._method_interface = _subdomain.interface.InterfaceMethod.from_string(
+                value
+            )
         else:
             raise TypeError("method_interface must be of type str or InterfaceMethod")
 
     def initialise(self):
+        # if method_interface is given as an attribute of Problem class, then pass it to
+        # each interface and raise a deprecation warning
+        if hasattr(self, "method_interface"):
+            warnings.warn(
+                "The method_interface attribute of the Problem class is deprecated, "
+                "please set the method_interface attribute of each interface instead",
+                DeprecationWarning,
+            )
+            for interface in self.interfaces:
+                interface.method = self.method_interface
+
         # check that all species have a list of F.VolumeSubdomain as this is
         # different from F.HydrogenTransportProblem
         for spe in self.species:
@@ -1518,126 +1519,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         [interface.pad_parent_maps() for interface in self.interfaces]
         dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
 
-        def mixed_term(u, v, n):
-            return ufl.dot(ufl.grad(u), n) * v
-
-        n = ufl.FacetNormal(mesh)
-        cr = ufl.Circumradius(mesh)
-        try:
-            from dolfinx.mesh import EntityMap  # noqa: F401
-
-            entity_maps = [sd.cell_map for sd in self.volume_subdomains]
-        except ImportError:
-            entity_maps = {
-                sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
-            }
+        all_mobile_species = [spe for spe in self.species if spe.mobile]
         for interface in self.interfaces:
-            gamma = interface.penalty_term
-
+            F_0, F_1 = interface.get_formulation(
+                dInterface,
+                species=all_mobile_species,
+                temperature=self.temperature_fenics,
+            )
             subdomain_0, subdomain_1 = interface.subdomains
-            res = interface.restriction
-            n_0 = n(res[0])
-            h_0 = 2 * cr(res[0])
-            h_1 = 2 * cr(res[1])
+            subdomain_0.F += F_0
+            subdomain_1.F += F_1
 
-            all_mobile_species = [spe for spe in self.species if spe.mobile]
-            # TODO only do this if the species in defined in both domains of the
-            # interface?
-            for H in all_mobile_species:
-                v_b = H.subdomain_to_test_function[subdomain_0](res[0])
-                v_t = H.subdomain_to_test_function[subdomain_1](res[1])
-
-                u_b = H.subdomain_to_solution[subdomain_0](res[0])
-                u_t = H.subdomain_to_solution[subdomain_1](res[1])
-
-                K_b = subdomain_0.material.get_solubility_coefficient(
-                    self.mesh.mesh, self.temperature_fenics(res[0]), H
-                )
-                K_t = subdomain_1.material.get_solubility_coefficient(
-                    self.mesh.mesh, self.temperature_fenics(res[1]), H
-                )
-
-                match self.method_interface:
-                    case InterfaceMethod.penalty:
-                        if (
-                            subdomain_0.material.solubility_law
-                            == subdomain_1.material.solubility_law
-                        ):
-                            left = u_b / K_b
-                            right = u_t / K_t
-                        else:
-                            match subdomain_0.material.solubility_law:
-                                case SolubilityLaw.HENRY:
-                                    left = u_b / K_b
-                                case SolubilityLaw.SIEVERT:
-                                    left = (u_b / K_b) ** 2
-                                case _:
-                                    raise ValueError(
-                                        "Unsupported material law "
-                                        + f"{subdomain_0.material.solubility_law}"
-                                    )
-
-                            match subdomain_1.material.solubility_law:
-                                case SolubilityLaw.HENRY:
-                                    right = u_t / K_t
-                                case SolubilityLaw.SIEVERT:
-                                    right = (u_t / K_t) ** 2
-                                case _:
-                                    raise ValueError(
-                                        f"Unsupported material law "
-                                        f"{subdomain_1.material.solubility_law}"
-                                    )
-
-                        equality = right - left
-
-                        F_0 = (
-                            interface.penalty_term
-                            * ufl.inner(equality, v_b)
-                            * dInterface(interface.id)
-                        )
-                        F_1 = (
-                            -interface.penalty_term
-                            * ufl.inner(equality, v_t)
-                            * dInterface(interface.id)
-                        )
-
-                        subdomain_0.F += F_0
-                        subdomain_1.F += F_1
-                    case InterfaceMethod.nitsche:
-                        F_0 = -0.5 * mixed_term((u_b + u_t), v_b, n_0) * dInterface(
-                            interface.id
-                        ) - 0.5 * mixed_term(
-                            v_b, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
-
-                        F_1 = +0.5 * mixed_term((u_b + u_t), v_t, n_0) * dInterface(
-                            interface.id
-                        ) - 0.5 * mixed_term(
-                            v_t, (u_b / K_b - u_t / K_t), n_0
-                        ) * dInterface(interface.id)
-                        F_0 += (
-                            2
-                            * gamma
-                            / (h_0 + h_1)
-                            * (u_b / K_b - u_t / K_t)
-                            * v_b
-                            * dInterface(interface.id)
-                        )
-                        F_1 += (
-                            -2
-                            * gamma
-                            / (h_0 + h_1)
-                            * (u_b / K_b - u_t / K_t)
-                            * v_t
-                            * dInterface(interface.id)
-                        )
-
-                        subdomain_0.F += F_0
-                        subdomain_1.F += F_1
-                    case _:
-                        raise ValueError(
-                            f"Unknown interface method {self.method_interface}"
-                        )
         J = []
         # this is the symbolic differentiation of the Jacobian
         for subdomain1 in self.volume_subdomains:
@@ -1648,6 +1540,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
             J.append(jac)
         # compile jacobian (J) and residual (F)
+        try:
+            from dolfinx.mesh import EntityMap  # noqa: F401
+
+            entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+        except ImportError:
+            entity_maps = {
+                sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
+            }
+
         self.forms = dolfinx.fem.form(
             [subdomain.F for subdomain in self.volume_subdomains],
             entity_maps=entity_maps,
