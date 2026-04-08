@@ -279,3 +279,82 @@ def test_multi_material_with_advection():
 
     my_model.initialise()
     my_model.run()
+
+
+def test_flux_conservation_advection():
+    """MMS coupled heat and hydrogen test with 1 mobile species and 1 trap in a 1s
+    transient, the values of the temperature, mobile and trapped solutions at the last
+    time step is compared to an analytical solution"""
+
+    my_model = F.HydrogenTransportProblem()
+
+    test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 15, 15)
+    my_model.mesh = F.Mesh(test_mesh_2d)
+
+    # common festim objects
+    test_mat = F.Material(D_0=1.2, E_D=0.1)
+    test_vol_sub = F.VolumeSubdomain(id=1, material=test_mat)
+    left = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 0))
+    right = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 1))
+    bottom = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[1], 0))
+    top = F.SurfaceSubdomain(id=4, locator=lambda x: np.isclose(x[1], 1))
+    my_model.subdomains = [test_vol_sub, left, right, bottom, top]
+
+    test_H = F.Species("H", mobile=True)
+    my_model.species = [test_H]
+
+    V = dolfinx.fem.functionspace(test_mesh_2d, ("Lagrange", 1, (2,)))
+    velocity_field = dolfinx.fem.Function(V)
+    factor = 100
+    velocity_field.interpolate(lambda x: (factor * np.sin(x[0]), factor * np.cos(x[1])))
+    my_model.advection_terms = [
+        F.AdvectionTerm(velocity=velocity_field, subdomain=test_vol_sub, species=test_H)
+    ]
+
+    my_model.temperature = 100
+
+    my_model.boundary_conditions = [
+        F.OutflowBC(velocity=velocity_field, species=test_H, subdomain=right),
+        F.OutflowBC(velocity=velocity_field, species=test_H, subdomain=top),
+        F.OutflowBC(velocity=velocity_field, species=test_H, subdomain=left),
+        F.FixedConcentrationBC(species=test_H, subdomain=bottom, value=0),
+    ]
+
+    my_model.sources = [F.ParticleSource(species=test_H, value=1, volume=test_vol_sub)]
+
+    my_model.settings = F.Settings(transient=False, atol=1e-10, rtol=1e-10)
+
+    advection_flux_top = F.AdvectionFlux(
+        velocity_field=velocity_field, field=test_H, surface=top
+    )
+    advection_flux_right = F.AdvectionFlux(
+        velocity_field=velocity_field, field=test_H, surface=right
+    )
+    advection_flux_left = F.AdvectionFlux(
+        velocity_field=velocity_field, field=test_H, surface=left
+    )
+    advection_flux_bottom = F.AdvectionFlux(
+        velocity_field=velocity_field, field=test_H, surface=bottom
+    )
+    my_model.exports = [
+        advection_flux_top,
+        advection_flux_right,
+        advection_flux_left,
+        advection_flux_bottom,
+    ]
+
+    my_model.initialise()
+    my_model.run()
+
+    total_source = dolfinx.fem.assemble_scalar(
+        dolfinx.fem.form(my_model.sources[0].value.fenics_object * ufl.dx)
+    )
+
+    total_outflux = (
+        advection_flux_top.data[-1]
+        + advection_flux_right.data[-1]
+        + advection_flux_left.data[-1]
+        + advection_flux_bottom.data[-1]
+    )
+
+    assert np.isclose(total_source, total_outflux, rtol=1e-3)

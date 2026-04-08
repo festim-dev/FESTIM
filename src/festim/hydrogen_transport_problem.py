@@ -731,6 +731,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 function_space=self.function_space, t=self.t
             )
 
+        for bc in self.boundary_conditions:
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                bc.velocity.convert_input_value(
+                    function_space=self.function_space, t=self.t
+                )
+
     def create_flux_values_fenics(self):
         """For each particle flux create the value_fenics"""
         for bc in self.boundary_conditions:
@@ -859,15 +865,28 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         * self.ds(flux_bc.subdomain.id)
                     )
 
-        for adv_term in self.advection_terms:
-            # create vector functionspace based on the elements in the mesh
+            # add outflow term for outflow bcs in advection diffusion cases
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                for species in bc.species:
+                    conc = species.solution
+                    v = species.test_function
+                    vel = bc.velocity.fenics_object
 
+                    outflow_term = (
+                        ufl.inner(vel * conc, self.mesh.n)
+                        * v
+                        * self.ds(bc.subdomain.id)
+                    )
+                    self.formulation += outflow_term
+
+        # add advection terms
+        for adv_term in self.advection_terms:
             for species in adv_term.species:
                 conc = species.solution
                 v = species.test_function
                 vel = adv_term.velocity.fenics_object
 
-                advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
+                advection_term = -ufl.inner(vel * conc, ufl.grad(v)) * self.dx(
                     adv_term.subdomain.id
                 )
                 self.formulation += advection_term
@@ -988,11 +1007,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export,
                     exports.SurfaceFlux | exports.TotalSurface | exports.AverageSurface,
                 ):
-                    if len(self.advection_terms) > 0:
-                        warnings.warn(
-                            "Advection terms are not currently accounted for in the "
-                            "evaluation of surface flux values"
-                        )
                     export.compute(export.field.solution, self.ds)
                 else:
                     export.compute()

@@ -1,3 +1,4 @@
+from .advection_flux import AdvectionFlux
 from .average_surface import AverageSurface
 from .average_volume import AverageVolume
 from .maximum_surface import MaximumSurface
@@ -14,6 +15,7 @@ from .vtx import ExportBaseClass, VTXSpeciesExport, VTXTemperatureExport
 from .xdmf import XDMFExport
 
 __all__ = [
+    "AdvectionFlux",
     "AverageSurface",
     "AverageVolume",
     "ExportBaseClass",
