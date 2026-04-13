@@ -106,41 +106,6 @@ But for particle fluxes, the values can also be dependent on a species' concentr
 
         species_dependent_value = {"c_A": A, "c_B": B, "c_C": C}
 
-Kinetic surface model (1D)
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Kinetic surface model can be included to account for the evolution of adsorbed hydrogen on a surface with the :class:`festim.SurfaceKinetics` class.
-The current class is supported for 1D simulations only. Refer to the :ref:`Kinetic surface model` theory section for more details.
-
-.. testcode:: BCs
-
-    from festim import t
-    import fenics as f
-
-    def k_bs(T, surf_conc, mobile_conc, t):
-        return 1e13*f.exp(-0.2/k_b/T)
-
-    def k_sb(T, surf_conc, mobile_conc, t):
-        return 1e13*f.exp(-1.0/k_b/T)
-
-    def J_vs(T, surf_conc, mobile_conc, t):
-
-        J_des = 2e5*surf_conc**2*f.exp(-1.2/k_b/T)
-        J_ads = 1e17*(1-surf_conc/1e17)**2*f.conditional(t<10, 1, 0)
-
-        return J_ads - J_des
-
-    my_bc = SurfaceKinetics(
-        k_bs=k_bs,
-        k_sb=k_sb,
-        lambda_IS=1.1e-10,
-        n_surf=1e17,
-        n_IS=6.3e28,
-        J_vs=J_vs,
-        surfaces=3,
-        initial_condition=0,
-        t=t
-        )
 
 Sievert's law of solubility
 ----------------------------
@@ -290,9 +255,6 @@ For example, in a system with both mobile hydrogen and tritium, various molecula
         E_kd=0.1,
         subdomain=boundary,
     )
-
-    # non-instantaneous recombination and dissociation
-    my_bc = ImplantationDirichlet(surfaces=3, phi=1e10 + t, R_p=1e-9, D_0=1, E_D=0.1, Kr_0=2, E_Kr=0.2, Kd_0=3, E_Kd=0.3, P=4)
 
 ----------------------
 Heat transfer BCs
