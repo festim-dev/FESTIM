@@ -324,7 +324,7 @@ def is_it_time_to_export(
 ) -> bool:
     """
     Checks if the exported field should be written to a file or not based on the
-    current time and the times in `export.times'
+    current time and the times in `export.times`
 
     After a successful match, the corresponding time is removed from the list to
     prevent multiple exports for the same target time.
