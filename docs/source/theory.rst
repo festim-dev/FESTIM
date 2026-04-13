@@ -289,73 +289,72 @@ Finally, convective heat fluxes can be applied to boundaries:
 
 where :math:`h` is the heat transfer coefficient and :math:`T_{\mathrm{ext}}` is the external temperature.
 
-Kinetic surface model
-^^^^^^^^^^^^^^^^^^^^^
+.. Kinetic surface model
+.. ^^^^^^^^^^^^^^^^^^^^^
 
-Modelling hydrogen retention or outgassing might require considering the kinetics of surface processes. 
-A representative example is the hydrogen uptake from a gas phase, when the energy of incident atoms/molecules is not high enough to 
-overcome the surface barrier for implantation. The general approach to account for surface kinetics :cite:`Pick1985, Hodille2017, Guterl2019, Schmid2021` consists in 
-introducing hydrogen surface species :math:`c_\mathrm{s}\,[\mathrm{m}^{-2}]`. 
+.. Modelling hydrogen retention or outgassing might require considering the kinetics of surface processes. 
+.. A representative example is the hydrogen uptake from a gas phase, when the energy of incident atoms/molecules is not high enough to 
+.. overcome the surface barrier for implantation. The general approach to account for surface kinetics :cite:`Pick1985, Hodille2017, Guterl2019, Schmid2021` consists in 
+.. introducing hydrogen surface species :math:`c_\mathrm{s}\,[\mathrm{m}^{-2}]`. 
 
-Evolution of hydrogen surface concentration is determined by the atomic flux balance at the surface, as sketched in the simplified energy diagram below.
+.. Evolution of hydrogen surface concentration is determined by the atomic flux balance at the surface, as sketched in the simplified energy diagram below.
 
-.. figure:: images/potential_diagram.png
-    :align: center
-    :width: 800
+.. .. figure:: images/potential_diagram.png
 
-    Idealised potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
+..     Idealised potential energy diagram for hydrogen near a surface of an endothermic metal. Energy levels are measured from the :math:`\mathrm{H}_2` state
 
-The governing equation for surface species is:
+.. The governing equation for surface species is:
 
-.. math::
-    :label: eq_surf_conc
+.. .. math::
+..     :label: eq_surf_conc
     
-    \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}~\text{on}~\delta\Omega
+..     \dfrac{d c_\mathrm{s}}{d t} = J_\mathrm{bs} - J_\mathrm{sb} + J_\mathrm{vs}~\text{on}~\delta\Omega
 
-where :math:`J_\mathrm{bs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the subsurface (bulk region just beneath the surface) onto the surface, 
-:math:`J_\mathrm{sb}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` 
-is the net flux of hydrogen atoms from the vaccuum onto the surface. The latter is defined as :math:`J_\mathrm{vs}=J_\mathrm{in}-J_\mathrm{out}`, where :math:`J_\mathrm{in}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` 
-is the sum of all fluxes coming from the vacuum onto the surface and :math:`J_\mathrm{out}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the sum of all fluxes coming from the surface to the vacuum.
-:math:`J_\mathrm{in}` can be used to set up adsorption fluxes from different processes such as molecular dissociation, adsorption of low-energy atoms, etc. Similarly, 
-:math:`J_\mathrm{out}` can be used to define desorption fluxes from various processes such as Langmuir-Hinshelwood recombination, Eley-Rideal recombination, sputtering, etc.
-It worth noticing that the current model does not account for possible surface diffusion and is available only for 1D hydrogen transport simulations.
+.. where :math:`J_\mathrm{bs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the subsurface (bulk region just beneath the surface) onto the surface, 
+.. :math:`J_\mathrm{sb}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the flux of hydrogen atoms from the surface into the subsurface, and :math:`J_\mathrm{vs}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` 
+.. is the net flux of hydrogen atoms from the vaccuum onto the surface. The latter is defined as :math:`J_\mathrm{vs}=J_\mathrm{in}-J_\mathrm{out}`, where :math:`J_\mathrm{in}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` 
+.. is the sum of all fluxes coming from the vacuum onto the surface and :math:`J_\mathrm{out}\,[\mathrm{m}^{-2}\,\mathrm{s}^{-1}]` is the sum of all fluxes coming from the surface to the vacuum.
+.. :math:`J_\mathrm{in}` can be used to set up adsorption fluxes from different processes such as molecular dissociation, adsorption of low-energy atoms, etc. Similarly, 
+.. :math:`J_\mathrm{out}` can be used to define desorption fluxes from various processes such as Langmuir-Hinshelwood recombination, Eley-Rideal recombination, sputtering, etc.
+.. It worth noticing that the current model does not account for possible surface diffusion and is available only for 1D hydrogen transport simulations.
 
-The connection condition between surface and bulk domains represents the Robin boundary condition for the hydrogen transport problem.
+.. The connection condition between surface and bulk domains represents the Robin boundary condition for the hydrogen transport problem.
 
-.. math::
-    :label: eq_subsurf_conc
+.. .. math::
+..     :label: eq_subsurf_conc
     
-    -D \nabla c_\mathrm{m} \cdot \mathbf{n} = \lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t} + J_{\mathrm{bs}} - J_{\mathrm{sb}}~\text{on}~\delta\Omega
+..     -D \nabla c_\mathrm{m} \cdot \mathbf{n} = \lambda_{\mathrm{IS}} \dfrac{\partial c_{\mathrm{m}}}{\partial t} + J_{\mathrm{bs}} - J_{\mathrm{sb}}~\text{on}~\delta\Omega
 
-where :math:`\lambda_\mathrm{IS}\,[\mathrm{m}]` is the distance between two interstitial sites in the bulk. 
+.. where :math:`\lambda_\mathrm{IS}\,[\mathrm{m}]` is the distance between two interstitial sites in the bulk. 
 
-.. note::
+.. .. note::
 
-    At the left boundary, the normal vector :math:`\textbf{n}` is :math:`-\vec{x}`. The steady-state approximation of eq. :eq:`eq_subsurf_conc` at the left boundary 
-    is, therefore, :math:`D\frac{\partial c_\mathrm{m}}{\partial x}=J_\mathrm{bs}-J_\mathrm{sb}` representing eq. (12) in the original work of M.A. Pick & K. Sonnenberg :cite:`Pick1985`.
+..     At the left boundary, the normal vector :math:`\textbf{n}` is :math:`-\vec{x}`. The steady-state approximation of eq. :eq:`eq_subsurf_conc` at the left boundary 
+..     is, therefore, :math:`D\frac{\partial c_\mathrm{m}}{\partial x}=J_\mathrm{bs}-J_\mathrm{sb}` representing eq. (12) in the original work of M.A. Pick & K. Sonnenberg :cite:`Pick1985`.
 
-The fluxes for subsurface-to-surface and surface-to-subsurface transitions are defined as follows:
+.. The fluxes for subsurface-to-surface and surface-to-subsurface transitions are defined as follows:
 
-.. math::
-    :label: eq_Jbs
+.. .. math::
+..     :label: eq_Jbs
 
-    J_\mathrm{bs} = k_\mathrm{bs} c_\mathrm{m} \left(1-\dfrac{c_\mathrm{s}}{n_\mathrm{surf}}\right)
+..     J_\mathrm{bs} = k_\mathrm{bs} \lambda_\mathrm{abs} c_\mathrm{m} \left(1-\dfrac{c_\mathrm{s}}{n_\mathrm{surf}}\right)
 
-.. math::
-    :label: eq_Jsb
+.. .. math::
+..     :label: eq_Jsb
 
-    J_\mathrm{sb} = k_\mathrm{sb} c_\mathrm{s} \left(1-\dfrac{c_\mathrm{m}}{n_\mathrm{IS}}\right)
+..     J_\mathrm{sb} = k_\mathrm{sb} c_\mathrm{s} \left(1-\dfrac{c_\mathrm{m}}{n_\mathrm{IS}}\right)
 
-where :math:`n_\mathrm{surf}\,[\mathrm{m}^{-2}]` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}\,[\mathrm{m}^{-3}]` is the bulk concentration of interstitial sites, :math:`k_\mathrm{bs}\,[\mathrm{m}\,\mathrm{s}^{-1}]` 
-and :math:`k_\mathrm{sb}\,[\mathrm{s}^{-1}]` are the rate constants for subsurface-to-surface and surface-to-subsurface transitions, respectively. 
-Usually, these rate constants are expressed in the Arrhenius form: :math:`k_i=k_{i,0}\exp(-E_{k,i} / kT)`. Both these processes are assumed to take place
-if there are available sites on the surface (in the subsurface). Possible surface/subsurface saturation is accounted for with terms in brackets.
+.. where :math:`n_\mathrm{surf}\,[\mathrm{m}^{-2}]` is the surface concentration of adsorption sites, :math:`n_\mathrm{IS}\,[\mathrm{m}^{-3}]` is the bulk concentration of interstitial sites,
+.. :math:`\lambda_\mathrm{abs}=n_\mathrm{surf}/n_\mathrm{IS}\,[\mathrm{m}]` is the characteristic distance between surface and subsurface sites, :math:`k_\mathrm{bs}\,[\mathrm{s}^{-1}]` 
+.. and :math:`k_\mathrm{sb}\,[\mathrm{s}^{-1}]` are the rate constants for subsurface-to-surface and surface-to-subsurface transitions, respectively. 
+.. Usually, these rate constants are expressed in the Arrhenius form: :math:`k_i=k_{i,0}\exp(-E_{k,i} / kT)`. Both these processes are assumed to take place
+.. if there are available sites on the surface (in the subsurface). Possible surface/subsurface saturation is accounted for with terms in brackets.
 
-.. note::
+.. .. note::
 
-    In eq. :eq:`eq_Jsb`, the last term in brackets is usually omitted :cite:`Guterl2019, Pick1985, Hodille2017, Schmid2021`, 
-    since :math:`c_\mathrm{m} \ll n_\mathrm{IS}` is assumed. However, this term is included in some works (e.g. :cite:`Hamamoto2020`) 
-    to better reproduce the experimental results.   
+..     In eq. :eq:`eq_Jsb`, the last term in brackets is usually omitted :cite:`Guterl2019, Pick1985, Hodille2017, Schmid2021`, 
+..     since :math:`c_\mathrm{m} \ll n_\mathrm{IS}` is assumed. However, this term is included in some works (e.g. :cite:`Hamamoto2020`) 
+..     to better reproduce the experimental results.   
 
 
 ------------
