@@ -83,6 +83,6 @@ Contents
 
    installation
    userguide/index
-   api/festim
+   api/index
    devguide/index
    theory
