@@ -1,20 +1,20 @@
-name: festim-docs
+name: festim2-docs
 channels:
   - conda-forge
   - defaults
 dependencies:
-  - setuptools<82
-  - wheel<0.45
-  - fenics
-  - python>=3.10
+  - fenics-dolfinx
   - matplotlib==3.7.1
   - pip>=20.1
-  - sphinx==7.4.3
+  - sphinx
   - folium
   - numpy==1.24
-  - sympy
-  - sphinx-book-theme
+  - tqdm
+  - scifem>=0.2.8
+  - adios4dolfinx
   - sphinx-design
   - sphinxcontrib-bibtex
+  - sympy
+  - sphinx-book-theme
   - sphinx-copybutton
   - pillow

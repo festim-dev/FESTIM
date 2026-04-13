@@ -24,14 +24,4 @@ If you're having an issue, the best way to find help is to join the `FESTIM disc
 Install FESTIM
 --------------
 
-Follow the :ref:`installation instructions<Install>` to install FESTIM on your computer.
-
-------------------------
-Your first FESTIM script
-------------------------
-
-
-Follow `this tutorial <https://festim-workshop.readthedocs.io/en/latest/content/task01.html>`_ to learn how
-to run a simple 1D diffusion problem in steady state with an homogeneous temperature, a volumetric source of hydrogen,
-and the concentration fixed at zero at boundaries.
-
+Follow the :ref:`installation instructions<Installation>` to install FESTIM on your computer.

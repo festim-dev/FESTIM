@@ -1,8 +1,9 @@
 # FESTIM
 [![NumFOCUS](https://img.shields.io/badge/powered%20by-NumFOCUS-orange.svg?style=flat&colorA=E1523D&colorB=007D8A)](https://numfocus.org/)
-[![CI](https://github.com/festim-dev/FESTIM/actions/workflows/ci.yml/badge.svg)](https://github.com/festim-dev/FESTIM/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/festim-dev/FESTIM/branch/master/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/festim-dev/FESTIM)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg?style=flat-square)](https://github.com/psf/black)
+[![Conda CI](https://github.com/festim-dev/FESTIM/actions/workflows/ci_conda.yml/badge.svg?branch=main)](https://github.com/festim-dev/FESTIM/actions/workflows/ci_conda.yml)
+[![Docker CI](https://github.com/festim-dev/FESTIM/actions/workflows/ci_docker.yml/badge.svg?branch=main)](https://github.com/festim-dev/FESTIM/actions/workflows/ci_docker.yml)
+[![codecov](https://codecov.io/gh/festim-dev/FESTIM/branch/main/graph/badge.svg?token=AK3A9CV2D3)](https://codecov.io/gh/festim-dev/FESTIM)
+[![Code style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 ![GitHub stars](https://img.shields.io/github/stars/festim-dev/FESTIM.svg?logo=github&label=Stars&logoColor=white)
 ![GitHub forks](https://img.shields.io/github/forks/festim-dev/FESTIM.svg?logo=github&label=Forks&logoColor=white)
 
@@ -34,4 +35,3 @@ The guidelines for contributions can be found in the documentation: https://fest
 ## Roadmap
 
 You can follow the public roadmap on the [FESTIM projects page](https://github.com/festim-dev/FESTIM/projects?query=is%3Aopen).
-Moreover, you can check out the development branch (with support of FEniCSx) on the [_fenicsx_](https://github.com/festim-dev/FESTIM/tree/fenicsx) branch.

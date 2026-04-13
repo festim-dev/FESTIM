@@ -1,0 +1,2 @@
+ignore:
+  - "festim/_version.py"  # ignore version file

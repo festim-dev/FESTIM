@@ -1,10 +1,8 @@
 import json
-from folium.plugins import MarkerCluster
-import folium
 
-import requests
+import folium
+from folium.plugins import MarkerCluster
 from PIL import Image
-from io import BytesIO
 
 LOGO_HEIGHT = 60
 

@@ -12,7 +12,24 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, os.path.abspath("../../src"))
+
+
+# Generate the map
+
+# Add the directory containing your Python script to the Python path
+sys.path.insert(0, os.path.abspath("."))
+
+import map
+
+m = map.generate_map()
+current_dir = os.path.dirname(__file__)
+html_path = os.path.join(current_dir, "_static", "map.html")
+
+# create _static directory if it doesn't exist
+os.makedirs(os.path.dirname(html_path), exist_ok=True)
+
+m.save(html_path)
 
 
 # Generate the map

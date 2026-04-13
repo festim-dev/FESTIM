@@ -19,17 +19,15 @@ We are simply solving a set of equations using the finite element method, and ar
 Solver doesn't converge
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-The first thing to check is the details of the Newton solver iterations.
-To do so, you must set the ``log_level`` to ``20`` (default is ``40``).
+The first thing to check is the details of the SNES Newton solver iterations.
+To do so, you must set the ``log_level`` to ``INFO`` or ``DEBUG``.
 This will provide more information during the solving stage.
 
 .. testcode::
 
-    import festim as F
+    import dolfinx
 
-    my_model = F.Simulation()
-
-    my_model.log_level = 20
+    dolfinx.log.set_log_level(dolfinx.log.LogLevel.INFO)
 
 From there, depending on the behaviour of the solver, you can try the following:
 
@@ -44,21 +42,22 @@ Solution is zero everywhere
 Sometimes, the solver converges fine but the solution is zero everywhere.
 This is often due to an excessively high absolute tolerance.
 The Newton solver then converges in zero iterations. In other words, nothing is solved.
-First, check that this is the case by setting the log level to 20:
+First, check that this is the case by setting the log level to INFO:
 
 .. testcode::
 
-    import festim as F
+    import dolfinx
 
-    my_model = F.Simulation()
-
-    my_model.log_level = 20
+    dolfinx.log.set_log_level(dolfinx.log.LogLevel.INFO)
 
 Then increase the absolute tolerance of the solver:
 
 .. testcode::
 
+    import festim as F
+
+    my_model = F.HydrogenTransportProblem()
     my_model.settings = F.Settings(
-        absolute_tolerance=1e10,
-        relative_tolerance=1e-10,
+        atol=1e10,
+        rtol=1e-10,
     )

@@ -6,5 +6,25 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: psf/black@stable
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install linting tools
+        run: pip install mypy ruff
+
+      - name: ruff format
+        run: |
+          ruff format --check .
+
+      - name: ruff check
+        continue-on-error: true
+        run: |
+          ruff check .
+
+      - name: mypy
+        continue-on-error: true
+        run: |
+          python -m mypy .

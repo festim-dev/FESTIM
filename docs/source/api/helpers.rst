@@ -1,4 +1,0 @@
-Helpers
-=======
-
-.. currentmodule:: festim

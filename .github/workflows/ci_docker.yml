@@ -1,0 +1,42 @@
+name: Docker CI
+on: [pull_request, push]
+
+jobs:
+  run-tests:
+    name: run-tests (fenics-dolfinx ${{ matrix.container_version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container_version: [v0.9.0, v0.10.0, nightly]
+    container: dolfinx/dolfinx:${{ matrix.container_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Configure git safe directory
+        run: |
+          git config --global --add safe.directory '*'
+
+      - name: Install local package and dependencies
+        run: |
+          pip install .[test]
+
+      - name: Overload adios4dolfinx
+        if: ${{ matrix.container_version == 'nightly' }}
+        run: python3 -m pip install git+https://github.com/jorgensd/adios4dolfinx.git
+
+      - name: Run tests
+        run: |
+          python3 -m pytest test/ --cov festim --cov-report xml --cov-report term
+
+      - name: Install curl
+        run: |
+          apt-get update
+          apt-get install -y curl
+
+      - name: Upload to codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
