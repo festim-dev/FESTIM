@@ -29,7 +29,7 @@ Moreover, users can rapidly get started with FESTIM thanks to its python API.
 
          .. card:: Tutorials
             :img-top: images/icons/clapperboard-play-svgrepo-com.svg
-            :link: https://github.com/festim-dev/FESTIM-workshop
+            :link: https://festim-workshop.readthedocs.io/
 
       .. grid-item::
 
@@ -82,10 +82,7 @@ Contents
    :maxdepth: 1
 
    installation
-   examples
-   theory
    userguide/index
-   devguide/index
    api/index
-   publications
-   fellowship
+   devguide/index
+   theory

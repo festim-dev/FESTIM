@@ -1,4 +1,4 @@
-.. _sources:
+.. _sources_guide:
 
 =======
 Sources

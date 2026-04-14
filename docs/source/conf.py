@@ -31,6 +31,23 @@ os.makedirs(os.path.dirname(html_path), exist_ok=True)
 
 m.save(html_path)
 
+
+# Generate the map
+
+# Add the directory containing your Python script to the Python path
+sys.path.insert(0, os.path.abspath("."))
+
+import map
+
+m = map.generate_map()
+current_dir = os.path.dirname(__file__)
+html_path = os.path.join(current_dir, "_static", "map.html")
+
+# create _static directory if it doesn't exist
+os.makedirs(os.path.dirname(html_path), exist_ok=True)
+
+m.save(html_path)
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
@@ -94,45 +111,58 @@ bibtex_bibfiles = ["bibliography/references.bib"]
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "sphinx_book_theme"
+html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_css_files = ["style.css"]
 
+html_context = {
+    "github_user": "festim-dev",
+    "github_repo": "FESTIM",
+    "github_version": "main",
+    "doc_path": "docs/source",
+}
+
 html_theme_options = {
-    "repository_url": "https://github.com/festim-dev/FESTIM",
-    "use_repository_button": True,
     "use_edit_page_button": True,
-    "repository_branch": "fenicsx",
-    "path_to_docs": "./docs/source",
+    "logo": {
+        "image_light": "images/festim logo.png",
+        "image_dark": "images/festim logo dark.png",
+    },
+    "external_links": [
+        {
+            "name": "Tutorials",
+            "url": "https://festim-workshop.readthedocs.io/",
+        },
+        {
+            "name": "V&V",
+            "url": "https://festim-vv-report.readthedocs.io/en/latest/",
+        },
+    ],
     "icon_links": [
         {
-            "name": "PyPI",
-            "url": "https://pypi.org/project/FESTIM/",
-            "icon": "https://img.shields.io/pypi/dw/festim",
-            "type": "url",
+            "name": "GitHub",
+            "url": "https://github.com/festim-dev/FESTIM",
+            "icon": "fa-brands fa-github fa-fw",
+            "type": "fontawesome",
         },
         {
             "name": "Support Forum",
             "url": "https://festim.discourse.group/",
-            "icon": "fa-brands fa-discourse",
+            "icon": "fa-brands fa-discourse fa-fw",
         },
         {
             "name": "Slack",
             "url": "https://join.slack.com/t/festim-dev/shared_invite/zt-246hw8d6o-htWASLsbdosUo_2nRKCf9g",
-            "icon": "fa-brands fa-slack",
+            "icon": "fa-brands fa-slack fa-fw",
         },
     ],
-    "article_header_end": [
-        "navbar-icon-links",
-        "article-header-buttons",
-    ],
+    "header_links_before_dropdown": 7,
+    "analytics": dict(google_analytics_id="G-SCL2TVV7BK"),
 }
 
 html_sidebars = {
     "**": [
-        "navbar-logo",
-        "search-button-field",
-        "sbt-sidebar-nav",
+        "sidebar-nav-bs",
     ],
 }
 
