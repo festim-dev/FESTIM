@@ -1,0 +1,75 @@
+name: Conda Nightly Build
+
+on:
+  schedule:
+    # Every day at 03:00 UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    # Only run on the main repo, not on forks
+    if: github.repository == 'festim-dev/FESTIM'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for versioning
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: build
+          channels: conda-forge
+          channel-priority: strict
+
+      - name: Install build tools
+        shell: bash -l {0}
+        run: |
+          conda install -y conda-build anaconda-client
+
+      - name: Generate nightly version string
+        id: version
+        shell: bash -l {0}
+        run: |
+          # Get base version from your source
+          BASE_VERSION=$(python -c "
+          import re
+          # Adjust this to however your version is defined
+          # Option A: read from pyproject.toml
+          with open('pyproject.toml') as f:
+              text = f.read()
+          match = re.search(r'version\s*=\s*[\"'\''](.*?)[\"'\'']\s*', text)
+          if match:
+              print(match.group(1))
+          else:
+              print('0.0.0')
+          ")
+          DATE=$(date +%Y%m%d)
+          NIGHTLY_VERSION="${BASE_VERSION}.dev${DATE}"
+          echo "version=${NIGHTLY_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Nightly version: ${NIGHTLY_VERSION}"
+
+      - name: Build conda package
+        shell: bash -l {0}
+        env:
+          NIGHTLY_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          conda build conda/recipe \
+            --channel conda-forge \
+            --no-anaconda-upload \
+            --output-folder ./conda-output
+
+      - name: Upload to Anaconda.org
+        shell: bash -l {0}
+        env:
+          ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        run: |
+          anaconda -t "$ANACONDA_TOKEN" upload \
+            --user festim-dev \
+            --label nightly \
+            --force \
+            ./conda-output/noarch/*.tar.bz2
