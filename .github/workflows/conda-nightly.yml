@@ -35,21 +35,8 @@ jobs:
         id: version
         shell: bash -l {0}
         run: |
-          # Get base version from your source
-          BASE_VERSION=$(python -c "
-          import re
-          # Adjust this to however your version is defined
-          # Option A: read from pyproject.toml
-          with open('pyproject.toml') as f:
-              text = f.read()
-          match = re.search(r'version\s*=\s*[\"'\''](.*?)[\"'\'']\s*', text)
-          if match:
-              print(match.group(1))
-          else:
-              print('0.0.0')
-          ")
-          DATE=$(date +%Y%m%d)
-          NIGHTLY_VERSION="${BASE_VERSION}.dev${DATE}"
+          BASE_VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          NIGHTLY_VERSION="${BASE_VERSION}.dev0"
           echo "version=${NIGHTLY_VERSION}" >> "$GITHUB_OUTPUT"
           echo "Nightly version: ${NIGHTLY_VERSION}"
 
@@ -68,8 +55,10 @@ jobs:
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
+          PKG=$(find ./conda-output -name "festim-*" \( -name "*.conda" -o -name "*.tar.bz2" \) | head -1)
+          echo "Uploading: $PKG"
           anaconda -t "$ANACONDA_TOKEN" upload \
             --user festim-dev \
             --label nightly \
             --force \
-            ./conda-output/noarch/*.tar.bz2
+            "$PKG"
