@@ -1,0 +1,48 @@
+{% set name = "festim" %}
+# Pull version dynamically from the source
+{% set version = environ.get("NIGHTLY_VERSION", "0.0.0.dev0") %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ../..
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+  string: nightly_py_{{ PKG_BUILDNUM }}
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=45
+    - wheel
+    - setuptools-scm >=7.0.5
+    - pip
+  run:
+    - python >={{ python_min }}
+    - fenics-dolfinx >=0.9,<=0.10
+    - scifem >=0.2.13
+    - adios4dolfinx
+    - tqdm
+
+test:
+  imports:
+    - festim
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/festim-dev/FESTIM
+  summary: Finite element simulations of hydrogen transport (nightly build)
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - RemDelaporteMathurin
