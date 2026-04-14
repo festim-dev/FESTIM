@@ -66,13 +66,10 @@ jobs:
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-            echo "Built packages:"
-            ls -la ./conda-output/noarch/
-
-            anaconda -t "$ANACONDA_TOKEN" upload \
-              --user festim-dev \
-              --label nightly \
-              --force \
-              ./conda-output/noarch/festim-*.conda \
-              ./conda-output/noarch/festim-*.tar.bz2 \
-              2>/dev/null || true
+          PKG=$(find ./conda-output -name "festim-*" \( -name "*.conda" -o -name "*.tar.bz2" \) | head -1)
+          echo "Uploading: $PKG"
+          anaconda -t "$ANACONDA_TOKEN" upload \
+            --user festim-dev \
+            --label nightly \
+            --force \
+            "$PKG"
