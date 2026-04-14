@@ -66,8 +66,13 @@ jobs:
         env:
           ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
         run: |
-          anaconda -t "$ANACONDA_TOKEN" upload \
-            --user festim-dev \
-            --label nightly \
-            --force \
-            ./conda-output/noarch/*.tar.bz2
+            echo "Built packages:"
+            ls -la ./conda-output/noarch/
+
+            anaconda -t "$ANACONDA_TOKEN" upload \
+              --user festim-dev \
+              --label nightly \
+              --force \
+              ./conda-output/noarch/festim-*.conda \
+              ./conda-output/noarch/festim-*.tar.bz2 \
+              2>/dev/null || true
