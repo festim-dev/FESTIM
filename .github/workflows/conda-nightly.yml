@@ -35,19 +35,17 @@ jobs:
         id: version
         shell: bash -l {0}
         run: |
-          # Get base version from your source
-          BASE_VERSION=$(python -c "
+          BASE_VERSION=$(python << 'EOF'
           import re
-          # Adjust this to however your version is defined
-          # Option A: read from pyproject.toml
-          with open('pyproject.toml') as f:
+          with open("pyproject.toml") as f:
               text = f.read()
-          match = re.search(r'version\s*=\s*[\"'\''](.*?)[\"'\'']\s*', text)
+          match = re.search(r'version\s*=\s*["\x27](.*?)["\x27]', text)
           if match:
               print(match.group(1))
           else:
-              print('0.0.0')
-          ")
+              print("0.0.0")
+          EOF
+          )
           DATE=$(date +%Y%m%d)
           NIGHTLY_VERSION="${BASE_VERSION}.dev${DATE}"
           echo "version=${NIGHTLY_VERSION}" >> "$GITHUB_OUTPUT"
