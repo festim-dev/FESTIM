@@ -1,10 +1,10 @@
 from mpi4py import MPI
 
+import numpy as np
 import pytest
 from dolfinx.fem import Function, functionspace
 from dolfinx.mesh import create_unit_cube
 from ufl import exp
-import numpy as np
 
 import festim as F
 
