@@ -12,8 +12,6 @@
 import os
 import sys
 
-import map
-
 sys.path.insert(0, os.path.abspath("../../src"))
 
 
@@ -22,6 +20,7 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # Add the directory containing your Python script to the Python path
 sys.path.insert(0, os.path.abspath("."))
 
+import map
 
 m = map.generate_map()
 current_dir = os.path.dirname(__file__)
