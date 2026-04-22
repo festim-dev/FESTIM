@@ -3,6 +3,7 @@ from mpi4py import MPI
 import dolfinx
 import dolfinx.fem.petsc
 import numpy as np
+import pytest
 import ufl
 
 import festim as F
@@ -396,3 +397,51 @@ def test_2_mats_particle_flux_bc(tmpdir):
 
     my_model.initialise()
     my_model.run()
+
+
+def test_all_cells_are_not_tagged():
+    """
+    Checks that an error is raised when not all cells are tagged with a non-zero value.
+    This can be caused by a volume subdomain not being defined correctly, or by a mesh
+    that is too coarse to capture the geometry of the volume subdomains.
+    """
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
+
+    surf1 = F.SurfaceSubdomain1D(id=1, x=0)
+    surf2 = F.SurfaceSubdomain1D(id=2, x=1)
+
+    my_model.subdomains = [vol1, vol2, surf1, surf2]
+
+    my_model.surface_to_volume = {
+        surf1: vol1,
+        surf2: vol2,
+    }
+    my_model.interfaces = [F.Interface(id=3, subdomains=[vol1, vol2])]
+
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 10))
+
+    my_model.species = [F.Species("H", subdomains=[vol1, vol2])]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(species=my_model.species[0], subdomain=surf1, value=1),
+    ]
+
+    my_model.temperature = 300
+
+    my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
+
+    my_model.exports = [
+        F.AverageVolume(field=my_model.species[0], volume=vol1),
+        F.AverageVolume(field=my_model.species[0], volume=vol2),
+    ]
+
+    with pytest.raises(
+        AssertionError, match="All cells must be tagged with a non-zero value"
+    ):
+        my_model.initialise()

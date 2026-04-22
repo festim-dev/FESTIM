@@ -214,3 +214,23 @@ def test_name_setter():
 
     with pytest.raises(TypeError, match="Name must be a string"):
         F.VolumeSubdomain(id=1, material=None, name=1)
+
+
+def test_all_cells_are_not_tagged():
+    """
+    Checks that an error is raised when not all cells are tagged with a non-zero value.
+    This can be caused by a volume subdomain not being defined correctly, or by a mesh
+    that is too coarse to capture the geometry of the volume subdomains.
+    """
+
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
+
+    mesh = F.Mesh1D(np.linspace(0, 1, 10))
+
+    with pytest.raises(
+        AssertionError, match="All cells must be tagged with a non-zero value"
+    ):
+        mesh.define_meshtags(surface_subdomains=[], volume_subdomains=[vol1, vol2])
