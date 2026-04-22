@@ -401,7 +401,7 @@ mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
 vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
 vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
 my_model = F.HydrogenTransportProblemDiscontinuous()
-my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
+my_model.mesh = F.Mesh1D(np.linspace(0, 1, 101))
 
 my_model.subdomains = [vol1, vol2]
 
