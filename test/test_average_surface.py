@@ -6,7 +6,7 @@ import festim as F
 
 
 def test_average_surface_compute_1D():
-    """Test that the average surface export computes the correct value"""
+    """Test that the average surface export computes the correct value."""
 
     # BUILD
     L = 6.0

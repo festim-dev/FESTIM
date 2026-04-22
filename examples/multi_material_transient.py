@@ -36,8 +36,8 @@ right_domain = F.VolumeSubdomain1D(
 left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
-# the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
-# TODO remove mesh and meshtags from these arguments
+# the ids here are arbitrary in 1D, you can put anything as long as it's not the same
+# as the surfaces
 my_model.interfaces = [
     F.Interface(6, (left_domain, middle_domain)),
     F.Interface(7, (middle_domain, right_domain)),

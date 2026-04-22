@@ -21,9 +21,10 @@ from festim.subdomain.volume_subdomain import (
 
 
 class ProblemBase:
-    """
-    Base class for :py:class:`HeatTransferProblem <festim.heat_transfer_problem.HeatTransferProblem>` and
-    :py:class:`HydrogenTransportProblem <festim.hydrogen_transport_problem.HydrogenTransportProblem>`.
+    """Base class for :py:class:`HeatTransferProblem
+    <festim.heat_transfer_problem.HeatTransferProblem>` and
+    :py:class:`HydrogenTransportProblem
+    <festim.hydrogen_transport_problem.HydrogenTransportProblem>`.
 
     Attributes:
         show_progress_bar: If `True` a progress bar is displayed during the simulation
@@ -85,8 +86,8 @@ class ProblemBase:
         return self._timesteps
 
     def define_meshtags_and_measures(self):
-        """Defines the facet and volume meshtags of the model which are used
-        to define the measures fo the model, dx and ds"""
+        """Defines the facet and volume meshtags of the model which are used to define
+        the measures fo the model, dx and ds."""
 
         if isinstance(self.mesh, F.MeshFromXDMF):
             # TODO: fix naming inconsistency between facet and surface meshtags
@@ -119,16 +120,15 @@ class ProblemBase:
         )
 
     def define_boundary_conditions(self):
-        """Defines the dirichlet boundary conditions of the model"""
+        """Defines the dirichlet boundary conditions of the model."""
         for bc in self.boundary_conditions:
             if isinstance(bc, F.DirichletBCBase):
                 form = self.create_dirichletbc_form(bc)
                 self.bc_forms.append(form)
 
     def get_petsc_options(self) -> dict[str, Any]:
-        """
-        Gets the PETSc options to pass to the NewtonProblem solver. Default
-        options are updated with user-provided options, if any.
+        """Gets the PETSc options to pass to the NewtonProblem solver. Default options
+        are updated with user-provided options, if any.
 
         Returns:
             the petsc options to pass to the NewtonProblem solver.
@@ -165,7 +165,7 @@ class ProblemBase:
         return petsc_options
 
     def create_solver(self):
-        """Creates the solver of the model"""
+        """Creates the solver of the model."""
 
         if Version(dolfinx.__version__) == Version("0.9.0"):
             problem = fem.petsc.NonlinearProblem(
@@ -226,7 +226,7 @@ class ProblemBase:
                 del opts[f"{prefix}{k}"]
 
     def run(self):
-        """Runs the model"""
+        """Runs the model."""
 
         if self.settings.transient:
             # Solve transient
@@ -250,7 +250,7 @@ class ProblemBase:
             self.post_processing()
 
     def iterate(self):
-        """Iterates the model for a given time step"""
+        """Iterates the model for a given time step."""
         self._timesteps.append(float(self.t))
 
         if self.show_progress_bar:
@@ -276,7 +276,7 @@ class ProblemBase:
             _ = self.solver.solve()
             converged_reason = self.solver.solver.getConvergedReason()
             assert converged_reason > 0, (
-                f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."
+                f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."  # noqa: E501
             )
             nb_its = self.solver.solver.getIterationNumber()
 

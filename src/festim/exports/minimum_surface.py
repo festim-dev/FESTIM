@@ -7,12 +7,13 @@ from festim.exports.surface_quantity import SurfaceQuantity
 
 
 class MinimumSurface(SurfaceQuantity):
-    """Computes the minimum value of a field on a given surface
+    """Computes the minimum value of a field on a given surface.
 
     Args:
         field (festim.Species): species for which the minimum surface is computed
         surface (festim.SurfaceSubdomain): surface subdomain
-        filename (str, optional): name of the file to which the minimum surface is exported
+        filename (str, optional): name of the file to which the minimum surface
+        is exported
 
     Attributes:
         see `festim.SurfaceQuantity`
@@ -23,10 +24,8 @@ class MinimumSurface(SurfaceQuantity):
         return f"Minimum {self.field.name} surface {self.surface.id}"
 
     def compute(self):
-        """
-        Computes the minimum value of the field on the defined surface
-        subdomain, and appends it to the data list
-        """
+        """Computes the minimum value of the field on the defined surface subdomain, and
+        appends it to the data list."""
         solution = self.field.post_processing_solution
         entities = self.facet_meshtags.find(self.surface.id)
         if isinstance(solution, dolfinx.fem.Function):

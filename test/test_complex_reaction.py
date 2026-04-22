@@ -5,10 +5,10 @@ import festim as F
 
 
 def concentration_A_exact(t, c_A_0, k, p):
-    """Analytical solution for the concentration of species A in a reaction A + B <-> C + D
-    assuming [A]_0 = [B]_0 and [C]_0 = [D]_0 = 0
-    can be obtained by solving
-    d[A]/dt = -k[A][B] + p[C][D]
+    """Analytical solution for the concentration of species A in a reaction A + B <-> C
+    + D assuming [A]_0 = [B]_0 and [C]_0 = [D]_0 = 0 can be obtained by solving d[A]/dt
+    = -k[A][B] + p[C][D]
+
     where [A] = [B] and [C] = [D] = 0 at t=0
     Moreover, [C] = [D] = [A]_0 - [A]
     The equation then becomes
@@ -39,8 +39,8 @@ def concentration_A_exact(t, c_A_0, k, p):
 
 
 def model_test_reaction(stepsize=1, k=350e-4, p=120e-4, c_A_0=1):
-    """Creates a festim model with a single reaction and runs it.
-    The reaction is A + B <-> C + D
+    """Creates a festim model with a single reaction and runs it. The reaction is A + B
+    <-> C + D.
 
     Args:
         stepsize (float): the stepsize
@@ -142,7 +142,8 @@ def model_test_reaction(stepsize=1, k=350e-4, p=120e-4, c_A_0=1):
 
 
 def compute_error(model):
-    """Computes the relative L2 error norm between the analytical solution and the numerical solution
+    """Computes the relative L2 error norm between the analytical solution and the
+    numerical solution.
 
     Args:
         model (F.HydrogenTransportModel): the numerical festim model
@@ -170,14 +171,15 @@ def compute_error(model):
 
 @pytest.mark.parametrize("k, p, c_A_0", [(350e-4, 120e-4, 3), (200e-4, 100e-4, 2)])
 def test_reaction(k, p, c_A_0):
-    """Test the reaction A + B <-> C + D with a festim model and compare the results with the analytical solution"""
+    """Test the reaction A + B <-> C + D with a festim model and compare the results
+    with the analytical solution."""
     model = model_test_reaction(stepsize=0.5, k=k, p=p, c_A_0=c_A_0)
     error = compute_error(model)
     assert error < 1e-2
 
 
 def test_surface_reaction_in_discontinuous_case():
-    """Test the SurfaceReactionBC in a discontinuous problem setup"""
+    """Test the SurfaceReactionBC in a discontinuous problem setup."""
     my_model = F.HydrogenTransportProblemDiscontinuous()
 
     my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=1000))

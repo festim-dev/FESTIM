@@ -11,7 +11,7 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy")
 
 
 def test_total_volume_export_compute():
-    """Test that the total volume export computes the correct value"""
+    """Test that the total volume export computes the correct value."""
 
     # BUILD
     L = 4.0
@@ -48,7 +48,7 @@ def test_total_volume_export_compute():
 
 @pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
 def test_title_generation(tmp_path, value):
-    """Test that the title is made to be written to the header in a csv or txt file"""
+    """Test that the title is made to be written to the header in a csv or txt file."""
     my_export = F.TotalVolume(
         filename=os.path.join(tmp_path, f"{value}"),
         field=F.Species("TEST"),

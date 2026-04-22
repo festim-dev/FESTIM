@@ -2,8 +2,7 @@ import numpy as np
 
 
 class Stepsize:
-    """
-    A class for evaluating the stepsize of transient simulations.
+    """A class for evaluating the stepsize of transient simulations.
 
     Args:
         initial_value (float, int): initial stepsize.
@@ -113,8 +112,7 @@ class Stepsize:
         self._max_stepsize = value
 
     def get_max_stepsize(self, t):
-        """
-        Returns the maximum stepsize at time t.
+        """Returns the maximum stepsize at time t.
 
         Args:
             t (float): the current time
@@ -152,9 +150,7 @@ class Stepsize:
         return updated_value
 
     def is_adapt(self, t):
-        """
-        Methods that defines if the stepsize should be
-        adapted or not
+        """Methods that defines if the stepsize should be adapted or not.
 
         Args:
             t (float): the current time
@@ -165,8 +161,8 @@ class Stepsize:
         return True
 
     def next_milestone(self, current_time: float):
-        """Returns the next milestone that the simulation must pass.
-        Returns None if there are no more milestones.
+        """Returns the next milestone that the simulation must pass. Returns None if
+        there are no more milestones.
 
         Args:
             current_time (float): current time.

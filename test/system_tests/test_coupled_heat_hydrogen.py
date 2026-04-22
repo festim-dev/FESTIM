@@ -9,7 +9,7 @@ from .tools import error_L2
 def test_MMS_coupled_problem():
     """MMS coupled heat and hydrogen test with 1 mobile species and 1 trap in a 1s
     transient, the values of the temperature, mobile and trapped solutions at the last
-    time step is compared to an analytical solution"""
+    time step is compared to an analytical solution."""
 
     # coupled simulation properties
     density, heat_capacity = 1.2, 2.6
@@ -70,11 +70,13 @@ def test_MMS_coupled_problem():
     # define hydrogen problem
     def exact_mobile_solution(x, t):
         return 2 * x[0] ** 2 + 15 * t
+
     def exact_trapped_solution(x, t):
         return 4 * x[0] ** 2 + 12 * t
 
     def exact_mobile_intial_cond(x):
         return exact_mobile_solution(x, t=0)
+
     def exact_trapped_intial_cond(x):
         return exact_trapped_solution(x, t=0)
 
@@ -83,8 +85,10 @@ def test_MMS_coupled_problem():
 
     def D(x, t):
         return D_0 * ufl.exp(-E_D / (k_B * exact_T_solution(x, t)))
+
     def k(x, t):
         return k_0 * ufl.exp(-E_k / (k_B * exact_T_solution(x, t)))
+
     def p(x, t):
         return p_0 * ufl.exp(-E_p / (k_B * exact_T_solution(x, t)))
 
@@ -186,8 +190,10 @@ def test_MMS_coupled_problem():
 
     def exact_final_T(x):
         return exact_T_solution(x, t=final_time)
+
     def exact_final_mobile(x):
         return exact_mobile_solution(x, t=final_time)
+
     def exact_final_trapped(x):
         return exact_trapped_solution(x, t=final_time)
 
@@ -204,7 +210,7 @@ def test_MMS_coupled_problem():
 def test_coupled_problem_non_matching_mesh():
     """MMS coupled heat and hydrogen test with 1 mobile species in a 1s transient with
     mismatched meshes, the value of the mobile solution at the last time step is
-    compared to an analytical solution"""
+    compared to an analytical solution."""
 
     # coupled simulation properties
     density, heat_capacity = 1.3, 2.3

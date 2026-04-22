@@ -5,7 +5,7 @@ import festim as F
 
 
 def test_maximum_volume_compute_1D():
-    """Test that the maximum volume export computes the right value"""
+    """Test that the maximum volume export computes the right value."""
 
     # BUILD
     L = 6

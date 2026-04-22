@@ -8,7 +8,7 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class ExportBaseClass:
-    """Export functions to VTX file
+    """Export functions to VTX file.
 
     Args:
         filename: The name of the output file
@@ -49,7 +49,7 @@ class ExportBaseClass:
 
 
 class VTXTemperatureExport(ExportBaseClass):
-    """Export temperature field functions to VTX file
+    """Export temperature field functions to VTX file.
 
     Args:
         filename: The name of the output file
@@ -74,7 +74,7 @@ class VTXTemperatureExport(ExportBaseClass):
 
 
 class VTXSpeciesExport(ExportBaseClass):
-    """Export species field functions to VTX file
+    """Export species field functions to VTX file.
 
     Args:
         filename: The name of the output file
@@ -117,8 +117,7 @@ class VTXSpeciesExport(ExportBaseClass):
 
     @field.setter
     def field(self, value: Species | list[Species]):
-        """
-        Update the field to export.
+        """Update the field to export.
 
         Args:
             value: The species to export
@@ -149,9 +148,9 @@ class VTXSpeciesExport(ExportBaseClass):
         self._field = val
 
     def get_functions(self) -> list[fem.Function]:
-        """
-        Returns list of species for a given subdomain. If using legacy mode, return the
-        whole species.
+        """Returns list of species for a given subdomain.
+
+        If using legacy mode, return the whole species.
         """
 
         legacy_output: bool = False

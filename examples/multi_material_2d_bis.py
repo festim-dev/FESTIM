@@ -167,10 +167,12 @@ try:
     from dolfinx.mesh import EntityMap  # noqa: F401
 
     legacy_entity_map = False
+
     def entity_map_wrapper(e_map):
         return list(e_map.values())
 except ImportError:
     legacy_entity_map = True
+
     def entity_map_wrapper(e_map):
         return e_map
 

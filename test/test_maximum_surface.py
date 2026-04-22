@@ -5,7 +5,7 @@ import festim as F
 
 
 def test_maximum_surface_compute_1D():
-    """Test that the maximum surface export computes the correct value"""
+    """Test that the maximum surface export computes the correct value."""
 
     # BUILD
     L = 4.0

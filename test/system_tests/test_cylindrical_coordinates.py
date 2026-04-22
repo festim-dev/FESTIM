@@ -6,10 +6,8 @@ from .tools import error_L2
 
 
 def test_run_MMS_cylindrical():
-    """
-    Tests that festim produces the correct concentration field in cylindrical
-    coordinates
-    """
+    """Tests that festim produces the correct concentration field in cylindrical
+    coordinates."""
 
     my_mesh = F.Mesh1D(vertices=np.linspace(1, 2, 500), coordinate_system="cylindrical")
 
@@ -68,10 +66,8 @@ def test_run_MMS_cylindrical():
 
 
 def test_run_MMS_cylindrical_mixed_domain():
-    """
-    Tests that festim produces the correct concentration field in cylindrical
-    coordinates in a discontinuous domain with two materials
-    """
+    """Tests that festim produces the correct concentration field in cylindrical
+    coordinates in a discontinuous domain with two materials."""
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
 
@@ -134,6 +130,7 @@ def test_run_MMS_cylindrical_mixed_domain():
 
     def f_left(x):
         return -D * lap_c(x[0])
+
     def f_right(x):
         return -D * K_S_right / K_S_left * lap_c(x[0])
 

@@ -13,22 +13,26 @@ class Reaction:
     """A reaction between two species, with a forward and backward rate.
 
     Arguments:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species, F.ImplicitSpecies]]): The reactant.
+        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
+        F.ImplicitSpecies]]): The reactant.
         product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction takes place.
+        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
+        takes place.
 
     Attributes:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species, F.ImplicitSpecies]]): The reactant.
+        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
+        F.ImplicitSpecies]]): The reactant.
         product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction takes place.
+        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
+        takes place.
 
     Examples:
 
@@ -53,7 +57,6 @@ class Reaction:
             # compute the reaction term at a given temperature
             temperature = 300.0
             reaction_term = reaction.reaction_term(temperature)
-
     """
 
     def __init__(
@@ -84,7 +87,7 @@ class Reaction:
             value = [value]
         if len(value) == 0:
             raise ValueError(
-                "reactant must be an entry of one or more species objects, not an empty list."
+                "reactant must be an entry of one or more species objects, not an empty list."  # noqa: E501
             )
         for i in value:
             if not isinstance(i, (_Species, _ImplicitSpecies)):
@@ -101,7 +104,7 @@ class Reaction:
             products = " + ".join([str(product) for product in self.product])
         else:
             products = self.product
-        return f"Reaction({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
+        return f"Reaction({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"  # noqa: E501
 
     def __str__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])

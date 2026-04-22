@@ -112,7 +112,9 @@ def run(N):
     my_problem.settings = F.Settings(
         atol=1e-8,
         rtol=1e-10,
-        final_time=1,  # final time shouldn't be too long so that a potential error at the initial timestep is not negligible
+        # final time shouldn't be too long so that a potential error at the
+        # initial timestep is not negligible
+        final_time=1,
     )
 
     # Forward euler isn't great so dt should be small
@@ -127,7 +129,8 @@ def run(N):
     my_problem.run()
 
     computed_solution = my_problem.u
-    # we use the exact final time of the simulation which may differ from the one specified in the settings
+    # we use the exact final time of the simulation which may differ from
+    # the one specified in the settings
     final_time_sim = my_problem.t.value
 
     def exact_solution_end(x):

@@ -5,7 +5,7 @@ import festim as F
 
 
 def test_minimum_surface_export_compute_1D():
-    """Test that the minimum surface export computes the correct value"""
+    """Test that the minimum surface export computes the correct value."""
 
     # BUILD
     L = 4.0

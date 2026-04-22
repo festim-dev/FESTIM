@@ -12,7 +12,7 @@ from packaging import version
 def as_fenics_constant(
     value: float | int | fem.Constant, mesh: dolfinx.mesh.Mesh
 ) -> fem.Constant:
-    """Converts a value to a dolfinx.Constant
+    """Converts a value to a dolfinx.Constant.
 
     Args:
         value: the value to convert
@@ -41,7 +41,7 @@ def as_mapped_function(
     temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
 ) -> ufl.core.expr.Expr:
     """Maps a user given callable function to the mesh, time or temperature within
-    festim as needed
+    festim as needed.
 
     Args:
         value: the callable to convert
@@ -76,7 +76,7 @@ def as_fenics_interp_expr_and_function(
 ) -> tuple[fem.Expression, fem.Function]:
     """Takes a user given callable function, maps the function to the mesh, time or
     temperature within festim as needed. Then creates the fenics interpolation
-    expression and function objects
+    expression and function objects.
 
     Args:
         value: the callable to convert
@@ -104,9 +104,8 @@ def as_fenics_interp_expr_and_function(
 
 
 class Value:
-    """
-    A class to handle input values from users and convert them to a relevent fenics
-    object
+    """A class to handle input values from users and convert them to a relevent fenics
+    object.
 
     Args:
         input_value: The value of the user input
@@ -119,7 +118,6 @@ class Value:
         explicit_time_dependent : True if the user input value is explicitly time
             dependent
         temperature_dependent : True if the user input value is temperature dependent
-
     """
 
     input_value: (
@@ -177,7 +175,7 @@ class Value:
 
     @property
     def explicit_time_dependent(self) -> bool:
-        """Returns true if the value given is time dependent"""
+        """Returns true if the value given is time dependent."""
         if self.input_value is None:
             return False
         if isinstance(self.input_value, fem.Constant | ufl.core.expr.Expr):
@@ -190,7 +188,7 @@ class Value:
 
     @property
     def temperature_dependent(self) -> bool:
-        """Returns true if the value given is temperature dependent"""
+        """Returns true if the value given is temperature dependent."""
         if self.input_value is None:
             return False
         if isinstance(self.input_value, fem.Constant | ufl.core.expr.Expr):
@@ -208,8 +206,8 @@ class Value:
         temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
         up_to_ufl_expr: bool | None = False,
     ):
-        """Converts a user given value to a relevent fenics object depending
-        on the type of the value provided
+        """Converts a user given value to a relevent fenics object depending on the type
+        of the value provided.
 
         Args:
             function_space: the function space of the fenics object, optional
@@ -264,7 +262,7 @@ class Value:
                 )
 
     def update(self, t: float):
-        """Updates the value
+        """Updates the value.
 
         Args:
             t: the time
@@ -285,9 +283,11 @@ dolfinx_version = dolfinx.__version__
 
 # Define the appropriate method based on the version
 if version.parse(dolfinx_version) > version.parse("0.9.0"):
+
     def get_interpolation_points(element):
         return element.interpolation_points
 else:
+
     def get_interpolation_points(element):
         return element.interpolation_points()
 
@@ -324,8 +324,7 @@ def nmm_interpolate(
 def is_it_time_to_export(
     times: list | None, current_time: float, atol=0, rtol=1.0e-5
 ) -> bool:
-    """
-    Checks if the exported field should be written to a file or not based on the
+    """Checks if the exported field should be written to a file or not based on the
     current time and the times in `export.times`
 
     After a successful match, the corresponding time is removed from the list to
@@ -392,7 +391,7 @@ def SnesMonitor(snes, iter, rnorm):
 
         dolfinx.log.log(
             dolfinx.log.LogLevel.INFO,
-            f"SNES {iter=} ; {rnorm=:.5e} ({atol=}) ; {relative_residual=:.5e} ({rtol=}) ; {stepsize_rel=:.5e} ({stol=:.5e})",
+            f"SNES {iter=} ; {rnorm=:.5e} ({atol=}) ; {relative_residual=:.5e} ({rtol=}) ; {stepsize_rel=:.5e} ({stol=:.5e})",  # noqa: E501
         )
 
         # Update previous xnorm

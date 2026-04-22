@@ -7,7 +7,7 @@ dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
 
 
 def test_filename_setter_raises_TypeError():
-    """Test that a TypeError is raised when the filename is not a string"""
+    """Test that a TypeError is raised when the filename is not a string."""
 
     with pytest.raises(TypeError, match="filename must be of type str"):
         F.VolumeQuantity(
@@ -18,7 +18,8 @@ def test_filename_setter_raises_TypeError():
 
 
 def test_filename_setter_raises_ValueError():
-    """Test that a ValueError is raised when the filename does not end with .csv or .txt"""
+    """Test that a ValueError is raised when the filename does not end with .csv or
+    .txt."""
 
     with pytest.raises(ValueError):
         F.VolumeQuantity(
@@ -29,7 +30,7 @@ def test_filename_setter_raises_ValueError():
 
 
 def test_field_setter_raises_TypeError():
-    """Test that a TypeError is raised when the field is not a F.Species"""
+    """Test that a TypeError is raised when the field is not a F.Species."""
 
     with pytest.raises(TypeError):
         F.VolumeQuantity(

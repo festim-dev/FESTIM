@@ -71,18 +71,15 @@ def test_2_materials_2d_mms(tmpdir):
     K_S_bot = 6.0
     D_top = 2.0
     D_bot = 5.0
+
     def c_exact_top_ufl(x):
-        return (
-            1 + ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
-        )
+        return 1 + ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
 
     def c_exact_bot_ufl(x):
         return K_S_bot / K_S_top * c_exact_top_ufl(x)
 
     def c_exact_top_np(x):
-        return (
-            1 + np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
-        )
+        return 1 + np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
 
     def c_exact_bot_np(x):
         return K_S_bot / K_S_top * c_exact_top_np(x)
@@ -129,13 +126,13 @@ def test_2_materials_2d_mms(tmpdir):
     ]
 
     def source_top_val(x):
-        return (
-            8 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
-        )
+        return 8 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
+
     def source_bottom_val(x):
         return (
             40 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
         )
+
     my_model.sources = [
         F.ParticleSource(volume=top_domain, species=H, value=source_top_val),
         F.ParticleSource(volume=bottom_domain, species=H, value=source_bottom_val),
@@ -267,8 +264,8 @@ def test_3_materials_transient(tmpdir):
     left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
     right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
-    # the ids here are arbitrary in 1D, you can put anything as long as it's not the same as the surfaces
-    # TODO remove mesh and meshtags from these arguments
+    # the ids here are arbitrary in 1D, you can put anything as long as it's not the
+    # same as the surfaces
     my_model.interfaces = [
         F.Interface(6, (left_domain, middle_domain)),
         F.Interface(7, (middle_domain, right_domain)),
@@ -403,8 +400,9 @@ def test_2_mats_particle_flux_bc(tmpdir):
 
 
 def test_all_cells_are_not_tagged():
-    """
-    Checks that an error is raised when not all cells are tagged with a non-zero value.
+    """Checks that an error is raised when not all cells are tagged with a non-zero
+    value.
+
     This can be caused by a volume subdomain not being defined correctly, or by a mesh
     that is too coarse to capture the geometry of the volume subdomains.
     """

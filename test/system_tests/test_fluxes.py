@@ -11,9 +11,7 @@ x_1d = ufl.SpatialCoordinate(test_mesh_1d.mesh)
 
 
 def test_flux_bc_1_mobile_MMS_steady_state():
-    """
-    MMS test with a flux BC considering one mobile species at steady state
-    """
+    """MMS test with a flux BC considering one mobile species at steady state."""
 
     def u_exact(x):
         return 1 + 2 * x[0] ** 2
@@ -61,9 +59,7 @@ def test_flux_bc_1_mobile_MMS_steady_state():
 
 
 def test_flux_bc_heat_transfer_steady_state():
-    """
-    MMS test with a flux BC in a heat transfer problem at steady state
-    """
+    """MMS test with a flux BC in a heat transfer problem at steady state."""
 
     def u_exact(x):
         return 1 + 2 * x[0] ** 2

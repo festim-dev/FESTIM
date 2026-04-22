@@ -1,4 +1,5 @@
 import dolfinx.fem as fem
+import matplotlib.pyplot as plt
 import numpy as np
 import ufl
 
@@ -98,7 +99,6 @@ my_model.settings.stepsize = 0.1
 my_model.initialise()
 my_model.run()
 
-import matplotlib.pyplot as plt
 
 plt.stackplot(
     H_flux_left.t,

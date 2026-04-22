@@ -7,10 +7,8 @@ from .tools import error_L2
 
 
 def test_run_MMS_spherical():
-    """
-    Tests that festim produces the correct concentration field in spherical
-    coordinates
-    """
+    """Tests that festim produces the correct concentration field in spherical
+    coordinates."""
 
     my_mesh = F.Mesh1D(vertices=np.linspace(1, 2, 1000), coordinate_system="spherical")
     fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
@@ -69,10 +67,8 @@ def test_run_MMS_spherical():
 
 
 def test_run_MMS_spherical_mixed_domain():
-    """
-    Tests that festim produces the correct concentration field in spherical
-    coordinates in a discontinuous domain with two materials
-    """
+    """Tests that festim produces the correct concentration field in spherical
+    coordinates in a discontinuous domain with two materials."""
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
 
@@ -135,6 +131,7 @@ def test_run_MMS_spherical_mixed_domain():
 
     def f_left(x):
         return -D * lap_c(x[0])
+
     def f_right(x):
         return -D * K_S_right / K_S_left * lap_c(x[0])
 

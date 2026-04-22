@@ -15,7 +15,7 @@ test_mesh = F.Mesh1D(np.linspace(0, 1, 100))
 
 
 def test_init():
-    """Test that the attributes are set correctly"""
+    """Test that the attributes are set correctly."""
     # create an InitialConcentration object
     value = 1.0
     species = F.Species("test")
@@ -38,8 +38,8 @@ def test_init():
     ],
 )
 def test_create_value_fenics(input_value, expected_type):
-    """Test that after calling .create_expr_fenics, the prev_solution
-    attribute of the species has the correct value at x=1.0."""
+    """Test that after calling .create_expr_fenics, the prev_solution attribute of the
+    species has the correct value at x=1.0."""
 
     # BUILD
 
@@ -66,7 +66,7 @@ def test_create_value_fenics(input_value, expected_type):
 
 
 def test_warning_raised_when_giving_time_as_arg():
-    """Test that a warning is raised if the value is given with t in its arguments"""
+    """Test that a warning is raised if the value is given with t in its arguments."""
 
     vol = F.VolumeSubdomain(id=1, material=dummy_mat)
 
@@ -83,13 +83,13 @@ def test_warning_raised_when_giving_time_as_arg():
     T = fem.Constant(test_mesh.mesh, 10.0)
 
     with pytest.raises(
-        ValueError, match="Initial condition cannot be a function of time."
+        ValueError, match=r"Initial condition cannot be a function of time."
     ):
         init_cond.create_expr_fenics(test_mesh.mesh, T, V)
 
 
 def test_warning_raised_when_giving_time_as_arg_initial_temperature():
-    """Test that a warning is raised if the value is given with t in its arguments"""
+    """Test that a warning is raised if the value is given with t in its arguments."""
 
     # give function to species
     V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
@@ -104,7 +104,7 @@ def test_warning_raised_when_giving_time_as_arg_initial_temperature():
     init_cond = F.InitialTemperature(value=my_value, volume=vol)
 
     with pytest.raises(
-        ValueError, match="Initial condition cannot be a function of time."
+        ValueError, match=r"Initial condition cannot be a function of time."
     ):
         init_cond.create_expr_fenics(test_mesh.mesh, V)
 
@@ -118,8 +118,8 @@ def test_warning_raised_when_giving_time_as_arg_initial_temperature():
     ],
 )
 def test_create_value_fenics_initial_temperature(input_value, expected_type):
-    """Test that after calling .create_expr_fenics, the prev_solution
-    attribute of the species has the correct value at x=1.0."""
+    """Test that after calling .create_expr_fenics, the prev_solution attribute of the
+    species has the correct value at x=1.0."""
 
     # BUILD
 
@@ -142,10 +142,8 @@ def test_create_value_fenics_initial_temperature(input_value, expected_type):
 
 
 def test_checkpointing_single_species(tmpdir):
-    """
-    Writes a P1 function to a file and reads it back in as initial condition
-    for one species.
-    """
+    """Writes a P1 function to a file and reads it back in as initial condition for one
+    species."""
     # build initial condition
     mesh = dolfinx.mesh.create_unit_square(
         MPI.COMM_WORLD, nx=6, ny=6, cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
@@ -193,10 +191,8 @@ def test_checkpointing_single_species(tmpdir):
 
 
 def test_checkpointing_multiple_species(tmpdir):
-    """
-    Writes two P1 functions to a file and reads them back in as initial conditions
-    for two species.
-    """
+    """Writes two P1 functions to a file and reads them back in as initial conditions
+    for two species."""
     # build initial condition
     mesh = dolfinx.mesh.create_unit_square(
         MPI.COMM_WORLD, nx=6, ny=6, cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
@@ -274,11 +270,11 @@ def test_checkpointing_multiple_species(tmpdir):
     ],
 )
 def test_error_raised_with_volume_setter(vol):
-    """Test that the volume setter works correctly"""
+    """Test that the volume setter works correctly."""
 
     spe = F.Species("test")
     with pytest.raises(
-        TypeError, match="volume must be of type festim.VolumeSubdomain"
+        TypeError, match=r"volume must be of type festim.VolumeSubdomain"
     ):
         F.InitialConcentration(value=1.0, species=spe, volume=vol)
 
@@ -292,15 +288,15 @@ def test_error_raised_with_volume_setter(vol):
     ],
 )
 def test_error_raised_with_species_setter(species):
-    """Test that the volume setter works correctly"""
+    """Test that the volume setter works correctly."""
 
     vol = F.VolumeSubdomain(id=1, material=dummy_mat)
-    with pytest.raises(TypeError, match="species must be of type festim.Species"):
+    with pytest.raises(TypeError, match=r"species must be of type festim.Species"):
         F.InitialConcentration(value=1.0, species=species, volume=vol)
 
 
 def test_create_initial_temperature_from_function():
-    """Test that the initial temperature can be created from a function"""
+    """Test that the initial temperature can be created from a function."""
 
     # create a volume subdomain
     vol = F.VolumeSubdomain(id=1, material=dummy_mat)
@@ -308,6 +304,7 @@ def test_create_initial_temperature_from_function():
     # create an initial temperature from a function
     def T(x):
         return 300 + 10 * x[0]
+
     V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     T_func = fem.Function(V)
     T_func.interpolate(T)
@@ -323,7 +320,7 @@ def test_create_initial_temperature_from_function():
 
 def test_initial_condition_discontinuous():
     """Test the initial condition in a multispecies case with a discontinuous volume
-    subdomain"""
+    subdomain."""
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
 
@@ -392,7 +389,7 @@ def test_initial_condition_discontinuous():
 
 def test_initial_condition_continuous_multimaterial():
     """Test the initial condition in multi-material continous case that the condition is
-    only appilied in the correct volume subdomain"""
+    only appilied in the correct volume subdomain."""
 
     my_model = F.HydrogenTransportProblem()
 
@@ -436,7 +433,7 @@ def test_initial_condition_continuous_multimaterial():
 
 
 def test_initial_condition_mixed_domain():
-    """Test the initial condition in a multi-material discontinous case"""
+    """Test the initial condition in a multi-material discontinous case."""
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
 
@@ -481,7 +478,7 @@ def test_initial_condition_mixed_domain():
 
 
 def test_initial_condition_mixed_domain_multispecies():
-    """Test the initial condition in a multispecies multi-material discontinous case"""
+    """Test the initial condition in a multispecies multi-material discontinous case."""
 
     my_model = F.HydrogenTransportProblemDiscontinuous()
 

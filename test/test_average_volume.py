@@ -8,7 +8,7 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy")
 
 
 def test_average_volume_compute_1D():
-    """Test that the average volume export computes the correct value"""
+    """Test that the average volume export computes the correct value."""
 
     # BUILD
     L = 6.0

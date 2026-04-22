@@ -15,7 +15,7 @@ from .tools import error_L2
 def test_MMS_1_species_1_trap_with_advection():
     """MMS coupled heat and hydrogen test with 1 mobile species and 1 trap in a 1s
     transient, the values of the temperature, mobile and trapped solutions at the last
-    time step is compared to an analytical solution"""
+    time step is compared to an analytical solution."""
 
     test_mesh_2d = create_unit_square(MPI.COMM_WORLD, 200, 200)
     x_2d = ufl.SpatialCoordinate(test_mesh_2d)
@@ -38,8 +38,10 @@ def test_MMS_1_species_1_trap_with_advection():
 
     V = fem.functionspace(test_mesh_2d, ("Lagrange", 1))
     T = fem.Function(V)
+
     def T_expr(x):
         return 100 + 200 * x[0] + 100 * x[1]
+
     T.interpolate(T_expr)
 
     # create velocity field
@@ -66,6 +68,7 @@ def test_MMS_1_species_1_trap_with_advection():
     # define hydrogen problem
     def exact_mobile_solution(x):
         return 200 * x[0] ** 2 + 300 * x[1] ** 2
+
     def exact_trapped_solution(x):
         return 10 * x[0] ** 2 + 10 * x[1] ** 2
 

@@ -124,13 +124,17 @@ try:
     from dolfinx.mesh import EntityMap  # noqa: F401
 
     legacy_entity_map = False
+
     def entity_map_wrapper(e_map):
         return list(e_map.values())
+
     entity_maps = [sd.cell_map for sd in my_model.volume_subdomains]
 except ImportError:
     legacy_entity_map = True
+
     def entity_map_wrapper(e_map):
         return e_map
+
     entity_maps = {
         sd.submesh: sd.parent_to_submesh for sd in my_model.volume_subdomains
     }

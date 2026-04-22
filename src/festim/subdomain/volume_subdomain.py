@@ -20,8 +20,7 @@ except ImportError:
 
 
 class VolumeSubdomain:
-    """
-    Volume subdomain class
+    """Volume subdomain class.
 
     Args:
         id: the id of the volume subdomain (> 0)
@@ -116,7 +115,7 @@ class VolumeSubdomain:
         )
 
     def locate_subdomain_entities(self, mesh: Mesh) -> npt.NDArray[np.int32]:
-        """Locates all cells in subdomain borders within domain
+        """Locates all cells in subdomain borders within domain.
 
         Args:
             mesh: the mesh of the model
@@ -132,8 +131,7 @@ class VolumeSubdomain:
 
 
 class VolumeSubdomain1D(VolumeSubdomain):
-    """
-    Volume subdomain class for 1D cases
+    """Volume subdomain class for 1D cases.
 
     Args:
         id (int): the id of the volume subdomain
@@ -167,8 +165,8 @@ class VolumeSubdomain1D(VolumeSubdomain):
 
 
 def find_volume_from_id(id: int, volumes: list):
-    """Returns the correct volume subdomain object from a list of volume ids
-    based on an int
+    """Returns the correct volume subdomain object from a list of volume ids based on an
+    int.
 
     Args:
         id (int): the id of the volume subdomain
@@ -179,7 +177,6 @@ def find_volume_from_id(id: int, volumes: list):
 
     Raises:
         ValueError: if the volume name is not found in the list of volumes
-
     """
     for vol in volumes:
         if vol.id == id:

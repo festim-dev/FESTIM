@@ -33,9 +33,9 @@ def relative_error_computed_to_analytical(
 
 
 def test_multispecies_permeation_problem():
-    """Test running a problem with 2 mobile species permeating through a 1D
-    domain, with different diffusion coefficients, checks that the computed
-    permeation flux matches the analytical solution"""
+    """Test running a problem with 2 mobile species permeating through a 1D domain, with
+    different diffusion coefficients, checks that the computed permeation flux matches
+    the analytical solution."""
 
     # festim model
     L = 3e-04

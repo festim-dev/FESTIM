@@ -26,7 +26,7 @@ test_function = fem.Function(test_function_space)
     ],
 )
 def test_temperature_type_and_processing(value):
-    """Test that the temperature type is correctly set"""
+    """Test that the temperature type is correctly set."""
 
     if not isinstance(value, fem.Constant | int | float):
         with pytest.raises(TypeError):
@@ -39,7 +39,7 @@ def test_temperature_type_and_processing(value):
     "input_value, expected_output_type", [(1.0, fem.Constant), (3, fem.Constant)]
 )
 def test_value_convert_float_int_inputs(input_value, expected_output_type):
-    """Test that float and  value is correctly converted"""
+    """Test that float and  value is correctly converted."""
 
     test_value = F.Value(input_value)
 
@@ -63,7 +63,7 @@ def test_value_convert_float_int_inputs(input_value, expected_output_type):
     ],
 )
 def test_value_convert_up_to_ufl_inputs(input_value, expected_output_type):
-    """Test that float and  value is correctly converted"""
+    """Test that float and  value is correctly converted."""
 
     my_mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
     V = fem.functionspace(my_mesh, ("Lagrange", 1))
@@ -97,7 +97,7 @@ def test_value_convert_up_to_ufl_inputs(input_value, expected_output_type):
     ],
 )
 def test_value_convert_callable_inputs(input_value, expected_output_type):
-    """Test that float and  value is correctly converted"""
+    """Test that float and  value is correctly converted."""
 
     my_mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 12)
     my_t = fem.Constant(my_mesh, default_scalar_type(8))
@@ -117,13 +117,13 @@ def test_value_convert_callable_inputs(input_value, expected_output_type):
 
 
 def test_error_raised_wehn_input_value_is_not_accepted():
-    """Test that an error is raised when the input value is not accepted"""
+    """Test that an error is raised when the input value is not accepted."""
 
     with pytest.raises(
         TypeError,
         match=(
-            "Value must be a float, int, fem.Constant, np.ndarray, fem.Expression, "
-            "ufl.core.expr.Expr, fem.Function, or callable not coucou"
+            r"Value must be a float, int, fem.Constant, np.ndarray, fem.Expression, "
+            r"ufl.core.expr.Expr, fem.Function, or callable not coucou"
         ),
     ):
         F.Value("coucou")
@@ -147,7 +147,7 @@ def test_error_raised_wehn_input_value_is_not_accepted():
     ],
 )
 def test_time_dependent_values(input_value, expected_output):
-    """Test that the time_dependent attribute is correctly set"""
+    """Test that the time_dependent attribute is correctly set."""
 
     test_value = F.Value(input_value)
 
@@ -172,7 +172,7 @@ def test_time_dependent_values(input_value, expected_output):
     ],
 )
 def test_temperature_dependent_values(input_value, expected_output):
-    """Test that the time_dependent attribute is correctly set"""
+    """Test that the time_dependent attribute is correctly set."""
 
     test_value = F.Value(input_value)
 
@@ -187,7 +187,7 @@ def test_temperature_dependent_values(input_value, expected_output):
     ],
 )
 def test_input_values_of_constants_and_functions_are_accepted(value):
-    """Test that the input values of constants and functions are accepted"""
+    """Test that the input values of constants and functions are accepted."""
 
     test_value = F.Value(value)
 
@@ -197,10 +197,11 @@ def test_input_values_of_constants_and_functions_are_accepted(value):
 
 
 def test_input_values_of_expressions_are_accepted():
-    """Test that the input values of constants and functions are accepted"""
+    """Test that the input values of constants and functions are accepted."""
 
     def my_func(x):
         return 1.0 + x[0]
+
     kwargs = {}
     kwargs["x"] = x
     mapped_func = my_func(**kwargs)
@@ -218,7 +219,7 @@ def test_input_values_of_expressions_are_accepted():
 
 def test_ValueError_raised_when_callable_returns_wrong_type():
     """The create_value_fenics method should raise a ValueError when the callable
-    returns an object which is not a float or int"""
+    returns an object which is not a float or int."""
 
     def my_value(t):
         return ufl.conditional(ufl.lt(t, 0.5), 100, 0)
@@ -230,7 +231,10 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     with pytest.raises(
         ValueError,
-        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
+        match=(
+            r"self.value should return a float or an int, not <class "
+            r"'ufl.conditional.Conditional'"
+        ),
     ):
         test_value.convert_input_value(
             function_space=test_function_space, temperature=T, t=t
@@ -252,7 +256,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     ],
 )
 def test_value_representation(value):
-    """Test that the representation of the value is correct"""
+    """Test that the representation of the value is correct."""
 
     test_value = F.Value(value)
 
@@ -271,7 +275,7 @@ def test_value_representation(value):
 )
 def test_velocity_field_convert_input_error_when_t_not_only_arg(value):
     """Test when an input value of type callable is converted that a Type error is
-    rasied when t is not the only arg"""
+    rasied when t is not the only arg."""
 
     test_value = F.VelocityField(value)
     t = F.as_fenics_constant(value=1.0, mesh=test_mesh.mesh)
@@ -284,7 +288,7 @@ def test_velocity_field_convert_input_error_when_t_not_only_arg(value):
 
 def test_velocity_field_convert_input_error_when_callable_doesnt_return_fem_func():
     """Test when an input value of type callable is converted that a Type error is
-    rasied when t is not the only arg"""
+    rasied when t is not the only arg."""
 
     def example_func(t):
         return 2 * t
@@ -294,7 +298,10 @@ def test_velocity_field_convert_input_error_when_callable_doesnt_return_fem_func
 
     with pytest.raises(
         ValueError,
-        match="A time dependent advection field should return an fem.Function, not a <class 'ufl.algebra.Product'>",
+        match=(
+            r"A time dependent advection field should return an fem.Function, not a "
+            r"<class 'ufl.algebra.Product'>"
+        ),
     ):
         test_value.convert_input_value(function_space=test_function_space, t=t)
 

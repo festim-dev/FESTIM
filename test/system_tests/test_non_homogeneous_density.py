@@ -9,12 +9,16 @@ import festim as F
 
 def step_function_space(x):
     return ufl.conditional(ufl.gt(x[0], 0.5), 10, 0.0)
+
+
 def step_function_time_non_homogeneous(x, t):
-    return ufl.conditional(
-    ufl.gt(t, 50), 10 - 10 * x[0], 0.0
-)
+    return ufl.conditional(ufl.gt(t, 50), 10 - 10 * x[0], 0.0)
+
+
 def step_function_time_homogeneous(t):
     return 10.0 if t > 50 else 2.0
+
+
 def simple_space(x):
     return 10 - 10 * x[0]
 

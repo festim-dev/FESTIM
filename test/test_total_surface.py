@@ -6,7 +6,7 @@ import festim as F
 
 
 def test_total_surface_compute_1D():
-    """Test that the total surface export computes the correct value"""
+    """Test that the total surface export computes the correct value."""
 
     # BUILD
     L = 6

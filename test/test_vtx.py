@@ -11,7 +11,7 @@ V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
 
 
 def test_vtx_export_one_function(tmpdir):
-    """Test can add one function to a vtx export"""
+    """Test can add one function to a vtx export."""
     u = dolfinx.fem.Function(V)
     sp = F.Species("H")
     sp.post_processing_solution = u
@@ -24,7 +24,7 @@ def test_vtx_export_one_function(tmpdir):
 
 
 def test_vtx_export_two_functions(tmpdir):
-    """Test can add two functions to a vtx export"""
+    """Test can add two functions to a vtx export."""
     u = dolfinx.fem.Function(V)
     v = dolfinx.fem.Function(V)
 
@@ -43,8 +43,8 @@ def test_vtx_export_two_functions(tmpdir):
 
 @pytest.mark.skip(reason="Not implemented")
 def test_vtx_export_subdomain():
-    """Test that given multiple subdomains in problem,
-    only correct functions are extracted from species"""
+    """Test that given multiple subdomains in problem, only correct functions are
+    extracted from species."""
     pass
 
 
@@ -55,7 +55,7 @@ def test_vtx_suffix_converter(tmpdir):
 
 
 def test_vtx_DG(tmpdir):
-    """Test VTX export setup for DG formulation"""
+    """Test VTX export setup for DG formulation."""
     my_model = F.HydrogenTransportProblemDiscontinuous()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     my_mat = F.Material(D_0=3, E_D=2, K_S_0=1, E_K_S=0, name="mat")
@@ -129,7 +129,7 @@ def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
     ],
 )
 def test_vtx_temperature(T, tmpdir):
-    """Tests that VTX temperature exports work with HydrogenTransportProblem"""
+    """Tests that VTX temperature exports work with HydrogenTransportProblem."""
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
     my_mat = F.Material(D_0=1, E_D=0, name="mat")
@@ -154,7 +154,7 @@ def test_vtx_temperature(T, tmpdir):
 
 
 def test_field_attribute_is_always_list():
-    """Test that the field attribute is always a list"""
+    """Test that the field attribute is always a list."""
     my_export = F.VTXSpeciesExport("my_export.bp", field=F.Species("H"))
     assert isinstance(my_export.field, list)
 
@@ -164,18 +164,20 @@ def test_field_attribute_is_always_list():
 
 @pytest.mark.parametrize("field", [["H", 1], 1, [F.Species("H"), 1]])
 def test_field_attribute_raises_error_when_invalid_type(field):
-    """Test that the field attribute raises an error if the type is not festim.Species or list"""
+    """Test that the field attribute raises an error if the type is not festim.Species
+    or list."""
     with pytest.raises(TypeError):
         F.VTXSpeciesExport("my_export.bp", field=field)
 
 
 def test_filename_raises_error_when_wrong_type():
-    """Test that the filename attribute raises an error if the extension is not .bp"""
+    """Test that the filename attribute raises an error if the extension is not .bp."""
     with pytest.raises(TypeError):
         F.VTXSpeciesExport(1, field=[F.Species("H")])
 
 
 def test_filename_temp_raises_error_when_wrong_type():
-    """Test that the filename attribute for VTXTemperature export raises an error if the extension is not .bp"""
+    """Test that the filename attribute for VTXTemperature export raises an error if the
+    extension is not .bp."""
     with pytest.raises(TypeError):
         F.VTXTemperatureExport(1)
