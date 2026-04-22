@@ -24,7 +24,7 @@ class VolumeSubdomain:
     Volume subdomain class
 
     Args:
-        id: the id of the volume subdomain
+        id: the id of the volume subdomain (> 0)
         submesh: the submesh of the volume subdomain
         cell_map: the cell map of the volume subdomain
         parent_mesh: the parent mesh of the volume subdomain
@@ -58,6 +58,7 @@ class VolumeSubdomain:
     def __init__(
         self, id, material, locator: Callable | None = None, name: str | None = None
     ):
+        assert id != 0, "Volume subdomain id cannot be 0"
         self.id = id
         self.material = material
         self.locator = locator
