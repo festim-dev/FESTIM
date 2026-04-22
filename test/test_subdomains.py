@@ -125,7 +125,7 @@ def test_ValueError_raised_when_id_not_found_in_volumes_subdomains():
 def test_ValueError_rasied_when_volume_ids_are_not_unique():
     """Checks"""
     my_test_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh1D(np.linspace(0, 2, num=10)), species=[F.Species("H")]
+        mesh=F.Mesh1D(np.linspace(0, 2, num=11)), species=[F.Species("H")]
     )
 
     vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
