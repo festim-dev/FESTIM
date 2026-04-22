@@ -75,7 +75,8 @@ def test_warning_raised_when_giving_time_as_arg():
     my_species = F.Species("test")
     my_species.prev_solution = fem.Function(V)
 
-    my_value = lambda t: 1.0 + t
+    def my_value(t):
+        return 1.0 + t
 
     init_cond = F.InitialConcentration(value=my_value, species=my_species, volume=vol)
 
@@ -97,7 +98,8 @@ def test_warning_raised_when_giving_time_as_arg_initial_temperature():
 
     vol = F.VolumeSubdomain(id=1, material=dummy_mat)
 
-    my_value = lambda t: 1.0 + t
+    def my_value(t):
+        return 1.0 + t
 
     init_cond = F.InitialTemperature(value=my_value, volume=vol)
 
@@ -304,7 +306,8 @@ def test_create_initial_temperature_from_function():
     vol = F.VolumeSubdomain(id=1, material=dummy_mat)
 
     # create an initial temperature from a function
-    T = lambda x: 300 + 10 * x[0]
+    def T(x):
+        return 300 + 10 * x[0]
     V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
     T_func = fem.Function(V)
     T_func.interpolate(T)
@@ -368,10 +371,10 @@ def test_initial_condition_discontinuous():
 
     my_model.initialise()
 
-    spe1_left, spe1_to_vol1 = vol1.u_n.function_space.sub(0).collapse()
-    spe2_left, spe2_to_vol1 = vol1.u_n.function_space.sub(1).collapse()
-    spe1_right, spe1_to_vol2 = vol2.u_n.function_space.sub(0).collapse()
-    spe2_right, spe2_to_vol2 = vol2.u_n.function_space.sub(1).collapse()
+    _spe1_left, spe1_to_vol1 = vol1.u_n.function_space.sub(0).collapse()
+    _spe2_left, spe2_to_vol1 = vol1.u_n.function_space.sub(1).collapse()
+    _spe1_right, spe1_to_vol2 = vol2.u_n.function_space.sub(0).collapse()
+    _spe2_right, spe2_to_vol2 = vol2.u_n.function_space.sub(1).collapse()
 
     prev_solution_spe1_left = vol1.u_n.x.array[spe1_to_vol1]
     prev_solution_spe2_left = vol1.u_n.x.array[spe2_to_vol1]
@@ -523,8 +526,8 @@ def test_initial_condition_mixed_domain_multispecies():
 
     my_model.initialise()
 
-    spe1_left, spe1_to_vol1 = vol1.u_n.function_space.sub(0).collapse()
-    spe2_left, spe2_to_vol1 = vol1.u_n.function_space.sub(1).collapse()
+    _spe1_left, spe1_to_vol1 = vol1.u_n.function_space.sub(0).collapse()
+    _spe2_left, spe2_to_vol1 = vol1.u_n.function_space.sub(1).collapse()
 
     prev_solution_spe1_left = vol1.u_n.x.array[spe1_to_vol1]
     prev_solution_spe2_left = vol1.u_n.x.array[spe2_to_vol1]

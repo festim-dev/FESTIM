@@ -199,7 +199,8 @@ def test_input_values_of_constants_and_functions_are_accepted(value):
 def test_input_values_of_expressions_are_accepted():
     """Test that the input values of constants and functions are accepted"""
 
-    my_func = lambda x: 1.0 + x[0]
+    def my_func(x):
+        return 1.0 + x[0]
     kwargs = {}
     kwargs["x"] = x
     mapped_func = my_func(**kwargs)

@@ -14,7 +14,7 @@ def test_minimum_volume_compute_1D():
     dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_material)
 
     # create mesh tags
-    ft, ct = my_mesh.define_meshtags(
+    _ft, ct = my_mesh.define_meshtags(
         surface_subdomains=[F.SurfaceSubdomain1D(id=1, x=0)],
         volume_subdomains=[dummy_volume],
         interfaces=None,

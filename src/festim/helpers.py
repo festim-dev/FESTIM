@@ -285,9 +285,11 @@ dolfinx_version = dolfinx.__version__
 
 # Define the appropriate method based on the version
 if version.parse(dolfinx_version) > version.parse("0.9.0"):
-    get_interpolation_points = lambda element: element.interpolation_points
+    def get_interpolation_points(element):
+        return element.interpolation_points
 else:
-    get_interpolation_points = lambda element: element.interpolation_points()
+    def get_interpolation_points(element):
+        return element.interpolation_points()
 
 
 def nmm_interpolate(
@@ -356,7 +358,7 @@ _prev_xnorm = 0
 
 def convergenceTest(snes, it, norms):
     global _residual0
-    xnorm, gnorm, f = norms  # ||x_k||, ||x_k-x_k-1||, ||F(x_k)||
+    _xnorm, gnorm, f = norms  # ||x_k||, ||x_k-x_k-1||, ||F(x_k)||
 
     rtol, atol, stol, max_its = snes.getTolerances()
 
@@ -378,7 +380,7 @@ def convergenceTest(snes, it, norms):
 def SnesMonitor(snes, iter, rnorm):
     global _prev_xnorm
     if MPI.COMM_WORLD.rank == 0:
-        rtol, atol, stol, max_its = snes.getTolerances()
+        rtol, atol, stol, _max_its = snes.getTolerances()
         x = snes.getSolution()
         xnorm = x.norm()
 

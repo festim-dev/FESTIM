@@ -271,7 +271,7 @@ class ProblemBase:
 
         # solve main problem
         if Version(dolfinx.__version__) == Version("0.9.0"):
-            nb_its, converged = self.solver.solve(self.u)
+            nb_its, _converged = self.solver.solve(self.u)
         elif Version(dolfinx.__version__) > Version("0.9.0"):
             _ = self.solver.solve()
             converged_reason = self.solver.solver.getConvergedReason()

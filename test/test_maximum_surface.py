@@ -14,7 +14,7 @@ def test_maximum_surface_compute_1D():
     dummy_surface = F.SurfaceSubdomain1D(id=1, x=4)
 
     # create mesh tags
-    ft, ct = my_mesh.define_meshtags(
+    ft, _ct = my_mesh.define_meshtags(
         surface_subdomains=[dummy_surface],
         volume_subdomains=[
             F.VolumeSubdomain1D(id=1, material=F.Material(D_0=1, E_D=0), borders=[0, L])

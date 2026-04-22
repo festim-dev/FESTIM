@@ -152,7 +152,8 @@ def test_implicit_species_wrong_type():
     """
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 
-    density = lambda t: "coucou"
+    def density(t):
+        return "coucou"
     species = F.ImplicitSpecies(n=density)
 
     with pytest.raises(

@@ -24,7 +24,6 @@ def generate_mesh(n=20):
     )
 
     # Split domain in half and set an interface tag of 5
-    gdim = mesh.geometry.dim
     tdim = mesh.topology.dim
     fdim = tdim - 1
     top_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, top_boundary)
@@ -156,16 +155,18 @@ def test_2_materials_2d_mms(tmpdir):
     K_S_bot = 6.0
     D_top = 2.0
     D_bot = 5.0
-    c_exact_top_ufl = lambda x: (
-        1 + ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
-    )
+    def c_exact_top_ufl(x):
+        return (
+            1 + ufl.sin(ufl.pi * (2 * x[0] + 0.5)) + ufl.cos(2 * ufl.pi * x[1])
+        )
 
     def c_exact_bot_ufl(x):
         return K_S_bot / K_S_top * c_exact_top_ufl(x)
 
-    c_exact_top_np = lambda x: (
-        1 + np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
-    )
+    def c_exact_top_np(x):
+        return (
+            1 + np.sin(np.pi * (2 * x[0] + 0.5)) + np.cos(2 * np.pi * x[1])
+        )
 
     def c_exact_bot_np(x):
         return K_S_bot / K_S_top * c_exact_top_np(x)
@@ -201,12 +202,14 @@ def test_2_materials_2d_mms(tmpdir):
         F.FixedConcentrationBC(bottom_surface, value=c_exact_bot_ufl, species=H),
     ]
 
-    source_top_val = lambda x: (
-        8 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
-    )
-    source_bottom_val = lambda x: (
-        40 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
-    )
+    def source_top_val(x):
+        return (
+            8 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
+        )
+    def source_bottom_val(x):
+        return (
+            40 * ufl.pi**2 * (ufl.cos(2 * ufl.pi * x[0]) + ufl.cos(2 * ufl.pi * x[1]))
+        )
     my_model.sources = [
         F.ParticleSource(volume=top_domain, species=H, value=source_top_val),
         F.ParticleSource(volume=bottom_domain, species=H, value=source_bottom_val),

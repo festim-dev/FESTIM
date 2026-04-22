@@ -13,7 +13,8 @@ def test_run_MMS_cylindrical():
 
     my_mesh = F.Mesh1D(vertices=np.linspace(1, 2, 500), coordinate_system="cylindrical")
 
-    u_exact = lambda x: 1 + x[0] ** 2
+    def u_exact(x):
+        return 1 + x[0] ** 2
 
     f = -4
 
@@ -98,7 +99,8 @@ def test_run_MMS_cylindrical_mixed_domain():
     def c_exact_right(x):
         return K_S_right / K_S_left * c_exact_left(x)
 
-    lap_c = lambda r: 4 - 2 * r_interface / r
+    def lap_c(r):
+        return 4 - 2 * r_interface / r
 
     mat_1 = F.Material(D_0=D, E_D=0, K_S_0=K_S_left, E_K_S=0, solubility_law="sievert")
     mat_2 = F.Material(D_0=D, E_D=0, K_S_0=K_S_right, E_K_S=0, solubility_law="sievert")
@@ -130,8 +132,10 @@ def test_run_MMS_cylindrical_mixed_domain():
 
     my_model.temperature = 500
 
-    f_left = lambda x: -D * lap_c(x[0])
-    f_right = lambda x: -D * K_S_right / K_S_left * lap_c(x[0])
+    def f_left(x):
+        return -D * lap_c(x[0])
+    def f_right(x):
+        return -D * K_S_right / K_S_left * lap_c(x[0])
 
     my_model.sources = [
         F.ParticleSource(value=f_left, volume=vol_1, species=H),

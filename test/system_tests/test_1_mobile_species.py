@@ -33,7 +33,8 @@ def test_1_mobile_MMS_steady_state():
 
     D_0 = 1
     E_D = 0.1
-    T_expr = lambda x: 500 + 100 * x[0]
+    def T_expr(x):
+        return 500 + 100 * x[0]
     T.interpolate(T_expr)
     D = D_0 * ufl.exp(-E_D / (F.k_B * T))
 
@@ -93,7 +94,8 @@ def test_1_mobile_MMS_transient():
 
     D_0 = 1
     E_D = 0.1
-    T_expr = lambda x: 600 + 50 * x[0]
+    def T_expr(x):
+        return 600 + 50 * x[0]
     T.interpolate(T_expr)
     D = D_0 * ufl.exp(-E_D / (F.k_B * T))
 
@@ -118,12 +120,14 @@ def test_1_mobile_MMS_transient():
         F.DirichletBC(subdomain=right, value=H_analytical_ufl, species=H),
     ]
 
-    init_value = lambda x: 1 + ufl.sin(2 * ufl.pi * x[0])
+    def init_value(x):
+        return 1 + ufl.sin(2 * ufl.pi * x[0])
     my_model.initial_conditions = [
         F.InitialConcentration(value=init_value, species=H, volume=vol)
     ]
 
-    f = lambda x, t: 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x, t)))
+    def f(x, t):
+        return 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x, t)))
     my_model.sources = [F.ParticleSource(value=f, volume=vol, species=H)]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=final_time)
@@ -154,7 +158,8 @@ def test_1_mobile_MMS_2D():
 
     D_0 = 1
     E_D = 0.1
-    T_expr = lambda x: 500 + 100 * x[0]
+    def T_expr(x):
+        return 500 + 100 * x[0]
     T.interpolate(T_expr)
     D = D_0 * ufl.exp(-E_D / (F.k_B * T))
 
@@ -219,7 +224,8 @@ def test_1_mobile_MMS_3D():
 
     D_0 = 1
     E_D = 0.1
-    T_expr = lambda x: 500 + 100 * x[0]
+    def T_expr(x):
+        return 500 + 100 * x[0]
     T.interpolate(T_expr)
     D = D_0 * ufl.exp(-E_D / (F.k_B * T))
 

@@ -38,7 +38,8 @@ def test_MMS_1_species_1_trap_with_advection():
 
     V = fem.functionspace(test_mesh_2d, ("Lagrange", 1))
     T = fem.Function(V)
-    T_expr = lambda x: 100 + 200 * x[0] + 100 * x[1]
+    def T_expr(x):
+        return 100 + 200 * x[0] + 100 * x[1]
     T.interpolate(T_expr)
 
     # create velocity field
@@ -63,8 +64,10 @@ def test_MMS_1_species_1_trap_with_advection():
     u.interpolate(velocity_func)
 
     # define hydrogen problem
-    exact_mobile_solution = lambda x: 200 * x[0] ** 2 + 300 * x[1] ** 2
-    exact_trapped_solution = lambda x: 10 * x[0] ** 2 + 10 * x[1] ** 2
+    def exact_mobile_solution(x):
+        return 200 * x[0] ** 2 + 300 * x[1] ** 2
+    def exact_trapped_solution(x):
+        return 10 * x[0] ** 2 + 10 * x[1] ** 2
 
     D = D_0 * ufl.exp(-E_D / (k_B * T))
     k = k_0 * ufl.exp(-E_k / (k_B * T))
@@ -207,8 +210,8 @@ def test_multi_material_with_advection():
             values[1] = 0  # Second component remains zero
             return values
 
-        mesh2, mt2, ct2 = generate_mesh(n=10)
-        submesh, cell_map, v_map = dolfinx.mesh.create_submesh(
+        mesh2, _mt2, ct2 = generate_mesh(n=10)
+        submesh, _cell_map, _v_map = dolfinx.mesh.create_submesh(
             mesh2, ct2.dim, ct2.find(4)
         )[0:3]
         v_cg = basix.ufl.element(

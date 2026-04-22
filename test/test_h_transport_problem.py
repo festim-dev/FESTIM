@@ -250,7 +250,7 @@ def test_define_D_global_different_temperatures():
     is different in the volume subdomains"""
     D_0, E_D = 1.5, 0.1
     my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
-    surf = F.SurfaceSubdomain1D(id=1, x=0)
+    F.SurfaceSubdomain1D(id=1, x=0)
     H = F.Species("H")
 
     my_model = F.HydrogenTransportProblem(
@@ -268,7 +268,7 @@ def test_define_D_global_different_temperatures():
     my_model.t = 1
     my_model.define_temperature()
 
-    D_computed, D_expr = my_model.define_D_global(H)
+    D_computed, _D_expr = my_model.define_D_global(H)
 
     computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
 
@@ -304,7 +304,7 @@ def test_define_D_global_different_materials():
     my_model.t = 0
     my_model.define_temperature()
 
-    D_computed, D_expr = my_model.define_D_global(H)
+    D_computed, _D_expr = my_model.define_D_global(H)
 
     computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
 
@@ -399,7 +399,7 @@ def test_define_D_global_multispecies():
     my_mat = F.Material(
         D_0={A: D_0_A, B: D_0_B}, E_D={A: E_D_A, B: E_D_B}, name="my_mat"
     )
-    surf = F.SurfaceSubdomain1D(id=1, x=1)
+    F.SurfaceSubdomain1D(id=1, x=1)
 
     my_model = F.HydrogenTransportProblem(
         mesh=F.Mesh1D(np.linspace(0, 1, num=101)),
@@ -415,8 +415,8 @@ def test_define_D_global_multispecies():
     my_model.t = 0
     my_model.define_temperature()
 
-    D_A_computed, D_A_expr = my_model.define_D_global(A)
-    D_B_computed, D_B_expr = my_model.define_D_global(B)
+    D_A_computed, _D_A_expr = my_model.define_D_global(A)
+    D_B_computed, _D_B_expr = my_model.define_D_global(B)
 
     computed_values = [D_A_computed.x.array[-1], D_B_computed.x.array[-1]]
 

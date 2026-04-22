@@ -24,7 +24,6 @@ def generate_mesh():
     )
 
     # Split domain in half and set an interface tag of 5
-    gdim = mesh.geometry.dim
     tdim = mesh.topology.dim
     fdim = tdim - 1
     top_facets = dolfinx.mesh.locate_entities_boundary(mesh, fdim, top_boundary)
@@ -125,11 +124,13 @@ try:
     from dolfinx.mesh import EntityMap  # noqa: F401
 
     legacy_entity_map = False
-    entity_map_wrapper = lambda e_map: list(e_map.values())
+    def entity_map_wrapper(e_map):
+        return list(e_map.values())
     entity_maps = [sd.cell_map for sd in my_model.volume_subdomains]
 except ImportError:
     legacy_entity_map = True
-    entity_map_wrapper = lambda e_map: e_map
+    def entity_map_wrapper(e_map):
+        return e_map
     entity_maps = {
         sd.submesh: sd.parent_to_submesh for sd in my_model.volume_subdomains
     }

@@ -63,8 +63,8 @@ class Reaction:
         E_k: float,
         volume: VS1D,
         product: Union[_Species, list[_Species]] | None = [],
-        p_0: float = None,
-        E_p: float = None,
+        p_0: float | None = None,
+        E_p: float | None = None,
     ) -> None:
         self.k_0 = k_0
         self.E_k = E_k
@@ -114,8 +114,8 @@ class Reaction:
     def reaction_term(
         self,
         temperature,
-        reactant_concentrations: list = None,
-        product_concentrations: list = None,
+        reactant_concentrations: list | None = None,
+        product_concentrations: list | None = None,
     ) -> Expr:
         """Compute the reaction term at a given temperature.
 
@@ -146,11 +146,11 @@ class Reaction:
                     + " when no products are present."
                 )
         else:
-            if self.p_0 == None:
+            if self.p_0 is None:
                 raise ValueError(
                     "p_0 cannot be None when reaction products are present."
                 )
-            elif self.E_p == None:
+            elif self.E_p is None:
                 raise ValueError(
                     "E_p cannot be None when reaction products are present."
                 )
