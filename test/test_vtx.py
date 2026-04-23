@@ -179,3 +179,84 @@ def test_filename_temp_raises_error_when_wrong_type():
     """Test that the filename attribute for VTXTemperature export raises an error if the extension is not .bp"""
     with pytest.raises(TypeError):
         F.VTXTemperatureExport(1)
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        lambda x: x[0] + x[1] * 2,
+        lambda T: T + 1,
+        lambda c_A, c_B: c_A + c_B,
+        lambda c_A, c_B, x: c_A * c_B + x[0],
+        lambda c_A, T, x: c_A * T + x[0],
+    ],
+)
+def test_custom_field(tmp_path, expression):
+    """
+    Test custom field export functionality.
+    This test checks that a custom field can be created with various types of
+    expressions.
+    """
+
+    my_model = F.HydrogenTransportProblem()
+
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+
+    vol = F.VolumeSubdomain(id=1, material=mat)
+
+    top = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[1], 1))
+    bottom = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[1], 0))
+    left = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 0))
+    right = F.SurfaceSubdomain(id=4, locator=lambda x: np.isclose(x[0], 1))
+
+    my_model.subdomains = [vol, top, bottom, left, right]
+
+    dolfinx_mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
+    my_model.mesh = F.Mesh(dolfinx_mesh)
+
+    A = F.Species("A")
+    B = F.Species("B")
+    C = F.Species("C")
+    D = F.Species("D")
+
+    my_model.species = [A, B, C, D]
+
+    my_model.boundary_conditions = (
+        [
+            F.FixedConcentrationBC(species=A, subdomain=top, value=1),
+            F.FixedConcentrationBC(species=B, subdomain=left, value=1),
+        ]
+        + [
+            F.FixedConcentrationBC(species=C, subdomain=surf, value=0)
+            for surf in [top, bottom, left, right]
+        ]
+        + [
+            F.FixedConcentrationBC(species=D, subdomain=surf, value=0)
+            for surf in [top, bottom, left, right]
+        ]
+    )
+
+    my_model.reactions = [
+        F.Reaction(
+            reactant=[A, B], product=[C], k_0=1, E_k=0, p_0=0, E_p=0, volume=vol
+        ),
+        F.Reaction(reactant=[C], product=[D], k_0=0.1, E_k=0, p_0=0, E_p=0, volume=vol),
+    ]
+
+    my_model.temperature = 300
+
+    my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
+
+    custom_field = F.CustomField(
+        filename=tmp_path / "custom_field.bp",
+        expression=expression,
+        species_dependent_value={"c_A": A, "c_B": B},
+    )
+
+    my_model.exports = [
+        custom_field,
+    ]
+
+    my_model.initialise()
+
+    my_model.run()
