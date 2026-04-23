@@ -115,10 +115,6 @@ def test_run_MMS_cylindrical_mixed_domain():
     my_model.subdomains = [vol_1, vol_2, left, right]
 
     my_model.interfaces = [F.Interface(5, (vol_1, vol_2), penalty_term=100)]
-    my_model.surface_to_volume = {
-        left: vol_1,
-        right: vol_2,
-    }
 
     H = F.Species("H", mobile=True, subdomains=[vol_1, vol_2])
     my_model.species = [H]

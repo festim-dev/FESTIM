@@ -110,10 +110,6 @@ def test_2_materials_2d_mms(tmpdir):
     ]
 
     my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
-    my_model.surface_to_volume = {
-        top_surface: top_domain,
-        bottom_surface: bottom_domain,
-    }
 
     H = F.Species("H", mobile=True)
 
@@ -182,10 +178,6 @@ def test_1_material_discontinuous_version(tmpdir):
     right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
     my_model.subdomains = [subdomain, left_surface, right_surface]
-    my_model.surface_to_volume = {
-        right_surface: subdomain,
-        left_surface: subdomain,
-    }
 
     H = F.Species("H", mobile=True)
     trapped_H = F.Species("H_trapped", mobile=False)
@@ -278,10 +270,6 @@ def test_3_materials_transient(tmpdir):
         left_surface,
         right_surface,
     ]
-    my_model.surface_to_volume = {
-        right_surface: right_domain,
-        left_surface: left_domain,
-    }
 
     H = F.Species("H", mobile=True)
     trapped_H = F.Species("H_trapped", mobile=False)
@@ -367,10 +355,6 @@ def test_2_mats_particle_flux_bc(tmpdir):
 
     # we should be able to automate this
     my_model.interfaces = [F.Interface(5, (bottom_domain, top_domain))]
-    my_model.surface_to_volume = {
-        top_surface: top_domain,
-        bottom_surface: bottom_domain,
-    }
 
     H = F.Species("H", mobile=True)
 
@@ -418,10 +402,6 @@ def test_all_cells_are_not_tagged():
 
     my_model.subdomains = [vol1, vol2, surf1, surf2]
 
-    my_model.surface_to_volume = {
-        surf1: vol1,
-        surf2: vol2,
-    }
     my_model.interfaces = [F.Interface(id=3, subdomains=[vol1, vol2])]
 
     my_model.mesh = F.Mesh1D(np.linspace(0, 1, 10))
