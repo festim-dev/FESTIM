@@ -250,7 +250,7 @@ def map_surface_to_volume_subdomains(
 
     for s_tag, v_tag in unique_pairs:
         dolfinx.log.log(
-            dolfinx.log.LogLevel.DEBUG,
+            dolfinx.log.LogLevel.INFO,
             f"Facet tag {s_tag} is connected to cell tag {v_tag}",
         )
         s_subdomain = surface_tag_to_subdomain.get(s_tag)
