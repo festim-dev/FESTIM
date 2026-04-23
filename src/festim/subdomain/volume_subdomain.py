@@ -194,7 +194,25 @@ def map_surface_to_volume_subdomains(
     facet_to_cell: dolfinx.cpp.graph.AdjacencyList_int32,
     volume_subdomains: list[VolumeSubdomain],
     surface_subdomains: list[SurfaceSubdomain],
-):
+) -> dict[SurfaceSubdomain, VolumeSubdomain]:
+    """Maps surface subdomains to volume subdomains based on the facet and cell meshtags
+    and the facet to cell connectivity.
+
+
+    Raises:
+        AssertionError: if a surface subdomain is connected to multiple volume subdomains
+
+    Args:
+        ft: the facet meshtags of the parent mesh
+        ct: the cell meshtags of the parent mesh
+        facet_to_cell: the facet to cell connectivity of the parent mesh
+        volume_subdomains: the list of volume subdomains
+        surface_subdomains: the list of surface subdomains
+
+    Returns:
+        dict[SurfaceSubdomain, VolumeSubdomain]: a dictionary mapping surface subdomains
+            to volume subdomains
+    """
 
     # get connected cells for tagged facets
     start_indices = facet_to_cell.offsets[ft.indices]
@@ -231,7 +249,10 @@ def map_surface_to_volume_subdomains(
     surface_to_subdomain = {}
 
     for s_tag, v_tag in unique_pairs:
-        print(f"Facet tag {s_tag} is connected to cell tag {v_tag}")
+        dolfinx.log.log(
+            dolfinx.log.LogLevel.DEBUG,
+            f"Facet tag {s_tag} is connected to cell tag {v_tag}",
+        )
         s_subdomain = surface_tag_to_subdomain.get(s_tag)
         v_subdomain = volume_tag_to_subdomain.get(v_tag)
 
