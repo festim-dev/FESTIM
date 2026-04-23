@@ -2,9 +2,11 @@ import warnings
 from pathlib import Path
 
 from dolfinx import fem, io
+import ufl
 
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
+import inspect
 
 
 class ExportBaseClass:
@@ -172,3 +174,56 @@ class VTXSpeciesExport(ExportBaseClass):
                             field.subdomain_to_post_processing_solution[self._subdomain]
                         )
                 return outfiles
+
+
+class CustomField(ExportBaseClass):
+    function: fem.Function
+    writer: io.VTXWriter
+    dolfinx_expression: fem.Expression
+
+    def __init__(
+        self,
+        filename,
+        expression,
+        species_dependent_value=None,
+        times=None,
+        subdomain: VolumeSubdomain = None,
+        checkpoint=False,
+    ):
+        super().__init__(
+            filename=filename,
+            times=times,
+            ext=".bp",
+        )
+        self.expression = expression
+        self.species_dependent_value = species_dependent_value or {}
+        self.checkpoint = checkpoint
+        self.subdomain = subdomain
+
+    def set_dolfinx_expression(
+        self,
+        temperature: fem.Constant | fem.Function,
+        species: list,
+        time: fem.Constant,
+    ):
+        # check
+        arguments = inspect.signature(self.expression).parameters
+        kwargs = {}
+        if "t" in arguments:
+            kwargs["t"] = time
+        if "x" in arguments:
+            x = ufl.SpatialCoordinate(time._ufl_domain)
+            kwargs["x"] = x
+        if "T" in arguments:
+            kwargs["T"] = temperature
+        # check if there are other arguments and if they are in species_dependent_value
+        for arg in arguments:
+            if arg in self.species_dependent_value:
+                spe = self.species_dependent_value[arg]
+                kwargs[arg] = spe.post_processing_solution
+                # TODO handle discontinuous case and use self.subdomain
+
+        self.dolfinx_expression = fem.Expression(
+            self.expression(**kwargs),
+            self.function.function_space.element.interpolation_points,
+        )

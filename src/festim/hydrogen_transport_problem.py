@@ -449,6 +449,22 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     else:
                         adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
+                elif isinstance(export, exports.CustomField):
+                    export.function = fem.Function(self.V_CG_1)
+                    export.set_dolfinx_expression(
+                        temperature=self.temperature_fenics,
+                        species=self.species,
+                        time=self.t,
+                    )
+
+                    export.writer = dolfinx.io.VTXWriter(
+                        comm=export.function.function_space.mesh.comm,
+                        filename=export.filename,
+                        output=export.function,
+                        engine="BP5",
+                    )
+                    continue
+
             elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 # raise not implemented error if the derived quantity don't match the
                 # type of mesh eg. SurfaceFlux is used with cylindrical mesh
@@ -629,6 +645,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         )
         self.V_DG_0 = fem.functionspace(self.mesh.mesh, element_DG0)
         self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
+        self.V_CG_1 = fem.functionspace(self.mesh.mesh, ("CG", 1))
 
         self.u = fem.Function(self.function_space)
         self.u_n = fem.Function(self.function_space)
@@ -981,6 +998,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self._temperature_as_function.interpolate(
                         self._get_temperature_field_as_function()
                     )
+                    export.writer.write(float(self.t))
+                elif isinstance(export, exports.CustomField):
+                    # update internal function
+                    export.function.interpolate(export.dolfinx_expression)
                     export.writer.write(float(self.t))
 
             # TODO if export type derived quantity
