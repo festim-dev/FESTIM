@@ -5,6 +5,7 @@ from dolfinx import fem, io
 import ufl
 
 from festim.species import Species
+from festim.helpers import get_interpolation_points
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 import inspect
 
@@ -225,5 +226,5 @@ class CustomField(ExportBaseClass):
 
         self.dolfinx_expression = fem.Expression(
             self.expression(**kwargs),
-            self.function.function_space.element.interpolation_points,
+            get_interpolation_points(self.function.function_space.element),
         )
