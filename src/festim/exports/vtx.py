@@ -9,7 +9,7 @@ from dolfinx import fem, io
 
 from festim.helpers import get_interpolation_points
 from festim import k_B as _k_B
-from festim.species import Species
+from festim.species import Species, ImplicitSpecies
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 from festim.reaction import Reaction
 
@@ -280,6 +280,11 @@ class CustomField(ExportBaseClass):
         for arg in arguments:
             if arg in self.species_dependent_value:
                 spe = self.species_dependent_value[arg]
+                if isinstance(spe, ImplicitSpecies):
+                    raise NotImplementedError(
+                        "Custom fields depending on implicit species are not"
+                        "implemented yet."
+                    )
                 if mixed_domain:
                     kwargs[arg] = spe.subdomain_to_post_processing_solution[
                         self.subdomain
