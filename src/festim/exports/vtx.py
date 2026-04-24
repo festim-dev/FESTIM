@@ -216,14 +216,28 @@ class CustomField(ExportBaseClass):
             x = ufl.SpatialCoordinate(time._ufl_domain)
             kwargs["x"] = x
         if "T" in arguments:
-            kwargs["T"] = temperature
+            if (
+                isinstance(temperature, fem.Function)
+                and self.subdomain.sub_T is not None
+            ):
+                kwargs["T"] = (
+                    self.subdomain.sub_T
+                )  # NOTE I'm not sure that sub_T is updated at every time step
+            else:
+                kwargs["T"] = temperature
         # check if there are other arguments and if they are in species_dependent_value
         for arg in arguments:
             if arg in self.species_dependent_value:
                 spe = self.species_dependent_value[arg]
-                kwargs[arg] = spe.post_processing_solution
-                # TODO handle discontinuous case and use self.subdomain
-
+                if spe.subdomain_to_post_processing_solution:
+                    kwargs[arg] = spe.subdomain_to_post_processing_solution[
+                        self.subdomain
+                    ]
+                else:
+                    kwargs[arg] = spe.post_processing_solution
+            assert kwargs[arg] is not None, (
+                f"Argument {arg} not found in species_dependent_value"
+            )
         self.dolfinx_expression = fem.Expression(
             self.expression(**kwargs),
             get_interpolation_points(self.function.function_space.element),
