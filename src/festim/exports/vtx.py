@@ -264,7 +264,7 @@ class CustomField(ExportBaseClass):
         if "t" in arguments:
             kwargs["t"] = time
         if "x" in arguments:
-            x = ufl.SpatialCoordinate(time._ufl_domain)
+            x = ufl.SpatialCoordinate(self.function.function_space.mesh)
             kwargs["x"] = x
         if "T" in arguments:
             if isinstance(temperature, fem.Function) and mixed_domain:
@@ -288,9 +288,34 @@ class CustomField(ExportBaseClass):
                 f"Argument {arg} not found in species_dependent_value"
             )
 
+        self.check_valid_inputs(kwargs, mixed_domain)
+
         # evaluate the user-provided expression with the appropriate arguments and create a
         # dolfinx.fem.Expression
         self.dolfinx_expression = fem.Expression(
             self.expression(**kwargs),
             get_interpolation_points(self.function.function_space.element),
         )
+
+    def check_valid_inputs(self, kwargs: dict, mixed_domain: bool):
+        """
+        Check if we are in the mixed domain/discontinuous case and if the user-provided
+        expression is valid in this case.
+        dolfinx.fem.Expression does not support co-dim 0 submeshes and time is defined
+        on the parent mesh, so we cannot have time-dependent custom fields in the mixed
+        domain/discontinuous case.
+
+        When https://github.com/FEniCS/dolfinx/issues/3207 is resolved we should be
+        able to support this
+        """
+
+        # check the domain of all kwargs and check that they are the same
+
+        if mixed_domain and "t" in kwargs:
+            raise NotImplementedError(
+                "Time-dependent custom fields are not implemented in the case of a "
+                "mixed domain/discontinuous case."
+                "dolfinx.fem.Expression does not support co-dim 0 submeshes and time is"
+                "defined on the parent mesh."
+                "See https://github.com/FEniCS/dolfinx/issues/3207 for more details."
+            )
