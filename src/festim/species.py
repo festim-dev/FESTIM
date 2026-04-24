@@ -111,6 +111,12 @@ class Species:
     def concentration(self):
         return self.solution
 
+    def concentration_submesh(self, subdomain: _VolumeSubdomain):
+        assert subdomain in self.subdomains, (
+            f"Species {self.name} has no solution on subdomain {subdomain}."
+        )
+        return self.subdomain_to_solution[subdomain]
+
     @property
     def legacy(self) -> bool:
         """
@@ -173,6 +179,17 @@ class ImplicitSpecies:
                         + f"because {other.name} has no solution."
                     )
         return self.value_fenics - sum([other.solution for other in self.others])
+
+    def concentration_submesh(self, subdomain: _VolumeSubdomain):
+        if len(self.others) > 0:
+            for other in self.others:
+                assert other.subdomain_to_solution[subdomain], (
+                    f"Cannot compute concentration of {self.name} because {other.name}"
+                    + f" has no solution on subdomain {subdomain}."
+                )
+        return self.value_fenics - sum(
+            [other.subdomain_to_solution[subdomain] for other in self.others]
+        )
 
     def create_value_fenics(self, mesh, t: fem.Constant):
         """Creates the value of the density as a fenics object and sets it to
