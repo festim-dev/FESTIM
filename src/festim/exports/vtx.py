@@ -8,6 +8,7 @@ import ufl
 from dolfinx import fem, io
 
 from festim.helpers import get_interpolation_points
+from festim import k_B as _k_B
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 from festim.reaction import Reaction
@@ -331,11 +332,14 @@ class ReactionRate(CustomField):
         subdomain: VolumeSubdomain | None = None,
         checkpoint: bool = False,
     ):
-        # for example
-        def expression(T, c_a, c_b, c_c):
-            return reaction.reaction_term(
-                T, reactant_concentrations=[c_a, c_b], product_concentrations=[c_c]
-            )
+        def expression(T, reactants, products):
+            k = reaction.k_0 * ufl.exp(-reaction.E_k / (_k_B * T))
+            if reaction.p_0 and reaction.E_p:
+                p = reaction.p_0 * ufl.exp(-reaction.E_p / (_k_B * T))
+            elif reaction.p_0:
+                p = reaction.p_0
+
+            return k * ufl.product(reactants) - p * ufl.product(products)
 
         super().__init__(
             filename=filename,
