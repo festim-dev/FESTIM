@@ -336,6 +336,7 @@ class ReactionRate(CustomField):
         times: list[float] | None = None,
         subdomain: VolumeSubdomain | None = None,
         checkpoint: bool = False,
+        direction: str = "both",
     ):
 
         reactant_names = [reactant.name for reactant in reaction.reactant]
@@ -355,7 +356,15 @@ class ReactionRate(CustomField):
             else:
                 p = 0.0
 
-            return k * ufl.product(_reactant_names) - p * ufl.product(_product_names)
+            forward = k * ufl.product(_reactant_names)
+            backward = p * ufl.product(_product_names)
+
+            if direction == "forward":
+                return forward
+            elif direction == "backward":
+                return backward
+            else:
+                return forward - backward
 
         self.override_signature(expression, reactant_names, product_names)
 
