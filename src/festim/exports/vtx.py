@@ -1,13 +1,15 @@
+import inspect
 import warnings
+from collections.abc import Callable
 from pathlib import Path
+from typing import Union
 
 from dolfinx import fem, io
 import ufl
 
-from festim.species import Species
 from festim.helpers import get_interpolation_points
+from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
-import inspect
 
 
 class ExportBaseClass:
@@ -178,18 +180,47 @@ class VTXSpeciesExport(ExportBaseClass):
 
 
 class CustomField(ExportBaseClass):
+    """Export a custom field to a VTX file
+
+    Args:
+        filename: The name of the output file
+        expression: A function evaluating the custom field. Positional
+            arguments of the function can be "t" (time), "x" (spatial coordinate),
+            "T" (temperature), or any key from the `species_dependent_value` dictionary.
+        species_dependent_value: A dictionary mapping argument names
+            in `expression` to Species objects. Defaults to None.
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
+        subdomain: The volume subdomain on which the custom
+            field is evaluated. Defaults to None.
+        checkpoint: If True, the export will be a checkpoint file using
+            adios4dolfinx and won't be readable by ParaView. Default is False.
+
+    Attributes:
+        filename: The name of the output file
+        expression: A function evaluating the custom field.
+        species_dependent_value: A dictionary mapping argument names to Species objects.
+        subdomain: The volume subdomain on which the custom field is evaluated.
+        checkpoint: If True, the export will be a checkpoint file.
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps.
+        function: the function containing the custom field values
+        writer: The VTXWriter object used to write the file
+        dolfinx_expression: the dolfinx expression used to evaluate the function
+    """
+
     function: fem.Function
     writer: io.VTXWriter
     dolfinx_expression: fem.Expression
 
     def __init__(
         self,
-        filename,
-        expression,
-        species_dependent_value=None,
-        times=None,
+        filename: Union[str, Path],
+        expression: Callable,
+        species_dependent_value: Union[dict[str, Species], None] = None,
+        times: Union[list[float], list[int], None] = None,
         subdomain: VolumeSubdomain = None,
-        checkpoint=False,
+        checkpoint: bool = False,
     ):
         super().__init__(
             filename=filename,
