@@ -337,14 +337,49 @@ class ReactionRate(CustomField):
         subdomain: VolumeSubdomain | None = None,
         checkpoint: bool = False,
     ):
-        def expression(T, reactants, products):
+
+        reactant_names = [reactant.name for reactant in reaction.reactant]
+        if isinstance(reaction.product, list):
+            product_names = [product.name for product in reaction.product]
+        else:
+            product_names = [reaction.product.name]
+
+        def expression(T, **kwargs):
+            _reactant_names = [kwargs[name] for name in reactant_names]
+            _product_names = [kwargs[name] for name in product_names]
             k = reaction.k_0 * ufl.exp(-reaction.E_k / (_k_B * T))
             if reaction.p_0 and reaction.E_p:
                 p = reaction.p_0 * ufl.exp(-reaction.E_p / (_k_B * T))
             elif reaction.p_0:
                 p = reaction.p_0
+            else:
+                p = 0.0
 
-            return k * ufl.product(reactants) - p * ufl.product(products)
+            return k * ufl.product(_reactant_names) - p * ufl.product(_product_names)
+
+        # generate the __signature__ of the expression function so that it has the
+        # correct arguments for the user-provided expression.
+        # This is needed as set_dolfinx_expression() checks
+        # the arguments of expression and it would otherwise look for kwargs
+        sig_params = [inspect.Parameter("T", inspect.Parameter.POSITIONAL_OR_KEYWORD)]
+        # Use dict.fromkeys to preserve order and remove duplicates
+        for name in dict.fromkeys(reactant_names + product_names):
+            sig_params.append(
+                inspect.Parameter(name, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+            )
+        expression.__signature__ = inspect.Signature(sig_params)
+
+        assert inspect.signature(expression).parameters.keys() == {
+            "T",
+            *reactant_names,
+            *product_names,
+        }, (
+            "The expression for the reaction rate is automatically generated based on the "
+            "reaction provided. The arguments of the expression must be T (temperature) and "
+            "the names of the reactants and products. The current expression has arguments "
+            f"{inspect.signature(expression).parameters.keys()} but should have arguments "
+            f"T and {reactant_names + product_names}."
+        )
 
         super().__init__(
             filename=filename,
