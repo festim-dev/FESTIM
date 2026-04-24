@@ -10,6 +10,7 @@ from dolfinx import fem, io
 from festim.helpers import get_interpolation_points
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
+from festim.reaction import Reaction
 
 
 class ExportBaseClass:
@@ -319,3 +320,30 @@ class CustomField(ExportBaseClass):
                 "defined on the parent mesh."
                 "See https://github.com/FEniCS/dolfinx/issues/3207 for more details."
             )
+
+
+class ReactionRate(CustomField):
+    def __init__(
+        self,
+        reaction: Reaction,
+        filename: str | Path,
+        times: list[float] | None = None,
+        subdomain: VolumeSubdomain | None = None,
+        checkpoint: bool = False,
+    ):
+        # for example
+        def expression(T, c_a, c_b, c_c):
+            return reaction.reaction_term(
+                T, reactant_concentrations=[c_a, c_b], product_concentrations=[c_c]
+            )
+
+        super().__init__(
+            filename=filename,
+            expression=expression,
+            species_dependent_value={
+                spe.name: spe for spe in reaction.reactant + reaction.product
+            },
+            times=times,
+            subdomain=subdomain,
+            checkpoint=checkpoint,
+        )

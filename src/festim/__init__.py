@@ -40,6 +40,7 @@ from .exports.vtx import (
     VTXSpeciesExport,
     VTXTemperatureExport,
     CustomField,
+    ReactionRate,
 )
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
