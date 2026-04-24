@@ -4,8 +4,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Union
 
-from dolfinx import fem, io
 import ufl
+from dolfinx import fem, io
 
 from festim.helpers import get_interpolation_points
 from festim.species import Species
