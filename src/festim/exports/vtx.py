@@ -357,10 +357,31 @@ class ReactionRate(CustomField):
 
             return k * ufl.product(_reactant_names) - p * ufl.product(_product_names)
 
-        # generate the __signature__ of the expression function so that it has the
-        # correct arguments for the user-provided expression.
-        # This is needed as set_dolfinx_expression() checks
-        # the arguments of expression and it would otherwise look for kwargs
+        self.override_signature(expression, reactant_names, product_names)
+
+        super().__init__(
+            filename=filename,
+            expression=expression,
+            species_dependent_value={
+                spe.name: spe for spe in reaction.reactant + reaction.product
+            },
+            times=times,
+            subdomain=subdomain,
+            checkpoint=checkpoint,
+        )
+
+    def override_signature(
+        self, expression: Callable, reactant_names: list[str], product_names: list[str]
+    ):
+        """
+        Override the signature of the expression function. This is needed to ensure that
+        the expression has the correct arguments for set_dolfinx_expression().
+
+        Args:
+            expression: The user-provided expression for the reaction rate. The arguments
+                of the expression must be T (temperature) and the names of the reactants
+                and products.
+        """
         sig_params = [inspect.Parameter("T", inspect.Parameter.POSITIONAL_OR_KEYWORD)]
         # Use dict.fromkeys to preserve order and remove duplicates
         for name in dict.fromkeys(reactant_names + product_names):
@@ -379,15 +400,4 @@ class ReactionRate(CustomField):
             "the names of the reactants and products. The current expression has arguments "
             f"{inspect.signature(expression).parameters.keys()} but should have arguments "
             f"T and {reactant_names + product_names}."
-        )
-
-        super().__init__(
-            filename=filename,
-            expression=expression,
-            species_dependent_value={
-                spe.name: spe for spe in reaction.reactant + reaction.product
-            },
-            times=times,
-            subdomain=subdomain,
-            checkpoint=checkpoint,
         )
