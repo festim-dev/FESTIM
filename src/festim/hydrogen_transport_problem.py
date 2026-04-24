@@ -453,7 +453,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     export.function = fem.Function(self.V_CG_1)
                     export.set_dolfinx_expression(
                         temperature=self.temperature_fenics,
-                        species=self.species,
                         time=self.t,
                     )
 
@@ -1695,7 +1694,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.function = fem.Function(V)
                 export.set_dolfinx_expression(
                     temperature=self.temperature_fenics,  # need to pass the right temperature
-                    species=self.species,
                     time=self.t,
                 )
 

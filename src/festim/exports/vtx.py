@@ -212,6 +212,10 @@ class CustomField(ExportBaseClass):
     function: fem.Function
     writer: io.VTXWriter
     dolfinx_expression: fem.Expression
+    expression: Callable
+    species_dependent_value: dict[str, Species]
+    subdomain: VolumeSubdomain
+    checkpoint: bool
 
     def __init__(
         self,
@@ -235,9 +239,17 @@ class CustomField(ExportBaseClass):
     def set_dolfinx_expression(
         self,
         temperature: fem.Constant | fem.Function,
-        species: list,
         time: fem.Constant,
     ):
+        """
+        Set the dolfinx expression used to evaluate the custom field. This is done by
+        evaluating the user-provided expression with the appropriate arguments and using
+        the result to create a dolfinx expression.
+
+        Args:
+            temperature: The temperature field to use in the expression
+            time: The time to use in the expression
+        """
         # check
         arguments = inspect.signature(self.expression).parameters
         kwargs = {}
