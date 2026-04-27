@@ -645,6 +645,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             spe.sub_function_space = self.function_space.sub(idx)
             spe.sub_function = self.u.sub(idx)  # TODO add this to discontinuous class
             spe.post_processing_solution = self.u.sub(idx).collapse()
+            spe.post_processing_solution.name = spe.name
             spe.collapsed_function_space, spe.map_sub_to_main_solution = (
                 self.function_space.sub(idx).collapse()
             )
