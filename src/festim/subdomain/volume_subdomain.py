@@ -244,7 +244,7 @@ def map_surface_to_volume_subdomains(
     valid_facet_tags = connected_facet_tags[valid]
 
     unique_pairs = np.unique(np.vstack((valid_facet_tags, valid_cell_tags)).T, axis=0)
-if comm is not None and comm.size > 1:
+    if comm is not None and comm.size > 1:
         all_pairs = comm.allgather(unique_pairs)
         non_empty = [p for p in all_pairs if len(p) > 0]
         if non_empty:
