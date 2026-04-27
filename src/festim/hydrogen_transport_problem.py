@@ -41,7 +41,6 @@ from festim.helpers import (
     is_it_time_to_export,
     nmm_interpolate,
 )
-from festim.material import SolubilityLaw
 
 from .mesh import CoordinateSystem, Mesh
 
