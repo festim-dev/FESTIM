@@ -194,6 +194,7 @@ def map_surface_to_volume_subdomains(
     facet_to_cell: dolfinx.cpp.graph.AdjacencyList_int32,
     volume_subdomains: list[VolumeSubdomain],
     surface_subdomains: list[SurfaceSubdomain],
+    comm=None,
 ) -> dict[SurfaceSubdomain, VolumeSubdomain]:
     """Maps surface subdomains to volume subdomains based on the facet and cell meshtags
     and the facet to cell connectivity.
@@ -208,6 +209,7 @@ def map_surface_to_volume_subdomains(
         facet_to_cell: the facet to cell connectivity of the parent mesh
         volume_subdomains: the list of volume subdomains
         surface_subdomains: the list of surface subdomains
+        comm: MPI communicator (required for parallel runs)
 
     Returns:
         dict[SurfaceSubdomain, VolumeSubdomain]: a dictionary mapping surface subdomains
@@ -242,6 +244,11 @@ def map_surface_to_volume_subdomains(
     valid_facet_tags = connected_facet_tags[valid]
 
     unique_pairs = np.unique(np.vstack((valid_facet_tags, valid_cell_tags)).T, axis=0)
+if comm is not None and comm.size > 1:
+        all_pairs = comm.allgather(unique_pairs)
+        non_empty = [p for p in all_pairs if len(p) > 0]
+        if non_empty:
+            unique_pairs = np.unique(np.vstack(non_empty), axis=0)
 
     surface_tag_to_subdomain = {s.id: s for s in surface_subdomains}
     volume_tag_to_subdomain = {v.id: v for v in volume_subdomains}

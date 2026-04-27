@@ -1158,6 +1158,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 facet_to_cell=facet_to_cell,
                 volume_subdomains=self.volume_subdomains,
                 surface_subdomains=self.surface_subdomains,
+                comm=self.mesh.mesh.comm,
             )
 
         # create submeshes and transfer meshtags to subdomains
