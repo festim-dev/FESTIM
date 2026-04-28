@@ -1,3 +1,4 @@
+import warnings
 from typing import Any
 
 from mpi4py import MPI
@@ -10,7 +11,6 @@ import ufl
 from dolfinx import fem
 from dolfinx.nls.petsc import NewtonSolver
 from packaging.version import Version
-import warnings
 
 import festim as F
 from festim.mesh.mesh import Mesh as _Mesh

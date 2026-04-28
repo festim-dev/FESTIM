@@ -41,7 +41,6 @@ from festim.helpers import (
     is_it_time_to_export,
     nmm_interpolate,
 )
-from festim.material import SolubilityLaw
 
 from .mesh import CoordinateSystem, Mesh
 
@@ -1076,7 +1075,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         exports=None,
         traps=None,
         interfaces: list[_subdomain.Interface] | None = None,
-        surface_to_volume: dict | None = None,
         petsc_options: dict | None = None,
     ):
         """Class for a multi-material hydrogen transport problem
@@ -1114,7 +1112,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             petsc_options=petsc_options,
         )
         self.interfaces = interfaces or []
-        self.surface_to_volume = surface_to_volume or {}
+        self.surface_to_volume = {}
         self.subdomain_to_species = {}  # maps subdomain to species defined in it
         self.subdomain_to_V_CG1 = {}
 
@@ -1163,6 +1161,27 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 raise TypeError("subdomains attribute in Species should be list")
 
         self.define_meshtags_and_measures()
+        if self.surface_to_volume:
+            # tell users that this is no longer required
+            warnings.warn(
+                f"The surface_to_volume attribute of the {self.__class__.__name__}"
+                " class is no longer required and can be removed."
+                "The mapping between surface and volume subdomains is now done"
+                "automatically based on the connectivity of the mesh and the meshtags",
+                DeprecationWarning,
+            )
+        else:
+            facet_to_cell = self.mesh.mesh.topology.connectivity(
+                self.mesh.mesh.topology.dim - 1, self.mesh.mesh.topology.dim
+            )
+            self.surface_to_volume = _subdomain.map_surface_to_volume_subdomains(
+                ft=self.facet_meshtags,
+                ct=self.volume_meshtags,
+                facet_to_cell=facet_to_cell,
+                volume_subdomains=self.volume_subdomains,
+                surface_subdomains=self.surface_subdomains,
+                comm=self.mesh.mesh.comm,
+            )
 
         # create submeshes and transfer meshtags to subdomains
         for subdomain in self.volume_subdomains:

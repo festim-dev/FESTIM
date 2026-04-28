@@ -9,6 +9,7 @@ from numpy import typing as npt
 from scifem.mesh import transfer_meshtags_to_submesh
 
 from festim.material import Material
+from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 # Define the appropriate method based on the version
 try:
@@ -24,7 +25,7 @@ class VolumeSubdomain:
     Volume subdomain class
 
     Args:
-        id: the id of the volume subdomain
+        id: the id of the volume subdomain (> 0)
         submesh: the submesh of the volume subdomain
         cell_map: the cell map of the volume subdomain
         parent_mesh: the parent mesh of the volume subdomain
@@ -58,6 +59,7 @@ class VolumeSubdomain:
     def __init__(
         self, id, material, locator: Callable | None = None, name: str | None = None
     ):
+        assert id != 0, "Volume subdomain id cannot be 0"
         self.id = id
         self.material = material
         self.locator = locator
@@ -184,3 +186,89 @@ def find_volume_from_id(id: int, volumes: list):
         if vol.id == id:
             return vol
     raise ValueError(f"id {id} not found in list of volumes")
+
+
+def map_surface_to_volume_subdomains(
+    ft: dolfinx.mesh.MeshTags,
+    ct: dolfinx.mesh.MeshTags,
+    facet_to_cell: dolfinx.cpp.graph.AdjacencyList_int32,
+    volume_subdomains: list[VolumeSubdomain],
+    surface_subdomains: list[SurfaceSubdomain],
+    comm=None,
+) -> dict[SurfaceSubdomain, VolumeSubdomain]:
+    """Maps surface subdomains to volume subdomains based on the facet and cell meshtags
+    and the facet to cell connectivity.
+
+
+    Raises:
+        AssertionError: if a surface subdomain is connected to multiple volume subdomains
+
+    Args:
+        ft: the facet meshtags of the parent mesh
+        ct: the cell meshtags of the parent mesh
+        facet_to_cell: the facet to cell connectivity of the parent mesh
+        volume_subdomains: the list of volume subdomains
+        surface_subdomains: the list of surface subdomains
+        comm: MPI communicator (required for parallel runs)
+
+    Returns:
+        dict[SurfaceSubdomain, VolumeSubdomain]: a dictionary mapping surface subdomains
+            to volume subdomains
+    """
+
+    # get connected cells for tagged facets
+    start_indices = facet_to_cell.offsets[ft.indices]
+    end_indices = facet_to_cell.offsets[ft.indices + 1]
+    num_connections = end_indices - start_indices
+
+    # A facet is connected to at most 2 cells (boundary = 1, interior = 2)
+    cell_ids_0 = facet_to_cell.array[start_indices]
+    has_second_cell = num_connections == 2
+    cell_ids_1 = facet_to_cell.array[start_indices[has_second_cell] + 1]
+
+    connected_cells = np.concatenate([cell_ids_0, cell_ids_1])
+    connected_facet_tags = np.concatenate([ft.values, ft.values[has_second_cell]])
+
+    # map connected cells to their cell tags
+    sort_idx = np.argsort(ct.indices)
+    sorted_ct_indices = ct.indices[sort_idx]
+    sorted_ct_values = ct.values[sort_idx]
+
+    idx = np.searchsorted(sorted_ct_indices, connected_cells)
+    # mask out-of-bounds
+    valid = idx < len(sorted_ct_indices)
+    # of those in bounds, check if they actually match
+    valid[valid] = sorted_ct_indices[idx[valid]] == connected_cells[valid]
+
+    valid_cell_tags = sorted_ct_values[idx[valid]]
+    valid_facet_tags = connected_facet_tags[valid]
+
+    unique_pairs = np.unique(np.vstack((valid_facet_tags, valid_cell_tags)).T, axis=0)
+    if comm is not None and comm.size > 1:
+        all_pairs = comm.allgather(unique_pairs)
+        non_empty = [p for p in all_pairs if len(p) > 0]
+        if non_empty:
+            unique_pairs = np.unique(np.vstack(non_empty), axis=0)
+
+    surface_tag_to_subdomain = {s.id: s for s in surface_subdomains}
+    volume_tag_to_subdomain = {v.id: v for v in volume_subdomains}
+
+    surface_to_subdomain = {}
+
+    for s_tag, v_tag in unique_pairs:
+        dolfinx.log.log(
+            dolfinx.log.LogLevel.INFO,
+            f"Facet tag {s_tag} is connected to cell tag {v_tag}",
+        )
+        s_subdomain = surface_tag_to_subdomain.get(s_tag)
+        v_subdomain = volume_tag_to_subdomain.get(v_tag)
+
+        if s_subdomain and v_subdomain:
+            if s_subdomain in surface_to_subdomain:
+                assert surface_to_subdomain[s_subdomain] == v_subdomain, (
+                    f"Surface subdomain {s_subdomain.id} is connected to multiple volume subdomains: "
+                    f"{surface_to_subdomain[s_subdomain].id} and {v_subdomain.id}"
+                )
+            else:
+                surface_to_subdomain[s_subdomain] = v_subdomain
+    return surface_to_subdomain
