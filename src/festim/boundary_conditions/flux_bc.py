@@ -7,8 +7,7 @@ from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class FluxBCBase:
-    """
-    Flux boundary condition class
+    """Flux boundary condition class.
 
     Ensuring the gradient of the solution u at a boundary:
 
@@ -30,11 +29,12 @@ class FluxBCBase:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the boundary
             condition is applied
         value (float, fem.Constant, callable): the value of the boundary condition
-        value_fenics (fem.Function or fem.Constant): the value of the boundary condition in
+        value_fenics (fem.Function or fem.Constant): the value of the boundary
+        condition in
             fenics format
-        bc_expr (fem.Expression): the expression of the boundary condition that is used to
+        bc_expr (fem.Expression): the expression of the boundary condition that
+        is used to
             update the value_fenics
-
     """
 
     def __init__(self, subdomain: SurfaceSubdomain, value):
@@ -57,7 +57,8 @@ class FluxBCBase:
             value, fem.Function | fem.Constant | np.ndarray | ufl.core.expr.Expr
         ):
             raise TypeError(
-                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not {type(value)}"  # noqa: E501
+                f"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant,"
+                f" np.ndarray or ufl.core.expr.Expr not {type(value)}"
             )
         self._value_fenics = value
 
@@ -87,10 +88,9 @@ class FluxBCBase:
 
     def create_value_fenics(self, mesh, temperature, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a fenics.Constant.
-        If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a ufl Expression
+        self.value_fenics. If the value is a constant, it is converted to a
+        fenics.Constant. If the value is a function of t, it is converted to a
+        fenics.Constant. Otherwise, it is converted to a ufl Expression.
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
@@ -109,7 +109,7 @@ class FluxBCBase:
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "
+                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "  # noqa: E501
                     )
                 self.value_fenics = F.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
@@ -126,7 +126,7 @@ class FluxBCBase:
                 self.value_fenics = self.value(**kwargs)
 
     def update(self, t):
-        """Updates the flux bc value
+        """Updates the flux bc value.
 
         Args:
             t (float): the time
@@ -138,22 +138,27 @@ class FluxBCBase:
 
 
 class ParticleFluxBC(FluxBCBase):
-    """
-    Particle flux boundary condition class
+    """Particle flux boundary condition class.
+
     Ensuring the gradient of the solution c at a boundary:
     -D * grad(c) * n = f
-    where D is the material diffusivity, n is the outwards normal vector of the boundary, f is a function of space and time.
+    where D is the material diffusivity, n is the outwards normal vector of the
+    boundary, f is a function of space and time.
 
     Args:
-        subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
+        subdomain (festim.SurfaceSubdomain): the surface subdomain where the
+        particle flux
             is applied
         value (float, fem.Constant, callable): the value of the particle flux
         species (festim.Species): the species to which the flux is applied
-        species_dependent_value (dict): a dictionary containing the species that the value. Example: {"name": species}
-            where "name" is the variable name in the callable value and species is a festim.Species object.
+        species_dependent_value (dict): a dictionary containing the species
+        that the value. Example: {"name": species}
+            where "name" is the variable name in the callable value and species
+            is a festim.Species object.
 
     Attributes:
-        subdomain (festim.SurfaceSubdomain): the surface subdomain where the particle flux
+        subdomain (festim.SurfaceSubdomain): the surface subdomain where the
+        particle flux
             is applied
         value (float or fem.Constant): the value of the particle flux
         species (festim.Species): the species to which the flux is applied
@@ -161,8 +166,10 @@ class ParticleFluxBC(FluxBCBase):
             fenics format
         bc_expr (fem.Expression): the expression of the particle flux that is used to
             update the value_fenics
-        species_dependent_value (dict): a dictionary containing the species that the value. Example: {"name": species}
-            where "name" is the variable name in the callable value and species is a festim.Species object.
+        species_dependent_value (dict): a dictionary containing the species
+        that the value. Example: {"name": species}
+            where "name" is the variable name in the callable value and species
+            is a festim.Species object.
 
 
     Examples:
@@ -176,11 +183,14 @@ class ParticleFluxBC(FluxBCBase):
         .. testcode:: ParticleFluxBC
 
             ParticleFluxBC(subdomain=my_subdomain, value=1, species="H")
-            ParticleFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0], species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda x: 1 + x[0],
+            species="H")
             ParticleFluxBC(subdomain=my_subdomain, value=lambda t: 1 + t, species="H")
             ParticleFluxBC(subdomain=my_subdomain, value=lambda T: 1 + T, species="H")
-            ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0] + t, species="H")
-            ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2, species="H", species_dependent_value={"c1": species1})
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda x, t: 1 + x[0]
+            + t, species="H")
+            ParticleFluxBC(subdomain=my_subdomain, value=lambda c1: 2 * c1**2,
+            species="H", species_dependent_value={"c1": species1})
     """
 
     def __init__(self, subdomain, value, species, species_dependent_value={}):
@@ -191,10 +201,9 @@ class ParticleFluxBC(FluxBCBase):
 
     def create_value_fenics(self, mesh, temperature, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a fenics.Constant.
-        If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a ufl Expression
+        self.value_fenics. If the value is a constant, it is converted to a
+        fenics.Constant. If the value is a function of t, it is converted to a
+        fenics.Constant. Otherwise, it is converted to a ufl Expression.
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
@@ -213,7 +222,7 @@ class ParticleFluxBC(FluxBCBase):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
-                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "
+                        f"self.value should return a float or an int, not {type(self.value(t=float(t)))} "  # noqa: E501
                     )
                 self.value_fenics = F.as_fenics_constant(
                     mesh=mesh, value=self.value(t=float(t))
@@ -239,11 +248,12 @@ class ParticleFluxBC(FluxBCBase):
 
 
 class HeatFluxBC(FluxBCBase):
-    """
-    Heat flux boundary condition class
+    """Heat flux boundary condition class.
+
     Ensuring the gradient of the solution T at a boundary:
     -lambda * grad(T) * n = f
-    where lambda is the thermal conductivity , n is the outwards normal vector of the boundary, f is a function of space and time.
+    where lambda is the thermal conductivity , n is the outwards normal vector
+    of the boundary, f is a function of space and time.
 
     Args:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the heat flux

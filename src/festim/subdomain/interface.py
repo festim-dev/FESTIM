@@ -54,9 +54,8 @@ class InterfaceMethod(Enum):
 class InterfaceBase(ABC):
     """Abstract base class for interfaces between subdomains.
 
-    Provides common functionality for handling interfaces in discontinuous
-    finite element problems, including integration data computation and
-    restriction handling.
+    Provides common functionality for handling interfaces in discontinuous finite
+    element problems, including integration data computation and restriction handling.
     """
 
     def __init__(
@@ -76,9 +75,9 @@ class InterfaceBase(ABC):
     def pad_parent_maps(self):
         """Pad parent-to-submesh maps for correct sparsity pattern.
 
-        This is a workaround to ensure the sparsity pattern is correct when
-        assembling forms with interface integrals. It pads the mapping between
-        parent mesh cells and submesh cells for DOLFINx versions that require it.
+        This is a workaround to ensure the sparsity pattern is correct when assembling
+        forms with interface integrals. It pads the mapping between parent mesh cells
+        and submesh cells for DOLFINx versions that require it.
         """
         try:
             # No padding needed for latest version of DOLFINx

@@ -46,10 +46,11 @@ def test_petsc_options():
 
 
 def test_D_global_on_2d_mesh():
-    """
-    Test that the D_global is defined correctly on a 2D mesh with two different
-    materials. The D_global should be defined as a piecewise constant function
-    with two different values, one for each material.
+    """Test that the D_global is defined correctly on a 2D mesh with two different
+    materials.
+
+    The D_global should be defined as a piecewise constant function with two different
+    values, one for each material.
     """
     mesh, mt, ct = generate_mesh(20)
 
@@ -100,7 +101,7 @@ def test_D_global_on_2d_mesh():
     ],
 )
 def test_min_max_vol_on_2d_mesh(species):
-    """Added test that catches bug #908"""
+    """Added test that catches bug #908."""
     mesh, mt, ct = generate_mesh(10)
 
     my_model = F.HydrogenTransportProblem()
@@ -185,7 +186,7 @@ def test_min_max_vol_on_2d_mesh(species):
 
 
 def test_temp_dependent_bc_mixed_domain_temperature_as_function():
-    """Test to catch bug 986"""
+    """Test to catch bug 986."""
     mesh, mt, ct = generate_mesh(8)
 
     V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
@@ -245,8 +246,8 @@ def test_del():
 
 
 def test_multispecies_with_immobile():
-    """test to catch bug 1036, that the diffusion coefficent for a non-mobile species
-    is not requested in the dict given to material"""
+    """Test to catch bug 1036, that the diffusion coefficent for a non-mobile species is
+    not requested in the dict given to material."""
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=50))
@@ -284,9 +285,7 @@ def test_multispecies_with_immobile():
 
 
 def test_implicit_species_bug_reaction():
-    """
-    This test catches the bug described in issue #1084
-    """
+    """This test catches the bug described in issue #1084."""
     tungsten = F.Material(
         D_0=1,
         E_D=0,
@@ -333,7 +332,7 @@ def test_implicit_species_bug_reaction():
 
 
 def test_timesteps():
-    """Test that the timesteps are correctly saved in the model"""
+    """Test that the timesteps are correctly saved in the model."""
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=50))
 

@@ -8,8 +8,7 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class SourceBase:
-    """
-    Source base class
+    """Source base class.
 
     Args:
         value: the value of the source
@@ -72,8 +71,7 @@ class SourceBase:
 
 
 class ParticleSource(SourceBase):
-    """
-    Particle source class
+    """Particle source class.
 
     Args:
         value: the value of the source
@@ -119,8 +117,7 @@ class ParticleSource(SourceBase):
 
 
 class HeatSource(SourceBase):
-    """
-    Heat source class
+    """Heat source class.
 
     Args:
         value: the value of the source

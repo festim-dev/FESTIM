@@ -14,9 +14,7 @@ from festim.species import Species
 
 
 class DirichletBCBase:
-    """
-    Dirichlet boundary condition class
-    u = value
+    """Dirichlet boundary condition class u = value.
 
     Args:
         subdomain: The surface subdomain where the boundary condition is applied
@@ -28,7 +26,6 @@ class DirichletBCBase:
         value_fenics: The value of the boundary condition in fenics format
         bc_expr: The expression of the boundary condition that is used to
             update the `value_fenics`
-
     """
 
     subdomain: _subdomain.SurfaceSubdomain
@@ -67,14 +64,14 @@ class DirichletBCBase:
         if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
             # FIXME: Should we allow sending in a callable here?
             raise TypeError(
-                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"
+                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"  # noqa: E501
                 + f"{type(value)}"
             )
         self._value_fenics = value
 
     @property
     def time_dependent(self) -> bool:
-        """Returns true if the value of the boundary condition is time dependent"""
+        """Returns true if the value of the boundary condition is time dependent."""
         if self.value is None:
             return False
         if isinstance(self.value, fem.Constant):
@@ -92,17 +89,20 @@ class DirichletBCBase:
     ) -> npt.NDArray[np.int32] | tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]:
         """Defines the facets and the degrees of freedom of the boundary condition.
 
-        Given the input meshtags, find all facets matching the boundary condition subdomain ID,
+        Given the input meshtags, find all facets matching the boundary
+        condition subdomain ID,
         and locate all DOFs associated with the input function space(s).
 
         Note:
-            For sub-spaces, a tuple of sub-spaces are expected as input, and a tuple of arrays
+            For sub-spaces, a tuple of sub-spaces are expected as input, and a
+            tuple of arrays
             associated to each of the function spaces are returned.
 
         Args:
             facet_meshtags: MeshTags describing some facets in the domain
             mesh:
-            function_space: The function space or a tuple of function spaces: (sub, collapsed)
+            function_space: The function space or a tuple of function spaces:
+            (sub, collapsed)
         """
         mesh = (
             function_space[0].mesh
@@ -111,11 +111,11 @@ class DirichletBCBase:
         )
         if facet_meshtags.topology != mesh.topology._cpp_object:
             raise ValueError(
-                "Mesh of function-space is not the same as the one used for the meshtags"
+                "Mesh of function-space is not the same as the one used for the meshtags"  # noqa: E501
             )
         if mesh.topology.dim - 1 != facet_meshtags.dim:
             raise ValueError(
-                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim - 1}"
+                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim - 1}"  # noqa: E501
             )
         bc_dofs = fem.locate_dofs_topological(
             function_space, facet_meshtags.dim, facet_meshtags.find(self.subdomain.id)
@@ -124,7 +124,7 @@ class DirichletBCBase:
         return bc_dofs
 
     def update(self, t: float):
-        """Updates the boundary condition value
+        """Updates the boundary condition value.
 
         Args:
             t: the time
@@ -144,11 +144,13 @@ class FixedConcentrationBC(DirichletBCBase):
     Args:
         subdomain (festim.Subdomain): the surface subdomain where the boundary
             condition is applied
-        value: The value of the boundary condition. It can be a function of space and/or time
+        value: The value of the boundary condition. It can be a function of
+        space and/or time
         species: The name of the species
 
     Attributes:
-        temperature_dependent (bool): True if the value of the bc is temperature dependent
+        temperature_dependent (bool): True if the value of the bc is
+        temperature dependent
 
     Examples:
 
@@ -202,17 +204,18 @@ class FixedConcentrationBC(DirichletBCBase):
         K_S: fem.Function = None,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-        If the value is a function of t, it is converted to  `dolfinx.fem.Constant`.
-        Otherwise, it is converted to a `dolfinx.fem.Function`.Function and the
-        expression of the function is stored in `bc_expr`.
+        self.value_fenics. If the value is a constant, it is converted to a
+        `dolfinx.fem.Constant`. If the value is a function of t, it is converted to
+        `dolfinx.fem.Constant`. Otherwise, it is converted to a
+        `dolfinx.fem.Function`.Function and the expression of the function is stored in
+        `bc_expr`.
 
         Args:
             function_space: the function space
             temperature: The temperature
             t: the time
-            K_S: The solubility of the species. If provided, the value of the boundary condition
+            K_S: The solubility of the species. If provided, the value of the
+            boundary condition
                 is divided by K_S (change of variable method).
         """
         mesh = function_space.mesh
@@ -313,11 +316,10 @@ DirichletBC = FixedConcentrationBC
 class FixedTemperatureBC(DirichletBCBase):
     def create_value(self, function_space: fem.FunctionSpace, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-        If the value is a function of t, it is converted to a `dolfinx.fem.Constant`.
-        Otherwise, it is converted to a` dolfinx.fem.Function` and the
-        expression of the function is stored in `bc_expr`.
+        self.value_fenics. If the value is a constant, it is converted to a
+        `dolfinx.fem.Constant`. If the value is a function of t, it is converted to a
+        `dolfinx.fem.Constant`. Otherwise, it is converted to a` dolfinx.fem.Function`
+        and the expression of the function is stored in `bc_expr`.
 
         Args:
             function_space: the function space

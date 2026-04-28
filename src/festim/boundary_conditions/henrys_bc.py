@@ -5,14 +5,13 @@ from festim.boundary_conditions import FixedConcentrationBC
 
 
 def henrys_law(T, H_0, E_H, pressure):
-    """Applies the Henry's law to compute the concentration at the boundary"""
+    """Applies the Henry's law to compute the concentration at the boundary."""
     H = H_0 * ufl.exp(-E_H / k_B / T)
     return H * pressure
 
 
 class HenrysBC(FixedConcentrationBC):
-    """
-    Henrys boundary condition class
+    """Henrys boundary condition class.
 
     c = H * pressure
     H = H_0 * exp(-E_H / k_B / T)
@@ -21,7 +20,8 @@ class HenrysBC(FixedConcentrationBC):
         subdomain (festim.Subdomain): the subdomain where the boundary
             condition is applied
         species (str): the name of the species
-        H_0 (float or fem.Constant): the Henrys constant pre-exponential factor (H/m3/Pa)
+        H_0 (float or fem.Constant): the Henrys constant pre-exponential factor
+        (H/m3/Pa)
         E_H (float or fem.Constant): the Henrys constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
 
@@ -30,7 +30,8 @@ class HenrysBC(FixedConcentrationBC):
             condition is applied
         value (float or fem.Constant): the value of the boundary condition
         species (festim.Species or str): the name of the species
-        H_0 (float or fem.Constant): the Henrys constant pre-exponential factor (H/m3/Pa)
+        H_0 (float or fem.Constant): the Henrys constant pre-exponential factor
+        (H/m3/Pa)
         E_H (float or fem.Constant): the Henrys constant activation energy (eV)
         pressure (float or callable): the pressure at the boundary (Pa)
 
@@ -43,11 +44,16 @@ class HenrysBC(FixedConcentrationBC):
 
         .. testcode:: HenrysBC
 
-            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=1e5, species="H")
-            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda x: 1e5 + x[0], species="H")
-            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda t: 1e5 + t, species="H")
-            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda T: 1e5 + T, species="H")
-            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda x, t: 1e5 + x[0] + t, species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=1e5,
+            species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda
+            x: 1e5 + x[0], species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda
+            t: 1e5 + t, species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda
+            T: 1e5 + T, species="H")
+            HenrysBC(subdomain=my_subdomain, H_0=1e-6, E_H=0.2, pressure=lambda
+            x, t: 1e5 + x[0] + t, species="H")
     """
 
     def __init__(self, subdomain, H_0, E_H, pressure, species) -> None:
@@ -62,7 +68,7 @@ class HenrysBC(FixedConcentrationBC):
         super().__init__(value=value, species=species, subdomain=subdomain)
 
     def create_new_value_function(self):
-        """Creates a new value function based on the pressure attribute
+        """Creates a new value function based on the pressure attribute.
 
         Raises:
             ValueError: if the pressure function is not supported

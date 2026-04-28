@@ -10,7 +10,7 @@ import festim as F
 
 
 def test_surface_flux_export_compute():
-    """Test that the surface flux export computes the correct value"""
+    """Test that the surface flux export computes the correct value."""
 
     # BUILD
     L = 4.0
@@ -57,7 +57,7 @@ def test_surface_flux_export_compute():
 
 @pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
 def test_title_generation(tmp_path, value):
-    """Test that the title is made to be written to the header in a csv or txt file"""
+    """Test that the title is made to be written to the header in a csv or txt file."""
     my_export = F.SurfaceFlux(
         filename=os.path.join(tmp_path, f"{value}"),
         field=F.Species("TEST"),
@@ -73,7 +73,7 @@ def test_title_generation(tmp_path, value):
 
 
 def test_write_overwrite(tmp_path):
-    """Test that the write method overwrites the file if it already exists"""
+    """Test that the write method overwrites the file if it already exists."""
     filename = os.path.join(tmp_path, "my_export.csv")
     my_export = F.SurfaceFlux(
         filename=filename,
@@ -102,7 +102,7 @@ def test_write_overwrite(tmp_path):
 
 
 def test_filename_setter_raises_TypeError():
-    """Test that a TypeError is raised when the filename is not a string"""
+    """Test that a TypeError is raised when the filename is not a string."""
 
     with pytest.raises(TypeError, match="filename must be of type str"):
         F.SurfaceQuantity(
@@ -113,7 +113,8 @@ def test_filename_setter_raises_TypeError():
 
 
 def test_filename_setter_raises_ValueError(tmp_path):
-    """Test that a ValueError is raised when the filename does not end with .csv or .txt"""
+    """Test that a ValueError is raised when the filename does not end with .csv or
+    .txt."""
 
     with pytest.raises(ValueError):
         F.SurfaceQuantity(
@@ -124,7 +125,7 @@ def test_filename_setter_raises_ValueError(tmp_path):
 
 
 def test_field_setter_raises_TypeError():
-    """Test that a TypeError is raised when the field is not a F.Species"""
+    """Test that a TypeError is raised when the field is not a F.Species."""
 
     with pytest.raises(TypeError):
         F.SurfaceQuantity(
@@ -135,7 +136,7 @@ def test_field_setter_raises_TypeError():
 
 @pytest.mark.parametrize("value", ["my_export.csv", "my_export.txt"])
 def test_writer(tmp_path, value):
-    """Test that the writes values at each timestep to either a csv or txt file"""
+    """Test that the writes values at each timestep to either a csv or txt file."""
     my_export = F.SurfaceFlux(
         filename=os.path.join(tmp_path, f"{value}"),
         field=F.Species("test"),
@@ -153,11 +154,10 @@ def test_writer(tmp_path, value):
 
 
 def test_surface_setter_raises_TypeError():
-    """Test that a TypeError is raised when the surface is not a
-    F.SurfaceSubdomain"""
+    """Test that a TypeError is raised when the surface is not a F.SurfaceSubdomain."""
 
     with pytest.raises(
-        TypeError, match="surface should be an int or F.SurfaceSubdomain"
+        TypeError, match=r"surface should be an int or F.SurfaceSubdomain"
     ):
         F.SurfaceQuantity(
             field=F.Species("H"),

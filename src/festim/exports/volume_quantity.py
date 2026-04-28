@@ -5,7 +5,7 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class VolumeQuantity:
-    """Export VolumeQuantity
+    """Export VolumeQuantity.
 
     Args:
         field: species for which the volume quantity is computed
@@ -63,8 +63,8 @@ class VolumeQuantity:
         self._field = value
 
     def write(self, t):
-        """If the filename doesnt exist yet, create it and write the header,
-        then append the time and value to the file"""
+        """If the filename doesnt exist yet, create it and write the header, then append
+        the time and value to the file."""
 
         if self.filename is not None:
             if self._first_time_export:

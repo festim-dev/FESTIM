@@ -11,11 +11,10 @@ x_1d = ufl.SpatialCoordinate(test_mesh_1d.mesh)
 
 
 def test_flux_bc_1_mobile_MMS_steady_state():
-    """
-    MMS test with a flux BC considering one mobile species at steady state
-    """
+    """MMS test with a flux BC considering one mobile species at steady state."""
 
-    u_exact = lambda x: 1 + 2 * x[0] ** 2
+    def u_exact(x):
+        return 1 + 2 * x[0] ** 2
 
     V = fem.functionspace(test_mesh_1d.mesh, ("Lagrange", 1))
     T = fem.Function(V)
@@ -60,11 +59,10 @@ def test_flux_bc_1_mobile_MMS_steady_state():
 
 
 def test_flux_bc_heat_transfer_steady_state():
-    """
-    MMS test with a flux BC in a heat transfer problem at steady state
-    """
+    """MMS test with a flux BC in a heat transfer problem at steady state."""
 
-    u_exact = lambda x: 1 + 2 * x[0] ** 2
+    def u_exact(x):
+        return 1 + 2 * x[0] ** 2
 
     thermal_cond = 2.3
 

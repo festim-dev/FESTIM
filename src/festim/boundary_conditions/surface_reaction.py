@@ -6,8 +6,8 @@ from festim.boundary_conditions import ParticleFluxBC
 
 
 class SurfaceReactionBCpartial(ParticleFluxBC):
-    """Boundary condition representing a surface reaction
-    A + B <-> C
+    """Boundary condition representing a surface reaction A + B <-> C.
+
     where A, B are the reactants and C is the product
     the forward reaction rate is K_r = k_r0 * exp(-E_kr / (k_B * T))
     and the backward reaction rate is K_d = k_d0 * exp(-E_kd / (k_B * T))
@@ -79,8 +79,8 @@ class SurfaceReactionBCpartial(ParticleFluxBC):
 
 
 class SurfaceReactionBC:
-    """Boundary condition representing a surface reaction
-    A + B <-> C
+    """Boundary condition representing a surface reaction A + B <-> C.
+
     where A, B are the reactants and C is the product
     the forward reaction rate is K_r = k_r0 * exp(-E_kr / (k_B * T))
     and the backward reaction rate is K_d = k_d0 * exp(-E_kd / (k_B * T))
