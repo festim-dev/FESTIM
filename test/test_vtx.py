@@ -402,3 +402,110 @@ def test_custom_field_not_implemented_error(expression):
 
     with pytest.raises(NotImplementedError):
         my_model.initialise()
+
+
+@pytest.mark.parametrize("direction", ["both", "forward", "backward"])
+@pytest.mark.parametrize("product_type", ["list", "single"])
+@pytest.mark.parametrize("p_0, E_p", [(0.01, 0.05), (0.01, 0.0), (0.0, 0.0)])
+def test_reaction_rate_export(tmp_path, direction, product_type, p_0, E_p):
+    """
+    Test ReactionRate export functionality for different directions, product formats,
+    and reaction configurations.
+    """
+    if p_0 == 0.0 and direction == "backward":
+        pytest.skip(
+            "Backward direction export not supported when backward reaction is disabled"
+        )
+    my_model = F.HydrogenTransportProblem()
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+    vol = F.VolumeSubdomain(id=1, material=mat)
+    top = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[1], 1))
+    bottom = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[1], 0))
+    left = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 0))
+    right = F.SurfaceSubdomain(id=4, locator=lambda x: np.isclose(x[0], 1))
+
+    my_model.subdomains = [vol, top, bottom, left, right]
+
+    dolfinx_mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
+    my_model.mesh = F.Mesh(dolfinx_mesh)
+
+    A = F.Species("A")
+    B = F.Species("B")
+    C = F.Species("C")
+
+    my_model.species = [A, B, C]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(species=A, subdomain=top, value=1),
+        F.FixedConcentrationBC(species=B, subdomain=left, value=1),
+        F.FixedConcentrationBC(species=C, subdomain=bottom, value=0),
+    ]
+
+    reaction = F.Reaction(
+        reactant=[A, B],
+        product=[C] if product_type == "list" else C,
+        k_0=1,
+        E_k=0.1,
+        p_0=p_0,
+        E_p=E_p,
+        volume=vol,
+    )
+
+    my_model.reactions = [reaction]
+
+    my_model.temperature = 300
+
+    my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
+
+    reaction_rate_export = F.ReactionRate(
+        filename=tmp_path / f"reaction_rate_{direction}.bp",
+        reaction=reaction,
+        direction=direction,
+    )
+
+    my_model.exports = [reaction_rate_export]
+
+    my_model.initialise()
+    my_model.run()
+
+
+def test_reaction_rate_override_signature():
+    """
+    Test that ReactionRate signature override correctly updates signatures.
+    """
+    mat = F.Material(D_0=1, E_D=0)
+    vol = F.VolumeSubdomain(id=1, material=mat)
+    A = F.Species("A")
+    B = F.Species("B")
+    reaction = F.Reaction(
+        reactant=[A], product=[B], k_0=1, E_k=0, p_0=0, E_p=0, volume=vol
+    )
+
+    rr = F.ReactionRate(reaction=reaction, filename="dummy.bp")
+
+    def my_expression(x, y):
+        return x + y
+
+    rr.override_signature(my_expression, ["A"], ["B"])
+    import inspect
+
+    sig = inspect.signature(my_expression)
+    assert set(sig.parameters.keys()) == {"T", "A", "B"}
+
+
+def test_export_base_class_times_and_extension(tmp_path):
+    """
+    Test that ExportBaseClass sorts times and warns when wrong extension is given.
+    """
+    with pytest.warns(UserWarning, match="does not have .bp extension"):
+        export = F.ExportBaseClass(
+            filename=tmp_path / "wrong_extension.txt", ext=".bp", times=[3.0, 1.0, 2.0]
+        )
+
+    assert export.filename.suffix == ".bp"
+    assert export.times == [1.0, 2.0, 3.0]
+
+
+def test_export_base_class_no_times(tmp_path):
+    export = F.ExportBaseClass(filename=tmp_path / "correct.bp", ext=".bp", times=None)
+    assert export.times is None

@@ -385,11 +385,13 @@ class ReactionRate(CustomFieldExport):
 
         self.override_signature(expression, reactant_names, product_names)
 
+        reaction_products = reaction.product if isinstance(reaction.product, list) else [reaction.product]
+
         super().__init__(
             filename=filename,
             expression=expression,
             species_dependent_value={
-                spe.name: spe for spe in reaction.reactant + reaction.product
+                spe.name: spe for spe in reaction.reactant + reaction_products
             },
             times=times,
             subdomain=subdomain,
