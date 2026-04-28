@@ -219,7 +219,7 @@ class InterfaceBase(ABC):
         dS: ufl.Measure,
         method: InterfaceMethod,
         species: list["Species"],
-        temperature,
+        temperature=None,
     ) -> tuple[ufl.Form, ufl.Form]:
         """Generate variational forms for interface conditions.
 
@@ -470,3 +470,36 @@ class Interface(InterfaceBase):
         F_1 += -2 * gamma / (h_0 + h_1) * (u_0 / K_0 - u_1 / K_1) * v_1 * dS(self.id)
 
         return F_0, F_1
+
+
+class ContactResistance(InterfaceBase):
+    def __init__(
+        self,
+        id: int,
+        subdomains: list[VolumeSubdomain],
+        contact_resistance: float,
+    ):
+        self.contact_resistance = contact_resistance
+        super().__init__(id, subdomains)
+
+    def get_formulation(self, dS, species, temperature=None):
+        subdomain_0, subdomain_1 = self.subdomains
+        res = self.restriction
+        _F_0, _F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
+
+        for spe in species:
+            assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
+                f"Species {spe.name} must be defined in both subdomains of the "
+                "interface for the interface conditions to be applied"
+            )
+            v_0 = spe.subdomain_to_test_function[subdomain_0](res[0])
+            v_1 = spe.subdomain_to_test_function[subdomain_1](res[1])
+
+            u_0 = spe.subdomain_to_solution[subdomain_0](res[0])
+            u_1 = spe.subdomain_to_solution[subdomain_1](res[1])
+            F0 = -(u_1 - u_0) / self.contact_resistance * v_0 * dS(self.id)
+            F1 = (u_1 - u_0) / self.contact_resistance * v_1 * dS(self.id)
+            _F_0 += F0
+            _F_1 += F1
+
+        return _F_0, _F_1

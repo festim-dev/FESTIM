@@ -69,7 +69,7 @@ from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
 from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
-from .subdomain.interface import Interface, InterfaceMethod
+from .subdomain.interface import Interface, InterfaceMethod, ContactResistance
 from .subdomain.surface_subdomain import (
     SurfaceSubdomain,
     SurfaceSubdomain1D,
