@@ -404,7 +404,6 @@ class ReactionRate(CustomFieldExport):
                 of the expression must be T (temperature) and the names of the reactants
                 and products.
         """
-        breakpoint()
         sig_params = [inspect.Parameter("T", inspect.Parameter.POSITIONAL_OR_KEYWORD)]
         # Use dict.fromkeys to preserve order and remove duplicates
         for name in dict.fromkeys(reactant_names + product_names):
