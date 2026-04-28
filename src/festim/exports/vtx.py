@@ -385,7 +385,11 @@ class ReactionRate(CustomFieldExport):
 
         self.override_signature(expression, reactant_names, product_names)
 
-        reaction_products = reaction.product if isinstance(reaction.product, list) else [reaction.product]
+        reaction_products = (
+            reaction.product
+            if isinstance(reaction.product, list)
+            else [reaction.product]
+        )
 
         super().__init__(
             filename=filename,

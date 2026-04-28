@@ -483,8 +483,8 @@ def test_reaction_rate_override_signature():
 
     rr = F.ReactionRate(reaction=reaction, filename="dummy.bp")
 
-    def my_expression(x, y):
-        return x + y
+    def my_expression(**kwargs):
+        return kwargs.get("x", 0) + kwargs.get("y", 0)
 
     rr.override_signature(my_expression, ["A"], ["B"])
     import inspect
