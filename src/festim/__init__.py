@@ -36,7 +36,12 @@ from .exports.surface_quantity import SurfaceQuantity
 from .exports.total_surface import TotalSurface
 from .exports.total_volume import TotalVolume
 from .exports.volume_quantity import VolumeQuantity
-from .exports.vtx import ExportBaseClass, VTXSpeciesExport, VTXTemperatureExport
+from .exports.vtx import (
+    ExportBaseClass,
+    VTXSpeciesExport,
+    VTXTemperatureExport,
+    CustomFieldExport,
+)
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (
