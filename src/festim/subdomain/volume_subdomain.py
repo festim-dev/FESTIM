@@ -198,7 +198,8 @@ def map_surface_to_volume_subdomains(
 
 
     Raises:
-        AssertionError: if a surface subdomain is connected to multiple volume subdomains
+        AssertionError: if a surface subdomain is connected to multiple volume
+            subdomains
 
     Args:
         ft: the facet meshtags of the parent mesh
@@ -263,7 +264,8 @@ def map_surface_to_volume_subdomains(
         if s_subdomain and v_subdomain:
             if s_subdomain in surface_to_subdomain:
                 assert surface_to_subdomain[s_subdomain] == v_subdomain, (
-                    f"Surface subdomain {s_subdomain.id} is connected to multiple volume subdomains: "
+                    f"Surface subdomain {s_subdomain.id} is connected "
+                    f"to multiple volume subdomains: "
                     f"{surface_to_subdomain[s_subdomain].id} and {v_subdomain.id}"
                 )
             else:
