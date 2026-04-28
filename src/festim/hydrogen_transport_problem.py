@@ -1239,6 +1239,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def define_temperature(self):
         super().define_temperature()
 
+        # NOTE this won't be needed anymore when https://github.com/FEniCS/dolfinx/pull/4140
+        # is released
+
+        # because dolfinx.fem.Expressions cannot work with submeshes
+        # (ie. mixing parent and submesh),
+        # we need to create "sub" temperature functions for each subdomain
         # pass temperature function to each subdomain
         if isinstance(self.temperature_fenics, fem.Function):
             for subdomain in self.volume_subdomains:
@@ -1865,6 +1871,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                 export.data.append(c)
                 export.t.append(float(self.t))
+
+    def update_time_dependent_values(self):
+        super().update_time_dependent_values()
+
+        # update sub_T if temperature is given as a function
+        if self.temperature_time_dependent:
+            if isinstance(self.temperature_fenics, fem.Function):
+                for subdomain in self.volume_subdomains:
+                    temp = self.temperature_fenics
+                    sub_T = subdomain.sub_T
+                    from festim.helpers import nmm_interpolate
+
+                    nmm_interpolate(f_out=sub_T, f_in=temp)
 
     def iterate(self):
         """Iterates the model for a given time step."""
