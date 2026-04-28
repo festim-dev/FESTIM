@@ -12,7 +12,7 @@ my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
 
 
 def test_reaction_init():
-    """Test that the Reaction class initialises correctly"""
+    """Test that the Reaction class initialises correctly."""
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -41,7 +41,7 @@ def test_reaction_init():
 
 
 def test_reaction_repr():
-    """Test that the Reaction __repr__ method returns the expected string"""
+    """Test that the Reaction __repr__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -67,7 +67,7 @@ def test_reaction_repr():
 
 
 def test_reaction_repr_2_products():
-    """Test that the Reaction __repr__ method returns the expected string"""
+    """Test that the Reaction __repr__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -94,7 +94,7 @@ def test_reaction_repr_2_products():
 
 
 def test_reaction_repr_0_products():
-    """Test that the Reaction __repr__ method returns the expected string"""
+    """Test that the Reaction __repr__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -113,7 +113,7 @@ def test_reaction_repr_0_products():
 
 
 def test_reaction_str():
-    """Test that the Reaction __str__ method returns the expected string"""
+    """Test that the Reaction __str__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -139,7 +139,8 @@ def test_reaction_str():
 
 
 def test_reaction_str_2_products():
-    """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
+    """Test that the Reaction __str__ method returns the expected string when there are
+    2 products."""
 
     # create two species
     species1 = F.Species("A")
@@ -166,7 +167,8 @@ def test_reaction_str_2_products():
 
 
 def test_reaction_str_no_products():
-    """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
+    """Test that the Reaction __str__ method returns the expected string when there are
+    2 products."""
 
     # create two species
     species1 = F.Species("A")
@@ -186,7 +188,8 @@ def test_reaction_str_no_products():
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
-    """Test that the Reaction.reaction_term method returns the expected reaction term"""
+    """Test that the Reaction.reaction_term method returns the expected reaction
+    term."""
 
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
     V = functionspace(mesh, ("Lagrange", 1))
@@ -258,7 +261,8 @@ def test_reaction_reaction_term_no_products(temperature):
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term_2_products(temperature):
-    """Test that the Reaction.reaction_term method returns the expected reaction term with two products"""
+    """Test that the Reaction.reaction_term method returns the expected reaction term
+    with two products."""
 
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
     V = functionspace(mesh, ("Lagrange", 1))
@@ -304,7 +308,10 @@ def test_reactant_setter_raises_error_with_zero_length_list():
     """Test a value error is raised when the first reactant is given a wrong type."""
     with pytest.raises(
         ValueError,
-        match="reactant must be an entry of one or more species objects, not an empty list.",
+        match=(
+            r"reactant must be an entry of one or more species objects, not an empty "
+            r"list."
+        ),
     ):
         F.Reaction(
             reactant=[],
@@ -320,7 +327,7 @@ def test_reactant_setter_raises_error_with_wrong_type():
     """Test a type error is raised when the first reactant is given a wrong type."""
     with pytest.raises(
         TypeError,
-        match="reactant must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
+        match=r"reactant must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
     ):
         F.Reaction(
             reactant=["A", F.Species("B")],
@@ -336,7 +343,7 @@ def test_reactant_setter_raises_error_with_wrong_type():
 def test_product_setter_raise_error_p_0_no_product():
     with pytest.raises(
         ValueError,
-        match="p_0 must be None, not 2 when no products are present.",
+        match=r"p_0 must be None, not 2 when no products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],
@@ -351,7 +358,7 @@ def test_product_setter_raise_error_p_0_no_product():
 def test_no_E_p_with_product():
     with pytest.raises(
         ValueError,
-        match="E_p cannot be None when reaction products are present.",
+        match=r"E_p cannot be None when reaction products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],
@@ -367,7 +374,7 @@ def test_no_E_p_with_product():
 def test_no_p_0_with_product():
     with pytest.raises(
         ValueError,
-        match="p_0 cannot be None when reaction products are present.",
+        match=r"p_0 cannot be None when reaction products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],
@@ -383,7 +390,7 @@ def test_no_p_0_with_product():
 def test_product_setter_raise_error_E_p_no_product():
     with pytest.raises(
         ValueError,
-        match="E_p must be None, not 2 when no products are present.",
+        match=r"E_p must be None, not 2 when no products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],

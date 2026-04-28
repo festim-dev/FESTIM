@@ -22,13 +22,12 @@ class FluxFromSurfaceReaction(F.SurfaceFlux):
 
 
 def test_2_isotopes_no_pressure():
-    """
-    Runs a simple 1D hydrogen transport problem with 2 isotopes
-    and 3 surface reactions on the right boundary.
+    """Runs a simple 1D hydrogen transport problem with 2 isotopes and 3 surface
+    reactions on the right boundary.
 
-    Then checks that the fluxes of the isotopes are consistent with the surface reactions
-    by computing the flux of H and D (from the gradient) and comparing it to the fluxes
-    computed from the surface reactions.
+    Then checks that the fluxes of the isotopes are consistent with the
+    surface reactions by computing the flux of H and D (from the gradient)
+    and comparing it to the fluxes computed from the surface reactions.
 
     Example: H + D <-> HD, H + H <-> HH, D + D <-> DD
     -D grad(c_H) n = 2*kr*c_H*c_H + kr*c_H*c_D
@@ -149,13 +148,12 @@ def test_2_isotopes_no_pressure():
 
 
 def test_2_isotopes_with_pressure():
-    """
-    Runs a simple 1D hydrogen transport problem with 2 isotopes
-    and 3 surface reactions on the right boundary.
+    """Runs a simple 1D hydrogen transport problem with 2 isotopes and 3 surface
+    reactions on the right boundary.
 
-    Then checks that the fluxes of the isotopes are consistent with the surface reactions
-    by computing the flux of H and D (from the gradient) and comparing it to the fluxes
-    computed from the surface reactions.
+    Then checks that the fluxes of the isotopes are consistent with the
+    surface reactions by computing the flux of H and D (from the gradient) and
+    comparing it to the fluxes computed from the surface reactions.
 
     Example: H + D <-> HD, H + H <-> HH, D + D <-> DD
     -D grad(c_H) n = 2*kr*c_H*c_H + kr*c_H*c_D - kd*P_H2
@@ -276,9 +274,8 @@ def test_2_isotopes_with_pressure():
 
 
 def test_pressure_varies_in_time():
-    """
-    Runs a problem with a surface reaction and a time-dependent pressure
-    on the right boundary.
+    """Runs a problem with a surface reaction and a time-dependent pressure on the right
+    boundary.
 
     Then checks that the flux is consistent with the surface reaction
     """

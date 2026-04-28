@@ -36,9 +36,8 @@ def relative_error_computed_to_analytical(
 
 
 def test_permeation_problem(mesh_size=1001):
-    """Test running a problem with a mobile species permeating through a 1D
-    domain, checks that the computed permeation flux matches the analytical
-    solution"""
+    """Test running a problem with a mobile species permeating through a 1D domain,
+    checks that the computed permeation flux matches the analytical solution."""
 
     # festim model
     L = 3e-04
@@ -107,7 +106,7 @@ def test_permeation_problem(mesh_size=1001):
     times = outgassing_flux.t
     flux_values = outgassing_flux.data
 
-    # -------------------------- analytical solution -------------------------------------
+    # -------------------------- analytical solution -------------------------------------  # noqa: E501
 
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, my_model.temperature)
 
@@ -127,8 +126,7 @@ def test_permeation_problem(mesh_size=1001):
 
 
 def test_permeation_problem_multi_volume(tmp_path):
-    """Same permeation problem as above but with 4 volume subdomains instead
-    of 1"""
+    """Same permeation problem as above but with 4 volume subdomains instead of 1."""
 
     L = 3e-04
     vertices = np.linspace(0, L, num=1001)

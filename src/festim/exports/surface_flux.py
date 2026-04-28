@@ -8,7 +8,7 @@ from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
 
 class SurfaceFlux(SurfaceQuantity):
-    """Computes the flux of a field on a given surface
+    """Computes the flux of a field on a given surface.
 
     Args:
         field: species for which the surface flux is computed
@@ -39,7 +39,7 @@ class SurfaceFlux(SurfaceQuantity):
     def compute(
         self, u: fem.Function | ufl.indexed.Indexed, ds: ufl.Measure, entity_maps=None
     ):
-        """Computes the value of the flux at the surface
+        """Computes the value of the flux at the surface.
 
         Args:
             u: field for which the flux is computed

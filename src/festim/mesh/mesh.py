@@ -26,7 +26,7 @@ class CoordinateSystem(Enum):
             return cls.SPHERICAL
         else:
             raise ValueError(
-                "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"
+                "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"  # noqa: E501
             )
 
     def __str__(self):
@@ -41,8 +41,7 @@ class CoordinateSystem(Enum):
 
 
 class Mesh:
-    """
-    Mesh class
+    """Mesh class.
 
     Args:
         mesh: The mesh. Defaults to None.
@@ -129,11 +128,13 @@ class Mesh:
         return ufl.FacetNormal(self._mesh)
 
     def define_meshtags(self, surface_subdomains, volume_subdomains, interfaces=None):
-        """Defines the facet and volume meshtags of the mesh
+        """Defines the facet and volume meshtags of the mesh.
 
         Args:
-            surface_subdomains (list of festim.SufaceSubdomains): the surface subdomains of the model
-            volume_subdomains (list of festim.VolumeSubdomains): the volume subdomains of the model
+            surface_subdomains (list of festim.SufaceSubdomains): the surface
+            subdomains of the model
+            volume_subdomains (list of festim.VolumeSubdomains): the volume
+            subdomains of the model
             interfaces (dict, optional): the interfaces between volume
                 subdomains {int: [VolumeSubdomain, VolumeSubdomain]}. Defaults to None.
 
@@ -219,7 +220,7 @@ class Mesh:
 
     def check_mesh_dim_coords(self):
         """Checks if the used coordinates can be applied for geometry with the specified
-        dimensions"""
+        dimensions."""
 
         if self.coordinate_system == CoordinateSystem.SPHERICAL and self.vdim != 1:
             raise AttributeError(

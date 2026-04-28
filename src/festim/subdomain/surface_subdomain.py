@@ -5,8 +5,7 @@ import numpy as np
 
 
 class SurfaceSubdomain:
-    """
-    Surface subdomain class
+    """Surface subdomain class.
 
     Args:
         id: the id of the surface subdomain
@@ -21,9 +20,12 @@ class SurfaceSubdomain:
         .. testcode:: SurfaceSubdomain
 
             SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 1.0))
-            SurfaceSubdomain(id=1, locator=lambda x: np.logical_or(np.isclose(x[1], 0.0), np.isclose(x[1], 1.0)))
-            SurfaceSubdomain(id=1, locator=lambda x: np.logical_and(np.isclose(x[0], 0.0), np.isclose(x[1], 1.0)))
-            SurfaceSubdomain(id=1, locator=lambda x: np.logical_and(np.isclose(x[0], 0.0), x[1] <= 0.5))
+            SurfaceSubdomain(id=1, locator=lambda x:
+            np.logical_or(np.isclose(x[1], 0.0), np.isclose(x[1], 1.0)))
+            SurfaceSubdomain(id=1, locator=lambda x:
+            np.logical_and(np.isclose(x[0], 0.0), np.isclose(x[1], 1.0)))
+            SurfaceSubdomain(id=1, locator=lambda x:
+            np.logical_and(np.isclose(x[0], 0.0), x[1] <= 0.5))
     """
 
     id: int
@@ -56,8 +58,7 @@ class SurfaceSubdomain:
 
 
 class SurfaceSubdomain1D(SurfaceSubdomain):
-    """
-    Surface subdomain class for 1D cases
+    """Surface subdomain class for 1D cases.
 
     Args:
         id: the id of the surface subdomain
@@ -88,8 +89,8 @@ class SurfaceSubdomain1D(SurfaceSubdomain):
 
 
 def find_surface_from_id(id: int, surfaces: list):
-    """Returns the correct surface subdomain object from a list of surface ids
-    based on an int
+    """Returns the correct surface subdomain object from a list of surface ids based on
+    an int.
 
     Args:
         id (int): the id of the surface subdomain
@@ -100,7 +101,6 @@ def find_surface_from_id(id: int, surfaces: list):
 
     Raises:
         ValueError: if the surface name is not found in the list of surfaces
-
     """
     for surf in surfaces:
         if surf.id == id:

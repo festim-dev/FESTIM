@@ -10,8 +10,7 @@ from festim.subdomain.volume_subdomain import (
 
 
 class Species:
-    """
-    Hydrogen species class for H transport simulation.
+    """Hydrogen species class for H transport simulation.
 
     Args:
         name: a name given to the species. Defaults to None.
@@ -53,8 +52,6 @@ class Species:
 
             Species(name="H")
             Species(name="Trap", mobile=False)
-
-
     """
 
     name: str | None
@@ -119,9 +116,7 @@ class Species:
 
     @property
     def legacy(self) -> bool:
-        """
-        Check if we are using FESTIM 1.0 implementation or FESTIM 2.0
-        """
+        """Check if we are using FESTIM 1.0 implementation or FESTIM 2.0."""
         if not self.subdomain_to_solution:
             return True
         else:
@@ -193,10 +188,9 @@ class ImplicitSpecies:
 
     def create_value_fenics(self, mesh, t: fem.Constant):
         """Creates the value of the density as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a fenics.Constant.
-        If the value is a function of t, it is converted to a fenics.Constant.
-        Otherwise, it is converted to a ufl Expression
+        self.value_fenics. If the value is a constant, it is converted to a
+        fenics.Constant. If the value is a function of t, it is converted to a
+        fenics.Constant. Otherwise, it is converted to a ufl Expression.
 
         Args:
             mesh (dolfinx.mesh.Mesh) : the mesh
@@ -248,8 +242,7 @@ class ImplicitSpecies:
 
 
 def find_species_from_name(name: str, species: list):
-    """Returns the correct species object from a list of species
-    based on a string
+    """Returns the correct species object from a list of species based on a string.
 
     Args:
         name (str): the name of the species
@@ -260,7 +253,6 @@ def find_species_from_name(name: str, species: list):
 
     Raises:
         ValueError: if the species name is not found in the list of species
-
     """
     for spe in species:
         if spe.name == name:
