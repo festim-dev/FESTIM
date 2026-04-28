@@ -1875,6 +1875,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.data.append(c)
                 export.t.append(float(self.t))
 
+    def update_time_dependent_values(self):
+        super().update_time_dependent_values()
+
+        # update sub_T if temperature is given as a function
+        if self.temperature_time_dependent:
+            if isinstance(self.temperature_fenics, fem.Function):
+                for subdomain in self.volume_subdomains:
+                    temp = self.temperature_fenics
+                    sub_T = subdomain.sub_T
+                    from festim.helpers import nmm_interpolate
+
+                    nmm_interpolate(f_out=sub_T, f_in=temp)
+
     def iterate(self):
         """Iterates the model for a given time step"""
         if self.show_progress_bar:
