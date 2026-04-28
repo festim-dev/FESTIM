@@ -36,7 +36,7 @@ class Trap(_Species):
         .. testsetup:: Trap
 
             from festim import Trap, Species, VolumeSubdomain, Material
-            from fsetim import HydrogenTransportProblem
+            from festim import HydrogenTransportProblem
 
             my_mat = Material(D_0=1, E_D=1, name="test_mat")
             my_vol = VolumeSubdomain(id=1, material=my_mat)
