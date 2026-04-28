@@ -111,10 +111,6 @@ def test_2_materials_2d_mms(tmpdir):
     my_model.interfaces = [
         F.Interface(5, (bottom_domain, top_domain), penalty_term=1),
     ]
-    my_model.surface_to_volume = {
-        top_surface: top_domain,
-        bottom_surface: bottom_domain,
-    }
 
     H = F.Species("H", mobile=True)
 
@@ -194,10 +190,6 @@ def test_derived_quantities_multi_mat():
     my_model.interfaces = [
         F.Interface(5, (bottom_domain, top_domain), penalty_term=1),
     ]
-    my_model.surface_to_volume = {
-        top_surface: top_domain,
-        bottom_surface: bottom_domain,
-    }
 
     H = F.Species("H", mobile=True)
 
@@ -268,11 +260,6 @@ def test_penalty_multispecies():
 
     for spe in my_model.species:
         spe.subdomains = [vol1, vol2]
-
-    my_model.surface_to_volume = {
-        left_surf: vol1,
-        right_surf: vol2,
-    }
 
     my_model.boundary_conditions = [
         # Protium BCs

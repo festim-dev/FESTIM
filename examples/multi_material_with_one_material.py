@@ -22,7 +22,6 @@ left_surface = F.SurfaceSubdomain1D(id=1, x=vertices[0])
 right_surface = F.SurfaceSubdomain1D(id=2, x=vertices[-1])
 
 my_model.subdomains = [subdomain, left_surface, right_surface]
-my_model.surface_to_volume = {right_surface: subdomain, left_surface: subdomain}
 
 H = F.Species("H", mobile=True)
 trapped_H = F.Species("H_trapped", mobile=False)

@@ -1412,11 +1412,6 @@ def test_surface_reaction_BC_discontinuous():
         outlet,
     ]
 
-    my_model.surface_to_volume = {
-        inlet: left_vol,
-        outlet: right_vol,
-    }
-
     my_model.method_interface = F.InterfaceMethod.nitsche
     my_model.interfaces = [
         F.Interface(id=5, subdomains=[left_vol, right_vol], penalty_term=10),

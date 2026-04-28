@@ -68,7 +68,6 @@ def test_vtx_DG(tmpdir):
 
     my_model.temperature = 55
     my_model.subdomains = [s0, s1, l0, l1]
-    my_model.surface_to_volume = {l0: s0, l1: s1}
     # NOTE: Ask Remi why `H` has to live in both s0 and s1
     my_model.species = [
         F.Species("H", subdomains=[s0, s1]),

@@ -211,11 +211,6 @@ def test_temp_dependent_bc_mixed_domain_temperature_as_function():
         bottom_surface,
     ]
 
-    my_model.surface_to_volume = {
-        top_surface: top_domain,
-        bottom_surface: bottom_domain,
-    }
-
     H = F.Species("H", mobile=True, subdomains=[bottom_domain, top_domain])
 
     my_model.species = [H]

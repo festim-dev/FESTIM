@@ -347,10 +347,6 @@ def test_initial_condition_discontinuous():
     my_model.interfaces = [
         F.Interface(id=3, subdomains=[vol1, vol2], penalty_term=1000)
     ]
-    my_model.surface_to_volume = {
-        left_surf: vol1,
-        right_surf: vol2,
-    }
 
     my_model.temperature = 300
 

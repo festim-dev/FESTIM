@@ -80,5 +80,6 @@ from .subdomain.volume_subdomain import (
     VolumeSubdomain,
     VolumeSubdomain1D,
     find_volume_from_id,
+    map_surface_to_volume_subdomains,
 )
 from .trap import Trap

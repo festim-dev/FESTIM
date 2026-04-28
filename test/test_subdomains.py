@@ -219,9 +219,8 @@ def test_name_setter():
 
 
 def test_all_cells_are_not_tagged():
-    """Checks that an error is raised when not all cells are tagged with a non-zero
-    value.
-
+    """
+    Checks that an error is raised when not all cells are tagged with a non-zero value.
     This can be caused by a volume subdomain not being defined correctly, or by a mesh
     that is too coarse to capture the geometry of the volume subdomains.
     """
@@ -237,3 +236,49 @@ def test_all_cells_are_not_tagged():
         AssertionError, match="All cells must be tagged with a non-zero value"
     ):
         mesh.define_meshtags(surface_subdomains=[], volume_subdomains=[vol1, vol2])
+
+
+def test_map_surface_to_volume_subdomains():
+    """
+    Tests that the function map_surface_to_volume_subdomains correctly maps surface
+    subdomains to volume subdomains based on the facet to cell connectivity
+    """
+
+    n = 20
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+
+    festim_mesh = F.Mesh(mesh)
+
+    surface_1 = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 0))
+    surface_2 = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 1))
+
+    material_1 = F.Material(D_0=1, E_D=0, name="material_1")
+    volume_1 = F.VolumeSubdomain(
+        id=2, material=material_1, locator=lambda x: x[0] <= 0.5
+    )
+    volume_2 = F.VolumeSubdomain(
+        id=3, material=material_1, locator=lambda x: x[0] >= 0.5
+    )
+
+    ft, ct = festim_mesh.define_meshtags(
+        surface_subdomains=[surface_1, surface_2],
+        volume_subdomains=[volume_1, volume_2],
+    )
+
+    facet_to_cell = mesh.topology.connectivity(mesh.topology.dim - 1, mesh.topology.dim)
+
+    surface_to_subdomain = F.map_surface_to_volume_subdomains(
+        ft, ct, facet_to_cell, [volume_1, volume_2], [surface_1, surface_2]
+    )
+    print(surface_to_subdomain)
+    for surface, volume in surface_to_subdomain.items():
+        print(f"Surface {surface.id} is connected to volume {volume.id}")
+
+    assert surface_to_subdomain[surface_1] == volume_1, (
+        "Expected surface 1 to be connected to volume 1, "
+        f"got {surface_to_subdomain[surface_1].id}"
+    )
+    assert surface_to_subdomain[surface_2] == volume_2, (
+        "Expected surface 2 to be connected to volume 2, "
+        f"got {surface_to_subdomain[surface_2].id}"
+    )
