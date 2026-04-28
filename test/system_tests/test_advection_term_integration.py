@@ -250,11 +250,6 @@ def test_multi_material_with_advection():
 
     # we should be able to automate this
     my_model.interfaces = [F.Interface(6, (bottom_domain, top_domain))]
-    my_model.surface_to_volume = {
-        top_surface: top_domain,
-        bottom_surface: bottom_domain,
-        inlet_surf: bottom_domain,
-    }
 
     H = F.Species("H", mobile=True)
 
