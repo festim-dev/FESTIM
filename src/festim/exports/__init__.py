@@ -14,6 +14,7 @@ from .vtx import (
     ExportBaseClass,
     VTXSpeciesExport,
     VTXTemperatureExport,
+    ReactionRate,
     CustomFieldExport,
 )
 from .xdmf import XDMFExport
@@ -28,6 +29,7 @@ __all__ = [
     "MinimumSurface",
     "MinimumVolume",
     "Profile1DExport",
+    "ReactionRate",
     "SurfaceFlux",
     "SurfaceQuantity",
     "TotalSurface",

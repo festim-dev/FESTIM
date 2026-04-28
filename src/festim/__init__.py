@@ -40,6 +40,7 @@ from .exports.vtx import (
     ExportBaseClass,
     VTXSpeciesExport,
     VTXTemperatureExport,
+    ReactionRate,
     CustomFieldExport,
 )
 from .exports.xdmf import XDMFExport
