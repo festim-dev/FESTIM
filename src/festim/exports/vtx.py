@@ -289,36 +289,39 @@ class CustomFieldExport(ExportBaseClass):
             else:
                 # else use the provided temperature
                 kwargs["T"] = temperature
+
         # check if there are other arguments and if they are in species_dependent_value
         for arg in arguments:
             if arg in self.species_dependent_value:
-                spe = self.species_dependent_value[arg]
-                if isinstance(spe, ImplicitSpecies):
-                    if self.mixed_domain:
-                        kwargs[arg] = spe.concentration_submesh(self.subdomain)
-                    else:
-                        kwargs[arg] = spe.concentration
-                else:
-                    if self.mixed_domain:
-                        kwargs[arg] = spe.subdomain_to_post_processing_solution[
-                            self.subdomain
-                        ]
-                    else:
-                        kwargs[arg] = spe.post_processing_solution
+                kwargs[arg] = self._get_species_function(
+                    self.species_dependent_value[arg]
+                )
             assert kwargs[arg] is not None, (
                 f"Argument {arg} not found in species_dependent_value"
             )
 
-        self.check_valid_inputs(kwargs, self.mixed_domain)
+        self.check_valid_inputs(kwargs)
 
-        # evaluate the user-provided expression with the appropriate arguments and create a
-        # dolfinx.fem.Expression
+        # evaluate the user-provided expression with the appropriate arguments and
+        # create a dolfinx.fem.Expression
         self.dolfinx_expression = fem.Expression(
             self.expression(**kwargs),
             get_interpolation_points(self.function.function_space.element),
         )
 
-    def check_valid_inputs(self, kwargs: dict, mixed_domain: bool):
+    def _get_species_function(self, spe: Species):
+        if isinstance(spe, ImplicitSpecies):
+            if self.mixed_domain:
+                return spe.concentration_submesh(self.subdomain)
+            else:
+                return spe.concentration
+        else:
+            if self.mixed_domain:
+                return spe.subdomain_to_post_processing_solution[self.subdomain]
+            else:
+                return spe.post_processing_solution
+
+    def check_valid_inputs(self, kwargs: dict):
         """
         Check if we are in the mixed domain/discontinuous case and if the user-provided
         expression is valid in this case.
@@ -332,7 +335,7 @@ class CustomFieldExport(ExportBaseClass):
 
         # check the domain of all kwargs and check that they are the same
 
-        if mixed_domain and "t" in kwargs:
+        if self.mixed_domain and "t" in kwargs:
             raise NotImplementedError(
                 "Time-dependent custom fields are not implemented in the case of a "
                 "mixed domain/discontinuous case."
