@@ -1241,6 +1241,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def define_temperature(self):
         super().define_temperature()
 
+        # NOTE this won't be needed anymore when https://github.com/FEniCS/dolfinx/pull/4140
+        # is released
+
+        # because dolfinx.fem.Expressions cannot work with submeshes
+        # (ie. mixing parent and submesh),
+        # we need to create "sub" temperature functions for each subdomain
         # pass temperature function to each subdomain
         if isinstance(self.temperature_fenics, fem.Function):
             for subdomain in self.volume_subdomains:
