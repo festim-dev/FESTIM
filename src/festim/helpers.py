@@ -34,6 +34,7 @@ def as_fenics_constant(
         )
 
 
+# TODO change this to accept species dependent values
 def as_mapped_function(
     value: Callable,
     function_space: fem.FunctionSpace | None = None,
@@ -68,6 +69,7 @@ def as_mapped_function(
     return value(**kwargs)
 
 
+# TODO change this to accept species dependent values
 def as_fenics_interp_expr_and_function(
     value: Callable,
     function_space: dolfinx.fem.function.FunctionSpace,

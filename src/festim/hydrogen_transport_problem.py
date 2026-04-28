@@ -448,6 +448,21 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     else:
                         adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
+                elif isinstance(export, exports.CustomFieldExport):
+                    export.function = fem.Function(self.V_CG_1)
+                    export.set_dolfinx_expression(
+                        temperature=self.temperature_fenics,
+                        time=self.t,
+                    )
+
+                    export.writer = dolfinx.io.VTXWriter(
+                        comm=export.function.function_space.mesh.comm,
+                        filename=export.filename,
+                        output=export.function,
+                        engine="BP5",
+                    )
+                    continue
+
             elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
                 # raise not implemented error if the derived quantity don't match the
                 # type of mesh eg. SurfaceFlux is used with cylindrical mesh
@@ -628,6 +643,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         )
         self.V_DG_0 = fem.functionspace(self.mesh.mesh, element_DG0)
         self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
+        self.V_CG_1 = fem.functionspace(self.mesh.mesh, ("CG", 1))
 
         self.u = fem.Function(self.function_space)
         self.u_n = fem.Function(self.function_space)
@@ -981,6 +997,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         self._get_temperature_field_as_function()
                     )
                     export.writer.write(float(self.t))
+                elif isinstance(export, exports.CustomFieldExport):
+                    # update internal function
+                    export.function.interpolate(export.dolfinx_expression)
+                    export.writer.write(float(self.t))
 
             # TODO if export type derived quantity
             if isinstance(export, exports.SurfaceQuantity):
@@ -1094,6 +1114,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.interfaces = interfaces or []
         self.surface_to_volume = {}
         self.subdomain_to_species = {}  # maps subdomain to species defined in it
+        self.subdomain_to_V_CG1 = {}
 
     @property
     def method_interface(self):
@@ -1354,6 +1375,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         V = dolfinx.fem.functionspace(subdomain.submesh, element)
         u = dolfinx.fem.Function(V)
         u_n = dolfinx.fem.Function(V)
+
+        self.subdomain_to_V_CG1[subdomain] = dolfinx.fem.functionspace(
+            subdomain.submesh, ("CG", 1)
+        )
 
         # store attributes in the subdomain object
         subdomain.u = u
@@ -1682,7 +1707,21 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.filename,
                         mesh=functions[0].function_space.mesh,
                     )
+            elif isinstance(export, exports.CustomFieldExport):
+                # need to find an appropriate function space on the right submesh
+                V = self.subdomain_to_V_CG1[export.subdomain]
+                export.function = fem.Function(V)
+                export.set_dolfinx_expression(
+                    temperature=self.temperature_fenics,  # need to pass the right temperature
+                    time=self.t,
+                )
 
+                export.writer = dolfinx.io.VTXWriter(
+                    comm=export.function.function_space.mesh.comm,
+                    filename=export.filename,
+                    output=export.function,
+                    engine="BP5",
+                )
         # compute diffusivity function for surface fluxes
         # for the discontinuous case, we don't use D_global as in
         # HydrogenTransportProblem
@@ -1724,11 +1763,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     continue
             # handle VTX exports
             if isinstance(export, exports.ExportBaseClass):
-                if not isinstance(export, exports.VTXSpeciesExport):
-                    raise NotImplementedError(
-                        f"Export type {type(export)} not implemented"
-                    )
-                if isinstance(export, exports.VTXSpeciesExport):
+                if isinstance(export, exports.CustomFieldExport):
+                    # update internal function
+                    export.function.interpolate(export.dolfinx_expression)
+                    export.writer.write(float(self.t))
+                elif isinstance(export, exports.VTXSpeciesExport):
                     if export._checkpoint:
                         for species in export.field:
                             post_processing_solution = (
@@ -1744,7 +1783,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             )
                     else:
                         export.writer.write(float(self.t))
-
+                else:
+                    raise NotImplementedError(
+                        f"Export type {type(export)} not implemented"
+                    )
             # handle derived quantities
             if isinstance(export, exports.SurfaceQuantity):
                 if isinstance(
