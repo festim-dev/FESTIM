@@ -13,7 +13,7 @@ mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 
 
 def test_init():
-    """Test that the attributes are set correctly"""
+    """Test that the attributes are set correctly."""
     # create a Source object
     volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
     value = 1.0
@@ -46,7 +46,7 @@ def test_init():
     ],
 )
 def test_create_fenics_object(value, expected_type):
-    """Test that the correct fenics object is created depending on the value input"""
+    """Test that the correct fenics object is created depending on the value input."""
 
     # BUILD
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
@@ -83,7 +83,7 @@ def test_create_fenics_object(value, expected_type):
     ],
 )
 def test_source_explicit_time_dependent_attribute(input, expected_value):
-    """Test that the time_dependent attribute is correctly set"""
+    """Test that the time_dependent attribute is correctly set."""
     volume = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
     my_source = F.ParticleSource(input, volume, species)
@@ -108,7 +108,7 @@ def test_source_explicit_time_dependent_attribute(input, expected_value):
     ],
 )
 def test_source_temperature_dependent_attribute(input, expected_value):
-    """Test that the temperature_dependent attribute is correctly set"""
+    """Test that the temperature_dependent attribute is correctly set."""
     volume = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
     my_source = F.ParticleSource(input, volume, species)
@@ -117,8 +117,8 @@ def test_source_temperature_dependent_attribute(input, expected_value):
 
 
 def test_ValueError_raised_when_callable_returns_wrong_type():
-    """The create_value method should raise a ValueError when the callable
-    returns an object which is not a float or int"""
+    """The create_value method should raise a ValueError when the callable returns an
+    object which is not a float or int."""
 
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     species = F.Species("test")
@@ -135,7 +135,10 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     with pytest.raises(
         ValueError,
-        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
+        match=(
+            r"self.value should return a float or an int, not <class "
+            r"'ufl.conditional.Conditional'"
+        ),
     ):
         source.value.convert_input_value(
             function_space=V, temperature=T, t=t, up_to_ufl_expr=True
@@ -143,8 +146,8 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
 
 def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
-    """The create_value method should raise a ValueError when the callable
-    returns an object which is not a float or int"""
+    """The create_value method should raise a ValueError when the callable returns an
+    object which is not a float or int."""
 
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
 
@@ -159,7 +162,10 @@ def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
 
     with pytest.raises(
         ValueError,
-        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
+        match=(
+            r"self.value should return a float or an int, not <class "
+            r"'ufl.conditional.Conditional'"
+        ),
     ):
         source.value.convert_input_value(function_space=V, t=t, up_to_ufl_expr=True)
 
@@ -179,12 +185,12 @@ def test_ValueError_raised_when_callable_returns_wrong_type_heat_source():
 )
 def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
     """Test that a TypeError is raised when the volume is not of type
-    festim.VolumeSubdomain"""
+    festim.VolumeSubdomain."""
 
     my_spe = F.Species("test")
     with pytest.raises(
         TypeError,
-        match="volume must be of type festim.VolumeSubdomain",
+        match=r"volume must be of type festim.VolumeSubdomain",
     ):
         F.ParticleSource(volume=volume_input, value=1.0, species=my_spe)
 
@@ -203,12 +209,12 @@ def test_TypeError_is_raised_when_volume_wrong_type(volume_input):
 )
 def test_TypeError_is_raised_when_species_wrong_type(species_input):
     """Test that a TypeError is raised when the species is not of type
-    festim.Species"""
+    festim.Species."""
 
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
 
     with pytest.raises(
         TypeError,
-        match="species must be of type festim.Species",
+        match=r"species must be of type festim.Species",
     ):
         F.ParticleSource(volume=my_vol, value=1.0, species=species_input)

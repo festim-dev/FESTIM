@@ -110,7 +110,7 @@ def test_MMS_1():
 
 
 def test_MMS_T_dependent_thermal_cond():
-    """MMS test with space T dependent thermal cond"""
+    """MMS test with space T dependent thermal cond."""
 
     def thermal_conductivity(T):
         return 3 * T + 2
@@ -159,10 +159,8 @@ def test_MMS_T_dependent_thermal_cond():
 
 
 def test_heat_transfer_transient(tmpdir):
-    """
-    MMS test for transient heat transfer
-    constant thermal conductivity density and heat capacity
-    """
+    """MMS test for transient heat transfer constant thermal conductivity density and
+    heat capacity."""
     density = 2
     heat_capacity = 3
     thermal_conductivity = 4
@@ -207,7 +205,8 @@ def test_heat_transfer_transient(tmpdir):
     my_problem.settings = F.Settings(
         atol=1e-8,
         rtol=1e-10,
-        final_time=1,  # final time shouldn't be too long so that a potential error at the initial timestep is not negligible
+        # final time shouldn't be too long so that a potential error at the initial timestep is not negligible  # noqa: E501
+        final_time=1,
     )
 
     # Forward euler isn't great so dt should be small
@@ -222,7 +221,7 @@ def test_heat_transfer_transient(tmpdir):
     my_problem.run()
 
     computed_solution = my_problem.u
-    # we use the exact final time of the simulation which may differ from the one specified in the settings
+    # we use the exact final time of the simulation which may differ from the one specified in the settings  # noqa: E501
     final_time_sim = my_problem.t.value
 
     def exact_solution_end(x):
@@ -233,8 +232,8 @@ def test_heat_transfer_transient(tmpdir):
 
 
 def test_MES():
-    """Method of Exact Solution test for transient heat transfer
-    with thermal cond. k = 2, T = 0 on surfaces, and source term q = 8 k
+    """Method of Exact Solution test for transient heat transfer with thermal cond. k =
+    2, T = 0 on surfaces, and source term q = 8 k.
 
     Analytical solution: T(x) = 4 x (1 - x)
     """
@@ -331,7 +330,8 @@ def test_sympify(tmpdir):
     my_problem.settings = F.Settings(
         atol=1e-8,
         rtol=1e-10,
-        final_time=1,  # final time shouldn't be too long so that a potential error at the initial timestep is not negligible
+        # final time shouldn't be too long so that a potential error at the initial timestep is not negligible  # noqa: E501
+        final_time=1,
     )
 
     # Forward euler isn't great so dt should be small
@@ -346,7 +346,7 @@ def test_sympify(tmpdir):
     my_problem.run()
 
     computed_solution = my_problem.u
-    # we use the exact final time of the simulation which may differ from the one specified in the settings
+    # we use the exact final time of the simulation which may differ from the one specified in the settings  # noqa: E501
     final_time_sim = my_problem.t.value
 
     def exact_solution_end(x):
@@ -357,7 +357,7 @@ def test_sympify(tmpdir):
 
 
 def test_sources():
-    """Tests the sources setter of the HeatTransferProblem class"""
+    """Tests the sources setter of the HeatTransferProblem class."""
     htp = F.HeatTransferProblem()
     vol = F.VolumeSubdomain1D(1, borders=[0, 1], material=None)
     # Test that setting valid sources works
@@ -369,7 +369,7 @@ def test_sources():
     assert htp.sources == valid_sources
 
     # Test that setting invalid sources raises a TypeError
-    with pytest.raises(TypeError, match="festim.HeatSource objects"):
+    with pytest.raises(TypeError, match=r"festim.HeatSource objects"):
         spe = F.Species("H")
         htp.sources = [
             F.ParticleSource(1, vol, spe),
@@ -378,7 +378,7 @@ def test_sources():
 
 
 def test_boundary_conditions():
-    """Tests the boundary_conditions setter of the HeatTransferProblem class"""
+    """Tests the boundary_conditions setter of the HeatTransferProblem class."""
     htp = F.HeatTransferProblem()
     left = F.SurfaceSubdomain(1)
 
@@ -399,7 +399,8 @@ mesh_3D = dolfinx.mesh.create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 
 @pytest.mark.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
 def test_meshtags_from_xdmf(tmp_path, mesh):
-    """Test that the facet and volume meshtags are read correctly from the mesh XDMF files"""
+    """Test that the facet and volume meshtags are read correctly from the mesh XDMF
+    files."""
     # create mesh functions
     fdim = mesh.topology.dim - 1
     vdim = mesh.topology.dim
@@ -482,7 +483,7 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
 
 
 def test_raise_error_non_unique_vol_ids():
-    """Test that an error is raised if the volume ids are not unique"""
+    """Test that an error is raised if the volume ids are not unique."""
     my_problem = F.HeatTransferProblem()
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 11))
     left = F.SurfaceSubdomain1D(id=1, x=0)
@@ -503,7 +504,8 @@ def test_raise_error_non_unique_vol_ids():
 
 
 def test_initial_condition():
-    """Test that an error is raised when initial conditions are defined for a transient simulation"""
+    """Test that an error is raised when initial conditions are defined for a transient
+    simulation."""
     my_problem = F.HeatTransferProblem()
 
     my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 3000))
@@ -536,7 +538,7 @@ dummy_mat.heat_capacity = 1
 
 
 def test_adaptive_timestepping_grows():
-    """Tests that the stepsize grows"""
+    """Tests that the stepsize grows."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HeatTransferProblem(
@@ -570,7 +572,7 @@ def test_adaptive_timestepping_grows():
 
 
 def test_adaptive_timestepping_shrinks():
-    """Tests that the stepsize shrinks"""
+    """Tests that the stepsize shrinks."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HeatTransferProblem(
@@ -616,8 +618,8 @@ def test_adaptive_timestepping_shrinks():
     ],
 )
 def test_update_time_dependent_values_HeatFluxBC(bc_value, expected_values):
-    """Test that time dependent fluxes are updated at each time step,
-    and match an expected value"""
+    """Test that time dependent fluxes are updated at each time step, and match an
+    expected value."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     surface = F.SurfaceSubdomain1D(id=2, x=0)

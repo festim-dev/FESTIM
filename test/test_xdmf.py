@@ -11,7 +11,7 @@ import festim as F
 
 
 def test_init():
-    """Tests the initialisation of XDMFExport"""
+    """Tests the initialisation of XDMFExport."""
     species = F.Species("H")
     my_export = F.XDMFExport(filename="my_export.xdmf", field=species)
 
@@ -20,7 +20,7 @@ def test_init():
 
 
 def test_write(tmp_path):
-    """Tests the write method of XDMFExport creates a file"""
+    """Tests the write method of XDMFExport creates a file."""
     species = F.Species("H")
     filename = os.path.join(tmp_path, "test.xdmf")
     my_export = F.XDMFExport(filename=filename, field=species)
@@ -38,7 +38,7 @@ def test_write(tmp_path):
 
 
 def test_integration_with_HTransportProblem(tmp_path):
-    """Tests that XDMFExport can be used in conjunction with HTransportProblem"""
+    """Tests that XDMFExport can be used in conjunction with HTransportProblem."""
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1))
     my_mat = F.Material(D_0=1.9e-7, E_D=0.2, name="my_mat")
@@ -59,7 +59,7 @@ def test_integration_with_HTransportProblem(tmp_path):
 
 
 def test_field_attribute_is_always_list():
-    """Test that the field attribute is always a list"""
+    """Test that the field attribute is always a list."""
     my_export = F.XDMFExport("my_export.xdmf", field=F.Species("H"))
     assert isinstance(my_export.field, list)
 
@@ -75,15 +75,13 @@ def test_vtx_suffix_converter(tmpdir):
 
 @pytest.mark.parametrize("field", [["H", 2], 1, [F.Species("H"), 1]])
 def test_field_attribute_raises_error_when_invalid_type(field):
-    """
-    Test that the field attribute raises an error if the type
-    is not festim.Species or list.
-    """
+    """Test that the field attribute raises an error if the type is not festim.Species
+    or list."""
     with pytest.raises(TypeError):
         F.XDMFExport("my_export.xdmf", field=field)
 
 
 def test_filename_raises_error_when_wrong_type():
-    """Test that the filename attribute raises an error if the file is not str"""
+    """Test that the filename attribute raises an error if the file is not str."""
     with pytest.raises(TypeError):
         F.XDMFExport(1, field=[F.Species("H")])

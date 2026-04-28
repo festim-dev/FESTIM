@@ -9,9 +9,7 @@ import festim as F
 
 
 def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
-    """
-    Tests that a model can write a checkpoint file and another model can read it.
-    """
+    """Tests that a model can write a checkpoint file and another model can read it."""
     mesh = dolfinx.mesh.create_unit_square(
         MPI.COMM_WORLD, nx=10, ny=10, cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
     )
@@ -117,8 +115,8 @@ def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
 
 def test_VTXExport_times_added_to_milestones(tmpdir):
     """Creates a HydrogenTransportProblem object and checks that, if no
-    stepsize.milestones are given and VTXExport.times are given, VTXExport.times are
-    are added to stepsize.milestones by .initialise()
+    stepsize.milestones are given and VTXExport.times are given, VTXExport.times are are
+    added to stepsize.milestones by .initialise()
 
     Args:
         tmpdir (os.PathLike): path to the pytest temporary folder
@@ -156,8 +154,8 @@ def test_VTXExport_times_added_to_milestones(tmpdir):
 
 
 def test_vtx_writer_called_only_at_specified_times(tmpdir):
-    """test that the VTXWriter.write function is called the number of times specified in
-    the export.times"""
+    """Test that the VTXWriter.write function is called the number of times specified in
+    the export.times."""
 
     filename = str(tmpdir.join("my_export.bp"))
 
