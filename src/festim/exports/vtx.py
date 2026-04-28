@@ -238,6 +238,25 @@ class CustomFieldExport(ExportBaseClass):
         self.checkpoint = checkpoint
         self.subdomain = subdomain
 
+    @property
+    def mixed_domain(self) -> bool:
+        """
+        Check if we are in a mixed domain/discontinuous case. This is the case if at least
+        one of the species in species_dependent_value is defined on a subdomain or if the
+        custom field is defined on a subdomain.
+
+        Returns:
+            True if we are in a mixed domain/discontinuous case, False otherwise.
+        """
+        all_explicit_species = [
+            spe
+            for spe in self.species_dependent_value.values()
+            if isinstance(spe, Species)
+        ]
+        return any(
+            spe.subdomain_to_post_processing_solution for spe in all_explicit_species
+        ) or (self.subdomain.sub_T if self.subdomain else None)
+
     def set_dolfinx_expression(
         self,
         temperature: fem.Constant | fem.Function,
@@ -252,12 +271,6 @@ class CustomFieldExport(ExportBaseClass):
             temperature: The temperature field to use in the expression
             time: The time to use in the expression
         """
-        # check if we are in a mixed domain/discontinuous case
-        mixed_domain = any(
-            spe.subdomain_to_post_processing_solution
-            for spe in self.species_dependent_value.values()
-        ) or (self.subdomain.sub_T if self.subdomain else None)
-
         # get the arguments of the user-provided expression
         arguments = inspect.signature(self.expression).parameters
 
@@ -269,7 +282,7 @@ class CustomFieldExport(ExportBaseClass):
             x = ufl.SpatialCoordinate(self.function.function_space.mesh)
             kwargs["x"] = x
         if "T" in arguments:
-            if isinstance(temperature, fem.Function) and mixed_domain:
+            if isinstance(temperature, fem.Function) and self.mixed_domain:
                 # fem.Function in mixed domain/discontinuous case, use sub_T
                 # NOTE I'm not sure that sub_T is updated at every time step
                 kwargs["T"] = self.subdomain.sub_T
@@ -285,7 +298,7 @@ class CustomFieldExport(ExportBaseClass):
                         "Custom fields depending on implicit species are not"
                         "implemented yet."
                     )
-                if mixed_domain:
+                if self.mixed_domain:
                     kwargs[arg] = spe.subdomain_to_post_processing_solution[
                         self.subdomain
                     ]
@@ -295,7 +308,7 @@ class CustomFieldExport(ExportBaseClass):
                 f"Argument {arg} not found in species_dependent_value"
             )
 
-        self.check_valid_inputs(kwargs, mixed_domain)
+        self.check_valid_inputs(kwargs, self.mixed_domain)
 
         # evaluate the user-provided expression with the appropriate arguments and create a
         # dolfinx.fem.Expression
@@ -391,6 +404,7 @@ class ReactionRate(CustomFieldExport):
                 of the expression must be T (temperature) and the names of the reactants
                 and products.
         """
+        breakpoint()
         sig_params = [inspect.Parameter("T", inspect.Parameter.POSITIONAL_OR_KEYWORD)]
         # Use dict.fromkeys to preserve order and remove duplicates
         for name in dict.fromkeys(reactant_names + product_names):
