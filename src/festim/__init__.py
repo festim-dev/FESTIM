@@ -39,8 +39,8 @@ from .exports.vtx import (
     ExportBaseClass,
     VTXSpeciesExport,
     VTXTemperatureExport,
-    CustomField,
     ReactionRate,
+    CustomFieldExport,
 )
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
@@ -85,5 +85,6 @@ from .subdomain.volume_subdomain import (
     VolumeSubdomain,
     VolumeSubdomain1D,
     find_volume_from_id,
+    map_surface_to_volume_subdomains,
 )
 from .trap import Trap

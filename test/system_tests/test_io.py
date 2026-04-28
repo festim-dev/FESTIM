@@ -19,7 +19,7 @@ def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
     my_model.mesh = F.Mesh(mesh)
 
     my_mat = F.Material(name="mat", D_0=1, E_D=0)
-    vol = F.VolumeSubdomain(id=0, material=my_mat)
+    vol = F.VolumeSubdomain(id=1, material=my_mat)
     surf = F.SurfaceSubdomain(id=1)
     my_model.subdomains = [vol, surf]
 

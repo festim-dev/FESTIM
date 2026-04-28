@@ -169,7 +169,7 @@ def test_checkpointing_single_species(tmpdir):
     my_problem.mesh = F.Mesh(mesh)
 
     mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
-    vol = F.VolumeSubdomain(id=0, material=mat)
+    vol = F.VolumeSubdomain(id=1, material=mat)
     my_problem.subdomains = [vol]
 
     function_initial_value = F.read_function_from_file(
@@ -227,7 +227,7 @@ def test_checkpointing_multiple_species(tmpdir):
     my_problem.mesh = F.Mesh(mesh)
 
     mat = F.Material(D_0=1, E_D=0.1, name="dummy_mat")
-    vol = F.VolumeSubdomain(id=0, material=mat)
+    vol = F.VolumeSubdomain(id=1, material=mat)
     my_problem.subdomains = [vol]
 
     my_problem.initial_conditions = [
@@ -347,10 +347,6 @@ def test_initial_condition_discontinuous():
     my_model.interfaces = [
         F.Interface(id=3, subdomains=[vol1, vol2], penalty_term=1000)
     ]
-    my_model.surface_to_volume = {
-        left_surf: vol1,
-        right_surf: vol2,
-    }
 
     my_model.temperature = 300
 

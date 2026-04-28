@@ -484,7 +484,7 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
 def test_raise_error_non_unique_vol_ids():
     """Test that an error is raised if the volume ids are not unique"""
     my_problem = F.HeatTransferProblem()
-    my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 2000))
+    my_problem.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 11))
     left = F.SurfaceSubdomain1D(id=1, x=0)
     right = F.SurfaceSubdomain1D(id=2, x=1)
     mat = F.Material(D_0=1, E_D=None)

@@ -68,7 +68,6 @@ def test_vtx_DG(tmpdir):
 
     my_model.temperature = 55
     my_model.subdomains = [s0, s1, l0, l1]
-    my_model.surface_to_volume = {l0: s0, l1: s1}
     # NOTE: Ask Remi why `H` has to live in both s0 and s1
     my_model.species = [
         F.Species("H", subdomains=[s0, s1]),
@@ -247,7 +246,7 @@ def test_custom_field(tmp_path, expression):
 
     my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
 
-    custom_field = F.CustomField(
+    custom_field = F.CustomFieldExport(
         filename=tmp_path / "custom_field.bp",
         expression=expression,
         species_dependent_value={"c_A": A, "c_B": B},
@@ -325,7 +324,7 @@ def test_custom_field_discontinuous(tmp_path, expression):
 
     my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
 
-    custom_field = F.CustomField(
+    custom_field = F.CustomFieldExport(
         filename=tmp_path / "custom_field.bp",
         expression=expression,
         species_dependent_value={"c_A": A, "c_B": B},
@@ -390,7 +389,7 @@ def test_custom_field_not_implemented_error(expression):
 
     my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
 
-    custom_field = F.CustomField(
+    custom_field = F.CustomFieldExport(
         filename="custom_field.bp",
         expression=expression,
         species_dependent_value={"c_A": A, "c_B": B},

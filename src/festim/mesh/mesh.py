@@ -180,6 +180,14 @@ class Mesh:
                     )
                 tags_volumes[:] = vol.id
 
+        # make sure there are no zeros in the tags_volumes
+        assert np.all(tags_volumes != 0), (
+            "All cells must be tagged with a non-zero value"
+            "This error can be caused by a volume subdomain not being defined"
+            "correctly, or by a mesh that is too coarse to capture the geometry"
+            "of the volume subdomains"
+        )
+
         volume_meshtags = meshtags(
             self._mesh, self.vdim, mesh_cell_indices, tags_volumes
         )

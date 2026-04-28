@@ -181,7 +181,7 @@ class VTXSpeciesExport(ExportBaseClass):
                 return outfiles
 
 
-class CustomField(ExportBaseClass):
+class CustomFieldExport(ExportBaseClass):
     """Export a custom field to a VTX file
 
     Args:
@@ -328,7 +328,7 @@ class CustomField(ExportBaseClass):
             )
 
 
-class ReactionRate(CustomField):
+class ReactionRate(CustomFieldExport):
     def __init__(
         self,
         reaction: Reaction,

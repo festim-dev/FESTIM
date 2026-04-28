@@ -14,15 +14,15 @@ from .vtx import (
     ExportBaseClass,
     VTXSpeciesExport,
     VTXTemperatureExport,
-    CustomField,
     ReactionRate,
+    CustomFieldExport,
 )
 from .xdmf import XDMFExport
 
 __all__ = [
     "AverageSurface",
     "AverageVolume",
-    "CustomField",
+    "CustomFieldExport",
     "ExportBaseClass",
     "MaximumSurface",
     "MaximumVolume",
