@@ -347,10 +347,10 @@ class ReactionRate(CustomFieldExport):
         self,
         reaction: Reaction,
         filename: str | Path,
+        direction: str = "both",
         times: list[float] | None = None,
         subdomain: VolumeSubdomain | None = None,
         checkpoint: bool = False,
-        direction: str = "both",
     ):
 
         reactant_names = [reactant.name for reactant in reaction.reactant]
