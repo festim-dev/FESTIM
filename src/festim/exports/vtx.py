@@ -294,16 +294,17 @@ class CustomFieldExport(ExportBaseClass):
             if arg in self.species_dependent_value:
                 spe = self.species_dependent_value[arg]
                 if isinstance(spe, ImplicitSpecies):
-                    raise NotImplementedError(
-                        "Custom fields depending on implicit species are not"
-                        "implemented yet."
-                    )
-                if self.mixed_domain:
-                    kwargs[arg] = spe.subdomain_to_post_processing_solution[
-                        self.subdomain
-                    ]
+                    if self.mixed_domain:
+                        kwargs[arg] = spe.concentration_submesh(self.subdomain)
+                    else:
+                        kwargs[arg] = spe.concentration
                 else:
-                    kwargs[arg] = spe.post_processing_solution
+                    if self.mixed_domain:
+                        kwargs[arg] = spe.subdomain_to_post_processing_solution[
+                            self.subdomain
+                        ]
+                    else:
+                        kwargs[arg] = spe.post_processing_solution
             assert kwargs[arg] is not None, (
                 f"Argument {arg} not found in species_dependent_value"
             )
