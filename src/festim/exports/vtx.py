@@ -179,7 +179,7 @@ class VTXSpeciesExport(ExportBaseClass):
                 return outfiles
 
 
-class CustomField(ExportBaseClass):
+class CustomFieldExport(ExportBaseClass):
     """Export a custom field to a VTX file
 
     Args:

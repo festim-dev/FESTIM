@@ -448,7 +448,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     else:
                         adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
 
-                elif isinstance(export, exports.CustomField):
+                elif isinstance(export, exports.CustomFieldExport):
                     export.function = fem.Function(self.V_CG_1)
                     export.set_dolfinx_expression(
                         temperature=self.temperature_fenics,
@@ -997,7 +997,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         self._get_temperature_field_as_function()
                     )
                     export.writer.write(float(self.t))
-                elif isinstance(export, exports.CustomField):
+                elif isinstance(export, exports.CustomFieldExport):
                     # update internal function
                     export.function.interpolate(export.dolfinx_expression)
                     export.writer.write(float(self.t))
@@ -1707,7 +1707,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.filename,
                         mesh=functions[0].function_space.mesh,
                     )
-            elif isinstance(export, exports.CustomField):
+            elif isinstance(export, exports.CustomFieldExport):
                 # need to find an appropriate function space on the right submesh
                 V = self.subdomain_to_V_CG1[export.subdomain]
                 export.function = fem.Function(V)
@@ -1763,7 +1763,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     continue
             # handle VTX exports
             if isinstance(export, exports.ExportBaseClass):
-                if isinstance(export, exports.CustomField):
+                if isinstance(export, exports.CustomFieldExport):
                     # update internal function
                     export.function.interpolate(export.dolfinx_expression)
                     export.writer.write(float(self.t))

@@ -246,7 +246,7 @@ def test_custom_field(tmp_path, expression):
 
     my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
 
-    custom_field = F.CustomField(
+    custom_field = F.CustomFieldExport(
         filename=tmp_path / "custom_field.bp",
         expression=expression,
         species_dependent_value={"c_A": A, "c_B": B},
@@ -324,7 +324,7 @@ def test_custom_field_discontinuous(tmp_path, expression):
 
     my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
 
-    custom_field = F.CustomField(
+    custom_field = F.CustomFieldExport(
         filename=tmp_path / "custom_field.bp",
         expression=expression,
         species_dependent_value={"c_A": A, "c_B": B},
@@ -389,7 +389,7 @@ def test_custom_field_not_implemented_error(expression):
 
     my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
 
-    custom_field = F.CustomField(
+    custom_field = F.CustomFieldExport(
         filename="custom_field.bp",
         expression=expression,
         species_dependent_value={"c_A": A, "c_B": B},

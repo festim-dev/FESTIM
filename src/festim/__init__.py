@@ -39,7 +39,7 @@ from .exports.vtx import (
     ExportBaseClass,
     VTXSpeciesExport,
     VTXTemperatureExport,
-    CustomField,
+    CustomFieldExport,
 )
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
