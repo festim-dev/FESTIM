@@ -43,11 +43,6 @@
            </div>
 
            <div class="carousel-item">
-             <img src="_static/gallery/permeation.png" alt="Permeation">
-             <p class="festim-carousel-caption">Permeation through a multi-layer membrane</p>
-           </div>
-
-           <div class="carousel-item">
              <img src="_static/gallery/fitting_tds.png" alt="TDS fitting">
              <p class="festim-carousel-caption">Thermo-desorption spectrum analysis</p>
            </div>
