@@ -62,7 +62,7 @@ def main():
     )
 
     # Find all duplicate markers
-    marker = "<!-- Duplicate for seamless loop -->"
+    marker = "       <!-- Duplicate for seamless loop -->"
     first_marker = content.find(marker)
     second_marker = content.find(marker, first_marker + 1)
 
@@ -94,10 +94,11 @@ def main():
     after_marker = marker_pos + len(marker)
 
     # Find the closing </div> of this track
-    track_end = content.find("</div>", after_marker)
+    track_end_marker = "     </div>"
+    track_end = content.find(track_end_marker, after_marker)
 
     # Insert before </div> (duplicate set)
-    content = content[:track_end] + logo_html + "\n       " + content[track_end:]
+    content = content[:track_end] + logo_html + "\n" + content[track_end:]
 
     with open(index_path, "w") as f:
         f.write(content)
