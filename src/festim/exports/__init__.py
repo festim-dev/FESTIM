@@ -11,10 +11,11 @@ from .total_surface import TotalSurface
 from .total_volume import TotalVolume
 from .volume_quantity import VolumeQuantity
 from .vtx import (
+    CustomFieldExport,
     ExportBaseClass,
+    ReactionRateExport,
     VTXSpeciesExport,
     VTXTemperatureExport,
-    CustomFieldExport,
 )
 from .xdmf import XDMFExport
 
@@ -28,6 +29,7 @@ __all__ = [
     "MinimumSurface",
     "MinimumVolume",
     "Profile1DExport",
+    "ReactionRateExport",
     "SurfaceFlux",
     "SurfaceQuantity",
     "TotalSurface",
