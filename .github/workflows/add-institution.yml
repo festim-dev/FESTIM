@@ -1,0 +1,59 @@
+name: Add institution logo
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  add-institution:
+    if: contains(github.event.issue.labels.*.name, 'new-institution')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        # for testing, remove this once update-homepage is merged
+        with:
+          ref: update-homepage
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Parse issue and create PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: python .github/scripts/add_institution.py
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "Add ${{ env.INSTITUTION_NAME }} to landing page"
+          branch: add-institution-${{ github.event.issue.number }}
+          title: "Add ${{ env.INSTITUTION_NAME }} to landing page"
+          body: |
+            Automatically generated from #${{ github.event.issue.number }}.
+
+            Adds the logo for **${{ env.INSTITUTION_NAME }}** to the landing page ribbon.
+
+            Please review the logo quality and placement before merging.
+          labels: automated-pr
+
+      - name: Comment on issue
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Thanks for submitting! A pull request has been automatically created to add your institution. A maintainer will review it shortly.
