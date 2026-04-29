@@ -121,13 +121,6 @@
         ============================================================ -->
    <h2 class="festim-section-heading">Explore the documentation</h2>
 
-.. raw:: html
-
-   <!-- ============================================================
-        SECTION 3 - EXPLORE THE DOCUMENTATION
-        ============================================================ -->
-   <h2 class="festim-section-heading">Explore the documentation</h2>
-
    <div class="festim-nav-grid">
      <a class="festim-nav-card" href="installation.html">
        <i class="fa-solid fa-download"></i>
