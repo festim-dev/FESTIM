@@ -1,5 +1,10 @@
 :html_theme.sidebar_secondary.remove:
 
+.. meta::
+   :title: FESTIM
+
+.. title:: FESTIM
+
 .. raw:: html
 
    <!-- ============================================================
