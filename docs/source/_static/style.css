@@ -5,7 +5,9 @@
    ============================================================= */
 :root {
     --festim-primary: #1a4848;
-    --festim-primary-hover: #f7b000;
+    --festim-primary-hover: #133636;
+    --festim-secondary: #f7b000;
+    --festim-secondary-hover: #d99b00;
 }
 
 body {
@@ -65,7 +67,7 @@ html .festim-hero-text h1 {
 }
 
 html .festim-feature-card h3 {
-    color: var(--festim-primary);
+    color: var(--festim-secondary);
 }
 
 html .festim-nav-card i {
@@ -75,8 +77,12 @@ html .festim-nav-card i {
 /* Tone it down slightly in dark mode so it stays readable */
 html[data-theme="dark"] .festim-section-heading,
 html[data-theme="dark"] .festim-hero-text h1,
-html[data-theme="dark"] .festim-feature-card h3 {
+html[data-theme="dark"] .festim-feature-card {
     color: color-mix(in srgb, var(--festim-primary) 85%, #fff);
+}
+
+html[data-theme="dark"] .festim-feature-card h3 {
+    color: color-mix(in srgb, var(--festim-secondary) 85%, #fff);
 }
 
 /* 
@@ -150,6 +156,7 @@ h3 {
 
 .festim-hero-subtitle a {
     font-weight: 600;
+    color: var(--festim-secondary);
 }
 
 .festim-hero-buttons {
@@ -348,7 +355,7 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
     border: 1px solid var(--pst-color-border);
     background-color: var(--pst-color-surface);
     text-decoration: none;
-    color: var(--pst-color-text-base);
+    color: var(--festim-primary);
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -357,16 +364,26 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     border-color: var(--festim-primary);
     text-decoration: none;
-    color: var(--pst-color-text-base);
+    color: var(--festim-secondary);
 }
 
+
+
 .festim-nav-card:visited {
-    color: var(--pst-color-text-base);
+    color: var(--festim-primary);
+}
+
+.festim-nav-card:visited:hover {
+    color: var(--festim-secondary);
 }
 
 .festim-nav-card i {
     font-size: 2rem;
-    color: var(--festim-primary);
+    color: var(--festim-primary) !important;
+}
+
+.festim-nav-card:hover i {
+    color: var(--festim-primary) !important;
 }
 
 .festim-nav-card span {
@@ -428,7 +445,6 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
-    color: var(--pst-color-text-base);
 }
 
 .festim-feature-card p {
