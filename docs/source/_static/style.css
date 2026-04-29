@@ -205,7 +205,6 @@ h3 {
     object-fit: contain;
     margin: 1rem auto;
     display: block;
-    border-radius: 0.75rem;
 }
 
 .festim-carousel-caption {
@@ -359,40 +358,67 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
     }
 }
 
-
 /* =============================================================
-   FIX - REMOVE UNWANTED BACKGROUNDS (RTD dark mode)
+   WHY FESTIM - FEATURE CARDS
    ============================================================= */
-
-/* Carousel image area */
-html[data-theme="dark"] .festim-hero-carousel .carousel,
-html[data-theme="dark"] .festim-hero-carousel .carousel-item,
-html[data-theme="dark"] .festim-hero-carousel .carousel-item img {
-    background-color: transparent;
+.festim-features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
 }
 
-/* Navigation cards - remove the lighter band */
-html[data-theme="dark"] .festim-nav-card {
-    background-color: transparent;
-    border-color: var(--pst-color-border);
+.festim-feature-card {
+    flex: 1 1 180px;
+    max-width: 200px;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    transition: border-color 0.3s ease, transform 0.2s ease;
 }
 
-html[data-theme="dark"] .festim-nav-card span {
-    background-color: transparent;
+.festim-feature-card:hover {
+    border-color: var(--festim-primary);
+    transform: translateY(-4px);
 }
 
-/* sphinx-design cards (Why FESTIM section) */
-html[data-theme="dark"] .sd-card {
-    background-color: transparent;
-    border-color: var(--pst-color-border);
+.festim-feature-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--festim-primary) 15%, transparent);
 }
 
-html[data-theme="dark"] .sd-card-body {
-    background-color: transparent;
+.festim-feature-icon i {
+    font-size: 1.4rem;
+    color: var(--festim-primary);
 }
 
-html[data-theme="dark"] .sd-card-header,
-html[data-theme="dark"] .sd-card-footer {
-    background-color: transparent;
-    border-color: var(--pst-color-border);
+.festim-feature-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--pst-color-text-base);
+}
+
+.festim-feature-card p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--pst-color-text-muted);
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .festim-feature-card {
+        max-width: 100%;
+        flex: 1 1 100%;
+    }
 }

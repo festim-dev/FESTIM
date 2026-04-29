@@ -39,7 +39,6 @@
 
            <div class="carousel-item">
              <img src="_static/gallery/permeation.png" alt="Permeation">
-
              <p class="festim-carousel-caption">Permeation through a multi-layer membrane</p>
            </div>
 
@@ -85,34 +84,41 @@
         ============================================================ -->
    <h2 class="festim-section-heading">Why FESTIM?</h2>
 
-.. grid:: 5
-   :gutter: 3
+   <div class="festim-features">
 
-   .. grid-item-card:: Multi-dimensional
-      :text-align: center
+     <div class="festim-feature-card">
+       <div class="festim-feature-icon">
+         <i class="fa-solid fa-cubes"></i>
+       </div>
+       <h3>Multi-dimensional</h3>
+       <p>Run simulations in 1D, 2D, or 3D to match your problem geometry.</p>
+     </div>
 
-      Run simulations in 1D, 2D, or 3D to match your problem geometry.
+     <div class="festim-feature-card">
+       <div class="festim-feature-icon">
+         <i class="fa-solid fa-layer-group"></i>
+       </div>
+       <h3>Multi-material</h3>
+       <p>Model complex assemblies with multiple materials and hydrogen isotopes.</p>
+     </div>
 
-   .. grid-item-card:: Multi-material
-      :text-align: center
+     <div class="festim-feature-card">
+       <div class="festim-feature-icon">
+         <i class="fa-brands fa-python"></i>
+       </div>
+       <h3>Python API</h3>
+       <p>Get started quickly with a clean, minimal Python interface.</p>
+     </div>
 
-      Model complex assemblies with multiple materials and hydrogen isotopes.
+     <div class="festim-feature-card">
+       <div class="festim-feature-icon">
+         <i class="fa-solid fa-gears"></i>
+       </div>
+       <h3>Built on FEniCS</h3>
+       <p>Leverages a mature finite element framework for robust, scalable simulations.</p>
+     </div>
 
-   .. grid-item-card:: Flexible BCs
-      :text-align: center
-
-      Choose from a wide range of boundary conditions adaptable to many use cases.
-
-   .. grid-item-card:: Python API
-      :text-align: center
-
-      Get started quickly with a clean, minimal Python interface.
-
-   .. grid-item-card:: Built on FEniCS
-      :text-align: center
-
-      Leverages the mature FEniCS finite element framework for robust, scalable simulations.
-
+   </div>
 
 .. raw:: html
 

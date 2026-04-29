@@ -14,10 +14,8 @@ sys.path.insert(0, os.path.abspath("../../src"))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "FESTIM"
-copyright = "2022-2023, FESTIM contributors"
+copyright = "2022-2026, FESTIM contributors"
 author = "FESTIM-dev"
-release = "1.0.0"
-version = "1.0"
 
 
 # -- General configuration ---------------------------------------------------
