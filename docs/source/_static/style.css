@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Open+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap');
 
+/* =============================================================
+   FESTIM BRAND COLOURS
+   ============================================================= */
+:root {
+    --festim-primary: #1a4848;
+    --festim-primary-hover: #f7b000;
+}
+
 body {
     font-family: 'Open Sans', sans-serif;
 }
@@ -48,6 +56,28 @@ code {
     padding: 2.5rem 0rem 0.5rem 0rem;
 }
 
+/* =============================================================
+   BRAND COLOUR HEADINGS
+   ============================================================= */
+html .festim-section-heading,
+html .festim-hero-text h1 {
+    color: var(--festim-primary);
+}
+
+html .festim-feature-card h3 {
+    color: var(--festim-primary);
+}
+
+html .festim-nav-card i {
+    color: var(--festim-primary);
+}
+
+/* Tone it down slightly in dark mode so it stays readable */
+html[data-theme="dark"] .festim-section-heading,
+html[data-theme="dark"] .festim-hero-text h1,
+html[data-theme="dark"] .festim-feature-card h3 {
+    color: color-mix(in srgb, var(--festim-primary) 85%, #fff);
+}
 
 /* 
 SPHINX-BOOK-THEME HOTFIX (top-right icons): 
@@ -75,4 +105,449 @@ https://github.com/executablebooks/sphinx-book-theme/issues/879
 h3 {
     font-size: 125%;
     font-weight: normal;
+}
+
+
+/* =============================================================
+   FESTIM LANDING PAGE STYLES
+   ============================================================= */
+
+/* ---- Section headings ---- */
+.festim-section-heading {
+    text-align: center;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+}
+
+/* =============================================================
+   HERO
+   ============================================================= */
+.festim-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    padding: 3rem 1rem 2rem;
+    flex-wrap: wrap;
+}
+
+.festim-hero-text {
+    flex: 1 1 360px;
+    max-width: 500px;
+}
+
+.festim-hero-text h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.festim-hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--pst-color-text-muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.festim-hero-subtitle a {
+    font-weight: 600;
+}
+
+.festim-hero-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* ---- Override button colours on landing page ---- */
+.festim-hero-buttons .btn-primary,
+.festim-hero-buttons .btn-primary:visited {
+    background-color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    color: #fff;
+}
+
+.festim-hero-buttons .btn-primary:hover,
+.festim-hero-buttons .btn-primary:focus,
+.festim-hero-buttons .btn-primary:active {
+    background-color: var(--festim-primary-hover);
+    border-color: var(--festim-primary-hover);
+    color: #fff;
+    text-decoration: none;
+}
+
+.festim-hero-buttons .btn-outline-primary,
+.festim-hero-buttons .btn-outline-primary:visited {
+    color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    background-color: transparent;
+}
+
+.festim-hero-buttons .btn-outline-primary:hover,
+.festim-hero-buttons .btn-outline-primary:focus,
+.festim-hero-buttons .btn-outline-primary:active {
+    background-color: var(--festim-primary-hover);
+    border-color: var(--festim-primary-hover);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ---- Community section buttons ---- */
+.festim-community-buttons .btn-outline-primary,
+.festim-community-buttons .btn-outline-primary:visited {
+    color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    background-color: transparent;
+}
+
+.festim-community-buttons .btn-outline-primary:hover,
+.festim-community-buttons .btn-outline-primary:focus,
+.festim-community-buttons .btn-outline-primary:active {
+    background-color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ---- Carousel in hero ---- */
+.festim-hero-carousel {
+    flex: 1 1 400px;
+    max-width: 520px;
+}
+
+.festim-hero-carousel .carousel {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: var(--pst-color-surface);
+    border: 1px solid var(--pst-color-border);
+}
+
+.festim-hero-carousel .carousel-item img {
+    width: calc(100% - 2rem);
+    height: 320px;
+    object-fit: contain;
+    margin: 1rem auto;
+    display: block;
+}
+
+.festim-carousel-caption {
+    text-align: center;
+    padding: 0.5rem 1rem 1rem;
+    color: var(--pst-color-text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.festim-hero-carousel .carousel-control-prev-icon,
+.festim-hero-carousel .carousel-control-next-icon {
+    filter: drop-shadow(0 0 2px var(--pst-color-text-base));
+}
+
+/* responsive: stack on small screens */
+@media (max-width: 768px) {
+    .festim-hero {
+        flex-direction: column;
+        text-align: center;
+    }
+    .festim-hero-buttons {
+        justify-content: center;
+    }
+    .festim-hero-carousel {
+        max-width: 100%;
+    }
+}
+
+/* =============================================================
+   LOGO RIBBON
+   ============================================================= */
+.festim-ribbon-wrapper {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    padding: 1rem 0;
+}
+
+/* Fade edges */
+.festim-ribbon-wrapper::before,
+.festim-ribbon-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.festim-ribbon-wrapper::before {
+    left: 0;
+    background: linear-gradient(to right, var(--pst-color-background), transparent);
+}
+
+.festim-ribbon-wrapper::after {
+    right: 0;
+    background: linear-gradient(to left, var(--pst-color-background), transparent);
+}
+
+.festim-ribbon-track {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    width: max-content;
+    animation: festim-scroll 60s linear infinite;
+}
+
+.festim-ribbon-track:hover {
+    animation-play-state: paused;
+}
+
+html .festim-ribbon-track img,
+html[data-theme="dark"] .festim-ribbon-track img {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+html .festim-ribbon-track img:hover,
+html[data-theme="dark"] .festim-ribbon-track img:hover {
+    filter: grayscale(0%);
+    opacity: 1.0;
+}
+
+@keyframes festim-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
+
+/* =============================================================
+   NAVIGATION CARDS
+   ============================================================= */
+.festim-nav-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    max-width: 900px;
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
+}
+
+.festim-nav-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--pst-color-border);
+    background-color: var(--pst-color-surface);
+    text-decoration: none;
+    color: var(--pst-color-text-base);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.festim-nav-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    border-color: var(--festim-primary);
+    text-decoration: none;
+    color: var(--pst-color-text-base);
+}
+
+.festim-nav-card:visited {
+    color: var(--pst-color-text-base);
+}
+
+.festim-nav-card i {
+    font-size: 2rem;
+    color: var(--festim-primary);
+}
+
+.festim-nav-card span {
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+@media (max-width: 600px) {
+    .festim-nav-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* =============================================================
+   WHY FESTIM - FEATURE CARDS
+   ============================================================= */
+.festim-features {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
+}
+
+.festim-feature-card {
+    flex: 1 1 180px;
+    max-width: 200px;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid transparent;
+    transition: border-color 0.3s ease, transform 0.2s ease;
+}
+
+.festim-feature-card:hover {
+    border-color: var(--festim-primary);
+    transform: translateY(-4px);
+}
+
+.festim-feature-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background-color: color-mix(in srgb, var(--festim-primary) 15%, transparent);
+}
+
+.festim-feature-icon i {
+    font-size: 1.4rem;
+    color: var(--festim-primary);
+}
+
+.festim-feature-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--pst-color-text-base);
+}
+
+.festim-feature-card p {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--pst-color-text-muted);
+    margin: 0;
+}
+
+@media (max-width: 600px) {
+    .festim-feature-card {
+        max-width: 100%;
+        flex: 1 1 100%;
+    }
+}
+
+/* =============================================================
+   CITING FESTIM
+   ============================================================= */
+.festim-cite {
+    max-width: 700px;
+    margin: 0 auto 2rem;
+    text-align: center;
+    padding: 0 1rem;
+}
+
+.festim-cite > p {
+    color: var(--pst-color-text-muted);
+    margin-bottom: 1.25rem;
+}
+
+/* ---- DOI badge ---- */
+.festim-doi-badge {
+    display: inline-flex;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--pst-color-border);
+    transition: box-shadow 0.2s ease;
+}
+
+.festim-doi-badge:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+}
+
+.festim-doi-label {
+    background-color: var(--festim-primary);
+    color: #fff;
+    padding: 0.4rem 0.65rem;
+}
+
+.festim-doi-value {
+    padding: 0.4rem 0.75rem;
+    color: var(--pst-color-text-base);
+    background-color: var(--pst-color-surface);
+}
+
+/* ---- BibTeX dropdown ---- */
+.festim-bibtex {
+    text-align: left;
+    border: 1px solid var(--pst-color-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.festim-bibtex:hover {
+    border-color: var(--festim-primary);
+}
+
+.festim-bibtex summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--pst-color-text-base);
+    list-style: none;
+    user-select: none;
+}
+
+.festim-bibtex summary::-webkit-details-marker {
+    display: none;
+}
+
+.festim-bibtex summary i:first-child {
+    color: var(--festim-primary);
+}
+
+.festim-bibtex-chevron {
+    margin-left: auto;
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+    color: var(--pst-color-text-muted);
+}
+
+.festim-bibtex[open] .festim-bibtex-chevron {
+    transform: rotate(180deg);
+}
+
+.festim-bibtex pre {
+    margin: 0;
+    padding: 1rem;
+    background-color: var(--pst-color-surface);
+    border-top: 1px solid var(--pst-color-border);
+    border-radius: 0;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.festim-bibtex code {
+    color: var(--pst-color-text-base);
+    background: none;
+    padding: 0;
 }
