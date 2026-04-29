@@ -71,11 +71,9 @@ Two different interface cases can then occur. At the interface between two Sieve
 .. math::
     :label: eq_continuity  
 
-    \begin{eqnarray} 
     \frac{c_\mathrm{m}^-}{K_S^-}&=&\frac{c_\mathrm{m}^+}{K_S^+} \\
     &\mathrm{or}& \\
     \frac{c_\mathrm{m}^-}{K_H^-}&=&\frac{c_\mathrm{m}^+}{K_H^+}
-    \end{eqnarray}
 
 where exponents :math:`+` and :math:`-` denote both sides of the interface.
 
