@@ -16,9 +16,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        # for testing, remove this once update-homepage is merged
-        with:
-          ref: update-homepage
 
       - name: Set up Python
         uses: actions/setup-python@v5
