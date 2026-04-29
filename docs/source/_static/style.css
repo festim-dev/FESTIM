@@ -74,6 +74,12 @@ html .festim-nav-card i {
     color: var(--festim-primary);
 }
 
+html .festim-nav-card svg {
+    width: 2rem;
+    height: 2rem;
+    color: var(--festim-primary);
+}
+
 /* Tone it down slightly in dark mode so it stays readable */
 html[data-theme="dark"] .festim-section-heading,
 html[data-theme="dark"] .festim-hero-text h1,
@@ -451,8 +457,8 @@ html[data-theme="dark"] .festim-nav-card {
 }
 
 .festim-feature-icon {
-    width: 56px;
-    height: 56px;
+    width: 70px;
+    height: 70px;
     margin: 0 auto 1rem;
     display: flex;
     align-items: center;
@@ -462,9 +468,15 @@ html[data-theme="dark"] .festim-nav-card {
 }
 
 .festim-feature-icon i {
-    font-size: 1.4rem;
     color: var(--festim-primary);
 }
+
+html .festim-feature-icon svg {
+    width: 2rem;
+    height: 2rem;
+    color: var(--festim-primary);
+}
+
 
 .festim-feature-card h3 {
     font-size: 1rem;
