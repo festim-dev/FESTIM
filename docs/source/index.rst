@@ -177,6 +177,7 @@
        <img src="_static/logos/UKAEA_UK.png" alt="UKAEA" title="UKAEA">
        <img src="_static/logos/digiLab_UK.png" alt="digiLab" title="digiLab">
 
+       <!-- Do not remove this marker as it's used to automatically add logos in add-institution.yml -->
        <!-- Duplicate for seamless loop -->
        <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
        <img src="_static/logos/IRFM_cadarache_France.png" alt="IRFM" title="IRFM (CEA Cadarache)">
@@ -209,6 +210,7 @@
        <img src="_static/logos/Exeter_University_UK.png" alt="University of Exeter" title="University of Exeter">
        <img src="_static/logos/rochester.svg" alt="University of Rochester" title="University of Rochester">
 
+       <!-- Do not remove this marker as it's used to automatically add logos in add-institution.yml -->
        <!-- Duplicate for seamless loop -->
        <img src="_static/logos/Cranfield_University_UK.png" alt="Cranfield University" title="Cranfield University">
        <img src="_static/logos/Politecnico_di_Torino.png" alt="Politecnico di Torino" title="Politecnico di Torino">
