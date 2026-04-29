@@ -196,6 +196,7 @@
        <img src="_static/logos/University_of_Surrey.png" alt="University of Surrey" title="University of Surrey">
        <img src="_static/logos/Logo_of_University_of_Tsukuba.png" alt="University of Tsukuba" title="University of Tsukuba">
        <img src="_static/logos/Exeter_University_UK.png" alt="University of Exeter" title="University of Exeter">
+       <img src="_static/logos/rochester.svg" alt="University of Rochester" title="University of Rochester">
 
        <!-- Duplicate for seamless loop -->
        <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
@@ -224,7 +225,7 @@
        <img src="_static/logos/University_of_Surrey.png" alt="University of Surrey" title="University of Surrey">
        <img src="_static/logos/Logo_of_University_of_Tsukuba.png" alt="University of Tsukuba" title="University of Tsukuba">
        <img src="_static/logos/Exeter_University_UK.png" alt="University of Exeter" title="University of Exeter">
-
+       <img src="_static/logos/University_of_Rochester.png" alt="University of Rochester" title="University of Rochester">
      </div>
    </div>
 
