@@ -177,7 +177,8 @@
        <img src="_static/logos/UKAEA_UK.png" alt="UKAEA" title="UKAEA">
        <img src="_static/logos/digiLab_UK.png" alt="digiLab" title="digiLab">
 
-       <!-- Duplicate for seamless loop -->
+              <img src="_static/logos/Test_name.jpg" alt="Test acronym" title="Test name">
+<!-- Duplicate for seamless loop -->
        <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
        <img src="_static/logos/IRFM_cadarache_France.png" alt="IRFM" title="IRFM (CEA Cadarache)">
        <img src="_static/logos/LSPM_Villetaneuse_France.png" alt="LSPM" title="LSPM Villetaneuse">
@@ -191,7 +192,8 @@
        <img src="_static/logos/ITER_organization_France.png" alt="ITER" title="ITER Organization">
        <img src="_static/logos/UKAEA_UK.png" alt="UKAEA" title="UKAEA">
        <img src="_static/logos/digiLab_UK.png" alt="digiLab" title="digiLab">
-     </div>
+            <img src="_static/logos/Test_name.jpg" alt="Test acronym" title="Test name">
+       </div>
 
      <div class="festim-ribbon-track festim-ribbon-right">
        <img src="_static/logos/Cranfield_University_UK.png" alt="Cranfield University" title="Cranfield University">
