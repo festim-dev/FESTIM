@@ -344,7 +344,7 @@ class CustomFieldExport(ExportBaseClass):
             )
 
 
-class ReactionRate(CustomFieldExport):
+class ReactionRateExport(CustomFieldExport):
     def __init__(
         self,
         reaction: Reaction,

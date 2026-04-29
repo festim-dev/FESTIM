@@ -411,7 +411,7 @@ def test_custom_field_not_implemented_error(expression):
 @pytest.mark.parametrize("p_0, E_p", [(0.01, 0.05), (0.01, 0.0), (0.0, 0.0)])
 def test_reaction_rate_export(tmp_path, direction, product_type, p_0, E_p):
     """
-    Test ReactionRate export functionality for different directions, product formats,
+    Test ReactionRateExport export functionality for different directions, product formats,
     and reaction configurations.
     """
     if p_0 == 0.0 and direction == "backward":
@@ -459,7 +459,7 @@ def test_reaction_rate_export(tmp_path, direction, product_type, p_0, E_p):
 
     my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
 
-    reaction_rate_export = F.ReactionRate(
+    reaction_rate_export = F.ReactionRateExport(
         filename=tmp_path / f"reaction_rate_{direction}.bp",
         reaction=reaction,
         direction=direction,
@@ -473,7 +473,7 @@ def test_reaction_rate_export(tmp_path, direction, product_type, p_0, E_p):
 
 def test_reaction_rate_override_signature():
     """
-    Test that ReactionRate signature override correctly updates signatures.
+    Test that ReactionRateExport signature override correctly updates signatures.
     """
     mat = F.Material(D_0=1, E_D=0)
     vol = F.VolumeSubdomain(id=1, material=mat)
@@ -483,7 +483,7 @@ def test_reaction_rate_override_signature():
         reactant=[A], product=[B], k_0=1, E_k=0, p_0=0, E_p=0, volume=vol
     )
 
-    rr = F.ReactionRate(reaction=reaction, filename="dummy.bp")
+    rr = F.ReactionRateExport(reaction=reaction, filename="dummy.bp")
 
     def my_expression(**kwargs):
         return kwargs.get("x", 0) + kwargs.get("y", 0)

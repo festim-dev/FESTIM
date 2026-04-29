@@ -39,7 +39,7 @@ from .exports.volume_quantity import VolumeQuantity
 from .exports.vtx import (
     CustomFieldExport,
     ExportBaseClass,
-    ReactionRate,
+    ReactionRateExport,
     VTXSpeciesExport,
     VTXTemperatureExport,
 )

@@ -13,7 +13,7 @@ from .volume_quantity import VolumeQuantity
 from .vtx import (
     CustomFieldExport,
     ExportBaseClass,
-    ReactionRate,
+    ReactionRateExport,
     VTXSpeciesExport,
     VTXTemperatureExport,
 )
@@ -29,7 +29,7 @@ __all__ = [
     "MinimumSurface",
     "MinimumVolume",
     "Profile1DExport",
-    "ReactionRate",
+    "ReactionRateExport",
     "SurfaceFlux",
     "SurfaceQuantity",
     "TotalSurface",
