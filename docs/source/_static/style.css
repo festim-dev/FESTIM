@@ -56,6 +56,28 @@ code {
     padding: 2.5rem 0rem 0.5rem 0rem;
 }
 
+/* =============================================================
+   BRAND COLOUR HEADINGS
+   ============================================================= */
+html .festim-section-heading,
+html .festim-hero-text h1 {
+    color: var(--festim-primary);
+}
+
+html .festim-feature-card h3 {
+    color: var(--festim-primary);
+}
+
+html .festim-nav-card i {
+    color: var(--festim-primary);
+}
+
+/* Tone it down slightly in dark mode so it stays readable */
+html[data-theme="dark"] .festim-section-heading,
+html[data-theme="dark"] .festim-hero-text h1,
+html[data-theme="dark"] .festim-feature-card h3 {
+    color: color-mix(in srgb, var(--festim-primary) 85%, #fff);
+}
 
 /* 
 SPHINX-BOOK-THEME HOTFIX (top-right icons): 
