@@ -356,3 +356,41 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+
+/* =============================================================
+   FIX - REMOVE UNWANTED BACKGROUNDS (RTD dark mode)
+   ============================================================= */
+
+/* Carousel image area */
+html[data-theme="dark"] .festim-hero-carousel .carousel,
+html[data-theme="dark"] .festim-hero-carousel .carousel-item,
+html[data-theme="dark"] .festim-hero-carousel .carousel-item img {
+    background-color: transparent;
+}
+
+/* Navigation cards - remove the lighter band */
+html[data-theme="dark"] .festim-nav-card {
+    background-color: transparent;
+    border-color: var(--pst-color-border);
+}
+
+html[data-theme="dark"] .festim-nav-card span {
+    background-color: transparent;
+}
+
+/* sphinx-design cards (Why FESTIM section) */
+html[data-theme="dark"] .sd-card {
+    background-color: transparent;
+    border-color: var(--pst-color-border);
+}
+
+html[data-theme="dark"] .sd-card-body {
+    background-color: transparent;
+}
+
+html[data-theme="dark"] .sd-card-header,
+html[data-theme="dark"] .sd-card-footer {
+    background-color: transparent;
+    border-color: var(--pst-color-border);
+}
