@@ -256,7 +256,9 @@
          BibTeX
          <i class="fa-solid fa-chevron-down festim-bibtex-chevron"></i>
        </summary>
-       <pre><code>
+
+.. code-block:: bibtex
+
          @article{dark_festim_2026,
             title = {{FESTIM} v2.0: {Upgraded} framework for multi-species hydrogen transport and enhanced performance},
             volume = {220},
@@ -269,7 +271,9 @@
             month = mar,
             year = {2026},
          }
-      </code></pre>
+
+.. raw:: html
+
      </details>
    </div>
 
