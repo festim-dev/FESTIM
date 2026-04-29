@@ -7,11 +7,11 @@ from typing import Union
 import ufl
 from dolfinx import fem, io
 
-from festim.helpers import get_interpolation_points
 from festim import k_B as _k_B
-from festim.species import Species, ImplicitSpecies
-from festim.subdomain.volume_subdomain import VolumeSubdomain
+from festim.helpers import get_interpolation_points
 from festim.reaction import Reaction
+from festim.species import ImplicitSpecies, Species
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class ExportBaseClass:
@@ -240,9 +240,9 @@ class CustomFieldExport(ExportBaseClass):
     @property
     def mixed_domain(self) -> bool:
         """
-        Check if we are in a mixed domain/discontinuous case. This is the case if at least
-        one of the species in species_dependent_value is defined on a subdomain or if the
-        custom field is defined on a subdomain.
+        Check if we are in a mixed domain/discontinuous case. This is the case if at
+        least one of the species in species_dependent_value is defined on a subdomain
+        or if the custom field is defined on a subdomain.
 
         Returns:
             True if we are in a mixed domain/discontinuous case, False otherwise.
@@ -409,9 +409,9 @@ class ReactionRate(CustomFieldExport):
         the expression has the correct arguments for set_dolfinx_expression().
 
         Args:
-            expression: The user-provided expression for the reaction rate. The arguments
-                of the expression must be T (temperature) and the names of the reactants
-                and products.
+            expression: The user-provided expression for the reaction rate. The
+                arguments of the expression must be T (temperature) and the names of
+                the reactants and products.
         """
         sig_params = [inspect.Parameter("T", inspect.Parameter.POSITIONAL_OR_KEYWORD)]
         # Use dict.fromkeys to preserve order and remove duplicates
@@ -426,9 +426,10 @@ class ReactionRate(CustomFieldExport):
             *reactant_names,
             *product_names,
         }, (
-            "The expression for the reaction rate is automatically generated based on the "
-            "reaction provided. The arguments of the expression must be T (temperature) and "
-            "the names of the reactants and products. The current expression has arguments "
-            f"{inspect.signature(expression).parameters.keys()} but should have arguments "
-            f"T and {reactant_names + product_names}."
+            "The expression for the reaction rate is automatically generated based on "
+            "the reaction provided. The arguments of the expression must be T "
+            "(temperature) and the names of the reactants and products. The current "
+            "expression has arguments "
+            f"{inspect.signature(expression).parameters.keys()} but should have "
+            f"arguments T and {reactant_names + product_names}."
         )

@@ -1690,7 +1690,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 V = self.subdomain_to_V_CG1[export.subdomain]
                 export.function = fem.Function(V)
                 export.set_dolfinx_expression(
-                    temperature=self.temperature_fenics,  # need to pass the right temperature
+                    # need to pass the right temperature
+                    temperature=self.temperature_fenics,
                     time=self.t,
                 )
 

@@ -11,11 +11,11 @@ from .total_surface import TotalSurface
 from .total_volume import TotalVolume
 from .volume_quantity import VolumeQuantity
 from .vtx import (
+    CustomFieldExport,
     ExportBaseClass,
+    ReactionRate,
     VTXSpeciesExport,
     VTXTemperatureExport,
-    ReactionRate,
-    CustomFieldExport,
 )
 from .xdmf import XDMFExport
 
