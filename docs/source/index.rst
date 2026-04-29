@@ -239,9 +239,9 @@
    <div class="festim-cite">
      <p>If you use FESTIM in your research, please cite the following publication:</p>
 
-     <a href="https://doi.org/10.1016/j.ijhydene.2024.03.184" target="_blank" class="festim-doi-badge">
+     <a href="https://doi.org/10.1016/j.ijhydene.2026.153987" target="_blank" class="festim-doi-badge">
        <span class="festim-doi-label">DOI</span>
-       <span class="festim-doi-value">10.1016/j.ijhydene.2024.03.184</span>
+       <span class="festim-doi-value">10.1016/j.ijhydene.2026.153987</span>
      </a>
 
      <details class="festim-bibtex">
@@ -251,15 +251,17 @@
          <i class="fa-solid fa-chevron-down festim-bibtex-chevron"></i>
        </summary>
        <pre><code>
-       @article{delaporte2024festim,
-         title     = {{FESTIM}: An open-source code for hydrogen transport simulations},
-         author    = {Delaporte-Mathurin, R{\'e}mi and Dark, James and Ferrero, Gabriele
-                        and Hodille, Etienne A. and Kulagin, Vladimir and Meschini, Samuele},
-         journal   = {International Journal of Hydrogen Energy},
-         volume    = {63},
-         pages     = {786--802},
-         year      = {2024},
-         doi       = {10.1016/j.ijhydene.2024.03.184}
+         @article{dark_festim_2026,
+            title = {{FESTIM} v2.0: {Upgraded} framework for multi-species hydrogen transport and enhanced performance},
+            volume = {220},
+            issn = {0360-3199},
+            shorttitle = {{FESTIM} v2.0},
+            url = {https://www.sciencedirect.com/science/article/pii/S0360319926006245},
+            doi = {10.1016/j.ijhydene.2026.153987},
+            journal = {International Journal of Hydrogen Energy},
+            author = {Dark, James and Delaporte-Mathurin, Rémi and Dokken, Jørgen S. and Yang, Huihua and Khurana, Chirag and Dunnell, Kaelyn and Ferrero, Gabriele and Kulagin, Vladimir and Meschini, Samuele and Dufour, Jonathan and Hodille, Etienne A.},
+            month = mar,
+            year = {2026},
          }
       </code></pre>
      </details>
