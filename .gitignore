@@ -116,7 +116,7 @@ venv.bak/
 
 # Docs files
 docs/source/_build/
-docs/source/_static/
+# docs/source/_static/
 
 # Visual Studio Code settings
 .vscode/

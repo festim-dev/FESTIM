@@ -277,7 +277,8 @@ h3 {
     animation-play-state: paused;
 }
 
-.festim-ribbon-track img {
+html .festim-ribbon-track img,
+html[data-theme="dark"] .festim-ribbon-track img {
     height: 50px;
     width: auto;
     object-fit: contain;
@@ -286,7 +287,8 @@ h3 {
     transition: filter 0.3s ease, opacity 0.3s ease;
 }
 
-.festim-ribbon-track img:hover {
+html .festim-ribbon-track img:hover,
+html[data-theme="dark"] .festim-ribbon-track img:hover {
     filter: grayscale(0%);
     opacity: 1.0;
 }
