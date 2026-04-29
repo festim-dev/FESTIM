@@ -104,6 +104,8 @@ html_theme_options = {
     "analytics": dict(google_analytics_id="G-SCL2TVV7BK"),
 }
 
+html_favicon = "_static/favicon.png"
+
 html_sidebars = {
     "**": [
         "sidebar-nav-bs",
