@@ -231,7 +231,7 @@
 
    <p style="text-align: center; margin-top: 1rem; color: var(--pst-color-text-muted); font-size: 0.9rem;">
      Want your institution listed?
-     <a href="https://github.com/festim-dev/festim/issues/new?template=add-institution.yml" target="_blank">Open an issue</a>.
+     <a href="https://github.com/festim-dev/festim/issues/new?template=add-institution.yml" target="_blank">Fill in this form!</a>.
    </p>
 
 
