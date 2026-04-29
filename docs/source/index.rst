@@ -105,48 +105,39 @@
         ============================================================ -->
    <h2 class="festim-section-heading">Explore the documentation</h2>
 
-.. grid:: 3
-   :gutter: 2
+.. raw:: html
 
-   .. grid-item::
+   <!-- ============================================================
+        SECTION 3 - EXPLORE THE DOCUMENTATION
+        ============================================================ -->
+   <h2 class="festim-section-heading">Explore the documentation</h2>
 
-      .. card:: Installation
-         :img-top: images/icons/running-2-svgrepo-com.svg
-         :link: installation
-         :link-type: doc
-
-   .. grid-item::
-
-      .. card:: User guide
-         :img-top: images/icons/book-2-svgrepo-com.svg
-         :link: userguide/index
-         :link-type: doc
-
-   .. grid-item::
-
-      .. card:: Tutorials
-         :img-top: images/icons/clapperboard-play-svgrepo-com.svg
-         :link: https://festim-workshop.readthedocs.io/
-
-   .. grid-item::
-
-      .. card:: Developer guide
-         :img-top: images/icons/code-square-svgrepo-com.svg
-         :link: devguide/index
-         :link-type: doc
-
-   .. grid-item::
-
-      .. card:: V&V
-         :img-top: images/icons/check-square-svgrepo-com.svg
-         :link: https://festim-vv-report.readthedocs.io/en/latest/
-
-   .. grid-item::
-
-      .. card:: Fellowship
-         :img-top: images/icons/graph-up-svgrepo-com.svg
-         :link: fellowship
-         :link-type: doc
+   <div class="festim-nav-grid">
+     <a class="festim-nav-card" href="installation.html">
+       <i class="fa-solid fa-download"></i>
+       <span>Installation</span>
+     </a>
+     <a class="festim-nav-card" href="userguide/index.html">
+       <i class="fa-solid fa-book"></i>
+       <span>User guide</span>
+     </a>
+     <a class="festim-nav-card" href="https://festim-workshop.readthedocs.io/" target="_blank">
+       <i class="fa-solid fa-graduation-cap"></i>
+       <span>Tutorials</span>
+     </a>
+     <a class="festim-nav-card" href="devguide/index.html">
+       <i class="fa-solid fa-code"></i>
+       <span>Developer guide</span>
+     </a>
+     <a class="festim-nav-card" href="https://festim-vv-report.readthedocs.io/en/latest/" target="_blank">
+       <i class="fa-solid fa-clipboard-check"></i>
+       <span>V&amp;V</span>
+     </a>
+     <a class="festim-nav-card" href="fellowship.html">
+       <i class="fa-solid fa-chart-line"></i>
+       <span>Fellowship</span>
+     </a>
+   </div>
 
 
 .. raw:: html
