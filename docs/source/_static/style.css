@@ -422,3 +422,110 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
         flex: 1 1 100%;
     }
 }
+
+/* =============================================================
+   CITING FESTIM
+   ============================================================= */
+.festim-cite {
+    max-width: 700px;
+    margin: 0 auto 2rem;
+    text-align: center;
+    padding: 0 1rem;
+}
+
+.festim-cite > p {
+    color: var(--pst-color-text-muted);
+    margin-bottom: 1.25rem;
+}
+
+/* ---- DOI badge ---- */
+.festim-doi-badge {
+    display: inline-flex;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--pst-color-border);
+    transition: box-shadow 0.2s ease;
+}
+
+.festim-doi-badge:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+}
+
+.festim-doi-label {
+    background-color: var(--festim-primary);
+    color: #fff;
+    padding: 0.4rem 0.65rem;
+}
+
+.festim-doi-value {
+    padding: 0.4rem 0.75rem;
+    color: var(--pst-color-text-base);
+    background-color: var(--pst-color-surface);
+}
+
+/* ---- BibTeX dropdown ---- */
+.festim-bibtex {
+    text-align: left;
+    border: 1px solid var(--pst-color-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.festim-bibtex:hover {
+    border-color: var(--festim-primary);
+}
+
+.festim-bibtex summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--pst-color-text-base);
+    list-style: none;
+    user-select: none;
+}
+
+.festim-bibtex summary::-webkit-details-marker {
+    display: none;
+}
+
+.festim-bibtex summary i:first-child {
+    color: var(--festim-primary);
+}
+
+.festim-bibtex-chevron {
+    margin-left: auto;
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+    color: var(--pst-color-text-muted);
+}
+
+.festim-bibtex[open] .festim-bibtex-chevron {
+    transform: rotate(180deg);
+}
+
+.festim-bibtex pre {
+    margin: 0;
+    padding: 1rem;
+    background-color: var(--pst-color-surface);
+    border-top: 1px solid var(--pst-color-border);
+    border-radius: 0;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    overflow-x: auto;
+}
+
+.festim-bibtex code {
+    color: var(--pst-color-text-base);
+    background: none;
+    padding: 0;
+}

@@ -236,26 +236,34 @@
         ============================================================ -->
    <h2 class="festim-section-heading">Citing FESTIM</h2>
 
-If you use FESTIM in your research, please cite the following publication:
+   <div class="festim-cite">
+     <p>If you use FESTIM in your research, please cite the following publication:</p>
 
-.. image:: https://img.shields.io/badge/DOI-10.1016%2Fj.ijhydene.2024.03.184-blue
-   :target: https://doi.org/10.1016/j.ijhydene.2024.03.184
-   :alt: DOI badge
+     <a href="https://doi.org/10.1016/j.ijhydene.2024.03.184" target="_blank" class="festim-doi-badge">
+       <span class="festim-doi-label">DOI</span>
+       <span class="festim-doi-value">10.1016/j.ijhydene.2024.03.184</span>
+     </a>
 
-.. dropdown:: BibTeX
-
-   .. code-block:: bibtex
-
-      @article{delaporte2024festim,
-        title     = {{FESTIM}: An open-source code for hydrogen transport simulations},
-        author    = {Delaporte-Mathurin, R{\'e}mi and Dark, James and Ferrero, Gabriele
-                     and Hodille, Etienne A. and Kulagin, Vladimir and Meschini, Samuele},
-        journal   = {International Journal of Hydrogen Energy},
-        volume    = {63},
-        pages     = {786--802},
-        year      = {2024},
-        doi       = {10.1016/j.ijhydene.2024.03.184}
-      }
+     <details class="festim-bibtex">
+       <summary>
+         <i class="fa-solid fa-code"></i>
+         BibTeX
+         <i class="fa-solid fa-chevron-down festim-bibtex-chevron"></i>
+       </summary>
+       <pre><code>
+       @article{delaporte2024festim,
+         title     = {{FESTIM}: An open-source code for hydrogen transport simulations},
+         author    = {Delaporte-Mathurin, R{\'e}mi and Dark, James and Ferrero, Gabriele
+                        and Hodille, Etienne A. and Kulagin, Vladimir and Meschini, Samuele},
+         journal   = {International Journal of Hydrogen Energy},
+         volume    = {63},
+         pages     = {786--802},
+         year      = {2024},
+         doi       = {10.1016/j.ijhydene.2024.03.184}
+         }
+      </code></pre>
+     </details>
+   </div>
 
 
 .. raw:: html
