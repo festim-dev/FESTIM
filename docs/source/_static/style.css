@@ -70,16 +70,6 @@ html .festim-feature-card h3 {
     color: var(--festim-secondary);
 }
 
-html .festim-nav-card i {
-    color: var(--festim-primary);
-}
-
-html .festim-nav-card svg {
-    width: 2rem;
-    height: 2rem;
-    color: var(--festim-primary);
-}
-
 /* Tone it down slightly in dark mode so it stays readable */
 html[data-theme="dark"] .festim-section-heading,
 html[data-theme="dark"] .festim-hero-text h1,
@@ -390,7 +380,8 @@ html[data-theme="dark"] .festim-nav-card {
     color: color-mix(in srgb, var(--pst-color-border) 40%, #fff);
 }
 
-.festim-nav-card:hover {
+.festim-nav-card:hover,
+html[data-theme="dark"] .festim-nav-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     border-color: var(--festim-primary);
@@ -408,13 +399,22 @@ html[data-theme="dark"] .festim-nav-card {
     color: var(--festim-secondary);
 }
 
-.festim-nav-card i {
-    font-size: 2rem;
+.festim-nav-card:hover i {
     color: var(--festim-primary) !important;
 }
 
-.festim-nav-card:hover i {
-    color: var(--festim-primary) !important;
+html .festim-nav-card i {
+    color: var(--festim-primary);
+}
+
+html[data-theme="dark"] .festim-nav-card svg {
+    color: var(--pst-color-text-muted);
+}
+
+html .festim-nav-card svg {
+    width: 2rem;
+    height: 2rem;
+    color: var(--festim-primary);
 }
 
 .festim-nav-card span {
@@ -469,6 +469,11 @@ html[data-theme="dark"] .festim-nav-card {
 
 .festim-feature-icon i {
     color: var(--festim-primary);
+}
+
+
+html[data-theme="dark"] .festim-feature-icon svg {
+    color: var(--pst-color-text-muted);
 }
 
 html .festim-feature-icon svg {
