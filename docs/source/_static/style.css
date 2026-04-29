@@ -380,6 +380,10 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
+html[data-theme="dark"] .festim-nav-card {
+    color: color-mix(in srgb, var(--pst-color-border) 40%, #fff);
+}
+
 .festim-nav-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
