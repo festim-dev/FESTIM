@@ -23,28 +23,44 @@
          <div class="carousel-inner">
 
            <div class="carousel-item active">
-             <img src="_static/gallery/placeholder_1.png" alt="Showcase 1">
+             <img src="_static/gallery/monoblock.png" alt="Monoblock">
              <p class="festim-carousel-caption">Tritium retention in a monoblock</p>
            </div>
 
+            <div class="carousel-item">
+             <img src="_static/gallery/microstructure.png" alt="Microstructure">
+             <p class="festim-carousel-caption">Hydrogen in microstructure</p>
+           </div>
+
+            <div class="carousel-item">
+             <img src="_static/gallery/arc.png" alt="ARC breeding blanket">
+             <p class="festim-carousel-caption">Tritium transport in ARC breeding blanket</p>
+           </div>
+
            <div class="carousel-item">
-             <img src="_static/gallery/placeholder_2.png" alt="Showcase 2">
+             <img src="_static/gallery/permeation.png" alt="Permeation">
+
              <p class="festim-carousel-caption">Permeation through a multi-layer membrane</p>
            </div>
 
            <div class="carousel-item">
-             <img src="_static/gallery/placeholder_3.png" alt="Showcase 3">
+             <img src="_static/gallery/fitting_tds.png" alt="TDS fitting">
              <p class="festim-carousel-caption">Thermo-desorption spectrum analysis</p>
            </div>
 
            <div class="carousel-item">
-             <img src="_static/gallery/placeholder_4.png" alt="Showcase 4">
-             <p class="festim-carousel-caption">2D hydrogen transport in a breeding blanket</p>
+             <img src="_static/gallery/hx.gif" alt="Heat Exchanger">
+             <p class="festim-carousel-caption">Heat exchangers</p>
            </div>
 
            <div class="carousel-item">
-             <img src="_static/gallery/placeholder_5.png" alt="Showcase 5">
-             <p class="festim-carousel-caption">Multi-material 3D simulation</p>
+             <img src="_static/gallery/probe.png" alt="Tritium permeator probe">
+             <p class="festim-carousel-caption">Tritium permeator probe</p>
+           </div>
+
+            <div class="carousel-item">
+             <img src="_static/gallery/openmc_coupling.png" alt="OpenMC coupling">
+             <p class="festim-carousel-caption">Coupling with OpenMC</p>
            </div>
 
          </div>

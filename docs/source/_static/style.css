@@ -200,10 +200,12 @@ h3 {
 }
 
 .festim-hero-carousel .carousel-item img {
-    width: 100%;
+    width: calc(100% - 2rem);
     height: 320px;
     object-fit: contain;
-    padding: 1rem;
+    margin: 1rem auto;
+    display: block;
+    border-radius: 0.75rem;
 }
 
 .festim-carousel-caption {
