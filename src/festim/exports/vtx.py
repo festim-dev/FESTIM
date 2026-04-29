@@ -345,6 +345,21 @@ class CustomFieldExport(ExportBaseClass):
 
 
 class ReactionRateExport(CustomFieldExport):
+    """Export a reaction rate to a VTX file
+
+    Args:
+        reaction: The reaction to export the rate of.
+        filename: The name of the output file.
+        direction: The direction of the reaction to export.
+            Can be "forward", "backward" or "both". Defaults to "both".
+        times: if provided, the field will be exported at these timesteps. Otherwise
+            exports at all timesteps. Defaults to None.
+        subdomain: The volume subdomain on which the reaction
+            rate is evaluated. Defaults to None.
+        checkpoint: If True, the export will be a checkpoint file using
+            adios4dolfinx and won't be readable by ParaView. Default is False.
+    """
+
     def __init__(
         self,
         reaction: Reaction,
