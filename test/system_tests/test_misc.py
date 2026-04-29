@@ -1,3 +1,5 @@
+from mpi4py import MPI
+
 import dolfinx
 import numpy as np
 import pytest
@@ -352,3 +354,38 @@ def test_timesteps():
 
     expected_timesteps = np.linspace(0, 10, num=10, endpoint=False)
     assert np.allclose(my_model.timesteps, expected_timesteps)
+
+
+def test_sub_temperature_as_function_mixed_domain_not_updated():
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    n = 8
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+    my_model.mesh = F.Mesh(mesh)
+
+    surface_1 = F.SurfaceSubdomain(id=1)
+
+    material_1 = F.Material(D_0=1, E_D=0, name="material_1")
+    volume_1 = F.VolumeSubdomain(id=2, material=material_1)
+
+    my_model.subdomains = [surface_1, volume_1]
+
+    H = F.Species(name="H", subdomains=my_model.volume_subdomains)
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(species=H, subdomain=surface_1, value=lambda T: 2 * T)
+    ]
+
+    my_model.temperature = lambda t, x: 1 + x[0] + x[1] + t
+
+    my_model.settings = F.Settings(final_time=1, atol=1e-9, rtol=1e-9, stepsize=0.1)
+
+    avg_surf = F.AverageSurface(field=H, surface=surface_1)
+    my_model.exports = [avg_surf]
+
+    my_model.initialise()
+    my_model.run()
+
+    assert not np.allclose(avg_surf.data, 4.0)
