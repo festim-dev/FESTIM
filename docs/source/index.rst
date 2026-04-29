@@ -264,7 +264,7 @@ If you use FESTIM in your research, please cite the following publication:
      Connect with the FESTIM community.
    </p>
 
-   <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+   <div class="festim-community-buttons" style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
      <a class="btn btn-outline-primary" href="https://festim.discourse.group/" target="_blank">
        <i class="fa-brands fa-discourse"></i>&ensp;Discourse
      </a>

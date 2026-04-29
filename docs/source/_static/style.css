@@ -1,5 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&family=Open+Sans:ital,wght@0,400;0,600;1,400;1,600&display=swap');
 
+/* =============================================================
+   FESTIM BRAND COLOURS
+   ============================================================= */
+:root {
+    --festim-primary: #1a4848;
+    --festim-primary-hover: #f7b000;
+}
+
 body {
     font-family: 'Open Sans', sans-serif;
 }
@@ -126,6 +134,56 @@ h3 {
     display: flex;
     gap: 0.75rem;
     flex-wrap: wrap;
+}
+
+/* ---- Override button colours on landing page ---- */
+.festim-hero-buttons .btn-primary,
+.festim-hero-buttons .btn-primary:visited {
+    background-color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    color: #fff;
+}
+
+.festim-hero-buttons .btn-primary:hover,
+.festim-hero-buttons .btn-primary:focus,
+.festim-hero-buttons .btn-primary:active {
+    background-color: var(--festim-primary-hover);
+    border-color: var(--festim-primary-hover);
+    color: #fff;
+    text-decoration: none;
+}
+
+.festim-hero-buttons .btn-outline-primary,
+.festim-hero-buttons .btn-outline-primary:visited {
+    color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    background-color: transparent;
+}
+
+.festim-hero-buttons .btn-outline-primary:hover,
+.festim-hero-buttons .btn-outline-primary:focus,
+.festim-hero-buttons .btn-outline-primary:active {
+    background-color: var(--festim-primary-hover);
+    border-color: var(--festim-primary-hover);
+    color: #fff;
+    text-decoration: none;
+}
+
+/* ---- Community section buttons ---- */
+.festim-community-buttons .btn-outline-primary,
+.festim-community-buttons .btn-outline-primary:visited {
+    color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    background-color: transparent;
+}
+
+.festim-community-buttons .btn-outline-primary:hover,
+.festim-community-buttons .btn-outline-primary:focus,
+.festim-community-buttons .btn-outline-primary:active {
+    background-color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    color: #fff;
+    text-decoration: none;
 }
 
 /* ---- Carousel in hero ---- */
