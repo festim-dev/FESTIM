@@ -271,6 +271,9 @@ h3 {
     position: relative;
     width: 100%;
     padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 /* Fade edges */
@@ -300,7 +303,6 @@ h3 {
     align-items: center;
     gap: 2.5rem;
     width: max-content;
-    animation: festim-scroll 60s linear infinite;
 }
 
 .festim-ribbon-track:hover {
@@ -323,12 +325,31 @@ html[data-theme="dark"] .festim-ribbon-track img:hover {
     opacity: 1.0;
 }
 
-@keyframes festim-scroll {
+/* Row 1: scrolls left */
+.festim-ribbon-left {
+    animation: festim-scroll-left 30s linear infinite;
+}
+
+/* Row 2: scrolls right */
+.festim-ribbon-right {
+    animation: festim-scroll-right 35s linear infinite;
+}
+
+@keyframes festim-scroll-left {
     0% {
         transform: translateX(0);
     }
     100% {
         transform: translateX(-50%);
+    }
+}
+
+@keyframes festim-scroll-right {
+    0% {
+        transform: translateX(-50%);
+    }
+    100% {
+        transform: translateX(0);
     }
 }
 

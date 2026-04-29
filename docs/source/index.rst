@@ -159,7 +159,6 @@
      </a>
    </div>
 
-
 .. raw:: html
 
    <!-- ============================================================
@@ -168,8 +167,7 @@
    <h2 class="festim-section-heading">Trusted by researchers worldwide</h2>
 
    <div class="festim-ribbon-wrapper">
-     <div class="festim-ribbon-track">
-
+     <div class="festim-ribbon-track festim-ribbon-left">
        <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
        <img src="_static/logos/IRFM_cadarache_France.png" alt="IRFM" title="IRFM (CEA Cadarache)">
        <img src="_static/logos/LSPM_Villetaneuse_France.png" alt="LSPM" title="LSPM Villetaneuse">
@@ -183,6 +181,24 @@
        <img src="_static/logos/ITER_organization_France.png" alt="ITER" title="ITER Organization">
        <img src="_static/logos/UKAEA_UK.png" alt="UKAEA" title="UKAEA">
        <img src="_static/logos/digiLab_UK.png" alt="digiLab" title="digiLab">
+
+       <!-- Duplicate for seamless loop -->
+       <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
+       <img src="_static/logos/IRFM_cadarache_France.png" alt="IRFM" title="IRFM (CEA Cadarache)">
+       <img src="_static/logos/LSPM_Villetaneuse_France.png" alt="LSPM" title="LSPM Villetaneuse">
+       <img src="_static/logos/MIT_Cambridge_MA_USA.png" alt="MIT" title="MIT">
+       <img src="_static/logos/Thea_Energy_USA.png" alt="Thea Energy" title="Thea Energy">
+       <img src="_static/logos/Commonwealth_Fusion_Systems Devens_MA_USA.png" alt="Commonwealth Fusion Systems" title="Commonwealth Fusion Systems">
+       <img src="_static/logos/University_Wisconsin_Madison_USA.png" alt="University of Wisconsin-Madison" title="University of Wisconsin-Madison">
+       <img src="_static/logos/Marathon_Fusion_USA.png" alt="Marathon Fusion" title="Marathon Fusion">
+       <img src="_static/logos/University_San_Diego.png" alt="University of San Diego" title="University of San Diego">
+       <img src="_static/logos/MEPhI_moscow_Russia.png" alt="MEPhI" title="MEPhI Moscow">
+       <img src="_static/logos/ITER_organization_France.png" alt="ITER" title="ITER Organization">
+       <img src="_static/logos/UKAEA_UK.png" alt="UKAEA" title="UKAEA">
+       <img src="_static/logos/digiLab_UK.png" alt="digiLab" title="digiLab">
+     </div>
+
+     <div class="festim-ribbon-track festim-ribbon-right">
        <img src="_static/logos/Cranfield_University_UK.png" alt="Cranfield University" title="Cranfield University">
        <img src="_static/logos/Politecnico_di_Torino.png" alt="Politecnico di Torino" title="Politecnico di Torino">
        <img src="_static/logos/Beihang_University.png" alt="Beihang University" title="Beihang University">
@@ -199,19 +215,6 @@
        <img src="_static/logos/rochester.svg" alt="University of Rochester" title="University of Rochester">
 
        <!-- Duplicate for seamless loop -->
-       <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
-       <img src="_static/logos/IRFM_cadarache_France.png" alt="IRFM" title="IRFM (CEA Cadarache)">
-       <img src="_static/logos/LSPM_Villetaneuse_France.png" alt="LSPM" title="LSPM Villetaneuse">
-       <img src="_static/logos/MIT_Cambridge_MA_USA.png" alt="MIT" title="MIT">
-       <img src="_static/logos/Thea_Energy_USA.png" alt="Thea Energy" title="Thea Energy">
-       <img src="_static/logos/Commonwealth_Fusion_Systems Devens_MA_USA.png" alt="Commonwealth Fusion Systems" title="Commonwealth Fusion Systems">
-       <img src="_static/logos/University_Wisconsin_Madison_USA.png" alt="University of Wisconsin-Madison" title="University of Wisconsin-Madison">
-       <img src="_static/logos/Marathon_Fusion_USA.png" alt="Marathon Fusion" title="Marathon Fusion">
-       <img src="_static/logos/University_San_Diego.png" alt="University of San Diego" title="University of San Diego">
-       <img src="_static/logos/MEPhI_moscow_Russia.png" alt="MEPhI" title="MEPhI Moscow">
-       <img src="_static/logos/ITER_organization_France.png" alt="ITER" title="ITER Organization">
-       <img src="_static/logos/UKAEA_UK.png" alt="UKAEA" title="UKAEA">
-       <img src="_static/logos/digiLab_UK.png" alt="digiLab" title="digiLab">
        <img src="_static/logos/Cranfield_University_UK.png" alt="Cranfield University" title="Cranfield University">
        <img src="_static/logos/Politecnico_di_Torino.png" alt="Politecnico di Torino" title="Politecnico di Torino">
        <img src="_static/logos/Beihang_University.png" alt="Beihang University" title="Beihang University">
@@ -225,7 +228,7 @@
        <img src="_static/logos/University_of_Surrey.png" alt="University of Surrey" title="University of Surrey">
        <img src="_static/logos/Logo_of_University_of_Tsukuba.png" alt="University of Tsukuba" title="University of Tsukuba">
        <img src="_static/logos/Exeter_University_UK.png" alt="University of Exeter" title="University of Exeter">
-       <img src="_static/logos/University_of_Rochester.png" alt="University of Rochester" title="University of Rochester">
+       <img src="_static/logos/rochester.svg" alt="University of Rochester" title="University of Rochester">
      </div>
    </div>
 
