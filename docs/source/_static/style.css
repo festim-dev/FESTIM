@@ -10,6 +10,16 @@
     --festim-secondary-hover: #d99b00;
 }
 
+html[data-theme="light"] {
+    --pst-color-secondary: var(--festim-secondary);
+    --pst-color-secondary-highlight: var(--festim-secondary-hover);
+}
+
+html[data-theme="dark"] {
+    --pst-color-secondary: var(--festim-secondary);
+    --pst-color-secondary-highlight: var(--festim-secondary-hover);
+}
+
 body {
     font-family: 'Open Sans', sans-serif;
 }
