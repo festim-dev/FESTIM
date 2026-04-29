@@ -101,6 +101,7 @@ html_theme_options = {
         },
     ],
     "header_links_before_dropdown": 7,
+    "show_prev_next": False,
     "analytics": dict(google_analytics_id="G-SCL2TVV7BK"),
 }
 
