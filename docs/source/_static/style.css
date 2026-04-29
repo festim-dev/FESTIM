@@ -211,6 +211,22 @@ h3 {
     text-decoration: none;
 }
 
+/* dark mode community buttons */
+html[data-theme="dark"] .festim-community-buttons .btn-outline-primary {
+    color: var(--pst-color-text-muted);
+    border-color: var(--pst-color-text-muted);
+    background-color: transparent;
+}
+
+html[data-theme="dark"] .festim-community-buttons .btn-outline-primary:hover,
+html[data-theme="dark"] .festim-community-buttons .btn-outline-primary:focus,
+html[data-theme="dark"] .festim-community-buttons .btn-outline-primary:active {
+    background-color: var(--pst-color-text-muted);
+    border-color: var(--pst-color-text-muted);
+    color: #fff;
+    text-decoration: none;
+}
+
 /* ---- Carousel in hero ---- */
 .festim-hero-carousel {
     flex: 1 1 400px;
