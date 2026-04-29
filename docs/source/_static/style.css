@@ -76,3 +76,168 @@ h3 {
     font-size: 125%;
     font-weight: normal;
 }
+
+
+/* =============================================================
+   FESTIM LANDING PAGE STYLES
+   ============================================================= */
+
+/* ---- Section headings ---- */
+.festim-section-heading {
+    text-align: center;
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+}
+
+/* =============================================================
+   HERO
+   ============================================================= */
+.festim-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    padding: 3rem 1rem 2rem;
+    flex-wrap: wrap;
+}
+
+.festim-hero-text {
+    flex: 1 1 360px;
+    max-width: 500px;
+}
+
+.festim-hero-text h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+}
+
+.festim-hero-subtitle {
+    font-size: 1.25rem;
+    color: var(--pst-color-text-muted);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.festim-hero-subtitle a {
+    font-weight: 600;
+}
+
+.festim-hero-buttons {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* ---- Carousel in hero ---- */
+.festim-hero-carousel {
+    flex: 1 1 400px;
+    max-width: 520px;
+}
+
+.festim-hero-carousel .carousel {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background-color: var(--pst-color-surface);
+    border: 1px solid var(--pst-color-border);
+}
+
+.festim-hero-carousel .carousel-item img {
+    width: 100%;
+    height: 320px;
+    object-fit: contain;
+    padding: 1rem;
+}
+
+.festim-carousel-caption {
+    text-align: center;
+    padding: 0.5rem 1rem 1rem;
+    color: var(--pst-color-text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.festim-hero-carousel .carousel-control-prev-icon,
+.festim-hero-carousel .carousel-control-next-icon {
+    filter: drop-shadow(0 0 2px var(--pst-color-text-base));
+}
+
+/* responsive: stack on small screens */
+@media (max-width: 768px) {
+    .festim-hero {
+        flex-direction: column;
+        text-align: center;
+    }
+    .festim-hero-buttons {
+        justify-content: center;
+    }
+    .festim-hero-carousel {
+        max-width: 100%;
+    }
+}
+
+/* =============================================================
+   LOGO RIBBON
+   ============================================================= */
+.festim-ribbon-wrapper {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    padding: 1rem 0;
+}
+
+/* Fade edges */
+.festim-ribbon-wrapper::before,
+.festim-ribbon-wrapper::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.festim-ribbon-wrapper::before {
+    left: 0;
+    background: linear-gradient(to right, var(--pst-color-background), transparent);
+}
+
+.festim-ribbon-wrapper::after {
+    right: 0;
+    background: linear-gradient(to left, var(--pst-color-background), transparent);
+}
+
+.festim-ribbon-track {
+    display: flex;
+    align-items: center;
+    gap: 2.5rem;
+    width: max-content;
+    animation: festim-scroll 60s linear infinite;
+}
+
+.festim-ribbon-track:hover {
+    animation-play-state: paused;
+}
+
+.festim-ribbon-track img {
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+    filter: grayscale(100%);
+    opacity: 0.7;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.festim-ribbon-track img:hover {
+    filter: grayscale(0%);
+    opacity: 1.0;
+}
+
+@keyframes festim-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-50%);
+    }
+}
