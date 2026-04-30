@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from festim.exports.derived_quantity import DerivedQuantity
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
@@ -35,6 +37,15 @@ class VolumeQuantity(DerivedQuantity):
         super().__init__(filename=filename)
         self.field = field
         self.volume = volume
+
+    @property
+    @abstractmethod
+    def title(self):
+        pass
+
+    @abstractmethod
+    def compute(self, *args, **kwargs):
+        pass
 
     @property
     def field(self):

@@ -26,8 +26,6 @@ min_surface = F.MinimumSurface(mobile_D, surface=surf_1, filename=results)
 max_surface = F.MaximumSurface(mobile_H, surface=surf_2, filename=results)
 avg_surface = F.AverageSurface(mobile_D, surface=surf_1, filename=results)
 avg_vol = F.AverageVolume(mobile_H, volume=vol_2, filename=results)
-surf_quant = F.SurfaceQuantity(mobile_H, surface=surf_1, filename=results)
-vol_quant = F.VolumeQuantity(mobile_H, volume=vol_1, filename=results)
 
 
 @pytest.mark.parametrize(
@@ -307,6 +305,109 @@ class TestCustomQuantityWithHydrogenTransportProblem:
         assert len(custom_qty.t) > 0
         # Combined concentration should be <= 2 (max of each species)
         assert all(0 <= v <= 2 for v in custom_qty.data)
+
+
+class TestDerivedQuantityFilename:
+    """Test suite for DerivedQuantity filename property validation"""
+
+    def test_filename_none(self):
+        """Test that filename can be set to None"""
+
+        def expr(**kwargs):
+            return 1
+
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1, filename=None)
+        assert quantity.filename is None
+
+    def test_filename_csv(self, tmp_path):
+        """Test that filename accepts .csv extension"""
+
+        def expr(**kwargs):
+            return 1
+
+        filename = os.path.join(tmp_path, "output.csv")
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1, filename=filename)
+        assert quantity.filename == filename
+
+    def test_filename_txt(self, tmp_path):
+        """Test that filename accepts .txt extension"""
+
+        def expr(**kwargs):
+            return 1
+
+        filename = os.path.join(tmp_path, "output.txt")
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1, filename=filename)
+        assert quantity.filename == filename
+
+    def test_filename_invalid_extension(self):
+        """Test that filename rejects invalid extensions"""
+
+        def expr(**kwargs):
+            return 1
+
+        with pytest.raises(ValueError, match="filename must end with .csv or .txt"):  # noqa: RUF043
+            F.CustomQuantity(expr=expr, subdomain=vol_1, filename="output.dat")
+
+    def test_filename_invalid_type(self):
+        """Test that filename rejects non-string types"""
+
+        def expr(**kwargs):
+            return 1
+
+        with pytest.raises(TypeError, match="filename must be of type str"):
+            F.CustomQuantity(expr=expr, subdomain=vol_1, filename=123)
+
+    def test_filename_property_setter_none(self):
+        """Test setting filename property to None after initialization"""
+
+        def expr(**kwargs):
+            return 1
+
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1)
+        quantity.filename = None
+        assert quantity.filename is None
+
+    def test_filename_property_setter_csv(self, tmp_path):
+        """Test setting filename property to a .csv file"""
+
+        def expr(**kwargs):
+            return 1
+
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1)
+        filename = os.path.join(tmp_path, "new_output.csv")
+        quantity.filename = filename
+        assert quantity.filename == filename
+
+    def test_filename_property_setter_txt(self, tmp_path):
+        """Test setting filename property to a .txt file"""
+
+        def expr(**kwargs):
+            return 1
+
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1)
+        filename = os.path.join(tmp_path, "new_output.txt")
+        quantity.filename = filename
+        assert quantity.filename == filename
+
+    def test_filename_property_setter_invalid_extension(self):
+        """Test that setting invalid extension raises ValueError"""
+
+        def expr(**kwargs):
+            return 1
+
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1)
+        with pytest.raises(ValueError, match="filename must end with .csv or .txt"):  # noqa: RUF043
+            quantity.filename = "output.json"
+
+    def test_filename_property_setter_invalid_type(self):
+        """Test that setting non-string filename raises TypeError"""
+
+        def expr(**kwargs):
+            return 1
+
+        quantity = F.CustomQuantity(expr=expr, subdomain=vol_1)
+        with pytest.raises(TypeError, match="filename must be of type str"):
+            quantity.filename = 42
 
 
 class TestCustomQuantityWithDiscontinuousProblem:

@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from festim.exports.derived_quantity import DerivedQuantity
 from festim.species import Species
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
@@ -35,6 +37,15 @@ class SurfaceQuantity(DerivedQuantity):
         super().__init__(filename=filename)
         self.field = field
         self.surface = surface
+
+    @property
+    @abstractmethod
+    def title(self):
+        pass
+
+    @abstractmethod
+    def compute(self, *args, **kwargs):
+        pass
 
     @property
     def surface(self):

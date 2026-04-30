@@ -101,29 +101,6 @@ def test_write_overwrite(tmp_path):
     assert file_length == expected_length
 
 
-def test_filename_setter_raises_TypeError():
-    """Test that a TypeError is raised when the filename is not a string."""
-
-    with pytest.raises(TypeError, match="filename must be of type str"):
-        F.SurfaceQuantity(
-            filename=1,
-            field=F.Species("test"),
-            surface=F.SurfaceSubdomain1D(id=1, x=0),
-        )
-
-
-def test_filename_setter_raises_ValueError(tmp_path):
-    """Test that a ValueError is raised when the filename does not end with .csv or
-    .txt."""
-
-    with pytest.raises(ValueError):
-        F.SurfaceQuantity(
-            filename=os.path.join(tmp_path, "my_export.xdmf"),
-            field=F.Species("test"),
-            surface=F.SurfaceSubdomain1D(id=1, x=0),
-        )
-
-
 def test_field_setter_raises_TypeError():
     """Test that a TypeError is raised when the field is not a F.Species."""
 
@@ -151,15 +128,3 @@ def test_writer(tmp_path, value):
         expected_length = i + 2
 
         assert file_length == expected_length
-
-
-def test_surface_setter_raises_TypeError():
-    """Test that a TypeError is raised when the surface is not a F.SurfaceSubdomain."""
-
-    with pytest.raises(
-        TypeError, match=r"surface should be an int or F.SurfaceSubdomain"
-    ):
-        F.SurfaceQuantity(
-            field=F.Species("H"),
-            surface="1",
-        )
