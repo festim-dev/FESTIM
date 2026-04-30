@@ -462,12 +462,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
                     continue
 
-            elif isinstance(
-                export,
-                exports.SurfaceQuantity
-                | exports.VolumeQuantity
-                | exports.CustomQuantity,
-            ):
+            elif isinstance(export, exports.DerivedQuantity):
                 # raise not implemented error if the derived quantity don't match the
                 # type of mesh eg. SurfaceFlux is used with cylindrical mesh
                 if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
@@ -1911,12 +1906,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     }
                 export.compute(measure, entity_maps=entity_maps)
 
-            if isinstance(
-                export,
-                exports.SurfaceQuantity
-                | exports.VolumeQuantity
-                | exports.CustomQuantity,
-            ):
+            if isinstance(export, exports.DerivedQuantity):
                 # update export data
                 export.t.append(float(self.t))
 
