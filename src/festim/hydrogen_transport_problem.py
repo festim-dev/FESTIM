@@ -977,6 +977,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
             # variables time dependent
+            # TODO: honestly, we probably don't need to do this at all
+            # SurfaceFlux quantities should use ufl.Expr for D instead of a fem.Function
+
             for spe, D_global in self._species_to_D_global.items():
                 D_global.interpolate(self._species_to_D_global_expr[spe])
 
