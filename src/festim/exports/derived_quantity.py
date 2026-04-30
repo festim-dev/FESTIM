@@ -1,7 +1,8 @@
 import csv
+from abc import ABC, abstractmethod
 
 
-class DerivedQuantity:
+class DerivedQuantity(ABC):
     """Base class for all derived quantities.
 
     Attributes:
@@ -21,8 +22,13 @@ class DerivedQuantity:
         self._first_time_export = True
 
     @property
+    @abstractmethod
     def title(self):
-        raise NotImplementedError("title must be implemented by subclasses")
+        pass
+
+    @abstractmethod
+    def compute(self, *args, **kwargs):
+        pass
 
     @property
     def filename(self):
