@@ -135,6 +135,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
     """
 
     _temperature_as_function: fem.Function
+    _species_to_D_global: dict[_species.Species, fem.Function]
+    _species_to_D_global_expr: dict[_species.Species, fem.Expression]
 
     def __init__(
         self,
@@ -190,6 +192,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._element_immobile = element_immobile
 
         self._temperature_as_function = None
+        self._species_to_D_global = None
+        self._species_to_D_global_expr = None
 
     @property
     def temperature(self):
@@ -494,24 +498,21 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.t = []
         # compute diffusivity function for surface fluxes
 
-        spe_to_D_global = {}  # links species to global D function
-        spe_to_D_global_expr = {}  # links species to D expression
+        spe_to_D_global_func_expr = {
+            spe: self.define_D_global(spe) for spe in self.species if spe.mobile
+        }
+        self._species_to_D_global_expr = {
+            k: v[1] for k, v in spe_to_D_global_func_expr.items()
+        }  # links species to D expression
+        self._species_to_D_global = {
+            k: v[0] for k, v in spe_to_D_global_func_expr.items()
+        }  # links species to global D function
 
         for export in self.exports:
             if isinstance(export, exports.SurfaceQuantity):
-                if export.field in spe_to_D_global:
-                    # if already computed then use the same D
-                    D = spe_to_D_global[export.field]
-                    D_expr = spe_to_D_global_expr[export.field]
-                else:
-                    # compute D and add it to the dict
-                    D, D_expr = self.define_D_global(export.field)
-                    spe_to_D_global[export.field] = D
-                    spe_to_D_global_expr[export.field] = D_expr
-
                 # add the global D to the export
-                export.D = D
-                export.D_expr = D_expr
+                export.D = self._species_to_D_global.get(export.field)
+                export.D_expr = self._species_to_D_global_expr.get(export.field)
             if isinstance(export, exports.MaximumVolume | exports.MinimumVolume):
                 export.volume_meshtags = self.volume_meshtags
             if isinstance(export, exports.MaximumSurface | exports.MinimumSurface):
@@ -530,8 +531,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 kwargs["n"] = ufl.FacetNormal(self.mesh.mesh)
                 kwargs["T"] = self.temperature_fenics
 
+                # NOTE we need to change our D_global approach
                 D_kwargs = {
-                    f"D_{sp.name}": self.define_D_global(sp)[0] for sp in self.species
+                    f"D_{sp.name}": self._species_to_D_global[sp] for sp in self.species
                 }
                 kwargs.update(D_kwargs)
                 kwargs["D"] = {sp.name: D_kwargs[f"D_{sp.name}"] for sp in self.species}
@@ -973,13 +975,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
         if self.temperature_time_dependent:
             # update global D if temperature time dependent or internal
             # variables time dependent
-            species_not_updated = self.species.copy()  # make a copy of the species
-            for export in self.exports:
-                if isinstance(export, exports.SurfaceFlux):
-                    # if the D of the species has not been updated yet
-                    if export.field in species_not_updated:
-                        export.D.interpolate(export.D_expr)
-                        species_not_updated.remove(export.field)
+            for spe, D_global in self._species_to_D_global.items():
+                D_global.interpolate(self._species_to_D_global_expr[spe])
 
         for export in self.exports:
             # skip if it isn't time to export
@@ -1047,9 +1044,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if export.filename is not None:
                     export.write(t=float(self.t))
             elif isinstance(export, exports.CustomQuantity):
-                import festim as F
-
-                is_surface = isinstance(export.subdomain, F.SurfaceSubdomain)
+                is_surface = isinstance(export.subdomain, _subdomain.SurfaceSubdomain)
                 measure = self.ds if is_surface else self.dx
                 export.compute(measure)
 
@@ -1749,16 +1744,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.data = []
 
             if isinstance(export, exports.CustomQuantity):
-                import ufl
-
-                import festim as F
-
                 volume = (
                     export.subdomain
-                    if not isinstance(export.subdomain, F.SurfaceSubdomain)
+                    if not isinstance(export.subdomain, _subdomain.SurfaceSubdomain)
                     else self.surface_to_volume[
                         export.subdomain
-                        if isinstance(export.subdomain, F.SurfaceSubdomain)
+                        if isinstance(export.subdomain, _subdomain.SurfaceSubdomain)
                         else next(
                             s
                             for s in self.surface_subdomains
@@ -1889,9 +1880,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.compute()
 
             elif isinstance(export, exports.CustomQuantity):
-                import festim as F
-
-                is_surface = isinstance(export.subdomain, F.SurfaceSubdomain)
+                is_surface = isinstance(export.subdomain, _subdomain.SurfaceSubdomain)
                 measure = self.ds if is_surface else self.dx
 
                 # getting entity_maps
