@@ -1068,14 +1068,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             elif isinstance(export, exports.CustomQuantity):
                 import festim as F
 
-                if isinstance(export.subdomain, F.SurfaceSubdomain):
-                    is_surface = True
-                elif type(export.subdomain) == int and any(
-                    s.id == export.subdomain for s in self.surface_subdomains
-                ):
-                    is_surface = True
-                else:
-                    is_surface = False
+                is_surface = isinstance(export.subdomain, F.SurfaceSubdomain)
                 measure = self.ds if is_surface else self.dx
                 export.compute(measure)
 
@@ -1770,9 +1763,52 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.D = D
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+            if isinstance(
+                export,
+                exports.SurfaceQuantity
+                | exports.VolumeQuantity
+                | exports.CustomQuantity,
+            ):
                 export.t = []
                 export.data = []
+
+            if isinstance(export, exports.CustomQuantity):
+                import ufl
+                import festim as F
+
+                volume = (
+                    export.subdomain
+                    if not isinstance(export.subdomain, F.SurfaceSubdomain)
+                    else self.surface_to_volume[
+                        export.subdomain
+                        if isinstance(export.subdomain, F.SurfaceSubdomain)
+                        else next(
+                            s
+                            for s in self.surface_subdomains
+                            if s.id == export.subdomain
+                        )
+                    ]
+                )
+
+                kwargs = {
+                    species.name: species.subdomain_to_post_processing_solution[volume]
+                    for species in self.species
+                }
+                kwargs["n"] = ufl.FacetNormal(self.mesh.mesh)
+                kwargs["T"] = self.temperature_fenics
+
+                D_kwargs = {
+                    f"D_{sp.name}": volume.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, sp
+                    )
+                    for sp in self.species
+                }
+                kwargs.update(D_kwargs)
+                kwargs["D"] = {sp.name: D_kwargs[f"D_{sp.name}"] for sp in self.species}
+                if len(self.species) == 1:
+                    kwargs["D"] = kwargs[f"D_{self.species[0].name}"]
+                kwargs["x"] = ufl.SpatialCoordinate(self.mesh.mesh)
+                export.ufl_expr = export.expr(**kwargs)
 
     def post_processing(self):
         # update post-processing solutions (for each species in each subdomain)
@@ -1878,14 +1914,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             elif isinstance(export, exports.CustomQuantity):
                 import festim as F
 
-                if isinstance(export.subdomain, F.SurfaceSubdomain):
-                    is_surface = True
-                elif type(export.subdomain) == int and any(
-                    s.id == export.subdomain for s in self.surface_subdomains
-                ):
-                    is_surface = True
-                else:
-                    is_surface = False
+                is_surface = isinstance(export.subdomain, F.SurfaceSubdomain)
                 measure = self.ds if is_surface else self.dx
 
                 # getting entity_maps

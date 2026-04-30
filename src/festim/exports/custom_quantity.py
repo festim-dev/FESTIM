@@ -29,7 +29,7 @@ class CustomQuantity(DerivedQuantity):
     def __init__(
         self,
         expr: Callable,
-        subdomain: SurfaceSubdomain | VolumeSubdomain | int,
+        subdomain: SurfaceSubdomain | VolumeSubdomain,
         title: str = "Custom Quantity",
         filename: str | None = None,
     ) -> None:
