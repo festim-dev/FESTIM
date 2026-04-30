@@ -10,7 +10,7 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class CustomQuantity(DerivedQuantity):
-    """
+    r"""
     Export CustomQuantity.
 
     Args:
@@ -54,6 +54,23 @@ class CustomQuantity(DerivedQuantity):
             subdomain=surface,
             title="Surface flux",
         )
+
+    The callable passed to ``expr`` receives keyword arguments assembled by the
+    problem class. Common entries are:
+
+    ``A``, ``B``, ...
+        Concentrations of the species present in the problem (here A and B).
+    ``n``
+        The facet normal on the selected surface subdomain.
+    ``T``
+        The temperature field.
+    ``D_A``, ``D_B``, ...
+        Species-specific diffusion coefficients.
+    ``D``
+        The diffusion coefficient data, either a single field for one species or
+        a dictionary keyed by species name when several species are present.
+    ``x``
+        The spatial coordinate (x[0], x[1], x[2]).
 
     For a surface quantity, the returned UFL expression can represent a flux such as
 
