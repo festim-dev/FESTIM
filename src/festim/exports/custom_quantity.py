@@ -10,7 +10,8 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class CustomQuantity(DerivedQuantity):
-    """Export CustomQuantity.
+    """
+    Export CustomQuantity.
 
     Args:
         expr: function that returns a UFL expression
@@ -25,6 +26,58 @@ class CustomQuantity(DerivedQuantity):
         filename: name of the file to which the quantity is exported
         t: list of time values
         data: list of values of the quantity
+
+    Usage:
+
+    .. testcode::
+
+        import numpy as np
+        import festim as F
+
+        material = F.Material(D_0=1, E_D=0)
+        volume = F.VolumeSubdomain(id=1, material=material)
+        surface = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[1], 1))
+
+        def total_concentration(**kwargs):
+            return kwargs["A"] + kwargs["B"]
+
+        quantity = F.CustomQuantity(
+            expr=total_concentration,
+            subdomain=volume,
+            title="Total quantity",
+        )
+
+        surface_quantity = F.CustomQuantity(
+            expr=lambda **kwargs: -kwargs["D_A"] * ufl.dot(
+                ufl.grad(kwargs["A"]), kwargs["n"]
+            ),
+            subdomain=surface,
+            title="Surface flux",
+        )
+
+    For a surface quantity, the returned UFL expression can represent a flux such as
+
+    .. math::
+
+        q = -D\,\nabla c \cdot n
+
+    and FESTIM will assemble
+
+    .. math::
+
+        Q = \int_{\Gamma} q\,\mathrm{d}\Gamma
+
+    over the selected surface subdomain.
+
+    The expression returned by ``expr`` is treated as an integrand and assembled over
+    the chosen subdomain.
+
+    .. math::
+
+        Q = \int_{\Omega} q\,\mathrm{d}\Omega
+
+    where ``q`` is the UFL expression returned by ``expr`` and ``\Omega`` is either a
+    surface or a volume subdomain.
     """
 
     def __init__(
