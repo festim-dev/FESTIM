@@ -462,7 +462,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
                     continue
 
-            elif isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+            elif isinstance(
+                export,
+                exports.SurfaceQuantity
+                | exports.VolumeQuantity
+                | exports.CustomQuantity,
+            ):
                 # raise not implemented error if the derived quantity don't match the
                 # type of mesh eg. SurfaceFlux is used with cylindrical mesh
                 if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
@@ -472,16 +477,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     )
 
             # if name of species is given then replace with species object
-            if isinstance(export.field, list):
-                for idx, field in enumerate(export.field):
-                    if isinstance(field, str):
-                        export.field[idx] = _species.find_species_from_name(
-                            field, self.species
-                        )
-            elif isinstance(export.field, str):
-                export.field = _species.find_species_from_name(
-                    export.field, self.species
-                )
+            if hasattr(export, "field"):
+                if isinstance(export.field, list):
+                    for idx, field in enumerate(export.field):
+                        if isinstance(field, str):
+                            export.field[idx] = _species.find_species_from_name(
+                                field, self.species
+                            )
+                elif isinstance(export.field, str):
+                    export.field = _species.find_species_from_name(
+                        export.field, self.species
+                    )
 
             # Initialize XDMFFile for writer
             if isinstance(export, exports.XDMFExport):
@@ -521,9 +527,37 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.volume_meshtags = self.volume_meshtags
                 export.facet_meshtags = self.facet_meshtags
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+            if isinstance(
+                export,
+                exports.SurfaceQuantity
+                | exports.VolumeQuantity
+                | exports.CustomQuantity,
+            ):
                 export.t = []
                 export.data = []
+
+            if isinstance(export, exports.CustomQuantity):
+                import ufl
+                import festim as F
+
+                # <-- this won't work in the Discontinuous case we need to use species.subdomain_to_post_processing_solution instead
+                # we know the subdomain from the surface_to_subdomain attribute of the export, we can use that to get the post processing solution to use in the expression
+                kwargs = {
+                    species.name: species.post_processing_solution
+                    for species in self.species
+                }
+                kwargs["n"] = ufl.FacetNormal(self.mesh.mesh)
+                kwargs["T"] = self.temperature_fenics
+
+                D_kwargs = {
+                    f"D_{sp.name}": self.define_D_global(sp)[0] for sp in self.species
+                }
+                kwargs.update(D_kwargs)
+                kwargs["D"] = {sp.name: D_kwargs[f"D_{sp.name}"] for sp in self.species}
+                if len(self.species) == 1:
+                    kwargs["D"] = kwargs[f"D_{self.species[0].name}"]
+                kwargs["x"] = ufl.SpatialCoordinate(self.mesh.mesh)
+                export.ufl_expr = export.expr(**kwargs)
 
     def _get_temperature_field_as_function(self) -> dolfinx.fem.Function:
         """Based on the type of the temperature_fenics attribute, converts it as a
@@ -1031,6 +1065,27 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # if filename given write export data to file
                 if export.filename is not None:
                     export.write(t=float(self.t))
+            elif isinstance(export, exports.CustomQuantity):
+                import festim as F
+
+                if isinstance(export.subdomain, F.SurfaceSubdomain):
+                    is_surface = True
+                elif type(export.subdomain) == int and any(
+                    s.id == export.subdomain for s in self.surface_subdomains
+                ):
+                    is_surface = True
+                else:
+                    is_surface = False
+                measure = self.ds if is_surface else self.dx
+                export.compute(measure)
+
+                # update export data
+                export.t.append(float(self.t))
+
+                # if filename given write export data to file
+                if export.filename is not None:
+                    export.write(t=float(self.t))
+
             if isinstance(export, exports.XDMFExport):
                 export.write(float(self.t))
 
@@ -1820,7 +1875,37 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 else:
                     export.compute()
 
-            if isinstance(export, exports.SurfaceQuantity | exports.VolumeQuantity):
+            elif isinstance(export, exports.CustomQuantity):
+                import festim as F
+
+                if isinstance(export.subdomain, F.SurfaceSubdomain):
+                    is_surface = True
+                elif type(export.subdomain) == int and any(
+                    s.id == export.subdomain for s in self.surface_subdomains
+                ):
+                    is_surface = True
+                else:
+                    is_surface = False
+                measure = self.ds if is_surface else self.dx
+
+                # getting entity_maps
+                try:
+                    from dolfinx.mesh import EntityMap  # noqa: F401
+
+                    entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+                except ImportError:
+                    entity_maps = {
+                        sd.submesh: sd.parent_to_submesh
+                        for sd in self.volume_subdomains
+                    }
+                export.compute(measure, entity_maps=entity_maps)
+
+            if isinstance(
+                export,
+                exports.SurfaceQuantity
+                | exports.VolumeQuantity
+                | exports.CustomQuantity,
+            ):
                 # update export data
                 export.t.append(float(self.t))
 
