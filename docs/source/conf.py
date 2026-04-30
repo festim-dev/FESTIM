@@ -5,63 +5,22 @@
 
 # -- Path setup --------------------------------------------------------------
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
+import datetime
 import os
 import sys
 
 sys.path.insert(0, os.path.abspath("../../src"))
 
-
-# Generate the map
-
-# Add the directory containing your Python script to the Python path
-sys.path.insert(0, os.path.abspath("."))
-
-import map
-
-m = map.generate_map()
-current_dir = os.path.dirname(__file__)
-html_path = os.path.join(current_dir, "_static", "map.html")
-
-# create _static directory if it doesn't exist
-os.makedirs(os.path.dirname(html_path), exist_ok=True)
-
-m.save(html_path)
-
-
-# Generate the map
-
-# Add the directory containing your Python script to the Python path
-sys.path.insert(0, os.path.abspath("."))
-
-
-m = map.generate_map()
-current_dir = os.path.dirname(__file__)
-html_path = os.path.join(current_dir, "_static", "map.html")
-
-# create _static directory if it doesn't exist
-os.makedirs(os.path.dirname(html_path), exist_ok=True)
-
-m.save(html_path)
-
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "FESTIM"
-copyright = "2022-2023, FESTIM contributors"
+copyright = "2022-2026, FESTIM contributors"
 author = "FESTIM-dev"
-release = "1.0.0"
-version = "1.0"
 
 
 # -- General configuration ---------------------------------------------------
 
-# Add any Sphinx extension module names here, as strings. They can be
-# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
-# ones.
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
@@ -79,37 +38,24 @@ extensions = [
 
 suppress_warnings = ["autosectionlabel.*"]
 
-napoleon_use_ivar = True  # needed to correctly format class attributes
+napoleon_use_ivar = True
 
-# Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
-# List of patterns, relative to source directory, that match files and
-# directories to ignore when looking for source files.
-# This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
 
 source_suffix = ".rst"
 
-# The master toctree document.
 master_doc = "index"
 
-# The name of the Pygments (syntax highlighting) style to use.
 pygments_style = None
 
-
-# shorten module names in readme
 add_module_names = False
 
-# bibliography file
 bibtex_bibfiles = ["bibliography/references.bib"]
 
 # -- Options for HTML output -------------------------------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
 html_theme = "pydata_sphinx_theme"
 html_static_path = ["_static"]
 html_css_files = ["style.css"]
@@ -156,8 +102,16 @@ html_theme_options = {
         },
     ],
     "header_links_before_dropdown": 7,
+    "show_prev_next": False,
     "analytics": dict(google_analytics_id="G-SCL2TVV7BK"),
 }
+
+if datetime.date.today() < datetime.date(2026, 5, 15):
+    html_theme_options["announcement"] = (
+        '📢 Register now for the <a href="https://mit.zoom.us/meeting/register/PElrepT-Tpivqzu9Jepr_g#/registration" target="_blank">FESTIM 2.0 webinar on 15th May, 9:00 am EST'
+    )
+
+html_favicon = "_static/favicon.png"
 
 html_sidebars = {
     "**": [

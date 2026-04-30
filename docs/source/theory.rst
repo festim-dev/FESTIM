@@ -71,11 +71,9 @@ Two different interface cases can then occur. At the interface between two Sieve
 .. math::
     :label: eq_continuity  
 
-    \begin{eqnarray} 
     \frac{c_\mathrm{m}^-}{K_S^-}&=&\frac{c_\mathrm{m}^+}{K_S^+} \\
     &\mathrm{or}& \\
     \frac{c_\mathrm{m}^-}{K_H^-}&=&\frac{c_\mathrm{m}^+}{K_H^+}
-    \end{eqnarray}
 
 where exponents :math:`+` and :math:`-` denote both sides of the interface.
 
@@ -208,20 +206,16 @@ with :math:`R_d` the diffusion depth and :math:`R_p` the implantation range. Whe
 .. math::
     :label: eq_flux_balance_approx1
 
-    \begin{eqnarray}
     \varphi_{\mathrm{recomb}} &=& D \cdot \frac{c_{\mathrm{m}} - c_0}{R_p} = \varphi_{\mathrm{imp}}\\
     \Leftrightarrow c_{\mathrm{m}} &=& \frac{\varphi_{\mathrm{imp}} R_p}{D} + c_0
-    \end{eqnarray}
 
 Assuming second order recombination, :math:`\varphi_{\mathrm{recomb}}` can also be expressed as a function of the recombination coefficient :math:`K_r`:
 
 .. math::
     :label: eq_flux_balance_approx2
 
-    \begin{eqnarray}
     \varphi_{\mathrm{recomb}} &=& K_r c_0^2 = \varphi_{\mathrm{imp}}\\
     \Leftrightarrow c_0 &=& \sqrt{\frac{\varphi_{\mathrm{imp}}}{K_r}}
-    \end{eqnarray}
 
 By substituting Equation :eq:`eq_flux_balance_approx2` into :eq:`eq_flux_balance_approx1` one can obtain:
 

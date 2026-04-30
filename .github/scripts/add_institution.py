@@ -13,6 +13,10 @@ def main():
     short_name = extract_field(body, "Short name or acronym")
     logo_url = extract_image_url(body)
 
+    print(f"Parsed name: {name}")
+    print(f"Parsed short_name: {short_name}")
+    print(f"Parsed logo_url: {logo_url}")
+
     if not name or not logo_url:
         print("ERROR: Could not parse institution name or logo URL")
         exit(1)
@@ -26,10 +30,24 @@ def main():
     os.makedirs(logo_dir, exist_ok=True)
     logo_path = os.path.join(logo_dir, filename)
 
-    response = requests.get(logo_url)
+    response = requests.get(logo_url, allow_redirects=True)
     response.raise_for_status()
     with open(logo_path, "wb") as f:
         f.write(response.content)
+
+    # Detect actual content type if URL had no extension
+    if filename.endswith(".png"):
+        content_type = response.headers.get("Content-Type", "")
+        if "svg" in content_type:
+            new_filename = filename[:-4] + ".svg"
+            os.rename(logo_path, os.path.join(logo_dir, new_filename))
+            filename = new_filename
+            logo_path = os.path.join(logo_dir, filename)
+        elif "jpeg" in content_type or "jpg" in content_type:
+            new_filename = filename[:-4] + ".jpg"
+            os.rename(logo_path, os.path.join(logo_dir, new_filename))
+            filename = new_filename
+            logo_path = os.path.join(logo_dir, filename)
 
     print(f"Downloaded logo to {logo_path}")
 
@@ -43,50 +61,44 @@ def main():
         f'       <img src="_static/logos/{filename}" alt="{short_name}" title="{name}">'
     )
 
-    # Insert before the duplicate comment in the first ribbon track
-    # Find the first "<!-- Duplicate for seamless loop -->" and insert before it
-    marker = "<!-- Duplicate for seamless loop -->"
+    # Find all duplicate markers
+    marker = "       <!-- Duplicate for seamless loop -->"
     first_marker = content.find(marker)
+    second_marker = content.find(marker, first_marker + 1)
 
     if first_marker == -1:
         print("ERROR: Could not find duplicate marker in index.rst")
         exit(1)
 
-    # Determine which row has fewer logos (count img tags before each marker)
-    second_marker = content.find(marker, first_marker + 1)
+    # Count logos in each row to decide where to add
     row1_section = content[:first_marker]
-    row2_section = content[first_marker:second_marker] if second_marker != -1 else ""
-
     row1_count = row1_section.count('<img src="_static/logos/')
-    row2_count = row2_section.count('<img src="_static/logos/')
 
-    if second_marker != -1 and row2_count < row1_count:
-        # Add to second row
-        insert_pos = second_marker
+    if second_marker != -1:
+        row2_section = content[first_marker:second_marker]
+        row2_count = row2_section.count('<img src="_static/logos/')
     else:
-        # Add to first row
-        insert_pos = first_marker
+        row2_count = row1_count  # fallback: add to row 1
 
-    # Insert the logo line (and its duplicate after the marker)
-    indent_and_newline = "\n"
-    insertion = logo_html + indent_and_newline + "       " + indent_and_newline
+    # Choose the row with fewer logos
+    if second_marker != -1 and row2_count < row1_count:
+        target_marker = second_marker
+    else:
+        target_marker = first_marker
 
-    # Find the marker after the chosen insert position
-    target_marker_pos = content.find(
-        marker, insert_pos if insert_pos == first_marker else second_marker
-    )
+    # Insert before the marker (original set)
+    content = content[:target_marker] + logo_html + "\n" + content[target_marker:]
 
-    # Insert before marker
-    content = content[:insert_pos] + logo_html + "\n       " + content[insert_pos:]
+    # Recalculate marker position after insertion
+    marker_pos = content.find(marker, target_marker)
+    after_marker = marker_pos + len(marker)
 
-    # Also insert after the duplicate section (for seamless loop)
-    # Find the closing </div> of the track after the marker
-    after_marker = content.find(marker, insert_pos) + len(marker)
-    # Find end of duplicated logos (next </div>)
-    track_end = content.find("</div>", after_marker)
+    # Find the closing </div> of this track
+    track_end_marker = "     </div>"
+    track_end = content.find(track_end_marker, after_marker)
 
-    # Insert before the </div>
-    content = content[:track_end] + logo_html + "\n       " + content[track_end:]
+    # Insert before </div> (duplicate set)
+    content = content[:track_end] + logo_html + "\n" + content[track_end:]
 
     with open(index_path, "w") as f:
         f.write(content)
@@ -96,23 +108,37 @@ def main():
 
 def extract_field(body, label):
     """Extract a field value from the issue form body."""
-    # GitHub issue forms format: ### Label\n\nValue\n
-    pattern = rf"### {re.escape(label)}\s*\n\s*\n(.+?)(?=\n\s*\n###|\Z)"
+    pattern = rf"###\s*{re.escape(label)}\s*\n\s*\n(.+?)(?=\n\s*\n###|\n\s*\n\s*$|\Z)"
     match = re.search(pattern, body, re.DOTALL)
     if match:
-        return match.group(1).strip()
+        value = match.group(1).strip()
+        # Remove any HTML tags (in case the value contains them)
+        value = re.sub(r"<[^>]+>", "", value).strip()
+        return value if value else None
     return None
 
 
 def extract_image_url(body):
     """Extract the first image URL from the issue body."""
-    # GitHub-hosted images
-    pattern = r"https://(?:user-images\.githubusercontent\.com|github\.com)[^\s\)\]]*\.(?:png|jpg|jpeg|svg|gif)"
+    # HTML img tag (GitHub drag-and-drop renders as <img> tags)
+    pattern = r'<img[^>]+src=["\']([^"\']+)["\']'
     match = re.search(pattern, body, re.IGNORECASE)
+    if match:
+        return match.group(1)
+
+    # GitHub user-attachments URLs (no file extension)
+    pattern = r"https://github\.com/user-attachments/assets/[^\s\"\'\)<]+"
+    match = re.search(pattern, body)
     if match:
         return match.group(0)
 
-    # Also try markdown image syntax
+    # GitHub user-images URLs (with file extension)
+    pattern = r"https://user-images\.githubusercontent\.com/[^\s\)\]]+"
+    match = re.search(pattern, body)
+    if match:
+        return match.group(0)
+
+    # Markdown image syntax
     pattern = r"!\[.*?\]\((https?://[^\s\)]+)\)"
     match = re.search(pattern, body)
     if match:
@@ -127,6 +153,7 @@ def get_extension(url):
     ext = os.path.splitext(path)[1].lower()
     if ext in (".png", ".jpg", ".jpeg", ".svg", ".gif"):
         return ext
+    # Default to .png for extensionless URLs (like user-attachments)
     return ".png"
 
 
