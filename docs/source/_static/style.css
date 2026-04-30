@@ -13,11 +13,18 @@
 html[data-theme="light"] {
     --pst-color-secondary: var(--festim-secondary);
     --pst-color-secondary-highlight: var(--festim-secondary-hover);
+    --pst-color-secondary-bg: color-mix(in srgb, var(--festim-secondary) 15%, transparent);
 }
 
 html[data-theme="dark"] {
     --pst-color-secondary: var(--festim-secondary);
     --pst-color-secondary-highlight: var(--festim-secondary-hover);
+    --pst-color-secondary-bg: #F46036;
+}
+
+html[data-theme="dark"] .bd-header-announcement a {
+    color: var(--festim-primary);
+    font-weight: 600;
 }
 
 body {

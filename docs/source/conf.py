@@ -102,6 +102,7 @@ html_theme_options = {
     ],
     "header_links_before_dropdown": 7,
     "show_prev_next": False,
+    "announcement": '📢 Register now for the <a href="https://mit.zoom.us/meeting/register/PElrepT-Tpivqzu9Jepr_g#/registration" target="_blank">FESTIM 2.0 webinar on 15th May, 9:00 am EST',
     "analytics": dict(google_analytics_id="G-SCL2TVV7BK"),
 }
 
