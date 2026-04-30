@@ -498,6 +498,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 export.t = []
         # compute diffusivity function for surface fluxes
 
+        # TODO: probably a better way to handle things would be to follow what's done in
+        # https://jsdokken.com/dolfinx-tutorial/chapter3/subdomains.html
         spe_to_D_global_func_expr = {
             spe: self.define_D_global(spe) for spe in self.species if spe.mobile
         }
