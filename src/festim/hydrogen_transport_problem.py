@@ -517,31 +517,17 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # add the global D to the export
                 export.D = D
                 export.D_expr = D_expr
-            if isinstance(
-                export,
-                exports.MaximumVolume
-                | exports.MaximumSurface
-                | exports.MinimumVolume
-                | exports.MinimumSurface,
-            ):
+            if isinstance(export, exports.MaximumVolume | exports.MinimumVolume):
                 export.volume_meshtags = self.volume_meshtags
+            if isinstance(export, exports.MaximumSurface | exports.MinimumSurface):
                 export.facet_meshtags = self.facet_meshtags
+
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(
-                export,
-                exports.SurfaceQuantity
-                | exports.VolumeQuantity
-                | exports.CustomQuantity,
-            ):
+            if isinstance(export, exports.DerivedQuantity):
                 export.t = []
                 export.data = []
 
             if isinstance(export, exports.CustomQuantity):
-                import ufl
-                import festim as F
-
-                # <-- this won't work in the Discontinuous case we need to use species.subdomain_to_post_processing_solution instead
-                # we know the subdomain from the surface_to_subdomain attribute of the export, we can use that to get the post processing solution to use in the expression
                 kwargs = {
                     species.name: species.post_processing_solution
                     for species in self.species
@@ -1763,17 +1749,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.D = D
 
             # reset the data and time for SurfaceQuantity and VolumeQuantity
-            if isinstance(
-                export,
-                exports.SurfaceQuantity
-                | exports.VolumeQuantity
-                | exports.CustomQuantity,
-            ):
+            if isinstance(export, exports.DerivedQuantity):
                 export.t = []
                 export.data = []
 
             if isinstance(export, exports.CustomQuantity):
                 import ufl
+
                 import festim as F
 
                 volume = (
@@ -1892,7 +1874,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
                     try:
-                        from dolfinx.mesh import EntityMap  # noqa: F401
+                        from dolfinx.mesh import EntityMap
 
                         entity_maps = [sd.cell_map for sd in self.volume_subdomains]
                     except ImportError:
