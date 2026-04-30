@@ -1,6 +1,6 @@
+from festim.exports.derived_quantity import DerivedQuantity
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
-from festim.exports.derived_quantity import DerivedQuantity
 
 
 class VolumeQuantity(DerivedQuantity):

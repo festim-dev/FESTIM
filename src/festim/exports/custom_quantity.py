@@ -1,7 +1,8 @@
-from typing import Callable
+from collections.abc import Callable
+
 import ufl
-from scifem import assemble_scalar
 from dolfinx import fem
+from scifem import assemble_scalar
 
 from festim.exports.derived_quantity import DerivedQuantity
 from festim.subdomain.surface_subdomain import SurfaceSubdomain

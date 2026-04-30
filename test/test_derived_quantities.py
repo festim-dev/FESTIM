@@ -310,7 +310,9 @@ class TestCustomQuantityWithHydrogenTransportProblem:
 
 
 class TestCustomQuantityWithDiscontinuousProblem:
-    """Integration tests for CustomQuantity with HydrogenTransportProblemDiscontinuous"""
+    """
+    Integration tests for CustomQuantity with HydrogenTransportProblemDiscontinuous
+    """
 
     def test_custom_quantity_discontinuous_volume(self):
         """Test CustomQuantity with volume subdomain in discontinuous problem"""
