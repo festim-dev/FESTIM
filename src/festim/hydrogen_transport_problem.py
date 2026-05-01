@@ -1688,6 +1688,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         mesh=functions[0].function_space.mesh,
                     )
             elif isinstance(export, exports.VTXTemperatureExport):
+                assert isinstance(self.temperature_fenics, fem.Function), (
+                    "Temperature must be space-dependent to be exported as "
+                    "VTXTemperatureExport"
+                )
                 export.writer = dolfinx.io.VTXWriter(
                     self.temperature_fenics.function_space.mesh.comm,
                     export.filename,
