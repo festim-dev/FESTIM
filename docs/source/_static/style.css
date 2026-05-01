@@ -980,14 +980,18 @@ html[data-theme="dark"] .festim-pub-stat-value {
     max-width: 500px;
 }
 
-.festim-pub-search-wrapper i {
+.festim-pub-search-wrapper i,
+.festim-pub-search-wrapper svg {
     position: absolute;
-    left: 0.85rem;
+    left: 1rem;
     top: 50%;
     transform: translateY(-50%);
     color: var(--pst-color-text-muted);
     font-size: 0.85rem;
+    width: 0.85rem;
+    height: 0.85rem;
     pointer-events: none;
+    z-index: 1;
 }
 
 .festim-pub-search {
