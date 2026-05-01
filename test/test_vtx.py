@@ -438,8 +438,8 @@ def test_custom_field_not_implemented_error(expression):
 @pytest.mark.parametrize("p_0, E_p", [(0.01, 0.05), (0.01, 0.0), (0.0, 0.0)])
 def test_reaction_rate_export(tmp_path, direction, product_type, p_0, E_p):
     """
-    Test ReactionRateExport export functionality for different directions, product formats,
-    and reaction configurations.
+    Test ReactionRateExport export functionality for different directions, product
+    formats, and reaction configurations.
     """
     if p_0 == 0.0 and direction == "backward":
         pytest.skip(
