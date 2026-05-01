@@ -93,6 +93,14 @@ def truncate_authors(authors, max_count=3):
 
 def resolve_type(work):
     raw_type = (work.get("type", "") or "").lower().strip()
+
+    # special case for zenodo records counted as articles but should be preprint
+    if (
+        "zenodo" in work["primary_location"].get("id", {}).lower()
+        and raw_type == "article"
+    ):
+        return OPENALEX_TYPE_MAP["preprint"]
+
     if raw_type in OPENALEX_TYPE_MAP:
         return OPENALEX_TYPE_MAP[raw_type]
     crossref_type = (work.get("type_crossref", "") or "").lower().strip()
