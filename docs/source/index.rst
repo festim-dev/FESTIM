@@ -275,6 +275,14 @@
 .. raw:: html
 
      </details>
+    <!-- More details to publications and link to publications page-->
+
+      <p style="text-align: center; margin-top: 1.5rem;">
+       <a href="publications.html" class="festim-pub-link">
+         <i class="fa-solid fa-book-open"></i>
+         See all publications powered by FESTIM
+       </a>
+     </p>
    </div>
 
 
