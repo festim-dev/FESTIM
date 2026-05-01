@@ -642,3 +642,283 @@ html .festim-feature-icon svg {
     background: none;
     padding: 0;
 }
+
+/* =============================================================
+   PUBLICATIONS PAGE
+   ============================================================= */
+.festim-pub-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.festim-pub-count {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--pst-color-text-muted);
+    margin-bottom: 2.5rem;
+}
+
+.festim-pub-count strong {
+    color: var(--festim-secondary);
+    font-size: 1.3rem;
+}
+
+/* ---- Year groups ---- */
+.festim-pub-year-group {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.festim-pub-year-marker {
+    flex-shrink: 0;
+    width: 60px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.festim-pub-year-marker span {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--festim-primary);
+    background-color: var(--pst-color-background);
+    padding: 0.25rem 0;
+    position: relative;
+    z-index: 1;
+}
+
+html[data-theme="dark"] .festim-pub-year-marker span {
+    color: color-mix(in srgb, var(--festim-primary) 40%, #fff);
+}
+
+.festim-pub-year-marker::after {
+    content: "";
+    position: absolute;
+    top: 1.8rem;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background-color: var(--pst-color-border);
+    transform: translateX(-50%);
+}
+
+.festim-pub-year-cards {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* ---- Individual card ---- */
+.festim-pub-card {
+    border: 1px solid var(--pst-color-border);
+    border-radius: 0.5rem;
+    padding: 1.25rem 1.5rem;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.festim-pub-card:hover {
+    border-color: var(--festim-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.festim-pub-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0 0 0.4rem;
+    color: var(--pst-color-text-base);
+    line-height: 1.4;
+}
+
+.festim-pub-authors {
+    font-size: 0.875rem;
+    color: var(--pst-color-text-muted);
+    margin: 0 0 0.25rem;
+}
+
+.festim-pub-journal {
+    font-size: 0.85rem;
+    font-style: italic;
+    color: var(--pst-color-text-muted);
+    margin: 0 0 0.75rem;
+}
+
+/* ---- Links row ---- */
+.festim-pub-links {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+
+/* DOI mini badge */
+.festim-pub-doi {
+    display: inline-flex;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid var(--pst-color-border);
+    transition: box-shadow 0.2s ease;
+}
+
+.festim-pub-doi:hover {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    text-decoration: none;
+}
+
+.festim-pub-doi-label {
+    background-color: var(--festim-primary);
+    color: #fff;
+    padding: 0.2rem 0.4rem;
+}
+
+.festim-pub-doi-value {
+    padding: 0.2rem 0.5rem;
+    color: var(--pst-color-text-base);
+    background-color: var(--pst-color-surface);
+}
+
+/* PDF button */
+.festim-pub-pdf {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #d32f2f;
+    text-decoration: none;
+    padding: 0.2rem 0.5rem;
+    border: 1px solid #d32f2f;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.festim-pub-pdf:hover {
+    background-color: #d32f2f;
+    color: #fff;
+    text-decoration: none;
+}
+
+/* Citation count */
+.festim-pub-cited {
+    font-size: 0.8rem;
+    color: var(--pst-color-text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.festim-pub-cited i {
+    color: var(--festim-secondary);
+    font-size: 0.7rem;
+}
+
+/* ---- Topic tags ---- */
+.festim-pub-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.festim-pub-tag {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    background-color: color-mix(in srgb, var(--festim-primary) 10%, transparent);
+    color: var(--festim-primary);
+}
+
+html[data-theme="dark"] .festim-pub-tag {
+    background-color: color-mix(in srgb, var(--festim-primary) 25%, transparent);
+    color: color-mix(in srgb, var(--festim-primary) 40%, #fff);
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 600px) {
+    .festim-pub-year-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .festim-pub-year-marker {
+        width: auto;
+        flex-direction: row;
+    }
+
+    .festim-pub-year-marker::after {
+        display: none;
+    }
+
+    .festim-pub-doi-value {
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+
+/* ---- Publication type badges ---- */
+.festim-pub-header {
+    margin-bottom: 0.5rem;
+}
+
+.festim-pub-type {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 1rem;
+}
+
+.festim-pub-type-article {
+    background-color: color-mix(in srgb, var(--festim-primary) 12%, transparent);
+    color: var(--festim-primary);
+}
+
+.festim-pub-type-thesis {
+    background-color: color-mix(in srgb, var(--festim-secondary) 15%, transparent);
+    color: var(--festim-secondary);
+}
+
+.festim-pub-type-preprint {
+    background-color: color-mix(in srgb, #7c4dff 12%, transparent);
+    color: #7c4dff;
+}
+
+.festim-pub-type-report {
+    background-color: color-mix(in srgb, #00897b 12%, transparent);
+    color: #00897b;
+}
+
+.festim-pub-type-book {
+    background-color: color-mix(in srgb, #c62828 12%, transparent);
+    color: #c62828;
+}
+
+.festim-pub-type-conference {
+    background-color: color-mix(in srgb, #ef6c00 12%, transparent);
+    color: #ef6c00;
+}
+
+html[data-theme="dark"] .festim-pub-type-article {
+    background-color: color-mix(in srgb, var(--festim-primary) 25%, transparent);
+    color: color-mix(in srgb, var(--festim-primary) 40%, #fff);
+}
+
+html[data-theme="dark"] .festim-pub-type-thesis {
+    background-color: color-mix(in srgb, var(--festim-secondary) 25%, transparent);
+    color: var(--festim-secondary);
+}

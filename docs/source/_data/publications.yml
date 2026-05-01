@@ -1,0 +1,40 @@
+# Add new publications by appending a DOI.
+# Metadata is fetched automatically from OpenAlex at build time.
+
+- doi: "10.1016/j.ijhydene.2024.03.184"
+- doi: "10.1016/j.nme.2019.100709"
+- doi: "10.1016/j.nme.2021.100984"
+- doi: "10.1016/j.nme.2019.100709"
+- doi: "10.1088/1741-4326/ac28b0"
+- doi: "10.1088/1741-4326/ad1019"
+- doi: "10.1088/1741-4326/ac2bbd"
+- doi: "10.1088/1741-4326/ac2abc"
+- doi: "10.1038/s41598-020-74844-w"
+- doi: "10.48550/arXiv.2604.04751"
+- doi: "10.48550/arxiv.2603.28991"
+- doi: "10.48550/arxiv.2603.25751"
+- doi: "10.1016/j.ijhydene.2026.153987"
+- doi: "10.1088/1741-4326/ae4110"
+- doi: "10.1016/j.ijhydene.2025.153245"
+- doi: "10.1088/1741-4326/adacfa"
+- doi: "10.1016/j.ijhydene.2025.02.128"
+- doi: "10.1088/1741-4326/ad56a0"
+- doi: "10.1088/1741-4326/abd95f"
+- doi: "10.5281/zenodo.19596859"
+
+# Thesis - by title (auto-fetched from OpenAlex)
+- title: "Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure"
+  type: thesis
+- title: "Multiphysics tritium transport simulations of the WCLL breeding blanket for DEMO"
+  type: thesis
+
+- type: thesis
+  title: "Modeling and analysis of Tritium trapping in breeding blankets."
+  authors: ["Andrea Di Maio"]
+  year: 2026
+  institution: "Politecnico di Torino"
+  degree: "MSc thesis"
+  url: "https://webthesis.biblio.polito.it/40037/1/tesi.pdf"
+
+- openalex_id: "W7039523697"
+  type: thesis
