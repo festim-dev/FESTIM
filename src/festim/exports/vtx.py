@@ -77,10 +77,8 @@ class VTXTemperatureExport(ExportBaseClass):
         self,
         filename: str | Path,
         times: list[float] | list[int] | None | None = None,
-        subdomain: VolumeSubdomain = None,
     ):
         super().__init__(filename, ".bp", times)
-        self._subdomain = subdomain
 
 
 class VTXSpeciesExport(ExportBaseClass):

@@ -1688,9 +1688,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     )
             elif isinstance(export, exports.VTXTemperatureExport):
                 export.writer = dolfinx.io.VTXWriter(
-                    export._subdomain.sub_T.function_space.mesh.comm,
+                    self.temperature_fenics.function_space.mesh.comm,
                     export.filename,
-                    export._subdomain.sub_T,
+                    self.temperature_fenics,
                     engine="BP5",
                 )
             elif isinstance(export, exports.CustomFieldExport):
