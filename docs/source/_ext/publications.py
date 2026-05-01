@@ -48,6 +48,15 @@ TYPE_ICONS = {
 }
 
 TYPE_LABELS = {
+    "article": "Articles",
+    "thesis": "Theses",
+    "report": "Reports",
+    "preprint": "Preprints",
+    "book": "Books",
+    "conference": "Conferences",
+}
+
+TYPE_LABELS_SINGULAR = {
     "article": "Article",
     "thesis": "Thesis",
     "report": "Report",
@@ -292,7 +301,7 @@ def build_stats_html(records):
                 f'<button class="festim-pub-filter-btn" '
                 f'data-filter="{t}" title="{label}">'
                 f'<i class="{icon}"></i> '
-                f"{count} {label}{'s' if count != 1 else ''}"
+                f"{count} {label}"
                 f"</button>"
             )
 
@@ -343,7 +352,7 @@ def build_card_html(record):
     entry_type = record.get("type", "article")
 
     icon_class = TYPE_ICONS.get(entry_type, "fa-solid fa-file-lines")
-    type_label = TYPE_LABELS.get(entry_type, "Article")
+    type_label = TYPE_LABELS_SINGULAR.get(entry_type, "Article")
 
     type_badge = (
         f'<span class="festim-pub-type festim-pub-type-{entry_type}">'
