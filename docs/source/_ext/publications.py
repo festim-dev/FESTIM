@@ -213,7 +213,7 @@ def fetch_work_by_id(openalex_id, cache, entry_type=None):
     logger.info(f"[publications] Fetching from OpenAlex by ID: {openalex_id}")
 
     try:
-        work = Works()[f"https://openalex.org/works/{openalex_id}"]
+        work = Works()[f"{openalex_id}"]
 
         if work is None:
             raise ExtensionError(
