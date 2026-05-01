@@ -922,3 +922,150 @@ html[data-theme="dark"] .festim-pub-type-thesis {
     background-color: color-mix(in srgb, var(--festim-secondary) 25%, transparent);
     color: var(--festim-secondary);
 }
+
+/* =============================================================
+   PUBLICATIONS - STATS BAR
+   ============================================================= */
+.festim-pub-stats {
+    margin-bottom: 2.5rem;
+}
+
+.festim-pub-stats-numbers {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.festim-pub-stat {
+    text-align: center;
+}
+
+.festim-pub-stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--festim-primary);
+    line-height: 1.2;
+}
+
+html[data-theme="dark"] .festim-pub-stat-value {
+    color: color-mix(in srgb, var(--festim-primary) 40%, #fff);
+}
+
+.festim-pub-stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--pst-color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.2rem;
+}
+
+/* =============================================================
+   PUBLICATIONS - TOOLBAR (search + filters)
+   ============================================================= */
+.festim-pub-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+/* Search */
+.festim-pub-search-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+}
+
+.festim-pub-search-wrapper i {
+    position: absolute;
+    left: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--pst-color-text-muted);
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+.festim-pub-search {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.5rem;
+    border: 1px solid var(--pst-color-border);
+    border-radius: 2rem;
+    font-size: 0.9rem;
+    color: var(--pst-color-text-base);
+    background-color: var(--pst-color-surface);
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.festim-pub-search:focus {
+    border-color: var(--festim-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--festim-primary) 15%, transparent);
+}
+
+.festim-pub-search::placeholder {
+    color: var(--pst-color-text-muted);
+}
+
+/* Filter buttons */
+.festim-pub-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.festim-pub-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--pst-color-border);
+    border-radius: 2rem;
+    background: transparent;
+    color: var(--pst-color-text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.festim-pub-filter-btn:hover {
+    border-color: var(--festim-primary);
+    color: var(--festim-primary);
+}
+
+.festim-pub-filter-btn.active {
+    background-color: var(--festim-primary);
+    border-color: var(--festim-primary);
+    color: #fff;
+}
+
+html[data-theme="dark"] .festim-pub-filter-btn.active {
+    background-color: color-mix(in srgb, var(--festim-primary) 60%, #fff);
+}
+
+/* =============================================================
+   PUBLICATIONS - NO RESULTS
+   ============================================================= */
+.festim-pub-no-results {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--pst-color-text-muted);
+}
+
+.festim-pub-no-results i {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+    display: block;
+    opacity: 0.4;
+}
+
+.festim-pub-no-results p {
+    font-size: 1rem;
+    margin: 0;
+}
