@@ -1,6 +1,5 @@
 import json
-import os
-import re
+import time
 from pathlib import Path
 
 import yaml
@@ -35,6 +34,16 @@ OPENALEX_TYPE_MAP = {
     "paratext": "article",
     "other": "article",
 }
+
+
+CACHE_MAX_AGE_DAYS = 30
+
+
+def is_cache_stale(record):
+    """Check if a cached record should be refreshed."""
+    cached_at = record.get("_cached_at", 0)
+    age_days = (time.time() - cached_at) / 86400
+    return age_days > CACHE_MAX_AGE_DAYS
 
 
 def load_cache():
@@ -143,7 +152,7 @@ def extract_record_from_work(work, entry_type=None):
 
 def fetch_work(doi, cache, entry_type=None):
     """Fetch a single work from OpenAlex by DOI, using cache if available."""
-    if doi in cache:
+    if doi in cache and not is_cache_stale(cache[doi]):
         logger.info(f"[publications] Cache hit: {doi}")
         record = cache[doi]
         # Allow type override even from cache
@@ -165,6 +174,7 @@ def fetch_work(doi, cache, entry_type=None):
 
     record = extract_record_from_work(work, entry_type)
     record["doi"] = doi  # ensure the DOI from YAML is used
+    record["_cached_at"] = time.time()
     cache[doi] = record
     return record
 
@@ -173,7 +183,7 @@ def fetch_work_by_title(title, cache, entry_type=None):
     """Fetch a work from OpenAlex by title search, using cache if available."""
     cache_key = f"title:{title}"
 
-    if cache_key in cache:
+    if cache_key in cache and not is_cache_stale(cache[cache_key]):
         logger.info(f"[publications] Cache hit: {title[:60]}...")
         record = cache[cache_key]
         if entry_type:
@@ -196,6 +206,7 @@ def fetch_work_by_title(title, cache, entry_type=None):
 
     record = extract_record_from_work(work, entry_type)
     cache[cache_key] = record
+    record["_cached_at"] = time.time()
     return record
 
 
@@ -203,7 +214,7 @@ def fetch_work_by_id(openalex_id, cache, entry_type=None):
     """Fetch a work from OpenAlex by its work ID, using cache if available."""
     cache_key = f"openalex:{openalex_id}"
 
-    if cache_key in cache:
+    if cache_key in cache and not is_cache_stale(cache[cache_key]):
         logger.info(f"[publications] Cache hit: {openalex_id}")
         record = cache[cache_key]
         if entry_type:
@@ -213,7 +224,7 @@ def fetch_work_by_id(openalex_id, cache, entry_type=None):
     logger.info(f"[publications] Fetching from OpenAlex by ID: {openalex_id}")
 
     try:
-        work = Works()[f"{openalex_id}"]
+        work = Works()[openalex_id]
 
         if work is None:
             raise ExtensionError(
@@ -224,6 +235,7 @@ def fetch_work_by_id(openalex_id, cache, entry_type=None):
 
         record = extract_record_from_work(work, entry_type)
         cache[cache_key] = record
+        record["_cached_at"] = time.time()
         return record
 
     except ExtensionError:

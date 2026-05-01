@@ -1,0 +1,516 @@
+{
+  "10.1016/j.ijhydene.2024.03.184": {
+    "doi": "10.1016/j.ijhydene.2024.03.184",
+    "title": "FESTIM: An open-source code for hydrogen transport simulations",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "James Dark",
+      "Gabriele Ferrero",
+      "E.A. Hodille",
+      "Vladimir Kulagin",
+      "Samuele Meschini"
+    ],
+    "journal": "International Journal of Hydrogen Energy",
+    "year": 2024,
+    "cited_by": 27,
+    "oa_url": "https://doi.org/10.1016/j.ijhydene.2024.03.184",
+    "topics": [
+      "Nuclear reactor physics and engineering",
+      "Nuclear Materials and Properties",
+      "Fusion materials and technologies"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.0125587
+  },
+  "10.1016/j.nme.2019.100709": {
+    "doi": "10.1016/j.nme.2019.100709",
+    "title": "Finite element analysis of hydrogen retention in ITER plasma facing components using FESTIM",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "E.A. Hodille",
+      "Jonathan Mougenot",
+      "Y. Charles",
+      "C. Grisolia"
+    ],
+    "journal": "Nuclear Materials and Energy",
+    "year": 2019,
+    "cited_by": 42,
+    "oa_url": "https://doi.org/10.1016/j.nme.2019.100709",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear Materials and Properties",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.1193185
+  },
+  "10.1016/j.nme.2021.100984": {
+    "doi": "10.1016/j.nme.2021.100984",
+    "title": "Parametric optimisation based on TDS experiments for rapid and efficient identification of hydrogen transport materials properties",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "E.A. Hodille",
+      "Jonathan Mougenot",
+      "Y. Charles",
+      "C. Grisolia"
+    ],
+    "journal": "Nuclear Materials and Energy",
+    "year": 2021,
+    "cited_by": 13,
+    "oa_url": "https://doi.org/10.1016/j.nme.2021.100984",
+    "topics": [
+      "Nuclear Materials and Properties",
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.2348826
+  },
+  "10.1088/1741-4326/ac28b0": {
+    "doi": "10.1088/1741-4326/ac28b0",
+    "title": "Influence of hydrogen trapping on WCLL breeding blanket performances",
+    "authors": [
+      "James Dark",
+      "Rémi Delaporte-Mathurin",
+      "Y. Charles",
+      "E.A. Hodille",
+      "C. Grisolia",
+      "Jonathan Mougenot"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2021,
+    "cited_by": 16,
+    "oa_url": null,
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear Materials and Properties",
+      "Muon and positron interactions and applications"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.3971047
+  },
+  "10.1088/1741-4326/ad1019": {
+    "doi": "10.1088/1741-4326/ad1019",
+    "title": "3D effects on hydrogen transport in ITER-like monoblocks",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "Romain Chochoy",
+      "Jonathan Mougenot",
+      "Y. Charles",
+      "E.A. Hodille",
+      "C. Grisolia"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2023,
+    "cited_by": 16,
+    "oa_url": "https://iopscience.iop.org/article/10.1088/1741-4326/ad1019/pdf",
+    "topics": [
+      "Fusion materials and technologies",
+      "Superconducting Materials and Applications",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.5244691
+  },
+  "10.1088/1741-4326/ac2bbd": {
+    "doi": "10.1088/1741-4326/ac2bbd",
+    "title": "Fuel retention in WEST and ITER divertors based on FESTIM monoblock simulations",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "H. Yang",
+      "J. Denis",
+      "James Dark",
+      "E.A. Hodille",
+      "G. De Temmerman",
+      "X. Bonnin",
+      "Jonathan Mougenot",
+      "Y. Charles",
+      "H. Bufferand",
+      "Guido Ciraolo",
+      "C. Grisolia"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2021,
+    "cited_by": 16,
+    "oa_url": null,
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.6330352
+  },
+  "10.1088/1741-4326/ac2abc": {
+    "doi": "10.1088/1741-4326/ac2abc",
+    "title": "Modelling of hydrogen isotopes trapping, diffusion and permeation in divertor monoblocks under ITER-like conditions",
+    "authors": [
+      "E.A. Hodille",
+      "Rémi Delaporte-Mathurin",
+      "J. Denis",
+      "M. Pečovnik",
+      "E. Bernard",
+      "Y. Ferro",
+      "R. Sakamoto",
+      "Y. Charles",
+      "Jonathan Mougenot",
+      "A. De Backer",
+      "Charlotte Becquart",
+      "S. Markelj",
+      "C. Grisolia"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2021,
+    "cited_by": 26,
+    "oa_url": null,
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear Materials and Properties",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.748388
+  },
+  "10.1038/s41598-020-74844-w": {
+    "doi": "10.1038/s41598-020-74844-w",
+    "title": "Parametric study of hydrogenic inventory in the ITER divertor based on machine learning",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "E.A. Hodille",
+      "Jonathan Mougenot",
+      "G. De Temmerman",
+      "Y. Charles",
+      "C. Grisolia"
+    ],
+    "journal": "Scientific Reports",
+    "year": 2020,
+    "cited_by": 25,
+    "oa_url": "https://www.nature.com/articles/s41598-020-74844-w.pdf",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "article",
+    "_cached_at": 1777643142.8502405
+  },
+  "10.48550/arXiv.2604.04751": {
+    "doi": "10.48550/arXiv.2604.04751",
+    "title": "Hydrogen Inventory Simulations for PFCs (HISP)",
+    "authors": [
+      "Kaelyn Dunnell",
+      "Adria Lleal",
+      "E.A. Hodille",
+      "Jonathan Dufour",
+      "Rémi Delaporte-Mathurin",
+      "Tom Wauters"
+    ],
+    "journal": "arXiv (Cornell University)",
+    "year": 2026,
+    "cited_by": 0,
+    "oa_url": "https://doi.org/10.48550/arxiv.2604.04751",
+    "topics": [
+      "Fusion materials and technologies",
+      "Magnetic confinement fusion research",
+      "Superconducting Materials and Applications"
+    ],
+    "type": "preprint",
+    "_cached_at": 1777643142.9807932
+  },
+  "10.48550/arxiv.2603.28991": {
+    "doi": "10.48550/arxiv.2603.28991",
+    "title": "Permeation behaviour of hydrogen isotopes in molten FLiBe (2LiF-BeF2): Identifying sources of uncertainty and associated measurement challenges",
+    "authors": [
+      "Abhishek Saraswat",
+      "Weiyue Zhou",
+      "Nayoung Kim",
+      "Jaron F. Cota",
+      "Guiqiu Zheng",
+      "Alexander A. Khechfe",
+      "Barthel, Caroline S.",
+      "Michael P. Short",
+      "Rémi Delaporte-Mathurin",
+      "Kevin B Woller"
+    ],
+    "journal": "arXiv (Cornell University)",
+    "year": 2026,
+    "cited_by": 0,
+    "oa_url": "https://doi.org/10.48550/arxiv.2603.28991",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering",
+      "Molten salt chemistry and electrochemical processes"
+    ],
+    "type": "preprint",
+    "_cached_at": 1777643143.1069493
+  },
+  "10.48550/arxiv.2603.25751": {
+    "doi": "10.48550/arxiv.2603.25751",
+    "title": "Physics-informed tritium fuel cycle modelling workflow for fusion reactors",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "Ross MacDonald",
+      "James Dark",
+      "Milan Rother",
+      "Tasnim Zulfiqar",
+      "Kevin B Woller"
+    ],
+    "journal": "arXiv (Cornell University)",
+    "year": 2026,
+    "cited_by": 0,
+    "oa_url": "https://doi.org/10.48550/arxiv.2603.25751",
+    "topics": [
+      "Nuclear reactor physics and engineering",
+      "Fusion materials and technologies",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "preprint",
+    "_cached_at": 1777643143.2196467
+  },
+  "10.1016/j.ijhydene.2026.153987": {
+    "doi": "10.1016/j.ijhydene.2026.153987",
+    "title": "FESTIM v2.0: Upgraded framework for multi-species hydrogen transport and enhanced performance",
+    "authors": [
+      "James Dark",
+      "Rémi Delaporte-Mathurin",
+      "Jørgen S. Dokken",
+      "Huihua Yang",
+      "Chirag Khurana",
+      "Kaelyn Dunnell",
+      "Gabriele Ferrero",
+      "Vladimir Kulagin",
+      "Samuele Meschini",
+      "Jonathan Dufour",
+      "E.A. Hodille"
+    ],
+    "journal": "International Journal of Hydrogen Energy",
+    "year": 2026,
+    "cited_by": 0,
+    "oa_url": null,
+    "topics": [
+      "Electrocatalysts for Energy Conversion",
+      "Fuel Cells and Related Materials",
+      "Metalloenzymes and iron-sulfur proteins"
+    ],
+    "type": "article",
+    "_cached_at": 1777643143.3454556
+  },
+  "10.1088/1741-4326/ae4110": {
+    "doi": "10.1088/1741-4326/ae4110",
+    "title": "Modeling hydrogen isotope transport behavior in the first wall: role of the bonding region in W-RAFM steel with an improved evaluation of transport coefficients",
+    "authors": [
+      "Xin Shen",
+      "Yu-Ping Xu",
+      "Xiao-Chun Li",
+      "Rémi Delaporte-Mathurin",
+      "James Dark",
+      "Peisong Du",
+      "Jun Yi",
+      "Hai-Shan Zhou",
+      "Guang-Nan Luo"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2026,
+    "cited_by": 0,
+    "oa_url": "https://doi.org/10.1088/1741-4326/ae4110",
+    "topics": [
+      "Hydrogen embrittlement and corrosion behaviors in metals",
+      "Fusion materials and technologies",
+      "Hydrogen Storage and Materials"
+    ],
+    "type": "article",
+    "_cached_at": 1777643143.4842494
+  },
+  "10.1016/j.ijhydene.2025.153245": {
+    "doi": "10.1016/j.ijhydene.2025.153245",
+    "title": "Tritium retention in the ITER/DEMO actively cooled tungsten monoblock in the presence of neutron-induced defects",
+    "authors": [
+      "E.A. Hodille",
+      "James Dark",
+      "Rémi Delaporte-Mathurin",
+      "C. Grisolia",
+      "Y. Charles",
+      "Jonathan Mougenot"
+    ],
+    "journal": "International Journal of Hydrogen Energy",
+    "year": 2026,
+    "cited_by": 2,
+    "oa_url": "https://doi.org/10.1016/j.ijhydene.2025.153245",
+    "topics": [
+      "Fusion materials and technologies",
+      "Magnetic confinement fusion research",
+      "Nuclear reactor physics and engineering"
+    ],
+    "type": "article",
+    "_cached_at": 1777643143.5804472
+  },
+  "10.1088/1741-4326/adacfa": {
+    "doi": "10.1088/1741-4326/adacfa",
+    "title": "Impact of trapping on tritium self-sufficiency and tritium inventories in fusion power plant fuel cycles",
+    "authors": [
+      "Samuele Meschini",
+      "Rémi Delaporte-Mathurin",
+      "George Tynan",
+      "S. Ferry"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2025,
+    "cited_by": 8,
+    "oa_url": "https://doi.org/10.1088/1741-4326/adacfa",
+    "topics": [
+      "Radioactive contamination and transfer",
+      "Magnetic confinement fusion research",
+      "Fusion materials and technologies"
+    ],
+    "type": "article",
+    "_cached_at": 1777643143.7039568
+  },
+  "10.1016/j.ijhydene.2025.02.128": {
+    "doi": "10.1016/j.ijhydene.2025.02.128",
+    "title": "Kinetic surface model in FESTIM: Verification and validation",
+    "authors": [
+      "Vladimir Kulagin",
+      "Rémi Delaporte-Mathurin",
+      "E.A. Hodille",
+      "M. Zibrov"
+    ],
+    "journal": "International Journal of Hydrogen Energy",
+    "year": 2024,
+    "cited_by": 1,
+    "oa_url": null,
+    "topics": [
+      "Nuclear Materials and Properties",
+      "Thermal properties of materials",
+      "Advanced Chemical Physics Studies"
+    ],
+    "type": "article",
+    "_cached_at": 1777643143.8161316
+  },
+  "10.1088/1741-4326/ad56a0": {
+    "doi": "10.1088/1741-4326/ad56a0",
+    "title": "Modelling neutron damage effects on tritium transport in tungsten",
+    "authors": [
+      "James Dark",
+      "Rémi Delaporte-Mathurin",
+      "T. Schwarz‐Selinger",
+      "E.A. Hodille",
+      "Jonathan Mougenot",
+      "Y. Charles",
+      "C. Grisolia"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2024,
+    "cited_by": 8,
+    "oa_url": "https://doi.org/10.1088/1741-4326/ad56a0",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear Materials and Properties",
+      "Nuclear materials and radiation effects"
+    ],
+    "type": "article",
+    "_cached_at": 1777643143.924555
+  },
+  "10.1088/1741-4326/abd95f": {
+    "doi": "10.1088/1741-4326/abd95f",
+    "title": "Influence of interface conditions on hydrogen transport studies",
+    "authors": [
+      "Rémi Delaporte-Mathurin",
+      "E.A. Hodille",
+      "Jonathan Mougenot",
+      "Y. Charles",
+      "G. De Temmerman",
+      "Floriane Leblond",
+      "C. Grisolia"
+    ],
+    "journal": "Nuclear Fusion",
+    "year": 2021,
+    "cited_by": 25,
+    "oa_url": "https://hal.science/hal-03188511",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear Materials and Properties",
+      "Nuclear reactor physics and engineering"
+    ],
+    "type": "article",
+    "_cached_at": 1777643144.038416
+  },
+  "10.5281/zenodo.19596859": {
+    "doi": "10.5281/zenodo.19596859",
+    "title": "Coupled CFD and Tritium Transport Modeling of a Permeator Probe for Tritium Concentration in Liquids",
+    "authors": [
+      "Kaelyn Dunnell",
+      "James Dark",
+      "C.M. Weaver",
+      "Rémi Delaporte-Mathurin",
+      "Jr Jordan",
+      "Chirag Khurana",
+      "Huihua Yang",
+      "Shaheen Dewji"
+    ],
+    "journal": "Zenodo (CERN European Organization for Nuclear Research)",
+    "year": 2026,
+    "cited_by": 0,
+    "oa_url": "https://doi.org/10.5281/zenodo.19596859",
+    "topics": [
+      "Fusion materials and technologies",
+      "Radioactive contamination and transfer",
+      "Chemical Synthesis and Characterization"
+    ],
+    "type": "article",
+    "_cached_at": 1777643144.132305
+  },
+  "title:Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure": {
+    "doi": "10.13140/rg.2.2.19774.97606",
+    "title": "Hydrogen transport in tokamaks: estimation of the ITER divertor tritium inventory and influence of helium exposure",
+    "authors": [
+      "Rémi Delaporte-Mathurin"
+    ],
+    "journal": "PhD thesis, theses.fr (ABES)",
+    "year": 2022,
+    "cited_by": 1,
+    "oa_url": "http://www.theses.fr/2022PA131054/document",
+    "topics": [
+      "Magnetic confinement fusion research",
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering"
+    ],
+    "type": "thesis",
+    "_cached_at": 1777643145.040707
+  },
+  "title:Multiphysics tritium transport simulations of the WCLL breeding blanket for DEMO": {
+    "doi": "10.70675/8f2b4408z7316z4985za755z16358de9cafa",
+    "title": "Multiphysics tritium transport simulations of the WCLL breeding blanket for DEMO",
+    "authors": [
+      "James Dark"
+    ],
+    "journal": "PhD thesis",
+    "year": 2024,
+    "cited_by": 0,
+    "oa_url": null,
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "thesis",
+    "_cached_at": 1777643145.06361
+  },
+  "openalex:W7039523697": {
+    "doi": "",
+    "title": "Modeling Hydrogen Transport in BABY",
+    "authors": [
+      "Weaver, Colin"
+    ],
+    "journal": "PhD thesis, DSpace@MIT (Massachusetts Institute of Technology)",
+    "year": 2024,
+    "cited_by": 0,
+    "oa_url": "https://hdl.handle.net/1721.1/156656",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering",
+      "Cold Fusion and Nuclear Reactions"
+    ],
+    "type": "thesis",
+    "_cached_at": 1777643145.178651
+  }
+}
