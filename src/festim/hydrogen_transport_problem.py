@@ -393,6 +393,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self.mesh.mesh, element_temperature
                 )
                 self.temperature_fenics = fem.Function(function_space_temperature)
+                self.temperature_fenics.name = "temperature"
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = self.t
