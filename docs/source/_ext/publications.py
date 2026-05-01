@@ -85,7 +85,7 @@ def is_cache_stale(record):
     return age_days > CACHE_MAX_AGE_DAYS
 
 
-def truncate_authors(authors, max_count=3):
+def truncate_authors(authors, max_count=5):
     if len(authors) <= max_count:
         return ", ".join(authors)
     return ", ".join(authors[:max_count]) + " et al."
