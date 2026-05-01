@@ -442,6 +442,70 @@ def build_filter_script():
     return """
     <script>
     document.addEventListener("DOMContentLoaded", function() {
+      // ---- Count-up animation ----
+      var statValues = document.querySelectorAll(".festim-pub-stat-value");
+
+      function animateValue(el) {
+        var text = el.textContent.trim();
+
+        // Check if it is a range like "2019-2024"
+        if (text.indexOf("-") !== -1 && text.match(/^\\d{4}/)) {
+          el.textContent = text;
+          return;
+        }
+
+        // Strip commas and parse
+        var target = parseInt(text.replace(/,/g, ""), 10);
+        if (isNaN(target)) {
+          el.textContent = text;
+          return;
+        }
+
+        var duration = 1500;
+        var start = 0;
+        var startTime = null;
+
+        function step(timestamp) {
+          if (!startTime) startTime = timestamp;
+          var progress = Math.min((timestamp - startTime) / duration, 1);
+
+          // Ease out cubic
+          var eased = 1 - Math.pow(1 - progress, 3);
+          var current = Math.floor(eased * target);
+
+          el.textContent = current.toLocaleString();
+
+          if (progress < 1) {
+            requestAnimationFrame(step);
+          } else {
+            el.textContent = target.toLocaleString();
+          }
+        }
+
+        el.textContent = "0";
+        requestAnimationFrame(step);
+      }
+
+      // Use IntersectionObserver to trigger only when visible
+      if ("IntersectionObserver" in window) {
+        var observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) {
+              animateValue(entry.target);
+              observer.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.5 });
+
+        statValues.forEach(function(el) {
+          observer.observe(el);
+        });
+      } else {
+        // Fallback: animate immediately
+        statValues.forEach(animateValue);
+      }
+
+      // ---- Filtering and search ----
       var searchInput = document.getElementById("festimPubSearch");
       var filterBtns = document.querySelectorAll(".festim-pub-filter-btn");
       var cards = document.querySelectorAll(".festim-pub-card");
