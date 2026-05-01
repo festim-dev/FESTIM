@@ -1256,6 +1256,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
                 V = dolfinx.fem.functionspace(subdomain.submesh, element_CG)
                 sub_T = dolfinx.fem.Function(V)
+                sub_T.name = "temperature"
                 from festim.helpers import nmm_interpolate
 
                 nmm_interpolate(f_out=sub_T, f_in=self.temperature_fenics)
@@ -1685,6 +1686,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.filename,
                         mesh=functions[0].function_space.mesh,
                     )
+            elif isinstance(export, exports.VTXTemperatureExport):
+                export.writer = dolfinx.io.VTXWriter(
+                    export._subdomain.sub_T.function_space.mesh.comm,
+                    export.filename,
+                    export._subdomain.sub_T,
+                    engine="BP5",
+                )
             elif isinstance(export, exports.CustomFieldExport):
                 # need to find an appropriate function space on the right submesh
                 V = self.subdomain_to_V_CG1[export.subdomain]
@@ -1762,6 +1770,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             )
                     else:
                         export.writer.write(float(self.t))
+                elif isinstance(export, exports.VTXTemperatureExport):
+                    export.writer.write(float(self.t))
                 else:
                     raise NotImplementedError(
                         f"Export type {type(export)} not implemented"
