@@ -29,7 +29,7 @@ jobs:
       - name: Install build tools
         shell: bash -l {0}
         run: |
-          conda install -y conda-build anaconda-client
+          conda install -n base -y conda-build anaconda-client
 
       - name: Generate nightly version string
         id: version
