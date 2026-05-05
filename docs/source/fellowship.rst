@@ -2,6 +2,13 @@
 FESTIM Fellowship Programme
 ====================================
 
+
+
+
+.. note::
+
+   See the Tez testimonial: :doc:`FESTIM Fellowship — Tez <fellowship_tez>`
+
 A selective, project-based programme for experienced FESTIM users to develop advanced simulation expertise through direct collaboration with the FESTIM development team.
 
 .. raw:: html
