@@ -26,6 +26,8 @@ from .coupled_heat_hydrogen_problem import (
 )
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
+from .exports.custom_quantity import CustomQuantity
+from .exports.derived_quantity import DerivedQuantity
 from .exports.maximum_surface import MaximumSurface
 from .exports.maximum_volume import MaximumVolume
 from .exports.minimum_surface import MinimumSurface

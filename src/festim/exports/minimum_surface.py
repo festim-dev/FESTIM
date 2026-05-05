@@ -19,6 +19,8 @@ class MinimumSurface(SurfaceQuantity):
         see `festim.SurfaceQuantity`
     """
 
+    facet_meshtags: dolfinx.mesh.MeshTags
+
     @property
     def title(self):
         return f"Minimum {self.field.name} surface {self.surface.id}"

@@ -19,6 +19,8 @@ class MaximumVolume(VolumeQuantity):
         see `festim.VolumeQuantity`
     """
 
+    volume_meshtags: dolfinx.mesh.MeshTags
+
     @property
     def title(self):
         return f"Maximum {self.field.name} volume {self.volume.id}"

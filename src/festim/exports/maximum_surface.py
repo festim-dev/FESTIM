@@ -19,6 +19,8 @@ class MaximumSurface(SurfaceQuantity):
         see `festim.SurfaceQuantity`
     """
 
+    facet_meshtags: dolfinx.mesh.MeshTags
+
     @property
     def title(self):
         return f"Maximum {self.field.name} surface {self.surface.id}"

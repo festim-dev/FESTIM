@@ -1,5 +1,7 @@
 from .average_surface import AverageSurface
 from .average_volume import AverageVolume
+from .custom_quantity import CustomQuantity
+from .derived_quantity import DerivedQuantity
 from .maximum_surface import MaximumSurface
 from .maximum_volume import MaximumVolume
 from .minimum_surface import MinimumSurface
@@ -23,6 +25,8 @@ __all__ = [
     "AverageSurface",
     "AverageVolume",
     "CustomFieldExport",
+    "CustomQuantity",
+    "DerivedQuantity",
     "ExportBaseClass",
     "MaximumSurface",
     "MaximumVolume",
