@@ -71,6 +71,7 @@ class VTXTemperatureExport(ExportBaseClass):
     """
 
     writer: io.VTXWriter
+    _subdomain: VolumeSubdomain
 
     def __init__(
         self,

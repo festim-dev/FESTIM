@@ -393,6 +393,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self.mesh.mesh, element_temperature
                 )
                 self.temperature_fenics = fem.Function(function_space_temperature)
+                self.temperature_fenics.name = "temperature"
                 kwargs = {}
                 if "t" in arguments:
                     kwargs["t"] = self.t
@@ -1256,6 +1257,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
                 V = dolfinx.fem.functionspace(subdomain.submesh, element_CG)
                 sub_T = dolfinx.fem.Function(V)
+                sub_T.name = "temperature"
                 from festim.helpers import nmm_interpolate
 
                 nmm_interpolate(f_out=sub_T, f_in=self.temperature_fenics)
@@ -1685,6 +1687,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.filename,
                         mesh=functions[0].function_space.mesh,
                     )
+            elif isinstance(export, exports.VTXTemperatureExport):
+                assert isinstance(self.temperature_fenics, fem.Function), (
+                    "Temperature must be space-dependent to be exported as "
+                    "VTXTemperatureExport"
+                )
+                export.writer = dolfinx.io.VTXWriter(
+                    self.temperature_fenics.function_space.mesh.comm,
+                    export.filename,
+                    self.temperature_fenics,
+                    engine="BP5",
+                )
             elif isinstance(export, exports.CustomFieldExport):
                 # need to find an appropriate function space on the right submesh
                 V = self.subdomain_to_V_CG1[export.subdomain]
@@ -1762,6 +1775,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             )
                     else:
                         export.writer.write(float(self.t))
+                elif isinstance(export, exports.VTXTemperatureExport):
+                    export.writer.write(float(self.t))
                 else:
                     raise NotImplementedError(
                         f"Export type {type(export)} not implemented"
