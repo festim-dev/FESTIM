@@ -531,6 +531,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     for species in self.species
                 }
                 kwargs["n"] = ufl.FacetNormal(self.mesh.mesh)
+                kwargs["t"] = self.t
                 kwargs["T"] = self.temperature_fenics
 
                 # NOTE we need to change our D_global approach
@@ -1768,6 +1769,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     for species in self.species
                 }
                 kwargs["n"] = ufl.FacetNormal(self.mesh.mesh)
+                kwargs["t"] = self.t
                 kwargs["T"] = self.temperature_fenics
 
                 D_kwargs = {
