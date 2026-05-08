@@ -7,6 +7,7 @@ from .minimum_volume import MinimumVolume
 from .profile_1d import Profile1DExport
 from .surface_flux import SurfaceFlux
 from .surface_quantity import SurfaceQuantity
+from .surface_temperature import AverageSurfaceTemperature
 from .total_surface import TotalSurface
 from .total_volume import TotalVolume
 from .volume_quantity import VolumeQuantity
@@ -30,4 +31,5 @@ __all__ = [
     "VTXTemperatureExport",
     "VolumeQuantity",
     "XDMFExport",
+    "AverageSurfaceTemperature",
 ]
