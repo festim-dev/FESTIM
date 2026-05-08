@@ -1,15 +1,15 @@
 .. _festim-fellowship-tez:
 
-FESTIM Fellowship — Tez
+FESTIM Fellowship — Tez Orr
 ========================
 
-.. rubric:: UKAEA · First FESTIM Fellow · 2025
+.. rubric:: UKAEA · First FESTIM Fellow · 2026
 
 .. rst-class:: lead
 
    **Tez** is a physicist and materials scientist at :bdg-primary:`UKAEA` — and our
    **very first FESTIM Fellow**. She joined the FESTIM development team at MIT for
-   two months in 2025 to master FESTIM v2 and bring that expertise back to UKAEA.
+   two months in 2026 to master FESTIM v2 and bring that expertise back to UKAEA.
 
 .. grid:: 2
    :gutter: 4
@@ -17,7 +17,7 @@ FESTIM Fellowship — Tez
    .. grid-item::
       :columns: 12 5 5 5
 
-      .. figure:: /_static/images/fellows/tez_portrait.jpg
+      .. figure:: /_static/fellowship/tez1.jpg
          :alt: Tez, FESTIM Fellow, UKAEA
          :align: center
          :width: 100%
@@ -52,6 +52,14 @@ FESTIM Fellowship — Tez
                :class-card: sd-border-1
 
                🔬 **LIBRTI + STEP** — UKAEA programmes now using FESTIM
+
+
+.. pull-quote::
+
+   "Even though it's quite nice to be the FESTIM v2 expert on site (!!!), I would
+   absolutely recommend the programme to my colleagues."
+
+   -- Tez, UKAEA
 
 ----
 
@@ -124,45 +132,6 @@ capabilities to catch these bugs and improve the code overall.
 
 ----
 
-Results
--------
-
-The figures below show outputs from Tez's tungsten monoblock FESTIM v2 model.
-
-.. TODO: Replace all three image paths below with actual simulation outputs from Tez.
-
-.. grid:: 2
-   :gutter: 3
-
-   .. grid-item::
-      :columns: 12 6 6 6
-
-      .. figure:: /_static/images/fellows/tez_monoblock_temperature.png
-         :alt: Temperature distribution in the tungsten monoblock — FESTIM v2
-         :align: center
-         :width: 100%
-
-         *Temperature distribution across the tungsten monoblock.*
-
-   .. grid-item::
-      :columns: 12 6 6 6
-
-      .. figure:: /_static/images/fellows/tez_monoblock_concentration.png
-         :alt: Tritium concentration profile — FESTIM v2
-         :align: center
-         :width: 100%
-
-         *Tritium concentration profile at the plasma-facing surface.*
-
-.. figure:: /_static/images/fellows/tez_monoblock_trapping.png
-   :alt: Multi-level trap occupancy — FESTIM v2
-   :align: center
-   :width: 65%
-
-   *Multi-level trap occupancy distribution across the monoblock cross-section.*
-
-----
-
 Learning & Impact
 -----------------
 
@@ -214,14 +183,12 @@ to create models where they are needed across the organisation.
 
 .. rubric:: 12. What advice would you give to someone considering applying to the FESTIM Fellowship?
 
-.. card::
-   :class-card: sd-bg-light sd-border-2
 
-   💬 I would tell them to **absolutely give it a shot!** It's a great way to learn
-   about a really interesting modelling code while exploring the wider world of
-   computational materials modelling and software development. The FESTIM team were
-   all very welcoming and it was helpful to be a part of the development of not only
-   the code but of all the projects that are using it.
+💬 I would tell them to **absolutely give it a shot!** It's a great way to learn
+about a really interesting modelling code while exploring the wider world of
+computational materials modelling and software development. The FESTIM team were
+all very welcoming and it was helpful to be a part of the development of not only
+the code but of all the projects that are using it.
 
 .. rubric:: 13. Would you recommend the programme to colleagues? Why or why not?
 
@@ -242,6 +209,5 @@ code you like to do what you want.
 
 .. seealso::
 
-   Interested in the FESTIM Fellowship? Reach out via the
-   `Support Forum <https://festim.discourse.group/>`_ or find us on
-   `GitHub <https://github.com/festim-dev/FESTIM>`_.
+   Interested in the FESTIM Fellowship? Learn more on the
+   :doc:`FESTIM Fellowship page <fellowship>`.
