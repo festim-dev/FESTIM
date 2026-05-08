@@ -43,6 +43,13 @@ code {
 
 /* Main page overview cards */
 
+/* Change card background in dark mode */
+[data-theme="dark"] .bd-content .sd-card .sd-card-body {
+    /* background-color: var(--pst-color-background); */
+    background-color: var(--pst-color-background);
+    color: #ffffff; /* optional: ensure text is white */
+}
+
 .sd-card {
     border-radius: 0;
     padding: 30px 10px 20px 10px;
