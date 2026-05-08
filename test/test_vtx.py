@@ -89,6 +89,33 @@ def test_vtx_DG(tmpdir):
     assert len(all_vtx) == 1
 
 
+def test_vtx_mixed_domain_temperature(tmpdir):
+    """Test VTXTemperatureExport setup for mixed formulation."""
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
+    my_mat = F.Material(D_0=3, E_D=2, K_S_0=1, E_K_S=0, name="mat")
+
+    s0 = F.VolumeSubdomain1D(1, borders=[0.0, 4.0], material=my_mat)
+
+    my_model.temperature = lambda x: 55 + 10 * x[0]
+    my_model.subdomains = [s0]
+    my_model.species = [F.Species("H", subdomains=[s0])]
+
+    filename = str(tmpdir.join("my_export.txt"))
+    my_export = F.VTXTemperatureExport(filename)
+    assert my_export.filename.suffix == ".bp"
+    my_model.exports = [my_export]
+    my_model.settings = F.Settings(atol=1, rtol=0.1, final_time=2)
+    my_model.settings.stepsize = F.Stepsize(initial_value=1)
+
+    my_model.initialise()
+    all_vtx = [e for e in my_model.exports if isinstance(e, F.ExportBaseClass)]
+
+    assert len(all_vtx) == 1
+
+    my_model.run()
+
+
 @pytest.mark.parametrize("checkpoint", [True, False])
 def test_vtx_integration_with_h_transport_problem(tmpdir, checkpoint):
     my_model = F.HydrogenTransportProblem()
@@ -411,8 +438,8 @@ def test_custom_field_not_implemented_error(expression):
 @pytest.mark.parametrize("p_0, E_p", [(0.01, 0.05), (0.01, 0.0), (0.0, 0.0)])
 def test_reaction_rate_export(tmp_path, direction, product_type, p_0, E_p):
     """
-    Test ReactionRateExport export functionality for different directions, product formats,
-    and reaction configurations.
+    Test ReactionRateExport export functionality for different directions, product
+    formats, and reaction configurations.
     """
     if p_0 == 0.0 and direction == "backward":
         pytest.skip(
