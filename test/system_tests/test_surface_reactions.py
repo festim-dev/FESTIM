@@ -9,7 +9,7 @@ import festim as F
 class FluxFromSurfaceReaction(F.SurfaceFlux):
     def __init__(self, reaction: F.SurfaceReactionBC):
         super().__init__(
-            F.Species(),  # just a dummy species here
+            F.Species(mobile=False),  # just a dummy species here
             reaction.subdomain,
         )
         self.reaction = reaction.flux_bcs[0]

@@ -19,6 +19,8 @@ class MinimumVolume(VolumeQuantity):
         see `festim.VolumeQuantity`
     """
 
+    volume_meshtags: dolfinx.mesh.MeshTags
+
     @property
     def title(self):
         return f"Minimum {self.field.name} volume {self.volume.id}"
