@@ -512,5 +512,51 @@
     ],
     "type": "thesis",
     "_cached_at": 1777647789.913146
+  },
+  "10.1016/j.nme.2025.102026": {
+    "doi": "10.1016/j.nme.2025.102026",
+    "title": "Verification, validation, and cross-comparison of tritium transport codes FESTIM, MHIMS, and mHIT",
+    "authors": [
+      "Gabriele Ferrero",
+      "Raffaella Testoni",
+      "E.A. Hodille"
+    ],
+    "journal": "Nuclear Materials and Energy",
+    "year": 2025,
+    "cited_by": 0,
+    "oa_url": "https://doi.org/10.1016/j.nme.2025.102026",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering",
+      "Nuclear Materials and Properties"
+    ],
+    "type": "article",
+    "_cached_at": 1778871363.5663605
+  },
+  "10.48550/arXiv.2605.12750": {
+    "doi": "10.48550/arXiv.2605.12750",
+    "title": "Quantifying Multidimensional Transport Effects on Permeability Inference in FLiBe Systems Using a Validation-Informed Modeling Framework",
+    "authors": [
+      "Huihua Yang",
+      "Abhishek Saraswat",
+      "Weiyue Zhou",
+      "Kevin Woller",
+      "James Dark",
+      "Chirag Khurana",
+      "Kaelyn Dunnell",
+      "Ethan Peterson",
+      "Rémi Delaporte-Mathurin"
+    ],
+    "journal": "arXiv (Cornell University)",
+    "year": 2026,
+    "cited_by": 0,
+    "oa_url": "https://doi.org/10.48550/arxiv.2605.12750",
+    "topics": [
+      "Fusion materials and technologies",
+      "Nuclear reactor physics and engineering",
+      "Magnetic confinement fusion research"
+    ],
+    "type": "preprint",
+    "_cached_at": 1778871363.783447
   }
 }
