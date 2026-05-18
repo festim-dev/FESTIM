@@ -20,7 +20,7 @@ jobs:
 
       - name: Install local package and dependencies
         run: |
-          pip install .[test] --no-build-isolation
+          python -m pip install .[test] --no-build-isolation
 
       - name: Overload adios4dolfinx
         if: ${{ matrix.container_version == 'nightly' }}
