@@ -123,8 +123,8 @@ class ProblemBase:
         """Defines the dirichlet boundary conditions of the model."""
         for bc in self.boundary_conditions:
             if isinstance(bc, F.DirichletBCBase):
+                form = self.create_dirichletbc_form(bc)
                 if not bc.enforce_weakly:
-                    form = self.create_dirichletbc_form(bc)
                     self.bc_forms.append(form)
 
     def get_petsc_options(self) -> dict[str, Any]:
