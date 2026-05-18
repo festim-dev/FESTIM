@@ -45,9 +45,13 @@ class DirichletBCBase:
         self,
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.subdomain = subdomain
         self.value = value
+        self.enforce_weakly = enforce_weakly
+        self.penalty = penalty
 
         self.value_fenics = None
         self.bc_expr = None
@@ -180,9 +184,13 @@ class FixedConcentrationBC(DirichletBCBase):
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
         species: Species,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.species = species
-        super().__init__(subdomain, value)
+        super().__init__(
+            subdomain, value, enforce_weakly=enforce_weakly, penalty=penalty
+        )
 
     @property
     def temperature_dependent(self):
