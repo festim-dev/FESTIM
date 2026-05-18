@@ -878,7 +878,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 * self.dx(source.volume.id)
             )
 
-        # add fluxes
+        # add boundary conditions (fluxes and weak dirichlet)
         for bc in self.boundary_conditions:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 self.formulation -= (
@@ -892,6 +892,36 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         flux_bc.value_fenics
                         * flux_bc.species.test_function
                         * self.ds(flux_bc.subdomain.id)
+                    )
+
+            if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                if bc.enforce_weakly:
+                    n = ufl.FacetNormal(self.mesh.mesh)
+                    h = ufl.Circumradius(
+                        self.mesh.mesh
+                    )  # FIXME this doesn't work for rectangles
+                    alpha = bc.penalty
+                    assert alpha is not None, (
+                        "Penalty parameter must be given for weakly enforced Dirichlet BCs"
+                    )
+                    assert bc.value_fenics is not None, (
+                        "value_fenics must be defined for weakly enforced Dirichlet BCs"
+                    )
+
+                    self.formulation += (
+                        -ufl.inner(n, ufl.grad(u)) * v * self.ds(bc.subdomain.id)
+                    )
+
+                    self.formulation += (
+                        +ufl.inner(n, ufl.grad(v))
+                        * (u - bc.value_fenics)
+                        * self.ds(bc.subdomain.id)
+                    )
+                    self.formulation += (
+                        -alpha
+                        / h
+                        * ufl.inner((u - bc.value_fenics), v)
+                        * self.ds(bc.subdomain.id)
                     )
 
         for adv_term in self.advection_terms:
