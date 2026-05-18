@@ -435,10 +435,12 @@ def test_MMS_weak_dirichlet(
     my_model.subdomains = [vol, left, right]
 
     H = F.Species("H")
-    my_model.species = [H]
+    H2 = F.Species("D")
+    my_model.species = [H, H2]
 
     if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
         H.subdomains = [vol]
+        H2.subdomains = [vol]
 
     my_model.temperature = T_expr
 
