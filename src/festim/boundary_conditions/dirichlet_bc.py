@@ -21,6 +21,10 @@ class DirichletBCBase:
     Args:
         subdomain: The surface subdomain where the boundary condition is applied
         value: The value of the boundary condition
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
+            Defaults to None
 
     Attributes:
         subdomain: The surface subdomain where the boundary condition is applied
@@ -28,6 +32,9 @@ class DirichletBCBase:
         value_fenics: The value of the boundary condition in fenics format
         bc_expr: The expression of the boundary condition that is used to
             update the `value_fenics`
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
     """
 
     subdomain: _subdomain.SurfaceSubdomain
@@ -194,6 +201,10 @@ class FixedConcentrationBC(DirichletBCBase):
         value: The value of the boundary condition. It can be a function of
         space and/or time
         species: The name of the species
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
+            Defaults to None
 
     Attributes:
         temperature_dependent (bool): True if the value of the bc is
