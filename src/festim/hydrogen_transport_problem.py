@@ -896,6 +896,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
             if isinstance(bc, boundary_conditions.FixedConcentrationBC):
                 if bc.enforce_weakly:
+                    u = bc.species.solution
+                    v = bc.species.test_function
                     n = ufl.FacetNormal(self.mesh.mesh)
                     h = ufl.Circumradius(
                         self.mesh.mesh
@@ -1579,7 +1581,35 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 if subdomain == self.surface_to_volume[bc.subdomain]:
                     v = bc.species.subdomain_to_test_function[subdomain]
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
+            if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                if bc.enforce_weakly:
+                    n = ufl.FacetNormal(self.mesh.mesh)
+                    h = ufl.Circumradius(
+                        self.mesh.mesh
+                    )  # FIXME this doesn't work for rectangles
+                    alpha = bc.penalty
+                    assert alpha is not None, (
+                        "Penalty parameter must be given for weakly enforced Dirichlet BCs"
+                    )
+                    assert bc.value_fenics is not None, (
+                        "value_fenics must be defined for weakly enforced Dirichlet BCs"
+                    )
 
+                    self.formulation += (
+                        -ufl.inner(n, ufl.grad(u)) * v * self.ds(bc.subdomain.id)
+                    )
+
+                    self.formulation += (
+                        +ufl.inner(n, ufl.grad(v))
+                        * (u - bc.value_fenics)
+                        * self.ds(bc.subdomain.id)
+                    )
+                    self.formulation += (
+                        -alpha
+                        / h
+                        * ufl.inner((u - bc.value_fenics), v)
+                        * self.ds(bc.subdomain.id)
+                    )
         # add volumetric sources
         for source in self.sources:
             v = source.species.subdomain_to_test_function[subdomain]
