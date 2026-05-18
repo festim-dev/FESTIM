@@ -393,7 +393,13 @@ def test_sub_temperature_as_function_mixed_domain_not_updated():
     assert not np.allclose(avg_surf.data, 4.0)
 
 
-def test_MMS_weak_dirichlet():
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+def test_MMS_weak_dirichlet(
+    model_class: type[F.HydrogenTransportProblem]
+    | type[F.HydrogenTransportProblemDiscontinuous],
+):
     """
     MMS test with one mobile species at steady state, with Dirichlet BCs enforced
     weakly.
@@ -419,7 +425,7 @@ def test_MMS_weak_dirichlet():
     T.interpolate(T_expr)
     D = D_0 * ufl.exp(-E_D / (F.k_B * T))
 
-    my_model = F.HydrogenTransportProblem()
+    my_model = model_class()
     my_model.mesh = F.Mesh(mesh=mesh)
 
     my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
@@ -430,6 +436,9 @@ def test_MMS_weak_dirichlet():
 
     H = F.Species("H")
     my_model.species = [H]
+
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H.subdomains = [vol]
 
     my_model.temperature = T_expr
 
@@ -459,7 +468,10 @@ def test_MMS_weak_dirichlet():
     my_model.initialise()
     my_model.run()
 
-    H_computed = H.post_processing_solution
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H_computed = H.subdomain_to_post_processing_solution[vol]
+    else:
+        H_computed = H.post_processing_solution
 
     L2_error = error_L2(H_computed, H_analytical_np)
 
