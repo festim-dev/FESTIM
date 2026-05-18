@@ -1,9 +1,9 @@
 from mpi4py import MPI
 
 import dolfinx
-import ufl
 import numpy as np
 import pytest
+import ufl
 
 import festim as F
 
@@ -395,7 +395,8 @@ def test_sub_temperature_as_function_mixed_domain_not_updated():
 
 def test_MMS_weak_dirichlet():
     """
-    MMS test with one mobile species at steady state, with Dirichlet BCs enforced weakly.
+    MMS test with one mobile species at steady state, with Dirichlet BCs enforced
+    weakly.
     """
 
     def u_exact(mod):
