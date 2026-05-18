@@ -898,34 +898,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if bc.enforce_weakly:
                     u = bc.species.solution
                     v = bc.species.test_function
-                    n = ufl.FacetNormal(self.mesh.mesh)
-                    h = ufl.Circumradius(
-                        self.mesh.mesh
-                    )  # FIXME this doesn't work for rectangles
-                    alpha = bc.penalty
-                    assert alpha is not None, (
-                        "Penalty parameter must be given for weakly enforced Dirichlet BCs"
-                    )
-                    assert bc.value_fenics is not None, (
-                        "value_fenics must be defined for weakly enforced Dirichlet BCs"
-                    )
-
-                    self.formulation += (
-                        -ufl.inner(n, ufl.grad(u)) * v * self.ds(bc.subdomain.id)
-                    )
-
-                    self.formulation += (
-                        +ufl.inner(n, ufl.grad(v))
-                        * (u - bc.value_fenics)
-                        * self.ds(bc.subdomain.id)
-                    )
-                    self.formulation += (
-                        -alpha
-                        / h
-                        * ufl.inner((u - bc.value_fenics), v)
-                        * self.ds(bc.subdomain.id)
-                    )
-
+                    self.formulation += bc.weak_formulation(u, v, self.ds)
         for adv_term in self.advection_terms:
             # create vector functionspace based on the elements in the mesh
 
@@ -1585,31 +1558,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 if bc.enforce_weakly:
                     u = bc.species.subdomain_to_solution[subdomain]
                     v = bc.species.subdomain_to_test_function[subdomain]
-                    n = ufl.FacetNormal(self.mesh.mesh)
-                    h = ufl.Circumradius(
-                        self.mesh.mesh
-                    )  # FIXME this doesn't work for rectangles
-                    alpha = bc.penalty
-                    assert alpha is not None, (
-                        "Penalty parameter must be given for weakly enforced Dirichlet BCs"
-                    )
-                    assert bc.value_fenics is not None, (
-                        "value_fenics must be defined for weakly enforced Dirichlet BCs"
-                    )
+                    form += bc.weak_formulation(u, v, self.ds)
 
-                    form += -ufl.inner(n, ufl.grad(u)) * v * self.ds(bc.subdomain.id)
-
-                    form += (
-                        +ufl.inner(n, ufl.grad(v))
-                        * (u - bc.value_fenics)
-                        * self.ds(bc.subdomain.id)
-                    )
-                    form += (
-                        -alpha
-                        / h
-                        * ufl.inner((u - bc.value_fenics), v)
-                        * self.ds(bc.subdomain.id)
-                    )
         # add volumetric sources
         for source in self.sources:
             v = source.species.subdomain_to_test_function[subdomain]

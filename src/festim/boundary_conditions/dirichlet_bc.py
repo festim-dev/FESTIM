@@ -3,8 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 import ufl
+import ufl.argument
 import ufl.core
 import ufl.core.expr
+import ufl.indexed
 from dolfinx import fem
 from dolfinx import mesh as _mesh
 
@@ -141,6 +143,47 @@ class DirichletBCBase:
                 self.value_fenics.interpolate(self.bc_expr)
         elif self.bc_expr is not None:
             self.value_fenics.interpolate(self.bc_expr)
+
+    def weak_formulation(
+        self,
+        u: fem.Function | ufl.indexed.Indexed,
+        v: ufl.argument.Argument | ufl.indexed.Indexed,
+        ds: ufl.Measure,
+    ) -> ufl.core.expr.Expr:
+        """
+        Returns the Nitsche weak formulation for the BC
+        This follows the dolfinx tutorial
+        https://jsdokken.com/dolfinx-tutorial/chapter1/nitsche.html
+
+        Args:
+            u: the solution function associated to the species for which the BC
+                is applied
+            v: the test function
+            ds: the surface measure
+
+        Returns:
+            the weak formulation
+        """
+        mesh = ds.ufl_domain()
+        n = ufl.FacetNormal(mesh)
+        h = ufl.Circumradius(mesh)  # FIXME this doesn't work for rectangles
+        alpha = self.penalty
+        assert alpha is not None, (
+            "Penalty parameter must be given for weakly enforced Dirichlet BCs"
+        )
+        assert self.value_fenics is not None, (
+            "value_fenics must be defined for weakly enforced Dirichlet BCs"
+        )
+
+        form = -ufl.inner(n, ufl.grad(u)) * v * ds(self.subdomain.id)
+
+        form += (
+            +ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds(self.subdomain.id)
+        )
+        form += (
+            -alpha / h * ufl.inner((u - self.value_fenics), v) * ds(self.subdomain.id)
+        )
+        return form
 
 
 class FixedConcentrationBC(DirichletBCBase):
