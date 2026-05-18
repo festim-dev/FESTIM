@@ -1583,6 +1583,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
             if isinstance(bc, boundary_conditions.FixedConcentrationBC):
                 if bc.enforce_weakly:
+                    u = bc.species.subdomain_to_solution[subdomain]
+                    v = bc.species.subdomain_to_test_function[subdomain]
                     n = ufl.FacetNormal(self.mesh.mesh)
                     h = ufl.Circumradius(
                         self.mesh.mesh
@@ -1595,16 +1597,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         "value_fenics must be defined for weakly enforced Dirichlet BCs"
                     )
 
-                    self.formulation += (
-                        -ufl.inner(n, ufl.grad(u)) * v * self.ds(bc.subdomain.id)
-                    )
+                    form += -ufl.inner(n, ufl.grad(u)) * v * self.ds(bc.subdomain.id)
 
-                    self.formulation += (
+                    form += (
                         +ufl.inner(n, ufl.grad(v))
                         * (u - bc.value_fenics)
                         * self.ds(bc.subdomain.id)
                     )
-                    self.formulation += (
+                    form += (
                         -alpha
                         / h
                         * ufl.inner((u - bc.value_fenics), v)
