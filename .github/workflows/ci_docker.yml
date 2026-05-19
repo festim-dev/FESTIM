@@ -20,7 +20,8 @@ jobs:
 
       - name: Install local package and dependencies
         run: |
-          pip install .[test]
+          python -m pip install scipy  # needed in scifem, can be removed when scifem adds it to their dependencies
+          python -m pip install .[test]
 
       - name: Overload adios4dolfinx
         if: ${{ matrix.container_version == 'nightly' }}
