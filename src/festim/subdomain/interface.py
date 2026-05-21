@@ -469,3 +469,53 @@ class Interface(InterfaceBase):
         F_1 += -2 * gamma / (h_0 + h_1) * (u_0 / K_0 - u_1 / K_1) * v_1 * dS(self.id)
 
         return F_0, F_1
+
+
+class InterfaceFlux(InterfaceBase):
+    restriction: list[str, str] = ("+", "-")
+
+    def __init__(
+        self, id: int, subdomains: list[VolumeSubdomain], k_plus: float, k_minus: float
+    ):
+        super().__init__(id, subdomains)
+        self.k_plus = k_plus
+        self.k_minus = k_minus
+
+    def get_formulation(
+        self,
+        dS: ufl.Measure,
+        species: list["Species"],
+        temperature,
+    ) -> tuple[ufl.Form, ufl.Form]:
+        """Generate the interface formulation for all species.
+
+        Args:
+            dS: Integration measure for the interface, with correct integration data.
+            species: Species for which interface conditions should be applied.
+                Must be defined in both subdomains of the interface.
+            temperature: Temperature field/function for temperature-dependent laws.
+
+        Returns:
+            Variational forms to be added to each subdomain.
+
+        Raises:
+            AssertionError: If the interface method is unknown or species is not
+                defined in both subdomains.
+        """
+
+        subdomain_0, subdomain_1 = self.subdomains
+        F_0, F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
+
+        for spe in species:
+            u_0, u_1 = self.us(spe)
+            v_0, v_1 = self.vs(spe)
+            assert subdomain_0 in spe.subdomains and subdomain_1 in spe.subdomains, (
+                f"Species {spe.name} must be defined in both subdomains of the "
+                "interface for the interface conditions to be applied"
+            )
+            R = self.k_plus * u_0 - self.k_minus * u_1
+
+            F_0 += ufl.inner(R, v_0) * dS(self.id)
+            F_1 += -ufl.inner(R, v_1) * dS(self.id)
+
+        return F_0, F_1
