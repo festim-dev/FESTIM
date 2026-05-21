@@ -1,10 +1,10 @@
 from mpi4py import MPI
 
+import numpy as np
 import pytest
 from dolfinx.fem import Function, functionspace
 from dolfinx.mesh import create_unit_cube
 from ufl import exp
-import numpy as np
 
 import festim as F
 
@@ -12,7 +12,7 @@ my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
 
 
 def test_reaction_init():
-    """Test that the Reaction class initialises correctly"""
+    """Test that the Reaction class initialises correctly."""
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -41,7 +41,7 @@ def test_reaction_init():
 
 
 def test_reaction_repr():
-    """Test that the Reaction __repr__ method returns the expected string"""
+    """Test that the Reaction __repr__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -67,7 +67,7 @@ def test_reaction_repr():
 
 
 def test_reaction_repr_2_products():
-    """Test that the Reaction __repr__ method returns the expected string"""
+    """Test that the Reaction __repr__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -94,7 +94,7 @@ def test_reaction_repr_2_products():
 
 
 def test_reaction_repr_0_products():
-    """Test that the Reaction __repr__ method returns the expected string"""
+    """Test that the Reaction __repr__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -113,7 +113,7 @@ def test_reaction_repr_0_products():
 
 
 def test_reaction_str():
-    """Test that the Reaction __str__ method returns the expected string"""
+    """Test that the Reaction __str__ method returns the expected string."""
 
     # create two species
     species1 = F.Species("A")
@@ -139,7 +139,8 @@ def test_reaction_str():
 
 
 def test_reaction_str_2_products():
-    """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
+    """Test that the Reaction __str__ method returns the expected string when there are
+    2 products."""
 
     # create two species
     species1 = F.Species("A")
@@ -166,7 +167,8 @@ def test_reaction_str_2_products():
 
 
 def test_reaction_str_no_products():
-    """Test that the Reaction __str__ method returns the expected string when there are 2 products"""
+    """Test that the Reaction __str__ method returns the expected string when there are
+    2 products."""
 
     # create two species
     species1 = F.Species("A")
@@ -186,7 +188,8 @@ def test_reaction_str_no_products():
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term(temperature):
-    """Test that the Reaction.reaction_term method returns the expected reaction term"""
+    """Test that the Reaction.reaction_term method returns the expected reaction
+    term."""
 
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
     V = functionspace(mesh, ("Lagrange", 1))
@@ -258,7 +261,8 @@ def test_reaction_reaction_term_no_products(temperature):
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
 def test_reaction_reaction_term_2_products(temperature):
-    """Test that the Reaction.reaction_term method returns the expected reaction term with two products"""
+    """Test that the Reaction.reaction_term method returns the expected reaction term
+    with two products."""
 
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
     V = functionspace(mesh, ("Lagrange", 1))
@@ -304,7 +308,10 @@ def test_reactant_setter_raises_error_with_zero_length_list():
     """Test a value error is raised when the first reactant is given a wrong type."""
     with pytest.raises(
         ValueError,
-        match="reactant must be an entry of one or more species objects, not an empty list.",
+        match=(
+            r"reactant must be an entry of one or more species objects, not an empty "
+            r"list."
+        ),
     ):
         F.Reaction(
             reactant=[],
@@ -320,7 +327,7 @@ def test_reactant_setter_raises_error_with_wrong_type():
     """Test a type error is raised when the first reactant is given a wrong type."""
     with pytest.raises(
         TypeError,
-        match="reactant must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
+        match=r"reactant must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
     ):
         F.Reaction(
             reactant=["A", F.Species("B")],
@@ -336,7 +343,7 @@ def test_reactant_setter_raises_error_with_wrong_type():
 def test_product_setter_raise_error_p_0_no_product():
     with pytest.raises(
         ValueError,
-        match="p_0 must be None, not 2 when no products are present.",
+        match=r"p_0 must be None, not 2 when no products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],
@@ -351,7 +358,7 @@ def test_product_setter_raise_error_p_0_no_product():
 def test_no_E_p_with_product():
     with pytest.raises(
         ValueError,
-        match="E_p cannot be None when reaction products are present.",
+        match=r"E_p cannot be None when reaction products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],
@@ -367,7 +374,7 @@ def test_no_E_p_with_product():
 def test_no_p_0_with_product():
     with pytest.raises(
         ValueError,
-        match="p_0 cannot be None when reaction products are present.",
+        match=r"p_0 cannot be None when reaction products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],
@@ -383,7 +390,7 @@ def test_no_p_0_with_product():
 def test_product_setter_raise_error_E_p_no_product():
     with pytest.raises(
         ValueError,
-        match="E_p must be None, not 2 when no products are present.",
+        match=r"E_p must be None, not 2 when no products are present.",
     ):
         reaction = F.Reaction(
             reactant=[F.Species("A")],
@@ -401,7 +408,7 @@ mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
 vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
 vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
 my_model = F.HydrogenTransportProblemDiscontinuous()
-my_model.mesh = F.Mesh1D(np.linspace(0, 1, 100))
+my_model.mesh = F.Mesh1D(np.linspace(0, 1, 101))
 
 my_model.subdomains = [vol1, vol2]
 
@@ -426,22 +433,3 @@ for subdomain in my_model.volume_subdomains:
 
 for subdomain in my_model.volume_subdomains:
     my_model.define_function_spaces(subdomain)
-
-
-@pytest.mark.parametrize("reaction", [reac1, reac2])
-def test_override_solution_attributes(reaction):
-    """
-    Tests the HydrogenTransportProblemDiscontinuous.override_solution_attributes method
-    Checks that the .solution attribute is the expected one based on the volume of the
-    reaction
-    """
-
-    # RUN
-    my_model.override_solution_attributes(reaction)
-
-    # TEST
-    relevant_species = reaction.reactant + reaction.product + empty_traps.others
-    for species in relevant_species:
-        if isinstance(species, F.Species):
-            expected_solution = species.subdomain_to_solution[reaction.volume]
-            assert species.solution == expected_solution

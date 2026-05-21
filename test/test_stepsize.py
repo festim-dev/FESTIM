@@ -6,7 +6,7 @@ import festim as F
 
 @pytest.mark.parametrize("growth_factor, target", [(10, 5), (1.2, 2), (1, 1)])
 def test_adaptive_stepsize_grows(growth_factor, target):
-    """Checks that the stepsize is increased correctly
+    """Checks that the stepsize is increased correctly.
 
     Args:
         growth_factor (float): the growth factor
@@ -28,7 +28,7 @@ def test_adaptive_stepsize_grows(growth_factor, target):
 
 @pytest.mark.parametrize("cutback_factor, target", [(0.8, 5), (0.5, 2), (1, 1)])
 def test_adaptive_stepsize_shrinks(cutback_factor, target):
-    """Checks that the stepsize is shrinks correctly
+    """Checks that the stepsize is shrinks correctly.
 
     Args:
         cutback_factor (float): the cutback factor
@@ -50,8 +50,7 @@ def test_adaptive_stepsize_shrinks(cutback_factor, target):
 
 @pytest.mark.parametrize("nb_its, target", [(1, 4), (5, 4), (4, 4)])
 def test_max_stepsize(nb_its, target):
-    """Checks that the stepsize is capped at max
-    stepsize.
+    """Checks that the stepsize is capped at max stepsize.
 
     Args:
         nb_its (int): the current number of iterations
@@ -75,10 +74,7 @@ def test_max_stepsize(nb_its, target):
 
 
 def test_stepsize_is_unchanged():
-    """
-    Checks that the stepsize is unchanged when reaches
-    the target nb iterations
-    """
+    """Checks that the stepsize is unchanged when reaches the target nb iterations."""
     my_stepsize = F.Stepsize(initial_value=2)
     my_stepsize.target_nb_iterations = 5
 
@@ -89,7 +85,7 @@ def test_stepsize_is_unchanged():
 
 
 def test_custom_stepsize_not_adaptive():
-    """Checks that a custom stepsize that isn't adaptive is unchanged"""
+    """Checks that a custom stepsize that isn't adaptive is unchanged."""
 
     class CustomStepsize(F.Stepsize):
         def is_adapt(self, t):
@@ -103,7 +99,7 @@ def test_custom_stepsize_not_adaptive():
 
 
 def test_growth_factor_setter():
-    """Checks that the growth factor setter works correctly"""
+    """Checks that the growth factor setter works correctly."""
     stepsize = F.Stepsize(1)
 
     # Test that setting a growth factor less than 1 raises a ValueError
@@ -116,7 +112,7 @@ def test_growth_factor_setter():
 
 
 def test_cutback_factor_setter():
-    """Checks that the cutback factor setter works correctly"""
+    """Checks that the cutback factor setter works correctly."""
     stepsize = F.Stepsize(1)
 
     # Test that setting a cutback factor greater than 1 raises a ValueError
@@ -129,10 +125,11 @@ def test_cutback_factor_setter():
 
 
 def test_max_stepsize_setter():
-    """Checks that the maximum stepsize setter works correctly"""
+    """Checks that the maximum stepsize setter works correctly."""
     stepsize = F.Stepsize(initial_value=1)
 
-    # Test that setting a maximum stepsize less than initial stepsize raises a ValueError
+    # Test that setting a maximum stepsize less than initial
+    # stepsize raises a ValueError
     with pytest.raises(
         ValueError, match="maximum stepsize cannot be less than initial stepsize"
     ):
@@ -154,8 +151,7 @@ def test_max_stepsize_setter():
     ],
 )
 def test_next_milestone(milestones, current_time, expected_value):
-    """Checks that the next milestone is
-     identified and set correctly.
+    """Checks that the next milestone is identified and set correctly.
 
     Args:
         milestone (float): next milestone
@@ -170,9 +166,7 @@ def test_next_milestone(milestones, current_time, expected_value):
 
 
 def test_overshoot_milestone():
-    """Test that stepsize is modified
-    when going to overshoot a milestone.
-    """
+    """Test that stepsize is modified when going to overshoot a milestone."""
 
     my_stepsize = F.Stepsize(initial_value=0.1)
     my_stepsize.growth_factor = 1
@@ -193,9 +187,7 @@ def test_overshoot_milestone():
     [(0, 10), (10, 10), (100, 10), (1000, None), (1001, None)],
 )
 def test_get_max_stepsize(t, expected_value):
-    """Tests get_max_stepsize when
-    max_stepsize is a callable.
-    """
+    """Tests get_max_stepsize when max_stepsize is a callable."""
     my_stepsize = F.Stepsize(initial_value=2)
 
     my_stepsize.max_stepsize = lambda t: 10 if t < 1000 else None
@@ -204,9 +196,9 @@ def test_get_max_stepsize(t, expected_value):
 
 
 def test_milestones_without_adaptivity_raises_error():
-    """Checks that setting milestones without adaptivity raises an error"""
+    """Checks that setting milestones without adaptivity raises an error."""
 
     with pytest.raises(
-        ValueError, match="Milestones are only relevant if the stepsize is adaptive."
+        ValueError, match=r"Milestones are only relevant if the stepsize is adaptive."
     ):
         F.Stepsize(initial_value=2, milestones=[1, 2, 3])

@@ -1,9 +1,8 @@
 ============
-User's Guide
+Usage
 ============
 
 .. toctree::
-   :numbered:
    :maxdepth: 1
 
    beginners_guide
@@ -11,10 +10,12 @@ User's Guide
    subdomains
    species
    boundary_conditions
+   initial_conditions
    sources
    temperature
    mesh
    settings
+   stepsize
    export_post_processing
    troubleshooting
    running_in_parallel

@@ -6,7 +6,7 @@ from festim.exports.surface_quantity import SurfaceQuantity
 
 
 class TotalSurface(SurfaceQuantity):
-    """Computes the total value of a field on a given surface
+    """Computes the total value of a field on a given surface.
 
     Args:
         field (`festim.Species`): species for which the total volume is computed
@@ -24,9 +24,8 @@ class TotalSurface(SurfaceQuantity):
     def compute(
         self, u: fem.Function | ufl.indexed.Indexed, ds: ufl.Measure, entity_maps=None
     ):
-        """
-        Computes the total value of the field on the defined surface
-        subdomain, and appends it to the data list
+        """Computes the total value of the field on the defined surface subdomain, and
+        appends it to the data list.
 
         Args:
             u: field for which the total value is computed

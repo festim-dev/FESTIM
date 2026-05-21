@@ -9,7 +9,7 @@ from .tools import error_L2
 def test_MMS_coupled_problem():
     """MMS coupled heat and hydrogen test with 1 mobile species and 1 trap in a 1s
     transient, the values of the temperature, mobile and trapped solutions at the last
-    time step is compared to an analytical solution"""
+    time step is compared to an analytical solution."""
 
     # coupled simulation properties
     density, heat_capacity = 1.2, 2.6
@@ -38,7 +38,8 @@ def test_MMS_coupled_problem():
     test_traps = F.ImplicitSpecies(n=n_trap, others=[test_mobile, test_trapped])
 
     # define temperature sim
-    exact_T_solution = lambda x, t: 3 * x[0] ** 2 + 10 * t
+    def exact_T_solution(x, t):
+        return 3 * x[0] ** 2 + 10 * t
 
     dTdt = 10
     mms_T_source = (
@@ -67,18 +68,29 @@ def test_MMS_coupled_problem():
     )
 
     # define hydrogen problem
-    exact_mobile_solution = lambda x, t: 2 * x[0] ** 2 + 15 * t
-    exact_trapped_solution = lambda x, t: 4 * x[0] ** 2 + 12 * t
+    def exact_mobile_solution(x, t):
+        return 2 * x[0] ** 2 + 15 * t
 
-    exact_mobile_intial_cond = lambda x: exact_mobile_solution(x, t=0)
-    exact_trapped_intial_cond = lambda x: exact_trapped_solution(x, t=0)
+    def exact_trapped_solution(x, t):
+        return 4 * x[0] ** 2 + 12 * t
+
+    def exact_mobile_intial_cond(x):
+        return exact_mobile_solution(x, t=0)
+
+    def exact_trapped_intial_cond(x):
+        return exact_trapped_solution(x, t=0)
 
     dmobiledt = 15
     dtrappeddt = 12
 
-    D = lambda x, t: D_0 * ufl.exp(-E_D / (k_B * exact_T_solution(x, t)))
-    k = lambda x, t: k_0 * ufl.exp(-E_k / (k_B * exact_T_solution(x, t)))
-    p = lambda x, t: p_0 * ufl.exp(-E_p / (k_B * exact_T_solution(x, t)))
+    def D(x, t):
+        return D_0 * ufl.exp(-E_D / (k_B * exact_T_solution(x, t)))
+
+    def k(x, t):
+        return k_0 * ufl.exp(-E_k / (k_B * exact_T_solution(x, t)))
+
+    def p(x, t):
+        return p_0 * ufl.exp(-E_p / (k_B * exact_T_solution(x, t)))
 
     def mms_mobile_source(x, t):
         return (
@@ -176,9 +188,14 @@ def test_MMS_coupled_problem():
     mobile_computed = test_mobile.post_processing_solution
     trapped_computed = test_trapped.post_processing_solution
 
-    exact_final_T = lambda x: exact_T_solution(x, t=final_time)
-    exact_final_mobile = lambda x: exact_mobile_solution(x, t=final_time)
-    exact_final_trapped = lambda x: exact_trapped_solution(x, t=final_time)
+    def exact_final_T(x):
+        return exact_T_solution(x, t=final_time)
+
+    def exact_final_mobile(x):
+        return exact_mobile_solution(x, t=final_time)
+
+    def exact_final_trapped(x):
+        return exact_trapped_solution(x, t=final_time)
 
     L2_error_T = error_L2(T_computed, exact_final_T)
     L2_error_mobile = error_L2(mobile_computed, exact_final_mobile)
@@ -193,7 +210,7 @@ def test_MMS_coupled_problem():
 def test_coupled_problem_non_matching_mesh():
     """MMS coupled heat and hydrogen test with 1 mobile species in a 1s transient with
     mismatched meshes, the value of the mobile solution at the last time step is
-    compared to an analytical solution"""
+    compared to an analytical solution."""
 
     # coupled simulation properties
     density, heat_capacity = 1.3, 2.3
@@ -216,7 +233,8 @@ def test_coupled_problem_non_matching_mesh():
     test_mobile = F.Species("mobile", mobile=True)
 
     # define temperature sim
-    exact_T_solution = lambda x, t: 2 * x[0] ** 2 + 5 * t
+    def exact_T_solution(x, t):
+        return 2 * x[0] ** 2 + 5 * t
 
     dTdt = 5
 
@@ -249,11 +267,13 @@ def test_coupled_problem_non_matching_mesh():
     )
 
     # define hydrogen problem
-    exact_mobile_solution = lambda x, t: 4 * x[0] ** 2 + 10 * t
+    def exact_mobile_solution(x, t):
+        return 4 * x[0] ** 2 + 10 * t
 
     dmobiledt = 10
 
-    D = lambda x, t: D_0 * ufl.exp(-E_D / (k_B * exact_T_solution(x, t)))
+    def D(x, t):
+        return D_0 * ufl.exp(-E_D / (k_B * exact_T_solution(x, t)))
 
     def mms_mobile_source(x, t):
         return dmobiledt - ufl.div(D(x, t) * ufl.grad(exact_mobile_solution(x, t)))
@@ -302,7 +322,8 @@ def test_coupled_problem_non_matching_mesh():
     test_coupled_problem.initialise()
     test_coupled_problem.run()
 
-    exact_solution = lambda x: exact_mobile_solution(x, t=final_time)
+    def exact_solution(x):
+        return exact_mobile_solution(x, t=final_time)
 
     computed_solution = test_mobile.post_processing_solution
 

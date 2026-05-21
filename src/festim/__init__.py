@@ -1,3 +1,4 @@
+# ruff: noqa: F401, E402
 from importlib import metadata
 
 try:
@@ -27,6 +28,8 @@ from .coupled_heat_hydrogen_problem import (
 from .exports.advection_flux import AdvectionFlux
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
+from .exports.custom_quantity import CustomQuantity
+from .exports.derived_quantity import DerivedQuantity
 from .exports.maximum_surface import MaximumSurface
 from .exports.maximum_volume import MaximumVolume
 from .exports.minimum_surface import MinimumSurface
@@ -37,7 +40,13 @@ from .exports.surface_quantity import SurfaceQuantity
 from .exports.total_surface import TotalSurface
 from .exports.total_volume import TotalVolume
 from .exports.volume_quantity import VolumeQuantity
-from .exports.vtx import ExportBaseClass, VTXSpeciesExport, VTXTemperatureExport
+from .exports.vtx import (
+    CustomFieldExport,
+    ExportBaseClass,
+    ReactionRateExport,
+    VTXSpeciesExport,
+    VTXTemperatureExport,
+)
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem
 from .helpers import (
@@ -54,7 +63,6 @@ from .hydrogen_transport_problem import (
     HydrogenTransportProblem,
     HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblemDiscontinuousChangeVar,
-    InterfaceMethod,
 )
 from .initial_condition import (
     InitialConcentration,
@@ -72,7 +80,7 @@ from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
 from .species import ImplicitSpecies, Species, find_species_from_name
 from .stepsize import Stepsize
-from .subdomain.interface import Interface
+from .subdomain.interface import Interface, InterfaceMethod
 from .subdomain.surface_subdomain import (
     SurfaceSubdomain,
     SurfaceSubdomain1D,
@@ -82,5 +90,6 @@ from .subdomain.volume_subdomain import (
     VolumeSubdomain,
     VolumeSubdomain1D,
     find_volume_from_id,
+    map_surface_to_volume_subdomains,
 )
 from .trap import Trap

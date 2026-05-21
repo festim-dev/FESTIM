@@ -4,6 +4,10 @@
 Boundary conditions
 ===================
 
+.. testsetup:: BCs
+
+    from festim import *
+
 The boundary conditions (BCs) are essential to FESTIM simulations. They describe the mathematical problem at the boundaries of the simulated domain.
 If no BC is set on a boundary, it is assumed that the flux is null. This is also called a symmetry BC.
 
@@ -251,7 +255,6 @@ For example, in a system with both mobile hydrogen and tritium, various molecula
         E_kd=0.1,
         subdomain=boundary,
     )
-
 
 ----------------------
 Heat transfer BCs

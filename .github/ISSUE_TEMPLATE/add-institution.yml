@@ -1,0 +1,36 @@
+name: Add institution to FESTIM users
+description: Request to add your institution to the FESTIM landing page
+title: "[New Institution] "
+labels: ["new-institution"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for using FESTIM! Fill out the form below to add your institution to our landing page.
+
+  - type: input
+    id: name
+    attributes:
+      label: Institution name
+      description: The full name of your institution
+      placeholder: e.g. Massachusetts Institute of Technology
+    validations:
+      required: true
+
+  - type: input
+    id: short_name
+    attributes:
+      label: Short name or acronym
+      description: Used for the image alt text
+      placeholder: e.g. MIT
+    validations:
+      required: true
+
+  - type: textarea
+    id: logo
+    attributes:
+      label: Logo
+      description: Drag and drop your institution logo here (PNG or SVG, ideally with transparent background)
+      placeholder: Drag and drop the image file here
+    validations:
+      required: true

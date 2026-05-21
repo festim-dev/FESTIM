@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import logging
 import os
 
@@ -76,7 +77,8 @@ def test_vdim_changes_when_mesh_changes():
 
 @pytest.mark.parametrize("mesh", [mesh_1D, mesh_2D, mesh_3D])
 def test_meshtags_from_xdmf(tmp_path, mesh):
-    """Test that the facet and volume meshtags are read correctly from the mesh XDMF files"""
+    """Test that the facet and volume meshtags are read correctly from the mesh XDMF
+    files."""
     # create mesh functions
     fdim = mesh.topology.dim - 1
     vdim = mesh.topology.dim
@@ -160,23 +162,24 @@ def test_meshtags_from_xdmf(tmp_path, mesh):
 
 @pytest.mark.parametrize("vertices", [[1, 2, 3, 4], [0, 0.1, 0.2, 0.3, 0.4, 0.5]])
 def test_mesh_vertices_from_list(vertices):
-    """Check that giving vertices as a list is correctly processed and ends up as a np.ndarray for the mesh"""
+    """Check that giving vertices as a list is correctly processed and ends up as a
+    np.ndarray for the mesh."""
     my_mesh = F.Mesh1D(vertices=vertices)
 
     assert isinstance(my_mesh.vertices, np.ndarray)
 
 
 def test_error_raised_when_mesh_is_wrong_type():
-    """Test that an TypeError is raised when the mesh is not a dolfinx mesh"""
+    """Test that an TypeError is raised when the mesh is not a dolfinx mesh."""
 
-    with pytest.raises(TypeError, match="Mesh must be of type dolfinx.mesh.Mesh"):
+    with pytest.raises(TypeError, match=r"Mesh must be of type dolfinx.mesh.Mesh"):
         F.Mesh(
             mesh="mesh",
         )
 
 
 def test_create_1D_mesh_parallel(cluster):
-    """Test creating a 1D mesh in parallel using ipyparallel"""
+    """Test creating a 1D mesh in parallel using ipyparallel."""
 
     def create_mesh():
         import numpy as np
@@ -193,7 +196,7 @@ def test_create_1D_mesh_parallel(cluster):
 @pytest.mark.parametrize("mesh", [mesh_2D, mesh_3D])
 def test_attr_error_with_incompitable_mesh_in_spherical(mesh):
     """Test that an AttributeError is raised when trying to use an incompatible mesh
-    with a spherical coordinate system"""
+    with a spherical coordinate system."""
 
     with pytest.raises(
         AttributeError,
@@ -204,7 +207,7 @@ def test_attr_error_with_incompitable_mesh_in_spherical(mesh):
 
 def test_attr_error_with_3D_mesh_in_cylindrical():
     """Test that an AttributeError is raised when trying to use an incompatible mesh
-    with a cylindrical coordinate system"""
+    with a cylindrical coordinate system."""
 
     with pytest.raises(
         AttributeError,
@@ -216,7 +219,7 @@ def test_attr_error_with_3D_mesh_in_cylindrical():
 @pytest.mark.parametrize("system", ["cyl", "cart", 1.0, "coucou", mesh_1D])
 def test_coordinate_system_setter(system):
     if isinstance(system, str):
-        err_msg = "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"
+        err_msg = "coordinate_system must be one of 'cartesian', 'cylindrical', or 'spherical'"  # noqa: E501
     else:
         err_msg = "coordinate_system must be of type str or CoordinateSystem"
     with pytest.raises(

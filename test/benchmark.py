@@ -187,8 +187,8 @@ def fenics_test_permeation_problem(mesh_size=1001):
 
 
 def test_festim_vs_fenics_permeation_benchmark():
-    """Runs a problem with pure fenicsx and the same problem with FESTIM and
-    raise ValueError if difference is too high"""
+    """Runs a problem with pure fenicsx and the same problem with FESTIM and raise
+    ValueError if difference is too high."""
 
     start = time.time()
     fenics_test_permeation_problem(mesh_size=20001)

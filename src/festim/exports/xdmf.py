@@ -10,7 +10,7 @@ from .vtx import ExportBaseClass
 
 
 class XDMFExport(ExportBaseClass):
-    """Export functions to XDMFfile
+    """Export functions to XDMFfile.
 
     Args:
         filename: The name of the output file
@@ -43,20 +43,20 @@ class XDMFExport(ExportBaseClass):
             for element in value:
                 if not isinstance(element, Species):
                     raise TypeError(
-                        f"Each element in the list must be a species, got {type(element)}."
+                        f"Each element in the list must be a species, got {type(element)}."  # noqa: E501
                     )
             val = value
         elif isinstance(value, Species):
             val = [value]
         else:
             raise TypeError(
-                f"field must be of type festim.Species or a list of festim.Species, got "
+                f"field must be of type festim.Species or a list of festim.Species, got "  # noqa: E501
                 f"{type(value)}."
             )
         self._field = val
 
     def define_writer(self, comm: mpi4py.MPI.Intracomm) -> None:
-        """Define the writer
+        """Define the writer.
 
         Args:
             comm (mpi4py.MPI.Intracomm): the MPI communicator
@@ -64,7 +64,7 @@ class XDMFExport(ExportBaseClass):
         self._writer = XDMFFile(comm, self.filename, "w")
 
     def write(self, t: float):
-        """Write functions to VTX file
+        """Write functions to VTX file.
 
         Args:
             t (float): the time of export

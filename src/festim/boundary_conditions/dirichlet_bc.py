@@ -3,8 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 import ufl
+import ufl.argument
 import ufl.core
 import ufl.core.expr
+import ufl.indexed
 from dolfinx import fem
 from dolfinx import mesh as _mesh
 
@@ -14,13 +16,15 @@ from festim.species import Species
 
 
 class DirichletBCBase:
-    """
-    Dirichlet boundary condition class
-    u = value
+    """Dirichlet boundary condition class u = value.
 
     Args:
         subdomain: The surface subdomain where the boundary condition is applied
         value: The value of the boundary condition
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
+            Defaults to None
 
     Attributes:
         subdomain: The surface subdomain where the boundary condition is applied
@@ -28,7 +32,9 @@ class DirichletBCBase:
         value_fenics: The value of the boundary condition in fenics format
         bc_expr: The expression of the boundary condition that is used to
             update the `value_fenics`
-
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
     """
 
     subdomain: _subdomain.SurfaceSubdomain
@@ -48,9 +54,13 @@ class DirichletBCBase:
         self,
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.subdomain = subdomain
         self.value = value
+        self.enforce_weakly = enforce_weakly
+        self.penalty = penalty
 
         self.value_fenics = None
         self.bc_expr = None
@@ -67,14 +77,14 @@ class DirichletBCBase:
         if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
             # FIXME: Should we allow sending in a callable here?
             raise TypeError(
-                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"
+                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"  # noqa: E501
                 + f"{type(value)}"
             )
         self._value_fenics = value
 
     @property
     def time_dependent(self) -> bool:
-        """Returns true if the value of the boundary condition is time dependent"""
+        """Returns true if the value of the boundary condition is time dependent."""
         if self.value is None:
             return False
         if isinstance(self.value, fem.Constant):
@@ -92,17 +102,20 @@ class DirichletBCBase:
     ) -> npt.NDArray[np.int32] | tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]:
         """Defines the facets and the degrees of freedom of the boundary condition.
 
-        Given the input meshtags, find all facets matching the boundary condition subdomain ID,
+        Given the input meshtags, find all facets matching the boundary
+        condition subdomain ID,
         and locate all DOFs associated with the input function space(s).
 
         Note:
-            For sub-spaces, a tuple of sub-spaces are expected as input, and a tuple of arrays
+            For sub-spaces, a tuple of sub-spaces are expected as input, and a
+            tuple of arrays
             associated to each of the function spaces are returned.
 
         Args:
             facet_meshtags: MeshTags describing some facets in the domain
             mesh:
-            function_space: The function space or a tuple of function spaces: (sub, collapsed)
+            function_space: The function space or a tuple of function spaces:
+            (sub, collapsed)
         """
         mesh = (
             function_space[0].mesh
@@ -111,11 +124,11 @@ class DirichletBCBase:
         )
         if facet_meshtags.topology != mesh.topology._cpp_object:
             raise ValueError(
-                "Mesh of function-space is not the same as the one used for the meshtags"
+                "Mesh of function-space is not the same as the one used for the meshtags"  # noqa: E501
             )
         if mesh.topology.dim - 1 != facet_meshtags.dim:
             raise ValueError(
-                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim - 1}"
+                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim - 1}"  # noqa: E501
             )
         bc_dofs = fem.locate_dofs_topological(
             function_space, facet_meshtags.dim, facet_meshtags.find(self.subdomain.id)
@@ -124,7 +137,7 @@ class DirichletBCBase:
         return bc_dofs
 
     def update(self, t: float):
-        """Updates the boundary condition value
+        """Updates the boundary condition value.
 
         Args:
             t: the time
@@ -138,17 +151,64 @@ class DirichletBCBase:
         elif self.bc_expr is not None:
             self.value_fenics.interpolate(self.bc_expr)
 
+    def weak_formulation(
+        self,
+        u: fem.Function | ufl.indexed.Indexed,
+        v: ufl.argument.Argument | ufl.indexed.Indexed,
+        ds: ufl.Measure,
+    ) -> ufl.core.expr.Expr:
+        """
+        Returns the Nitsche weak formulation for the BC
+        This follows the dolfinx tutorial
+        https://jsdokken.com/dolfinx-tutorial/chapter1/nitsche.html
+
+        Args:
+            u: the solution function associated to the species for which the BC
+                is applied
+            v: the test function
+            ds: the surface measure
+
+        Returns:
+            the weak formulation
+        """
+        mesh = ds.ufl_domain()
+        n = ufl.FacetNormal(mesh)
+        h = ufl.Circumradius(mesh)  # FIXME this doesn't work for rectangles
+        alpha = self.penalty
+        assert alpha is not None, (
+            "Penalty parameter must be given for weakly enforced Dirichlet BCs"
+        )
+        assert self.value_fenics is not None, (
+            "value_fenics must be defined for weakly enforced Dirichlet BCs"
+        )
+
+        form = -ufl.inner(n, ufl.grad(u)) * v * ds(self.subdomain.id)
+
+        form += (
+            +ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds(self.subdomain.id)
+        )
+        form += (
+            -alpha / h * ufl.inner((u - self.value_fenics), v) * ds(self.subdomain.id)
+        )
+        return form
+
 
 class FixedConcentrationBC(DirichletBCBase):
     """
     Args:
         subdomain (festim.Subdomain): the surface subdomain where the boundary
             condition is applied
-        value: The value of the boundary condition. It can be a function of space and/or time
+        value: The value of the boundary condition. It can be a function of
+        space and/or time
         species: The name of the species
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
+            Defaults to None
 
     Attributes:
-        temperature_dependent (bool): True if the value of the bc is temperature dependent
+        temperature_dependent (bool): True if the value of the bc is
+        temperature dependent
 
     Examples:
 
@@ -178,9 +238,13 @@ class FixedConcentrationBC(DirichletBCBase):
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
         species: Species,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.species = species
-        super().__init__(subdomain, value)
+        super().__init__(
+            subdomain, value, enforce_weakly=enforce_weakly, penalty=penalty
+        )
 
     @property
     def temperature_dependent(self):
@@ -202,17 +266,18 @@ class FixedConcentrationBC(DirichletBCBase):
         K_S: fem.Function = None,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-        If the value is a function of t, it is converted to  `dolfinx.fem.Constant`.
-        Otherwise, it is converted to a `dolfinx.fem.Function`.Function and the
-        expression of the function is stored in `bc_expr`.
+        self.value_fenics. If the value is a constant, it is converted to a
+        `dolfinx.fem.Constant`. If the value is a function of t, it is converted to
+        `dolfinx.fem.Constant`. Otherwise, it is converted to a
+        `dolfinx.fem.Function`.Function and the expression of the function is stored in
+        `bc_expr`.
 
         Args:
             function_space: the function space
             temperature: The temperature
             t: the time
-            K_S: The solubility of the species. If provided, the value of the boundary condition
+            K_S: The solubility of the species. If provided, the value of the
+            boundary condition
                 is divided by K_S (change of variable method).
         """
         mesh = function_space.mesh
@@ -313,11 +378,10 @@ DirichletBC = FixedConcentrationBC
 class FixedTemperatureBC(DirichletBCBase):
     def create_value(self, function_space: fem.FunctionSpace, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-        If the value is a function of t, it is converted to a `dolfinx.fem.Constant`.
-        Otherwise, it is converted to a` dolfinx.fem.Function` and the
-        expression of the function is stored in `bc_expr`.
+        self.value_fenics. If the value is a constant, it is converted to a
+        `dolfinx.fem.Constant`. If the value is a function of t, it is converted to a
+        `dolfinx.fem.Constant`. Otherwise, it is converted to a` dolfinx.fem.Function`
+        and the expression of the function is stored in `bc_expr`.
 
         Args:
             function_space: the function space

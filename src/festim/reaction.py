@@ -13,22 +13,26 @@ class Reaction:
     """A reaction between two species, with a forward and backward rate.
 
     Arguments:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species, F.ImplicitSpecies]]): The reactant.
+        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
+        F.ImplicitSpecies]]): The reactant.
         product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction takes place.
+        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
+        takes place.
 
     Attributes:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species, F.ImplicitSpecies]]): The reactant.
+        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
+        F.ImplicitSpecies]]): The reactant.
         product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction takes place.
+        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
+        takes place.
 
     Examples:
 
@@ -53,7 +57,6 @@ class Reaction:
             # compute the reaction term at a given temperature
             temperature = 300.0
             reaction_term = reaction.reaction_term(temperature)
-
     """
 
     def __init__(
@@ -63,8 +66,8 @@ class Reaction:
         E_k: float,
         volume: VS1D,
         product: Union[_Species, list[_Species]] | None = [],
-        p_0: float = None,
-        E_p: float = None,
+        p_0: float | None = None,
+        E_p: float | None = None,
     ) -> None:
         self.k_0 = k_0
         self.E_k = E_k
@@ -84,7 +87,7 @@ class Reaction:
             value = [value]
         if len(value) == 0:
             raise ValueError(
-                "reactant must be an entry of one or more species objects, not an empty list."
+                "reactant must be an entry of one or more species objects, not an empty list."  # noqa: E501
             )
         for i in value:
             if not isinstance(i, (_Species, _ImplicitSpecies)):
@@ -101,7 +104,7 @@ class Reaction:
             products = " + ".join([str(product) for product in self.product])
         else:
             products = self.product
-        return f"Reaction({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"
+        return f"Reaction({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"  # noqa: E501
 
     def __str__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])
@@ -114,8 +117,8 @@ class Reaction:
     def reaction_term(
         self,
         temperature,
-        reactant_concentrations: list = None,
-        product_concentrations: list = None,
+        reactant_concentrations: list | None = None,
+        product_concentrations: list | None = None,
     ) -> Expr:
         """Compute the reaction term at a given temperature.
 
@@ -134,6 +137,24 @@ class Reaction:
             The reaction term to be used in a formulation.
         """
 
+        # make sure products is a list
+        products = self.product if isinstance(self.product, list) else [self.product]
+
+        # detect if mixed_domain
+        mixed_domain = any(
+            isinstance(reactant, _Species) and reactant.subdomain_to_solution != {}
+            for reactant in self.reactant
+        ) or any(
+            isinstance(product, _Species) and product.subdomain_to_solution != {}
+            for product in products
+        )
+
+        def get_concentration(species):
+            if mixed_domain:
+                return species.concentration_submesh(self.volume)
+            else:
+                return species.concentration
+
         if self.product == []:
             if self.p_0 is not None:
                 raise ValueError(
@@ -146,16 +167,14 @@ class Reaction:
                     + " when no products are present."
                 )
         else:
-            if self.p_0 == None:
+            if self.p_0 is None:
                 raise ValueError(
                     "p_0 cannot be None when reaction products are present."
                 )
-            elif self.E_p == None:
+            elif self.E_p is None:
                 raise ValueError(
                     "E_p cannot be None when reaction products are present."
                 )
-
-        products = self.product if isinstance(self.product, list) else [self.product]
 
         # reaction rates
         k = self.k_0 * exp(-self.E_k / (_k_B * temperature))
@@ -173,18 +192,22 @@ class Reaction:
             assert len(reactant_concentrations) == len(reactants)
             for i, reactant in enumerate(reactants):
                 if reactant_concentrations[i] is None:
-                    reactant_concentrations[i] = reactant.concentration
+                    reactant_concentrations[i] = get_concentration(reactant)
         else:
-            reactant_concentrations = [reactant.concentration for reactant in reactants]
+            reactant_concentrations = [
+                get_concentration(reactant) for reactant in reactants
+            ]
 
         # if product_concentrations is provided, use these concentrations
         if product_concentrations is not None:
             assert len(product_concentrations) == len(products)
             for i, product in enumerate(products):
                 if product_concentrations[i] is None:
-                    product_concentrations[i] = product.concentration
+                    product_concentrations[i] = get_concentration(product)
         else:
-            product_concentrations = [product.concentration for product in products]
+            product_concentrations = [
+                get_concentration(product) for product in products
+            ]
 
         # multiply all concentrations to be used in the term
         product_of_reactants = reactant_concentrations[0]

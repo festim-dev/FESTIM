@@ -5,7 +5,7 @@ from festim.exports.volume_quantity import VolumeQuantity
 
 
 class TotalVolume(VolumeQuantity):
-    """Computes the total value of a field in a given volume
+    """Computes the total value of a field in a given volume.
 
     Args:
         field (festim.Species): species for which the total volume is computed
@@ -21,9 +21,8 @@ class TotalVolume(VolumeQuantity):
         return f"Total {self.field.name} volume {self.volume.id}"
 
     def compute(self, u, dx: ufl.Measure, entity_maps=None):
-        """
-        Computes the value of the total volume of the field in the volume subdomain
-        and appends it to the data list
+        """Computes the value of the total volume of the field in the volume subdomain
+        and appends it to the data list.
 
         Args:
             u: field for which the total volume is computed

@@ -10,9 +10,8 @@ import festim as F
 
 
 def test_assign_functions_to_species():
-    """Test that checks if the function assign_functions_to_species
-    creates the correct attributes for each species
-    """
+    """Test that checks if the function assign_functions_to_species creates the correct
+    attributes for each species."""
 
     mesh = F.Mesh1D(
         vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0])
@@ -38,8 +37,7 @@ def test_assign_functions_to_species():
 
 def test_species_repr_and_str():
     """Test that the __repr__ and __str__ methods of the Species class returns the
-    expected string.
-    """
+    expected string."""
     # create a species
     species = F.Species("A")
 
@@ -53,9 +51,8 @@ def test_species_repr_and_str():
 
 
 def test_implicit_species_repr_and_str():
-    """Test that the __repr__ and __str__ methods of the ImplicitSpecies class
-    returns the expected string.
-    """
+    """Test that the __repr__ and __str__ methods of the ImplicitSpecies class returns
+    the expected string."""
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -73,9 +70,7 @@ def test_implicit_species_repr_and_str():
 
 
 def test_implicit_species_concentration():
-    """Test that the concentration of an implicit species is computed
-    correctly.
-    """
+    """Test that the concentration of an implicit species is computed correctly."""
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -99,10 +94,8 @@ def test_implicit_species_concentration():
 
 
 def test_implicit_species_concentration_with_no_solution():
-    """Test that a ValueError is raised when on of the 'others' species
-    has no solution and the concentration of the implicit species is
-    requested.
-    """
+    """Test that a ValueError is raised when on of the 'others' species has no solution
+    and the concentration of the implicit species is requested."""
     # create two species
     species1 = F.Species("A")
     species2 = F.Species("B")
@@ -121,8 +114,8 @@ def test_implicit_species_concentration_with_no_solution():
 
 
 def test_create_species_and_reaction():
-    """test that the trapped_concentration and trap_reaction attributes
-    are correctly set"""
+    """Test that the trapped_concentration and trap_reaction attributes are correctly
+    set."""
 
     # BUILD
     my_mobile_species = F.Species("test_mobile")
@@ -147,15 +140,16 @@ def test_create_species_and_reaction():
 
 
 def test_implicit_species_wrong_type():
-    """Test that a ValueError is raised when the value of n in an ImplicitSpecies is
-    a function of time only but doesn't return a float or an int.
-    """
+    """Test that a ValueError is raised when the value of n in an ImplicitSpecies is a
+    function of time only but doesn't return a float or an int."""
     mesh = create_unit_cube(MPI.COMM_WORLD, 10, 10, 10)
 
-    density = lambda t: "coucou"
+    def density(t):
+        return "coucou"
+
     species = F.ImplicitSpecies(n=density)
 
     with pytest.raises(
-        ValueError, match="self.value should return a float or an int, not "
+        ValueError, match=r"self.value should return a float or an int, not "
     ):
         species.create_value_fenics(mesh=mesh, t=0.0)

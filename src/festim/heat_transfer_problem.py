@@ -79,10 +79,12 @@ class HeatTransferProblem(problem.ProblemBase):
         self.initialise_exports()
 
     def define_function_space(self):
-        """Creates the function space of the model, creates a mixed element if
-        model is multispecies. Creates the main solution and previous solution
-        function u and u_n. Create global DG function spaces of degree 0 and 1
-        for the global diffusion coefficient"""
+        """Creates the function space of the model, creates a mixed element if model is
+        multispecies.
+
+        Creates the main solution and previous solution function u and u_n. Create
+        global DG function spaces of degree 0 and 1 for the global diffusion coefficient
+        """
 
         degree = 1
         element_CG = basix.ufl.element(
@@ -99,7 +101,7 @@ class HeatTransferProblem(problem.ProblemBase):
         self.test_function = ufl.TestFunction(self.function_space)
 
     def create_dirichletbc_form(self, bc):
-        """Creates a dirichlet boundary condition form
+        """Creates a dirichlet boundary condition form.
 
         Args:
             bc (festim.FixedTemperatureBC): the boundary condition
@@ -128,7 +130,7 @@ class HeatTransferProblem(problem.ProblemBase):
         return form
 
     def create_source_values_fenics(self):
-        """For each source create the value_fenics"""
+        """For each source create the value_fenics."""
         for source in self.sources:
             # create value_fenics for all source objects
             source.value.convert_input_value(
@@ -138,7 +140,7 @@ class HeatTransferProblem(problem.ProblemBase):
             )
 
     def create_flux_values_fenics(self):
-        """For each heat flux create the value_fenics"""
+        """For each heat flux create the value_fenics."""
         for bc in self.boundary_conditions:
             # create value_fenics for all F.HeatFluxBC objects
             if isinstance(bc, boundary_conditions.HeatFluxBC):
@@ -149,8 +151,8 @@ class HeatTransferProblem(problem.ProblemBase):
                 )
 
     def create_initial_conditions(self):
-        """For each initial condition, create the value_fenics and assign it to
-        the previous solution of the condition's species"""
+        """For each initial condition, create the value_fenics and assign it to the
+        previous solution of the condition's species."""
 
         if not self.initial_condition:
             return
@@ -171,7 +173,7 @@ class HeatTransferProblem(problem.ProblemBase):
         self.u_n.interpolate(self.initial_condition.expr_fenics)
 
     def create_formulation(self):
-        """Creates the formulation of the model"""
+        """Creates the formulation of the model."""
 
         self.formulation = 0
 
@@ -216,8 +218,8 @@ class HeatTransferProblem(problem.ProblemBase):
                 )
 
     def initialise_exports(self):
-        """Defines the export writers of the model, if field is given as
-        a string, find species object in self.species"""
+        """Defines the export writers of the model, if field is given as a string, find
+        species object in self.species."""
 
         for export in self.exports:
             if isinstance(export, exports.XDMFExport):
@@ -233,7 +235,7 @@ class HeatTransferProblem(problem.ProblemBase):
                 )
 
     def post_processing(self):
-        """Post processes the model"""
+        """Post processes the model."""
 
         for export in self.exports:
             # skip if it isn't time to export

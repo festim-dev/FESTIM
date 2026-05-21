@@ -15,7 +15,7 @@ mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 
 
 def test_init():
-    """Test that the attributes are set correctly"""
+    """Test that the attributes are set correctly."""
     # create a DirichletBC object
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     value = 1.0
@@ -31,9 +31,8 @@ def test_init():
 
 
 def test_value_fenics():
-    """Test that the value_fenics attribute can be set to a valid value
-    and that an invalid type throws an error
-    """
+    """Test that the value_fenics attribute can be set to a valid value and that an
+    invalid type throws an error."""
     # create a DirichletBC object
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     value = 1.0
@@ -53,7 +52,7 @@ def test_value_fenics():
 
 
 def test_callable_for_value():
-    """Test that the value attribute can be a callable function of x and t"""
+    """Test that the value attribute can be a callable function of x and t."""
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
@@ -97,7 +96,7 @@ def test_callable_for_value():
 
 
 def test_value_callable_x_t_T():
-    """Test that the value attribute can be a callable function of x, t, and T"""
+    """Test that the value attribute can be a callable function of x, t, and T."""
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
@@ -145,7 +144,7 @@ def test_value_callable_x_t_T():
 
 @pytest.mark.parametrize("value", [lambda t: t, lambda t: 1.0 + t])
 def test_callable_t_only(value):
-    """Test that the value attribute can be a callable function of t only"""
+    """Test that the value attribute can be a callable function of t only."""
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
@@ -186,7 +185,7 @@ def test_callable_t_only(value):
 
 
 def test_callable_x_only():
-    """Test that the value attribute can be a callable function of x only"""
+    """Test that the value attribute can be a callable function of x only."""
 
     # BUILD
     subdomain = F.SurfaceSubdomain1D(1, x=1)
@@ -247,8 +246,8 @@ def test_callable_x_only():
     ],
 )
 def test_integration_with_HTransportProblem(value):
-    """test that different callable functions can be applied to a dirichlet
-    boundary condition, asserting in each case they match an expected value"""
+    """Test that different callable functions can be applied to a dirichlet boundary
+    condition, asserting in each case they match an expected value."""
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
 
@@ -311,8 +310,8 @@ def test_integration_with_HTransportProblem(value):
     ],
 )
 def test_define_value_error_if_ufl_conditional_t_only(value):
-    """Test that a ValueError is raised when the value attribute is a callable
-    of t only and contains a ufl conditional"""
+    """Test that a ValueError is raised when the value attribute is a callable of t only
+    and contains a ufl conditional."""
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     species = F.Species("test")
@@ -322,14 +321,14 @@ def test_define_value_error_if_ufl_conditional_t_only(value):
     t = fem.Constant(mesh, 0.0)
     V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
     with pytest.raises(
-        ValueError, match="self.value should return a float or an int, not "
+        ValueError, match=r"self.value should return a float or an int, not "
     ):
         bc.create_value(V, temperature=None, t=t)
 
 
 def test_species_predefined():
-    """Test a ValueError is raised when the species defined in the boundary
-    condition is not predefined in the model"""
+    """Test a ValueError is raised when the species defined in the boundary condition is
+    not predefined in the model."""
 
     subdomain = F.SurfaceSubdomain1D(1, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
@@ -362,9 +361,9 @@ def test_species_predefined():
     ],
 )
 def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
-    """test that a mixture of callable functions can be applied to dirichlet
-    boundary conditions in a multispecies case, asserting in each case they
-    match an expected value"""
+    """Test that a mixture of callable functions can be applied to dirichlet boundary
+    conditions in a multispecies case, asserting in each case they match an expected
+    value."""
     subdomain_A = F.SurfaceSubdomain1D(1, x=0)
     subdomain_B = F.SurfaceSubdomain1D(2, x=1)
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
@@ -438,7 +437,7 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
     ],
 )
 def test_bc_time_dependent_attribute(input, expected_value):
-    """Test that the time_dependent attribute is correctly set"""
+    """Test that the time_dependent attribute is correctly set."""
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     species = F.Species("test")
     my_bc = F.DirichletBC(subdomain, input, species)
@@ -463,7 +462,7 @@ def test_bc_time_dependent_attribute(input, expected_value):
     ],
 )
 def test_bc_temperature_dependent_attribute(input, expected_value):
-    """Test that the temperature_dependent attribute is correctly set"""
+    """Test that the temperature_dependent attribute is correctly set."""
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     species = F.Species("test")
     my_bc = F.DirichletBC(subdomain, input, species)

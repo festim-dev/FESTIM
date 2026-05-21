@@ -29,8 +29,7 @@ class SolubilityLaw(Enum):
 
 
 class Material:
-    """
-    Material class
+    """Material class.
 
     Args:
         D_0: the pre-exponential factor of the
@@ -147,7 +146,7 @@ class Material:
             raise TypeError("D must be of type fem.Function")
 
     def get_D_0(self, species=None):
-        """Returns the pre-exponential factor of the diffusion coefficient
+        """Returns the pre-exponential factor of the diffusion coefficient.
 
         Args:
             species (festim.Species or str, optional): the species we want the
@@ -176,7 +175,7 @@ class Material:
             raise TypeError("D_0 must be either a float, int or a dict")
 
     def get_E_D(self, species=None):
-        """Returns the activation energy of the diffusion coefficient
+        """Returns the activation energy of the diffusion coefficient.
 
         Args:
             species (festim.Species or str, optional): the species we want the
@@ -205,7 +204,7 @@ class Material:
             raise TypeError("E_D must be either a float, int or a dict")
 
     def get_K_S_0(self, species=None) -> float:
-        """Returns the pre-exponential factor of the solubility coefficient
+        """Returns the pre-exponential factor of the solubility coefficient.
 
         Args:
             species: the species we want the pre-exponential
@@ -233,7 +232,7 @@ class Material:
             raise TypeError("K_S_0 must be either a float, int or a dict")
 
     def get_E_K_S(self, species=None) -> float:
-        """Returns the activation energy of the solubility coefficient
+        """Returns the activation energy of the solubility coefficient.
 
         Args:
             species: the species we want the activation
@@ -261,7 +260,7 @@ class Material:
             raise TypeError("E_K_S must be either a float, int or a dict")
 
     def get_diffusion_coefficient(self, mesh=None, temperature=None, species=None):
-        """Defines the diffusion coefficient
+        """Defines the diffusion coefficient.
 
         Args:
 
@@ -319,7 +318,7 @@ class Material:
             raise ValueError("D_0 and E_D must be either floats or dicts")
 
     def get_solubility_coefficient(self, mesh, temperature, species=None):
-        """Defines the solubility coefficient
+        """Defines the solubility coefficient.
 
         Args:
 

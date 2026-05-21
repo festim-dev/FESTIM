@@ -1,0 +1,64 @@
+name: Conda Nightly Build
+
+on:
+  schedule:
+    # Every day at 03:00 UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    # Only run on the main repo, not on forks
+    if: github.repository == 'festim-dev/FESTIM'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Full history for versioning
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: base
+          channels: conda-forge
+          channel-priority: strict
+
+      - name: Install build tools
+        shell: bash -l {0}
+        run: |
+          conda install -y conda-build anaconda-client
+
+      - name: Generate nightly version string
+        id: version
+        shell: bash -l {0}
+        run: |
+          BASE_VERSION=$(git describe --tags --abbrev=0 | sed 's/^v//')
+          NIGHTLY_VERSION="${BASE_VERSION}.dev0"
+          echo "version=${NIGHTLY_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Nightly version: ${NIGHTLY_VERSION}"
+
+      - name: Build conda package
+        shell: bash -l {0}
+        env:
+          NIGHTLY_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          conda build conda/recipe \
+            --channel conda-forge \
+            --no-anaconda-upload \
+            --output-folder ./conda-output
+
+      - name: Upload to Anaconda.org
+        shell: bash -l {0}
+        env:
+          ANACONDA_TOKEN: ${{ secrets.ANACONDA_TOKEN }}
+        run: |
+          PKG=$(find ./conda-output -name "festim-*" \( -name "*.conda" -o -name "*.tar.bz2" \) | head -1)
+          echo "Uploading: $PKG"
+          anaconda -t "$ANACONDA_TOKEN" upload \
+            --user festim-dev \
+            --label nightly \
+            --force \
+            "$PKG"

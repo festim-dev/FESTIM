@@ -6,7 +6,7 @@ import festim as F
 
 
 def test_total_surface_compute_1D():
-    """Test that the total surface export computes the correct value"""
+    """Test that the total surface export computes the correct value."""
 
     # BUILD
     L = 6
@@ -16,7 +16,7 @@ def test_total_surface_compute_1D():
     dummy_volume = F.VolumeSubdomain1D(
         id=1, borders=[0, L], material=F.Material(D_0=1, E_D=1, name="dummy")
     )
-    facet_meshtags, temp = my_mesh.define_meshtags(
+    facet_meshtags, _temp = my_mesh.define_meshtags(
         surface_subdomains=[dummy_surface], volume_subdomains=[dummy_volume]
     )
     ds = ufl.Measure("ds", domain=my_mesh.mesh, subdomain_data=facet_meshtags)

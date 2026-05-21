@@ -15,8 +15,7 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class InitialConditionBase:
-    """
-    Base initial condition class
+    """Base initial condition class.
 
     Args:
         value: the value of the initial condition.
@@ -67,8 +66,7 @@ class InitialConditionBase:
 
 
 class InitialConcentration(InitialConditionBase):
-    """
-    Initial concentration class
+    """Initial concentration class.
 
     Args:
         value: the value of the initial concentration of a given species.
@@ -172,8 +170,7 @@ class InitialConcentration(InitialConditionBase):
 
 
 class InitialTemperature(InitialConditionBase):
-    """
-    Initial temperature class
+    """Initial temperature class.
 
     Args:
         value: the value of the initial temperature
@@ -247,8 +244,7 @@ def read_function_from_file(
     order: int = 1,
     mesh: dolfinx.mesh.Mesh | None = None,
 ) -> fem.Function:
-    """
-    Read a function from a file
+    """Read a function from a file.
 
     note::
         The function is read from a file using adios4dolfinx. For more information

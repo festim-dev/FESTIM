@@ -1,10 +1,14 @@
+from mpi4py import MPI
+
 import dolfinx
 import numpy as np
 import pytest
+import ufl
 
 import festim as F
 
 from .test_multi_mat_penalty import generate_mesh
+from .tools import error_L2
 
 
 def test_petsc_options():
@@ -44,10 +48,11 @@ def test_petsc_options():
 
 
 def test_D_global_on_2d_mesh():
-    """
-    Test that the D_global is defined correctly on a 2D mesh with two different
-    materials. The D_global should be defined as a piecewise constant function
-    with two different values, one for each material.
+    """Test that the D_global is defined correctly on a 2D mesh with two different
+    materials.
+
+    The D_global should be defined as a piecewise constant function with two different
+    values, one for each material.
     """
     mesh, mt, ct = generate_mesh(20)
 
@@ -98,7 +103,7 @@ def test_D_global_on_2d_mesh():
     ],
 )
 def test_min_max_vol_on_2d_mesh(species):
-    """Added test that catches bug #908"""
+    """Added test that catches bug #908."""
     mesh, mt, ct = generate_mesh(10)
 
     my_model = F.HydrogenTransportProblem()
@@ -183,7 +188,7 @@ def test_min_max_vol_on_2d_mesh(species):
 
 
 def test_temp_dependent_bc_mixed_domain_temperature_as_function():
-    """Test to catch bug 986"""
+    """Test to catch bug 986."""
     mesh, mt, ct = generate_mesh(8)
 
     V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
@@ -209,11 +214,6 @@ def test_temp_dependent_bc_mixed_domain_temperature_as_function():
         top_surface,
         bottom_surface,
     ]
-
-    my_model.surface_to_volume = {
-        top_surface: top_domain,
-        bottom_surface: bottom_domain,
-    }
 
     H = F.Species("H", mobile=True, subdomains=[bottom_domain, top_domain])
 
@@ -248,8 +248,8 @@ def test_del():
 
 
 def test_multispecies_with_immobile():
-    """test to catch bug 1036, that the diffusion coefficent for a non-mobile species
-    is not requested in the dict given to material"""
+    """Test to catch bug 1036, that the diffusion coefficent for a non-mobile species is
+    not requested in the dict given to material."""
 
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=50))
@@ -287,9 +287,7 @@ def test_multispecies_with_immobile():
 
 
 def test_implicit_species_bug_reaction():
-    """
-    This test catches the bug described in issue #1084
-    """
+    """This test catches the bug described in issue #1084."""
     tungsten = F.Material(
         D_0=1,
         E_D=0,
@@ -336,7 +334,7 @@ def test_implicit_species_bug_reaction():
 
 
 def test_timesteps():
-    """Test that the timesteps are correctly saved in the model"""
+    """Test that the timesteps are correctly saved in the model."""
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=50))
 
@@ -358,3 +356,125 @@ def test_timesteps():
 
     expected_timesteps = np.linspace(0, 10, num=10, endpoint=False)
     assert np.allclose(my_model.timesteps, expected_timesteps)
+
+
+def test_sub_temperature_as_function_mixed_domain_not_updated():
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    n = 8
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+    my_model.mesh = F.Mesh(mesh)
+
+    surface_1 = F.SurfaceSubdomain(id=1)
+
+    material_1 = F.Material(D_0=1, E_D=0, name="material_1")
+    volume_1 = F.VolumeSubdomain(id=2, material=material_1)
+
+    my_model.subdomains = [surface_1, volume_1]
+
+    H = F.Species(name="H", subdomains=my_model.volume_subdomains)
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(species=H, subdomain=surface_1, value=lambda T: 2 * T)
+    ]
+
+    my_model.temperature = lambda t, x: 1 + x[0] + x[1] + t
+
+    my_model.settings = F.Settings(final_time=1, atol=1e-9, rtol=1e-9, stepsize=0.1)
+
+    avg_surf = F.AverageSurface(field=H, surface=surface_1)
+    my_model.exports = [avg_surf]
+
+    my_model.initialise()
+    my_model.run()
+
+    assert not np.allclose(avg_surf.data, 4.0)
+
+
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+def test_MMS_weak_dirichlet(
+    model_class: type[F.HydrogenTransportProblem]
+    | type[F.HydrogenTransportProblemDiscontinuous],
+):
+    """
+    MMS test with one mobile species at steady state, with Dirichlet BCs enforced
+    weakly.
+    """
+
+    def u_exact(mod):
+        return lambda x: 1 + mod.sin(2 * mod.pi * x[0]) + mod.cos(2 * mod.pi * x[1])
+
+    H_analytical_ufl = u_exact(ufl)
+    H_analytical_np = u_exact(np)
+
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 50, 50)
+
+    V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
+    T = dolfinx.fem.Function(V)
+
+    D_0 = 1
+    E_D = 0.1
+
+    def T_expr(x):
+        return 500 + 100 * x[0]
+
+    T.interpolate(T_expr)
+    D = D_0 * ufl.exp(-E_D / (F.k_B * T))
+
+    my_model = model_class()
+    my_model.mesh = F.Mesh(mesh=mesh)
+
+    my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
+    vol = F.VolumeSubdomain(id=1, material=my_mat)
+    left = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 0))
+    right = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 1))
+    my_model.subdomains = [vol, left, right]
+
+    H = F.Species("H")
+    H2 = F.Species("D")
+    my_model.species = [H, H2]
+
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H.subdomains = [vol]
+        H2.subdomains = [vol]
+
+    my_model.temperature = T_expr
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(
+            subdomain=left,
+            value=H_analytical_ufl,
+            species=H,
+            enforce_weakly=True,
+            penalty=300,
+        ),
+        F.FixedConcentrationBC(
+            subdomain=right,
+            value=H_analytical_ufl,
+            species=H,
+            enforce_weakly=True,
+            penalty=300,
+        ),
+    ]
+
+    x = ufl.SpatialCoordinate(mesh)
+    f = -ufl.div(D * ufl.grad(H_analytical_ufl(x)))
+    my_model.sources = [F.ParticleSource(value=f, volume=vol, species=H)]
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    my_model.initialise()
+    my_model.run()
+
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H_computed = H.subdomain_to_post_processing_solution[vol]
+    else:
+        H_computed = H.post_processing_solution
+
+    L2_error = error_L2(H_computed, H_analytical_np)
+
+    assert L2_error < 2e-3
