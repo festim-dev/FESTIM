@@ -878,7 +878,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 * self.dx(source.volume.id)
             )
 
-        # add fluxes
+        # add boundary conditions (fluxes and weak dirichlet)
         for bc in self.boundary_conditions:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 self.formulation -= (
@@ -894,6 +894,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         * self.ds(flux_bc.subdomain.id)
                     )
 
+            if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                if bc.enforce_weakly:
+                    u = bc.species.solution
+                    v = bc.species.test_function
+                    self.formulation += bc.weak_formulation(u, v, self.ds)
         for adv_term in self.advection_terms:
             # create vector functionspace based on the elements in the mesh
 
@@ -1549,6 +1554,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 if subdomain == self.surface_to_volume[bc.subdomain]:
                     v = bc.species.subdomain_to_test_function[subdomain]
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
+            if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                if bc.enforce_weakly:
+                    u = bc.species.subdomain_to_solution[subdomain]
+                    v = bc.species.subdomain_to_test_function[subdomain]
+                    form += bc.weak_formulation(u, v, self.ds)
 
         # add volumetric sources
         for source in self.sources:
