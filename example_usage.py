@@ -1,17 +1,21 @@
 from mpi4py import MPI
 
 import numpy as np
-from dolfinx.mesh import create_unit_square
-from dolfinx import plot
-import festim as F
 import pyvista
+from dolfinx import plot
+from dolfinx.mesh import create_unit_square
+
+import festim as F
 
 my_model = F.HydrogenTransportProblemDiscontinuous()
 
-mat = F.Material(D_0=0.1, E_D=0, K_S_0=1, E_K_S=0)
+D = 300
 
-vol1 = F.VolumeSubdomain(id=1, material=mat, locator=lambda x: x[0] < 0.6)
-vol2 = F.VolumeSubdomain(id=2, material=mat, locator=lambda x: x[0] >= 0.5)
+mat1 = F.Material(D_0=D, E_D=0, K_S_0=1, E_K_S=0)
+mat2 = F.Material(D_0=D, E_D=0, K_S_0=10, E_K_S=0)
+
+vol1 = F.VolumeSubdomain(id=1, material=mat1, locator=lambda x: x[0] < 0.6)
+vol2 = F.VolumeSubdomain(id=2, material=mat2, locator=lambda x: x[0] >= 0.5)
 
 left = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 0))
 right = F.SurfaceSubdomain(id=4, locator=lambda x: np.isclose(x[0], 1))
@@ -28,7 +32,13 @@ my_model.species = [A]
 
 
 my_model.interfaces = [
-    F.InterfaceFlux(id=1, subdomains=[vol1, vol2], k_plus=1, k_minus=1)
+    F.InterfaceFlux(id=1, subdomains=[vol1, vol2], k_plus=10, k_minus=1),
+    # F.Interface(
+    #     id=2,
+    #     subdomains=[vol1, vol2],
+    #     penalty_term=100,
+    #     method=F.InterfaceMethod.nitsche,
+    # ),
 ]
 
 my_model.boundary_conditions = [
