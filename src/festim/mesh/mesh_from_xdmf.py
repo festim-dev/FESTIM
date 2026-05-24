@@ -42,8 +42,8 @@ class MeshFromXDMF(Mesh):
         self.surface_meshtags_name = surface_meshtags_name
         self.volume_meshtags_name = volume_meshtags_name
 
-        volumes_file = XDMFFile(MPI.COMM_WORLD, self.volume_file, "r")
-        mesh = volumes_file.read_mesh(name=f"{self.mesh_name}")
+        with XDMFFile(MPI.COMM_WORLD, self.volume_file, "r") as volumes_file:
+            mesh = volumes_file.read_mesh(name=f"{self.mesh_name}")
 
         super().__init__(mesh=mesh)
 
@@ -53,10 +53,10 @@ class MeshFromXDMF(Mesh):
         Returns:
             dolfinx.MeshTags: the facet meshtags
         """
-        facets_file = XDMFFile(MPI.COMM_WORLD, self.facet_file, "r")
-        facet_meshtags = facets_file.read_meshtags(
-            self.mesh, name=f"{self.surface_meshtags_name}"
-        )
+        with XDMFFile(MPI.COMM_WORLD, self.facet_file, "r") as facets_file:
+            facet_meshtags = facets_file.read_meshtags(
+                self.mesh, name=f"{self.surface_meshtags_name}"
+            )
 
         return facet_meshtags
 
@@ -66,10 +66,9 @@ class MeshFromXDMF(Mesh):
         Returns:
             dolfinx.MeshTags: the volume meshtags
         """
-        volume_file = XDMFFile(MPI.COMM_WORLD, self.volume_file, "r")
-
-        volume_meshtags = volume_file.read_meshtags(
-            self.mesh, name=f"{self.volume_meshtags_name}"
-        )
+        with XDMFFile(MPI.COMM_WORLD, self.volume_file, "r") as volume_file:
+            volume_meshtags = volume_file.read_meshtags(
+                self.mesh, name=f"{self.volume_meshtags_name}"
+            )
 
         return volume_meshtags
