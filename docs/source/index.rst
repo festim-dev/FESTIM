@@ -181,6 +181,7 @@
        <img src="_static/logos/GenF_Systems.jpg" alt="GenF" title="GenF Systems">
        <img src="_static/logos/University_of_Bristol.png" alt="UoB" title="University of Bristol">
        <img src="_static/logos/University_of_Minnesota_Twin_Cities.png" alt="UMN" title="University of Minnesota Twin Cities">
+       <img src="_static/logos/Esteyco.png" alt="Esteyco" title="Esteyco">
        <!-- Duplicate for seamless loop -->
        <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
        <img src="_static/logos/IRFM_cadarache_France.png" alt="IRFM" title="IRFM (CEA Cadarache)">
@@ -198,6 +199,7 @@
        <img src="_static/logos/GenF_Systems.jpg" alt="GenF" title="GenF Systems">
        <img src="_static/logos/University_of_Bristol.png" alt="UoB" title="University of Bristol">
        <img src="_static/logos/University_of_Minnesota_Twin_Cities.png" alt="UMN" title="University of Minnesota Twin Cities">
+       <img src="_static/logos/Esteyco.png" alt="Esteyco" title="Esteyco">
      </div>
 
      <div class="festim-ribbon-track festim-ribbon-right">
