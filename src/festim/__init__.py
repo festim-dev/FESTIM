@@ -56,6 +56,7 @@ from .helpers import (
 )
 from .hydrogen_transport_problem import (
     HydrogenTransportProblem,
+    HydrogenTransportProblemDG,
     HydrogenTransportProblemDiscontinuous,
     HydrogenTransportProblemDiscontinuousChangeVar,
 )

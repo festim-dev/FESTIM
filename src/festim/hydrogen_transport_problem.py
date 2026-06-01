@@ -46,6 +46,7 @@ from .mesh import CoordinateSystem, Mesh
 
 __all__ = [
     "HydrogenTransportProblem",
+    "HydrogenTransportProblemDG",
     "HydrogenTransportProblemDiscontinuous",
 ]
 
@@ -2190,3 +2191,243 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             for bc in self.boundary_conditions:
                 if isinstance(bc, boundary_conditions.FixedConcentrationBC):
                     bc.update(self.t)
+
+
+class HydrogenTransportProblemDG(HydrogenTransportProblem):
+    def __init__(
+        self,
+        mesh=None,
+        subdomains=None,
+        species=None,
+        reactions=None,
+        temperature=None,
+        sources=None,
+        initial_conditions=None,
+        boundary_conditions=None,
+        settings=None,
+        exports=None,
+        traps=None,
+        petsc_options: dict | None = None,
+    ):
+        super().__init__(
+            mesh,
+            subdomains,
+            species,
+            reactions,
+            temperature,
+            sources,
+            initial_conditions,
+            boundary_conditions,
+            settings,
+            exports,
+            traps,
+            petsc_options=petsc_options,
+        )
+
+    def initialise(self):
+        self.create_species_from_traps()
+        self.define_function_spaces(element_degree=self.settings.element_degree)
+        self.define_meshtags_and_measures()
+        self.assign_functions_to_species()
+
+        self.t = fem.Constant(self.mesh.mesh, 0.0)
+        if self.settings.transient:
+            # TODO should raise error if no stepsize is provided
+            # TODO Should this be an attribute of festim.Stepsize?
+            self._dt = as_fenics_constant(
+                self.settings.stepsize.initial_value, self.mesh.mesh
+            )
+
+        self.create_implicit_species_value_fenics()
+
+        self.define_temperature()
+        self.define_boundary_conditions()
+        self.convert_source_input_values_to_fenics_objects()
+        self.convert_advection_term_to_fenics_objects()
+        self.create_flux_values_fenics()
+        self.create_initial_conditions()
+        self.create_formulation()
+        self.create_solver()
+        self.initialise_exports()
+
+    def define_function_spaces(self, element_degree: int = 1):
+        """Creates the function space of the modelw with a mixed element. Creates the
+        main solution and previous solution function u and u_n. Create global DG
+        function spaces of degree 0 and 1 for the global diffusion coefficient.
+
+        Args:
+            element_degree: Degree order for finite element. Defaults to 1.
+        """
+
+        element_DG = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            element_degree,
+            basix.LagrangeVariant.equispaced,
+        )
+
+        elements = []
+        for spe in self.species:
+            if isinstance(spe, _species.Species):
+                elements.append(element_DG)
+
+        element = basix.ufl.mixed_element(elements)
+
+        self.function_space = fem.functionspace(self.mesh.mesh, element)
+
+        # create global DG function spaces of degree 0 and 1
+        element_DG0 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            0,
+            basix.LagrangeVariant.equispaced,
+        )
+        element_DG1 = basix.ufl.element(
+            "DG",
+            self.mesh.mesh.basix_cell(),
+            1,
+            basix.LagrangeVariant.equispaced,
+        )
+        self.V_DG_0 = fem.functionspace(self.mesh.mesh, element_DG0)
+        self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
+
+        self.u = fem.Function(self.function_space)
+        self.u_n = fem.Function(self.function_space)
+
+    def create_formulation(self):
+        """Creates the formulation of the model."""
+
+        self.formulation = 0
+
+        # add diffusion and time derivative for each species
+        for spe in self.species:
+            u = spe.solution
+            u_n = spe.prev_solution
+            v = spe.test_function
+
+            for vol in self.volume_subdomains:
+                if spe.mobile:
+                    D = vol.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, spe
+                    )
+                    match self.mesh.coordinate_system:
+                        case CoordinateSystem.CARTESIAN:
+                            self.formulation += ufl.dot(
+                                D * ufl.grad(u), ufl.grad(v)
+                            ) * self.dx(vol.id)
+                        case CoordinateSystem.CYLINDRICAL:
+                            r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                            self.formulation += (
+                                r
+                                * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
+                                * self.dx(vol.id)
+                            )
+                        case CoordinateSystem.SPHERICAL:
+                            r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
+                            self.formulation += (
+                                r**2
+                                * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
+                                * self.dx(vol.id)
+                            )
+                        case _:
+                            raise NotImplementedError(
+                                f"Unknown coordinate system {self.mesh.coordinate_system!s}"  # noqa: E501
+                            )
+
+                    # Add SIPG diffusion
+                    self.formulation += (
+                        -D
+                        * ufl.inner(ufl.avg(ufl.grad(u)), ufl.jump(v, self.mesh.n))
+                        * self.dS
+                    )
+                    self.formulation += (
+                        -D
+                        * ufl.inner(ufl.jump(u, self.mesh.n), ufl.avg(ufl.grad(v)))
+                        * self.dS
+                    )
+                    PENALY = 100
+                    self.formulation += (
+                        D
+                        * (PENALY / ufl.avg(self.mesh.h))
+                        * ufl.inner(ufl.jump(u, self.mesh.n), ufl.jump(v, self.mesh.n))
+                        * self.dS
+                    )
+
+                if self.settings.transient:
+                    self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
+
+        for reaction in self.reactions:
+            for reactant in reaction.reactant:
+                if isinstance(reactant, _species.Species):
+                    self.formulation += (
+                        reaction.reaction_term(self.temperature_fenics)
+                        * reactant.test_function
+                        * self.dx(reaction.volume.id)
+                    )
+
+            # product
+            if isinstance(reaction.product, list):
+                products = reaction.product
+            else:
+                products = [reaction.product]
+            for product in products:
+                self.formulation += (
+                    -reaction.reaction_term(self.temperature_fenics)
+                    * product.test_function
+                    * self.dx(reaction.volume.id)
+                )
+        # add sources
+        for source in self.sources:
+            self.formulation -= (
+                source.value.fenics_object
+                * source.species.test_function
+                * self.dx(source.volume.id)
+            )
+
+        # add fluxes
+        for bc in self.boundary_conditions:
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
+                self.formulation -= (
+                    bc.value_fenics
+                    * bc.species.test_function
+                    * self.ds(bc.subdomain.id)
+                )
+            if isinstance(bc, boundary_conditions.SurfaceReactionBC):
+                for flux_bc in bc.flux_bcs:
+                    self.formulation -= (
+                        flux_bc.value_fenics
+                        * flux_bc.species.test_function
+                        * self.ds(flux_bc.subdomain.id)
+                    )
+
+        # for adv_term in self.advection_terms:
+        #     # create vector functionspace based on the elements in the mesh
+
+        #     for species in adv_term.species:
+        #         conc = species.solution
+        #         v = species.test_function
+        #         vel = adv_term.velocity.fenics_object
+
+        #         advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
+        #             adv_term.subdomain.id
+        #         )
+        #         self.formulation += advection_term
+
+        # check if each species is defined in all volumes
+        if not self.settings.transient:
+            for spe in self.species:
+                # if species mobile, already defined in diffusion term
+                if not spe.mobile:
+                    not_defined_in_volume = self.volume_subdomains.copy()
+                    for vol in self.volume_subdomains:
+                        # check reactions
+                        for reaction in self.reactions:
+                            if vol == reaction.volume:
+                                if vol in not_defined_in_volume:
+                                    not_defined_in_volume.remove(vol)
+
+                    # add c = 0 to formulation where needed
+                    for vol in not_defined_in_volume:
+                        self.formulation += (
+                            spe.solution * spe.test_function * self.dx(vol.id)
+                        )
