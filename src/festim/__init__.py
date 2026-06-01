@@ -26,6 +26,8 @@ from .coupled_heat_hydrogen_problem import (
 )
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
+from .exports.custom_quantity import CustomQuantity
+from .exports.derived_quantity import DerivedQuantity
 from .exports.maximum_surface import MaximumSurface
 from .exports.maximum_volume import MaximumVolume
 from .exports.minimum_surface import MinimumSurface
@@ -37,10 +39,11 @@ from .exports.total_surface import TotalSurface
 from .exports.total_volume import TotalVolume
 from .exports.volume_quantity import VolumeQuantity
 from .exports.vtx import (
+    CustomFieldExport,
     ExportBaseClass,
+    ReactionRateExport,
     VTXSpeciesExport,
     VTXTemperatureExport,
-    CustomFieldExport,
 )
 from .exports.xdmf import XDMFExport
 from .heat_transfer_problem import HeatTransferProblem

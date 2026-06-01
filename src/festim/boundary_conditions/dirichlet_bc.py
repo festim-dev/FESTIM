@@ -3,8 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 import ufl
+import ufl.argument
 import ufl.core
 import ufl.core.expr
+import ufl.indexed
 from dolfinx import fem
 from dolfinx import mesh as _mesh
 
@@ -19,6 +21,10 @@ class DirichletBCBase:
     Args:
         subdomain: The surface subdomain where the boundary condition is applied
         value: The value of the boundary condition
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
+            Defaults to None
 
     Attributes:
         subdomain: The surface subdomain where the boundary condition is applied
@@ -26,6 +32,9 @@ class DirichletBCBase:
         value_fenics: The value of the boundary condition in fenics format
         bc_expr: The expression of the boundary condition that is used to
             update the `value_fenics`
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
     """
 
     subdomain: _subdomain.SurfaceSubdomain
@@ -45,9 +54,13 @@ class DirichletBCBase:
         self,
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.subdomain = subdomain
         self.value = value
+        self.enforce_weakly = enforce_weakly
+        self.penalty = penalty
 
         self.value_fenics = None
         self.bc_expr = None
@@ -138,6 +151,47 @@ class DirichletBCBase:
         elif self.bc_expr is not None:
             self.value_fenics.interpolate(self.bc_expr)
 
+    def weak_formulation(
+        self,
+        u: fem.Function | ufl.indexed.Indexed,
+        v: ufl.argument.Argument | ufl.indexed.Indexed,
+        ds: ufl.Measure,
+    ) -> ufl.core.expr.Expr:
+        """
+        Returns the Nitsche weak formulation for the BC
+        This follows the dolfinx tutorial
+        https://jsdokken.com/dolfinx-tutorial/chapter1/nitsche.html
+
+        Args:
+            u: the solution function associated to the species for which the BC
+                is applied
+            v: the test function
+            ds: the surface measure
+
+        Returns:
+            the weak formulation
+        """
+        mesh = ds.ufl_domain()
+        n = ufl.FacetNormal(mesh)
+        h = ufl.Circumradius(mesh)  # FIXME this doesn't work for rectangles
+        alpha = self.penalty
+        assert alpha is not None, (
+            "Penalty parameter must be given for weakly enforced Dirichlet BCs"
+        )
+        assert self.value_fenics is not None, (
+            "value_fenics must be defined for weakly enforced Dirichlet BCs"
+        )
+
+        form = -ufl.inner(n, ufl.grad(u)) * v * ds(self.subdomain.id)
+
+        form += (
+            +ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds(self.subdomain.id)
+        )
+        form += (
+            -alpha / h * ufl.inner((u - self.value_fenics), v) * ds(self.subdomain.id)
+        )
+        return form
+
 
 class FixedConcentrationBC(DirichletBCBase):
     """
@@ -147,6 +201,10 @@ class FixedConcentrationBC(DirichletBCBase):
         value: The value of the boundary condition. It can be a function of
         space and/or time
         species: The name of the species
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
+            Defaults to None
 
     Attributes:
         temperature_dependent (bool): True if the value of the bc is
@@ -180,9 +238,13 @@ class FixedConcentrationBC(DirichletBCBase):
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
         species: Species,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.species = species
-        super().__init__(subdomain, value)
+        super().__init__(
+            subdomain, value, enforce_weakly=enforce_weakly, penalty=penalty
+        )
 
     @property
     def temperature_dependent(self):

@@ -3,10 +3,12 @@ from mpi4py import MPI
 import dolfinx
 import numpy as np
 import pytest
+import ufl
 
 import festim as F
 
 from .test_multi_mat_penalty import generate_mesh
+from .tools import error_L2
 
 
 def test_petsc_options():
@@ -389,3 +391,90 @@ def test_sub_temperature_as_function_mixed_domain_not_updated():
     my_model.run()
 
     assert not np.allclose(avg_surf.data, 4.0)
+
+
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+def test_MMS_weak_dirichlet(
+    model_class: type[F.HydrogenTransportProblem]
+    | type[F.HydrogenTransportProblemDiscontinuous],
+):
+    """
+    MMS test with one mobile species at steady state, with Dirichlet BCs enforced
+    weakly.
+    """
+
+    def u_exact(mod):
+        return lambda x: 1 + mod.sin(2 * mod.pi * x[0]) + mod.cos(2 * mod.pi * x[1])
+
+    H_analytical_ufl = u_exact(ufl)
+    H_analytical_np = u_exact(np)
+
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 50, 50)
+
+    V = dolfinx.fem.functionspace(mesh, ("Lagrange", 1))
+    T = dolfinx.fem.Function(V)
+
+    D_0 = 1
+    E_D = 0.1
+
+    def T_expr(x):
+        return 500 + 100 * x[0]
+
+    T.interpolate(T_expr)
+    D = D_0 * ufl.exp(-E_D / (F.k_B * T))
+
+    my_model = model_class()
+    my_model.mesh = F.Mesh(mesh=mesh)
+
+    my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
+    vol = F.VolumeSubdomain(id=1, material=my_mat)
+    left = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 0))
+    right = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 1))
+    my_model.subdomains = [vol, left, right]
+
+    H = F.Species("H")
+    H2 = F.Species("D")
+    my_model.species = [H, H2]
+
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H.subdomains = [vol]
+        H2.subdomains = [vol]
+
+    my_model.temperature = T_expr
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(
+            subdomain=left,
+            value=H_analytical_ufl,
+            species=H,
+            enforce_weakly=True,
+            penalty=300,
+        ),
+        F.FixedConcentrationBC(
+            subdomain=right,
+            value=H_analytical_ufl,
+            species=H,
+            enforce_weakly=True,
+            penalty=300,
+        ),
+    ]
+
+    x = ufl.SpatialCoordinate(mesh)
+    f = -ufl.div(D * ufl.grad(H_analytical_ufl(x)))
+    my_model.sources = [F.ParticleSource(value=f, volume=vol, species=H)]
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    my_model.initialise()
+    my_model.run()
+
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H_computed = H.subdomain_to_post_processing_solution[vol]
+    else:
+        H_computed = H.post_processing_solution
+
+    L2_error = error_L2(H_computed, H_analytical_np)
+
+    assert L2_error < 2e-3

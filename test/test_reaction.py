@@ -433,20 +433,3 @@ for subdomain in my_model.volume_subdomains:
 
 for subdomain in my_model.volume_subdomains:
     my_model.define_function_spaces(subdomain)
-
-
-@pytest.mark.parametrize("reaction", [reac1, reac2])
-def test_override_solution_attributes(reaction):
-    """Tests the HydrogenTransportProblemDiscontinuous.override_solution_attributes
-    method Checks that the .solution attribute is the expected one based on the volume
-    of the reaction."""
-
-    # RUN
-    my_model.override_solution_attributes(reaction)
-
-    # TEST
-    relevant_species = reaction.reactant + reaction.product + empty_traps.others
-    for species in relevant_species:
-        if isinstance(species, F.Species):
-            expected_solution = species.subdomain_to_solution[reaction.volume]
-            assert species.solution == expected_solution

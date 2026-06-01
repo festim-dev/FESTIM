@@ -22,7 +22,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
-          activate-environment: build
+          activate-environment: base
           channels: conda-forge
           channel-priority: strict
 
