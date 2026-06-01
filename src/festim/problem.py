@@ -118,6 +118,7 @@ class ProblemBase:
         self.dx = ufl.Measure(
             "dx", domain=self.mesh.mesh, subdomain_data=self.volume_meshtags
         )
+        self.dS = ufl.Measure("dS", domain=self.mesh.mesh)
 
     def define_boundary_conditions(self):
         """Defines the dirichlet boundary conditions of the model."""
