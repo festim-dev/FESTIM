@@ -492,7 +492,6 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         K_S_1 = self._K_S_1 * np.exp(-self._E_K_S_1 / (_k_B * T))
         self.function.x.array[:] = self._u_0.x.array / K_S_0 - self._u_1.x.array / K_S_1
 
-        print(np.max(np.absolute(self.function.x.array[:])))
         self.writer.write(t)
 
 
