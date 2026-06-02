@@ -349,11 +349,21 @@ class CustomFieldExport(ExportBaseClass):
 
 
 class VTXInterfaceResidualExport(ExportBaseClass):
-    """Export the interface condition residual ``c_0/K_S_0 - c_1/K_S_1`` to a VTX file.
+    """Export the interface condition residual to a VTX file.
 
     This quantity measures how well the penalty/Nitsche interface condition is
-    satisfied. It is zero when the condition holds exactly; a non-zero value
-    indicates the penalty term is too small.
+    satisfied at the interface. It is zero when the condition holds exactly; the lower
+    the value, the better.
+
+    The residual is ``right - left`` where each side's term depends on the
+    solubility laws of the two subdomains:
+
+    - **Same law on both sides** (Henry-Henry or Sievert-Sievert):
+      ``residual = c_1/K_S_1 - c_0/K_S_0``
+    - **Henry (side 0) - Sievert (side 1)**:
+      ``residual = (c_1/K_S_1)^2 - c_0/K_S_0``
+    - **Sievert (side 0) - Henry (side 1)**:
+      ``residual = c_1/K_S_1 - (c_0/K_S_0)^2``
 
     Args:
         field: The species whose interface residual is exported.
@@ -364,6 +374,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
     Attributes:
         field: The species to export.
+        filename: The name of the output file.
         interface: The interface between the two subdomains.
         function: Residual function on the interface submesh. Set by
             ``initialise``.
@@ -372,6 +383,8 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
     field: Species
     interface: Interface
+    times: list[float] | list[int] | None
+
     function: fem.Function
     writer: io.VTXWriter
 
@@ -460,11 +473,17 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         )
 
     def write(self, t: float) -> None:
-        """Compute ``c_0/K_S_0 - c_1/K_S_1`` on the interface and write to file.
+        """Compute the interface condition residual and write to file.
 
         Interpolates the concentration from each subdomain onto the interface
-        submesh, evaluates K_S at the current temperature, computes the
-        residual, and writes the result via the VTXWriter.
+        submesh, evaluates ``K_S = K_S_0 * exp(-E_K_S / (k_B * T))`` at the
+        current temperature, then computes ``right - left`` via
+        :func:`interface_condition_term`:
+
+        - **Same law or Henry (side 0)**: ``left = c_0 / K_S_0``
+        - **Sievert (side 0, mixed only)**: ``left = (c_0 / K_S_0)^2``
+
+        and symmetrically for ``right``.
 
         Args:
             t: Current simulation time.
