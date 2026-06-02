@@ -2482,6 +2482,11 @@ class HydrogenTransportProblemDG(HydrogenTransportProblem):
                         * flux_bc.species.test_function
                         * self.ds(flux_bc.subdomain.id)
                     )
+            if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                if bc.enforce_weakly:
+                    u = bc.species.solution
+                    v = bc.species.test_function
+                    self.formulation += bc.weak_formulation(u, v, self.ds)
 
         # for adv_term in self.advection_terms:
         #     # create vector functionspace based on the elements in the mesh
