@@ -4,6 +4,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Union
 
+import dolfinx
+import numpy as np
 import ufl
 from dolfinx import fem, io
 
@@ -346,11 +348,11 @@ class CustomFieldExport(ExportBaseClass):
 
 
 class VTXInterfaceResidualExport(ExportBaseClass):
-    """Export the concentration jump (residual) at an interface to a VTX file.
+    """Export the interface condition residual ``c_0/K_S_0 - c_1/K_S_1`` to a VTX file.
 
-    The residual is defined as ``c_0 - c_1``, where ``c_0`` and ``c_1`` are the
-    concentrations of the species on each side of the interface, interpolated
-    onto a submesh built from the interface facets.
+    This quantity measures how well the penalty/Nitsche interface condition is
+    satisfied. It is zero when the condition holds exactly; a non-zero value
+    indicates the penalty term is too small.
 
     Args:
         field: The species whose interface residual is exported.
@@ -363,15 +365,114 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         field: The species to export.
         interface: The interface between the two subdomains.
         function: The residual function on the interface submesh (set during
-            initialisation).
+            ``initialise``).
         writer: The VTXWriter object used to write the file (set during
-            initialisation).
+            ``initialise``).
     """
 
     def __init__(self, field, filename, interface, times=None):
         super().__init__(filename, ".bp", times)
         self.field = field
         self.interface = interface
+
+    def initialise(self, temperature_fenics):
+        """Create the interface submesh, interpolation data, and VTX writer.
+
+        Args:
+            temperature_fenics: The temperature field (``fem.Constant`` or
+                ``fem.Function`` on the parent mesh).
+        """
+        parent_mesh = self.interface.parent_mesh
+        fdim = parent_mesh.topology.dim - 1
+        interface_facets = self.interface.mt.find(self.interface.id)
+
+        interface_submesh, _, _, _ = dolfinx.mesh.create_submesh(
+            parent_mesh, fdim, interface_facets
+        )
+        V_interface = fem.functionspace(interface_submesh, ("CG", 1))
+
+        self._u_0 = fem.Function(V_interface)
+        self._u_1 = fem.Function(V_interface)
+        self.function = fem.Function(V_interface)
+        self.function.name = f"{self.field.name}_interface_residual"
+
+        imap = interface_submesh.topology.index_map(interface_submesh.topology.dim)
+        self._interface_cells = np.arange(
+            imap.size_local + imap.num_ghosts, dtype=np.int32
+        )
+
+        subdomain_0, subdomain_1 = self.interface.subdomains
+        V_0 = self.field.subdomain_to_post_processing_solution[
+            subdomain_0
+        ].function_space
+        V_1 = self.field.subdomain_to_post_processing_solution[
+            subdomain_1
+        ].function_space
+
+        self._interp_data_0 = fem.create_interpolation_data(
+            V_interface, V_0, self._interface_cells, padding=1e-11
+        )
+        self._interp_data_1 = fem.create_interpolation_data(
+            V_interface, V_1, self._interface_cells, padding=1e-11
+        )
+
+        self._K_S_0 = subdomain_0.material.get_K_S_0(self.field)
+        self._E_K_S_0 = subdomain_0.material.get_E_K_S(self.field)
+        self._K_S_1 = subdomain_1.material.get_K_S_0(self.field)
+        self._E_K_S_1 = subdomain_1.material.get_E_K_S(self.field)
+
+        self._temperature_fenics = temperature_fenics
+        if isinstance(temperature_fenics, fem.Constant):
+            self._T_func = None
+        else:
+            self._T_func = fem.Function(V_interface)
+            self._T_interp_data = fem.create_interpolation_data(
+                V_interface,
+                temperature_fenics.function_space,
+                self._interface_cells,
+                padding=1e-11,
+            )
+
+        self.writer = io.VTXWriter(
+            comm=interface_submesh.comm,
+            filename=self.filename,
+            output=self.function,
+            engine="BP5",
+        )
+
+    def write(self, t: float):
+        """Compute ``c_0/K_S_0 - c_1/K_S_1`` on the interface and write to file.
+
+        Args:
+            t: Current simulation time.
+        """
+        subdomain_0, subdomain_1 = self.interface.subdomains
+        u_0 = self.field.subdomain_to_post_processing_solution[subdomain_0]
+        u_1 = self.field.subdomain_to_post_processing_solution[subdomain_1]
+
+        self._u_0.interpolate_nonmatching(
+            u_0, self._interface_cells, interpolation_data=self._interp_data_0
+        )
+        self._u_1.interpolate_nonmatching(
+            u_1, self._interface_cells, interpolation_data=self._interp_data_1
+        )
+
+        if self._T_func is not None:
+            self._T_func.interpolate_nonmatching(
+                self._temperature_fenics,
+                self._interface_cells,
+                interpolation_data=self._T_interp_data,
+            )
+            T = self._T_func.x.array
+        else:
+            T = float(self._temperature_fenics)
+
+        K_S_0 = self._K_S_0 * np.exp(-self._E_K_S_0 / (_k_B * T))
+        K_S_1 = self._K_S_1 * np.exp(-self._E_K_S_1 / (_k_B * T))
+        self.function.x.array[:] = self._u_0.x.array / K_S_0 - self._u_1.x.array / K_S_1
+
+        print(np.max(np.absolute(self.function.x.array[:])))
+        self.writer.write(t)
 
 
 class ReactionRateExport(CustomFieldExport):
