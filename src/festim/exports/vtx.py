@@ -13,7 +13,7 @@ from festim import k_B as _k_B
 from festim.helpers import get_interpolation_points
 from festim.reaction import Reaction
 from festim.species import ImplicitSpecies, Species
-from festim.subdomain.interface import Interface
+from festim.subdomain.interface import Interface, interface_condition_term
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
@@ -437,6 +437,8 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         self._E_K_S_0 = subdomain_0.material.get_E_K_S(self.field)
         self._K_S_1 = subdomain_1.material.get_K_S_0(self.field)
         self._E_K_S_1 = subdomain_1.material.get_E_K_S(self.field)
+        self._law_0 = subdomain_0.material.solubility_law
+        self._law_1 = subdomain_1.material.solubility_law
 
         self._temperature_fenics = temperature_fenics
         if isinstance(temperature_fenics, fem.Constant):
@@ -490,7 +492,13 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
         K_S_0 = self._K_S_0 * np.exp(-self._E_K_S_0 / (_k_B * T))
         K_S_1 = self._K_S_1 * np.exp(-self._E_K_S_1 / (_k_B * T))
-        self.function.x.array[:] = self._u_0.x.array / K_S_0 - self._u_1.x.array / K_S_1
+        left = interface_condition_term(
+            self._u_0.x.array, K_S_0, self._law_0, self._law_1
+        )
+        right = interface_condition_term(
+            self._u_1.x.array, K_S_1, self._law_1, self._law_0
+        )
+        self.function.x.array[:] = right - left
 
         self.writer.write(t)
 
