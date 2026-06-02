@@ -13,6 +13,7 @@ from festim import k_B as _k_B
 from festim.helpers import get_interpolation_points
 from festim.reaction import Reaction
 from festim.species import ImplicitSpecies, Species
+from festim.subdomain.interface import Interface
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
@@ -364,23 +365,39 @@ class VTXInterfaceResidualExport(ExportBaseClass):
     Attributes:
         field: The species to export.
         interface: The interface between the two subdomains.
-        function: The residual function on the interface submesh (set during
-            ``initialise``).
-        writer: The VTXWriter object used to write the file (set during
-            ``initialise``).
+        function: Residual function on the interface submesh. Set by
+            ``initialise``.
+        writer: VTXWriter used to write the output file. Set by ``initialise``.
     """
 
-    def __init__(self, field, filename, interface, times=None):
+    field: Species
+    interface: Interface
+    function: fem.Function
+    writer: io.VTXWriter
+
+    def __init__(
+        self,
+        field: Species,
+        filename: str | Path,
+        interface: Interface,
+        times: list[float | int] | None = None,
+    ):
         super().__init__(filename, ".bp", times)
         self.field = field
         self.interface = interface
 
-    def initialise(self, temperature_fenics):
+    def initialise(self, temperature_fenics: fem.Constant | fem.Function) -> None:
         """Create the interface submesh, interpolation data, and VTX writer.
 
+        Called by the problem during ``initialise_exports``. Builds a CG1
+        function space on the interface submesh, pre-computes
+        ``create_interpolation_data`` for both subdomain concentrations and
+        (if space-dependent) temperature, and opens the VTXWriter.
+
         Args:
-            temperature_fenics: The temperature field (``fem.Constant`` or
-                ``fem.Function`` on the parent mesh).
+            temperature_fenics: Temperature field on the parent mesh. Either a
+                ``fem.Constant`` (uniform) or a ``fem.Function`` (spatially
+                varying).
         """
         parent_mesh = self.interface.parent_mesh
         fdim = parent_mesh.topology.dim - 1
@@ -440,8 +457,12 @@ class VTXInterfaceResidualExport(ExportBaseClass):
             engine="BP5",
         )
 
-    def write(self, t: float):
+    def write(self, t: float) -> None:
         """Compute ``c_0/K_S_0 - c_1/K_S_1`` on the interface and write to file.
+
+        Interpolates the concentration from each subdomain onto the interface
+        submesh, evaluates K_S at the current temperature, computes the
+        residual, and writes the result via the VTXWriter.
 
         Args:
             t: Current simulation time.
