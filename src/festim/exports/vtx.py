@@ -345,6 +345,35 @@ class CustomFieldExport(ExportBaseClass):
             )
 
 
+class VTXInterfaceResidualExport(ExportBaseClass):
+    """Export the concentration jump (residual) at an interface to a VTX file.
+
+    The residual is defined as ``c_0 - c_1``, where ``c_0`` and ``c_1`` are the
+    concentrations of the species on each side of the interface, interpolated
+    onto a submesh built from the interface facets.
+
+    Args:
+        field: The species whose interface residual is exported.
+        filename: The name of the output file.
+        interface: The interface between the two subdomains.
+        times: if provided, the field will be exported at these timesteps.
+            Otherwise exports at all timesteps. Defaults to None.
+
+    Attributes:
+        field: The species to export.
+        interface: The interface between the two subdomains.
+        function: The residual function on the interface submesh (set during
+            initialisation).
+        writer: The VTXWriter object used to write the file (set during
+            initialisation).
+    """
+
+    def __init__(self, field, filename, interface, times=None):
+        super().__init__(filename, ".bp", times)
+        self.field = field
+        self.interface = interface
+
+
 class ReactionRateExport(CustomFieldExport):
     """Export a reaction rate to a VTX file
 
@@ -370,7 +399,6 @@ class ReactionRateExport(CustomFieldExport):
         subdomain: VolumeSubdomain | None = None,
         checkpoint: bool = False,
     ):
-
         reactant_names = [reactant.name for reactant in reaction.reactant]
         if isinstance(reaction.product, list):
             product_names = [product.name for product in reaction.product]
