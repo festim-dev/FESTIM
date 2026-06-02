@@ -1738,6 +1738,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     self.temperature_fenics,
                     engine="BP5",
                 )
+            elif isinstance(export, exports.VTXInterfaceResidualExport):
+                export.initialise(self.temperature_fenics)
+
             elif isinstance(export, exports.CustomFieldExport):
                 # need to find an appropriate function space on the right submesh
                 V = self.subdomain_to_V_CG1[export.subdomain]
@@ -1853,6 +1856,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.writer.write(float(self.t))
                 elif isinstance(export, exports.VTXTemperatureExport):
                     export.writer.write(float(self.t))
+                elif isinstance(export, exports.VTXInterfaceResidualExport):
+                    export.write(float(self.t))
                 else:
                     raise NotImplementedError(
                         f"Export type {type(export)} not implemented"
