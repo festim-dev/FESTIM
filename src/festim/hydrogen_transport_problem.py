@@ -2483,23 +2483,62 @@ class HydrogenTransportProblemDG(HydrogenTransportProblem):
                         * self.ds(flux_bc.subdomain.id)
                     )
             if isinstance(bc, boundary_conditions.FixedConcentrationBC):
-                if bc.enforce_weakly:
-                    u = bc.species.solution
-                    v = bc.species.test_function
-                    self.formulation += bc.weak_formulation(u, v, self.ds)
+                if not bc.enforce_weakly:
+                    raise ValueError(
+                        "FixedConcentrationBC must be enforced weakly for DG formulation"
+                    )
+                u = bc.species.solution
+                v = bc.species.test_function
+                self.formulation += bc.weak_formulation(u, v, self.ds)
 
-        # for adv_term in self.advection_terms:
-        #     # create vector functionspace based on the elements in the mesh
+            if isinstance(bc, boundary_conditions.FixedConcentrationInflowBC):
+                if not bc.enforce_weakly:
+                    raise ValueError(
+                        "FixedConcentrationInflowBC must be enforced weakly "
+                        "for DG formulation"
+                    )
+                u = bc.species.solution
+                v = bc.species.test_function
+                vel = bc.velocity.fenics_object
 
-        #     for species in adv_term.species:
-        #         conc = species.solution
-        #         v = species.test_function
-        #         vel = adv_term.velocity.fenics_object
+                lmbda = ufl.conditional(ufl.gt(ufl.dot(vel, self.mesh.n), 0), 1, 0)
 
-        #         advection_term = ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
-        #             adv_term.subdomain.id
-        #         )
-        #         self.formulation += advection_term
+                self.formulation += bc.weak_formulation(u, v, self.ds)
+
+                self.formulation += -ufl.inner(
+                    (1 - lmbda) * ufl.dot(vel, self.mesh.n) * u, v
+                ) * self.ds(bc.subdomain.id)
+
+            if isinstance(bc, boundary_conditions.OutflowBC):
+                for species in bc.species:
+                    conc = species.solution
+                    v = species.test_function
+                    vel = bc.velocity.fenics_object
+
+                    lmbda = ufl.conditional(ufl.gt(ufl.dot(vel, self.mesh.n), 0), 1, 0)
+
+                    self.formulation += (
+                        ufl.inner(lmbda * ufl.dot(vel, self.mesh.n) * u, v) * self.ds
+                    )
+
+        for adv_term in self.advection_terms:
+            for species in adv_term.species:
+                conc = species.solution
+                v = species.test_function
+                vel = adv_term.velocity.fenics_object
+
+                lmbda = ufl.conditional(ufl.gt(ufl.dot(vel, self.mesh.n), 0), 1, 0)
+
+                # Advection, bulk
+                self.formulation += -ufl.inner(vel * conc, ufl.grad(v)) * self.dx(
+                    adv_term.subdomain.id
+                )
+
+                # Advection, interior upwind flux
+                self.formulation += (
+                    ufl.inner(2 * ufl.avg(lmbda * vel * conc), ufl.jump(v, self.mesh.n))
+                    * self.dS
+                )
 
         # check if each species is defined in all volumes
         if not self.settings.transient:
