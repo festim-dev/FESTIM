@@ -20,6 +20,8 @@
 - doi: "10.1088/1741-4326/ad56a0"
 - doi: "10.1088/1741-4326/abd95f"
 - doi: "10.5281/zenodo.19596859"
+- doi: "10.1103/nbwm-bs8m"
+- doi: "10.1016/j.nme.2026.102153"
 
 # Thesis - by title (auto-fetched from OpenAlex)
 - title: "Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure"
@@ -43,3 +45,7 @@
 
 - doi: "10.1016/j.nme.2025.102026"
 - doi: "10.48550/arXiv.2605.12750"
+
+- openalex_id: "W7164459034"
+  type: thesis
+  degree: "MSc thesis"
