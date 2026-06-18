@@ -4,9 +4,9 @@ from collections.abc import Callable
 from mpi4py import MPI
 from petsc4py import PETSc
 
-import adios4dolfinx
 import basix
 import dolfinx
+import io4dolfinx
 import numpy as np
 import numpy.typing as npt
 import tqdm.auto
@@ -450,7 +450,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         )
 
                     else:
-                        adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
+                        io4dolfinx.write_mesh(
+                            filename=export.filename,
+                            mesh=self.mesh.mesh,
+                            backend="adios2",
+                            backend_args={"engine": "BP5"},
+                        )
 
                 elif isinstance(export, exports.CustomFieldExport):
                     export.function = fem.Function(self.V_CG_1)
@@ -1003,9 +1008,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if isinstance(export, exports.VTXSpeciesExport):
                     if export._checkpoint:
                         for field in export.field:
-                            adios4dolfinx.write_function(
-                                export.filename,
-                                field.post_processing_solution,
+                            io4dolfinx.write_function(
+                                filename=export.filename,
+                                u=field.post_processing_solution,
                                 time=float(self.t),
                                 name=field.name,
                             )
@@ -1723,9 +1728,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         engine="BP5",
                     )
                 else:
-                    adios4dolfinx.write_mesh(
-                        export.filename,
+                    io4dolfinx.write_mesh(
+                        filename=export.filename,
                         mesh=functions[0].function_space.mesh,
+                        backend="adios2",
+                        backend_args={"engine": "BP5"},
                     )
             elif isinstance(export, exports.VTXTemperatureExport):
                 assert isinstance(self.temperature_fenics, fem.Function), (
@@ -1843,9 +1850,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                                     export._subdomain
                                 ]
                             )
-                            adios4dolfinx.write_function(
-                                export.filename,
-                                post_processing_solution,
+                            io4dolfinx.write_function(
+                                filename=export.filename,
+                                u=post_processing_solution,
                                 time=float(self.t),
                                 name=species.name,
                             )
