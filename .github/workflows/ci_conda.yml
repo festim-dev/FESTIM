@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dolfinx: ['0.9.0', '0.10.0']
+        dolfinx: ['0.9.0', '0.10.0', '0.11.0']
 
     steps:
     - name: Checkout code
