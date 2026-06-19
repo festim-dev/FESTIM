@@ -454,7 +454,6 @@ class HydrogenTransportProblem(problem.ProblemBase):
                             filename=export.filename,
                             mesh=self.mesh.mesh,
                             backend="adios2",
-                            backend_args={"engine": "BP5"},
                         )
 
                 elif isinstance(export, exports.CustomFieldExport):
@@ -1732,7 +1731,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         filename=export.filename,
                         mesh=functions[0].function_space.mesh,
                         backend="adios2",
-                        backend_args={"engine": "BP5"},
                     )
             elif isinstance(export, exports.VTXTemperatureExport):
                 assert isinstance(self.temperature_fenics, fem.Function), (
@@ -1761,6 +1759,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     output=export.function,
                     engine="BP5",
                 )
+
         # compute diffusivity function for surface fluxes
         # for the discontinuous case, we don't use D_global as in
         # HydrogenTransportProblem
