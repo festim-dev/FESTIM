@@ -472,8 +472,8 @@ class VTXInterfaceResidualExport(ExportBaseClass):
             engine="BP5",
         )
 
-    def write(self, t: float) -> None:
-        """Compute the interface condition residual and write to file.
+    def set_dolfinx_expression(self) -> None:
+        """Compute the interface condition residual.
 
         Interpolates the concentration from each subdomain onto the interface
         submesh, evaluates ``K_S = K_S_0 * exp(-E_K_S / (k_B * T))`` at the
@@ -511,15 +511,13 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
         K_S_0 = self._K_S_0 * np.exp(-self._E_K_S_0 / (_k_B * T))
         K_S_1 = self._K_S_1 * np.exp(-self._E_K_S_1 / (_k_B * T))
-        left = interface_condition_term(
-            self._u_0.x.array, K_S_0, self._law_0, self._law_1
-        )
-        right = interface_condition_term(
-            self._u_1.x.array, K_S_1, self._law_1, self._law_0
-        )
-        self.function.x.array[:] = right - left
+        left = interface_condition_term(self._u_0, K_S_0, self._law_0, self._law_1)
+        right = interface_condition_term(self._u_1, K_S_1, self._law_1, self._law_0)
 
-        self.writer.write(t)
+        self.dolfinx_expression = fem.Expression(
+            right - left,
+            get_interpolation_points(self.function.function_space.element),
+        )
 
 
 class ReactionRateExport(CustomFieldExport):

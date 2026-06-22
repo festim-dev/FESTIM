@@ -1857,7 +1857,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 elif isinstance(export, exports.VTXTemperatureExport):
                     export.writer.write(float(self.t))
                 elif isinstance(export, exports.VTXInterfaceResidualExport):
-                    export.write(float(self.t))
+                    export.set_dolfinx_expression()
+                    export.function.interpolate(export.dolfinx_expression)
+                    export.writer.write(float(self.t))
                 else:
                     raise NotImplementedError(
                         f"Export type {type(export)} not implemented"
