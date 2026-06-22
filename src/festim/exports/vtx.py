@@ -371,6 +371,8 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         interface: The interface between the two subdomains.
         times: if provided, the field will be exported at these timesteps.
             Otherwise exports at all timesteps. Defaults to None.
+        export_constituents: If True, also export the left and right terms of the
+            residual as separate fields. Defaults to False.
 
     Attributes:
         field: The species to export.
@@ -384,6 +386,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
     field: Species
     interface: Interface
     times: list[float] | list[int] | None
+    export_constituents: bool
 
     function: fem.Function
     writer: io.VTXWriter
@@ -394,10 +397,12 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         filename: str | Path,
         interface: Interface,
         times: list[float | int] | None = None,
+        export_constituents: bool = False,
     ):
         super().__init__(filename, ".bp", times)
         self.field = field
         self.interface = interface
+        self.export_constituents = export_constituents
 
     def initialise(self, temperature_fenics: fem.Constant | fem.Function) -> None:
         """Create the interface submesh, interpolation data, and VTX writer.
@@ -421,8 +426,8 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         )
         V_interface = fem.functionspace(interface_submesh, ("CG", 1))
 
-        self._u_0 = fem.Function(V_interface)
-        self._u_1 = fem.Function(V_interface)
+        self._u_0_interface = fem.Function(V_interface)
+        self._u_1_interface = fem.Function(V_interface)
         self.function = fem.Function(V_interface)
         self.function.name = f"{self.field.name}_interface_residual"
 
@@ -446,13 +451,6 @@ class VTXInterfaceResidualExport(ExportBaseClass):
             V_interface, V_1, self._interface_cells, padding=1e-11
         )
 
-        self._K_S_0 = subdomain_0.material.get_K_S_0(self.field)
-        self._E_K_S_0 = subdomain_0.material.get_E_K_S(self.field)
-        self._K_S_1 = subdomain_1.material.get_K_S_0(self.field)
-        self._E_K_S_1 = subdomain_1.material.get_E_K_S(self.field)
-        self._law_0 = subdomain_0.material.solubility_law
-        self._law_1 = subdomain_1.material.solubility_law
-
         self._temperature_fenics = temperature_fenics
         if isinstance(temperature_fenics, fem.Constant):
             self._T_func = None
@@ -471,6 +469,26 @@ class VTXInterfaceResidualExport(ExportBaseClass):
             output=self.function,
             engine="BP5",
         )
+
+        if self.export_constituents:
+            u0_filename = self.filename.with_name(
+                self.filename.stem + "_u0" + self.filename.suffix
+            )
+            u1_filename = self.filename.with_name(
+                self.filename.stem + "_u1" + self.filename.suffix
+            )
+            self.writer_u0 = io.VTXWriter(
+                comm=interface_submesh.comm,
+                filename=u0_filename,
+                output=self._u_0_interface,
+                engine="BP5",
+            )
+            self.writer_u1 = io.VTXWriter(
+                comm=interface_submesh.comm,
+                filename=u1_filename,
+                output=self._u_1_interface,
+                engine="BP5",
+            )
 
     def set_dolfinx_expression(self) -> None:
         """Compute the interface condition residual.
@@ -492,10 +510,10 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         u_0 = self.field.subdomain_to_post_processing_solution[subdomain_0]
         u_1 = self.field.subdomain_to_post_processing_solution[subdomain_1]
 
-        self._u_0.interpolate_nonmatching(
+        self._u_0_interface.interpolate_nonmatching(
             u_0, self._interface_cells, interpolation_data=self._interp_data_0
         )
-        self._u_1.interpolate_nonmatching(
+        self._u_1_interface.interpolate_nonmatching(
             u_1, self._interface_cells, interpolation_data=self._interp_data_1
         )
 
@@ -509,13 +527,28 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         else:
             T = float(self._temperature_fenics)
 
-        K_S_0 = self._K_S_0 * np.exp(-self._E_K_S_0 / (_k_B * T))
-        K_S_1 = self._K_S_1 * np.exp(-self._E_K_S_1 / (_k_B * T))
-        left = interface_condition_term(self._u_0, K_S_0, self._law_0, self._law_1)
-        right = interface_condition_term(self._u_1, K_S_1, self._law_1, self._law_0)
+        K_S_0 = subdomain_0.material.get_K_S_0(self.field) * np.exp(
+            -subdomain_0.material.get_E_K_S(self.field) / (_k_B * T)
+        )
+        u0 = interface_condition_term(
+            self._u_0_interface,
+            K_S_0,
+            subdomain_0.material.solubility_law,
+            subdomain_1.material.solubility_law,
+        )
 
-        self.dolfinx_expression = fem.Expression(
-            right - left,
+        K_S_1 = subdomain_1.material.get_K_S_0(self.field) * np.exp(
+            -subdomain_1.material.get_E_K_S(self.field) / (_k_B * T)
+        )
+        u1 = interface_condition_term(
+            self._u_1_interface,
+            K_S_1,
+            subdomain_1.material.solubility_law,
+            subdomain_0.material.solubility_law,
+        )
+
+        self.residual_expr = fem.Expression(
+            u0 - u1,
             get_interpolation_points(self.function.function_space.element),
         )
 
