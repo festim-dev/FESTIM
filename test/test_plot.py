@@ -56,11 +56,12 @@ def test_plot_single_species(monkeypatch):
 
     species = F.Species("H")
     species.post_processing_solution = object()
-    plotter = F.plot(species, show_edges=True)
+    plotter = F.plot(species, show_edges=True, opacity=0.5)
 
     assert plotter.shape is None
     assert len(plotter.mesh_calls) == 1
     assert plotter.mesh_calls[0][1]["show_edges"] is True
+    assert plotter.mesh_calls[0][1]["opacity"] == 0.5
     assert plotter.show_called is True
 
 
@@ -124,11 +125,14 @@ def test_plot_with_filename_saves_screenshot(monkeypatch, tmp_path):
 
 def test_plot_raises_for_invalid_field_type(monkeypatch):
     _setup_fake_pyvista(monkeypatch, off_screen=False)
-    with pytest.raises(TypeError):
+    with pytest.raises(
+        TypeError,
+        match=r"field must be of type festim\.Species or a list of festim\.Species",
+    ):
         F.plot("H")
 
 
 def test_plot_raises_if_no_solution(monkeypatch):
     _setup_fake_pyvista(monkeypatch, off_screen=False)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="has no post_processing_solution to plot"):
         F.plot(F.Species("H"))

@@ -5,7 +5,7 @@ from festim.species import Species
 DEFAULT_TITLE_FONT_SIZE = 12
 
 
-def _normalise_fields(field: Species | list[Species]) -> list[Species]:
+def _normalize_fields(field: Species | list[Species]) -> list[Species]:
     if isinstance(field, Species):
         return [field]
     if isinstance(field, list) and all(isinstance(f, Species) for f in field):
@@ -67,7 +67,7 @@ def plot(
             "pyvista is required for plotting. Install it with `pip install pyvista`."
         ) from import_error
 
-    fields = _normalise_fields(field)
+    fields = _normalize_fields(field)
     shape = (1, len(fields)) if len(fields) > 1 else None
     plotter = pyvista.Plotter(shape=shape)
 
