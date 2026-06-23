@@ -6,7 +6,7 @@ import pytest
 
 import festim as F
 
-MOCK_GRID = object()
+_MOCK_GRID = object()
 
 
 class FakePlotter:
@@ -51,7 +51,7 @@ def test_plot_single_species(monkeypatch):
     _setup_fake_pyvista(monkeypatch, off_screen=False)
     plot_module = importlib.import_module("festim.plot")
     monkeypatch.setattr(
-        plot_module, "_make_ugrid", lambda solution, pyvista_module: MOCK_GRID
+        plot_module, "_make_ugrid", lambda solution, pyvista_module: _MOCK_GRID
     )
 
     species = F.Species("H")
@@ -69,7 +69,7 @@ def test_plot_multiple_species_creates_subplots(monkeypatch):
     _setup_fake_pyvista(monkeypatch, off_screen=False)
     plot_module = importlib.import_module("festim.plot")
     monkeypatch.setattr(
-        plot_module, "_make_ugrid", lambda solution, pyvista_module: MOCK_GRID
+        plot_module, "_make_ugrid", lambda solution, pyvista_module: _MOCK_GRID
     )
 
     h = F.Species("H")
@@ -91,7 +91,7 @@ def test_plot_subdomain_uses_subdomain_solution(monkeypatch):
 
     def fake_make_ugrid(solution, pyvista_module):
         used_solutions.append(solution)
-        return MOCK_GRID
+        return _MOCK_GRID
 
     monkeypatch.setattr(plot_module, "_make_ugrid", fake_make_ugrid)
 
@@ -111,7 +111,7 @@ def test_plot_with_filename_saves_screenshot(monkeypatch, tmp_path):
     _setup_fake_pyvista(monkeypatch, off_screen=True)
     plot_module = importlib.import_module("festim.plot")
     monkeypatch.setattr(
-        plot_module, "_make_ugrid", lambda solution, pyvista_module: MOCK_GRID
+        plot_module, "_make_ugrid", lambda solution, pyvista_module: _MOCK_GRID
     )
 
     species = F.Species("H")

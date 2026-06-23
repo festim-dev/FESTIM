@@ -76,7 +76,7 @@ def plot(
             plotter.subplot(0, i)
 
         solution = _get_solution(spe, subdomain=subdomain)
-        u_grid = _make_ugrid(solution, pyvista_module=pyvista)
+        u_grid = _make_ugrid(solution, pyvista)
         plotter.add_mesh(u_grid, show_edges=show_edges, **kwargs)
         plotter.view_xy()
         if spe.name:
