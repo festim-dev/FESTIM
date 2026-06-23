@@ -20,7 +20,12 @@ def _get_solution(field: Species, subdomain=None):
                 f"Species {field.name} has no post_processing_solution to plot."
             )
         return field.post_processing_solution
-
+    else:
+        if field.post_processing_solution is not None:
+            raise ValueError(
+                "Problem seems to be HydrogenTransportProblem but a subdomain"
+                " was provided."
+            )
     if not field.subdomain_to_post_processing_solution:
         raise ValueError(
             f"Species {field.name} has no subdomain post-processing solutions."
@@ -74,6 +79,14 @@ def plot(
     for i, spe in enumerate(fields):
         if len(fields) > 1:
             plotter.subplot(0, i)
+        # if subdomain is None but the species has .subdomain_to_post_processing_solution,
+        # we need to plot on all subdomains
+        if subdomain is None:
+            if spe.subdomain_to_post_processing_solution:
+                for solution in spe.subdomain_to_post_processing_solution.values():
+                    u_grid = _make_ugrid(solution, pyvista)
+                    plotter.add_mesh(u_grid, show_edges=show_edges, **kwargs)
+                continue
 
         solution = _get_solution(spe, subdomain=subdomain)
         u_grid = _make_ugrid(solution, pyvista)
@@ -83,6 +96,7 @@ def plot(
             plotter.add_text(spe.name, font_size=DEFAULT_TITLE_FONT_SIZE)
 
     if filename is not None:
+        plotter.show()
         plotter.screenshot(str(filename))
     elif not pyvista.OFF_SCREEN:
         plotter.show()
