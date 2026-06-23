@@ -88,8 +88,9 @@ def test_plot_subdomain_uses_subdomain_solution(monkeypatch):
 
     monkeypatch.setattr(plot_module, "_make_ugrid", fake_make_ugrid)
 
-    vol_1 = F.VolumeSubdomain(id=1, material=F.Material(D_0=1, E_D=0))
-    vol_2 = F.VolumeSubdomain(id=2, material=F.Material(D_0=1, E_D=0))
+    material = F.Material(D_0=1, E_D=0)
+    vol_1 = F.VolumeSubdomain(id=1, material=material)
+    vol_2 = F.VolumeSubdomain(id=2, material=material)
     sol_1 = object()
     sol_2 = object()
     h = F.Species("H")

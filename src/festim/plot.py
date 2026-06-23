@@ -60,10 +60,10 @@ def plot(
     """
     try:
         import pyvista
-    except ImportError as error:
+    except ImportError as import_error:
         raise ImportError(
             "pyvista is required for plotting. Install it with `pip install pyvista`."
-        ) from error
+        ) from import_error
 
     fields = _normalise_fields(field)
     shape = (1, len(fields)) if len(fields) > 1 else None
