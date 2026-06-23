@@ -123,6 +123,21 @@ def test_plot_with_filename_saves_screenshot(monkeypatch, tmp_path):
     assert plotter.show_called is False
 
 
+def test_plot_with_string_filename_saves_screenshot(monkeypatch):
+    _setup_fake_pyvista(monkeypatch, off_screen=True)
+    plot_module = importlib.import_module("festim.plot")
+    monkeypatch.setattr(
+        plot_module, "_make_ugrid", lambda solution, pyvista_module: _MOCK_GRID
+    )
+
+    species = F.Species("H")
+    species.post_processing_solution = object()
+    plotter = F.plot(species, filename="out.png")
+
+    assert plotter.screenshot_filename == "out.png"
+    assert plotter.show_called is False
+
+
 def test_plot_raises_for_invalid_field_type(monkeypatch):
     _setup_fake_pyvista(monkeypatch, off_screen=False)
     with pytest.raises(
@@ -136,3 +151,34 @@ def test_plot_raises_if_no_solution(monkeypatch):
     _setup_fake_pyvista(monkeypatch, off_screen=False)
     with pytest.raises(ValueError, match="has no post_processing_solution to plot"):
         F.plot(F.Species("H"))
+
+
+def test_plot_default_show_edges_and_empty_name(monkeypatch):
+    _setup_fake_pyvista(monkeypatch, off_screen=False)
+    plot_module = importlib.import_module("festim.plot")
+    monkeypatch.setattr(
+        plot_module, "_make_ugrid", lambda solution, pyvista_module: _MOCK_GRID
+    )
+
+    species = F.Species()
+    species.post_processing_solution = object()
+    plotter = F.plot(species)
+
+    assert plotter.mesh_calls[0][1]["show_edges"] is False
+    assert plotter.text_calls == []
+    assert plotter.show_called is True
+
+
+def test_plot_off_screen_without_filename_does_not_show(monkeypatch):
+    _setup_fake_pyvista(monkeypatch, off_screen=True)
+    plot_module = importlib.import_module("festim.plot")
+    monkeypatch.setattr(
+        plot_module, "_make_ugrid", lambda solution, pyvista_module: _MOCK_GRID
+    )
+
+    species = F.Species("H")
+    species.post_processing_solution = object()
+    plotter = F.plot(species)
+
+    assert plotter.show_called is False
+    assert plotter.screenshot_filename is None
