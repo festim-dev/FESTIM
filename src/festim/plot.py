@@ -38,13 +38,13 @@ def _get_solution(field: Species, subdomain=None):
     return field.subdomain_to_post_processing_solution[subdomain]
 
 
-def _make_ugrid(solution, pyvista_module):
+def _make_ugrid(solution, pyvista_module, name="c"):
     from dolfinx import plot as dolfinx_plot
 
     topology, cell_types, geometry = dolfinx_plot.vtk_mesh(solution.function_space)
     u_grid = pyvista_module.UnstructuredGrid(topology, cell_types, geometry)
-    u_grid.point_data["c"] = solution.x.array.real
-    u_grid.set_active_scalars("c")
+    u_grid.point_data[name] = solution.x.array.real
+    u_grid.set_active_scalars(name)
     return u_grid
 
 
@@ -53,6 +53,7 @@ def plot(
     subdomain=None,
     filename: str | Path | None = None,
     show_edges: bool = False,
+    split_colourbars: bool = False,
     **kwargs,
 ):
     """
@@ -63,6 +64,7 @@ def plot(
         subdomain: optional volume subdomain used in mixed-domain problems.
         filename: optional output image path. If provided, a screenshot is saved.
         show_edges: whether to show mesh edges.
+        split_colourbars: whether to use a different colourbar for each species.
         **kwargs: additional arguments forwarded to ``pyvista.Plotter.add_mesh``.
     """
     try:
@@ -89,7 +91,9 @@ def plot(
                 continue
 
         solution = _get_solution(spe, subdomain=subdomain)
-        u_grid = _make_ugrid(solution, pyvista)
+        u_grid = _make_ugrid(
+            solution, pyvista, name=spe.name if split_colourbars else "c"
+        )
         plotter.add_mesh(u_grid, show_edges=show_edges, **kwargs)
         plotter.view_xy()
         if spe.name:
