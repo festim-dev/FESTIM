@@ -2,6 +2,8 @@ from pathlib import Path
 
 from festim.species import Species
 
+DEFAULT_TITLE_FONT_SIZE = 12
+
 
 def _normalise_fields(field: Species | list[Species]) -> list[Species]:
     if isinstance(field, Species):
@@ -78,7 +80,7 @@ def plot(
         plotter.add_mesh(u_grid, show_edges=show_edges, **kwargs)
         plotter.view_xy()
         if spe.name:
-            plotter.add_text(spe.name, font_size=12)
+            plotter.add_text(spe.name, font_size=DEFAULT_TITLE_FONT_SIZE)
 
     if filename is not None:
         plotter.screenshot(str(filename))
