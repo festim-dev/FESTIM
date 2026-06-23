@@ -68,7 +68,7 @@ def plot(
         ) from import_error
 
     fields = _normalize_fields(field)
-    shape = (1, len(fields)) if len(fields) > 1 else None
+    shape = (1, len(fields)) if len(fields) > 1 else (1, 1)
     plotter = pyvista.Plotter(shape=shape)
 
     for i, spe in enumerate(fields):
