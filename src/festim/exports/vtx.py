@@ -421,11 +421,18 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         )
         V_interface = fem.functionspace(interface_submesh, ("CG", 1))
 
-        self._u_0_interface = fem.Function(
-            V_interface, name=f"{self.field.name}_interface_u0"
+        self._c_0_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_c0"
         )
-        self._u_1_interface = fem.Function(
-            V_interface, name=f"{self.field.name}_interface_u1"
+        self._c_1_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_c1"
+        )
+
+        self._f_0_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_f0"
+        )
+        self._f_1_interface = fem.Function(
+            V_interface, name=f"{self.field.name}_interface_f1"
         )
         self.function = fem.Function(V_interface)
         self.function.name = f"{self.field.name}_interface_residual"
@@ -465,7 +472,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         self.writer = io.VTXWriter(
             comm=interface_submesh.comm,
             filename=self.filename,
-            output=[self.function, self._u_0_interface, self._u_1_interface],
+            output=[self.function, self._f_0_interface, self._f_1_interface],
             engine="BP5",
         )
 
@@ -486,20 +493,23 @@ class VTXInterfaceResidualExport(ExportBaseClass):
             t: Current simulation time.
         """
         subdomain_0, subdomain_1 = self.interface.subdomains
-        u_0 = self.field.subdomain_to_post_processing_solution[subdomain_0]
-        u_1 = self.field.subdomain_to_post_processing_solution[subdomain_1]
+
+        # Get the concentration from each subdomain on the interface submesh
+        c_0 = self.field.subdomain_to_post_processing_solution[subdomain_0]
+        c_1 = self.field.subdomain_to_post_processing_solution[subdomain_1]
 
         # FIXME: once we support dolfinx 0.11 we should be able to mix parent and
         # sub-meshes in the same expression
 
         # NOTE: we need to do this multiple times to update the residual
-        self._u_0_interface.interpolate_nonmatching(
-            u_0, self._interface_cells, interpolation_data=self._interp_data_0
+        self._c_0_interface.interpolate_nonmatching(
+            c_0, self._interface_cells, interpolation_data=self._interp_data_0
         )
-        self._u_1_interface.interpolate_nonmatching(
-            u_1, self._interface_cells, interpolation_data=self._interp_data_1
+        self._c_1_interface.interpolate_nonmatching(
+            c_1, self._interface_cells, interpolation_data=self._interp_data_1
         )
 
+        # Get the temperature on the interface submesh
         if self._T_func is not None:
             self._T_func.interpolate_nonmatching(
                 self._temperature_fenics,
@@ -510,11 +520,12 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         else:
             T = self._temperature_fenics
 
+        # Compute f_i = (c_i / K_S_i) ^ {1, 2} on the interface submesh
         K_S_0 = subdomain_0.material.get_K_S_0(self.field) * ufl.exp(
             -subdomain_0.material.get_E_K_S(self.field) / (_k_B * T)
         )
-        u0 = interface_condition_term(
-            self._u_0_interface,
+        f0 = interface_condition_term(
+            self._c_0_interface,
             K_S_0,
             subdomain_0.material.solubility_law,
             subdomain_1.material.solubility_law,
@@ -523,15 +534,22 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         K_S_1 = subdomain_1.material.get_K_S_0(self.field) * ufl.exp(
             -subdomain_1.material.get_E_K_S(self.field) / (_k_B * T)
         )
-        u1 = interface_condition_term(
-            self._u_1_interface,
+        f1 = interface_condition_term(
+            self._c_1_interface,
             K_S_1,
             subdomain_1.material.solubility_law,
             subdomain_0.material.solubility_law,
         )
 
+        self.f_0_expr = fem.Expression(
+            f0, get_interpolation_points(self.function.function_space.element)
+        )
+        self.f_1_expr = fem.Expression(
+            f1, get_interpolation_points(self.function.function_space.element)
+        )
+
         self.residual_expr = fem.Expression(
-            u0 - u1,
+            f0 - f1,
             get_interpolation_points(self.function.function_space.element),
         )
 
