@@ -61,8 +61,8 @@ def test_plot_with_filename_saves_screenshot(tmp_path):
     species.post_processing_solution = create_mock_solution()
     filename = tmp_path / "out.png"
 
-    F.plot(species, filename=filename)
-
+    plotter = F.plot(species, filename=filename)
+    plotter.close()
     assert filename.exists()
 
 
@@ -72,7 +72,8 @@ def test_plot_with_string_filename_saves_screenshot(tmp_path, monkeypatch):
     species = F.Species("H")
     species.post_processing_solution = create_mock_solution()
 
-    F.plot(species, filename="out.png")
+    plotter = F.plot(species, filename="out.png")
+    plotter.close()
 
     assert (tmp_path / "out.png").exists()
 
