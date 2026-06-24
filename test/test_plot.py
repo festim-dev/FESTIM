@@ -26,6 +26,7 @@ def test_plot_single_species():
 
     assert isinstance(plotter, pyvista.Plotter)
     assert plotter.shape == (1, 1)
+    plotter.close()
 
 
 def test_plot_multiple_species_creates_subplots():
@@ -37,6 +38,7 @@ def test_plot_multiple_species_creates_subplots():
     plotter = F.plot([h, d])
 
     assert plotter.shape == (1, 2)
+    plotter.close()
 
 
 def test_plot_subdomain_uses_subdomain_solution():
@@ -51,6 +53,7 @@ def test_plot_subdomain_uses_subdomain_solution():
 
     plotter = F.plot(h, subdomain=vol_2)
     assert isinstance(plotter, pyvista.Plotter)
+    plotter.close()
 
 
 def test_plot_with_filename_saves_screenshot(tmp_path):
@@ -94,3 +97,4 @@ def test_plot_default_show_edges_and_empty_name():
     plotter = F.plot(species)
 
     assert isinstance(plotter, pyvista.Plotter)
+    plotter.close()
