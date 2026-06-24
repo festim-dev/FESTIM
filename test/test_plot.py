@@ -99,3 +99,18 @@ def test_plot_default_show_edges_and_empty_name():
 
     assert isinstance(plotter, pyvista.Plotter)
     plotter.close()
+
+
+def test_plot_default_with_several_subdomains():
+    material = F.Material(D_0=1, E_D=0)
+    vol_1 = F.VolumeSubdomain(id=1, material=material)
+    vol_2 = F.VolumeSubdomain(id=2, material=material)
+    sol_1 = create_mock_solution()
+    sol_2 = create_mock_solution()
+
+    h = F.Species("H")
+    h.subdomain_to_post_processing_solution = {vol_1: sol_1, vol_2: sol_2}
+
+    plotter = F.plot(h)
+    assert isinstance(plotter, pyvista.Plotter)
+    plotter.close()
