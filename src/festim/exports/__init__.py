@@ -1,3 +1,4 @@
+from .advection_flux import AdvectionFlux
 from .average_surface import AverageSurface
 from .average_volume import AverageVolume
 from .custom_quantity import CustomQuantity
@@ -22,6 +23,7 @@ from .vtx import (
 from .xdmf import XDMFExport
 
 __all__ = [
+    "AdvectionFlux",
     "AverageSurface",
     "AverageVolume",
     "CustomFieldExport",
