@@ -9,9 +9,9 @@ conda:
   environment: docs/environment.yml
 
 build:
-  os: "ubuntu-lts-latest"
+  os: "ubuntu-24.04"
   tools:
-    python: "mambaforge-4.10"
+    python: "miniconda-latest"
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
