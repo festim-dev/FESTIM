@@ -9,7 +9,7 @@ conda:
   environment: docs/environment.yml
 
 build:
-  os: "ubuntu-lts-latest"
+  os: "ubuntu-24.04"
   tools:
     python: "miniconda-latest"
 
