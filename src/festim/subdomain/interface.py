@@ -519,3 +519,89 @@ class InterfaceFlux(InterfaceBase):
             F_1 += -ufl.inner(R, v_1) * dS(self.id)
 
         return F_0, F_1
+
+
+class InterfaceReaction(InterfaceBase):
+    restriction: list[str, str] = ("+", "-")
+
+    def __init__(
+        self,
+        id: int,
+        subdomains: list[VolumeSubdomain],
+        k_plus: float,
+        k_minus: float,
+        reactants: list["Species"],
+        products: list["Species"],
+    ):
+        super().__init__(id, subdomains)
+        self.k_plus = k_plus
+        self.k_minus = k_minus
+        self.reactants = reactants
+        self.products = products
+
+    def get_formulation(
+        self,
+        dS: ufl.Measure,
+        species: list["Species"],
+        temperature,
+    ) -> tuple[ufl.Form, ufl.Form]:
+        """Generate the interface formulation for all species.
+
+        Args:
+            dS: Integration measure for the interface, with correct integration data.
+            species: Species for which interface conditions should be applied.
+                Must be defined in both subdomains of the interface.
+            temperature: Temperature field/function for temperature-dependent laws.
+
+        Returns:
+            Variational forms to be added to each subdomain.
+
+        Raises:
+            AssertionError: If the interface method is unknown or species is not
+                defined in both subdomains.
+        """
+
+        subdomain_0, subdomain_1 = self.subdomains
+        F_0, F_1 = dolfinx.fem.form(0), dolfinx.fem.form(0)
+
+        R = self.reaction_term()
+
+        for spe in self.reactants:
+            v_0 = spe.subdomain_to_test_function[subdomain_0](self.restriction[0])
+
+            F_0 += ufl.inner(R, v_0) * dS(self.id)
+
+        for spe in self.products:
+            v_1 = spe.subdomain_to_test_function[subdomain_1](self.restriction[1])
+            F_1 += -ufl.inner(R, v_1) * dS(self.id)
+
+        return F_0, F_1
+
+    def reaction_term(self):
+
+        # make sure products is a list
+        products = self.products if isinstance(self.products, list) else [self.products]
+
+        # multiply all concentrations to be used in the term
+
+        reactant_concentrations = [
+            spe.subdomain_to_solution[self.subdomains[0]](self.restriction[0])
+            for spe in self.reactants
+        ]
+        product_concentrations = [
+            spe.subdomain_to_solution[self.subdomains[1]](self.restriction[1])
+            for spe in products
+        ]
+
+        product_of_reactants = reactant_concentrations[0]
+        for reactant_conc in reactant_concentrations[1:]:
+            product_of_reactants *= reactant_conc
+
+        if products:
+            product_of_products = product_concentrations[0]
+            for product_conc in product_concentrations[1:]:
+                product_of_products *= product_conc
+        else:
+            product_of_products = 0
+
+        return self.k_plus * product_of_reactants - (self.k_minus * product_of_products)
