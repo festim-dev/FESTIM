@@ -9,7 +9,7 @@ import festim as F
 
 my_model = F.HydrogenTransportProblemDiscontinuous()
 
-D = 100
+D = 1
 
 mat1 = F.Material(D_0=D, E_D=0, K_S_0=1, E_K_S=0)
 mat2 = F.Material(D_0=D, E_D=0, K_S_0=2, E_K_S=0)
@@ -34,7 +34,7 @@ my_model.species = [A]
 
 
 my_model.interfaces = [
-    F.InterfaceFlux(id=1, subdomains=[vol1, vol2], k_plus=1, k_minus=1),
+    F.InterfaceFlux(id=1, subdomains=[vol1, vol2], k_plus=100000, k_minus=0.0000000001),
     # F.Interface(
     #     id=2,
     #     subdomains=[vol1, vol2],
@@ -75,6 +75,7 @@ for e in my_model.exports:
             e.data[idx],
             label=f"Subdomain {e.subdomain.id}",
         )
+plt.ylim(bottom=0)
 plt.show()
 
 # def make_ugrid(solution):
