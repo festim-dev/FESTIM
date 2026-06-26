@@ -28,24 +28,27 @@ my_model.subdomains = [vol1, vol2, left, right]
 my_model.mesh = F.Mesh1D(vertices=np.linspace(0, 1, 101))
 
 
-A = F.Species("A", subdomains=[vol1, vol2])
+A = F.Species("A", subdomains=[vol1])
+B = F.Species("B", subdomains=[vol2])
 
-my_model.species = [A]
+my_model.species = [A, B]
 
 
+n = 1
 my_model.interfaces = [
-    F.InterfaceFlux(id=1, subdomains=[vol1, vol2], k_plus=1, k_minus=1),
-    # F.Interface(
-    #     id=2,
-    #     subdomains=[vol1, vol2],
-    #     penalty_term=50,
-    #     method=F.InterfaceMethod.nitsche,
-    # ),
+    F.InterfaceReaction(
+        id=1,
+        subdomains=[vol1, vol2],
+        k_plus=2,
+        k_minus=1,
+        reactants=[A] * 2,
+        products=[B] * 1,
+    ),
 ]
 
 my_model.boundary_conditions = [
     F.FixedConcentrationBC(species=A, subdomain=left, value=1),
-    F.FixedConcentrationBC(species=A, subdomain=right, value=0),
+    F.FixedConcentrationBC(species=B, subdomain=right, value=0),
 ]
 
 my_model.temperature = 300
@@ -55,7 +58,7 @@ my_model.settings = F.Settings(final_time=3, atol=1e-9, rtol=1e-9, stepsize=0.1)
 
 my_model.exports = [
     F.Profile1DExport(field=A, subdomain=vol1),
-    F.Profile1DExport(field=A, subdomain=vol2),
+    F.Profile1DExport(field=B, subdomain=vol2),
 ]
 
 from dolfinx.log import set_log_level, LogLevel
