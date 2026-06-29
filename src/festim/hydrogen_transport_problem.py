@@ -1738,6 +1738,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     self.temperature_fenics,
                     engine="BP5",
                 )
+            elif isinstance(export, exports.VTXInterfaceResidualExport):
+                export.initialise(self.temperature_fenics)
+
             elif isinstance(export, exports.CustomFieldExport):
                 # need to find an appropriate function space on the right submesh
                 V = self.subdomain_to_V_CG1[export.subdomain]
@@ -1852,6 +1855,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     else:
                         export.writer.write(float(self.t))
                 elif isinstance(export, exports.VTXTemperatureExport):
+                    export.writer.write(float(self.t))
+                elif isinstance(export, exports.VTXInterfaceResidualExport):
+                    # FIXME: don't need to remake the whole expression everytime just
+                    # need to update "sub" functions
+                    export.set_dolfinx_expression()
+                    export.function.interpolate(export.residual_expr)
+                    export._f_0_interface.interpolate(export.f_0_expr)
+                    export._f_1_interface.interpolate(export.f_1_expr)
                     export.writer.write(float(self.t))
                 else:
                     raise NotImplementedError(

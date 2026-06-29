@@ -42,6 +42,7 @@ from .exports.vtx import (
     CustomFieldExport,
     ExportBaseClass,
     ReactionRateExport,
+    VTXInterfaceResidualExport,
     VTXSpeciesExport,
     VTXTemperatureExport,
 )

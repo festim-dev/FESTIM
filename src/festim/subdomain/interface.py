@@ -1,8 +1,10 @@
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import TYPE_CHECKING
 
 import dolfinx
 import numpy as np
+import numpy.typing as npt
 import ufl
 from dolfinx.cpp.fem import compute_integration_domains
 from packaging.version import Version
@@ -13,7 +15,38 @@ from festim.subdomain.volume_subdomain import VolumeSubdomain
 if TYPE_CHECKING:
     from festim.species import Species
 
-from abc import ABC, abstractmethod
+
+def interface_condition_term(
+    c: ufl.core.expr.Expr | npt.NDArray[np.floating],
+    K_S: ufl.core.expr.Expr | npt.NDArray[np.floating],
+    law: SolubilityLaw,
+    other_law: SolubilityLaw,
+) -> ufl.core.expr.Expr | npt.NDArray[np.floating]:
+    """Return the interface condition expression for one side.
+
+    When both sides share the same solubility law the condition simplifies to
+    ``c/K_S`` on each side.  When the laws differ Henry is expressed as
+    ``c/K_S`` and Sievert as ``(c/K_S)^2``.
+
+    Args:
+        c: Concentration on this side.
+        K_S: Solubility coefficient on this side.
+        law: Solubility law for this side.
+        other_law: Solubility law for the other side.
+
+    Returns:
+        The interface condition term for this side.
+
+    Raises:
+        ValueError: If ``law`` is not ``HENRY`` or ``SIEVERT`` in the mixed-law
+            case.
+    """
+    if law == other_law or law == SolubilityLaw.HENRY:
+        return c / K_S
+    elif law == SolubilityLaw.SIEVERT:
+        return (c / K_S) ** 2
+    else:
+        raise ValueError(f"Unsupported solubility law: {law}")
 
 
 class InterfaceMethod(Enum):
@@ -393,32 +426,12 @@ class Interface(InterfaceBase):
         u_0, u_1 = self.us(species)
         v_0, v_1 = self.vs(species)
         K_0, K_1 = self.Ks(species, temperature)
-        if subdomain_0.material.solubility_law == subdomain_1.material.solubility_law:
-            left = u_0 / K_0
-            right = u_1 / K_1
-        else:
-            match subdomain_0.material.solubility_law:
-                case SolubilityLaw.HENRY:
-                    left = u_0 / K_0
-                case SolubilityLaw.SIEVERT:
-                    left = (u_0 / K_0) ** 2
-                case _:
-                    raise ValueError(
-                        "Unsupported material law "
-                        + f"{subdomain_0.material.solubility_law}"
-                    )
-
-            match subdomain_1.material.solubility_law:
-                case SolubilityLaw.HENRY:
-                    right = u_1 / K_1
-                case SolubilityLaw.SIEVERT:
-                    right = (u_1 / K_1) ** 2
-                case _:
-                    raise ValueError(
-                        f"Unsupported material law "
-                        f"{subdomain_1.material.solubility_law}"
-                    )
-
+        law_0, law_1 = (
+            subdomain_0.material.solubility_law,
+            subdomain_1.material.solubility_law,
+        )
+        left = interface_condition_term(u_0, K_0, law_0, law_1)
+        right = interface_condition_term(u_1, K_1, law_1, law_0)
         equality = right - left
 
         F_0 = self.penalty_term * ufl.inner(equality, v_0) * dS(self.id)
