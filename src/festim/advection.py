@@ -17,6 +17,8 @@ class AdvectionTerm:
         subdomain: the volume subdomain where the velocity is to be applied
         species: the species to which the velocity field is acting on
 
+    I want this in too
+
     attributes:
         velocity: the velocity field or function
         subdomain: the volume subdomain where the velocity is to be applied
