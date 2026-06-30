@@ -12,6 +12,7 @@ from dolfinx import mesh as _mesh
 
 from festim import helpers
 from festim import subdomain as _subdomain
+from festim.advection import VelocityField
 from festim.species import Species
 
 
@@ -421,3 +422,53 @@ class FixedTemperatureBC(DirichletBCBase):
                     helpers.get_interpolation_points(function_space.element),
                 )
                 self.value_fenics.interpolate(self.bc_expr)
+
+
+class FixedConcentrationInflowBC(FixedConcentrationBC):
+    """Inflow boundary condition with fixed concentration.
+
+    This is a specific case of `FixedConcentrationBC` where the value of the
+    boundary condition is fixed and does not depend on time or space. It is
+    used for inflow boundary conditions where the concentration of the species
+    entering the domain is known and constant.
+
+    Args:
+        subdomain (festim.Subdomain): the surface subdomain where the boundary
+            condition is applied
+        value: The value of the boundary condition. It can be a function of
+        space and/or time
+        species: The name of the species
+
+    """
+
+    def __init__(
+        self,
+        subdomain: _subdomain.SurfaceSubdomain,
+        value: np.ndarray | fem.Constant | int | float | Callable,
+        species: Species,
+        velocity_field: fem.Function,
+    ):
+        super().__init__(subdomain, value, species, enforce_weakly=False)
+
+        self.velocity_field = velocity_field
+
+    @property
+    def velocity_field(self):
+        return self._velocity_field
+
+    @velocity_field.setter
+    def velocity_field(self, value):
+        err_message = f"velocity must be a fem.Function, or callable not {type(value)}"
+        if value is None:
+            self._velocity = VelocityField(value)
+        elif isinstance(
+            value,
+            fem.Function,
+        ):
+            self._velocity = VelocityField(value)
+        elif isinstance(value, fem.Constant | fem.Expression | ufl.core.expr.Expr):
+            raise TypeError(err_message)
+        elif callable(value):
+            self._velocity = VelocityField(value)
+        else:
+            raise TypeError(err_message)

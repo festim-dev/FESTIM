@@ -62,6 +62,7 @@ class Mesh:
     vdim: int
     fdim: int
     n: ufl.FacetNormal
+    h: ufl.CellDiameter
 
     def __init__(
         self,
@@ -126,6 +127,12 @@ class Mesh:
         if self._mesh is None:
             raise RuntimeError("Mesh is not defined")
         return ufl.FacetNormal(self._mesh)
+
+    @property
+    def h(self):
+        if self._mesh is None:
+            raise RuntimeError("Mesh is not defined")
+        return ufl.CellDiameter(self._mesh)
 
     def define_meshtags(self, surface_subdomains, volume_subdomains, interfaces=None):
         """Defines the facet and volume meshtags of the mesh.
