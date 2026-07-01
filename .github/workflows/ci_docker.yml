@@ -20,7 +20,7 @@ jobs:
 
       - name: Install local package and dependencies
         run: |
-          python -m pip install scipy  # needed in scifem, can be removed when scifem adds it to their dependencies
+          python -m pip install scipy pyvista  # scipy needed in scifem, can be removed when scifem adds it to their dependencies
           python -m pip install .[test]
 
       - name: Overload adios4dolfinx

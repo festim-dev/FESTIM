@@ -72,6 +72,7 @@ from .material import Material, SolubilityLaw
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
+from .plotting import plot
 from .problem import ProblemBase
 from .reaction import Reaction
 from .settings import Settings

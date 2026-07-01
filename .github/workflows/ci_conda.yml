@@ -15,6 +15,8 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v7
 
+    - uses: pyvista/setup-headless-display-action@v3
+
     - name: Set up Conda
       uses: conda-incubator/setup-miniconda@v4
       with:
@@ -26,7 +28,7 @@ jobs:
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
-        conda install -c conda-forge python pip fenics-dolfinx=${{ matrix.dolfinx }} scifem adios4dolfinx
+        conda install -c conda-forge python pip fenics-dolfinx=${{ matrix.dolfinx }} scifem adios4dolfinx pyvista
 
     - name: Install local package and dependencies
       shell: bash -l {0}
