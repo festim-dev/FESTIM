@@ -27,7 +27,7 @@
 - title: "Hydrogen transport in tokamaks : Estimation of the ITER divertor tritium inventory and influence of helium exposure"
   type: thesis
   degree: "PhD thesis"
-- title: "Multiphysics tritium transport simulations of the WCLL breeding blanket for DEMO"
+- openalex_id: W7152043806
   type: thesis
   degree: "PhD thesis"
 
@@ -49,3 +49,7 @@
 - openalex_id: "W7164459034"
   type: thesis
   degree: "MSc thesis"
+
+
+- doi: "10.1080/15361055.2026.2686572"
+- doi: "10.1103/lnnc-h1yy"
