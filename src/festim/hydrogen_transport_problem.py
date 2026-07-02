@@ -1694,40 +1694,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 J=self.J,
                 petsc_options=petsc_options,
                 petsc_options_prefix="festim_solver",
+                # Force a monolithic (non-nested) MPI vector. With the default
+                # (kind=None) dolfinx >=0.11 skips attaching the block layout
+                # for a single-block system (one volume subdomain), which then
+                # makes its own blocked residual assembly fail with
+                # "Block data must be provided for block assembly" (surfaced as
+                # PETSc error code 101).
+                kind="mpi",
             )
-
-            # For a single-block system (one volume subdomain) dolfinx >=0.11
-            # does not attach `_blocks` to the residual vector, which makes its
-            # own blocked SNES residual assembly raise
-            # "Block data must be provided for block assembly" (surfaced as
-            # PETSc error code 101). Backfill the block data and re-register the
-            # residual callback in that case. This mechanism (and
-            # ``assemble_residual``) only exists in dolfinx >=0.11.
-            if (
-                Version(dolfinx.__version__) >= Version("0.11")
-                and self.solver.b.getAttr("_blocks") is None
-            ):
-                from dolfinx.fem.petsc import (
-                    _extract_function_spaces,
-                    assemble_residual,
-                )
-                from dolfinx.la.petsc import _assign_block_data
-
-                spaces = _extract_function_spaces(self.solver.F)
-                maps = [(V.dofmap.index_map, V.dofmap.index_map_bs) for V in spaces]
-                _assign_block_data(maps, self.solver.b)
-                _assign_block_data(maps, self.solver.x)
-                self.solver.solver.setFunction(
-                    assemble_residual,
-                    self.solver.b,
-                    kargs={
-                        "u": self.solver.u,
-                        "residual": self.solver.F,
-                        "jacobian": self.solver.J,
-                        "bcs": self.bc_forms,
-                        "_blocks": self.solver.b.getAttr("_blocks"),
-                    },
-                )
 
             self.solver.solver.setMonitor(SnesMonitor)
             self.solver.solver.getKSP().setMonitor(KSPMonitor)
