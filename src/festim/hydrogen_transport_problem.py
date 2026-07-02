@@ -1079,6 +1079,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if export._dofs is None:
                     index = self.species.index(export.field)
                     V0, export._dofs = self.u.function_space.sub(index).collapse()
+                    # dolfinx >=0.11 returns the collapse dof map as a list of
+                    # arrays; flatten it back to a 1D index array
+                    if isinstance(export._dofs, list):
+                        export._dofs = np.concatenate(export._dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
                     x = coords[export._sort_coords]
@@ -1980,6 +1984,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.field
                     )
                     V0, export._dofs = u.function_space.sub(index).collapse()
+                    # dolfinx >=0.11 returns the collapse dof map as a list of
+                    # arrays; flatten it back to a 1D index array
+                    if isinstance(export._dofs, list):
+                        export._dofs = np.concatenate(export._dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
                     x = coords[export._sort_coords]
