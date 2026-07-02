@@ -1694,12 +1694,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 J=self.J,
                 petsc_options=petsc_options,
                 petsc_options_prefix="festim_solver",
-                # Force a monolithic (non-nested) MPI vector. With the default
-                # (kind=None) dolfinx >=0.11 skips attaching the block layout
-                # for a single-block system (one volume subdomain), which then
-                # makes its own blocked residual assembly fail with
-                # "Block data must be provided for block assembly" (surfaced as
-                # PETSc error code 101).
                 kind="mpi",
             )
 
