@@ -1081,7 +1081,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     V0, export._dofs = self.u.function_space.sub(index).collapse()
                     # dolfinx >=0.11 returns the collapse dof map as a list of
                     # arrays; flatten it back to a 1D index array
-                    if isinstance(export._dofs, list):
+                    if Version(dolfinx.__version__) >= Version("0.11"):
                         export._dofs = np.concatenate(export._dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
@@ -1701,8 +1701,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             # own blocked SNES residual assembly raise
             # "Block data must be provided for block assembly" (surfaced as
             # PETSc error code 101). Backfill the block data and re-register the
-            # residual callback in that case.
-            if self.solver.b.getAttr("_blocks") is None:
+            # residual callback in that case. This mechanism (and
+            # ``assemble_residual``) only exists in dolfinx >=0.11.
+            if (
+                Version(dolfinx.__version__) >= Version("0.11")
+                and self.solver.b.getAttr("_blocks") is None
+            ):
                 from dolfinx.fem.petsc import (
                     _extract_function_spaces,
                     assemble_residual,
@@ -1986,7 +1990,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     V0, export._dofs = u.function_space.sub(index).collapse()
                     # dolfinx >=0.11 returns the collapse dof map as a list of
                     # arrays; flatten it back to a 1D index array
-                    if isinstance(export._dofs, list):
+                    if Version(dolfinx.__version__) >= Version("0.11"):
                         export._dofs = np.concatenate(export._dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
