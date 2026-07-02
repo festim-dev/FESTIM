@@ -1692,6 +1692,35 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 petsc_options_prefix="festim_solver",
             )
 
+            # For a single-block system (one volume subdomain) dolfinx >=0.11
+            # does not attach `_blocks` to the residual vector, which makes its
+            # own blocked SNES residual assembly raise
+            # "Block data must be provided for block assembly" (surfaced as
+            # PETSc error code 101). Backfill the block data and re-register the
+            # residual callback in that case.
+            if self.solver.b.getAttr("_blocks") is None:
+                from dolfinx.fem.petsc import (
+                    _extract_function_spaces,
+                    assemble_residual,
+                )
+                from dolfinx.la.petsc import _assign_block_data
+
+                spaces = _extract_function_spaces(self.solver.F)
+                maps = [(V.dofmap.index_map, V.dofmap.index_map_bs) for V in spaces]
+                _assign_block_data(maps, self.solver.b)
+                _assign_block_data(maps, self.solver.x)
+                self.solver.solver.setFunction(
+                    assemble_residual,
+                    self.solver.b,
+                    kargs={
+                        "u": self.solver.u,
+                        "residual": self.solver.F,
+                        "jacobian": self.solver.J,
+                        "bcs": self.bc_forms,
+                        "_blocks": self.solver.b.getAttr("_blocks"),
+                    },
+                )
+
             self.solver.solver.setMonitor(SnesMonitor)
             self.solver.solver.getKSP().setMonitor(KSPMonitor)
             self.solver.solver.setConvergenceTest(convergenceTest)
@@ -2022,6 +2051,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.iterate()
             if self.show_progress_bar:
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
+                self.progress_bar.close()
         else:
             # Solve steady-state
             self.solver.solve()
