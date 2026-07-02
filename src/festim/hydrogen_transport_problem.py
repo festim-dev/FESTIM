@@ -4,9 +4,9 @@ from collections.abc import Callable
 from mpi4py import MPI
 from petsc4py import PETSc
 
-import adios4dolfinx
 import basix
 import dolfinx
+import io4dolfinx
 import numpy as np
 import numpy.typing as npt
 import tqdm.auto
@@ -450,7 +450,11 @@ class HydrogenTransportProblem(problem.ProblemBase):
                         )
 
                     else:
-                        adios4dolfinx.write_mesh(export.filename, mesh=self.mesh.mesh)
+                        io4dolfinx.write_mesh(
+                            filename=export.filename,
+                            mesh=self.mesh.mesh,
+                            backend="adios2",
+                        )
 
                 elif isinstance(export, exports.CustomFieldExport):
                     export.function = fem.Function(self.V_CG_1)
@@ -1003,9 +1007,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if isinstance(export, exports.VTXSpeciesExport):
                     if export._checkpoint:
                         for field in export.field:
-                            adios4dolfinx.write_function(
-                                export.filename,
-                                field.post_processing_solution,
+                            io4dolfinx.write_function(
+                                filename=export.filename,
+                                u=field.post_processing_solution,
                                 time=float(self.t),
                                 name=field.name,
                             )
@@ -1075,6 +1079,10 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if export._dofs is None:
                     index = self.species.index(export.field)
                     V0, export._dofs = self.u.function_space.sub(index).collapse()
+                    # dolfinx >=0.11 returns the collapse dof map as a list of
+                    # arrays; flatten it back to a 1D index array
+                    if Version(dolfinx.__version__) >= Version("0.11"):
+                        export._dofs = np.concatenate(export._dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
                     x = coords[export._sort_coords]
@@ -1686,6 +1694,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 J=self.J,
                 petsc_options=petsc_options,
                 petsc_options_prefix="festim_solver",
+                kind="mpi",
             )
 
             self.solver.solver.setMonitor(SnesMonitor)
@@ -1723,9 +1732,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         engine="BP5",
                     )
                 else:
-                    adios4dolfinx.write_mesh(
-                        export.filename,
+                    io4dolfinx.write_mesh(
+                        filename=export.filename,
                         mesh=functions[0].function_space.mesh,
+                        backend="adios2",
                     )
             elif isinstance(export, exports.VTXTemperatureExport):
                 assert isinstance(self.temperature_fenics, fem.Function), (
@@ -1754,6 +1764,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     output=export.function,
                     engine="BP5",
                 )
+
         # compute diffusivity function for surface fluxes
         # for the discontinuous case, we don't use D_global as in
         # HydrogenTransportProblem
@@ -1843,9 +1854,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                                     export._subdomain
                                 ]
                             )
-                            adios4dolfinx.write_function(
-                                export.filename,
-                                post_processing_solution,
+                            io4dolfinx.write_function(
+                                filename=export.filename,
+                                u=post_processing_solution,
                                 time=float(self.t),
                                 name=species.name,
                             )
@@ -1945,6 +1956,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         export.field
                     )
                     V0, export._dofs = u.function_space.sub(index).collapse()
+                    # dolfinx >=0.11 returns the collapse dof map as a list of
+                    # arrays; flatten it back to a 1D index array
+                    if Version(dolfinx.__version__) >= Version("0.11"):
+                        export._dofs = np.concatenate(export._dofs)
                     coords = V0.tabulate_dof_coordinates()[:, 0]
                     export._sort_coords = np.argsort(coords)
                     x = coords[export._sort_coords]
@@ -2016,6 +2031,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.iterate()
             if self.show_progress_bar:
                 self.progress_bar.refresh()  # refresh progress bar to show 100%
+                self.progress_bar.close()
         else:
             # Solve steady-state
             self.solver.solve()

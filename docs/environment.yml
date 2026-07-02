@@ -11,7 +11,7 @@ dependencies:
   - numpy==1.24
   - tqdm
   - scifem>=0.2.8
-  - adios4dolfinx
+  - io4dolfinx
   - sphinx-design
   - sphinxcontrib-bibtex
   - sympy

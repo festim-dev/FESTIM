@@ -27,7 +27,7 @@ requirements:
     - python >={{ python_min }}
     - fenics-dolfinx >=0.9,<=0.10
     - scifem >=0.2.13
-    - adios4dolfinx
+    - io4dolfinx
     - tqdm
 
 test:
