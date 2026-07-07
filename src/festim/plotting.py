@@ -13,7 +13,7 @@ def _normalize_fields(field: Species | list[Species]) -> list[Species]:
     raise TypeError("field must be of type festim.Species or a list of festim.Species")
 
 
-def _get_solution(field: Species, subdomain=None):
+def _get_solution(field: Species, subdomain=None): -> fem.function
     if subdomain is None:
         if field.post_processing_solution is None:
             raise ValueError(
