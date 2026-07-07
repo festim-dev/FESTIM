@@ -4,261 +4,314 @@
 Contributing
 =================
 
+All contributions are welcome, no matter how small.
+Whether you are fixing a typo, reporting a bug, or implementing a new feature, your help is appreciated.
+
 ------------------
-How to contribute?
+Ways to contribute
 ------------------
 
-All contributions, even the smallest, are welcome!
-There are many ways to contribute to FESTIM.
+**In the community:**
 
-Be active in the community by:
+* `Report a bug <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
+* `Propose a feature <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
 
-* Reporting a bug
-* Proposing a feature
+**In the codebase:**
 
-And/or contribute to the source code by:
-
-* Improving the documentation
-* Fixing bugs
-* Implementing new features
+* Improve the documentation
+* Fix bugs
+* Implement new features
 
 ------------------------
 Contributing to the code
 ------------------------
 
-For complete information on contributions with GitHub see this guide on `GitHub <https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project>`_.
+For a general overview of contributing to GitHub projects, see the
+`GitHub contributing guide <https://docs.github.com/en/get-started/exploring-projects-on-github/contributing-to-a-project>`_.
 
 .. tip::
 
-   If you're a beginner, look for `issues tagged with "Good first issue" <https://github.com/festim-dev/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
-
-   These issues are usually relatively easy to tackle and perfect for newcomers.
+   If you are new to the project, look for
+   `issues tagged "good first issue" <https://github.com/festim-dev/FESTIM/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22>`_.
+   These are typically straightforward and a great way to get started.
 
 #. `Fork the repository <https://github.com/festim-dev/FESTIM/fork>`_
 
-   By forking the repository, you create a copy where you can safely make changes.
+   Forking creates a personal copy of the repository where you can freely make changes.
 
-#. Clone your fork
+#. Clone your fork and add the upstream remote
 
    .. code-block:: bash
 
       git clone https://github.com/[your_username]/FESTIM
+      cd FESTIM
+      git remote add upstream https://github.com/festim-dev/FESTIM
 
-   Remember to replace ``[your_username]`` with your GitHub username.
+   Replace ``[your_username]`` with your GitHub username.
+   The upstream remote lets you pull in changes from the main repository to keep your fork up to date:
+
+   .. code-block:: bash
+
+      git fetch upstream
+      git merge upstream/main
+
+#. Create a branch
+
+   Always work on a dedicated branch rather than directly on ``main``:
+
+   .. code-block:: bash
+
+      git checkout -b my-feature-branch
+
+#. Set up your development environment
+
+   Create a dedicated conda environment and install FESTIM from conda-forge.
+   This pulls in all required dependencies, including FEniCSx:
+
+   .. code-block:: bash
+
+      conda create -n festim-dev
+      conda activate festim-dev
+      conda install -c conda-forge festim
+
+   Then uninstall the conda-managed FESTIM package and replace it with your
+   local clone in editable mode, so that any changes you make are picked up
+   immediately without reinstalling:
+
+   .. code-block:: bash
+
+      pip uninstall festim
+      pip install -e .
+
+   .. note::
+
+      The ``-e`` flag installs the package in *editable* mode.
+      Python will import directly from your local source tree,
+      meaning you do not need to reinstall after each change.
 
 #. Make your changes
 
-   Commit your changes locally and push them to your fork.
+   Commit your changes with a clear, descriptive message:
 
    .. code-block:: bash
 
       git add [modified files]
-      git commit -m "Your commit message"
-      git push
+      git commit -m "Short description of the change"
+      git push origin my-feature-branch
 
 #. Test your code
 
-   If you are adding new features or fixing bugs, it is important to test your code.
+   Before opening a PR, run the test suite locally to make sure nothing is broken.
    See :ref:`Test suite` for more information.
 
-#. Format your code using `Black <https://github.com/psf/black>`_.
+#. Format your code
 
-   The source code of FESTIM is formated with the Black code formatter. Using of a unified code style simplifies the code review
-   and increases its readability. See :ref:`Code formatting` for more information.
+   FESTIM uses `Black <https://github.com/psf/black>`_ for consistent code formatting.
+   See :ref:`Code formatting` for more information.
 
-#. Optional: Build the documentation
+#. Optional: build the documentation
 
-   You may want to build the documentation to see if your changes are correctly reflected or if you are updating the docs.
+   If you modified or added documentation, build it locally to verify it renders correctly.
    See :ref:`Documentation guide` for more information.
 
 #. `Open a PR <https://github.com/festim-dev/FESTIM/compare>`_
 
-#. Wait for a :ref:`maintainer<Maintainers>` to review your PR
+   Include a clear description of what the PR does and reference any related issues
+   (e.g. ``Closes #123``).
 
-   Before merging your changes, they have to be reviewed. We ensure the changes don't break anything during the review and eventually propose/request improvements.
-   The time before the review will depend on the maintainers' availability.
+#. Wait for a :ref:`maintainer <Maintainers>` to review your PR
 
-#. When everything is in order, the maintainers will merge your PR!
+   Maintainers will review your changes to ensure correctness and code quality, and may
+   request further modifications. Review time depends on maintainer availability.
+
+#. Once approved, a maintainer will merge your PR. Congratulations!
 
 -----------
 Maintainers
 -----------
 
-The maintainers are the people who have the right to merge PRs to the repository.
-They consist of the following individuals:
+Maintainers are the people with merge rights on the repository:
 
-- Remi Delaporte-Mathurin (`@RemDelaporteMathurin <https://github.com/RemDelaporteMathurin>`_)
+- Remi Delaporte-Mathurin (`@RemDelaporteMathurin <https://github.com/RemDelaporteMathurin>`_) -- project lead
 - James Dark (`@jhdark <https://github.com/jhdark>`_)
 - Vladimir Kulagin (`@KulaginVladimir <https://github.com/KulaginVladimir>`_)
-
-The project lead is Remi Delaporte-Mathurin.
 
 ----------
 Test suite
 ----------
 
-FESTIM uses continuous integration (CI) to ensure code quality and eliminate as many bugs as possible.
+FESTIM uses continuous integration (CI) to maintain code quality.
+Every push to the repository or a pull request triggers the test suite automatically,
+catching regressions and bugs early.
+See `Atlassian's CI guide <https://www.atlassian.com/continuous-delivery/continuous-integration>`_
+for a general introduction to CI.
 
-In a nutshell, every time a change is pushed to the repository (or to a PR), a suite of tests is automatically triggered.
-This is to make sure the changes don't break existing functionalities.
-It is also very useful to catch bugs that developers could have missed.
-Click `here <https://www.atlassian.com/continuous-delivery/continuous-integration>`_ for more information on CI.
-
-All the tests can be found in the `test folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/test>`_ at the root of the FESTIM repository.
-
-You need to have the right dependencies installed to test your code (see :ref:`installation<Installation>`).
+All tests live in the `test folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/test>`_
+at the root of the repository.
 
 .. note::
 
-   Make sure to install ``pytest`` to run the test suite locally:
+   Install ``pytest`` if you haven't already:
 
    .. code-block:: bash
 
       pip install pytest
 
-   And then run the tests using:
+   Then run the full test suite from the project root:
 
    .. code-block:: bash
 
       pytest test/
-   
-Whenever contributors open a PR, **the tests must pass** in order for the PR to be merged in.
 
-In some cases, new tests need to be written to account for more use cases or to catch bugs that weren't previously caught.
+**The tests must pass before a PR can be merged.**
+
+When fixing a bug or adding a feature, please add or update tests to cover the new behaviour.
 
 ---------
 Debugging
 ---------
 
-When you find a bug in the code, there are several steps to follow to make things easier for maintainers.
+When you find a bug, follow these steps to make things easier for maintainers:
 
-#. | `Raise an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
-   |
-   | This is important to keep track of things.
-   | The issue is a place to talk about the bug, troubleshoot users and sometimes find workarounds.
-   | It also greatly helps maintainers find the origin of the bug to fix it faster.
+#. `Raise an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
 
-#. | Write a test
-   | To make the test suite more robust, first write a test that catches the bug.
-   | This may appear useless, but it will help the future contributors by alerting them if they reproduce this error.
-   | It will also be useful to prove your fix is effective.
+   Opening an issue creates a record of the bug and gives maintainers and contributors
+   a place to troubleshoot, discuss potential fixes, and document workarounds.
 
-#. Make your changes and open a PR.
+#. Write a test that reproduces the bug
+
+   A failing test is the clearest way to demonstrate a bug and verify that your fix works.
+   It also guards against the same bug reappearing in the future.
+
+#. Fix the bug and open a PR.
 
 --------------------------
 Implementing a new feature
 --------------------------
 
-#. | `Raise an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
-   |
-   | Before spending time implementing a new great feature, it is better to open an issue first to discuss with the maintainers.
-   | For all you know, someone is already working at implementing it and all your time would be spent for nothing.
-   | 
-   | It is also beneficial to discuss with the community on how this new feature would be used.
+#. `Raise an issue <https://github.com/festim-dev/FESTIM/issues/new/choose>`_
 
-#. :ref:`Make your changes<contributing to the code>`. Don't forget to :ref:`adapt the documentation <Documentation guide>` if necessary.
+   Before writing any code, open an issue to discuss the feature with the maintainers.
+   Someone may already be working on it, or the maintainers may have context that
+   shapes the design.
 
-#. Write a test to test your feature
+#. :ref:`Make your changes <contributing to the code>` and
+   :ref:`update the documentation <Documentation guide>` if needed.
 
-#. Open a PR
+#. Write tests to cover the new feature.
 
+#. Open a PR.
 
 ----------------
 Code formatting
 ----------------
 
-Before merging your PR, the modified scripts should be formatted to maintain the consistency of the coding style. FESTIM is formatted using 
-`Black <https://github.com/psf/black>`_. To install Black, run the following command:
+FESTIM uses `Black <https://github.com/psf/black>`_ to enforce a consistent code style,
+which reduces noise in code reviews and keeps the codebase readable.
+
+Install Black:
 
 .. code-block:: bash
 
    pip install black
 
-After the installation, you can format a file using:
+Format a single file:
 
 .. code-block:: bash
 
    black my_script.py
 
-Alternatively, you can format all files in the current directory with:
+Format all files in the current directory:
 
 .. code-block:: bash
 
    black .
 
+Check formatting without modifying any files:
 
-If you use Visual Studio Code, you can install the `extension <https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter>`_ 
-with support for the Black formatter. Then, you can set Black as a default formatter for python and enable formatting "on save" for your code. 
+.. code-block:: bash
+
+   black --check .
+
+.. tip::
+
+   If you use Visual Studio Code, install the
+   `Black Formatter extension <https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter>`_
+   and enable **Format on Save** to apply Black automatically whenever you save a file.
 
 -------------------
 Documentation guide
 -------------------
 
-The documentation is a crucial part of the project. It is the first thing users will see when they want to use FESTIM.
-It is important to keep it up to date and clear.
+The documentation is often the first thing a user encounters.
+Keeping it accurate, clear, and up to date is as important as keeping the code correct.
 
-The documentation is written in `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_ and is located in the `docs folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/docs>`_ at the root of the FESTIM repository.
+The docs are written in
+`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
+and live in the `docs folder <https://github.com/festim-dev/FESTIM/tree/fenicsx/docs>`_.
+They are built with `Sphinx <https://www.sphinx-doc.org/en/master/>`_ and hosted on
+`Read the Docs <https://readthedocs.org/>`_, which rebuilds automatically on every
+commit and pull request.
 
-The documentation is built using `Sphinx <https://www.sphinx-doc.org/en/master/>`_.
+**Setting up the documentation environment**
 
-To build the documentation locally, you can use the following command:
+.. note::
+
+   Create a dedicated conda environment with all documentation dependencies:
+
+   .. code-block:: bash
+
+      conda env create -f docs/environment.yml
+      conda activate festim2-docs
+
+**Building the docs**
+
+From the ``docs/source`` directory:
 
 .. code-block:: bash
 
    cd docs/source
    make html
 
-This will generate the documentation in the `docs/source/_build/html` folder.
-You can then open the `index.html` file in your browser to see the documentation.
-To remove everything and start from scratch, you can use the following command:
-
-.. code-block:: bash
-
-   make clean
-
-Alternatively, you can use the following command to build the documentation in one line:
+Or from the ``docs`` directory in a single step:
 
 .. code-block:: bash
 
    cd docs
    sphinx-build -b html source build
 
-.. note::
+The generated HTML will be in ``docs/source/_build/html``.
+Open ``index.html`` in your browser to preview the result.
 
-   Make sure to have the right dependencies installed. You can create a new conda environment with the following command:
+To remove all build artefacts and start from scratch:
 
-   .. code-block:: bash
-      
-      conda env create -f docs/environment.yml
-   
-   This will create a new environment called `festim2-docs` with all the necessary dependencies.
-   Activate it using:
+.. code-block:: bash
 
-   .. code-block:: bash
+   cd docs/source
+   make clean
 
-      conda activate festim2-docs
+**Running doctests**
 
-The documentation is hosted on `Read the Docs <https://readthedocs.org/>`_ and is automatically updated when a new commit is pushed to the repository or to a Pull Request.
-
-.. note::
-
-   The documentation is built using the `sphinx_book_theme <https://sphinx-book-theme.readthedocs.io/en/latest/>`_ theme.
-
-When contributing to the documentation, make sure to:
-
-#. Write clear and concise documentation
-#. Use the right syntax
-#. Update the documentation when new features are added
-#. Test the documentation using:
+Verify that all code examples in the documentation execute correctly:
 
 .. code-block:: bash
 
    cd docs/source
    make doctest
 
-or using: 
+Or equivalently:
 
 .. code-block:: bash
 
    cd docs
    sphinx-build -b doctest source build
+
+**Documentation checklist**
+
+When contributing to the documentation, make sure to:
+
+* Write clearly and concisely
+* Use correct reStructuredText syntax
+* Update existing pages when behaviour changes
+* Add documentation for any new features
+* Run the doctests to confirm all code examples are correct
