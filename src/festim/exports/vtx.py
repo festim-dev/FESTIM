@@ -352,18 +352,18 @@ class VTXInterfaceResidualExport(ExportBaseClass):
     """Export the interface condition residual to a VTX file.
 
     This quantity measures how well the penalty/Nitsche interface condition is
-    satisfied at the interface. It is zero when the condition holds exactly; the lower
-    the value, the better.
+    satisfied at the interface. It is the absolute difference between the two sides'
+    terms, ``|right - left|``, so it is always non-negative, zero when the condition
+    holds exactly; the lower the value, the better.
 
-    The residual is ``right - left`` where each side's term depends on the
-    solubility laws of the two subdomains:
+    Each side's term depends on the solubility laws of the two subdomains:
 
     - **Same law on both sides** (Henry-Henry or Sievert-Sievert):
-      ``residual = c_1/K_S_1 - c_0/K_S_0``
+      ``residual = |c_1/K_S_1 - c_0/K_S_0|``
     - **Henry (side 0) - Sievert (side 1)**:
-      ``residual = (c_1/K_S_1)^2 - c_0/K_S_0``
+      ``residual = |(c_1/K_S_1)^2 - c_0/K_S_0|``
     - **Sievert (side 0) - Henry (side 1)**:
-      ``residual = c_1/K_S_1 - (c_0/K_S_0)^2``
+      ``residual = |c_1/K_S_1 - (c_0/K_S_0)^2|``
 
     Args:
         field: The species whose interface residual is exported.
@@ -481,16 +481,13 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
         Interpolates the concentration from each subdomain onto the interface
         submesh, evaluates ``K_S = K_S_0 * exp(-E_K_S / (k_B * T))`` at the
-        current temperature, then computes ``right - left`` via
+        current temperature, then computes ``|right - left|`` via
         :func:`interface_condition_term`:
 
         - **Same law or Henry (side 0)**: ``left = c_0 / K_S_0``
         - **Sievert (side 0, mixed only)**: ``left = (c_0 / K_S_0)^2``
 
         and symmetrically for ``right``.
-
-        Args:
-            t: Current simulation time.
         """
         subdomain_0, subdomain_1 = self.interface.subdomains
 
@@ -549,7 +546,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         )
 
         self.residual_expr = fem.Expression(
-            f0 - f1,
+            abs(f1 - f0),
             get_interpolation_points(self.function.function_space.element),
         )
 
