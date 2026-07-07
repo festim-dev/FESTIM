@@ -9,7 +9,6 @@ import numpy as np
 import ufl
 from dolfinx import fem
 
-from festim.helpers import get_interpolation_points
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
@@ -165,7 +164,7 @@ class InitialConcentration(InitialConditionBase):
 
             self.expr_fenics = fem.Expression(
                 self.value(**kwargs),
-                get_interpolation_points(function_space.element),
+                function_space.element.interpolation_points,
             )
 
 
@@ -232,7 +231,7 @@ class InitialTemperature(InitialConditionBase):
 
             self.expr_fenics = fem.Expression(
                 self.value(**kwargs),
-                get_interpolation_points(function_space.element),
+                function_space.element.interpolation_points,
             )
 
 

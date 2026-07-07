@@ -8,7 +8,6 @@ import ufl
 from dolfinx import fem, io
 
 from festim import k_B as _k_B
-from festim.helpers import get_interpolation_points
 from festim.reaction import Reaction
 from festim.species import ImplicitSpecies, Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
@@ -306,7 +305,7 @@ class CustomFieldExport(ExportBaseClass):
         # create a dolfinx.fem.Expression
         self.dolfinx_expression = fem.Expression(
             self.expression(**kwargs),
-            get_interpolation_points(self.function.function_space.element),
+            self.function.function_space.element.interpolation_points,
         )
 
     def _get_species_function(self, spe: Species):

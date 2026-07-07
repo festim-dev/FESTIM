@@ -13,7 +13,6 @@ import tqdm.auto
 import ufl
 from dolfinx import fem
 from packaging.version import Version
-from scifem import BlockedNewtonSolver
 
 from festim import (
     boundary_conditions,
@@ -37,7 +36,6 @@ from festim.helpers import (
     SnesMonitor,
     as_fenics_constant,
     convergenceTest,
-    get_interpolation_points,
     is_it_time_to_export,
     nmm_interpolate,
 )
@@ -408,7 +406,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 # to update the temperature_fenics later
                 self.temperature_expr = fem.Expression(
                     self.temperature(**kwargs),
-                    get_interpolation_points(function_space_temperature.element),
+                    function_space_temperature.element.interpolation_points,
                 )
                 self.temperature_fenics.interpolate(self.temperature_expr)
 
@@ -568,7 +566,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             temperature_field = dolfinx.fem.Function(V)
             temperature_expr = fem.Expression(
                 self.temperature_fenics,
-                get_interpolation_points(V.element),
+                V.element.interpolation_points,
             )
             temperature_field.interpolate(temperature_expr)
             return temperature_field
@@ -609,7 +607,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         expr = D_0 * ufl.exp(
             -E_D / as_fenics_constant(k_B, self.mesh.mesh) / self.temperature_fenics
         )
-        D_expr = fem.Expression(expr, get_interpolation_points(self.V_DG_1.element))
+        D_expr = fem.Expression(expr, self.V_DG_1.element.interpolation_points)
         D.interpolate(D_expr)
         return D, D_expr
 
@@ -1610,7 +1608,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             interface.compute_mapped_interior_facet_data(mesh)
             for interface in self.interfaces
         ]
-        [interface.pad_parent_maps() for interface in self.interfaces]
         dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
 
         all_mobile_species = [spe for spe in self.species if spe.mobile]
@@ -1634,14 +1631,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 )
             J.append(jac)
         # compile jacobian (J) and residual (F)
-        try:
-            from dolfinx.mesh import EntityMap  # noqa: F401
-
-            entity_maps = [sd.cell_map for sd in self.volume_subdomains]
-        except ImportError:
-            entity_maps = {
-                sd.submesh: sd.parent_to_submesh for sd in self.volume_subdomains
-            }
+        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
 
         self.forms = dolfinx.fem.form(
             [subdomain.F for subdomain in self.volume_subdomains],
@@ -1661,53 +1651,31 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_solver(self):
-        if Version(dolfinx.__version__) == Version("0.9.0"):
-            self.solver = BlockedNewtonSolver(
-                self.forms,
-                [subdomain.u for subdomain in self.volume_subdomains],
-                J=self.J,
-                bcs=self.bc_forms,
-                petsc_options=self.petsc_options,
-            )
-            self.solver.max_iterations = self.settings.max_iterations
-            self.solver.convergence_criterion = self.settings.convergence_criterion
-            self.solver.atol = (
-                self.settings.atol
-                if not callable(self.settings.atol)
-                else self.settings.atol(float(self.t))
-            )
-            self.solver.rtol = (
-                self.settings.rtol
-                if not callable(self.settings.rtol)
-                else self.settings.rtol(float(self.t))
-            )
+        from dolfinx.fem.petsc import NonlinearProblem
 
-        elif Version(dolfinx.__version__) > Version("0.9.0"):
-            from dolfinx.fem.petsc import NonlinearProblem
+        petsc_options = self.get_petsc_options()
 
-            petsc_options = self.get_petsc_options()
+        self.solver = NonlinearProblem(
+            self.forms,
+            [subdomain.u for subdomain in self.volume_subdomains],
+            bcs=self.bc_forms,
+            J=self.J,
+            petsc_options=petsc_options,
+            petsc_options_prefix="festim_solver",
+            kind="mpi",
+        )
 
-            self.solver = NonlinearProblem(
-                self.forms,
-                [subdomain.u for subdomain in self.volume_subdomains],
-                bcs=self.bc_forms,
-                J=self.J,
-                petsc_options=petsc_options,
-                petsc_options_prefix="festim_solver",
-                kind="mpi",
-            )
+        self.solver.solver.setMonitor(SnesMonitor)
+        self.solver.solver.getKSP().setMonitor(KSPMonitor)
+        self.solver.solver.setConvergenceTest(convergenceTest)
 
-            self.solver.solver.setMonitor(SnesMonitor)
-            self.solver.solver.getKSP().setMonitor(KSPMonitor)
-            self.solver.solver.setConvergenceTest(convergenceTest)
-
-            # Delete PETSc options post setting them, ref:
-            # https://gitlab.com/petsc/petsc/-/issues/1201
-            snes = self.solver.solver
-            prefix = snes.getOptionsPrefix()
-            opts = PETSc.Options()
-            for k in petsc_options.keys():
-                del opts[f"{prefix}{k}"]
+        # Delete PETSc options post setting them, ref:
+        # https://gitlab.com/petsc/petsc/-/issues/1201
+        snes = self.solver.solver
+        prefix = snes.getOptionsPrefix()
+        opts = PETSc.Options()
+        for k in petsc_options.keys():
+            del opts[f"{prefix}{k}"]
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute."""
@@ -1884,15 +1852,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     submesh_function = (
                         export.field.subdomain_to_post_processing_solution[export_vol]
                     )
-                    try:
-                        from dolfinx.mesh import EntityMap
-
-                        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
-                    except ImportError:
-                        entity_maps = {
-                            sd.submesh: sd.parent_to_submesh
-                            for sd in self.volume_subdomains
-                        }
+                    entity_maps = [sd.cell_map for sd in self.volume_subdomains]
 
                     export.compute(
                         u=submesh_function, ds=self.ds, entity_maps=entity_maps
@@ -1902,15 +1862,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
             elif isinstance(export, exports.VolumeQuantity):
                 if isinstance(export, exports.TotalVolume | exports.AverageVolume):
-                    try:
-                        from dolfinx.mesh import EntityMap
-
-                        entity_maps = [sd.cell_map for sd in self.volume_subdomains]
-                    except ImportError:
-                        entity_maps = {
-                            sd.submesh: sd.parent_to_submesh
-                            for sd in self.volume_subdomains
-                        }
+                    entity_maps = [sd.cell_map for sd in self.volume_subdomains]
 
                     export.compute(
                         u=export.field.subdomain_to_post_processing_solution[
@@ -1927,15 +1879,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 measure = self.ds if is_surface else self.dx
 
                 # getting entity_maps
-                try:
-                    from dolfinx.mesh import EntityMap  # noqa: F401
-
-                    entity_maps = [sd.cell_map for sd in self.volume_subdomains]
-                except ImportError:
-                    entity_maps = {
-                        sd.submesh: sd.parent_to_submesh
-                        for sd in self.volume_subdomains
-                    }
+                entity_maps = [sd.cell_map for sd in self.volume_subdomains]
                 export.compute(measure, entity_maps=entity_maps)
 
             if isinstance(export, exports.DerivedQuantity):
@@ -1994,15 +1938,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.update_time_dependent_values()
 
         # Solve main problem
-        if Version(dolfinx.__version__) == Version("0.9.0"):
-            nb_its, _converged = self.solver.solve()
-        elif Version(dolfinx.__version__) > Version("0.9.0"):
-            _ = self.solver.solve()
-            converged_reason = self.solver.solver.getConvergedReason()
-            assert converged_reason > 0, (
-                f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."  # noqa: E501
-            )
-            nb_its = self.solver.solver.getIterationNumber()
+        _ = self.solver.solve()
+        converged_reason = self.solver.solver.getConvergedReason()
+        assert converged_reason > 0, (
+            f"Non-linear solver did not converge. Reason code: {converged_reason}. \n See https://petsc.org/release/manualpages/SNES/SNESConvergedReason/ for more information."  # noqa: E501
+        )
+        nb_its = self.solver.solver.getIterationNumber()
 
         # post processing
         self.post_processing()
@@ -2213,7 +2154,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
             theta = spe.solution
 
             spe.dg_expr = fem.Expression(
-                theta * K_S, get_interpolation_points(Q1.element)
+                theta * K_S, Q1.element.interpolation_points
             )
             spe.post_processing_solution = fem.Function(Q1)
             spe.post_processing_solution.interpolate(

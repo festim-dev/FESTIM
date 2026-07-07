@@ -55,7 +55,6 @@ from .helpers import (
     as_fenics_interp_expr_and_function,
     as_mapped_function,
     convergenceTest,
-    get_interpolation_points,
 )
 from .hydrogen_transport_problem import (
     HydrogenTransportProblem,
