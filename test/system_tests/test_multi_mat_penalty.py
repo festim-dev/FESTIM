@@ -1,8 +1,8 @@
 from mpi4py import MPI
 
 import dolfinx
-import dolfinx.fem.petsc
 import numpy as np
+import pytest
 import ufl
 
 import festim as F
@@ -285,7 +285,8 @@ def test_penalty_multispecies():
     my_model.run()
 
 
-def test_interface_residual_export_below_tolerance(tmpdir):
+@pytest.mark.parametrize("T_value", [500, lambda x: 300 + 10 * x[1] + 100 * x[0]])
+def test_interface_residual_export_below_tolerance(tmpdir, T_value):
     """A high penalty term drives the exported interface residual below 1e-3."""
     K_S_top, K_S_bot, D_top, D_bot = 3.0, 6.0, 2.0, 5.0
 
@@ -338,7 +339,7 @@ def test_interface_residual_export_below_tolerance(tmpdir):
             value=-ufl.div(D_bot * ufl.grad(c_exact_bot_ufl(x))),
         ),
     ]
-    my_model.temperature = 500.0
+    my_model.temperature = T_value
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
 
     residual_export = F.VTXInterfaceResidualExport(
