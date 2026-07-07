@@ -538,3 +538,39 @@ def test_export_base_class_times_and_extension(tmp_path):
 def test_export_base_class_no_times(tmp_path):
     export = F.ExportBaseClass(filename=tmp_path / "correct.bp", ext=".bp", times=None)
     assert export.times is None
+
+
+def test_vtx_interface_residual_export_stores_field_and_interface(tmpdir):
+    """Test that the interface residual export stores its field and interface."""
+    mat = F.Material(D_0=1, E_D=0)
+    interface = F.Interface(
+        id=5,
+        subdomains=(
+            F.VolumeSubdomain(id=1, material=mat),
+            F.VolumeSubdomain(id=2, material=mat),
+        ),
+    )
+    species = F.Species("H")
+    filename = str(tmpdir.join("residual.bp"))
+    my_export = F.VTXInterfaceResidualExport(
+        field=species, filename=filename, interface=interface
+    )
+    assert my_export.field is species
+    assert my_export.interface is interface
+
+
+def test_vtx_interface_residual_export_suffix_converter(tmpdir):
+    """Test that a non-.bp filename is corrected to a .bp suffix."""
+    mat = F.Material(D_0=1, E_D=0)
+    interface = F.Interface(
+        id=5,
+        subdomains=(
+            F.VolumeSubdomain(id=1, material=mat),
+            F.VolumeSubdomain(id=2, material=mat),
+        ),
+    )
+    filename = str(tmpdir.join("residual.txt"))
+    my_export = F.VTXInterfaceResidualExport(
+        field=F.Species("H"), filename=filename, interface=interface
+    )
+    assert my_export.filename.suffix == ".bp"
