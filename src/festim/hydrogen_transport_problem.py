@@ -2153,9 +2153,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
             theta = spe.solution
 
-            spe.dg_expr = fem.Expression(
-                theta * K_S, Q1.element.interpolation_points
-            )
+            spe.dg_expr = fem.Expression(theta * K_S, Q1.element.interpolation_points)
             spe.post_processing_solution = fem.Function(Q1)
             spe.post_processing_solution.interpolate(
                 spe.dg_expr

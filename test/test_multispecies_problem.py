@@ -1,4 +1,3 @@
-
 import numpy as np
 from dolfinx.fem import Constant
 from ufl import exp
