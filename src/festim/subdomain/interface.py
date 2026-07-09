@@ -2,10 +2,8 @@ from enum import Enum
 from typing import TYPE_CHECKING
 
 import dolfinx
-import numpy as np
 import ufl
 from dolfinx.cpp.fem import compute_integration_domains
-from packaging.version import Version
 
 from festim.material import SolubilityLaw
 from festim.subdomain.volume_subdomain import VolumeSubdomain
@@ -72,46 +70,6 @@ class InterfaceBase(ABC):
         self.id = id
         self.subdomains = tuple(subdomains)
 
-    def pad_parent_maps(self):
-        """Pad parent-to-submesh maps for correct sparsity pattern.
-
-        This is a workaround to ensure the sparsity pattern is correct when assembling
-        forms with interface integrals. It pads the mapping between parent mesh cells
-        and submesh cells for DOLFINx versions that require it.
-        """
-        try:
-            # No padding needed for latest version of DOLFINx
-            from dolfinx.mesh import EntityMap  # noqa: F401
-
-            return
-        except ImportError:
-            pass
-
-        if Version(dolfinx.__version__) == Version("0.9.0"):
-            args = (
-                dolfinx.fem.IntegralType.interior_facet,
-                self.parent_mesh.topology._cpp_object,
-                self.mt.find(self.id),
-                self.mt.dim,
-            )
-        elif Version(dolfinx.__version__) > Version("0.9.0"):
-            args = (
-                dolfinx.fem.IntegralType.interior_facet,
-                self.parent_mesh.topology._cpp_object,
-                self.mt.find(self.id),
-            )
-
-        integration_data = compute_integration_domains(*args).reshape(-1, 4)
-        for i in range(2):
-            # We pad the parent-to-submesh map so that the sparsity pattern
-            # is correct.
-            mapped_cell_0 = self.subdomains[i].parent_to_submesh[integration_data[:, 0]]
-            mapped_cell_1 = self.subdomains[i].parent_to_submesh[integration_data[:, 2]]
-            max_cells = np.maximum(mapped_cell_0, mapped_cell_1)
-            self.subdomains[i].parent_to_submesh[integration_data[:, 0]] = max_cells
-            self.subdomains[i].parent_to_submesh[integration_data[:, 2]] = max_cells
-            self.subdomains[i].padded = True
-
     def compute_mapped_interior_facet_data(self, mesh):
         """Compute integration data for interface integrals.
 
@@ -128,41 +86,22 @@ class InterfaceBase(ABC):
         """
         mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
 
-        if Version(dolfinx.__version__) == Version("0.9.0"):
-            args = (
-                dolfinx.fem.IntegralType.interior_facet,
-                self.parent_mesh.topology._cpp_object,
-                self.mt.find(self.id),
-                self.mt.dim,
-            )
-        elif Version(dolfinx.__version__) > Version("0.9.0"):
-            args = (
-                dolfinx.fem.IntegralType.interior_facet,
-                mesh.topology._cpp_object,
-                self.mt.find(self.id),
-            )
+        args = (
+            dolfinx.fem.IntegralType.interior_facet,
+            mesh.topology._cpp_object,
+            self.mt.find(self.id),
+        )
 
         integration_data = compute_integration_domains(*args)
 
         ordered_integration_data = integration_data.reshape(-1, 4).copy()
 
-        try:
-            # No padding needed for latest version of DOLFINx
-            from dolfinx.mesh import EntityMap  # noqa: F401
-
-            mapped_cell_0 = self.subdomains[0].cell_map.sub_topology_to_topology(
-                integration_data[0::4], inverse=True
-            )
-            mapped_cell_1 = self.subdomains[0].cell_map.sub_topology_to_topology(
-                integration_data[2::4], inverse=True
-            )
-            legacy_entity_map = False
-
-        except ImportError:
-            assert (not self.subdomains[0].padded) and (not self.subdomains[1].padded)
-            mapped_cell_0 = self.subdomains[0].parent_to_submesh[integration_data[0::4]]
-            mapped_cell_1 = self.subdomains[0].parent_to_submesh[integration_data[2::4]]
-            legacy_entity_map = True
+        mapped_cell_0 = self.subdomains[0].cell_map.sub_topology_to_topology(
+            integration_data[0::4], inverse=True
+        )
+        mapped_cell_1 = self.subdomains[0].cell_map.sub_topology_to_topology(
+            integration_data[2::4], inverse=True
+        )
 
         switch = mapped_cell_1 > mapped_cell_0
         # Order restriction on one side
@@ -172,14 +111,9 @@ class InterfaceBase(ABC):
             ]
 
         # Check that other restriction lies in other interface
-        if legacy_entity_map:
-            domain1_cell = self.subdomains[1].parent_to_submesh[
-                ordered_integration_data[:, 2]
-            ]
-        else:
-            domain1_cell = self.subdomains[1].cell_map.sub_topology_to_topology(
-                ordered_integration_data[:, 2], inverse=True
-            )
+        domain1_cell = self.subdomains[1].cell_map.sub_topology_to_topology(
+            ordered_integration_data[:, 2], inverse=True
+        )
         assert (domain1_cell >= 0).all()
 
         return (self.id, ordered_integration_data.reshape(-1))
@@ -249,7 +183,6 @@ class Interface(InterfaceBase):
         mt: Mesh tags for the parent mesh.
         restriction: FEniCS restriction operators for each side
             of the interface, defaults to ("+", "-").
-        padded: Whether the parent-to-submesh maps have been padded.
         method: The method used to enforce interface conditions
             (penalty or Nitsche).
         penalty_term: Penalty parameter for the interface formulation.
@@ -260,7 +193,6 @@ class Interface(InterfaceBase):
     parent_mesh: dolfinx.mesh.Mesh
     mt: dolfinx.mesh.MeshTags
     restriction: list[str, str] = ("+", "-")
-    padded: bool
     method: InterfaceMethod
 
     def __init__(
