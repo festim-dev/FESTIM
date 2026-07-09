@@ -73,7 +73,7 @@ from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
 from .problem import ProblemBase
-from .reaction import Reaction
+from .reaction import BaseReaction, Reaction
 from .settings import Settings
 from .source import HeatSource, ParticleSource, SourceBase
 from .species import ImplicitSpecies, Species, find_species_from_name
