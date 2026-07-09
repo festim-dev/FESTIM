@@ -317,7 +317,7 @@ class FixedConcentrationBC(DirichletBCBase):
                 )
                 self.bc_expr = fem.Expression(
                     self.value(**kwargs),
-                    helpers.get_interpolation_points(function_space.element),
+                    function_space.element.interpolation_points,
                 )
 
                 self.value_fenics.interpolate(self.bc_expr)
@@ -328,7 +328,7 @@ class FixedConcentrationBC(DirichletBCBase):
                 val_as_cst = helpers.as_fenics_constant(mesh=mesh, value=self.value)
                 self.bc_expr = fem.Expression(
                     val_as_cst / K_S,
-                    helpers.get_interpolation_points(function_space.element),
+                    function_space.element.interpolation_points,
                 )
                 self.value_fenics = fem.Function(function_space)
                 self.value_fenics.interpolate(self.bc_expr)
@@ -348,7 +348,7 @@ class FixedConcentrationBC(DirichletBCBase):
 
                     self.bc_expr = fem.Expression(
                         self.value(t=t) / K_S,
-                        helpers.get_interpolation_points(function_space.element),
+                        function_space.element.interpolation_points,
                     )
                     self.value_fenics = fem.Function(function_space)
                     self.value_fenics.interpolate(self.bc_expr)
@@ -366,7 +366,7 @@ class FixedConcentrationBC(DirichletBCBase):
                     # to update the value_fenics later
                     self.bc_expr = fem.Expression(
                         self.value(**kwargs) / K_S,
-                        helpers.get_interpolation_points(function_space.element),
+                        function_space.element.interpolation_points,
                     )
                     self.value_fenics.interpolate(self.bc_expr)
 
@@ -418,6 +418,6 @@ class FixedTemperatureBC(DirichletBCBase):
                 # to update the value_fenics later
                 self.bc_expr = fem.Expression(
                     self.value(**kwargs),
-                    helpers.get_interpolation_points(function_space.element),
+                    function_space.element.interpolation_points,
                 )
                 self.value_fenics.interpolate(self.bc_expr)
