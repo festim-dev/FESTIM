@@ -9,7 +9,7 @@ from festim.species import Species as _Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain1D as VS1D
 
 
-class BaseReaction:
+class GenericReaction:
     """A generic reaction between one or more reactant species and zero or more
     product species, taking place within a volume.
 
@@ -184,8 +184,39 @@ class BaseReaction:
 
         return k * product_of_reactants - (p * product_of_products)
 
+    def source_contributions(self, temperature):
+        """Express the reaction as a set of volumetric source contributions, one
+        per participating :class:`~festim.species.Species`.
 
-class Reaction(BaseReaction):
+        Each contribution is returned in the same sign convention as a
+        :class:`~festim.source.SourceBase`, i.e. the returned ``value`` is meant
+        to enter the residual as ``-value * test_function * dx``. Reactants are
+        consumed (``value = -R``) and products are produced (``value = +R``),
+        where ``R`` is :meth:`reaction_term`. Implicit species (which have no
+        governing equation) are skipped.
+
+        Arguments:
+            temperature: The temperature at which the reaction term is computed.
+
+        Returns:
+            A list of ``(species, value)`` tuples.
+        """
+        rate = self.reaction_term(temperature)
+
+        products = self.product if isinstance(self.product, list) else [self.product]
+
+        contributions = [
+            (reactant, -rate)
+            for reactant in self.reactant
+            if isinstance(reactant, _Species)
+        ]
+        contributions += [
+            (product, rate) for product in products if isinstance(product, _Species)
+        ]
+        return contributions
+
+
+class Reaction(GenericReaction):
     """A reaction between two species, with a forward and backward rate built
     from Arrhenius laws. This is typically used to model trapping/detrapping.
 

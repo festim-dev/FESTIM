@@ -853,24 +853,13 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
         for reaction in self.reactions:
-            for reactant in reaction.reactant:
-                if isinstance(reactant, _species.Species):
-                    self.formulation += (
-                        reaction.reaction_term(self.temperature_fenics)
-                        * reactant.test_function
-                        * self.dx(reaction.volume.id)
-                    )
-
-            # product
-            if isinstance(reaction.product, list):
-                products = reaction.product
-            else:
-                products = [reaction.product]
-            for product in products:
-                self.formulation += (
-                    -reaction.reaction_term(self.temperature_fenics)
-                    * product.test_function
-                    * self.dx(reaction.volume.id)
+            # a reaction enters the formulation as a set of volumetric source
+            # contributions (-R for reactants, +R for products)
+            for species, value in reaction.source_contributions(
+                self.temperature_fenics
+            ):
+                self.formulation -= (
+                    value * species.test_function * self.dx(reaction.volume.id)
                 )
         # add sources
         for source in self.sources:
@@ -1531,24 +1520,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if reaction.volume != subdomain:
                 continue
 
-            # reactant
-            for reactant in reaction.reactant:
-                if isinstance(reactant, _species.Species):
-                    form += (
-                        reaction.reaction_term(self.temperature_fenics)
-                        * reactant.subdomain_to_test_function[subdomain]
-                        * self.dx(subdomain.id)
-                    )
-
-            # product
-            if isinstance(reaction.product, list):
-                products = reaction.product
-            else:
-                products = [reaction.product]
-            for product in products:
-                form += (
-                    -reaction.reaction_term(self.temperature_fenics)
-                    * product.subdomain_to_test_function[subdomain]
+            # a reaction enters the formulation as a set of volumetric source
+            # contributions (-R for reactants, +R for products)
+            for species, value in reaction.source_contributions(
+                self.temperature_fenics
+            ):
+                form -= (
+                    value
+                    * species.subdomain_to_test_function[subdomain]
                     * self.dx(subdomain.id)
                 )
 
