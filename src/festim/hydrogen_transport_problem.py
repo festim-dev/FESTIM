@@ -1453,15 +1453,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                for subdomain in source.species.subdomains:
-                    V = source.species.subdomain_to_function_space[subdomain]
+                # the source is applied on source.volume, so the value is converted on
+                # that subdomain's function space and any species-dependent value is
+                # resolved on that same subdomain
+                V = source.species.subdomain_to_function_space[source.volume]
 
-                    source.value.convert_input_value(
-                        function_space=V,
-                        t=self.t,
-                        temperature=self.temperature_fenics,
-                        up_to_ufl_expr=True,
-                    )
+                source.value.convert_input_value(
+                    function_space=V,
+                    t=self.t,
+                    temperature=self.temperature_fenics,
+                    up_to_ufl_expr=True,
+                    subdomain=source.volume,
+                )
 
     def convert_advection_term_to_fenics_objects(self):
         """For each advection term convert the input value."""

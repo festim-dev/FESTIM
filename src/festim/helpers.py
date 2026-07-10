@@ -158,6 +158,7 @@ class Value:
         | ufl.core.expr.Expr
         | fem.Function
     )
+    species_dependent_value: dict
 
     ufl_expression: ufl.core.expr.Expr
     fenics_interpolation_expression: fem.Expression

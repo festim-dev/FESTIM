@@ -99,9 +99,16 @@ class ParticleSource(SourceBase):
 
     species: Species
 
-    def __init__(self, value, volume, species: Species):
+    def __init__(
+        self,
+        value,
+        volume,
+        species: Species,
+        species_dependent_value: dict | None = None,
+    ):
         self.species = species
         super().__init__(value, volume)
+        self.value.species_dependent_value = species_dependent_value or {}
 
     @property
     def species(self):
