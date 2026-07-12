@@ -17,6 +17,8 @@ class Stepsize:
             If callable, has to be a function of `t`. Defaults to None.
         milestones (list, optional): list of times by which the simulation must
             pass. Defaults to an empty list.
+        milestone_tolerance (float, optional): relative tolerance for how closely
+            a time must align with a milestone to be triggered. Defaults to 1e-5.
 
 
     Attributes:
@@ -32,6 +34,8 @@ class Stepsize:
         max_stepsize (float, callable): Maximum stepsize.
         milestones (list): list of times by which the simulation must
             pass.
+        milestone_tolerance (float): relative tolerance for how closely a
+            time must align with a milestone to be triggered.
     """
 
     def __init__(
@@ -42,6 +46,7 @@ class Stepsize:
         target_nb_iterations=None,
         max_stepsize=None,
         milestones=None,
+        milestone_tolerance=None,
     ) -> None:
         self.initial_value = initial_value
         self.growth_factor = growth_factor
@@ -49,6 +54,7 @@ class Stepsize:
         self.target_nb_iterations = target_nb_iterations
         self.max_stepsize = max_stepsize
         self.milestones = milestones or []
+        self.milestone_tolerance = milestone_tolerance
 
         if milestones and (growth_factor is None or cutback_factor is None):
             raise ValueError(
@@ -68,6 +74,19 @@ class Stepsize:
             self._milestones = sorted(value)
         else:
             self._milestones = value
+
+    @property
+    def milestone_tolerance(self):
+        return self._milestone_tolerance
+
+    @milestone_tolerance.setter
+    def milestone_tolerance(self, value):
+        if value is None:
+            value = 1e-5  # np.isclose default
+        elif value <= 0:
+            raise ValueError("milestone tolerance should be greater than zero")
+
+        self._milestone_tolerance = value
 
     @property
     def adaptive(self):
@@ -143,7 +162,7 @@ class Stepsize:
         if next_milestone is not None:
             time_to_milestone = next_milestone - t
             if updated_value > time_to_milestone and not np.isclose(
-                t, next_milestone, atol=0
+                t, next_milestone, atol=0, rtol=self.milestone_tolerance
             ):
                 updated_value = time_to_milestone
 
