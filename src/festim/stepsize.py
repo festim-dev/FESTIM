@@ -45,7 +45,7 @@ class Stepsize:
         target_nb_iterations=None,
         max_stepsize=None,
         milestones=None,
-        milestone_tolerance=None,
+        milestone_tolerance=1e-5,
     ) -> None:
         self.initial_value = initial_value
         self.growth_factor = growth_factor
