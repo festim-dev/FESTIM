@@ -80,9 +80,7 @@ class Stepsize:
 
     @milestone_tolerance.setter
     def milestone_tolerance(self, value):
-        if value is None:
-            value = 1e-5  # np.isclose default
-        elif value <= 0:
+        if value <= 0:
             raise ValueError("milestone tolerance should be greater than zero")
 
         self._milestone_tolerance = value
