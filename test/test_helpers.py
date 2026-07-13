@@ -415,9 +415,7 @@ def test_convert_input_value_species_dependent_up_to_ufl_expr():
     species.solution = fem.Function(V)
     species.solution.x.array[:] = 5.0
 
-    test_value = F.Value(
-        lambda c1: 2 * c1, species_dependent_value={"c1": species}
-    )
+    test_value = F.Value(lambda c1: 2 * c1, species_dependent_value={"c1": species})
     test_value.convert_input_value(function_space=V, up_to_ufl_expr=True)
 
     result = fem.Function(V)
