@@ -17,7 +17,8 @@ class Stepsize:
             If callable, has to be a function of `t`. Defaults to None.
         milestones (list, optional): list of times by which the simulation must
             pass. Defaults to an empty list.
-        milestone_tolerance (float, optional): relative tolerance passed to numpy.isclose (rtol) Defaults to 1e-5.
+        milestone_tolerance (float, optional): relative tolerance passed to
+            numpy.isclose (rtol). Defaults to 1e-5.
 
 
     Attributes:
