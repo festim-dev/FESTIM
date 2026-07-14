@@ -234,7 +234,7 @@ def test_milestone_tolerance_setter():
 
     # Test that setting a milestone tolerance <=0 raises a ValueError
     with pytest.raises(
-        ValueError, match="milestone tolerance must be greater than zero"
+        ValueError, match="milestone tolerance should be greater than zero"
     ):
         stepsize.milestone_tolerance = -1.0
 
