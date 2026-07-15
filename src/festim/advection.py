@@ -149,6 +149,8 @@ class VelocityField(Value):
                 )
 
         # create vector function space and function
+
+        # NOTE: this is what needs to change!! @jhdark @kaelyn
         v_cg = basix.ufl.element(
             "Lagrange",
             function_space.mesh.topology.cell_name(),
