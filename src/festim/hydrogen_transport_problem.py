@@ -1453,9 +1453,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                # the source is applied on source.volume, so the value is converted on
-                # that subdomain's function space and any species-dependent value is
-                # resolved on that same subdomain
                 V = source.species.subdomain_to_function_space[source.volume]
 
                 source.value.convert_input_value(
@@ -1999,12 +1996,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     f"{type(bc)} not implemented for "
                     f"HydrogenTransportProblemDiscontinuousChangeVar"
                 )
-            if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                if bc.species_dependent_value:
-                    raise ValueError(
-                        f"{type(bc)} concentration-dependent not implemented for "
-                        f"HydrogenTransportProblemDiscontinuousChangeVar"
-                    )
 
         super().initialise()
 
