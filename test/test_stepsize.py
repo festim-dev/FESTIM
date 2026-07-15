@@ -202,3 +202,42 @@ def test_milestones_without_adaptivity_raises_error():
         ValueError, match=r"Milestones are only relevant if the stepsize is adaptive."
     ):
         F.Stepsize(initial_value=2, milestones=[1, 2, 3])
+
+
+def test_milestone_tolerance_miss_tolerance():
+    """
+    This tests confirms that with a high rtol the milestone is missed
+    See issue #933
+    """
+
+    stepsize = F.Stepsize(
+        initial_value=1,
+        growth_factor=1.2,
+        cutback_factor=0.9,
+        target_nb_iterations=4,
+        milestones=[0.05, 0.1, 0.2, 0.5, 1],
+        milestone_tolerance=1e-10,
+    )
+
+    current_t = 0.499999
+    current_dt = 1
+    new_dt = stepsize.modify_value(value=current_dt, nb_iterations=4, t=current_t)
+
+    new_t = current_t + new_dt
+    assert np.isclose(new_t, 0.5), f"Expected new_t to be 0.5, but got {new_t}"
+
+
+def test_milestone_tolerance_setter():
+    """Checks that the milestone tolerance setter works correctly"""
+
+    stepsize = F.Stepsize(1)
+
+    # Test that setting a milestone tolerance <=0 raises a ValueError
+    with pytest.raises(
+        ValueError, match="milestone tolerance should be greater than zero"
+    ):
+        stepsize.milestone_tolerance = -1.0
+
+    # Test that setting the default milestone tolerance of 1e-5 works
+    stepsize.milestone_tolerance = 1e-5
+    assert stepsize.milestone_tolerance == 1e-5
