@@ -77,11 +77,18 @@ class ParticleSource(SourceBase):
         value: the value of the source
         volume: the volume subdomains where the source is applied
         species: the species to which the source is applied
+        species_dependent_value: a dictionary of species-dependent values for the
+            source, where the keys are species names and the values are the
+            corresponding values for those species.
 
     Attributes:
         value: the value of the source
         volume: the volume subdomains where the source is applied
         species: the species to which the source is applied
+        species_dependent_value: a dictionary of species-dependent values for the
+            source, where the keys are species names and the values are the
+            corresponding values for those species.
+
 
     Examples:
 
@@ -98,6 +105,7 @@ class ParticleSource(SourceBase):
     """
 
     species: Species
+    species_dependent_value: dict | None
 
     def __init__(
         self,
