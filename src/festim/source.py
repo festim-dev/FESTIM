@@ -77,18 +77,18 @@ class ParticleSource(SourceBase):
         value: the value of the source
         volume: the volume subdomains where the source is applied
         species: the species to which the source is applied
-        species_dependent_value: a dictionary of species-dependent values for the
-            source, where the keys are species names and the values are the
-            corresponding values for those species.
+        species_dependent_value: a dictionary mapping the argument names in a callable
+            ``value`` to festim.Species objects, allowing the source to depend on the
+            concentration of other species. Example: ``{"c1": species1}`` where ``"c1"``
+            is the argument name in the callable ``value`` and ``species1`` is a
+            festim.Species object. Ignored if ``value`` is not callable. Defaults to
+            None. Not supported by
+            :class:`festim.HydrogenTransportProblemDiscontinuousChangeVar`.
 
     Attributes:
-        value: the value of the source
+        value: the value of the source, as a festim.Value object
         volume: the volume subdomains where the source is applied
         species: the species to which the source is applied
-        species_dependent_value: a dictionary of species-dependent values for the
-            source, where the keys are species names and the values are the
-            corresponding values for those species.
-
 
     Examples:
 
@@ -102,10 +102,11 @@ class ParticleSource(SourceBase):
             ParticleSource(volume=my_vol, value=lambda t: 1 + t, species="H")
             ParticleSource(volume=my_vol, value=lambda T: 1 + T, species="H")
             ParticleSource(volume=my_vol, value=lambda x, t: 1 + x[0] + t, species="H")
+            ParticleSource(volume=my_vol, value=lambda c1: 2 * c1**2, species="H",
+            species_dependent_value={"c1": species1})
     """
 
     species: Species
-    species_dependent_value: dict | None
 
     def __init__(
         self,
@@ -116,7 +117,10 @@ class ParticleSource(SourceBase):
     ):
         self.species = species
         super().__init__(value, volume)
-        self.value.species_dependent_value = species_dependent_value or {}
+        # only override what the Value already holds if a dict was explicitly given,
+        # so that ParticleSource(value=Value(..., species_dependent_value=...)) works
+        if species_dependent_value is not None:
+            self.value.species_dependent_value = species_dependent_value
 
     @property
     def species(self):

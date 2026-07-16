@@ -871,6 +871,81 @@ def test_species_dependent_source_discontinuous():
     assert vol2.u not in coefficients
 
 
+def _change_var_model_with_species_dependent(species_dependent_on):
+    """Builds a HydrogenTransportProblemDiscontinuousChangeVar with a species-dependent
+    source or flux BC. `species_dependent_on` is either "source" or "flux"."""
+    my_model = F.HydrogenTransportProblemDiscontinuousChangeVar()
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 11))
+    mat = F.Material(D_0=1, E_D=0, K_S_0=2.0, E_K_S=0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    left_surf = F.SurfaceSubdomain1D(id=2, x=0)
+    right_surf = F.SurfaceSubdomain1D(id=3, x=1)
+    my_model.subdomains = [vol, left_surf, right_surf]
+
+    A, B = F.Species("A"), F.Species("B")
+    my_model.species = [A, B]
+    my_model.temperature = 500
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(left_surf, value=1, species=A),
+        F.FixedConcentrationBC(right_surf, value=0, species=A),
+        F.FixedConcentrationBC(left_surf, value=1, species=B),
+        F.FixedConcentrationBC(right_surf, value=0, species=B),
+    ]
+
+    if species_dependent_on == "source":
+        my_model.sources = [
+            F.ParticleSource(
+                value=lambda B: 2 * B,
+                volume=vol,
+                species=A,
+                species_dependent_value={"B": B},
+            )
+        ]
+    else:
+        my_model.boundary_conditions.append(
+            F.ParticleFluxBC(
+                subdomain=right_surf,
+                value=lambda B: 2 * B,
+                species=A,
+                species_dependent_value={"B": B},
+            )
+        )
+
+    return my_model
+
+
+@pytest.mark.parametrize("species_dependent_on", ["source", "flux"])
+def test_species_dependent_value_not_implemented_for_change_var(species_dependent_on):
+    """Test that a species-dependent source or flux BC raises an error with the change
+    of variable, where the solution of a mobile species is the chemical potential and
+    not the concentration."""
+    # BUILD
+    my_model = _change_var_model_with_species_dependent(species_dependent_on)
+
+    # RUN + TEST
+    with pytest.raises(ValueError, match="concentration-dependent not implemented"):
+        my_model.initialise()
+
+
+def test_non_species_dependent_source_works_with_change_var():
+    """Test that a source that doesn't depend on other species is still accepted with
+    the change of variable."""
+    # BUILD
+    my_model = _change_var_model_with_species_dependent("source")
+    my_model.sources = [
+        F.ParticleSource(
+            value=lambda x: 1 + x[0],
+            volume=my_model.subdomains[0],
+            species=my_model.species[0],
+        )
+    ]
+
+    # RUN + TEST (should not raise)
+    my_model.initialise()
+    my_model.run()
+
+
 # TODO replace this by a proper MMS test
 def test_run_in_steady_state():
     """Test that the run method works in steady state."""

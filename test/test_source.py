@@ -223,6 +223,19 @@ def test_particle_source_species_dependent_value_defaults_to_empty_dict():
     assert source.value.species_dependent_value == {}
 
 
+def test_particle_source_keeps_species_dependent_value_of_given_value_object():
+    """Test that a Value given to ParticleSource keeps its own species_dependent_value
+    when none is passed to the source."""
+    volume = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=dummy_mat)
+    species = F.Species("test")
+    other_species = F.Species("other")
+
+    my_value = F.Value(lambda c1: 2 * c1, species_dependent_value={"c1": other_species})
+    source = F.ParticleSource(value=my_value, volume=volume, species=species)
+
+    assert source.value.species_dependent_value == {"c1": other_species}
+
+
 @pytest.mark.parametrize(
     "species_input",
     [

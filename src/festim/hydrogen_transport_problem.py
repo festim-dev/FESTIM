@@ -1996,6 +1996,23 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     f"{type(bc)} not implemented for "
                     f"HydrogenTransportProblemDiscontinuousChangeVar"
                 )
+            # with the change of variable, the solution of a mobile species is the
+            # chemical potential and not the concentration, so a species-dependent
+            # value would silently be given the wrong quantity
+            if isinstance(bc, boundary_conditions.ParticleFluxBC):
+                if bc.species_dependent_value:
+                    raise ValueError(
+                        f"{type(bc)} concentration-dependent not implemented for "
+                        f"HydrogenTransportProblemDiscontinuousChangeVar"
+                    )
+
+        for source in self.sources:
+            if isinstance(source, _source.ParticleSource):
+                if source.value.species_dependent:
+                    raise ValueError(
+                        f"{type(source)} concentration-dependent not implemented for "
+                        f"HydrogenTransportProblemDiscontinuousChangeVar"
+                    )
 
         super().initialise()
 
