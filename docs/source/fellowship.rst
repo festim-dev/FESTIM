@@ -12,7 +12,7 @@ Previous Fellows
       :columns: 12 10 8 8
 
       .. card:: Tez Orr — UKAEA (2026)
-         :link: fellowship_tez
+         :link: fellowship/fellowship_tez
          :link-type: doc
 
          .. grid:: 2
@@ -141,11 +141,11 @@ The programme is organised in cohorts throughout the year:
 
 **Fall cohort**:
 ^^^^^^^^^^^^^^^^^
-- April - Applications open  
-- August - Application deadline  
-- August - Decisions released  
-- October* - Programme starts  
-- December* - Programme ends  
+- 1st April - Applications open  
+- 31st August - Application deadline  
+- 6th September - Decisions released  
+- 5th October* - Programme starts  
+- 11th December* - Programme ends  
 
 *\*Programme dates are flexible*
 
