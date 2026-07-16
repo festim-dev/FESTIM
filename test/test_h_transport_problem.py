@@ -5,8 +5,7 @@ import numpy as np
 import pytest
 import tqdm.auto
 import ufl
-from dolfinx import default_scalar_type, fem, nls
-from packaging.version import Version
+from dolfinx import default_scalar_type, fem
 
 import festim as F
 
@@ -162,14 +161,10 @@ def test_iterate():
         my_model.u - my_model.u_n
     ) / my_model.dt * v * ufl.dx - source_value * v * ufl.dx
 
-    if Version(dolfinx.__version__) == Version("0.9.0"):
-        problem = fem.petsc.NonlinearProblem(form, my_model.u, bcs=[])
-        my_model.solver = nls.petsc.NewtonSolver(MPI.COMM_WORLD, problem)
-    elif Version(dolfinx.__version__) > Version("0.9.0"):
-        problem = fem.petsc.NonlinearProblem(
-            form, my_model.u, bcs=[], petsc_options_prefix="festim_solver"
-        )
-        my_model.solver = problem
+    problem = fem.petsc.NonlinearProblem(
+        form, my_model.u, bcs=[], petsc_options_prefix="festim_solver"
+    )
+    my_model.solver = problem
 
     my_model.t = fem.Constant(mesh, 0.0)
 

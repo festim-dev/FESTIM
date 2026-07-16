@@ -1,23 +1,16 @@
-import types
 from collections.abc import Callable
 
 import dolfinx
 import numpy as np
 from dolfinx import fem
-from dolfinx.mesh import Mesh, locate_entities
+from dolfinx.mesh import EntityMap, Mesh, locate_entities
 from numpy import typing as npt
 from scifem.mesh import transfer_meshtags_to_submesh
 
 from festim.material import Material
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
 
-# Define the appropriate method based on the version
-try:
-    from dolfinx.mesh import EntityMap
-
-    entity_map_type = EntityMap
-except ImportError:
-    entity_map_type = npt.NDArray[np.int32]
+entity_map_type = EntityMap
 
 
 class VolumeSubdomain:
@@ -28,12 +21,10 @@ class VolumeSubdomain:
         submesh: the submesh of the volume subdomain
         cell_map: the cell map of the volume subdomain
         parent_mesh: the parent mesh of the volume subdomain
-        parent_to_submesh: the parent to submesh map of the volume subdomain
         v_map: the vertex map of the volume subdomain
         n_map: the normal map of the volume subdomain
         facet_to_parent: the facet to parent map of the volume subdomain
         ft: the facet meshtags of the volume subdomain
-        padded: whether the subdomain is padded (for 0.9 compatibility)
         u: the solution function of the subdomain
         u_n: the previous solution function of the subdomain
         material: the material assigned to the subdomain
@@ -44,12 +35,10 @@ class VolumeSubdomain:
     submesh: dolfinx.mesh.Mesh
     cell_map: "entity_map_type"
     parent_mesh: dolfinx.mesh.Mesh
-    parent_to_submesh: "entity_map_type"
     v_map: "entity_map_type"
     n_map: np.ndarray
     facet_to_parent: np.ndarray
     ft: dolfinx.mesh.MeshTags
-    padded: bool  # NOTE: Once 0.9 support is dropped, this can be removed
     u: dolfinx.fem.Function
     u_n: dolfinx.fem.Function
     material: Material
@@ -80,7 +69,7 @@ class VolumeSubdomain:
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
         Creates the following attributes: ``.parent_mesh``, ``.submesh``, ``.cell_map``,
-        ``.v_map``, ``padded``, and the entity map ``parent_to_submesh``.
+        and ``.v_map``.
 
         Only used in ``festim.HydrogenTransportProblemDiscontinuous``
 
@@ -96,17 +85,6 @@ class VolumeSubdomain:
         self.submesh, self.cell_map, self.v_map, self.n_map = (
             dolfinx.mesh.create_submesh(mesh, marker.dim, entities)
         )
-        if isinstance(entity_map_type, types.GenericAlias):
-            num_cells_local = (
-                mesh.topology.index_map(marker.dim).size_local
-                + mesh.topology.index_map(marker.dim).num_ghosts
-            )
-            self.parent_to_submesh = np.full(num_cells_local, -1, dtype=np.int32)
-            self.parent_to_submesh[self.cell_map] = np.arange(
-                len(self.cell_map), dtype=np.int32
-            )
-
-            self.padded = False
 
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
         # Transfer meshtags to submesh
