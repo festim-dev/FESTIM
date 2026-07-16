@@ -91,6 +91,47 @@ def test_plot_raises_if_no_solution():
         F.plot(F.Species("H"))
 
 
+def test_plot_raises_if_subdomain_given_on_non_mixed_domain_problem():
+    material = F.Material(D_0=1, E_D=0)
+    vol_1 = F.VolumeSubdomain(id=1, material=material)
+
+    species = F.Species("H")
+    species.post_processing_solution = create_mock_solution()
+
+    with pytest.raises(
+        ValueError,
+        match="Problem seems to be HydrogenTransportProblem but a subdomain "
+        "was provided",
+    ):
+        F.plot(species, subdomain=vol_1)
+
+
+def test_plot_raises_if_no_subdomain_solutions():
+    material = F.Material(D_0=1, E_D=0)
+    vol_1 = F.VolumeSubdomain(id=1, material=material)
+
+    species = F.Species("H")
+
+    with pytest.raises(
+        ValueError, match="Species H has no subdomain post-processing solutions"
+    ):
+        F.plot(species, subdomain=vol_1)
+
+
+def test_plot_raises_if_no_solution_on_given_subdomain():
+    material = F.Material(D_0=1, E_D=0)
+    vol_1 = F.VolumeSubdomain(id=1, material=material)
+    vol_2 = F.VolumeSubdomain(id=2, material=material)
+
+    species = F.Species("H")
+    species.subdomain_to_post_processing_solution = {vol_1: create_mock_solution()}
+
+    with pytest.raises(
+        ValueError, match="Species H has no post-processing solution on subdomain"
+    ):
+        F.plot(species, subdomain=vol_2)
+
+
 def test_plot_default_show_edges_and_empty_name():
     species = F.Species()
     species.post_processing_solution = create_mock_solution()

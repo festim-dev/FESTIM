@@ -1,11 +1,24 @@
 from pathlib import Path
 
+from dolfinx import fem
+
 from festim.species import Species
 
 DEFAULT_TITLE_FONT_SIZE = 12
 
 
 def _normalize_fields(field: Species | list[Species]) -> list[Species]:
+    """Return the species to plot as a list.
+
+    Args:
+        field: one species or a list of species.
+
+    Returns:
+        the species as a list.
+
+    Raises:
+        TypeError: if field is not a Species or a list of Species.
+    """
     if isinstance(field, Species):
         return [field]
     if isinstance(field, list) and all(isinstance(f, Species) for f in field):
@@ -13,7 +26,26 @@ def _normalize_fields(field: Species | list[Species]) -> list[Species]:
     raise TypeError("field must be of type festim.Species or a list of festim.Species")
 
 
-def _get_solution(field: Species, subdomain=None): -> fem.function
+def _get_solution(field: Species, subdomain=None) -> fem.Function:
+    """Return the post-processing solution of a species, optionally on a subdomain.
+
+    Args:
+        field: the species to get the solution from.
+        subdomain: optional volume subdomain used in mixed-domain problems. If None,
+            the solution of the species itself is returned.
+
+    Returns:
+        the post-processing solution to plot.
+
+    Raises:
+        ValueError: if no subdomain is given and the species has no
+            post_processing_solution.
+        ValueError: if a subdomain is given but the species has a
+            post_processing_solution (ie. the problem is not a mixed-domain one).
+        ValueError: if the species has no post-processing solution on any subdomain.
+        ValueError: if the species has no post-processing solution on the given
+            subdomain.
+    """
     if subdomain is None:
         if field.post_processing_solution is None:
             raise ValueError(
@@ -39,6 +71,17 @@ def _get_solution(field: Species, subdomain=None): -> fem.function
 
 
 def _make_ugrid(solution, pyvista_module, name="c"):
+    """Build a pyvista grid holding the values of a solution.
+
+    Args:
+        solution: the function to represent on the grid.
+        pyvista_module: the imported pyvista module.
+        name: the name of the scalar field on the grid. Species sharing a name share
+            a colourbar.
+
+    Returns:
+        the grid with ``name`` set as active scalars.
+    """
     from dolfinx import plot as dolfinx_plot
 
     topology, cell_types, geometry = dolfinx_plot.vtk_mesh(solution.function_space)
@@ -71,7 +114,8 @@ def plot(
         import pyvista
     except ImportError as import_error:
         raise ImportError(
-            "pyvista is required for plotting. Install it with `pip install pyvista`."
+            "pyvista is required for plotting. Install it with "
+            "`pip install festim[plot]`."
         ) from import_error
 
     fields = _normalize_fields(field)
@@ -81,8 +125,8 @@ def plot(
     for i, spe in enumerate(fields):
         if len(fields) > 1:
             plotter.subplot(0, i)
-        # if subdomain is None but the species has .subdomain_to_post_processing_solution,
-        # we need to plot on all subdomains
+        # if subdomain is None but the species has
+        # .subdomain_to_post_processing_solution, we need to plot on all subdomains
         if subdomain is None:
             if spe.subdomain_to_post_processing_solution:
                 for solution in spe.subdomain_to_post_processing_solution.values():
