@@ -117,7 +117,7 @@ class ParticleSource(SourceBase):
         value,
         volume,
         species: Species,
-        species_dependent_value: dict[str, "Species"] | None,
+        species_dependent_value: dict[str, "Species"] | None = None,
     ):
         self.species = species
         self.species_dependent_value = species_dependent_value
