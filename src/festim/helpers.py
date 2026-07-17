@@ -287,7 +287,12 @@ class Value:
         elif callable(self.input_value):
             args = self.input_value.__code__.co_varnames
             # if only t is an argument, create constant object
-            if "t" in args and "x" not in args and "T" not in args:
+            if (
+                "t" in args
+                and "x" not in args
+                and "T" not in args
+                and not self.species_dependent_value
+            ):
                 if not isinstance(self.input_value(t=float(t)), float | int):
                     raise ValueError(
                         "self.value should return a float or an int, not "
@@ -447,3 +452,6 @@ def KSPMonitor(ksp, iter, rnorm):
     dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=}, {_residual0=:.5e}")
     if MPI.COMM_WORLD.rank == 0:
         dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=} {rnorm=:.5e}")
+
+
+lambda c, t: 1 + c + t

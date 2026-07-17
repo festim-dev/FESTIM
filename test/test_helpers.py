@@ -461,3 +461,33 @@ def test_value_species_dependent(input_value, species_dependent_value, expected)
     test_value = F.Value(input_value, species_dependent_value=species_dependent_value)
 
     assert test_value.species_dependent is expected
+
+
+def test_convert_input_value_time_and_species_dependent():
+    """Regression test: a value depending on both time and a species must not take the
+    t-only constant fast path (which would call the callable without the species
+    argument). It should map to a UFL expression that tracks both the time and the
+    species concentration as they change."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    species = F.Species("B")
+    species.solution = fem.Function(V)  # continuous case: concentration is set
+    species.solution.x.array[:] = 2.0
+
+    t = fem.Constant(test_mesh.mesh, 3.0)
+
+    test_value = F.Value(lambda t, B: t * B, species_dependent_value={"B": species})
+    # up_to_ufl_expr=True is the path used for sources
+    test_value.convert_input_value(function_space=V, t=t, up_to_ufl_expr=True)
+
+    # the result is a UFL expression; evaluate it by interpolating into V
+    result = fem.Function(V)
+    expr = fem.Expression(test_value.fenics_object, V.element.interpolation_points)
+    result.interpolate(expr)
+    assert np.allclose(result.x.array, 3.0 * 2.0)  # t * B
+
+    # the expression tracks later changes to both the time and the concentration
+    t.value = 5.0
+    species.solution.x.array[:] = 4.0
+    result.interpolate(expr)
+    assert np.allclose(result.x.array, 5.0 * 4.0)
