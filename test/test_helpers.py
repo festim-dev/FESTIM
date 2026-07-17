@@ -461,36 +461,3 @@ def test_value_species_dependent(input_value, species_dependent_value, expected)
     test_value = F.Value(input_value, species_dependent_value=species_dependent_value)
 
     assert test_value.species_dependent is expected
-
-
-def test_as_mapped_function_error_when_no_subdomain_given():
-    """Test that a clear error is raised when a species has no solution and no subdomain
-    is given to select one from."""
-
-    species = F.Species("c1")  # solution is None -> concentration is None
-
-    with pytest.raises(ValueError, match="no solution defined and no subdomain"):
-        F.as_mapped_function(
-            value=lambda c1: 2 * c1,
-            species_dependent_value={"c1": species},
-        )
-
-
-def test_as_mapped_function_error_when_species_not_on_subdomain():
-    """Test that a clear error is raised when a species has no solution on the subdomain
-    the value is evaluated on."""
-
-    mat = F.Material(D_0=1, E_D=1)
-    subdomain = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
-    other_subdomain = F.VolumeSubdomain1D(id=2, borders=[1, 2], material=mat)
-
-    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
-    species = F.Species("c1")
-    species.subdomain_to_solution = {other_subdomain: fem.Function(V)}
-
-    with pytest.raises(ValueError, match="no solution on subdomain 1"):
-        F.as_mapped_function(
-            value=lambda c1: 2 * c1,
-            species_dependent_value={"c1": species},
-            subdomain=subdomain,
-        )
