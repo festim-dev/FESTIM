@@ -1739,7 +1739,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return
 
         mesh = self.mesh.mesh
-        # NOTE: we could define the Gas Species real element on a submesh
+        # The real space is defined on the parent mesh. It could instead live on a
+        # submesh of the contact facets (as in the scifem demo), but that is a
+        # code-structure choice, not a performance one: a real space has a single
+        # global dof either way, and the pressure's Jacobian coupling is already
+        # surface-local (its sparsity comes from the ds integration measure, not from
+        # the mesh the space is defined on). A submesh would only add entity_map
+        # bookkeeping.
         for gas_species in self.gas_species:
             V = create_real_function_space(mesh)
             gas_species.function_space = V
