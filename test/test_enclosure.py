@@ -204,10 +204,45 @@ class TestOpeningSigns:
 
 @requires_dolfinx_011
 class TestValidation:
+    def test_area_required_on_1d_mesh(self):
+        """In 1D a surface is a point, so the mesh cannot supply the area of the
+        membrane facing the enclosure and the user must give it."""
+        H2 = make_gas_species()
+        my_model, _volume, _left, right = make_model()
+        # a plain list means no areas were given
+        my_model.enclosures = [make_enclosure(species=[H2], surfaces=[right])]
+        with pytest.raises(ValueError, match="areas of those surfaces"):
+            my_model.initialise()
+
+    def test_area_given_as_dict_is_accepted_on_1d_mesh(self):
+        H2 = make_gas_species()
+        my_model, _volume, _left, right = make_model()
+        my_model.enclosures = [make_enclosure(species=[H2], surfaces={right: 1e-4})]
+        my_model.initialise()  # must not raise
+
+    def test_surfaceless_enclosure_needs_no_area(self):
+        """An enclosure that only has openings never integrates a flux, so there is no
+        area to supply."""
+        H2 = make_gas_species()
+        enclosure = make_enclosure(species=[H2], openings=[F.Pump(pumping_speed=1e-4)])
+        my_model, *_ = make_model(enclosures=[enclosure])
+        my_model.initialise()  # must not raise
+
+    def test_negative_area_raises(self):
+        H2 = make_gas_species()
+        right = F.SurfaceSubdomain1D(id=2, x=1.0)
+        with pytest.raises(ValueError, match="area of surface 2 must be positive"):
+            make_enclosure(species=[H2], surfaces={right: -1.0})
+
+    def test_surfaces_keys_must_be_surface_subdomains(self):
+        H2 = make_gas_species()
+        with pytest.raises(TypeError, match="SurfaceSubdomain"):
+            make_enclosure(species=[H2], surfaces={"right": 1.0})
+
     def test_surface_not_in_subdomains_raises(self):
         stray = F.SurfaceSubdomain1D(id=99, x=0.5)
         H2 = make_gas_species()
-        enclosure = make_enclosure(species=[H2], surfaces=[stray])
+        enclosure = make_enclosure(species=[H2], surfaces={stray: 1.0})
         my_model, *_ = make_model(enclosures=[enclosure])
         with pytest.raises(ValueError, match="is not in the subdomains"):
             my_model.initialise()
@@ -272,7 +307,7 @@ class TestSurfaceReactionCoupling:
     def test_gas_pressure_accepts_gas_species(self):
         H2 = make_gas_species(initial_pressure=1e5)
         my_model, _volume, _left, right = make_model()
-        enclosure = make_enclosure(species=[H2], surfaces=[right])
+        enclosure = make_enclosure(species=[H2], surfaces={right: 1.0})
         my_model.enclosures = [enclosure]
         H = my_model.species[0]
         my_model.boundary_conditions = [
@@ -296,7 +331,7 @@ class TestSurfaceReactionCoupling:
         and the gas would never gain the particles the solid loses."""
         H2 = make_gas_species(initial_pressure=1e5)
         my_model, volume, _left, right = make_model()
-        my_model.enclosures = [make_enclosure(species=[H2], surfaces=[right])]
+        my_model.enclosures = [make_enclosure(species=[H2], surfaces={right: 1.0})]
         H = my_model.species[0]
         my_model.boundary_conditions = [
             F.SurfaceReactionBC(

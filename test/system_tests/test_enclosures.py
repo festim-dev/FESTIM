@@ -1,6 +1,7 @@
 from mpi4py import MPI
 
 import dolfinx
+import numpy as np
 import pytest
 import ufl
 
@@ -179,22 +180,24 @@ def test_enclosure_connection_two_boxes():
     assert P1 * V1 + P2 * V2 == pytest.approx(P1_0 * V1 + P2_0 * V2, rel=1e-8)
 
 
-@pytest.mark.parametrize("length", [1.0, 2.0])
-def test_closed_enclosure_conserves_particles(length):
+@pytest.mark.parametrize("length, area", [(1.0, 1.0), (2.0, 0.25)])
+def test_closed_enclosure_conserves_particles(length, area):
     """A closed enclosure exchanging with a slab through a surface reaction 2H <-> H2
     must conserve hydrogen atoms exactly at every timestep.
 
-    Nothing leaves the system, so ``int(c_H) dx + 2*P*V/(k*T)`` is invariant. This is
-    exact (to Newton tolerance) rather than approximate, because the same UFL
-    expression drives both the species residual and the pressure residual. It is the
-    sharpest check available on the sign conventions and on the factor of 2 from the
-    diatomic stoichiometry.
+    Nothing leaves the system, so ``A*int(c_H) dx + 2*P*V/(k*T)`` is invariant, where
+    ``A`` is the area of the membrane facing the enclosure (in 1D the model is per unit
+    area, so the solid inventory has to be scaled by it). This is exact (to Newton
+    tolerance) rather than approximate, because the same UFL expression drives both the
+    species residual and the pressure residual. It is the sharpest check available on
+    the sign conventions, on the factor of 2 from the diatomic stoichiometry, and on
+    the area factor.
 
-    ``length`` is parameterised, and 1.0 is deliberately not the only case: the pressure
-    test function is a global constant, so a volume term assembles to ``|Omega| * f``
-    while a surface term does not pick up that factor. The residual divides its volume
-    terms by ``|Omega|`` to compensate, and on a unit domain that division is a no-op --
-    so a unit-only test passes even if the normalisation is missing entirely.
+    ``(1.0, 1.0)`` is deliberately not the only case. The pressure test function is a
+    global constant, so a term spread over a region assembles to ``|region| * f`` and
+    has to be divided by that measure, and the flux has to be multiplied by the physical
+    area. Both factors are exactly 1 in the unit case, so a unit-only test would pass
+    even with the normalisation and the area dropped entirely.
     """
     V_enc, T, P0 = 1e-3, 500.0, 1e5
     k_d0, k_r0 = 1e15, 1e-25
@@ -214,7 +217,7 @@ def test_closed_enclosure_conserves_particles(length):
 
     H2 = F.GasSpecies(name="H2", initial_pressure=P0)
     my_model.enclosures = [
-        F.Enclosure(volume=V_enc, species=[H2], temperature=T, surfaces=[right])
+        F.Enclosure(volume=V_enc, species=[H2], temperature=T, surfaces={right: area})
     ]
     my_model.boundary_conditions = [
         F.SurfaceReactionBC(
@@ -242,7 +245,8 @@ def test_closed_enclosure_conserves_particles(length):
 
     def total_hydrogen_atoms():
         c = H.subdomain_to_post_processing_solution[volume]
-        in_solid = mesh.comm.allreduce(
+        # the 1D model is per unit area, so scale the inventory by the membrane area
+        in_solid = area * mesh.comm.allreduce(
             dolfinx.fem.assemble_scalar(dolfinx.fem.form(c * ufl.dx)), op=MPI.SUM
         )
         # 2 atoms per H2 molecule
@@ -284,7 +288,9 @@ def test_steady_state_closed_enclosure_reaches_surface_equilibrium():
 
     H2 = F.GasSpecies(name="H2", initial_pressure=1e5)
     my_model.enclosures = [
-        F.Enclosure(volume=1e-3, species=[H2], temperature=T, surfaces=[right])
+        # the area does not affect the steady-state equilibrium: zero net flux forces
+        # kd*P = kr*c^2 whatever the area scaling
+        F.Enclosure(volume=1e-3, species=[H2], temperature=T, surfaces={right: 0.5})
     ]
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(subdomain=left, value=c0, species=H),
@@ -304,6 +310,100 @@ def test_steady_state_closed_enclosure_reaches_surface_equilibrium():
     my_model.run()
 
     assert H2.value == pytest.approx(k_r0 * c0**2 / k_d0, rel=1e-8)
+
+
+def test_enclosure_in_contact_with_two_materials():
+    """One enclosure touching both ends of a two-material slab.
+
+    The two contact surfaces sit on different submeshes, so the single pressure form has
+    to pull each surface's concentration from a different submesh via ``entity_maps``.
+    This also exercises the multi-surface paths: the contact measure is a sum over
+    surfaces, and the scalar terms are spread across both of them.
+
+    Conservation is checked over both materials at once, so it fails if either surface
+    is dropped from the balance.
+    """
+    area = 0.25
+    V_enc, T, P0 = 1e-3, 500.0, 1e5
+    k_d0, k_r0 = 1e15, 1e-25
+    dt, final_time = 5.0, 200.0
+
+    vertices = np.concatenate((np.linspace(0, 0.5, 30), np.linspace(0.5, 1.0, 30)))
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D(vertices)
+    material_left = F.Material(D_0=1e-6, E_D=0.0, K_S_0=1, E_K_S=0)
+    material_right = F.Material(D_0=2e-6, E_D=0.0, K_S_0=1, E_K_S=0)
+    vol_left = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=material_left)
+    vol_right = F.VolumeSubdomain1D(id=2, borders=[0.5, 1.0], material=material_right)
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+    my_model.subdomains = [vol_left, vol_right, left, right]
+    my_model.interfaces = [
+        F.Interface(id=3, subdomains=[vol_left, vol_right], penalty_term=1000)
+    ]
+    H = F.Species("H", subdomains=[vol_left, vol_right])
+    my_model.species = [H]
+    my_model.temperature = T
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=P0)
+    # left belongs to vol_left's submesh, right to vol_right's
+    my_model.enclosures = [
+        F.Enclosure(
+            volume=V_enc,
+            species=[H2],
+            temperature=T,
+            surfaces={left: area, right: area},
+        )
+    ]
+    my_model.boundary_conditions = [
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=H2,
+            k_r0=k_r0,
+            E_kr=0.0,
+            k_d0=k_d0,
+            E_kd=0.0,
+            subdomain=surface,
+        )
+        for surface in (left, right)
+    ]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=0.0, species=H, volume=volume)
+        for volume in (vol_left, vol_right)
+    ]
+    my_model.settings = F.Settings(
+        atol=1e-8,
+        rtol=1e-10,
+        transient=True,
+        final_time=final_time,
+        stepsize=F.Stepsize(dt),
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    # two point facets in 1D
+    assert my_model.enclosures[0]._contact_measure == pytest.approx(2.0)
+
+    def total_hydrogen_atoms():
+        in_solid = 0.0
+        for volume in (vol_left, vol_right):
+            c = H.subdomain_to_post_processing_solution[volume]
+            in_solid += my_model.mesh.mesh.comm.allreduce(
+                dolfinx.fem.assemble_scalar(
+                    dolfinx.fem.form(c * ufl.dx(domain=volume.submesh))
+                ),
+                op=MPI.SUM,
+            )
+        return area * in_solid + 2.0 * H2.value * V_enc / (F.k_B_SI * T)
+
+    my_model.post_processing()
+    initial_inventory = total_hydrogen_atoms()
+
+    while my_model.t.value < final_time:
+        my_model.iterate()
+        assert total_hydrogen_atoms() == pytest.approx(initial_inventory, rel=1e-12)
+
+    assert H2.value < P0
 
 
 def test_gas_pressure_export():
