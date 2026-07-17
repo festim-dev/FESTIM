@@ -1658,6 +1658,23 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         mesh_dim = self.mesh.mesh.topology.dim
         all_gas_species = self.gas_species
+
+        # A GasSpecies carries exactly one pressure unknown and one backref to its
+        # enclosure, so it cannot belong to two of them. Sharing one silently corrupts
+        # the model (the backref points to the last enclosure, and the species gets two
+        # pressure blocks sharing one solution). Catch it explicitly.
+        seen = set()
+        for gas_species in all_gas_species:
+            if id(gas_species) in seen:
+                enclosures = [e for e in self.enclosures if gas_species in e.species]
+                names = ", ".join(str(e) for e in enclosures)
+                raise ValueError(
+                    f"{gas_species} belongs to more than one enclosure ({names}). A "
+                    "GasSpecies has a single partial pressure and can live in only one "
+                    "enclosure; create a separate GasSpecies for each enclosure."
+                )
+            seen.add(id(gas_species))
+
         for enclosure in self.enclosures:
             for surface in enclosure.surfaces:
                 if surface not in self.surface_subdomains:

@@ -247,6 +247,16 @@ class TestValidation:
         with pytest.raises(ValueError, match="is not in the subdomains"):
             my_model.initialise()
 
+    def test_same_gas_species_in_two_enclosures_raises(self):
+        """A GasSpecies has a single pressure unknown, so it cannot live in two
+        enclosures. Sharing one would otherwise silently corrupt the model."""
+        H2 = make_gas_species()
+        enclosure_a = make_enclosure(species=[H2])
+        enclosure_b = make_enclosure(species=[H2])
+        my_model, *_ = make_model(enclosures=[enclosure_a, enclosure_b])
+        with pytest.raises(ValueError, match="belongs to more than one enclosure"):
+            my_model.initialise()
+
     def test_steady_state_enclosure_with_nothing_coupled_raises(self):
         """Steady state with no surfaces and no openings: the pressure never appears in
         its own balance, so it is undetermined."""
