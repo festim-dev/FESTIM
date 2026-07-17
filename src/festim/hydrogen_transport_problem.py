@@ -13,6 +13,7 @@ import scifem
 import tqdm.auto
 import ufl
 from dolfinx import fem
+from dolfinx.fem.petsc import NonlinearProblem
 from packaging.version import Version
 
 from festim import (
@@ -1723,6 +1724,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         f"{bc} is coupled to {pressure}, which does not belong to any "
                         "enclosure of the model"
                     )
+                # NOTE: is this still needed?
                 bc._gas_species = pressure
 
     def define_enclosure_function_spaces(self):
@@ -1737,6 +1739,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return
 
         mesh = self.mesh.mesh
+        # NOTE: we could define the Gas Species real element on a submesh
         for gas_species in self.gas_species:
             V = create_real_function_space(mesh)
             gas_species.function_space = V
@@ -1770,7 +1773,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 function_space=self.V_DG_0, t=self.t
             )
 
-    def gas_production_rates(self, surface, gas_species):
+    # NOTE: what are the alternative naming for "production rate"?
+    def gas_production_rates(self, surface, gas_species: _GasSpecies):
         """The rates at which particles of a gas species are produced at a surface, in
         particles/s/m2, positive when entering the gas.
 
@@ -1794,7 +1798,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # of the solid they apply to.
                 yield -bc.flux_bcs[0].value_fenics
 
-    def create_enclosure_formulation(self, gas_species):
+    def create_enclosure_formulation(self, gas_species: _GasSpecies):
         """Creates the variational formulation of the pressure balance of a gas species
         and stores it in ``gas_species.F``.
 
@@ -1929,7 +1933,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_solver(self):
-        from dolfinx.fem.petsc import NonlinearProblem
 
         petsc_options = self.get_petsc_options()
 

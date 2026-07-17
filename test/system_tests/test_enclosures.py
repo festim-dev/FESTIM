@@ -264,6 +264,96 @@ def test_closed_enclosure_conserves_particles(length, area):
     assert H2.value < P0
 
 
+def test_enclosure_on_2d_mesh_conserves_particles():
+    """A closed enclosure on a 2D mesh, facing one wall through a surface reaction.
+
+    This is the 2D counterpart of the conservation test. It matters because a 2D contact
+    surface is a line with real extent (unlike 1D, where a facet is a point of measure
+    1), so both the domain-measure normalisation and the out-of-plane depth are
+    genuinely non-trivial here.
+
+    The wall has length ``Ly = 2`` (so ``|Gamma| = 2``, not 1), and the enclosure area
+    is the out-of-plane depth ``0.5`` (not 1). Conservation is
+    ``depth * int(c) dx + 2*P*V/(k*T)``. Parameters are kept well scaled so Newton
+    converges from the cold start (a stiff cold start is a solver issue independent of
+    the enclosure; see the discontinuous solver's behaviour with a zero initial field).
+    """
+    Lx, Ly, depth = 1.0, 2.0, 0.5
+    V_enc, T = 3.0, 500.0
+    c0 = 1.0
+    k_d0, k_r0 = 1e-3, 1e-3
+    dt, final_time = 0.5, 200.0
+
+    mesh = dolfinx.mesh.create_rectangle(
+        MPI.COMM_WORLD,
+        [np.array([0.0, 0.0]), np.array([Lx, Ly])],
+        [24, 24],
+        dolfinx.mesh.CellType.triangle,
+    )
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh=mesh)
+    material = F.Material(name="mat", D_0=1.0, E_D=0.0)
+    volume = F.VolumeSubdomain(id=1, material=material)
+    right = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], Lx))
+    my_model.subdomains = [volume, right]
+    H = F.Species("H", subdomains=[volume])
+    my_model.species = [H]
+    my_model.temperature = T
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=0.0)
+    my_model.enclosures = [
+        F.Enclosure(volume=V_enc, species=[H2], temperature=T, surfaces={right: depth})
+    ]
+    my_model.boundary_conditions = [
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=H2,
+            k_r0=k_r0,
+            E_kr=0.0,
+            k_d0=k_d0,
+            E_kd=0.0,
+            subdomain=right,
+        )
+    ]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=c0, species=H, volume=volume)
+    ]
+    my_model.settings = F.Settings(
+        atol=1e-10,
+        rtol=1e-10,
+        transient=True,
+        final_time=final_time,
+        stepsize=F.Stepsize(dt),
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    # |Gamma| is the length of the wall, not 1
+    assert my_model.enclosures[0]._contact_measure == pytest.approx(Ly)
+
+    def total_hydrogen_atoms():
+        c = H.subdomain_to_post_processing_solution[volume]
+        in_solid = depth * mesh.comm.allreduce(
+            dolfinx.fem.assemble_scalar(
+                dolfinx.fem.form(c * ufl.dx(domain=volume.submesh))
+            ),
+            op=MPI.SUM,
+        )
+        in_gas = 2.0 * H2.value * V_enc / (F.k_B_SI * T)
+        return in_solid + in_gas
+
+    # the slab starts uniformly loaded and the gas empty
+    initial_inventory = depth * c0 * (Lx * Ly)
+
+    while my_model.t.value < final_time:
+        my_model.iterate()
+        assert total_hydrogen_atoms() == pytest.approx(initial_inventory, rel=1e-10)
+
+    # a meaningful fraction must have crossed into the gas, else the test is vacuous
+    in_gas = 2.0 * H2.value * V_enc / (F.k_B_SI * T)
+    assert in_gas / initial_inventory > 0.1
+
+
 def test_steady_state_closed_enclosure_reaches_surface_equilibrium():
     """A closed enclosure at steady state is determined by its contact surface alone.
 
