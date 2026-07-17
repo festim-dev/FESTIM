@@ -110,14 +110,14 @@ class ParticleSource(SourceBase):
     """
 
     species: Species
-    species_dependent_value: dict | None
+    species_dependent_value: dict[str, Species] | None
 
     def __init__(
         self,
         value,
         volume,
         species: Species,
-        species_dependent_value: dict | None = None,
+        species_dependent_value: dict[str, "Species"] | None,
     ):
         self.species = species
         self.species_dependent_value = species_dependent_value
