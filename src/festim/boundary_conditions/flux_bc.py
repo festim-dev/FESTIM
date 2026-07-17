@@ -218,7 +218,12 @@ class ParticleFluxBC(FluxBCBase):
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
 
-            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+            if (
+                "t" in arguments
+                and "x" not in arguments
+                and "T" not in arguments
+                and not self.species_dependent_value
+            ):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
