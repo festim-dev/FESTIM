@@ -95,12 +95,16 @@ def build_slab_with_enclosure(
     my_model.initial_conditions = [
         F.InitialConcentration(value=0.0, species=H, volume=vol)
     ]
-    # The Nitsche penalty term scales the residual by alpha*D/h, so with concentrations
-    # of order 1e20 the absolute residual is many orders larger than in the flux path
-    # and an absolute tolerance of 1e-8 is unreachable. Convergence is on rtol here.
+    # Both tolerances have to match the magnitude of the problem, which is not specific
+    # to this coupling: with concentrations of order 1e20 the residual bottoms out
+    # around 1e6 in double precision. FESTIM's rtol is measured against the initial
+    # residual of the timestep, so as the solution approaches steady state that initial
+    # residual falls towards the same floor and no relative criterion can be met. atol
+    # is the absolute floor that ends the step, and it has to sit above the roundoff
+    # level: a value of 1e-8 assumes residuals of order 1 and is unreachable here.
     my_model.settings = F.Settings(
-        atol=1e12,
-        rtol=1e-12,
+        atol=1e8,
+        rtol=1e-8,
         transient=True,
         final_time=final_time,
         stepsize=F.Stepsize(dt),
@@ -319,9 +323,11 @@ def test_dirichlet_coupling_agrees_with_surface_reaction():
     model_r.initial_conditions = [
         F.InitialConcentration(value=0.0, species=H_r, volume=vol_r)
     ]
+    # same reasoning as in build_slab_with_enclosure: atol has to sit above the
+    # roundoff floor of a problem whose concentrations are of order 1e19
     model_r.settings = F.Settings(
         atol=1e8,
-        rtol=1e-12,
+        rtol=1e-8,
         transient=True,
         final_time=final_time,
         stepsize=F.Stepsize(dt),
