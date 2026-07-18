@@ -598,3 +598,25 @@ def test_weak_dirichlet_insensitive_to_penalty(
     assert np.max(errors) / np.min(errors) < 2, (
         f"errors {errors} depend too strongly on the penalty parameter"
     )
+
+
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+def test_weak_dirichlet_penalty_is_dimensionless(
+    model_class: type[F.HydrogenTransportProblem]
+    | type[F.HydrogenTransportProblemDiscontinuous],
+):
+    """The Nitsche penalty scales as ``penalty * D / h``, so at a fixed ``penalty`` the
+    discrete problem is D * (a fixed unit problem) and the error does not depend on the
+    diffusion coefficient. This is what makes ``penalty`` a material-independent knob:
+    a value tuned on one material stays valid on another.
+    """
+    errors = [
+        solve_weak_dirichlet_mms(N=40, D_0=D_0, penalty=100, model_class=model_class)
+        for D_0 in (1e2, 1.0, 1e-4, 1e-10)
+    ]
+
+    assert np.allclose(errors, errors[0], rtol=1e-8), (
+        f"errors {errors} depend on the diffusion coefficient"
+    )
