@@ -119,9 +119,23 @@ class ProblemBase:
         """Defines the dirichlet boundary conditions of the model."""
         for bc in self.boundary_conditions:
             if isinstance(bc, F.DirichletBCBase):
+                if getattr(bc, "_gas_species", None) is not None:
+                    # the value depends on an enclosure pressure, which is an unknown
+                    # living in a real function space and cannot be interpolated, so
+                    # the value stays a ufl expression and the BC is weak-only
+                    self.create_dirichletbc_value_ufl(bc)
+                    continue
                 form = self.create_dirichletbc_form(bc)
                 if not bc.enforce_weakly:
                     self.bc_forms.append(form)
+
+    def create_dirichletbc_value_ufl(self, bc):
+        """Creates the ``value_fenics`` of a Dirichlet BC as a pure ufl expression.
+
+        Args:
+            bc: the dirichlet BC
+        """
+        bc.create_value_ufl(temperature=self.temperature_fenics)
 
     def get_petsc_options(self) -> dict[str, Any]:
         """Gets the PETSc options to pass to the NewtonProblem solver. Default options
