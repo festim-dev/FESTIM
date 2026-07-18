@@ -400,6 +400,7 @@ class TestDirichletCoupling:
         ]
         return my_model, H2
 
+    @requires_dolfinx_011
     @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
     def test_strong_enforcement_raises(self, bc_class):
         """The value depends on a real-space unknown, so it cannot be interpolated into
@@ -409,6 +410,7 @@ class TestDirichletCoupling:
         with pytest.raises(ValueError, match="can only be enforced weakly"):
             my_model.initialise()
 
+    @requires_dolfinx_011
     @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
     def test_missing_penalty_raises(self, bc_class):
         """There is no defensible default penalty, so it must be given explicitly."""
@@ -422,6 +424,7 @@ class TestDirichletCoupling:
         dissolves the molecule as such."""
         assert bc_class.stoichiometry == expected
 
+    @requires_dolfinx_011
     @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
     def test_value_is_a_ufl_expression_of_the_pressure(self, bc_class):
         """The value must stay a ufl expression carrying the pressure unknown, rather
@@ -432,6 +435,7 @@ class TestDirichletCoupling:
         assert not isinstance(bc.value_fenics, dolfinx.fem.Function)
         assert H2.solution in ufl.algorithms.extract_coefficients(bc.value_fenics)
 
+    @requires_dolfinx_011
     @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
     def test_pressure_appears_in_its_own_balance(self, bc_class):
         """The flux through the coupled surface must reach the pressure balance,
@@ -440,6 +444,7 @@ class TestDirichletCoupling:
         my_model.initialise()
         assert H2.solution in ufl.algorithms.extract_coefficients(H2.F)
 
+    @requires_dolfinx_011
     @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
     def test_solid_solution_appears_in_the_pressure_balance(self, bc_class):
         """The pressure balance is driven by the numerical flux, which depends on the
