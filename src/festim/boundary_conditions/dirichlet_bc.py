@@ -151,27 +151,30 @@ class DirichletBCBase:
         elif self.bc_expr is not None:
             self.value_fenics.interpolate(self.bc_expr)
 
-    def weak_formulation(
+    def numerical_flux(
         self,
         u: fem.Function | ufl.indexed.Indexed,
-        v: ufl.argument.Argument | ufl.indexed.Indexed,
-        ds: ufl.Measure,
+        D: ufl.core.expr.Expr | fem.Function | fem.Constant,
+        mesh,
     ) -> ufl.core.expr.Expr:
-        """
-        Returns the Nitsche weak formulation for the BC
-        This follows the dolfinx tutorial
-        https://jsdokken.com/dolfinx-tutorial/chapter1/nitsche.html
+        """Returns the numerical flux leaving the domain through the surface of the BC.
+
+        Nitsche's method only enforces ``u = value`` weakly, so ``u - value`` does not
+        vanish on the boundary and the raw gradient ``-D grad(u).n`` is not the quantity
+        the discrete scheme conserves. The conserved quantity is this numerical flux,
+        which includes the penalty contribution. Use it (rather than the raw gradient)
+        whenever the flux through a weakly enforced boundary feeds another equation, so
+        that the discrete balance is exact.
 
         Args:
             u: the solution function associated to the species for which the BC
                 is applied
-            v: the test function
-            ds: the surface measure
+            D: the diffusion coefficient of the species at this surface
+            mesh: the mesh the surface belongs to
 
         Returns:
-            the weak formulation
+            the numerical flux, positive when leaving the domain
         """
-        mesh = ds.ufl_domain()
         n = ufl.FacetNormal(mesh)
         h = ufl.Circumradius(mesh)  # FIXME this doesn't work for rectangles
         alpha = self.penalty
@@ -182,14 +185,43 @@ class DirichletBCBase:
             "value_fenics must be defined for weakly enforced Dirichlet BCs"
         )
 
-        form = -ufl.inner(n, ufl.grad(u)) * v * ds(self.subdomain.id)
+        return -D * ufl.inner(n, ufl.grad(u)) + alpha / h * (u - self.value_fenics)
 
-        form += (
-            +ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds(self.subdomain.id)
-        )
-        form += (
-            -alpha / h * ufl.inner((u - self.value_fenics), v) * ds(self.subdomain.id)
-        )
+    def weak_formulation(
+        self,
+        u: fem.Function | ufl.indexed.Indexed,
+        v: ufl.argument.Argument | ufl.indexed.Indexed,
+        ds: ufl.Measure,
+        D: ufl.core.expr.Expr | fem.Function | fem.Constant,
+    ) -> ufl.core.expr.Expr:
+        """
+        Returns the symmetric Nitsche weak formulation for the BC
+        This follows the dolfinx tutorial
+        https://jsdokken.com/dolfinx-tutorial/chapter1/nitsche.html
+
+        Args:
+            u: the solution function associated to the species for which the BC
+                is applied
+            v: the test function
+            ds: the surface measure
+            D: the diffusion coefficient of the species at this surface. It multiplies
+                the consistency and symmetry terms, without which the scheme is only
+                consistent when ``D == 1``.
+
+        Returns:
+            the weak formulation
+        """
+        mesh = ds.ufl_domain()
+        n = ufl.FacetNormal(mesh)
+        ds_bc = ds(self.subdomain.id)
+
+        # consistency + penalty, grouped as the numerical flux so that the flux the
+        # scheme conserves is defined in a single place
+        form = self.numerical_flux(u, D, mesh) * v * ds_bc
+
+        # symmetry term, making the bilinear form symmetric (and the L2 error optimal)
+        form += -D * ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds_bc
+
         return form
 
 

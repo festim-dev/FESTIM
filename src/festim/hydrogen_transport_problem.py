@@ -192,6 +192,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._temperature_as_function = None
         self._species_to_D_global = None
         self._species_to_D_global_expr = None
+        self._surface_to_volume = None
 
     @property
     def temperature(self):
@@ -571,6 +572,43 @@ class HydrogenTransportProblem(problem.ProblemBase):
             temperature_field.interpolate(temperature_expr)
             return temperature_field
 
+    def volume_subdomain_of_surface(
+        self, surface: _subdomain.SurfaceSubdomain
+    ) -> _subdomain.VolumeSubdomain:
+        """Returns the volume subdomain a surface subdomain belongs to.
+
+        The mapping is deduced from the mesh connectivity and the meshtags, and is
+        computed once then cached.
+
+        Args:
+            surface: the surface subdomain
+
+        Returns:
+            the volume subdomain the surface belongs to
+
+        Raises:
+            ValueError: if the surface cannot be mapped to a volume subdomain
+        """
+        if self._surface_to_volume is None:
+            mesh = self.mesh.mesh
+            tdim = mesh.topology.dim
+            mesh.topology.create_connectivity(tdim - 1, tdim)
+            self._surface_to_volume = _subdomain.map_surface_to_volume_subdomains(
+                ft=self.facet_meshtags,
+                ct=self.volume_meshtags,
+                facet_to_cell=mesh.topology.connectivity(tdim - 1, tdim),
+                volume_subdomains=self.volume_subdomains,
+                surface_subdomains=self.surface_subdomains,
+                comm=mesh.comm,
+            )
+
+        if surface not in self._surface_to_volume:
+            raise ValueError(
+                f"Surface subdomain {surface.id} could not be mapped to a volume "
+                "subdomain. Check that its id matches a tagged facet of the mesh."
+            )
+        return self._surface_to_volume[surface]
+
     def define_D_global(self, species):
         """Defines the global diffusion coefficient for a given species.
 
@@ -900,7 +938,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if bc.enforce_weakly:
                     u = bc.species.solution
                     v = bc.species.test_function
-                    self.formulation += bc.weak_formulation(u, v, self.ds)
+                    # D is set by the material of the volume the surface belongs to
+                    vol = self.volume_subdomain_of_surface(bc.subdomain)
+                    D = vol.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                    self.formulation += bc.weak_formulation(u, v, self.ds, D)
         for adv_term in self.advection_terms:
             # create vector functionspace based on the elements in the mesh
 
@@ -1561,10 +1604,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     v = bc.species.subdomain_to_test_function[subdomain]
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
             if isinstance(bc, boundary_conditions.FixedConcentrationBC):
-                if bc.enforce_weakly:
+                # as for fluxes, only the subdomain owning the surface gets the term,
+                # and its material is the one setting D there
+                if (
+                    bc.enforce_weakly
+                    and subdomain == self.surface_to_volume[bc.subdomain]
+                ):
                     u = bc.species.subdomain_to_solution[subdomain]
                     v = bc.species.subdomain_to_test_function[subdomain]
-                    form += bc.weak_formulation(u, v, self.ds)
+                    D = subdomain.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                    form += bc.weak_formulation(u, v, self.ds, D)
 
         # add volumetric sources
         for source in self.sources:
