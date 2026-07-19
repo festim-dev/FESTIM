@@ -8,14 +8,41 @@ import ufl
 from festim.mesh.mesh import Mesh
 
 
+def _is_nested(vertices) -> bool:
+    """Returns True if vertices is a list of lists of coordinates."""
+    return len(vertices) > 0 and all(np.ndim(block) > 0 for block in vertices)
+
+
 class Mesh1D(Mesh):
     """1D Mesh.
 
+    The vertices can be given as a flat list of x-coordinates, or as a list of
+    lists of x-coordinates. In the latter case each sublist produces a
+    disconnected block of cells, so that no cell is created between the last
+    vertex of a block and the first vertex of the next one. This makes it
+    possible to represent several solids separated by a gap (which can then be
+    coupled through e.g. an enclosure).
+
     Args:
-        vertices (list or np.ndarray): the mesh x-coordinates (m)
+        vertices (list or np.ndarray): the mesh x-coordinates (m), either flat
+            or as a list of lists (one per disconnected block)
 
     Attributes:
-        vertices (np.ndarray): the mesh x-coordinates (m)
+        vertices (np.ndarray): all the mesh x-coordinates (m), sorted
+        vertex_blocks (list of np.ndarray): the x-coordinates of each
+            disconnected block of the mesh
+
+    Examples:
+
+        .. testcode::
+
+            import festim as F
+
+            # a single continuous domain
+            F.Mesh1D(vertices=[0, 0.1, 0.2, 0.3])
+
+            # two blocks separated by a gap between x=0.3 and x=1
+            F.Mesh1D(vertices=[[0, 0.1, 0.2, 0.3], [1, 1.1, 1.2]])
     """
 
     def __init__(self, vertices, **kwargs) -> None:
@@ -30,15 +57,42 @@ class Mesh1D(Mesh):
 
     @vertices.setter
     def vertices(self, value):
-        self._vertices = np.sort(np.unique(value)).astype(np.float64)
+        blocks = value if _is_nested(value) else [value]
+
+        self._vertex_blocks = [
+            np.sort(np.unique(block)).astype(np.float64) for block in blocks
+        ]
+        for block in self._vertex_blocks:
+            if block.size < 2:
+                raise ValueError("Each block of vertices must have at least 2 vertices")
+
+        # sort the blocks by their first vertex so that they are ordered along x
+        self._vertex_blocks.sort(key=lambda block: block[0])
+
+        for block, next_block in zip(self._vertex_blocks[:-1], self._vertex_blocks[1:]):
+            if next_block[0] < block[-1]:
+                raise ValueError("Blocks of vertices must not overlap")
+
+        self._vertices = np.concatenate(self._vertex_blocks)
+
+    @property
+    def vertex_blocks(self):
+        return self._vertex_blocks
 
     def generate_mesh(self):
         """Generates a 1D mesh."""
 
         if MPI.COMM_WORLD.rank == 0:
             mesh_points = np.reshape(self.vertices, (len(self.vertices), 1))
-            indexes = np.arange(self.vertices.shape[0])
-            cells = np.stack((indexes[:-1], indexes[1:]), axis=-1)
+            # cells are created within each block only, leaving the blocks
+            # disconnected from each other
+            cells_per_block = []
+            offset = 0
+            for block in self.vertex_blocks:
+                indexes = np.arange(offset, offset + block.shape[0])
+                cells_per_block.append(np.stack((indexes[:-1], indexes[1:]), axis=-1))
+                offset += block.shape[0]
+            cells = np.concatenate(cells_per_block)
 
         else:
             mesh_points = np.empty((0, 1), dtype=np.float64)
@@ -61,23 +115,39 @@ class Mesh1D(Mesh):
         Raises:
             Value error: if borders outside the domain
         """
-        # check that subdomains are connected
-        all_borders = [border for vol in volume_subdomains for border in vol.borders]
-        sorted_borders = np.sort(all_borders)
-        for start, end in zip(sorted_borders[1:-2:2], sorted_borders[2:-1:2]):
-            if start != end:
-                raise ValueError("Subdomain borders don't match to each other")
-
         # check volume subdomain is defined
         # TODO this possible by default
-        if len(all_borders) == 0:
+        if len(volume_subdomains) == 0:
             raise ValueError("No volume subdomains defined")
 
-        # check that subdomains are within the domain
-        if (
-            sorted_borders[0] != self.vertices[0]
-            or sorted_borders[-1] != self.vertices[-1]
-        ):
+        # each block of the mesh must be tiled by the subdomains that lie in it
+        remaining = list(volume_subdomains)
+        for block in self.vertex_blocks:
+            in_block = [
+                vol
+                for vol in remaining
+                if block[0] <= min(vol.borders) and max(vol.borders) <= block[-1]
+            ]
+            for vol in in_block:
+                remaining.remove(vol)
+
+            block_borders = np.sort(
+                [border for vol in in_block for border in vol.borders]
+            )
+            if len(block_borders) == 0:
+                raise ValueError("borders dont match domain borders")
+
+            # check that subdomains are connected
+            for start, end in zip(block_borders[1:-2:2], block_borders[2:-1:2]):
+                if start != end:
+                    raise ValueError("Subdomain borders don't match to each other")
+
+            # check that subdomains span the whole block
+            if block_borders[0] != block[0] or block_borders[-1] != block[-1]:
+                raise ValueError("borders dont match domain borders")
+
+        # subdomains that don't fit within a single block
+        if remaining:
             raise ValueError("borders dont match domain borders")
 
     def define_meshtags(self, surface_subdomains, volume_subdomains, interfaces=None):
