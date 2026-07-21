@@ -106,7 +106,7 @@ For a general overview of contributing to GitHub projects, see the
 
 #. Format your code
 
-   FESTIM uses `Black <https://github.com/psf/black>`_ for consistent code formatting.
+   FESTIM uses `Ruff <https://docs.astral.sh/ruff/>`_ for consistent code formatting.
    See :ref:`Code formatting` for more information.
 
 #. Optional: build the documentation
@@ -206,38 +206,59 @@ Implementing a new feature
 Code formatting
 ----------------
 
-FESTIM uses `Black <https://github.com/psf/black>`_ to enforce a consistent code style,
+FESTIM uses `Ruff <https://docs.astral.sh/ruff/>`_ to enforce a consistent code style,
 which reduces noise in code reviews and keeps the codebase readable.
+Ruff is both a formatter and a linter, and its configuration lives in ``pyproject.toml``.
 
-Install Black:
+Install Ruff:
 
 .. code-block:: bash
 
-   pip install black
+   pip install ruff
 
 Format a single file:
 
 .. code-block:: bash
 
-   black my_script.py
+   ruff format my_script.py
 
 Format all files in the current directory:
 
 .. code-block:: bash
 
-   black .
+   ruff format .
 
 Check formatting without modifying any files:
 
 .. code-block:: bash
 
-   black --check .
+   ruff format --check .
+
+In addition to formatting, run the linter to catch unused imports, wrongly sorted
+imports, and similar issues:
+
+.. code-block:: bash
+
+   ruff check .
+
+Many of the issues it reports can be corrected automatically:
+
+.. code-block:: bash
+
+   ruff check --fix .
+
+.. note::
+
+   CI runs ``ruff format --check .`` on every pull request and **fails if any file is
+   not formatted**, so run the formatter before pushing.
+   ``ruff check`` and ``mypy`` also run, but do not currently block a PR from being
+   merged.
 
 .. tip::
 
    If you use Visual Studio Code, install the
-   `Black Formatter extension <https://marketplace.visualstudio.com/items?itemName=ms-python.black-formatter>`_
-   and enable **Format on Save** to apply Black automatically whenever you save a file.
+   `Ruff extension <https://marketplace.visualstudio.com/items?itemName=charliermarsh.ruff>`_
+   and enable **Format on Save** to apply Ruff automatically whenever you save a file.
 
 -------------------
 Documentation guide
