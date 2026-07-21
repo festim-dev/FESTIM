@@ -20,7 +20,7 @@ jobs:
 
       - name: Install local package and dependencies
         run: |
-          python -m pip install scipy pyvista
+          python -m pip install pyvista
           python3 -m pip install .[test] --no-build-isolation
 
       - name: Overload io4dolfinx
