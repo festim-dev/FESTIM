@@ -18,9 +18,13 @@ jobs:
         run: |
           git config --global --add safe.directory '*'
 
+      - name: Install scifem
+        run: |
+          python -m pip install scifem --no-build-isolation
+
       - name: Install local package and dependencies
         run: |
-          python -m pip install scipy pyvista scifem
+          python -m pip install scipy pyvista
           python -m pip install .[test]
 
       - name: Overload io4dolfinx
