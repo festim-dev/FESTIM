@@ -2,6 +2,7 @@ from .average_surface import AverageSurface
 from .average_volume import AverageVolume
 from .custom_quantity import CustomQuantity
 from .derived_quantity import DerivedQuantity
+from .gas_pressure import GasPressure
 from .maximum_surface import MaximumSurface
 from .maximum_volume import MaximumVolume
 from .minimum_surface import MinimumSurface
@@ -28,6 +29,7 @@ __all__ = [
     "CustomQuantity",
     "DerivedQuantity",
     "ExportBaseClass",
+    "GasPressure",
     "MaximumSurface",
     "MaximumVolume",
     "MinimumSurface",

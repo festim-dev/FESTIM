@@ -16,7 +16,7 @@ class Trap(_Species):
         E_k (float): the trapping rate constant activation energy (eV)
         p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
         E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+        volume (F.VolumeSubdomain): The volume subdomain where the trap is.
 
     Attributes:
         name (str, optional): a name given to the trap. Defaults to None.
@@ -25,7 +25,7 @@ class Trap(_Species):
         E_k (float): the trapping rate constant activation energy (eV)
         p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
         E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+        volume (F.VolumeSubdomain): The volume subdomain where the trap is.
         trapped_concentration (_Species): The immobile trapped concentration
         trap_reaction (_Reaction): The reaction for trapping the mobile conc.
         empty_trap_sites (F.ImplicitSpecies): The implicit species for the

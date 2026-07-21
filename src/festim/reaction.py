@@ -6,7 +6,7 @@ from ufl.core.expr import Expr
 from festim import k_B as _k_B
 from festim.species import ImplicitSpecies as _ImplicitSpecies
 from festim.species import Species as _Species
-from festim.subdomain.volume_subdomain import VolumeSubdomain1D as VS1D
+from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class GenericReaction:
@@ -220,27 +220,27 @@ class Reaction(GenericReaction):
     """A reaction between two species, with a forward and backward rate built
     from Arrhenius laws. This is typically used to model trapping/detrapping.
 
-    Arguments:
+    Args:
         reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
-        F.ImplicitSpecies]]): The reactant.
+            F.ImplicitSpecies]]): The reactant.
         product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
-        takes place.
+        volume (F.VolumeSubdomain): The volume subdomain where the reaction
+            takes place.
 
     Attributes:
         reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
-        F.ImplicitSpecies]]): The reactant.
+            F.ImplicitSpecies]]): The reactant.
         product (Optional[Union[F.Species, List[F.Species]]]): The product.
         k_0 (float): The forward rate constant pre-exponential factor.
         E_k (float): The forward rate constant activation energy.
         p_0 (float): The backward rate constant pre-exponential factor.
         E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
-        takes place.
+        volume (F.VolumeSubdomain): The volume subdomain where the reaction
+            takes place.
 
     Examples:
 
@@ -272,8 +272,8 @@ class Reaction(GenericReaction):
         reactant: _Species | _ImplicitSpecies | list[_Species | _ImplicitSpecies],
         k_0: float,
         E_k: float,
-        volume: VS1D,
-        product: Union[_Species, list[_Species]] | None = None,
+        volume: VolumeSubdomain,
+        product: Union[_Species, list[_Species]] | None = [],
         p_0: float | None = None,
         E_p: float | None = None,
     ) -> None:
