@@ -20,8 +20,14 @@ jobs:
 
       - name: Install local package and dependencies
         run: |
-          python -m pip install scipy pyvista scifem
+          python -m pip install scipy pyvista
           python -m pip install .[test]
+
+      - name: Build scifem against nightly DOLFINx
+        if: ${{ matrix.container_version == 'nightly' }}
+        run: |
+          python -m pip install --no-build-isolation --force-reinstall --no-deps \
+            git+https://github.com/scientificcomputing/scifem.git
 
       - name: Overload io4dolfinx
       #   if: ${{ matrix.container_version == 'nightly' }}
