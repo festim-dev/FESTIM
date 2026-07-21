@@ -5,6 +5,7 @@ import numpy as np
 from dolfinx import fem
 from dolfinx.mesh import EntityMap, Mesh, locate_entities
 from numpy import typing as npt
+
 try:
     from dolfinx.mesh import transfer_meshtags_to_submesh
 except ImportError:
@@ -91,8 +92,8 @@ class VolumeSubdomain:
         # Transfer meshtags to submesh
         assert self.submesh is not None, "Need to call create_subdomain first"
         sub_tag = transfer_meshtags_to_submesh(
-                tag, self.submesh, self.v_map, self.cell_map
-                )
+            tag, self.submesh, self.v_map, self.cell_map
+        )
         if isinstance(sub_tag, dolfinx.mesh.MeshTags):
             self.ft = sub_tag
         else:
