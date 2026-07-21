@@ -9,6 +9,8 @@ from ufl.conditional import Conditional
 
 import festim as F
 
+from .utils import evaluate_at_point
+
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
 
 mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
@@ -82,7 +84,7 @@ def test_callable_for_value():
     assert isinstance(bc.value_fenics, fem.Function)
 
     # check the initial value of the boundary condition
-    assert bc.value_fenics.x.petsc_vec.array[-1] == float(
+    assert evaluate_at_point(bc.value_fenics, subdomain.x) == float(
         value(x=np.array([subdomain.x]), t=0.0)
     )
 
@@ -91,7 +93,7 @@ def test_callable_for_value():
         t.value = i
         bc.update(float(t))
         expected_value = float(value(x=np.array([subdomain.x]), t=float(t)))
-        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
+        computed_value = evaluate_at_point(bc.value_fenics, subdomain.x)
         assert np.isclose(computed_value, expected_value)
 
 
@@ -127,7 +129,7 @@ def test_value_callable_x_t_T():
 
     # check the initial value of the boundary condition
     assert np.isclose(
-        bc.value_fenics.x.petsc_vec.array[-1],
+        evaluate_at_point(bc.value_fenics, subdomain.x),
         float(value(x=np.array([subdomain.x]), t=float(t), T=float(T))),
     )
 
@@ -138,7 +140,7 @@ def test_value_callable_x_t_T():
         bc.update(float(t))
 
         expected_value = float(value(x=np.array([subdomain.x]), t=float(t), T=float(T)))
-        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
+        computed_value = evaluate_at_point(bc.value_fenics, subdomain.x)
         assert np.isclose(computed_value, expected_value)
 
 
@@ -219,7 +221,7 @@ def test_callable_x_only():
 
     # check the initial value of the boundary condition
     assert np.isclose(
-        bc.value_fenics.x.petsc_vec.array[-1],
+        evaluate_at_point(bc.value_fenics, subdomain.x),
         float(value(x=np.array([subdomain.x]))),
     )
 
@@ -228,7 +230,7 @@ def test_callable_x_only():
         t.value = i
         bc.update(float(t))
         expected_value = float(value(x=np.array([subdomain.x])))
-        computed_value = bc.value_fenics.x.petsc_vec.array[-1]
+        computed_value = evaluate_at_point(bc.value_fenics, subdomain.x)
         assert np.isclose(computed_value, expected_value)
 
 
@@ -281,13 +283,13 @@ def test_integration_with_HTransportProblem(value):
         arguments = value.__code__.co_varnames
         if "x" in arguments and "t" in arguments and "T" in arguments:
             expected_value = value(x=np.array([subdomain.x]), t=2.0, T=550.0)
-            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
+            computed_value = evaluate_at_point(my_bc.value_fenics, subdomain.x)
         elif "x" in arguments and "t" in arguments:
             expected_value = value(x=np.array([subdomain.x]), t=2.0)
-            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
+            computed_value = evaluate_at_point(my_bc.value_fenics, subdomain.x)
         elif "x" in arguments:
             expected_value = value(x=np.array([subdomain.x]))
-            computed_value = my_bc.value_fenics.x.petsc_vec.array[-1]
+            computed_value = evaluate_at_point(my_bc.value_fenics, subdomain.x)
         elif "t" in arguments:
             expected_value = value(t=2.0)
             computed_value = float(my_bc.value_fenics)
@@ -403,13 +405,13 @@ def test_integration_with_a_multispecies_HTransportProblem(value_A, value_B):
         arguments = value_B.__code__.co_varnames
         if "x" in arguments and "t" in arguments and "T" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0, T=550.0)
-            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
+            computed_value = evaluate_at_point(my_bc_B.value_fenics, subdomain_B.x)
         elif "x" in arguments and "t" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]), t=2.0)
-            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
+            computed_value = evaluate_at_point(my_bc_B.value_fenics, subdomain_B.x)
         elif "x" in arguments:
             expected_value = value_B(x=np.array([subdomain_B.x]))
-            computed_value = my_bc_B.value_fenics.x.petsc_vec.array[-1]
+            computed_value = evaluate_at_point(my_bc_B.value_fenics, subdomain_B.x)
         elif "t" in arguments:
             expected_value = value_B(t=2.0)
             computed_value = float(my_bc_B.value_fenics)

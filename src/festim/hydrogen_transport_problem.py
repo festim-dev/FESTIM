@@ -1536,15 +1536,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                for subdomain in source.species.subdomains:
-                    V = source.species.subdomain_to_function_space[subdomain]
+                V = source.species.subdomain_to_function_space[source.volume]
 
-                    source.value.convert_input_value(
-                        function_space=V,
-                        t=self.t,
-                        temperature=self.temperature_fenics,
-                        up_to_ufl_expr=True,
-                    )
+                source.value.convert_input_value(
+                    function_space=V,
+                    t=self.t,
+                    temperature=self.temperature_fenics,
+                    up_to_ufl_expr=True,
+                    subdomain=source.volume,
+                )
 
     def convert_advection_term_to_fenics_objects(self):
         """For each advection term convert the input value."""
@@ -2322,10 +2322,21 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     f"{type(bc)} not implemented for "
                     f"HydrogenTransportProblemDiscontinuousChangeVar"
                 )
+            # with the change of variable, the solution of a mobile species is the
+            # chemical potential and not the concentration, so a species-dependent
+            # value would silently be given the wrong quantity
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 if bc.species_dependent_value:
                     raise ValueError(
                         f"{type(bc)} concentration-dependent not implemented for "
+                        f"HydrogenTransportProblemDiscontinuousChangeVar"
+                    )
+
+        for source in self.sources:
+            if isinstance(source, _source.ParticleSource):
+                if source.value.species_dependent:
+                    raise ValueError(
+                        f"{type(source)} concentration-dependent not implemented for "
                         f"HydrogenTransportProblemDiscontinuousChangeVar"
                     )
 
