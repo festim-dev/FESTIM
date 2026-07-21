@@ -9,9 +9,7 @@ import festim as F
 
 
 def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
-    """
-    Tests that a model can write a checkpoint file and another model can read it.
-    """
+    """Tests that a model can write a checkpoint file and another model can read it."""
     mesh = dolfinx.mesh.create_unit_square(
         MPI.COMM_WORLD, nx=10, ny=10, cell_type=dolfinx.cpp.mesh.CellType.quadrilateral
     )
@@ -19,7 +17,7 @@ def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
     my_model.mesh = F.Mesh(mesh)
 
     my_mat = F.Material(name="mat", D_0=1, E_D=0)
-    vol = F.VolumeSubdomain(id=0, material=my_mat)
+    vol = F.VolumeSubdomain(id=1, material=my_mat)
     surf = F.SurfaceSubdomain(id=1)
     my_model.subdomains = [vol, surf]
 
@@ -117,8 +115,8 @@ def test_writing_and_reading_of_species_function_using_checkpoints(tmpdir):
 
 def test_VTXExport_times_added_to_milestones(tmpdir):
     """Creates a HydrogenTransportProblem object and checks that, if no
-    stepsize.milestones are given and VTXExport.times are given, VTXExport.times are
-    are added to stepsize.milestones by .initialise()
+    stepsize.milestones are given and VTXExport.times are given, VTXExport.times are are
+    added to stepsize.milestones by .initialise()
 
     Args:
         tmpdir (os.PathLike): path to the pytest temporary folder
@@ -156,8 +154,8 @@ def test_VTXExport_times_added_to_milestones(tmpdir):
 
 
 def test_vtx_writer_called_only_at_specified_times(tmpdir):
-    """test that the VTXWriter.write function is called the number of times specified in
-    the export.times"""
+    """Test that the VTXWriter.write function is called the number of times specified in
+    the export.times."""
 
     filename = str(tmpdir.join("my_export.bp"))
 
@@ -202,3 +200,140 @@ def test_vtx_writer_called_only_at_specified_times(tmpdir):
         ]
         expected_times = [2, 4, 6]
         assert actual_times == expected_times
+
+
+def test_writing_and_reading_of_species_function_using_checkpoints_discontinuous(
+    tmpdir,
+):
+    """Tests that a model can write a checkpoint file and another model can read it."""
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
+    my_model.mesh = F.Mesh(mesh)
+
+    mat = F.Material(name="mat", D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+    vol1 = F.VolumeSubdomain(id=1, material=mat, locator=lambda x: x[0] <= 0.5)
+    vol2 = F.VolumeSubdomain(id=2, material=mat, locator=lambda x: x[0] >= 0.5)
+    surf1 = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 0.0))
+    surf2 = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 1.0))
+    my_model.subdomains = [vol1, vol2, surf1, surf2]
+
+    H = F.Species(name="H", subdomains=[vol1, vol2])
+    D = F.Species(name="D", subdomains=[vol1, vol2])
+    my_model.species = [H, D]
+
+    my_model.temperature = 500
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(subdomain=surf1, value=1.5, species=H),
+        F.FixedConcentrationBC(subdomain=surf1, value=3.4, species=D),
+        F.FixedConcentrationBC(subdomain=surf2, value=1.5, species=H),
+        F.FixedConcentrationBC(subdomain=surf2, value=3.4, species=D),
+    ]
+
+    my_model.settings = F.Settings(
+        atol=1e-12, rtol=1e-12, transient=True, final_time=10
+    )
+    my_model.settings.stepsize = F.Stepsize(1)
+
+    my_model.exports = [
+        F.VTXSpeciesExport(
+            filename=tmpdir + "/out_checkpoint1.bp",
+            field=[H, D],
+            checkpoint=True,
+            subdomain=vol1,
+        ),
+        F.VTXSpeciesExport(
+            filename=tmpdir + "/out_checkpoint2.bp",
+            field=[H, D],
+            checkpoint=True,
+            subdomain=vol2,
+        ),
+    ]
+
+    my_model.initialise()
+    my_model.run()
+
+    my_model2 = F.HydrogenTransportProblemDiscontinuous()
+    my_model2.mesh = F.Mesh(mesh)
+    my_model2.subdomains = [vol1, vol2, surf1]
+
+    H = F.Species("H", subdomains=[vol1, vol2])
+    D = F.Species("D", subdomains=[vol1, vol2])
+    my_model2.species = [H, D]
+
+    my_model2.temperature = 500
+
+    my_model2.initial_conditions = [
+        F.InitialConcentration(
+            value=F.read_function_from_file(
+                filename=tmpdir + "/out_checkpoint1.bp",
+                name="H",
+                timestamp=10,
+                mesh=mesh,
+            ),
+            species=H,
+            volume=vol1,
+        ),
+        F.InitialConcentration(
+            value=F.read_function_from_file(
+                filename=tmpdir + "/out_checkpoint1.bp",
+                name="D",
+                timestamp=10,
+                mesh=mesh,
+            ),
+            species=D,
+            volume=vol1,
+        ),
+        F.InitialConcentration(
+            value=F.read_function_from_file(
+                filename=tmpdir + "/out_checkpoint2.bp",
+                name="H",
+                timestamp=10,
+                mesh=mesh,
+            ),
+            species=H,
+            volume=vol2,
+        ),
+        F.InitialConcentration(
+            value=F.read_function_from_file(
+                filename=tmpdir + "/out_checkpoint2.bp",
+                name="D",
+                timestamp=10,
+                mesh=mesh,
+            ),
+            species=D,
+            volume=vol2,
+        ),
+    ]
+
+    my_model2.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, transient=True, final_time=10
+    )
+    my_model2.settings.stepsize = F.Stepsize(0.1)
+
+    my_model2.exports = [
+        F.VTXSpeciesExport(
+            filename=tmpdir + "/model_2_out_h.bp",
+            field=[H],
+            subdomain=vol1,
+        ),
+    ]
+
+    my_model2.initialise()
+    my_model2.run()
+
+    vol_1_H_solution = H.subdomain_to_post_processing_solution[vol1]
+    vol_2_D_solution = D.subdomain_to_post_processing_solution[vol2]
+
+    np.testing.assert_allclose(
+        vol_1_H_solution.x.array,
+        1.5,
+        atol=1e-10,
+    )
+
+    np.testing.assert_allclose(
+        vol_2_D_solution.x.array,
+        3.4,
+        atol=1e-10,
+    )

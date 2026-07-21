@@ -5,10 +5,11 @@ import numpy as np
 import pytest
 import tqdm.auto
 import ufl
-from dolfinx import default_scalar_type, fem, nls
-from packaging.version import Version
+from dolfinx import default_scalar_type, fem
 
 import festim as F
+
+from .utils import evaluate_at_point
 
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
@@ -27,7 +28,7 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
     ],
 )
 def test_temperature_setter_type(value):
-    """Test that the temperature type is correctly set"""
+    """Test that the temperature type is correctly set."""
     my_model = F.HydrogenTransportProblem(
         mesh=test_mesh,
     )
@@ -53,7 +54,7 @@ def test_temperature_setter_type(value):
     ],
 )
 def test_time_dependent_temperature_attribute(input, expected_value):
-    """Test that the temperature_time_dependent attribute is correctly set"""
+    """Test that the temperature_time_dependent attribute is correctly set."""
 
     my_model = F.HydrogenTransportProblem()
     my_model.temperature = input
@@ -62,7 +63,7 @@ def test_time_dependent_temperature_attribute(input, expected_value):
 
 
 def test_define_temperature_value_error_raised():
-    """Test that a ValueError is raised when the temperature is None"""
+    """Test that a ValueError is raised when the temperature is None."""
 
     # BUILD
     my_model = F.HydrogenTransportProblem(mesh=test_mesh)
@@ -94,9 +95,9 @@ def test_define_temperature_value_error_raised():
     ],
 )
 def test_define_temperature(input, expected_type):
-    """Test that the define_temperature method correctly sets the
-    temperature_fenics attribute to either a fem.Constant or a
-    fem.Function depending on the type of input"""
+    """Test that the define_temperature method correctly sets the temperature_fenics
+    attribute to either a fem.Constant or a fem.Function depending on the type of
+    input."""
 
     # BUILD
     my_model = F.HydrogenTransportProblem(mesh=test_mesh)
@@ -121,8 +122,8 @@ def test_define_temperature(input, expected_type):
     ],
 )
 def test_define_temperature_error_if_ufl_conditional_t_only(input):
-    """Test that a ValueError is raised when the temperature attribute is a callable
-    of t only and contains a ufl conditional"""
+    """Test that a ValueError is raised when the temperature attribute is a callable of
+    t only and contains a ufl conditional."""
     my_model = F.HydrogenTransportProblem(mesh=test_mesh)
     my_model.t = fem.Constant(test_mesh.mesh, 0.0)
 
@@ -130,13 +131,13 @@ def test_define_temperature_error_if_ufl_conditional_t_only(input):
 
     with pytest.raises(
         ValueError,
-        match="self.temperature should return a float or an int, not",
+        match=r"self.temperature should return a float or an int, not",
     ):
         my_model.define_temperature()
 
 
 def test_iterate():
-    """Test that the iterate method updates the solution and time correctly"""
+    """Test that the iterate method updates the solution and time correctly."""
     # BUILD
     my_model = F.HydrogenTransportProblem()
 
@@ -162,14 +163,10 @@ def test_iterate():
         my_model.u - my_model.u_n
     ) / my_model.dt * v * ufl.dx - source_value * v * ufl.dx
 
-    if Version(dolfinx.__version__) == Version("0.9.0"):
-        problem = fem.petsc.NonlinearProblem(form, my_model.u, bcs=[])
-        my_model.solver = nls.petsc.NewtonSolver(MPI.COMM_WORLD, problem)
-    elif Version(dolfinx.__version__) > Version("0.9.0"):
-        problem = fem.petsc.NonlinearProblem(
-            form, my_model.u, bcs=[], petsc_options_prefix="festim_solver"
-        )
-        my_model.solver = problem
+    problem = fem.petsc.NonlinearProblem(
+        form, my_model.u, bcs=[], petsc_options_prefix="festim_solver"
+    )
+    my_model.solver = problem
 
     my_model.t = fem.Constant(mesh, 0.0)
 
@@ -201,8 +198,8 @@ def test_iterate():
     ],
 )
 def test_update_time_dependent_values_temperature(T_function, expected_values):
-    """Test that different time-dependent callable functions for the
-    temperature are updated at each time step and match an expected value"""
+    """Test that different time-dependent callable functions for the temperature are
+    updated at each time step and match an expected value."""
 
     # BUILD
     my_model = F.HydrogenTransportProblem(
@@ -227,7 +224,7 @@ def test_update_time_dependent_values_temperature(T_function, expected_values):
 
 
 def test_initialise_exports_find_species_with_one_field():
-    """Test that a species can be found from the model species if given as a string"""
+    """Test that a species can be found from the model species if given as a string."""
 
     # BUILD
     my_model = F.HydrogenTransportProblem(
@@ -246,11 +243,11 @@ def test_initialise_exports_find_species_with_one_field():
 
 
 def test_define_D_global_different_temperatures():
-    """Test that the D_global object is correctly defined when the temperature
-    is different in the volume subdomains"""
+    """Test that the D_global object is correctly defined when the temperature is
+    different in the volume subdomains."""
     D_0, E_D = 1.5, 0.1
     my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
-    surf = F.SurfaceSubdomain1D(id=1, x=0)
+    F.SurfaceSubdomain1D(id=1, x=0)
     H = F.Species("H")
 
     my_model = F.HydrogenTransportProblem(
@@ -268,9 +265,12 @@ def test_define_D_global_different_temperatures():
     my_model.t = 1
     my_model.define_temperature()
 
-    D_computed, D_expr = my_model.define_D_global(H)
+    D_computed, _D_expr = my_model.define_D_global(H)
 
-    computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
+    computed_values = [
+        evaluate_at_point(D_computed, 0.0),
+        evaluate_at_point(D_computed, 4.0),
+    ]
 
     D_analytical_left = D_0 * np.exp(-E_D / (F.k_B * 50))
     D_analytical_right = D_0 * np.exp(-E_D / (F.k_B * 450))
@@ -281,8 +281,8 @@ def test_define_D_global_different_temperatures():
 
 
 def test_define_D_global_different_materials():
-    """Test that the D_global object is correctly defined when the material
-    is different in the volume subdomains"""
+    """Test that the D_global object is correctly defined when the material is different
+    in the volume subdomains."""
     D_0_left, E_D_left = 1.0, 0.1
     D_0_right, E_D_right = 2.0, 0.2
     my_mat_L = F.Material(D_0=D_0_left, E_D=E_D_left, name="my_mat_L")
@@ -304,9 +304,12 @@ def test_define_D_global_different_materials():
     my_model.t = 0
     my_model.define_temperature()
 
-    D_computed, D_expr = my_model.define_D_global(H)
+    D_computed, _D_expr = my_model.define_D_global(H)
 
-    computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
+    computed_values = [
+        evaluate_at_point(D_computed, 0.0),
+        evaluate_at_point(D_computed, 4.0),
+    ]
 
     D_expected_left = D_0_left * np.exp(-E_D_left / (F.k_B * my_model.temperature))
     D_expected_right = D_0_right * np.exp(-E_D_right / (F.k_B * my_model.temperature))
@@ -317,9 +320,9 @@ def test_define_D_global_different_materials():
 
 
 def test_initialise_exports_multiple_exports_same_species():
-    """Test that the diffusion coefficient within the D_global object function is the same
-    for multiple exports of the same species, and that D_global object is only
-    created once per species"""
+    """Test that the diffusion coefficient within the D_global object function is the
+    same for multiple exports of the same species, and that D_global object is only
+    created once per species."""
 
     D_0, E_D = 1.5, 0.1
     my_mat = F.Material(D_0=D_0, E_D=E_D, name="my_mat")
@@ -359,7 +362,8 @@ def test_initialise_exports_multiple_exports_same_species():
 
 
 def test_export_resets_quantities():
-    """Test that the export.data and export.t are correctly reset every time a simulation is initiated."""
+    """Test that the export.data and export.t are correctly reset every time a
+    simulation is initiated."""
     my_mat = F.Material(D_0=1, E_D=0)
     H = F.Species("H")
     surf = F.SurfaceSubdomain1D(id=1, x=4)
@@ -389,7 +393,7 @@ def test_export_resets_quantities():
 
 def test_define_D_global_multispecies():
     """Test that the D_global object is correctly defined when there are multiple
-    species in one subdomain"""
+    species in one subdomain."""
     A = F.Species("A")
     B = F.Species("B")
 
@@ -399,7 +403,7 @@ def test_define_D_global_multispecies():
     my_mat = F.Material(
         D_0={A: D_0_A, B: D_0_B}, E_D={A: E_D_A, B: E_D_B}, name="my_mat"
     )
-    surf = F.SurfaceSubdomain1D(id=1, x=1)
+    F.SurfaceSubdomain1D(id=1, x=1)
 
     my_model = F.HydrogenTransportProblem(
         mesh=F.Mesh1D(np.linspace(0, 1, num=101)),
@@ -415,8 +419,8 @@ def test_define_D_global_multispecies():
     my_model.t = 0
     my_model.define_temperature()
 
-    D_A_computed, D_A_expr = my_model.define_D_global(A)
-    D_B_computed, D_B_expr = my_model.define_D_global(B)
+    D_A_computed, _D_A_expr = my_model.define_D_global(A)
+    D_B_computed, _D_B_expr = my_model.define_D_global(B)
 
     computed_values = [D_A_computed.x.array[-1], D_B_computed.x.array[-1]]
 
@@ -429,8 +433,8 @@ def test_define_D_global_multispecies():
 
 
 def test_post_processing_update_D_global():
-    """Test that the D_global object is updated at each time
-    step when temperture is time dependent"""
+    """Test that the D_global object is updated at each time step when temperture is
+    time dependent."""
     my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
     my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
     surf = F.SurfaceSubdomain1D(id=1, x=1)
@@ -480,8 +484,8 @@ def test_post_processing_update_D_global():
 
 
 def test_post_processing_update_D_global_2():
-    """Test that the D_global object is updated at each time
-    step when temperture is time dependent"""
+    """Test that the D_global object is updated at each time step when temperture is
+    time dependent."""
     my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
     my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
     surf = F.SurfaceSubdomain1D(id=1, x=1)
@@ -524,8 +528,8 @@ def test_post_processing_update_D_global_2():
 
 
 def test_post_processing_update_D_global_volume_1():
-    """Test that the D_global object is updated at each time
-    step when temperture is time dependent"""
+    """Test that the D_global object is updated at each time step when temperture is
+    time dependent."""
     my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
     my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
@@ -562,8 +566,8 @@ def test_post_processing_update_D_global_volume_1():
 
 
 def test_post_processing_update_D_global_volume_2():
-    """Test that the D_global object is updated at each time
-    step when temperture is time dependent"""
+    """Test that the D_global object is updated at each time step when temperture is
+    time dependent."""
     my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
     my_mat = F.Material(D_0=1.5, E_D=0.1, name="my_mat")
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
@@ -617,7 +621,7 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
     temperature_value, bc_value, expected_values
 ):
     """Test that temperature dependent bcs are updated at each time step when the
-    temperature is time dependent, and match an expected value"""
+    temperature is time dependent, and match an expected value."""
 
     # BUILD
     H = F.Species("H")
@@ -666,8 +670,8 @@ def test_update_time_dependent_bcs_with_time_dependent_temperature(
     ],
 )
 def test_update_time_dependent_values_source(source_value, expected_values):
-    """Test that time dependent sources are updated at each time step,
-    and match an expected value"""
+    """Test that time dependent sources are updated at each time step, and match an
+    expected value."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     H = F.Species("H")
@@ -714,8 +718,8 @@ def test_update_time_dependent_values_source(source_value, expected_values):
 def test_update_sources_with_time_dependent_temperature(
     temperature_value, source_value, expected_values
 ):
-    """Test that temperature dependent source terms are updated at each time step
-    when the temperature is time dependent, and match an expected value"""
+    """Test that temperature dependent source terms are updated at each time step when
+    the temperature is time dependent, and match an expected value."""
 
     # BUILD
     H = F.Species("H")
@@ -753,7 +757,7 @@ def test_update_sources_with_time_dependent_temperature(
 
 def test_convert_source_input_values_to_fenics_objects_multispecies():
     """Test that the define_sources method correctly sets the value_fenics attribute in
-    a multispecies case"""
+    a multispecies case."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     H, D = F.Species("H"), F.Species("D")
@@ -784,7 +788,7 @@ def test_convert_source_input_values_to_fenics_objects_multispecies():
 
 # TODO replace this by a proper MMS test
 def test_run_in_steady_state():
-    """Test that the run method works in steady state"""
+    """Test that the run method works in steady state."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HydrogenTransportProblem(
@@ -806,20 +810,20 @@ def test_run_in_steady_state():
 
 def test_species_setter():
     """Test that a TypeError is rasied when a species of type other than F.Species is
-    given"""
+    given."""
 
     my_model = F.HydrogenTransportProblem()
 
     with pytest.raises(
         TypeError,
-        match="elements of species must be of type festim.Species not <class 'int'>",
+        match=r"elements of species must be of type festim.Species not <class 'int'>",
     ):
         my_model.species = [1, 2, 3]
 
 
 def test_create_initial_conditions_ValueError_raised_when_not_transient():
-    """Test that ValueError is raised if initial conditions are defined in
-    a steady state simulation"""
+    """Test that ValueError is raised if initial conditions are defined in a steady
+    state simulation."""
 
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     H = F.Species("H")
@@ -852,8 +856,8 @@ def test_create_initial_conditions_ValueError_raised_when_not_transient():
     ],
 )
 def test_create_initial_conditions_expr_fenics(input_value, expected_value):
-    """Test that after calling create_initial_conditions, the prev_solution
-    attribute of the species has the correct value at x=4.0."""
+    """Test that after calling create_initial_conditions, the prev_solution attribute of
+    the species has the correct value at x=4.0."""
 
     # BUILD
     vol_subdomain = F.VolumeSubdomain1D(1, borders=[0, 4], material=dummy_mat)
@@ -871,9 +875,9 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
 
     # RUN
     my_model.initialise()
-    prev_solution = my_model.u_n.sub(0)
+    prev_solution = my_model.u_n.sub(0).collapse()
     assert np.isclose(
-        prev_solution.x.petsc_vec.array[-1],
+        evaluate_at_point(prev_solution, 4.0),
         expected_value,
     )
 
@@ -931,8 +935,8 @@ def test_create_species_from_trap():
 def test_create_initial_conditions_value_fenics_multispecies(
     input_value_1, input_value_2, expected_value_1, expected_value_2
 ):
-    """Test that after calling create_initial_conditions, the prev_solution
-    attribute of each species has the correct value at x=4.0 in a multispecies case"""
+    """Test that after calling create_initial_conditions, the prev_solution attribute of
+    each species has the correct value at x=4.0 in a multispecies case."""
 
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 4, num=101))
@@ -958,19 +962,22 @@ def test_create_initial_conditions_value_fenics_multispecies(
     my_model.initialise()
 
     # TEST
-    # When in multispecies, the u and u_n x arrays are structured as follows:
-    # [H, D, ..., H, D, H, D], thus the last two values are the ones we are
-    # interested in
+    # Collapse each species' sub-space so the check is independent of both the
+    # DOF ordering and the per-node block layout.
 
     # test value of H at x = 4.0
-    assert np.isclose(my_model.u_n.x.array[-2], expected_value_1)
+    assert np.isclose(
+        evaluate_at_point(my_model.u_n.sub(0).collapse(), 4.0), expected_value_1
+    )
 
     # test value of D at x = 4.0
-    assert np.isclose(my_model.u_n.x.array[-1], expected_value_2)
+    assert np.isclose(
+        evaluate_at_point(my_model.u_n.sub(1).collapse(), 4.0), expected_value_2
+    )
 
 
 def test_adaptive_timestepping_grows():
-    """Tests that the stepsize grows"""
+    """Tests that the stepsize grows."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HydrogenTransportProblem(
@@ -1006,7 +1013,7 @@ def test_adaptive_timestepping_grows():
 
 
 def test_adaptive_timestepping_shrinks():
-    """Tests that the stepsize shrinks"""
+    """Tests that the stepsize shrinks."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     my_model = F.HydrogenTransportProblem(
@@ -1053,8 +1060,8 @@ def test_adaptive_timestepping_shrinks():
     ],
 )
 def test_reinstantiation_of_class(attribute, value):
-    """Test that when an attribute defaults to empty list, when the class
-    is reinstantiated the list is not passed to the new class object"""
+    """Test that when an attribute defaults to empty list, when the class is
+    reinstantiated the list is not passed to the new class object."""
 
     model_1 = F.HydrogenTransportProblem()
     getattr(model_1, attribute).append(value)
@@ -1064,8 +1071,8 @@ def test_reinstantiation_of_class(attribute, value):
 
 
 def test_define_meshtags_and_measures_with_custom_fenics_mesh():
-    """Test that the define_meshtags_and_measures method works when the mesh is
-    a custom fenics mesh"""
+    """Test that the define_meshtags_and_measures method works when the mesh is a custom
+    fenics mesh."""
 
     # BUILD
     mesh_1D = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
@@ -1096,7 +1103,7 @@ def test_define_meshtags_and_measures_with_custom_fenics_mesh():
 
 
 def test_error_raised_when_custom_fenics_mesh_wrong_facet_meshtags_type():
-    """Test the facet_meshtags type hinting raises error when given as wrong type"""
+    """Test the facet_meshtags type hinting raises error when given as wrong type."""
 
     # BUILD
     mesh_1D = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
@@ -1104,12 +1111,12 @@ def test_error_raised_when_custom_fenics_mesh_wrong_facet_meshtags_type():
     my_model = F.HydrogenTransportProblem(mesh=my_mesh)
 
     # TEST
-    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
+    with pytest.raises(TypeError, match=r"value must be of type dolfinx.mesh.MeshTags"):
         my_model.facet_meshtags = [0, 1]
 
 
 def test_error_raised_when_custom_fenics_mesh_wrong_volume_meshtags_type():
-    """Test the volume_meshtags type hinting raises error when given as wrong type"""
+    """Test the volume_meshtags type hinting raises error when given as wrong type."""
 
     # BUILD
     mesh_1D = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
@@ -1117,7 +1124,7 @@ def test_error_raised_when_custom_fenics_mesh_wrong_volume_meshtags_type():
     my_model = F.HydrogenTransportProblem(mesh=my_mesh)
 
     # TEST
-    with pytest.raises(TypeError, match="value must be of type dolfinx.mesh.MeshTags"):
+    with pytest.raises(TypeError, match=r"value must be of type dolfinx.mesh.MeshTags"):
         my_model.volume_meshtags = [0, 1]
 
 
@@ -1135,8 +1142,8 @@ def test_error_raised_when_custom_fenics_mesh_wrong_volume_meshtags_type():
     ],
 )
 def test_update_time_dependent_values_flux(bc_value, expected_values):
-    """Test that time dependent fluxes are updated at each time step,
-    and match an expected value"""
+    """Test that time dependent fluxes are updated at each time step, and match an
+    expected value."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     surface = F.SurfaceSubdomain1D(id=2, x=0)
@@ -1187,8 +1194,8 @@ def test_update_time_dependent_values_flux(bc_value, expected_values):
 def test_update_fluxes_with_time_dependent_temperature(
     temperature_value, bc_value, expected_values
 ):
-    """Test that temperature dependent flux terms are updated at each time step
-    when the temperature is time dependent, and match an expected value"""
+    """Test that temperature dependent flux terms are updated at each time step when the
+    temperature is time dependent, and match an expected value."""
 
     # BUILD
     H = F.Species("H")
@@ -1226,7 +1233,7 @@ def test_update_fluxes_with_time_dependent_temperature(
 
 def test_create_flux_values_fenics_multispecies():
     """Test that the create_flux_values_fenics method correctly sets the value_fenics
-    attribute in a multispecies case"""
+    attribute in a multispecies case."""
     # BUILD
     my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
     surface = F.SurfaceSubdomain1D(id=2, x=0)
@@ -1258,7 +1265,7 @@ def test_create_flux_values_fenics_multispecies():
 
 def test_not_implemented_error_raised_with_D_as_function():
     """Test that NotImplementedError is raised when D is a function and more than one
-    volume subdomain has been defined"""
+    volume subdomain has been defined."""
 
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
@@ -1293,7 +1300,7 @@ def test_not_implemented_error_raised_with_D_as_function():
 
 def test_define_D_global_with_D_as_function():
     """Test that if a function is given as diffusion coeff of a material, that it is
-    passed to D_global"""
+    passed to D_global."""
 
     # BUILD
     test_mesh = F.Mesh1D(vertices=np.linspace(0, 1, num=101))
@@ -1323,7 +1330,7 @@ def test_define_D_global_with_D_as_function():
 @pytest.mark.parametrize("coord_sys", ["cylindrical", "spherical"])
 def test_exports_cyl_sph_coord_system_raise_not_implemented(coord_sys):
     """Test that NotImplementedError is raised when trying to use exports in a
-    cylindrical or spherical coordinate system"""
+    cylindrical or spherical coordinate system."""
 
     # BUILD
     my_mesh = F.Mesh1D(np.linspace(0, 1, num=11), coordinate_system=coord_sys)
@@ -1352,7 +1359,7 @@ def test_exports_cyl_sph_coord_system_raise_not_implemented(coord_sys):
 
 def test_traps_with_CG_elements():
     """Test that when creating species from traps, if the element for traps is set to
-    CG, the created species has a CG element as well"""
+    CG, the created species has a CG element as well."""
 
     # BUILD
     my_mesh = F.Mesh1D(np.linspace(0, 1, num=11))
@@ -1376,7 +1383,7 @@ def test_traps_with_CG_elements():
 
 
 def test_surface_reaction_BC_discontinuous():
-    """Test that surface reaction BC conserves flux"""
+    """Test that surface reaction BC conserves flux."""
 
     # BUILD
     my_model = F.HydrogenTransportProblemDiscontinuous()
@@ -1410,11 +1417,6 @@ def test_surface_reaction_BC_discontinuous():
         inlet,
         outlet,
     ]
-
-    my_model.surface_to_volume = {
-        inlet: left_vol,
-        outlet: right_vol,
-    }
 
     my_model.method_interface = F.InterfaceMethod.nitsche
     my_model.interfaces = [
@@ -1461,7 +1463,7 @@ def test_surface_reaction_BC_discontinuous():
 
 def test_temperature_as_function_in_discontinuous():
     """Test that a discontinuous problem can be initialised with a temperature field
-    given as a function"""
+    given as a function."""
 
     # BUILD
     my_model = F.HydrogenTransportProblemDiscontinuous()
@@ -1503,7 +1505,7 @@ def test_temperature_as_function_in_discontinuous():
 
 def test_wrong_element_for_immobile_species():
     """Test that an error is raised when an immobile species is defined on a subdomain
-    with an element that is incorrect"""
+    with an element that is incorrect."""
     my_model = F.HydrogenTransportProblem()
 
     with pytest.raises(ValueError, match="element_immobile should be in"):
@@ -1514,8 +1516,8 @@ def test_wrong_element_for_immobile_species():
     "element_type, expected_element", [("CG", "CG"), ("DG", "DG"), ("P", "CG")]
 )
 def test_element_for_immobile_species(element_type, expected_element):
-    """Test that the element for immobile species is correctly set when the user sets
-    it to CG or DG"""
+    """Test that the element for immobile species is correctly set when the user sets it
+    to CG or DG."""
     my_model = F.HydrogenTransportProblem()
 
     my_model.element_immobile = element_type
@@ -1524,7 +1526,7 @@ def test_element_for_immobile_species(element_type, expected_element):
 
 def test_nb_dofs_dg_or_cg():
     """Test that the number of dofs is different when using CG or DG elements for
-    immobile species"""
+    immobile species."""
 
     # BUILD
     my_model = F.HydrogenTransportProblem()

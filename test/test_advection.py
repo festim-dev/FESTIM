@@ -91,7 +91,7 @@ def test_subdomain_accepts_None_value():
 
 
 def test_velocity_field_update():
-    """Test a explicit time dependent input value is updated correctly"""
+    """Test a explicit time dependent input value is updated correctly."""
 
     test_mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
     V = fem.functionspace(test_mesh, ("Lagrange", 1))

@@ -3,11 +3,12 @@ from dolfinx import fem
 
 from festim import k_B
 from festim.boundary_conditions import ParticleFluxBC
+from festim.enclosure.gas_species import GasSpecies
 
 
 class SurfaceReactionBCpartial(ParticleFluxBC):
-    """Boundary condition representing a surface reaction
-    A + B <-> C
+    """Boundary condition representing a surface reaction A + B <-> C.
+
     where A, B are the reactants and C is the product
     the forward reaction rate is K_r = k_r0 * exp(-E_kr / (k_B * T))
     and the backward reaction rate is K_d = k_d0 * exp(-E_kd / (k_B * T))
@@ -22,7 +23,10 @@ class SurfaceReactionBCpartial(ParticleFluxBC):
 
     Args:
         reactant (list): list of F.Species objects representing the reactants
-        gas_pressure (float, callable): the partial pressure of the product species
+        gas_pressure (float, callable or F.GasSpecies): the partial pressure of
+            the product species. If a F.GasSpecies is given, the pressure is an
+            unknown of the problem and the reaction feeds the mass balance of
+            the enclosure that species belongs to.
         k_r0 (float): the pre-exponential factor of the forward reaction rate
         E_kr (float): the activation energy of the forward reaction rate (eV)
         k_d0 (float): the pre-exponential factor of the backward reaction rate
@@ -53,7 +57,10 @@ class SurfaceReactionBCpartial(ParticleFluxBC):
     def create_value_fenics(self, mesh, temperature, t: fem.Constant):
         kr = self.k_r0 * ufl.exp(-self.E_kr / (k_B * temperature))
         kd = self.k_d0 * ufl.exp(-self.E_kd / (k_B * temperature))
-        if callable(self.gas_pressure):
+        if isinstance(self.gas_pressure, GasSpecies):
+            # the pressure is an unknown of the problem, living in an enclosure
+            gas_pressure = self.gas_pressure.solution
+        elif callable(self.gas_pressure):
             gas_pressure = self.gas_pressure(t=t)
         else:
             gas_pressure = self.gas_pressure
@@ -79,8 +86,8 @@ class SurfaceReactionBCpartial(ParticleFluxBC):
 
 
 class SurfaceReactionBC:
-    """Boundary condition representing a surface reaction
-    A + B <-> C
+    """Boundary condition representing a surface reaction A + B <-> C.
+
     where A, B are the reactants and C is the product
     the forward reaction rate is K_r = k_r0 * exp(-E_kr / (k_B * T))
     and the backward reaction rate is K_d = k_d0 * exp(-E_kd / (k_B * T))
@@ -95,7 +102,10 @@ class SurfaceReactionBC:
 
     Args:
         reactant (list): list of F.Species objects representing the reactants
-        gas_pressure (float, callable): the partial pressure of the product species
+        gas_pressure (float, callable or F.GasSpecies): the partial pressure of
+            the product species. If a F.GasSpecies is given, the pressure is an
+            unknown of the problem and the reaction feeds the mass balance of
+            the enclosure that species belongs to.
         k_r0 (float): the pre-exponential factor of the forward reaction rate
         E_kr (float): the activation energy of the forward reaction rate (eV)
         k_d0 (float): the pre-exponential factor of the backward reaction rate

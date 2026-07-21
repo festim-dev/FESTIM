@@ -6,8 +6,7 @@ from festim.mesh.mesh import Mesh
 
 
 class MeshFromXDMF(Mesh):
-    """
-    Mesh read from the XDMF files
+    """Mesh read from the XDMF files.
 
     Args:
         volume_file (str): path to the volume file
@@ -23,7 +22,8 @@ class MeshFromXDMF(Mesh):
         volume_file (str): path to the volume file
         facet_file (str): path to the facet file
         mesh_name (str): name of the mesh in the volume XDMF file.
-        surface_meshtags_name (str): name of the surface meshtags in the facet XDMF file.
+        surface_meshtags_name (str): name of the surface meshtags in the facet
+        XDMF file.
         volume_meshtags_name (str): name of the volume meshtags in the volume XDMF file
         mesh (fenics.mesh.Mesh): the fenics mesh
     """
@@ -48,7 +48,7 @@ class MeshFromXDMF(Mesh):
         super().__init__(mesh=mesh)
 
     def define_surface_meshtags(self):
-        """Creates the facet meshtags
+        """Creates the facet meshtags.
 
         Returns:
             dolfinx.MeshTags: the facet meshtags
@@ -61,7 +61,7 @@ class MeshFromXDMF(Mesh):
         return facet_meshtags
 
     def define_volume_meshtags(self):
-        """Creates the volume meshtags
+        """Creates the volume meshtags.
 
         Returns:
             dolfinx.MeshTags: the volume meshtags

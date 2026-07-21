@@ -144,11 +144,6 @@ def test_profile_discontinuous():
     for spe in my_model.species:
         spe.subdomains = [vol1, vol2]
 
-    my_model.surface_to_volume = {
-        left_surf: vol1,
-        right_surf: vol2,
-    }
-
     my_model.boundary_conditions = [
         # Protium BCs
         F.FixedConcentrationBC(left_surf, value=10, species=protium),
@@ -214,11 +209,6 @@ def test_profile_discontinuous_single_species():
 
     for spe in my_model.species:
         spe.subdomains = [vol1, vol2]
-
-    my_model.surface_to_volume = {
-        left_surf: vol1,
-        right_surf: vol2,
-    }
 
     my_model.boundary_conditions = [
         F.FixedConcentrationBC(left_surf, value=10, species=protium),

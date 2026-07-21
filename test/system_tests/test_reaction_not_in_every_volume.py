@@ -4,8 +4,8 @@ import festim as F
 
 
 def test_sim_reaction_not_in_every_volume():
-    """Tests that a steady simulation can be run if a reaction is not defined
-    in every volume"""
+    """Tests that a steady simulation can be run if a reaction is not defined in every
+    volume."""
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D(np.linspace(0, 2e-04, num=1001))
 

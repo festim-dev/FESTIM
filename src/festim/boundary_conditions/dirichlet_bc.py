@@ -3,8 +3,10 @@ from collections.abc import Callable
 import numpy as np
 import numpy.typing as npt
 import ufl
+import ufl.argument
 import ufl.core
 import ufl.core.expr
+import ufl.indexed
 from dolfinx import fem
 from dolfinx import mesh as _mesh
 
@@ -14,13 +16,17 @@ from festim.species import Species
 
 
 class DirichletBCBase:
-    """
-    Dirichlet boundary condition class
-    u = value
+    """Dirichlet boundary condition class u = value.
 
     Args:
         subdomain: The surface subdomain where the boundary condition is applied
         value: The value of the boundary condition
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The dimensionless penalty parameter to use if ``enforce_weakly`` is
+            True. The Nitsche penalty term scales as ``penalty * D / h``, so a value of
+            order 10-100 is appropriate regardless of the material or the mesh size.
+            Defaults to None
 
     Attributes:
         subdomain: The surface subdomain where the boundary condition is applied
@@ -28,7 +34,9 @@ class DirichletBCBase:
         value_fenics: The value of the boundary condition in fenics format
         bc_expr: The expression of the boundary condition that is used to
             update the `value_fenics`
-
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method.
+        penalty: The penalty parameter to use if ``enforce_weakly`` is True.
     """
 
     subdomain: _subdomain.SurfaceSubdomain
@@ -48,9 +56,13 @@ class DirichletBCBase:
         self,
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.subdomain = subdomain
         self.value = value
+        self.enforce_weakly = enforce_weakly
+        self.penalty = penalty
 
         self.value_fenics = None
         self.bc_expr = None
@@ -67,14 +79,14 @@ class DirichletBCBase:
         if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
             # FIXME: Should we allow sending in a callable here?
             raise TypeError(
-                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"
+                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"  # noqa: E501
                 + f"{type(value)}"
             )
         self._value_fenics = value
 
     @property
     def time_dependent(self) -> bool:
-        """Returns true if the value of the boundary condition is time dependent"""
+        """Returns true if the value of the boundary condition is time dependent."""
         if self.value is None:
             return False
         if isinstance(self.value, fem.Constant):
@@ -92,17 +104,20 @@ class DirichletBCBase:
     ) -> npt.NDArray[np.int32] | tuple[npt.NDArray[np.int32], npt.NDArray[np.int32]]:
         """Defines the facets and the degrees of freedom of the boundary condition.
 
-        Given the input meshtags, find all facets matching the boundary condition subdomain ID,
+        Given the input meshtags, find all facets matching the boundary
+        condition subdomain ID,
         and locate all DOFs associated with the input function space(s).
 
         Note:
-            For sub-spaces, a tuple of sub-spaces are expected as input, and a tuple of arrays
+            For sub-spaces, a tuple of sub-spaces are expected as input, and a
+            tuple of arrays
             associated to each of the function spaces are returned.
 
         Args:
             facet_meshtags: MeshTags describing some facets in the domain
             mesh:
-            function_space: The function space or a tuple of function spaces: (sub, collapsed)
+            function_space: The function space or a tuple of function spaces:
+            (sub, collapsed)
         """
         mesh = (
             function_space[0].mesh
@@ -111,11 +126,11 @@ class DirichletBCBase:
         )
         if facet_meshtags.topology != mesh.topology._cpp_object:
             raise ValueError(
-                "Mesh of function-space is not the same as the one used for the meshtags"
+                "Mesh of function-space is not the same as the one used for the meshtags"  # noqa: E501
             )
         if mesh.topology.dim - 1 != facet_meshtags.dim:
             raise ValueError(
-                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim - 1}"
+                f"Meshtags of dimension {facet_meshtags.dim}, expected {mesh.topology.dim - 1}"  # noqa: E501
             )
         bc_dofs = fem.locate_dofs_topological(
             function_space, facet_meshtags.dim, facet_meshtags.find(self.subdomain.id)
@@ -124,7 +139,7 @@ class DirichletBCBase:
         return bc_dofs
 
     def update(self, t: float):
-        """Updates the boundary condition value
+        """Updates the boundary condition value.
 
         Args:
             t: the time
@@ -138,17 +153,101 @@ class DirichletBCBase:
         elif self.bc_expr is not None:
             self.value_fenics.interpolate(self.bc_expr)
 
+    def numerical_flux(
+        self,
+        u: fem.Function | ufl.indexed.Indexed,
+        D: ufl.core.expr.Expr | fem.Function | fem.Constant,
+        mesh,
+    ) -> ufl.core.expr.Expr:
+        """Returns the numerical flux leaving the domain through the surface of the BC.
+
+        Nitsche's method only enforces ``u = value`` weakly, so ``u - value`` does not
+        vanish on the boundary and the raw gradient ``-D grad(u).n`` is not the quantity
+        the discrete scheme conserves. The conserved quantity is this numerical flux,
+        which includes the penalty contribution. Use it (rather than the raw gradient)
+        whenever the flux through a weakly enforced boundary feeds another equation, so
+        that the discrete balance is exact.
+
+        Args:
+            u: the solution function associated to the species for which the BC
+                is applied
+            D: the diffusion coefficient of the species at this surface
+            mesh: the mesh the surface belongs to
+
+        Returns:
+            the numerical flux, positive when leaving the domain
+        """
+        n = ufl.FacetNormal(mesh)
+        h = ufl.Circumradius(mesh)  # FIXME this doesn't work for rectangles
+        alpha = self.penalty
+        assert alpha is not None, (
+            "Penalty parameter must be given for weakly enforced Dirichlet BCs"
+        )
+        assert self.value_fenics is not None, (
+            "value_fenics must be defined for weakly enforced Dirichlet BCs"
+        )
+
+        # the penalty scales with D/h, like the consistency term it has to dominate,
+        # which makes ``penalty`` a dimensionless parameter independent of the material
+        # and of the mesh size
+        return -D * ufl.inner(n, ufl.grad(u)) + alpha * D / h * (u - self.value_fenics)
+
+    def weak_formulation(
+        self,
+        u: fem.Function | ufl.indexed.Indexed,
+        v: ufl.argument.Argument | ufl.indexed.Indexed,
+        ds: ufl.Measure,
+        D: ufl.core.expr.Expr | fem.Function | fem.Constant,
+    ) -> ufl.core.expr.Expr:
+        """
+        Returns the symmetric Nitsche weak formulation for the BC
+        This follows the dolfinx tutorial
+        https://jsdokken.com/dolfinx-tutorial/chapter1/nitsche.html
+
+        Args:
+            u: the solution function associated to the species for which the BC
+                is applied
+            v: the test function
+            ds: the surface measure
+            D: the diffusion coefficient of the species at this surface. It multiplies
+                the consistency and symmetry terms, without which the scheme is only
+                consistent when ``D == 1``.
+
+        Returns:
+            the weak formulation
+        """
+        mesh = ds.ufl_domain()
+        n = ufl.FacetNormal(mesh)
+        ds_bc = ds(self.subdomain.id)
+
+        # consistency + penalty, grouped as the numerical flux so that the flux the
+        # scheme conserves is defined in a single place
+        form = self.numerical_flux(u, D, mesh) * v * ds_bc
+
+        # symmetry term, making the bilinear form symmetric (and the L2 error optimal)
+        form += -D * ufl.inner(n, ufl.grad(v)) * (u - self.value_fenics) * ds_bc
+
+        return form
+
 
 class FixedConcentrationBC(DirichletBCBase):
     """
     Args:
         subdomain (festim.Subdomain): the surface subdomain where the boundary
             condition is applied
-        value: The value of the boundary condition. It can be a function of space and/or time
+        value: The value of the boundary condition. It can be a function of
+        space and/or time
         species: The name of the species
+        enforce_weakly: Whether to enforce the boundary condition weakly using Nitsche's
+            method. Defaults to False.
+        penalty: The dimensionless penalty parameter to use if ``enforce_weakly`` is
+            True. The Nitsche penalty term scales as ``penalty * D / h``, so a value of
+            order 10-100 is appropriate regardless of the material or the mesh size.
+            Defaults to None
 
     Attributes:
-        temperature_dependent (bool): True if the value of the bc is temperature dependent
+        temperature_dependent (bool): True if the value of the bc is
+        temperature dependent
 
     Examples:
 
@@ -178,9 +277,13 @@ class FixedConcentrationBC(DirichletBCBase):
         subdomain: _subdomain.SurfaceSubdomain,
         value: np.ndarray | fem.Constant | int | float | Callable,
         species: Species,
+        enforce_weakly: bool = False,
+        penalty: float | None = None,
     ):
         self.species = species
-        super().__init__(subdomain, value)
+        super().__init__(
+            subdomain, value, enforce_weakly=enforce_weakly, penalty=penalty
+        )
 
     @property
     def temperature_dependent(self):
@@ -202,17 +305,18 @@ class FixedConcentrationBC(DirichletBCBase):
         K_S: fem.Function = None,
     ):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-        If the value is a function of t, it is converted to  `dolfinx.fem.Constant`.
-        Otherwise, it is converted to a `dolfinx.fem.Function`.Function and the
-        expression of the function is stored in `bc_expr`.
+        self.value_fenics. If the value is a constant, it is converted to a
+        `dolfinx.fem.Constant`. If the value is a function of t, it is converted to
+        `dolfinx.fem.Constant`. Otherwise, it is converted to a
+        `dolfinx.fem.Function`.Function and the expression of the function is stored in
+        `bc_expr`.
 
         Args:
             function_space: the function space
             temperature: The temperature
             t: the time
-            K_S: The solubility of the species. If provided, the value of the boundary condition
+            K_S: The solubility of the species. If provided, the value of the
+            boundary condition
                 is divided by K_S (change of variable method).
         """
         mesh = function_space.mesh
@@ -252,7 +356,7 @@ class FixedConcentrationBC(DirichletBCBase):
                 )
                 self.bc_expr = fem.Expression(
                     self.value(**kwargs),
-                    helpers.get_interpolation_points(function_space.element),
+                    function_space.element.interpolation_points,
                 )
 
                 self.value_fenics.interpolate(self.bc_expr)
@@ -263,7 +367,7 @@ class FixedConcentrationBC(DirichletBCBase):
                 val_as_cst = helpers.as_fenics_constant(mesh=mesh, value=self.value)
                 self.bc_expr = fem.Expression(
                     val_as_cst / K_S,
-                    helpers.get_interpolation_points(function_space.element),
+                    function_space.element.interpolation_points,
                 )
                 self.value_fenics = fem.Function(function_space)
                 self.value_fenics.interpolate(self.bc_expr)
@@ -283,7 +387,7 @@ class FixedConcentrationBC(DirichletBCBase):
 
                     self.bc_expr = fem.Expression(
                         self.value(t=t) / K_S,
-                        helpers.get_interpolation_points(function_space.element),
+                        function_space.element.interpolation_points,
                     )
                     self.value_fenics = fem.Function(function_space)
                     self.value_fenics.interpolate(self.bc_expr)
@@ -301,7 +405,7 @@ class FixedConcentrationBC(DirichletBCBase):
                     # to update the value_fenics later
                     self.bc_expr = fem.Expression(
                         self.value(**kwargs) / K_S,
-                        helpers.get_interpolation_points(function_space.element),
+                        function_space.element.interpolation_points,
                     )
                     self.value_fenics.interpolate(self.bc_expr)
 
@@ -313,11 +417,10 @@ DirichletBC = FixedConcentrationBC
 class FixedTemperatureBC(DirichletBCBase):
     def create_value(self, function_space: fem.FunctionSpace, t: fem.Constant):
         """Creates the value of the boundary condition as a fenics object and sets it to
-        self.value_fenics.
-        If the value is a constant, it is converted to a `dolfinx.fem.Constant`.
-        If the value is a function of t, it is converted to a `dolfinx.fem.Constant`.
-        Otherwise, it is converted to a` dolfinx.fem.Function` and the
-        expression of the function is stored in `bc_expr`.
+        self.value_fenics. If the value is a constant, it is converted to a
+        `dolfinx.fem.Constant`. If the value is a function of t, it is converted to a
+        `dolfinx.fem.Constant`. Otherwise, it is converted to a` dolfinx.fem.Function`
+        and the expression of the function is stored in `bc_expr`.
 
         Args:
             function_space: the function space
@@ -354,6 +457,6 @@ class FixedTemperatureBC(DirichletBCBase):
                 # to update the value_fenics later
                 self.bc_expr = fem.Expression(
                     self.value(**kwargs),
-                    helpers.get_interpolation_points(function_space.element),
+                    function_space.element.interpolation_points,
                 )
                 self.value_fenics.interpolate(self.bc_expr)

@@ -8,13 +8,13 @@ dummy_mat = F.Material(D_0=1, E_D=1, name="dummy")
 
 
 def test_average_volume_compute_1D():
-    """Test that the average volume export computes the correct value"""
+    """Test that the average volume export computes the correct value."""
 
     # BUILD
     L = 6.0
     my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
     dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_mat)
-    temp, cell_meshtags = my_mesh.define_meshtags(
+    _temp, cell_meshtags = my_mesh.define_meshtags(
         surface_subdomains=[], volume_subdomains=[dummy_volume]
     )
     dx = ufl.Measure("dx", domain=my_mesh.mesh, subdomain_data=cell_meshtags)

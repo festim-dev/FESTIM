@@ -10,8 +10,7 @@ from festim.subdomain import VolumeSubdomain
 
 
 class AdvectionTerm:
-    """
-    Advection term class
+    """Advection term class.
 
     args:
         velocity: the velocity field or function
@@ -22,7 +21,6 @@ class AdvectionTerm:
         velocity: the velocity field or function
         subdomain: the volume subdomain where the velocity is to be applied
         species: the species to which the velocity field is acting on
-
     """
 
     velocity: fem.Function
@@ -94,9 +92,8 @@ class AdvectionTerm:
 
 
 class VelocityField(Value):
-    """
-    A class to handle input values of velocity fields from users and convert them to a
-    relevent fenics object
+    """A class to handle input values of velocity fields from users and convert them to
+    a relevent fenics object.
 
     Args:
         input_value: The value of the user input
@@ -124,7 +121,7 @@ class VelocityField(Value):
         function_space: fem.FunctionSpace,
         t: fem.Constant | None = None,
     ):
-        """Converts a user given value to a relevent fenics object
+        """Converts a user given value to a relevent fenics object.
 
         Args:
             function_space: the function space of the fenics object
@@ -165,7 +162,7 @@ class VelocityField(Value):
         nmm_interpolate(self.fenics_object, vel)
 
     def update(self, t: fem.Constant):
-        """Updates the velocity field
+        """Updates the velocity field.
 
         Args:
             t: the time

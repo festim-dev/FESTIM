@@ -30,7 +30,6 @@ class Settings:
         stepsize (festim.Stepsize): stepsize for a transient
             simulation.
         convergence_criterion: resiudal or incremental (for Newton solver)
-
     """
 
     def __init__(

@@ -1,5 +1,9 @@
 [build-system]
-requires = ["setuptools >= 61", "wheel", "setuptools-scm[toml] >= 7.0.5"]
+requires = [
+    "setuptools>=77.0.3", # Ensuring license field is correctly parsed
+    "wheel",
+    "setuptools-scm[toml] >= 7.0.5",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -13,7 +17,7 @@ description = "Finite element simulations of hydrogen transport"
 readme = "README.md"
 requires-python = ">=3.9"
 license = "Apache-2.0"
-dependencies = ["tqdm", "scifem>=0.2.13", "adios4dolfinx"]
+dependencies = ["tqdm", "scifem>=0.20.0", "io4dolfinx"]
 classifiers = [
     "Natural Language :: English",
     "Topic :: Scientific/Engineering",
@@ -26,6 +30,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+plot = ["pyvista"]
 test = ["pytest >= 5.4.3", "pytest-cov", "sympy", "ipyparallel"]
 lint = ["ruff", "mypy"]
 docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]

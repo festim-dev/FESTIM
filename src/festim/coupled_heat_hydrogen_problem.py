@@ -11,8 +11,7 @@ from festim.hydrogen_transport_problem import (
 
 
 class CoupledTransientHeatTransferHydrogenTransport:
-    """
-    Coupled heat transfer and hydrogen transport transient problem
+    """Coupled heat transfer and hydrogen transport transient problem.
 
     Args:
         heat_problem: the heat transfer problem
@@ -37,8 +36,6 @@ class CoupledTransientHeatTransferHydrogenTransport:
                 heat_problem=my_heat_transfer_model,
                 hydrogen_problem=my_h_transport_model,
             )
-
-
     """
 
     heat_problem: HeatTransferProblem

@@ -18,9 +18,7 @@ x_3d = ufl.SpatialCoordinate(test_mesh_3d)
 
 
 def test_1_mobile_1_trap_MMS_steady_state():
-    """
-    MMS test with 1 mobile species and 1 trap at steady state
-    """
+    """MMS test with 1 mobile species and 1 trap at steady state."""
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0])
@@ -42,7 +40,10 @@ def test_1_mobile_1_trap_MMS_steady_state():
     E_k = 1.5
     p_0 = 0.2
     E_p = 0.1
-    T_expr = lambda x: 500 + 100 * x[0]
+
+    def T_expr(x):
+        return 500 + 100 * x[0]
+
     T.interpolate(T_expr)
     n_trap = 3
     E_D = 0.1
@@ -117,10 +118,8 @@ def test_1_mobile_1_trap_MMS_steady_state():
 
 
 def test_1_mobile_1_trap_MMS_transient():
-    """
-    MMS test with 1 mobile species and 1 trap in 0.1s transient, the value at the last time step is
-    compared to an analytical solution
-    """
+    """MMS test with 1 mobile species and 1 trap in 0.1s transient, the value at the
+    last time step is compared to an analytical solution."""
 
     final_time = 0.1
 
@@ -138,7 +137,10 @@ def test_1_mobile_1_trap_MMS_transient():
 
     D_0 = 1
     E_D = 0.1
-    T_expr = lambda x: 600 + 50 * x[0]
+
+    def T_expr(x):
+        return 600 + 50 * x[0]
+
     T.interpolate(T_expr)
     D = D_0 * ufl.exp(-E_D / (F.k_B * T))
 
@@ -163,12 +165,16 @@ def test_1_mobile_1_trap_MMS_transient():
         F.DirichletBC(subdomain=right, value=H_analytical_ufl, species=H),
     ]
 
-    init_value = lambda x: 1 + ufl.sin(2 * ufl.pi * x[0])
+    def init_value(x):
+        return 1 + ufl.sin(2 * ufl.pi * x[0])
+
     my_model.initial_conditions = [
         F.InitialConcentration(value=init_value, species=H, volume=vol)
     ]
 
-    f = lambda x, t: 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x_1d, t)))
+    def f(x, t):
+        return 4 * t - ufl.div(D * ufl.grad(H_analytical_ufl(x_1d, t)))
+
     my_model.sources = [F.ParticleSource(value=f, volume=vol, species=H)]
 
     my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, final_time=final_time)
@@ -185,8 +191,8 @@ def test_1_mobile_1_trap_MMS_transient():
 
 
 def test_1_mobile_1_trap_MMS_3D():
-    """Tests that a steady simulation can be run in a 3D domain with
-    1 mobile and 1 trapped species"""
+    """Tests that a steady simulation can be run in a 3D domain with 1 mobile and 1
+    trapped species."""
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
@@ -208,7 +214,10 @@ def test_1_mobile_1_trap_MMS_3D():
     E_k = 1.5
     p_0 = 0.2
     E_p = 0.1
-    T_expr = lambda x: 500 + 100 * x[0]
+
+    def T_expr(x):
+        return 500 + 100 * x[0]
+
     T.interpolate(T_expr)
     n_trap = 3
     E_D = 0.1
@@ -298,8 +307,8 @@ def test_1_mobile_1_trap_MMS_3D():
 
 
 def test_1_mobile_1_trap_MMS_2D():
-    """Tests that a steady simulation can be run in a 2D domain with
-    1 mobile and 1 trapped species"""
+    """Tests that a steady simulation can be run in a 2D domain with 1 mobile and 1
+    trapped species."""
 
     def u_exact(mod):
         return lambda x: 1.5 + mod.sin(3 * mod.pi * x[0]) + mod.cos(3 * mod.pi * x[1])
@@ -321,7 +330,10 @@ def test_1_mobile_1_trap_MMS_2D():
     E_k = 1.5
     p_0 = 0.2
     E_p = 0.1
-    T_expr = lambda x: 500 + 100 * x[0]
+
+    def T_expr(x):
+        return 500 + 100 * x[0]
+
     T.interpolate(T_expr)
     n_trap = 3
     E_D = 0.1

@@ -6,7 +6,7 @@ from festim.exports.surface_quantity import SurfaceQuantity
 
 
 class AverageSurface(SurfaceQuantity):
-    """Computes the average value of a field on a given surface
+    """Computes the average value of a field on a given surface.
 
     Args:
         field (festim.Species): species for which the average surface is computed
@@ -25,9 +25,8 @@ class AverageSurface(SurfaceQuantity):
     def compute(
         self, u: fem.Function | ufl.indexed.Indexed, ds: ufl.Measure, entity_maps=None
     ):
-        """
-        Computes the average value of the field on the defined surface
-        subdomain, and appends it to the data list
+        """Computes the average value of the field on the defined surface subdomain, and
+        appends it to the data list.
 
         Args:
             u: field for which the average value is computed

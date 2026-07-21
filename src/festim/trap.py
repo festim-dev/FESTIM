@@ -16,7 +16,7 @@ class Trap(_Species):
         E_k (float): the trapping rate constant activation energy (eV)
         p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
         E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+        volume (F.VolumeSubdomain): The volume subdomain where the trap is.
 
     Attributes:
         name (str, optional): a name given to the trap. Defaults to None.
@@ -25,16 +25,18 @@ class Trap(_Species):
         E_k (float): the trapping rate constant activation energy (eV)
         p_0 (float): the detrapping rate constant pre-exponential factor (s-1)
         E_p (float): the detrapping rate constant activation energy (eV)
-        volume (F.VolumeSubdomain1D): The volume subdomain where the trap is.
+        volume (F.VolumeSubdomain): The volume subdomain where the trap is.
         trapped_concentration (_Species): The immobile trapped concentration
         trap_reaction (_Reaction): The reaction for trapping the mobile conc.
-        empty_trap_sites (F.ImplicitSpecies): The implicit species for the empty trap sites
+        empty_trap_sites (F.ImplicitSpecies): The implicit species for the
+        empty trap sites
 
     Examples:
 
         .. testsetup:: Trap
 
-            from festim import Trap, Species, VolumeSubdomain, Material, HydrogenTransportProblem
+            from festim import Trap, Species, VolumeSubdomain, Material
+            from festim import HydrogenTransportProblem
 
             my_mat = Material(D_0=1, E_D=1, name="test_mat")
             my_vol = VolumeSubdomain(id=1, material=my_mat)
@@ -42,7 +44,8 @@ class Trap(_Species):
 
         .. testcode:: Trap
 
-            trap = Trap(name="Trap", mobile_species=H, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3, n=100, volume=my_vol)
+            trap = Trap(name="Trap", mobile_species=H, k_0=1.0, E_k=0.2,
+            p_0=0.1, E_p=0.3, n=100, volume=my_vol)
 
             my_model = HydrogenTransportProblem()
             my_model.traps = [trap]
@@ -85,8 +88,6 @@ class Trap(_Species):
             )
             my_model.species = [cm, ct]
             my_model.reactions = [trap_reaction]
-
-
     """
 
     def __init__(
@@ -105,7 +106,7 @@ class Trap(_Species):
         self.reaction = None
 
     def create_species_and_reaction(self):
-        """create the immobile trapped species object and the reaction for trapping"""
+        """Create the immobile trapped species object and the reaction for trapping."""
         self.trapped_concentration = _Species(name=self.name, mobile=False)
         self.empty_trap_sites = _ImplicitSpecies(
             n=self.n, others=[self.trapped_concentration]

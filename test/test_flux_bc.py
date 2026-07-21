@@ -14,7 +14,7 @@ mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 10)
 
 
 def test_init():
-    """Test that the attributes are set correctly"""
+    """Test that the attributes are set correctly."""
     # create a DirichletBC object
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     value = 1.0
@@ -46,7 +46,7 @@ def test_init():
     ],
 )
 def test_create_value_fenics_type(value, expected_type):
-    """Test that"""
+    """Test that."""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
@@ -72,7 +72,7 @@ def test_create_value_fenics_type(value, expected_type):
     ],
 )
 def test_create_value_fenics_value(value, expected_value):
-    """Test that"""
+    """Test that."""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
@@ -90,7 +90,8 @@ def test_create_value_fenics_value(value, expected_value):
 
 
 def test_create_value_fenics_dependent_conc():
-    """Test that the value_fenics of ParticleFluxBC is set correctly when the value is dependent on the concentration"""
+    """Test that the value_fenics of ParticleFluxBC is set correctly when the value is
+    dependent on the concentration."""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")
@@ -119,14 +120,17 @@ def test_value_fenics_setter_error():
 
     with pytest.raises(
         TypeError,
-        match="Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or ufl.core.expr.Expr not <class 'str'>",
+        match=(
+            r"Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, np.ndarray or "  # noqa: E501
+            r"ufl.core.expr.Expr not <class 'str'>"
+        ),
     ):
         bc.value_fenics = "coucou"
 
 
 def test_ValueError_raised_when_callable_returns_wrong_type():
     """The create_value_fenics method should raise a ValueError when the callable
-    returns an object which is not a float or int"""
+    returns an object which is not a float or int."""
 
     surface = F.SurfaceSubdomain(id=1)
     species = F.Species("test")
@@ -141,7 +145,10 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
 
     with pytest.raises(
         ValueError,
-        match="self.value should return a float or an int, not <class 'ufl.conditional.Conditional'",
+        match=(
+            r"self.value should return a float or an int, not <class "
+            r"'ufl.conditional.Conditional'"
+        ),
     ):
         bc.create_value_fenics(mesh, T, t)
 
@@ -160,7 +167,7 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     ],
 )
 def test_bc_time_dependent_attribute(input, expected_value):
-    """Test that the time_dependent attribute is correctly set"""
+    """Test that the time_dependent attribute is correctly set."""
     surface = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     my_species = F.Species("test")
     my_bc = F.ParticleFluxBC(subdomain=surface, value=input, species=my_species)
@@ -169,7 +176,8 @@ def test_bc_time_dependent_attribute(input, expected_value):
 
 
 def test_bc_time_dependent_attribute_raises_error_when_value_none():
-    """Test that the time_dependent attribute raises a TypeError when the value is None"""
+    """Test that the time_dependent attribute raises a TypeError when the value is
+    None."""
     surface = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     my_flux_bc = F.FluxBCBase(subdomain=surface, value=None)
 
@@ -197,7 +205,7 @@ def test_bc_time_dependent_attribute_raises_error_when_value_none():
     ],
 )
 def test_bc_temperature_dependent_attribute(input, expected_value):
-    """Test that the temperature_dependent attribute is correctly set"""
+    """Test that the temperature_dependent attribute is correctly set."""
     surface = F.VolumeSubdomain1D(1, borders=[0, 1], material=dummy_mat)
     my_species = F.Species("test")
     my_bc = F.ParticleFluxBC(subdomain=surface, value=input, species=my_species)
@@ -206,7 +214,7 @@ def test_bc_temperature_dependent_attribute(input, expected_value):
 
 
 def test_HeatFluxBC_init():
-    """Test that the attributes are set correctly"""
+    """Test that the attributes are set correctly."""
     # create a DirichletBC object
     subdomain = F.SurfaceSubdomain1D(1, x=0)
     value = 1.0
@@ -235,7 +243,7 @@ def test_HeatFluxBC_init():
     ],
 )
 def test_create_value_fenics_type_HeatFluxBC(value, expected_type):
-    """Test that"""
+    """Test that."""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     t = F.as_fenics_constant(0, mesh)
@@ -266,7 +274,7 @@ def test_create_value_fenics_type_HeatFluxBC(value, expected_type):
     ],
 )
 def test_create_value_fenics_value_HeatFluxBC(value, expected_value):
-    """Test that"""
+    """Test that."""
     # BUILD
     left = F.SurfaceSubdomain1D(1, x=0)
     t = F.as_fenics_constant(0, mesh)

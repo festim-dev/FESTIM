@@ -2,6 +2,35 @@
 FESTIM Fellowship Programme
 ====================================
 
+----------------
+Previous Fellows
+----------------
+
+.. grid:: 1
+
+   .. grid-item::
+      :columns: 12 10 8 8
+
+      .. card:: Tez Orr — UKAEA (2026)
+         :link: fellowship_tez
+         :link-type: doc
+
+         .. grid:: 2
+            :gutter: 4
+
+            .. grid-item::
+               :columns: 4
+
+               .. image:: /_static/fellowship/tez2.jpg
+                  :alt: Tez, FESTIM Fellow
+                  :width: 100%
+
+            .. grid-item::
+               :columns: 8
+               :margin: auto
+
+               Read our interview with **Tez**, our very first FESTIM Fellow, to learn about her experience mastering FESTIM v2 at MIT.
+
 A selective, project-based programme for experienced FESTIM users to develop advanced simulation expertise through direct collaboration with the FESTIM development team.
 
 .. raw:: html

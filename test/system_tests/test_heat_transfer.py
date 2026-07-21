@@ -11,9 +11,7 @@ x_1d = ufl.SpatialCoordinate(test_mesh_1d.mesh)
 
 
 def test_heat_transfer_steady_state():
-    """
-    MMS test with heat transfer simulation
-    """
+    """MMS test with heat transfer simulation."""
 
     def u_exact(mod):
         return lambda x: 1 + mod.sin(2 * mod.pi * x[0])

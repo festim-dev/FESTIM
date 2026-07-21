@@ -8,7 +8,7 @@ import festim as F
 
 
 def test_different_surface_ids():
-    """Checks that different surface ids are correctly set"""
+    """Checks that different surface ids are correctly set."""
     my_test_model = F.HydrogenTransportProblem()
     my_test_model.species = [F.Species("H")]
     L = 1e-04
@@ -54,7 +54,7 @@ def test_different_volume_ids():
 
 
 def test_non_matching_volume_borders():
-    """Checks that non-matching borders raise an error"""
+    """Checks that non-matching borders raise an error."""
     mesh = F.Mesh1D(vertices=np.linspace(0, 5, 6))
     vol_subdomain_1 = F.VolumeSubdomain1D(id=1, borders=[0, 2], material=None)
     vol_subdomain_2 = F.VolumeSubdomain1D(id=1, borders=[3, 5], material=None)
@@ -65,7 +65,7 @@ def test_non_matching_volume_borders():
 
 
 def test_matching_volume_borders_non_ascending_order():
-    """Checks that subdomain placed in non ascending order still passes"""
+    """Checks that subdomain placed in non ascending order still passes."""
     mesh = F.Mesh1D(vertices=np.linspace(0, 8, 9))
     vol_subdomain_1 = F.VolumeSubdomain1D(id=1, borders=[0, 2], material=None)
     vol_subdomain_2 = F.VolumeSubdomain1D(id=2, borders=[4, 8], material=None)
@@ -76,7 +76,7 @@ def test_matching_volume_borders_non_ascending_order():
 
 
 def test_borders_out_of_domain():
-    """Checks that borders outside of the domain raise an error"""
+    """Checks that borders outside of the domain raise an error."""
     mesh = F.Mesh1D(vertices=np.linspace(0, 2))
     subdomains = [F.VolumeSubdomain1D(id=1, borders=[1, 15], material=None)]
     with pytest.raises(ValueError, match="borders dont match domain borders"):
@@ -84,7 +84,7 @@ def test_borders_out_of_domain():
 
 
 def test_borders_inside_domain():
-    """Checks that borders inside of the domain raise an error"""
+    """Checks that borders inside of the domain raise an error."""
     mesh = F.Mesh1D(vertices=np.linspace(0, 20))
     subdomains = [F.VolumeSubdomain1D(id=1, borders=[1, 6], material=None)]
     with pytest.raises(ValueError, match="borders dont match domain borders"):
@@ -92,7 +92,7 @@ def test_borders_inside_domain():
 
 
 def test_raise_error_with_no_volume_subdomain():
-    """Checks that error is rasied when no volume subdomain is defined"""
+    """Checks that error is rasied when no volume subdomain is defined."""
     mesh = F.Mesh1D(vertices=np.linspace(0, 20))
 
     with pytest.raises(ValueError, match="No volume subdomains defined"):
@@ -101,7 +101,7 @@ def test_raise_error_with_no_volume_subdomain():
 
 @pytest.mark.parametrize("input", [1, 2, 3, 4])
 def test_find_volume_from_int(input):
-    """test that the correct volume is returned when input is an int"""
+    """Test that the correct volume is returned when input is an int."""
 
     vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
     vol_2 = F.VolumeSubdomain1D(id=2, borders=[1, 2], material=None)
@@ -114,7 +114,8 @@ def test_find_volume_from_int(input):
 
 
 def test_ValueError_raised_when_id_not_found_in_volumes_subdomains():
-    """test that a ValueError is raised when an id is not found in the list of volume subdomains"""
+    """Test that a ValueError is raised when an id is not found in the list of volume
+    subdomains."""
 
     volumes = [F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)]
 
@@ -123,9 +124,9 @@ def test_ValueError_raised_when_id_not_found_in_volumes_subdomains():
 
 
 def test_ValueError_rasied_when_volume_ids_are_not_unique():
-    """Checks"""
+    """Checks."""
     my_test_model = F.HydrogenTransportProblem(
-        mesh=F.Mesh1D(np.linspace(0, 2, num=10)), species=[F.Species("H")]
+        mesh=F.Mesh1D(np.linspace(0, 2, num=11)), species=[F.Species("H")]
     )
 
     vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
@@ -142,7 +143,8 @@ def test_ValueError_rasied_when_volume_ids_are_not_unique():
 
 
 def test_ValueError_raised_when_id_not_found_in_surface_subdomains():
-    """test that a ValueError is raised when an id is not found in the list of surface subdomains"""
+    """Test that a ValueError is raised when an id is not found in the list of surface
+    subdomains."""
 
     surfaces = [F.SurfaceSubdomain(id=1)]
 
@@ -152,7 +154,7 @@ def test_ValueError_raised_when_id_not_found_in_surface_subdomains():
 
 @pytest.mark.parametrize("input_id, output_index", [(1, 2), (4, 0), (7, 1), (9, 3)])
 def test_find_surface_from_id(input_id, output_index):
-    """test that the correct surface is returned when input is an int"""
+    """Test that the correct surface is returned when input is an int."""
 
     surf_1 = F.SurfaceSubdomain(id=7)
     surf_2 = F.SurfaceSubdomain1D(id=4, x=0)
@@ -165,8 +167,8 @@ def test_find_surface_from_id(input_id, output_index):
 
 
 def test_volume_subdomain_properties():
-    """Tests that the volume subdomain property obtains the correct
-    subdomains from the the model subdomains list"""
+    """Tests that the volume subdomain property obtains the correct subdomains from the
+    the model subdomains list."""
 
     my_model = F.HydrogenTransportProblem()
     my_model.subdomains = [
@@ -209,8 +211,74 @@ def test_name_attribute():
 
 
 def test_name_setter():
-    """Makes sure that a type error is raised when the name type variable is not
-    a string"""
+    """Makes sure that a type error is raised when the name type variable is not a
+    string."""
 
     with pytest.raises(TypeError, match="Name must be a string"):
         F.VolumeSubdomain(id=1, material=None, name=1)
+
+
+def test_all_cells_are_not_tagged():
+    """
+    Checks that an error is raised when not all cells are tagged with a non-zero value.
+    This can be caused by a volume subdomain not being defined correctly, or by a mesh
+    that is too coarse to capture the geometry of the volume subdomains.
+    """
+
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
+
+    mesh = F.Mesh1D(np.linspace(0, 1, 10))
+
+    with pytest.raises(
+        AssertionError, match="All cells must be tagged with a non-zero value"
+    ):
+        mesh.define_meshtags(surface_subdomains=[], volume_subdomains=[vol1, vol2])
+
+
+def test_map_surface_to_volume_subdomains():
+    """
+    Tests that the function map_surface_to_volume_subdomains correctly maps surface
+    subdomains to volume subdomains based on the facet to cell connectivity
+    """
+
+    n = 20
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+
+    festim_mesh = F.Mesh(mesh)
+
+    surface_1 = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[0], 0))
+    surface_2 = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[0], 1))
+
+    material_1 = F.Material(D_0=1, E_D=0, name="material_1")
+    volume_1 = F.VolumeSubdomain(
+        id=2, material=material_1, locator=lambda x: x[0] <= 0.5
+    )
+    volume_2 = F.VolumeSubdomain(
+        id=3, material=material_1, locator=lambda x: x[0] >= 0.5
+    )
+
+    ft, ct = festim_mesh.define_meshtags(
+        surface_subdomains=[surface_1, surface_2],
+        volume_subdomains=[volume_1, volume_2],
+    )
+
+    facet_to_cell = mesh.topology.connectivity(mesh.topology.dim - 1, mesh.topology.dim)
+
+    surface_to_subdomain = F.map_surface_to_volume_subdomains(
+        ft, ct, facet_to_cell, [volume_1, volume_2], [surface_1, surface_2]
+    )
+    print(surface_to_subdomain)
+    for surface, volume in surface_to_subdomain.items():
+        print(f"Surface {surface.id} is connected to volume {volume.id}")
+
+    assert surface_to_subdomain[surface_1] == volume_1, (
+        "Expected surface 1 to be connected to volume 1, "
+        f"got {surface_to_subdomain[surface_1].id}"
+    )
+    assert surface_to_subdomain[surface_2] == volume_2, (
+        "Expected surface 2 to be connected to volume 2, "
+        f"got {surface_to_subdomain[surface_2].id}"
+    )

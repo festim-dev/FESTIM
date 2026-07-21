@@ -9,14 +9,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dolfinx: ['0.9.0', '0.10.0']
+        dolfinx: ['0.10.0', '0.11.0']
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
+
+    - uses: pyvista/setup-headless-display-action@v4
 
     - name: Set up Conda
-      uses: conda-incubator/setup-miniconda@v3
+      uses: conda-incubator/setup-miniconda@v4
       with:
         activate-environment: myenv
         miniforge-version: latest
@@ -26,12 +28,13 @@ jobs:
     - name: Create Conda environment
       shell: bash -l {0}
       run: |
-        conda install -c conda-forge fenics-dolfinx=${{ matrix.dolfinx }} scifem adios4dolfinx
+        conda install -c conda-forge python pip fenics-dolfinx=${{ matrix.dolfinx }} scifem io4dolfinx pyvista nanobind
 
     - name: Install local package and dependencies
       shell: bash -l {0}
       run: |
-        pip install .[test]
+        python3 -m pip install scikit-build-core
+        python3 -m pip install .[test] --no-build-isolation
 
     - name: Run tests
       shell: bash -l {0}
@@ -39,7 +42,7 @@ jobs:
         pytest test/ --cov festim --cov-report xml --cov-report term
     
     - name: Upload to codecov
-      uses: codecov/codecov-action@v6
+      uses: codecov/codecov-action@v7
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./coverage.xml

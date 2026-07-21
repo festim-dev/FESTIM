@@ -2,8 +2,7 @@ import numpy as np
 
 
 class Stepsize:
-    """
-    A class for evaluating the stepsize of transient simulations.
+    """A class for evaluating the stepsize of transient simulations.
 
     Args:
         initial_value (float, int): initial stepsize.
@@ -18,6 +17,8 @@ class Stepsize:
             If callable, has to be a function of `t`. Defaults to None.
         milestones (list, optional): list of times by which the simulation must
             pass. Defaults to an empty list.
+        milestone_tolerance (float, optional): relative tolerance passed to
+            numpy.isclose (rtol). Defaults to 1e-5.
 
 
     Attributes:
@@ -33,6 +34,8 @@ class Stepsize:
         max_stepsize (float, callable): Maximum stepsize.
         milestones (list): list of times by which the simulation must
             pass.
+        milestone_tolerance (float): relative tolerance for how closely a
+            time must align with a milestone to be triggered.
     """
 
     def __init__(
@@ -43,6 +46,7 @@ class Stepsize:
         target_nb_iterations=None,
         max_stepsize=None,
         milestones=None,
+        milestone_tolerance=1e-5,
     ) -> None:
         self.initial_value = initial_value
         self.growth_factor = growth_factor
@@ -50,6 +54,7 @@ class Stepsize:
         self.target_nb_iterations = target_nb_iterations
         self.max_stepsize = max_stepsize
         self.milestones = milestones or []
+        self.milestone_tolerance = milestone_tolerance
 
         if milestones and (growth_factor is None or cutback_factor is None):
             raise ValueError(
@@ -69,6 +74,17 @@ class Stepsize:
             self._milestones = sorted(value)
         else:
             self._milestones = value
+
+    @property
+    def milestone_tolerance(self):
+        return self._milestone_tolerance
+
+    @milestone_tolerance.setter
+    def milestone_tolerance(self, value):
+        if value <= 0:
+            raise ValueError("milestone tolerance should be greater than zero")
+
+        self._milestone_tolerance = value
 
     @property
     def adaptive(self):
@@ -113,8 +129,7 @@ class Stepsize:
         self._max_stepsize = value
 
     def get_max_stepsize(self, t):
-        """
-        Returns the maximum stepsize at time t.
+        """Returns the maximum stepsize at time t.
 
         Args:
             t (float): the current time
@@ -145,16 +160,14 @@ class Stepsize:
         if next_milestone is not None:
             time_to_milestone = next_milestone - t
             if updated_value > time_to_milestone and not np.isclose(
-                t, next_milestone, atol=0
+                t, next_milestone, atol=0, rtol=self.milestone_tolerance
             ):
                 updated_value = time_to_milestone
 
         return updated_value
 
     def is_adapt(self, t):
-        """
-        Methods that defines if the stepsize should be
-        adapted or not
+        """Methods that defines if the stepsize should be adapted or not.
 
         Args:
             t (float): the current time
@@ -165,8 +178,8 @@ class Stepsize:
         return True
 
     def next_milestone(self, current_time: float):
-        """Returns the next milestone that the simulation must pass.
-        Returns None if there are no more milestones.
+        """Returns the next milestone that the simulation must pass. Returns None if
+        there are no more milestones.
 
         Args:
             current_time (float): current time.

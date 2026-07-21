@@ -9,8 +9,7 @@ from festim.mesh.mesh import Mesh
 
 
 class Mesh1D(Mesh):
-    """
-    1D Mesh
+    """1D Mesh.
 
     Args:
         vertices (list or np.ndarray): the mesh x-coordinates (m)
@@ -34,7 +33,7 @@ class Mesh1D(Mesh):
         self._vertices = np.sort(np.unique(value)).astype(np.float64)
 
     def generate_mesh(self):
-        """Generates a 1D mesh"""
+        """Generates a 1D mesh."""
 
         if MPI.COMM_WORLD.rank == 0:
             mesh_points = np.reshape(self.vertices, (len(self.vertices), 1))
@@ -54,7 +53,7 @@ class Mesh1D(Mesh):
         )
 
     def check_borders(self, volume_subdomains):
-        """Checks that the borders of the subdomain are within the domain
+        """Checks that the borders of the subdomain are within the domain.
 
         Args:
             volume_subdomains (list of festim.VolumeSubdomain1D): the volume subdomains

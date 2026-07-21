@@ -1,12 +1,8 @@
 import os
 import tempfile
 
-from petsc4py import PETSc
-
-import dolfinx
 import numpy as np
 from dolfinx.fem import Constant
-from packaging.version import Version
 from ufl import exp
 
 import festim as F
@@ -36,9 +32,8 @@ def relative_error_computed_to_analytical(
 
 
 def test_permeation_problem(mesh_size=1001):
-    """Test running a problem with a mobile species permeating through a 1D
-    domain, checks that the computed permeation flux matches the analytical
-    solution"""
+    """Test running a problem with a mobile species permeating through a 1D domain,
+    checks that the computed permeation flux matches the analytical solution."""
 
     # festim model
     L = 3e-04
@@ -94,20 +89,12 @@ def test_permeation_problem(mesh_size=1001):
     my_model.initialise()
 
     my_model.solver.convergence_criterion = "incremental"
-    if Version(dolfinx.__version__) == Version("0.9.0"):
-        ksp = my_model.solver.krylov_solver
-        opts = PETSc.Options()
-        option_prefix = ksp.getOptionsPrefix()
-        opts[f"{option_prefix}ksp_type"] = "cg"
-        opts[f"{option_prefix}pc_type"] = "gamg"
-        ksp.setFromOptions()
-
     my_model.run()
 
     times = outgassing_flux.t
     flux_values = outgassing_flux.data
 
-    # -------------------------- analytical solution -------------------------------------
+    # -------------------------- analytical solution -------------------------------------  # noqa: E501
 
     D = my_mat.get_diffusion_coefficient(my_mesh.mesh, my_model.temperature)
 
@@ -127,8 +114,7 @@ def test_permeation_problem(mesh_size=1001):
 
 
 def test_permeation_problem_multi_volume(tmp_path):
-    """Same permeation problem as above but with 4 volume subdomains instead
-    of 1"""
+    """Same permeation problem as above but with 4 volume subdomains instead of 1."""
 
     L = 3e-04
     vertices = np.linspace(0, L, num=1001)
@@ -194,16 +180,6 @@ def test_permeation_problem_multi_volume(tmp_path):
     my_model.settings.stepsize = F.Stepsize(initial_value=0.4)
 
     my_model.initialise()
-
-    if Version(dolfinx.__version__) == Version("0.9.0"):
-        my_model.solver.convergence_criterion = "incremental"
-        ksp = my_model.solver.krylov_solver
-        opts = PETSc.Options()
-        option_prefix = ksp.getOptionsPrefix()
-        opts[f"{option_prefix}ksp_type"] = "cg"
-        opts[f"{option_prefix}pc_type"] = "gamg"
-        opts[f"{option_prefix}pc_factor_mat_solver_type"] = "mumps"
-        ksp.setFromOptions()
 
     my_model.run()
 

@@ -6,7 +6,7 @@ import festim as F
 
 @pytest.mark.parametrize("test_type", [int, F.Stepsize, float])
 def test_stepsize_value(test_type):
-    """Test that the stepsize is correctly set"""
+    """Test that the stepsize is correctly set."""
     test_value = 23.0
     my_settings = F.Settings(atol=1, rtol=0.1)
     my_settings.stepsize = test_type(test_value)
@@ -16,7 +16,7 @@ def test_stepsize_value(test_type):
 
 
 def test_stepsize_value_wrong_type():
-    """Checks that an error is raised when the wrong type is given"""
+    """Checks that an error is raised when the wrong type is given."""
     my_settings = F.Settings(atol=1, rtol=0.1)
 
     with pytest.raises(TypeError):
@@ -49,7 +49,7 @@ def test_stepsize_value_wrong_type():
 #     ],
 # )
 # def test_tolerances_value(rtol, atol):
-#     """Tests that callable tolerances are called & return correct float before passed to fenics"""
+#     """Tests that callable tolerances are called & return correct float before passed to fenics"""  # noqa: E501
 
 #     # BUILD
 #     test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))

@@ -3,20 +3,18 @@ from typing import Union
 
 from mpi4py import MPI
 
-import adios4dolfinx
 import dolfinx
+import io4dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
 
-from festim.helpers import get_interpolation_points
 from festim.species import Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 class InitialConditionBase:
-    """
-    Base initial condition class
+    """Base initial condition class.
 
     Args:
         value: the value of the initial condition.
@@ -67,8 +65,7 @@ class InitialConditionBase:
 
 
 class InitialConcentration(InitialConditionBase):
-    """
-    Initial concentration class
+    """Initial concentration class.
 
     Args:
         value: the value of the initial concentration of a given species.
@@ -167,13 +164,12 @@ class InitialConcentration(InitialConditionBase):
 
             self.expr_fenics = fem.Expression(
                 self.value(**kwargs),
-                get_interpolation_points(function_space.element),
+                function_space.element.interpolation_points,
             )
 
 
 class InitialTemperature(InitialConditionBase):
-    """
-    Initial temperature class
+    """Initial temperature class.
 
     Args:
         value: the value of the initial temperature
@@ -235,7 +231,7 @@ class InitialTemperature(InitialConditionBase):
 
             self.expr_fenics = fem.Expression(
                 self.value(**kwargs),
-                get_interpolation_points(function_space.element),
+                function_space.element.interpolation_points,
             )
 
 
@@ -247,12 +243,12 @@ def read_function_from_file(
     order: int = 1,
     mesh: dolfinx.mesh.Mesh | None = None,
 ) -> fem.Function:
-    """
-    Read a function from a file
+    """Read a function from a file.
 
     note::
-        The function is read from a file using adios4dolfinx. For more information
-        see the [adios4dolfinx documentation](https://jsdokken.com/adios4dolfinx/README.html).
+        The function is read from a file using io4dolfinx. For more information
+        see the [io4dolfinx documentation](
+        scientificcomputing.github.io/io4dolfinx/README.html).
 
     Args:
         filename: the filename
@@ -265,10 +261,10 @@ def read_function_from_file(
     Returns:
         the function
     """
-    mesh_in = adios4dolfinx.read_mesh(filename, MPI.COMM_WORLD)
+    mesh_in = io4dolfinx.read_mesh(filename=filename, comm=MPI.COMM_WORLD)
     V_in = fem.functionspace(mesh_in, (family, order))
     u_in = fem.Function(V_in)
-    adios4dolfinx.read_function(
+    io4dolfinx.read_function(
         filename=filename,
         u=u_in,
         name=name,
