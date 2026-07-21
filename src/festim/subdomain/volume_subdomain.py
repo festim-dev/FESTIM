@@ -5,7 +5,10 @@ import numpy as np
 from dolfinx import fem
 from dolfinx.mesh import EntityMap, Mesh, locate_entities
 from numpy import typing as npt
-from scifem.mesh import transfer_meshtags_to_submesh
+try:
+    from dolfinx.mesh import transfer_meshtags_to_submesh
+except ImportError:
+    from scifem.mesh import transfer_meshtags_to_submesh
 
 from festim.material import Material
 from festim.subdomain.surface_subdomain import SurfaceSubdomain
@@ -23,7 +26,6 @@ class VolumeSubdomain:
         parent_mesh: the parent mesh of the volume subdomain
         v_map: the vertex map of the volume subdomain
         n_map: the normal map of the volume subdomain
-        facet_to_parent: the facet to parent map of the volume subdomain
         ft: the facet meshtags of the volume subdomain
         u: the solution function of the subdomain
         u_n: the previous solution function of the subdomain
@@ -37,7 +39,6 @@ class VolumeSubdomain:
     parent_mesh: dolfinx.mesh.Mesh
     v_map: "entity_map_type"
     n_map: np.ndarray
-    facet_to_parent: np.ndarray
     ft: dolfinx.mesh.MeshTags
     u: dolfinx.fem.Function
     u_n: dolfinx.fem.Function
@@ -89,9 +90,13 @@ class VolumeSubdomain:
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
         # Transfer meshtags to submesh
         assert self.submesh is not None, "Need to call create_subdomain first"
-        self.ft, self.facet_to_parent = transfer_meshtags_to_submesh(
-            tag, self.submesh, self.v_map, self.cell_map
-        )
+        sub_tag = transfer_meshtags_to_submesh(
+                tag, self.submesh, self.v_map, self.cell_map
+                )
+        if isinstance(sub_tag, dolfinx.mesh.MeshTags):
+            self.ft = sub_tag
+        else:
+            self.ft, _ = sub_tag
 
     def locate_subdomain_entities(self, mesh: Mesh) -> npt.NDArray[np.int32]:
         """Locates all cells in subdomain borders within domain.
