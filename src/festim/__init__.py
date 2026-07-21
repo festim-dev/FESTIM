@@ -9,6 +9,7 @@ except Exception:
 
 R = 8.314462618  # Gas constant J.mol-1.K-1
 k_B = 8.6173303e-5  # Boltzmann constant eV.K-1
+k_B_SI = 1.380649e-23  # Boltzmann constant J.K-1
 
 from .advection import AdvectionTerm, VelocityField
 from .boundary_conditions.dirichlet_bc import (
@@ -24,10 +25,20 @@ from .boundary_conditions.surface_reaction import SurfaceReactionBC
 from .coupled_heat_hydrogen_problem import (
     CoupledTransientHeatTransferHydrogenTransport,
 )
+from .enclosure.enclosure import Enclosure
+from .enclosure.gas_species import GasSpecies
+from .enclosure.openings import (
+    EnclosureConnection,
+    OpeningBase,
+    PrescribedFlowRate,
+    Pump,
+    Reservoir,
+)
 from .exports.average_surface import AverageSurface
 from .exports.average_volume import AverageVolume
 from .exports.custom_quantity import CustomQuantity
 from .exports.derived_quantity import DerivedQuantity
+from .exports.gas_pressure import GasPressure
 from .exports.maximum_surface import MaximumSurface
 from .exports.maximum_volume import MaximumVolume
 from .exports.minimum_surface import MinimumSurface
@@ -56,7 +67,6 @@ from .helpers import (
     as_fenics_interp_expr_and_function,
     as_mapped_function,
     convergenceTest,
-    get_interpolation_points,
 )
 from .hydrogen_transport_problem import (
     HydrogenTransportProblem,
@@ -73,6 +83,7 @@ from .material import Material, SolubilityLaw
 from .mesh.mesh import Mesh
 from .mesh.mesh_1d import Mesh1D
 from .mesh.mesh_from_xdmf import MeshFromXDMF
+from .plotting import plot
 from .problem import ProblemBase
 from .reaction import Reaction
 from .settings import Settings

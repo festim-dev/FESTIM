@@ -6,7 +6,6 @@ import dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
-from packaging import version
 
 
 def as_fenics_constant(
@@ -96,7 +95,7 @@ def as_fenics_interp_expr_and_function(
 
     fenics_interpolation_expression = fem.Expression(
         mapped_function,
-        get_interpolation_points(function_space.element),
+        function_space.element.interpolation_points,
     )
 
     fenics_object = fem.Function(function_space)
@@ -278,20 +277,6 @@ class Value:
             elif isinstance(self.fenics_object, fem.Function):
                 if self.fenics_interpolation_expression is not None:
                     self.fenics_object.interpolate(self.fenics_interpolation_expression)
-
-
-# Check the version of dolfinx
-dolfinx_version = dolfinx.__version__
-
-# Define the appropriate method based on the version
-if version.parse(dolfinx_version) > version.parse("0.9.0"):
-
-    def get_interpolation_points(element):
-        return element.interpolation_points
-else:
-
-    def get_interpolation_points(element):
-        return element.interpolation_points()
 
 
 def nmm_interpolate(

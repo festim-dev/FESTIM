@@ -10,7 +10,6 @@ import ufl
 from dolfinx import fem, io
 
 from festim import k_B as _k_B
-from festim.helpers import get_interpolation_points
 from festim.reaction import Reaction
 from festim.species import ImplicitSpecies, Species
 from festim.subdomain.interface import Interface, interface_condition_term
@@ -92,7 +91,7 @@ class VTXSpeciesExport(ExportBaseClass):
         field: Set of species to export
         subdomain: A field can be defined on multiple domains. This arguments specifies
             what subdomains we export on. If `None` we export on all domains.
-        checkpoint: If True, the export will be a checkpoint file using adios4dolfinx
+        checkpoint: If True, the export will be a checkpoint file using io4dolfinx
             and won't be readable by ParaView. Default is False.
         times: if provided, the field will be exported at these timesteps. Otherwise
             exports at all timesteps. Defaults to None.
@@ -199,7 +198,7 @@ class CustomFieldExport(ExportBaseClass):
         subdomain: The volume subdomain on which the custom
             field is evaluated. Defaults to None.
         checkpoint: If True, the export will be a checkpoint file using
-            adios4dolfinx and won't be readable by ParaView. Default is False.
+            io4dolfinx and won't be readable by ParaView. Default is False.
 
     Attributes:
         filename: The name of the output file
@@ -309,7 +308,7 @@ class CustomFieldExport(ExportBaseClass):
         # create a dolfinx.fem.Expression
         self.dolfinx_expression = fem.Expression(
             self.expression(**kwargs),
-            get_interpolation_points(self.function.function_space.element),
+            self.function.function_space.element.interpolation_points,
         )
 
     def _get_species_function(self, spe: Species):
@@ -564,7 +563,7 @@ class ReactionRateExport(CustomFieldExport):
         subdomain: The volume subdomain on which the reaction
             rate is evaluated. Defaults to None.
         checkpoint: If True, the export will be a checkpoint file using
-            adios4dolfinx and won't be readable by ParaView. Default is False.
+            io4dolfinx and won't be readable by ParaView. Default is False.
     """
 
     def __init__(
