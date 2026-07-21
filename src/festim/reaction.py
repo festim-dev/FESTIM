@@ -24,7 +24,7 @@ class GenericReaction:
         product (Optional[Union[F.Species, List[F.Species]]]): The product(s).
         forward_rate: The forward reaction rate. Can be a float, a ufl expression,
             or a callable of temperature returning either of those.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
+        volume (F.VolumeSubdomain): The volume subdomain where the reaction
         takes place.
         backward_rate: The backward reaction rate, following the same rules as
         forward_rate. If None, the reaction is irreversible.
@@ -44,7 +44,7 @@ class GenericReaction:
         reactant: _Species | _ImplicitSpecies | list[_Species | _ImplicitSpecies],
         product: Union[_Species, list[_Species]] | None,
         forward_rate,
-        volume: VS1D,
+        volume: VolumeSubdomain,
         backward_rate=None,
     ) -> None:
         self.reactant = reactant
