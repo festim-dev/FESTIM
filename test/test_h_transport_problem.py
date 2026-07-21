@@ -9,6 +9,8 @@ from dolfinx import default_scalar_type, fem
 
 import festim as F
 
+from .utils import evaluate_at_point
+
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
@@ -265,7 +267,10 @@ def test_define_D_global_different_temperatures():
 
     D_computed, _D_expr = my_model.define_D_global(H)
 
-    computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
+    computed_values = [
+        evaluate_at_point(D_computed, 0.0),
+        evaluate_at_point(D_computed, 4.0),
+    ]
 
     D_analytical_left = D_0 * np.exp(-E_D / (F.k_B * 50))
     D_analytical_right = D_0 * np.exp(-E_D / (F.k_B * 450))
@@ -301,7 +306,10 @@ def test_define_D_global_different_materials():
 
     D_computed, _D_expr = my_model.define_D_global(H)
 
-    computed_values = [D_computed.x.array[0], D_computed.x.array[-1]]
+    computed_values = [
+        evaluate_at_point(D_computed, 0.0),
+        evaluate_at_point(D_computed, 4.0),
+    ]
 
     D_expected_left = D_0_left * np.exp(-E_D_left / (F.k_B * my_model.temperature))
     D_expected_right = D_0_right * np.exp(-E_D_right / (F.k_B * my_model.temperature))
@@ -867,9 +875,9 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
 
     # RUN
     my_model.initialise()
-    prev_solution = my_model.u_n.sub(0)
+    prev_solution = my_model.u_n.sub(0).collapse()
     assert np.isclose(
-        prev_solution.x.petsc_vec.array[-1],
+        evaluate_at_point(prev_solution, 4.0),
         expected_value,
     )
 
@@ -954,15 +962,18 @@ def test_create_initial_conditions_value_fenics_multispecies(
     my_model.initialise()
 
     # TEST
-    # When in multispecies, the u and u_n x arrays are structured as follows:
-    # [H, D, ..., H, D, H, D], thus the last two values are the ones we are
-    # interested in
+    # Collapse each species' sub-space so the check is independent of both the
+    # DOF ordering and the per-node block layout.
 
     # test value of H at x = 4.0
-    assert np.isclose(my_model.u_n.x.array[-2], expected_value_1)
+    assert np.isclose(
+        evaluate_at_point(my_model.u_n.sub(0).collapse(), 4.0), expected_value_1
+    )
 
     # test value of D at x = 4.0
-    assert np.isclose(my_model.u_n.x.array[-1], expected_value_2)
+    assert np.isclose(
+        evaluate_at_point(my_model.u_n.sub(1).collapse(), 4.0), expected_value_2
+    )
 
 
 def test_adaptive_timestepping_grows():
