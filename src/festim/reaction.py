@@ -4,8 +4,7 @@ from ufl import exp
 from ufl.core.expr import Expr
 
 from festim import k_B as _k_B
-from festim.species import ImplicitSpecies as _ImplicitSpecies
-from festim.species import Species as _Species
+from festim.species import ImplicitSpecies, Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
@@ -41,8 +40,8 @@ class GenericReaction:
 
     def __init__(
         self,
-        reactant: _Species | _ImplicitSpecies | list[_Species | _ImplicitSpecies],
-        product: Union[_Species, list[_Species]] | None,
+        reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
+        product: Union[Species, list[Species]] | None,
         forward_rate,
         volume: VolumeSubdomain,
         backward_rate=None,
@@ -66,7 +65,7 @@ class GenericReaction:
                 "reactant must be an entry of one or more species objects, not an empty list."  # noqa: E501
             )
         for i in value:
-            if not isinstance(i, (_Species, _ImplicitSpecies)):
+            if not isinstance(i, (Species, ImplicitSpecies)):
                 raise TypeError(
                     "reactant must be an F.Species or F.ImplicitSpecies, not "
                     + f"{type(i)}"
@@ -126,10 +125,10 @@ class GenericReaction:
 
         # detect if mixed_domain
         mixed_domain = any(
-            isinstance(reactant, _Species) and reactant.subdomain_to_solution != {}
+            isinstance(reactant, Species) and reactant.subdomain_to_solution != {}
             for reactant in self.reactant
         ) or any(
-            isinstance(product, _Species) and product.subdomain_to_solution != {}
+            isinstance(product, Species) and product.subdomain_to_solution != {}
             for product in products
         )
 
@@ -208,10 +207,10 @@ class GenericReaction:
         contributions = [
             (reactant, -rate)
             for reactant in self.reactant
-            if isinstance(reactant, _Species)
+            if isinstance(reactant, Species)
         ]
         contributions += [
-            (product, rate) for product in products if isinstance(product, _Species)
+            (product, rate) for product in products if isinstance(product, Species)
         ]
         return contributions
 
@@ -269,11 +268,11 @@ class Reaction(GenericReaction):
 
     def __init__(
         self,
-        reactant: _Species | _ImplicitSpecies | list[_Species | _ImplicitSpecies],
+        reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
         k_0: float,
         E_k: float,
         volume: VolumeSubdomain,
-        product: Union[_Species, list[_Species]] | None = [],
+        product: Union[Species, list[Species]] | None = [],
         p_0: float | None = None,
         E_p: float | None = None,
     ) -> None:
