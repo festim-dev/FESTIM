@@ -478,3 +478,145 @@ def test_MMS_weak_dirichlet(
     L2_error = error_L2(H_computed, H_analytical_np)
 
     assert L2_error < 2e-3
+
+
+def solve_weak_dirichlet_mms(
+    N: int,
+    D_0: float,
+    penalty: float,
+    model_class: type[F.HydrogenTransportProblem] = F.HydrogenTransportProblem,
+) -> float:
+    """Solves a 1D steady-state MMS problem with both Dirichlet BCs enforced weakly
+    and returns the L2 error.
+
+    Args:
+        N: the number of cells of the mesh
+        D_0: the pre-exponential factor of the diffusion coefficient
+        penalty: the Nitsche penalty parameter
+        model_class: the problem class to use
+
+    Returns:
+        the L2 error of the computed concentration
+    """
+
+    def u_exact(mod):
+        return lambda x: 1 + mod.sin(2 * mod.pi * x[0])
+
+    H_analytical_ufl = u_exact(ufl)
+    H_analytical_np = u_exact(np)
+
+    my_mesh = F.Mesh1D(np.linspace(0, 1, N + 1))
+    x = ufl.SpatialCoordinate(my_mesh.mesh)
+
+    my_model = model_class()
+    my_model.mesh = my_mesh
+
+    my_mat = F.Material(name="mat", D_0=D_0, E_D=0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+    my_model.subdomains = [vol, left, right]
+
+    H = F.Species("H")
+    my_model.species = [H]
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H.subdomains = [vol]
+
+    my_model.temperature = 500
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(
+            subdomain=surf,
+            value=H_analytical_ufl,
+            species=H,
+            enforce_weakly=True,
+            penalty=penalty,
+        )
+        for surf in (left, right)
+    ]
+
+    # E_D = 0 so D is exactly D_0
+    f = -ufl.div(D_0 * ufl.grad(H_analytical_ufl(x)))
+    my_model.sources = [F.ParticleSource(value=f, volume=vol, species=H)]
+
+    my_model.settings = F.Settings(atol=1e-12, rtol=1e-12, transient=False)
+
+    my_model.initialise()
+    my_model.run()
+
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        H_computed = H.subdomain_to_post_processing_solution[vol]
+    else:
+        H_computed = H.post_processing_solution
+
+    return error_L2(H_computed, H_analytical_np)
+
+
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+@pytest.mark.parametrize("D_0", [1.0, 0.01])
+def test_weak_dirichlet_convergence_rate(
+    model_class: type[F.HydrogenTransportProblem]
+    | type[F.HydrogenTransportProblemDiscontinuous],
+    D_0: float,
+):
+    """The weakly enforced Dirichlet BC must be consistent, ie. converge at the
+    optimal order 2 in L2 for P1 elements, for any diffusion coefficient.
+
+    ``D_0 != 1`` is the case that matters: omitting D from the Nitsche consistency
+    and symmetry terms leaves a scheme that is only consistent when D == 1, and drops
+    this rate to ~0.85 at D_0 = 0.01.
+    """
+    mesh_sizes = [20, 40, 80, 160]
+    errors = [
+        solve_weak_dirichlet_mms(N=N, D_0=D_0, penalty=100, model_class=model_class)
+        for N in mesh_sizes
+    ]
+
+    rates = np.log(np.array(errors[:-1]) / np.array(errors[1:])) / np.log(2)
+
+    assert np.all(rates > 1.8), f"convergence rates {rates} are not close to 2"
+
+
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+def test_weak_dirichlet_insensitive_to_penalty(
+    model_class: type[F.HydrogenTransportProblem]
+    | type[F.HydrogenTransportProblemDiscontinuous],
+):
+    """A consistent Nitsche scheme converges to the same solution regardless of the
+    penalty value. With D missing from the consistency and symmetry terms, the error
+    instead swings by more than an order of magnitude across these penalties.
+    """
+    errors = [
+        solve_weak_dirichlet_mms(N=40, D_0=0.01, penalty=p, model_class=model_class)
+        for p in (10, 100, 1000)
+    ]
+
+    assert np.max(errors) / np.min(errors) < 2, (
+        f"errors {errors} depend too strongly on the penalty parameter"
+    )
+
+
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+def test_weak_dirichlet_penalty_is_dimensionless(
+    model_class: type[F.HydrogenTransportProblem]
+    | type[F.HydrogenTransportProblemDiscontinuous],
+):
+    """The Nitsche penalty scales as ``penalty * D / h``, so at a fixed ``penalty`` the
+    discrete problem is D * (a fixed unit problem) and the error does not depend on the
+    diffusion coefficient. This is what makes ``penalty`` a material-independent knob:
+    a value tuned on one material stays valid on another.
+    """
+    errors = [
+        solve_weak_dirichlet_mms(N=40, D_0=D_0, penalty=100, model_class=model_class)
+        for D_0 in (1e2, 1.0, 1e-4, 1e-10)
+    ]
+
+    assert np.allclose(errors, errors[0], rtol=1e-8), (
+        f"errors {errors} depend on the diffusion coefficient"
+    )
