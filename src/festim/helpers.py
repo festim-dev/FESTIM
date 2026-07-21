@@ -452,6 +452,3 @@ def KSPMonitor(ksp, iter, rnorm):
     dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=}, {_residual0=:.5e}")
     if MPI.COMM_WORLD.rank == 0:
         dolfinx.log.log(dolfinx.log.LogLevel.DEBUG, f"KSP {iter=} {rnorm=:.5e}")
-
-
-lambda c, t: 1 + c + t
