@@ -113,6 +113,31 @@ def test_create_value_fenics_dependent_conc():
     assert bc.value_fenics == 1.0 + my_species.solution
 
 
+def test_create_value_fenics_time_and_concentration_dependent():
+    """Regression test that a ParticleFluxBC value depending on both time and a species
+    concentration is handled: it must not take the t-only constant fast path (which
+    would call the value without the species argument), but map to a UFL expression."""
+    # BUILD
+    left = F.SurfaceSubdomain1D(1, x=0)
+    my_species = F.Species("test")
+    my_species.solution = F.as_fenics_constant(12, mesh)
+    T = F.as_fenics_constant(1, mesh)
+    t = F.as_fenics_constant(3, mesh)
+    bc = F.ParticleFluxBC(
+        subdomain=left,
+        value=lambda t, c: t * c,
+        species=my_species,
+        species_dependent_value={"c": my_species},
+    )
+
+    # RUN
+    bc.create_value_fenics(mesh, T, t)
+
+    # TEST
+    assert isinstance(bc.value_fenics, ufl.core.expr.Expr)
+    assert bc.value_fenics == t * my_species.solution
+
+
 def test_value_fenics_setter_error():
     left = F.SurfaceSubdomain1D(1, x=0)
     my_species = F.Species("test")

@@ -9,9 +9,11 @@ import dolfinx
 import io4dolfinx
 import numpy as np
 import numpy.typing as npt
+import scifem
 import tqdm.auto
 import ufl
 from dolfinx import fem
+from dolfinx.fem.petsc import NonlinearProblem
 from packaging.version import Version
 
 from festim import (
@@ -31,6 +33,11 @@ from festim import (
     subdomain as _subdomain,
 )
 from festim.advection import AdvectionTerm
+from festim.enclosure._utils import check_dolfinx_version_for_enclosures
+from festim.enclosure.enclosure import Enclosure as _Enclosure
+from festim.enclosure.gas_species import GasSpecies as _GasSpecies
+from festim.enclosure.gas_species import create_real_function_space
+from festim.enclosure.openings import EnclosureConnection
 from festim.helpers import (
     KSPMonitor,
     SnesMonitor,
@@ -192,6 +199,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._temperature_as_function = None
         self._species_to_D_global = None
         self._species_to_D_global_expr = None
+        self._surface_to_volume = None
 
     @property
     def temperature(self):
@@ -304,6 +312,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._element_immobile = value
 
     def initialise(self):
+        if getattr(self, "enclosures", None):
+            raise NotImplementedError(
+                f"Gas enclosures are not supported by {self.__class__.__name__}. Use "
+                "festim.HydrogenTransportProblemDiscontinuous instead, which solves a "
+                "blocked system the enclosure pressures can be added to."
+            )
         self.create_species_from_traps()
         self.define_function_spaces(element_degree=self.settings.element_degree)
         self.define_meshtags_and_measures()
@@ -570,6 +584,43 @@ class HydrogenTransportProblem(problem.ProblemBase):
             )
             temperature_field.interpolate(temperature_expr)
             return temperature_field
+
+    def volume_subdomain_of_surface(
+        self, surface: _subdomain.SurfaceSubdomain
+    ) -> _subdomain.VolumeSubdomain:
+        """Returns the volume subdomain a surface subdomain belongs to.
+
+        The mapping is deduced from the mesh connectivity and the meshtags, and is
+        computed once then cached.
+
+        Args:
+            surface: the surface subdomain
+
+        Returns:
+            the volume subdomain the surface belongs to
+
+        Raises:
+            ValueError: if the surface cannot be mapped to a volume subdomain
+        """
+        if self._surface_to_volume is None:
+            mesh = self.mesh.mesh
+            tdim = mesh.topology.dim
+            mesh.topology.create_connectivity(tdim - 1, tdim)
+            self._surface_to_volume = _subdomain.map_surface_to_volume_subdomains(
+                ft=self.facet_meshtags,
+                ct=self.volume_meshtags,
+                facet_to_cell=mesh.topology.connectivity(tdim - 1, tdim),
+                volume_subdomains=self.volume_subdomains,
+                surface_subdomains=self.surface_subdomains,
+                comm=mesh.comm,
+            )
+
+        if surface not in self._surface_to_volume:
+            raise ValueError(
+                f"Surface subdomain {surface.id} could not be mapped to a volume "
+                "subdomain. Check that its id matches a tagged facet of the mesh."
+            )
+        return self._surface_to_volume[surface]
 
     def define_D_global(self, species):
         """Defines the global diffusion coefficient for a given species.
@@ -900,7 +951,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if bc.enforce_weakly:
                     u = bc.species.solution
                     v = bc.species.test_function
-                    self.formulation += bc.weak_formulation(u, v, self.ds)
+                    # D is set by the material of the volume the surface belongs to
+                    vol = self.volume_subdomain_of_surface(bc.subdomain)
+                    D = vol.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                    self.formulation += bc.weak_formulation(u, v, self.ds, D)
         for adv_term in self.advection_terms:
             # create vector functionspace based on the elements in the mesh
 
@@ -1115,6 +1171,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         exports=None,
         traps=None,
         interfaces: list[_subdomain.Interface] | None = None,
+        enclosures: list[_Enclosure] | None = None,
         petsc_options: dict | None = None,
     ):
         """Class for a multi-material hydrogen transport problem For other arguments see
@@ -1123,6 +1180,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         Args:
             interfaces (list, optional): list of interfaces (``festim.Interface``
                 objects). Defaults to None.
+            enclosures (list, optional): list of gas enclosures (``festim.Enclosure``
+                objects). Requires dolfinx >= 0.11. Defaults to None.
             surface_to_volume (dict, optional): correspondance dictionary linking
                 each ``festim.SurfaceSubdomain`` objects to a ``festim.VolumeSubdomain``
                 object). Defaults to None.
@@ -1152,9 +1211,30 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             petsc_options=petsc_options,
         )
         self.interfaces = interfaces or []
+        self.enclosures = enclosures or []
         self.surface_to_volume = {}
         self.subdomain_to_species = {}  # maps subdomain to species defined in it
         self.subdomain_to_V_CG1 = {}
+        self._total_volume = None
+
+    @property
+    def enclosures(self) -> list[_Enclosure]:
+        return self._enclosures
+
+    @enclosures.setter
+    def enclosures(self, value):
+        value = value or []
+        if value:
+            # fail early and with a clear message rather than deep inside the
+            # function space creation
+            check_dolfinx_version_for_enclosures()
+        self._enclosures = value
+
+    @property
+    def gas_species(self):
+        """All the gas species across all the enclosures. Defines the ordering of the
+        pressure blocks in the solver."""
+        return [gs for enclosure in self.enclosures for gs in enclosure.species]
 
     @property
     def method_interface(self):
@@ -1233,6 +1313,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             interface.parent_mesh = self.mesh.mesh
 
         self.create_species_from_traps()
+        self.link_enclosures()
 
         self.t = fem.Constant(self.mesh.mesh, 0.0)
         if self.settings.transient:
@@ -1246,6 +1327,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for subdomain in self.volume_subdomains:
             self.define_function_spaces(subdomain)
+
+        self.define_enclosure_function_spaces()
 
         # create global DG function spaces of degree 0 and 1
         element_DG0 = basix.ufl.element(
@@ -1264,6 +1347,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.V_DG_1 = fem.functionspace(self.mesh.mesh, element_DG1)
 
         self.define_temperature()
+        self.convert_enclosure_input_values_to_fenics_objects()
         self.convert_source_input_values_to_fenics_objects()
         self.convert_advection_term_to_fenics_objects()
         self.define_boundary_conditions()
@@ -1273,6 +1357,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for subdomain in self.volume_subdomains:
             self.create_subdomain_formulation(subdomain)
             subdomain.u.name = f"u_{subdomain.id}"
+
+        for gas_species in self.gas_species:
+            self.create_enclosure_formulation(gas_species)
 
         self.create_formulation()
         self.create_solver()
@@ -1383,6 +1470,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     condition.expr_fenics, cells1=entities
                 )
 
+        for gas_species in self.gas_species:
+            gas_species.prev_solution.x.array[:] = gas_species.initial_pressure
+            # also seed the current solution: it is the initial guess of the first
+            # Newton solve, and some coupling laws (eg. Sieverts' sqrt(P)) are not
+            # differentiable at P=0
+            gas_species.solution.x.array[:] = gas_species.initial_pressure
+
     def define_function_spaces(
         self, subdomain: _subdomain.VolumeSubdomain, element_degree=1
     ):
@@ -1453,15 +1547,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                for subdomain in source.species.subdomains:
-                    V = source.species.subdomain_to_function_space[subdomain]
+                V = source.species.subdomain_to_function_space[source.volume]
 
-                    source.value.convert_input_value(
-                        function_space=V,
-                        t=self.t,
-                        temperature=self.temperature_fenics,
-                        up_to_ufl_expr=True,
-                    )
+                source.value.convert_input_value(
+                    function_space=V,
+                    t=self.t,
+                    temperature=self.temperature_fenics,
+                    up_to_ufl_expr=True,
+                    subdomain=source.volume,
+                )
 
     def convert_advection_term_to_fenics_objects(self):
         """For each advection term convert the input value."""
@@ -1561,10 +1655,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     v = bc.species.subdomain_to_test_function[subdomain]
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
             if isinstance(bc, boundary_conditions.FixedConcentrationBC):
-                if bc.enforce_weakly:
+                # as for fluxes, only the subdomain owning the surface gets the term,
+                # and its material is the one setting D there
+                if (
+                    bc.enforce_weakly
+                    and subdomain == self.surface_to_volume[bc.subdomain]
+                ):
                     u = bc.species.subdomain_to_solution[subdomain]
                     v = bc.species.subdomain_to_test_function[subdomain]
-                    form += bc.weak_formulation(u, v, self.ds)
+                    D = subdomain.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                    form += bc.weak_formulation(u, v, self.ds, D)
 
         # add volumetric sources
         for source in self.sources:
@@ -1589,6 +1691,234 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # store the form in the subdomain object
         subdomain.F = form
+
+    def link_enclosures(self):
+        """Validates the enclosures and resolves the links between them, their surfaces
+        and the boundary conditions coupled to them.
+
+        This runs before any fenics object is created.
+        """
+        if not self.enclosures:
+            return
+
+        if self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
+            raise NotImplementedError(
+                "Enclosures are only supported for cartesian coordinate systems, not "
+                f"{self.mesh.coordinate_system!s}. The surface integrals of the "
+                "pressure balance would need the appropriate metric factors."
+            )
+
+        mesh_dim = self.mesh.mesh.topology.dim
+        all_gas_species = self.gas_species
+
+        # A GasSpecies carries exactly one pressure unknown and one backref to its
+        # enclosure, so it cannot belong to two of them. Sharing one silently corrupts
+        # the model (the backref points to the last enclosure, and the species gets two
+        # pressure blocks sharing one solution). Catch it explicitly.
+        seen = set()
+        for gas_species in all_gas_species:
+            if id(gas_species) in seen:
+                enclosures = [e for e in self.enclosures if gas_species in e.species]
+                names = ", ".join(str(e) for e in enclosures)
+                raise ValueError(
+                    f"{gas_species} belongs to more than one enclosure ({names}). A "
+                    "GasSpecies has a single partial pressure and can live in only one "
+                    "enclosure; create a separate GasSpecies for each enclosure."
+                )
+            seen.add(id(gas_species))
+
+        for enclosure in self.enclosures:
+            for surface in enclosure.surfaces:
+                if surface not in self.surface_subdomains:
+                    raise ValueError(
+                        f"Surface {surface.id} of {enclosure} is not in the subdomains "
+                        "of the model"
+                    )
+            # The flux through a surface is per unit area, so turning it into a number
+            # of particles per second needs the physical area of that surface. Only a 3D
+            # mesh measures that area itself: in 1D a surface is a point and in 2D a
+            # line, so the missing extent has to come from the user.
+            if enclosure.surfaces and not enclosure.areas_given and mesh_dim < 3:
+                missing = (
+                    "area (m2) of the surface"
+                    if mesh_dim == 1
+                    else ("out-of-plane depth (m) of the model")
+                )
+                raise ValueError(
+                    f"{enclosure} is attached to surfaces on a {mesh_dim}D mesh, so "
+                    "the areas of those surfaces cannot be taken from the mesh and "
+                    "must be given: pass surfaces as a dict mapping each surface to "
+                    f"the {missing}, eg. surfaces={{my_surface: 1e-4}}."
+                )
+            # a connection only needs declaring on one side: mirror it onto the partner
+            for opening in enclosure.openings:
+                if not isinstance(opening, EnclosureConnection):
+                    continue
+                for gas_species in opening.species:
+                    if gas_species not in all_gas_species:
+                        raise ValueError(
+                            f"{gas_species} is connected by an EnclosureConnection but "
+                            "does not belong to any enclosure of the model"
+                        )
+                    partner = gas_species.enclosure
+                    if opening not in partner.openings:
+                        partner.openings.append(opening)
+
+        # let the boundary conditions know which gas species they are coupled to
+        for bc in self._unpacked_bcs:
+            pressure = getattr(bc, "gas_pressure", None)
+            if pressure is None:
+                pressure = getattr(bc, "pressure", None)
+            if isinstance(pressure, _GasSpecies):
+                if pressure not in all_gas_species:
+                    raise ValueError(
+                        f"{bc} is coupled to {pressure}, which does not belong to any "
+                        "enclosure of the model"
+                    )
+                # NOTE: is this still needed?
+                bc._gas_species = pressure
+
+    def define_enclosure_function_spaces(self):
+        """Creates a real function space, a solution and a previous solution for each
+        gas species of each enclosure.
+
+        The real function spaces live on the parent mesh: every form of the blocked
+        system is integrated over the parent mesh, with submesh functions pulled in via
+        ``entity_maps``.
+        """
+        if not self.enclosures:
+            return
+
+        mesh = self.mesh.mesh
+        # The real space is defined on the parent mesh. It could instead live on a
+        # submesh of the contact facets (as in the scifem demo), but that is a
+        # code-structure choice, not a performance one: a real space has a single
+        # global dof either way, and the pressure's Jacobian coupling is already
+        # surface-local (its sparsity comes from the ds integration measure, not from
+        # the mesh the space is defined on). A submesh would only add entity_map
+        # bookkeeping.
+        for gas_species in self.gas_species:
+            V = create_real_function_space(mesh)
+            gas_species.function_space = V
+            gas_species.solution = fem.Function(V)
+            gas_species.prev_solution = fem.Function(V)
+            gas_species.test_function = ufl.TestFunction(V)
+            gas_species.solution.name = f"P_{gas_species.name}"
+
+        # The pressure balance is a 0D equation, but its test function is a single
+        # global constant, so every term of it must be written as an integral. The
+        # scalar terms are therefore spread over a region and divided by the measure of
+        # that region, which recovers the bare scalar: for constant f,
+        # int_R f/|R| q dR == f. The region is the enclosure's contact surfaces where it
+        # has some (that is where the physics is, and it keeps assembly on the boundary
+        # facets), and the whole domain for an enclosure that only has openings.
+        one = fem.Constant(mesh, 1.0)
+        self._total_volume = scifem.assemble_scalar(fem.form(one * self.dx))
+        for enclosure in self.enclosures:
+            enclosure._contact_measure = sum(
+                scifem.assemble_scalar(fem.form(one * self.ds(surface.id)))
+                for surface in enclosure.surfaces
+            )
+
+    def convert_enclosure_input_values_to_fenics_objects(self):
+        """Converts the user input values of the enclosures and their openings to fenics
+        objects."""
+        for enclosure in self.enclosures:
+            # opening parameters are scalars, so any function space on the parent mesh
+            # will do here
+            enclosure.convert_input_values_to_fenics_objects(
+                function_space=self.V_DG_0, t=self.t
+            )
+
+    # NOTE: what are the alternative naming for "production rate"?
+    def gas_production_rates(self, surface, gas_species: _GasSpecies):
+        """The rates at which particles of a gas species are produced at a surface, in
+        particles/s/m2, positive when entering the gas.
+
+        Args:
+            surface: the surface subdomain
+            gas_species: the gas species
+
+        Yields:
+            ufl expressions for each contribution at that surface
+        """
+        for bc in self.boundary_conditions:
+            if bc.subdomain is not surface:
+                continue
+            if (
+                isinstance(bc, boundary_conditions.SurfaceReactionBC)
+                and bc.gas_pressure is gas_species
+            ):
+                # value_fenics is the rate at which the solid gains particles, so the
+                # gas loses them. Taken once per reaction, not once per reactant: the
+                # partials share the same expression and differ only in which species
+                # of the solid they apply to.
+                yield -bc.flux_bcs[0].value_fenics
+
+    def create_enclosure_formulation(self, gas_species: _GasSpecies):
+        """Creates the variational formulation of the pressure balance of a gas species
+        and stores it in ``gas_species.F``.
+
+        Args:
+            gas_species: the gas species
+        """
+        enclosure = gas_species.enclosure
+        P = gas_species.solution
+        P_n = gas_species.prev_solution
+        q = gas_species.test_function
+        kT = enclosure.thermal_energy
+
+        # see define_enclosure_function_spaces: a scalar term of this 0D equation is
+        # spread over a region and divided by the measure of that region
+        if enclosure.surfaces:
+            regions = [self.ds(surface.id) for surface in enclosure.surfaces]
+            measure_of_regions = enclosure._contact_measure
+        else:
+            regions = [self.dx]
+            measure_of_regions = self._total_volume
+
+        def as_integral(scalar):
+            return sum(scalar / measure_of_regions * q * region for region in regions)
+
+        form = 0
+
+        if self.settings.transient:
+            form += as_integral((P - P_n) / self.dt)
+
+        for surface, area in enclosure.surfaces.items():
+            for rate in self.gas_production_rates(surface, gas_species):
+                # rate is per unit area, so the physical area of the surface turns it
+                # into particles per second. This integral is already over the surface
+                # and must not be normalised.
+                form -= kT / enclosure.volume * area * rate * q * self.ds(surface.id)
+
+        for opening in enclosure.openings:
+            if not opening.applies_to(gas_species):
+                continue
+            flow_rate = opening.molar_flow_rate(gas_species, enclosure)
+            form -= as_integral(kT / enclosure.volume * flow_rate)
+
+        # The pressure is only determined if it appears in its own balance. In a
+        # transient problem the time derivative always puts it there. In steady state it
+        # only appears through something that depends on it: a surface reaction coupled
+        # to this species, or a pressure-dependent opening (Pump, Reservoir,
+        # EnclosureConnection). A PrescribedFlowRate alone does not, and neither does an
+        # enclosure with no coupling at all.
+        determined = isinstance(
+            form, ufl.Form
+        ) and P in ufl.algorithms.extract_coefficients(form)
+        if not determined:
+            raise ValueError(
+                f"The pressure of {gas_species} in {enclosure} is undetermined: it "
+                "does not appear in its own mass balance, so the problem has no unique "
+                "solution. This happens in steady state when nothing in the balance "
+                "depends on the pressure. Give the enclosure a surface with a "
+                "SurfaceReactionBC coupled to this species, or a pressure-dependent "
+                "opening (Pump, Reservoir or EnclosureConnection), or run a transient "
+                "simulation."
+            )
+
+        gas_species.F = form
 
     def create_formulation(self):
         """Takes all the formulations for each subdomain and adds the interface
@@ -1621,20 +1951,29 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain_0.F += F_0
             subdomain_1.F += F_1
 
+        # the unknowns of the blocked system: one block per volume subdomain, plus one
+        # block per gas species (the pressure of that species in its enclosure)
+        all_forms = [subdomain.F for subdomain in self.volume_subdomains] + [
+            gas_species.F for gas_species in self.gas_species
+        ]
+        all_unknowns = [subdomain.u for subdomain in self.volume_subdomains] + [
+            gas_species.solution for gas_species in self.gas_species
+        ]
+
         J = []
         # this is the symbolic differentiation of the Jacobian
-        for subdomain1 in self.volume_subdomains:
+        for form in all_forms:
             jac = []
-            for subdomain2 in self.volume_subdomains:
+            for unknown in all_unknowns:
                 jac.append(
-                    ufl.derivative(subdomain1.F, subdomain2.u),
+                    ufl.derivative(form, unknown),
                 )
             J.append(jac)
         # compile jacobian (J) and residual (F)
         entity_maps = [sd.cell_map for sd in self.volume_subdomains]
 
         self.forms = dolfinx.fem.form(
-            [subdomain.F for subdomain in self.volume_subdomains],
+            all_forms,
             entity_maps=entity_maps,
             jit_options={
                 "cffi_extra_compile_args": ["-O3", "-march=native"],
@@ -1651,13 +1990,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         )
 
     def create_solver(self):
-        from dolfinx.fem.petsc import NonlinearProblem
 
         petsc_options = self.get_petsc_options()
 
         self.solver = NonlinearProblem(
             self.forms,
-            [subdomain.u for subdomain in self.volume_subdomains],
+            [subdomain.u for subdomain in self.volume_subdomains]
+            + [gas_species.solution for gas_species in self.gas_species],
             bcs=self.bc_forms,
             J=self.J,
             petsc_options=petsc_options,
@@ -1882,6 +2221,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 entity_maps = [sd.cell_map for sd in self.volume_subdomains]
                 export.compute(measure, entity_maps=entity_maps)
 
+            elif isinstance(export, exports.GasPressure):
+                export.compute()
+
             if isinstance(export, exports.DerivedQuantity):
                 # update export data
                 export.t.append(float(self.t))
@@ -1917,6 +2259,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def update_time_dependent_values(self):
         super().update_time_dependent_values()
 
+        for enclosure in self.enclosures:
+            enclosure.update_time_dependent_values(t=float(self.t))
+
         # update sub_T if temperature is given as a function
         if self.temperature_time_dependent:
             if isinstance(self.temperature_fenics, fem.Function):
@@ -1951,6 +2296,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         # update previous solution
         for subdomain in self.volume_subdomains:
             subdomain.u_n.x.array[:] = subdomain.u.x.array[:]
+        for gas_species in self.gas_species:
+            gas_species.prev_solution.x.array[:] = gas_species.solution.x.array[:]
 
         # adapt stepsize
         if self.settings.stepsize.adaptive:
@@ -1996,10 +2343,21 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     f"{type(bc)} not implemented for "
                     f"HydrogenTransportProblemDiscontinuousChangeVar"
                 )
+            # with the change of variable, the solution of a mobile species is the
+            # chemical potential and not the concentration, so a species-dependent
+            # value would silently be given the wrong quantity
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 if bc.species_dependent_value:
                     raise ValueError(
                         f"{type(bc)} concentration-dependent not implemented for "
+                        f"HydrogenTransportProblemDiscontinuousChangeVar"
+                    )
+
+        for source in self.sources:
+            if isinstance(source, _source.ParticleSource):
+                if source.value.species_dependent:
+                    raise ValueError(
+                        f"{type(source)} concentration-dependent not implemented for "
                         f"HydrogenTransportProblemDiscontinuousChangeVar"
                     )
 

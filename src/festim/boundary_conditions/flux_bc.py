@@ -151,10 +151,12 @@ class ParticleFluxBC(FluxBCBase):
             is applied
         value (float, fem.Constant, callable): the value of the particle flux
         species (festim.Species): the species to which the flux is applied
-        species_dependent_value (dict): a dictionary containing the species
-        that the value. Example: {"name": species}
-            where "name" is the variable name in the callable value and species
-            is a festim.Species object.
+        species_dependent_value (dict): a dictionary mapping the argument names in a
+            callable value to festim.Species objects, allowing the flux to depend on the
+            concentration of other species. Example: {"c1": species1} where "c1" is the
+            argument name in the callable value and species1 is a festim.Species
+            object. Ignored if value is not callable. Defaults to an empty dict. Not
+            supported by festim.HydrogenTransportProblemDiscontinuousChangeVar.
 
     Attributes:
         subdomain (festim.SurfaceSubdomain): the surface subdomain where the
@@ -166,10 +168,8 @@ class ParticleFluxBC(FluxBCBase):
             fenics format
         bc_expr (fem.Expression): the expression of the particle flux that is used to
             update the value_fenics
-        species_dependent_value (dict): a dictionary containing the species
-        that the value. Example: {"name": species}
-            where "name" is the variable name in the callable value and species
-            is a festim.Species object.
+        species_dependent_value (dict): a dictionary mapping the argument names in a
+            callable value to festim.Species objects
 
 
     Examples:
@@ -193,10 +193,10 @@ class ParticleFluxBC(FluxBCBase):
             species="H", species_dependent_value={"c1": species1})
     """
 
-    def __init__(self, subdomain, value, species, species_dependent_value={}):
+    def __init__(self, subdomain, value, species, species_dependent_value=None):
         super().__init__(subdomain=subdomain, value=value)
         self.species = species
-        self.species_dependent_value = species_dependent_value
+        self.species_dependent_value = species_dependent_value or {}
         self._volume_subdomain = None
 
     def create_value_fenics(self, mesh, temperature, t: fem.Constant):
@@ -218,7 +218,12 @@ class ParticleFluxBC(FluxBCBase):
         elif callable(self.value):
             arguments = self.value.__code__.co_varnames
 
-            if "t" in arguments and "x" not in arguments and "T" not in arguments:
+            if (
+                "t" in arguments
+                and "x" not in arguments
+                and "T" not in arguments
+                and not self.species_dependent_value
+            ):
                 # only t is an argument
                 if not isinstance(self.value(t=float(t)), (float, int)):
                     raise ValueError(
@@ -237,9 +242,9 @@ class ParticleFluxBC(FluxBCBase):
                     kwargs["T"] = temperature
 
                 for name, species in self.species_dependent_value.items():
-                    if species.concentration:
+                    if species.concentration is not None:
                         kwargs[name] = species.concentration
-                    else:  # probably in discontinuous case
+                    else:  # discontinuous case: one solution per subdomain
                         kwargs[name] = species.subdomain_to_solution[
                             self._volume_subdomain
                         ]
