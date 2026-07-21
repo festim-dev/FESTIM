@@ -12,38 +12,37 @@ class GenericReaction:
     """A generic reaction between one or more reactant species and zero or more
     product species, taking place within a volume.
 
-    The forward and backward rates are not restricted to Arrhenius laws: they can
-    be a float, a ufl expression, or a callable that takes the temperature and
-    returns either of those. This makes it possible to build other reaction types
-    (eg. trapping, hydride formation) on top of this class.
-
     Arguments:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
-        F.ImplicitSpecies]]): The reactant(s).
-        product (Optional[Union[F.Species, List[F.Species]]]): The product(s).
+        volume: The volume subdomain where the reaction takes place.
+        reactant: The reactant(s).
+        product: The product(s).
         forward_rate: The forward reaction rate. Can be a float, a ufl expression,
             or a callable of temperature returning either of those.
-        volume (F.VolumeSubdomain): The volume subdomain where the reaction
-        takes place.
         backward_rate: The backward reaction rate, following the same rules as
-        forward_rate. If None, the reaction is irreversible.
+            the forward rate.
 
     Attributes:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
-        F.ImplicitSpecies]]): The reactant(s).
-        product (Optional[Union[F.Species, List[F.Species]]]): The product(s).
-        forward_rate: The forward reaction rate.
-        backward_rate: The backward reaction rate.
-        volume (F.VolumeSubdomain1D): The volume subdomain where the reaction
-        takes place.
+        volume: The volume subdomain where the reaction takes place.
+        reactant: The reactant(s).
+        product: The product(s).
+        forward_rate: The forward reaction rate. Can be a float, a ufl expression,
+            or a callable of temperature returning either of those.
+        backward_rate: The backward reaction rate, following the same rules as
+            the forward rate.
     """
+
+    volume: VolumeSubdomain
+    reactant: list[Species | ImplicitSpecies]
+    product: Union[Species, list[Species]] | None
+    forward_rate: Union[float, Expr, callable]
+    backward_rate: Union[float, Expr, callable] | None
 
     def __init__(
         self,
+        volume: VolumeSubdomain,
         reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
         product: Union[Species, list[Species]] | None,
-        forward_rate,
-        volume: VolumeSubdomain,
+        forward_rate=None,
         backward_rate=None,
     ) -> None:
         self.reactant = reactant
@@ -99,7 +98,7 @@ class GenericReaction:
 
     def reaction_term(
         self,
-        temperature,
+        temperature: float,
         reactant_concentrations: list | None = None,
         product_concentrations: list | None = None,
     ) -> Expr:
