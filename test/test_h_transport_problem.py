@@ -786,6 +786,174 @@ def test_convert_source_input_values_to_fenics_objects_multispecies():
     assert np.isclose(float(my_model.sources[1].value.fenics_object), 11)
 
 
+def test_species_dependent_source_continuous():
+    """Integration test that a species-dependent source is converted to a fenics object
+    that depends on the concentration of the referenced species (continuous case)."""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    A, B = F.Species("A"), F.Species("B")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol],
+        species=[A, B],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+
+    # source on A that depends on the concentration of B
+    my_source = F.ParticleSource(
+        value=lambda B: 2 * B,
+        volume=my_vol,
+        species=A,
+        species_dependent_value={"B": B},
+    )
+    my_model.sources = [my_source]
+
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+
+    # RUN
+    my_model.convert_source_input_values_to_fenics_objects()
+
+    # TEST
+    # the converted value should be a ufl expression built from B's concentration,
+    # whose underlying coefficient is the shared solution function my_model.u
+    fenics_object = my_model.sources[0].value.fenics_object
+    coefficients = ufl.algorithms.analysis.extract_coefficients(fenics_object)
+    assert my_model.u in coefficients
+
+
+def test_species_dependent_source_discontinuous():
+    """Integration test that a species-dependent source in the discontinuous case is
+    resolved on the source's own volume (source.volume), not any other subdomain."""
+    # BUILD
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    vertices = np.concatenate((np.linspace(0, 0.5, 20), np.linspace(0.5, 1, 20)))
+    my_model.mesh = F.Mesh1D(vertices)
+
+    left_surf = F.SurfaceSubdomain1D(id=1, x=0)
+    right_surf = F.SurfaceSubdomain1D(id=2, x=1)
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
+    my_model.subdomains = [vol1, vol2, left_surf, right_surf]
+
+    A = F.Species("A", subdomains=[vol1, vol2])
+    B = F.Species("B", subdomains=[vol1, vol2])
+    my_model.species = [A, B]
+    my_model.interfaces = [
+        F.Interface(id=3, subdomains=[vol1, vol2], penalty_term=1000)
+    ]
+    my_model.temperature = 300
+
+    # source on A, applied only on vol1, depending on the concentration of B
+    my_model.sources = [
+        F.ParticleSource(
+            value=lambda B: 2 * B,
+            volume=vol1,
+            species=A,
+            species_dependent_value={"B": B},
+        )
+    ]
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(left_surf, value=1, species=A),
+        F.FixedConcentrationBC(right_surf, value=0, species=A),
+        F.FixedConcentrationBC(left_surf, value=1, species=B),
+        F.FixedConcentrationBC(right_surf, value=0, species=B),
+    ]
+    my_model.settings = F.Settings(
+        atol=1e-10, rtol=1e-10, final_time=1, stepsize=F.Stepsize(0.5)
+    )
+
+    # RUN
+    my_model.initialise()
+
+    # TEST
+    # the converted value must be built from B's solution on vol1 (source.volume),
+    # whose underlying coefficient is vol1.u, and not from vol2's solution (vol2.u)
+    fenics_object = my_model.sources[0].value.fenics_object
+    coefficients = ufl.algorithms.analysis.extract_coefficients(fenics_object)
+    assert vol1.u in coefficients
+    assert vol2.u not in coefficients
+
+
+def _change_var_model_with_species_dependent(species_dependent_on):
+    """Builds a HydrogenTransportProblemDiscontinuousChangeVar with a species-dependent
+    source or flux BC. `species_dependent_on` is either "source" or "flux"."""
+    my_model = F.HydrogenTransportProblemDiscontinuousChangeVar()
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 11))
+    mat = F.Material(D_0=1, E_D=0, K_S_0=2.0, E_K_S=0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=mat)
+    left_surf = F.SurfaceSubdomain1D(id=2, x=0)
+    right_surf = F.SurfaceSubdomain1D(id=3, x=1)
+    my_model.subdomains = [vol, left_surf, right_surf]
+
+    A, B = F.Species("A"), F.Species("B")
+    my_model.species = [A, B]
+    my_model.temperature = 500
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(left_surf, value=1, species=A),
+        F.FixedConcentrationBC(right_surf, value=0, species=A),
+        F.FixedConcentrationBC(left_surf, value=1, species=B),
+        F.FixedConcentrationBC(right_surf, value=0, species=B),
+    ]
+
+    if species_dependent_on == "source":
+        my_model.sources = [
+            F.ParticleSource(
+                value=lambda B: 2 * B,
+                volume=vol,
+                species=A,
+                species_dependent_value={"B": B},
+            )
+        ]
+    else:
+        my_model.boundary_conditions.append(
+            F.ParticleFluxBC(
+                subdomain=right_surf,
+                value=lambda B: 2 * B,
+                species=A,
+                species_dependent_value={"B": B},
+            )
+        )
+
+    return my_model
+
+
+@pytest.mark.parametrize("species_dependent_on", ["source", "flux"])
+def test_species_dependent_value_not_implemented_for_change_var(species_dependent_on):
+    """Test that a species-dependent source or flux BC raises an error with the change
+    of variable, where the solution of a mobile species is the chemical potential and
+    not the concentration."""
+    # BUILD
+    my_model = _change_var_model_with_species_dependent(species_dependent_on)
+
+    # RUN + TEST
+    with pytest.raises(ValueError, match="concentration-dependent not implemented"):
+        my_model.initialise()
+
+
+def test_non_species_dependent_source_works_with_change_var():
+    """Test that a source that doesn't depend on other species is still accepted with
+    the change of variable."""
+    # BUILD
+    my_model = _change_var_model_with_species_dependent("source")
+    my_model.sources = [
+        F.ParticleSource(
+            value=lambda x: 1 + x[0],
+            volume=my_model.subdomains[0],
+            species=my_model.species[0],
+        )
+    ]
+
+    # RUN + TEST (should not raise)
+    my_model.initialise()
+    my_model.run()
+
+
 # TODO replace this by a proper MMS test
 def test_run_in_steady_state():
     """Test that the run method works in steady state."""
