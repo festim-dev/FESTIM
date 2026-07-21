@@ -243,27 +243,33 @@ class Reaction(GenericReaction):
 
     Examples:
 
-        :: testsetup:: Reaction
+        .. testcode:: Reaction
 
-            from festim import Reaction, Species, ImplicitSpecies
+            import festim as F
 
-        :: testcode:: Reaction
+            # create a volume subdomain for the reaction to take place in
+            material = F.Material(D_0=1, E_D=0)
+            volume = F.VolumeSubdomain(id=1, material=material)
 
-            # create a volume subdomain
-            # create two species
+            # create two reactant species and a product species
             reactant = [F.Species("A"), F.Species("B")]
-
-            # create a product species
             product = F.Species("C")
 
-            # create a reaction between the two species
-            reaction = Reaction(reactant, product, k_0=1.0, E_k=0.2, p_0=0.1, E_p=0.3)
+            # create a reaction between the reactants and the product
+            reaction = F.Reaction(
+                reactant=reactant,
+                product=product,
+                k_0=1.0,
+                E_k=0.2,
+                p_0=0.1,
+                E_p=0.3,
+                volume=volume,
+            )
             print(reaction)
-            # A + B <--> C
 
-            # compute the reaction term at a given temperature
-            temperature = 300.0
-            reaction_term = reaction.reaction_term(temperature)
+        .. testoutput:: Reaction
+
+            A + B <--> C
     """
 
     def __init__(
