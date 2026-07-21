@@ -9,19 +9,11 @@ from dolfinx import default_scalar_type, fem
 
 import festim as F
 
+from .utils import evaluate_at_point
+
 test_mesh = F.Mesh1D(vertices=np.array([0.0, 1.0, 2.0, 3.0, 4.0]))
 x = ufl.SpatialCoordinate(test_mesh.mesh)
 dummy_mat = F.Material(D_0=1, E_D=1, name="dummy_mat")
-
-
-def value_at_x(u, x):
-    """Return the value of a Lagrange function ``u`` at coordinate ``x``.
-
-    Locates the DOF by coordinate rather than assuming a fixed array position, so
-    the check is independent of DOLFINx DOF ordering (which varies by version).
-    """
-    coords = u.function_space.tabulate_dof_coordinates()[:, 0]
-    return u.x.array[np.argmin(np.abs(coords - x))]
 
 
 # TODO test all the methods in the class
@@ -275,7 +267,10 @@ def test_define_D_global_different_temperatures():
 
     D_computed, _D_expr = my_model.define_D_global(H)
 
-    computed_values = [value_at_x(D_computed, 0.0), value_at_x(D_computed, 4.0)]
+    computed_values = [
+        evaluate_at_point(D_computed, 0.0),
+        evaluate_at_point(D_computed, 4.0),
+    ]
 
     D_analytical_left = D_0 * np.exp(-E_D / (F.k_B * 50))
     D_analytical_right = D_0 * np.exp(-E_D / (F.k_B * 450))
@@ -311,7 +306,10 @@ def test_define_D_global_different_materials():
 
     D_computed, _D_expr = my_model.define_D_global(H)
 
-    computed_values = [value_at_x(D_computed, 0.0), value_at_x(D_computed, 4.0)]
+    computed_values = [
+        evaluate_at_point(D_computed, 0.0),
+        evaluate_at_point(D_computed, 4.0),
+    ]
 
     D_expected_left = D_0_left * np.exp(-E_D_left / (F.k_B * my_model.temperature))
     D_expected_right = D_0_right * np.exp(-E_D_right / (F.k_B * my_model.temperature))
@@ -879,7 +877,7 @@ def test_create_initial_conditions_expr_fenics(input_value, expected_value):
     my_model.initialise()
     prev_solution = my_model.u_n.sub(0).collapse()
     assert np.isclose(
-        value_at_x(prev_solution, 4.0),
+        evaluate_at_point(prev_solution, 4.0),
         expected_value,
     )
 
@@ -968,10 +966,14 @@ def test_create_initial_conditions_value_fenics_multispecies(
     # DOF ordering and the per-node block layout.
 
     # test value of H at x = 4.0
-    assert np.isclose(value_at_x(my_model.u_n.sub(0).collapse(), 4.0), expected_value_1)
+    assert np.isclose(
+        evaluate_at_point(my_model.u_n.sub(0).collapse(), 4.0), expected_value_1
+    )
 
     # test value of D at x = 4.0
-    assert np.isclose(value_at_x(my_model.u_n.sub(1).collapse(), 4.0), expected_value_2)
+    assert np.isclose(
+        evaluate_at_point(my_model.u_n.sub(1).collapse(), 4.0), expected_value_2
+    )
 
 
 def test_adaptive_timestepping_grows():
