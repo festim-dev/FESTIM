@@ -268,7 +268,9 @@ def test_custom_field(tmp_path, expression):
         F.ArrheniusReaction(
             reactant=[A, B], product=[C], k_0=1, E_k=0, p_0=0, E_p=0, volume=vol
         ),
-        F.ArrheniusReaction(reactant=[C], product=[D], k_0=0.1, E_k=0, p_0=0, E_p=0, volume=vol),
+        F.ArrheniusReaction(
+            reactant=[C], product=[D], k_0=0.1, E_k=0, p_0=0, E_p=0, volume=vol
+        ),
     ]
 
     my_model.temperature = 300
