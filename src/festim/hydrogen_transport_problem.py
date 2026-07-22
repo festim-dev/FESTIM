@@ -1786,7 +1786,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         f"{bc} is coupled to {pressure}, which does not belong to any "
                         "enclosure of the model"
                     )
-                # NOTE: is this still needed?
                 bc._gas_species = pressure
 
                 if isinstance(bc, boundary_conditions.FixedConcentrationBC):
