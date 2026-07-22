@@ -105,8 +105,6 @@ class GenericReaction:
         self.product = product
         self.forward_rate = forward_rate
         self.backward_rate = backward_rate
-        # arg_to_species is validated against the species and rate coefficients,
-        # so it must be set last
         self.arg_to_species = arg_to_species
 
     @property
@@ -330,7 +328,7 @@ class GenericReaction:
         else:
             product_of_products = 0
 
-        return k * product_of_reactants - (p * product_of_products)
+        return (k * product_of_reactants) - (p * product_of_products)
 
     def create_sources(
         self,
