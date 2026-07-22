@@ -76,6 +76,10 @@ def as_mapped_function(
         kwargs["T"] = temperature
 
     for name, species in (species_dependent_value or {}).items():
+        # only pass the species the callable actually declares, as done above for
+        # t/x/T, so a value may be given more species than it uses
+        if name not in arguments:
+            continue
         if species.concentration is not None:
             kwargs[name] = species.concentration
         else:  # discontinuous case: the species has one solution per subdomain

@@ -150,7 +150,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             list[_subdomain.VolumeSubdomain | _subdomain.SurfaceSubdomain] | None
         ) = None,
         species: list[_species.Species] | None = None,
-        reactions: list[_reaction.Reaction] | None = None,
+        reactions: list[_reaction.GenericReaction] | None = None,
         temperature: (
             float
             | int
@@ -335,6 +335,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self.define_temperature()
         self.define_boundary_conditions()
+        self.create_sources_from_reactions()
         self.convert_source_input_values_to_fenics_objects()
         self.convert_advection_term_to_fenics_objects()
         self.create_flux_values_fenics()
@@ -811,6 +812,16 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     up_to_ufl_expr=True,
                 )
 
+    def create_sources_from_reactions(self):
+        """Expand each reaction into one volumetric particle source per
+        participating species and add them to the sources."""
+        for reaction in self.reactions:
+            self.sources += reaction.create_sources(
+                temperature=self.temperature_fenics,
+                function_space=getattr(self, "function_space", None),
+                subdomain=reaction.volume,
+            )
+
     def convert_advection_term_to_fenics_objects(self):
         """For each advection term convert the input value."""
 
@@ -903,16 +914,8 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if self.settings.transient:
                     self.formulation += ((u - u_n) / self.dt) * v * self.dx(vol.id)
 
-        for reaction in self.reactions:
-            # a reaction enters the formulation as a set of volumetric source
-            # contributions (-R for reactants, +R for products)
-            for species, value in reaction.source_contributions(
-                self.temperature_fenics
-            ):
-                self.formulation -= (
-                    value * species.test_function * self.dx(reaction.volume.id)
-                )
-        # add sources
+        # reactions are expanded into particle sources (see
+        # create_sources_from_reactions), so they are handled by the source loop
         for source in self.sources:
             self.formulation -= (
                 source.value.fenics_object
@@ -1337,6 +1340,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.define_temperature()
         self.convert_enclosure_input_values_to_fenics_objects()
+        self.create_sources_from_reactions()
         self.convert_source_input_values_to_fenics_objects()
         self.convert_advection_term_to_fenics_objects()
         self.define_boundary_conditions()
@@ -1609,21 +1613,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                             f"Unsupported coordinate system {self.mesh.coordinate_system}"  # noqa: E501
                         )
 
-        # add reaction terms
-        for reaction in self.reactions:
-            if reaction.volume != subdomain:
-                continue
-
-            # a reaction enters the formulation as a set of volumetric source
-            # contributions (-R for reactants, +R for products)
-            for species, value in reaction.source_contributions(
-                self.temperature_fenics
-            ):
-                form -= (
-                    value
-                    * species.subdomain_to_test_function[subdomain]
-                    * self.dx(subdomain.id)
-                )
+        # reactions are expanded into particle sources (see
+        # create_sources_from_reactions), so they are handled by the source loop
 
         # add fluxes
         for bc in self._unpacked_bcs:
@@ -1649,8 +1640,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # add volumetric sources
         for source in self.sources:
-            v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
+                v = source.species.subdomain_to_test_function[subdomain]
                 form -= source.value.fenics_object * v * self.dx(subdomain.id)
 
         # add advection
@@ -2342,6 +2333,13 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
         super().initialise()
 
+    def create_sources_from_reactions(self):
+        # this problem uses a change of variable (u * K_S) for mobile species, so
+        # reactions cannot be expressed as plain particle sources and are instead
+        # handled directly in add_reaction_term. This override will be removed
+        # when this deprecated problem class is dropped.
+        pass
+
     def create_formulation(self):
         """Creates the formulation of the model."""
 
@@ -2417,7 +2415,7 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                             spe.solution * spe.test_function * self.dx(vol.id)
                         )
 
-    def add_reaction_term(self, reaction: _reaction.Reaction):
+    def add_reaction_term(self, reaction: _reaction.GenericReaction):
         """Adds the reaction term to the formulation."""
 
         products = (
