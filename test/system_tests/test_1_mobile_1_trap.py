@@ -77,7 +77,7 @@ def test_1_mobile_1_trap_MMS_steady_state():
     my_model.species = [mobile, trapped]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[mobile, traps],
             product=trapped,
             k_0=k_0,
@@ -266,7 +266,7 @@ def test_1_mobile_1_trap_MMS_3D():
     my_model.species = [mobile, trapped]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[mobile, traps],
             product=trapped,
             k_0=k_0,
@@ -381,7 +381,7 @@ def test_1_mobile_1_trap_MMS_2D():
     my_model.species = [mobile, trapped]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[mobile, traps],
             product=trapped,
             k_0=k_0,

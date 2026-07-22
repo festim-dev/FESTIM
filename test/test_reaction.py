@@ -11,6 +11,15 @@ import festim as F
 my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
 
 
+def test_reaction_is_deprecated_alias():
+    """Test that F.Reaction emits a DeprecationWarning pointing at
+    ArrheniusReaction."""
+    # BUILD / RUN / TEST
+    with pytest.warns(DeprecationWarning, match="ArrheniusReaction"):
+        reaction = F.Reaction(reactant=F.Species("A"), k_0=1.0, E_k=0.2, volume=my_vol)
+    assert isinstance(reaction, F.ArrheniusReaction)
+
+
 def test_reaction_init():
     """Test that the Reaction class initialises correctly."""
     # create two species
@@ -21,7 +30,7 @@ def test_reaction_init():
     product = F.Species("C")
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         product=product,
         k_0=1.0,
@@ -33,7 +42,7 @@ def test_reaction_init():
 
     # check that the attributes are set correctly
     assert reaction.reactant == [species1, species2]
-    assert reaction.product == product
+    assert reaction.product == [product]
     assert reaction.k_0 == 1.0
     assert reaction.E_k == 0.2
     assert reaction.p_0 == 0.1
@@ -51,7 +60,7 @@ def test_reaction_repr():
     product = F.Species("C")
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         product=product,
         k_0=1.0,
@@ -62,7 +71,7 @@ def test_reaction_repr():
     )
 
     # check that the __repr__ method returns the expected string
-    expected_repr = "Reaction(A + B <--> C, 1.0, 0.2, 0.1, 0.3)"
+    expected_repr = "ArrheniusReaction(A + B <--> C, 1.0, 0.2, 0.1, 0.3)"
     assert repr(reaction) == expected_repr
 
 
@@ -78,7 +87,7 @@ def test_reaction_repr_2_products():
     product2 = F.Species("D")
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         product=[product1, product2],
         k_0=1.0,
@@ -89,7 +98,7 @@ def test_reaction_repr_2_products():
     )
 
     # check that the __repr__ method returns the expected string
-    expected_repr = "Reaction(A + B <--> C + D, 1.0, 0.2, 0.1, 0.3)"
+    expected_repr = "ArrheniusReaction(A + B <--> C + D, 1.0, 0.2, 0.1, 0.3)"
     assert repr(reaction) == expected_repr
 
 
@@ -100,7 +109,7 @@ def test_reaction_repr_0_products():
     species1 = F.Species("A")
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=species1,
         k_0=1.0,
         E_k=0.2,
@@ -108,7 +117,7 @@ def test_reaction_repr_0_products():
     )
 
     # check that the __repr__ method returns the expected string
-    expected_repr = "Reaction(A <--> , 1.0, 0.2, None, None)"
+    expected_repr = "ArrheniusReaction(A <--> , 1.0, 0.2, None, None)"
     assert repr(reaction) == expected_repr
 
 
@@ -123,7 +132,7 @@ def test_reaction_str():
     product = F.Species("C")
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         product=product,
         k_0=1.0,
@@ -151,7 +160,7 @@ def test_reaction_str_2_products():
     product2 = F.Species("D")
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         product=[product1, product2],
         k_0=1.0,
@@ -174,7 +183,7 @@ def test_reaction_str_no_products():
     species1 = F.Species("A")
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=species1,
         k_0=1.0,
         E_k=0.2,
@@ -205,7 +214,7 @@ def test_reaction_reaction_term(temperature):
     product.solution = Function(V)
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         product=product,
         k_0=1.0,
@@ -241,7 +250,7 @@ def test_reaction_reaction_term_no_products(temperature):
     species2.solution = Function(V)
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         k_0=1.0,
         E_k=0.2,
@@ -280,7 +289,7 @@ def test_reaction_reaction_term_2_products(temperature):
     product2.solution = Function(V)
 
     # create a reaction between the two species
-    reaction = F.Reaction(
+    reaction = F.ArrheniusReaction(
         reactant=[species1, species2],
         product=[product1, product2],
         k_0=1.0,
@@ -313,7 +322,7 @@ def test_reactant_setter_raises_error_with_zero_length_list():
             r"list."
         ),
     ):
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[],
             k_0=1,
             E_k=0.1,
@@ -329,7 +338,7 @@ def test_reactant_setter_raises_error_with_wrong_type():
         TypeError,
         match=r"reactant must be an F.Species or F.ImplicitSpecies, not <class 'str'>",
     ):
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=["A", F.Species("B")],
             product=F.Species("C"),
             k_0=1,
@@ -340,12 +349,134 @@ def test_reactant_setter_raises_error_with_wrong_type():
         )
 
 
+C, D = F.Species("C"), F.Species("D")
+
+
+@pytest.mark.parametrize(
+    "product, expected",
+    [(C, [C]), ([C, D], [C, D]), (None, []), ([], [])],
+)
+def test_product_setter_normalises_to_list(product, expected):
+    """Test that the product setter stores the product(s) as a list, accepting a
+    single species, a list, None or an empty list."""
+    # BUILD / RUN
+    reaction = F.GenericReaction(
+        reactant=F.Species("A"),
+        product=product,
+        forward_rate=1.0,
+        volume=my_vol,
+    )
+
+    # TEST
+    assert reaction.product == expected
+
+
+@pytest.mark.parametrize("product", ["C", 3, [F.Species("C"), "D"]])
+def test_product_setter_raises_error_with_wrong_type(product):
+    """Test a type error is raised when a product is given a wrong type."""
+    with pytest.raises(
+        TypeError,
+        match=r"product must be an F.Species, a list of F.Species, or None",
+    ):
+        F.GenericReaction(
+            reactant=F.Species("A"),
+            product=product,
+            forward_rate=1.0,
+            volume=my_vol,
+        )
+
+
+def test_arg_to_species_is_stored():
+    """Test that a valid arg_to_species mapping is stored on the reaction."""
+    # BUILD
+    A, C = F.Species("A"), F.Species("C")
+
+    # RUN
+    reaction = F.GenericReaction(
+        reactant=A,
+        product=C,
+        forward_rate=1.0,
+        backward_rate=lambda c_C: c_C,
+        arg_to_species={"c_C": C},
+        volume=my_vol,
+    )
+
+    # TEST
+    assert reaction.arg_to_species == {"c_C": C}
+
+
+def test_arg_to_species_is_passed_to_rate_coefficient():
+    """Test that arg_to_species is handed to the festim.Value of a rate
+    coefficient, so the coefficient can depend on species concentrations."""
+    # BUILD
+    A, C = F.Species("A"), F.Species("C")
+
+    # RUN
+    reaction = F.GenericReaction(
+        reactant=A,
+        product=C,
+        forward_rate=lambda T: T,
+        backward_rate=lambda c_C: c_C,
+        arg_to_species={"c_C": C},
+        volume=my_vol,
+    )
+
+    # TEST
+    assert reaction.backward_rate.species_dependent_value == {"c_C": C}
+
+
+def test_arg_to_species_raises_error_with_non_species_value():
+    """Test a type error is raised when an arg_to_species value is not a Species."""
+    with pytest.raises(
+        TypeError,
+        match=r"arg_to_species values must be a festim.Species",
+    ):
+        F.GenericReaction(
+            reactant=F.Species("A"),
+            product=F.Species("C"),
+            forward_rate=lambda c: c,
+            arg_to_species={"c": "not_a_species"},
+            volume=my_vol,
+        )
+
+
+def test_arg_to_species_raises_error_when_rate_depends_on_unmapped_species():
+    """Test a value error is raised when a rate coefficient has a species argument
+    that is not given in arg_to_species."""
+    with pytest.raises(
+        ValueError,
+        match=r"depend on \['c_C'\], which must be given in arg_to_species",
+    ):
+        F.GenericReaction(
+            reactant=F.Species("A"),
+            product=F.Species("C"),
+            forward_rate=lambda c_C: c_C,
+            volume=my_vol,
+        )
+
+
+def test_arg_to_species_raises_error_with_orphan_mapping():
+    """Test a value error is raised when an arg_to_species key is not a species
+    argument of any rate coefficient."""
+    with pytest.raises(
+        ValueError,
+        match=r"arg_to_species contains \['c_C'\], which is not an argument",
+    ):
+        F.GenericReaction(
+            reactant=F.Species("A"),
+            product=F.Species("C"),
+            forward_rate=lambda T: T,
+            arg_to_species={"c_C": F.Species("C")},
+            volume=my_vol,
+        )
+
+
 def test_product_setter_raise_error_p_0_no_product():
     with pytest.raises(
         ValueError,
         match=r"p_0 must be None, not 2 when no products are present.",
     ):
-        reaction = F.Reaction(
+        reaction = F.ArrheniusReaction(
             reactant=[F.Species("A")],
             k_0=1,
             E_k=0.1,
@@ -360,7 +491,7 @@ def test_no_E_p_with_product():
         ValueError,
         match=r"E_p cannot be None when reaction products are present.",
     ):
-        reaction = F.Reaction(
+        reaction = F.ArrheniusReaction(
             reactant=[F.Species("A")],
             product=[F.Species("C")],
             k_0=1,
@@ -376,7 +507,7 @@ def test_no_p_0_with_product():
         ValueError,
         match=r"p_0 cannot be None when reaction products are present.",
     ):
-        reaction = F.Reaction(
+        reaction = F.ArrheniusReaction(
             reactant=[F.Species("A")],
             product=[F.Species("C")],
             k_0=1,
@@ -392,7 +523,7 @@ def test_product_setter_raise_error_E_p_no_product():
         ValueError,
         match=r"E_p must be None, not 2 when no products are present.",
     ):
-        reaction = F.Reaction(
+        reaction = F.ArrheniusReaction(
             reactant=[F.Species("A")],
             k_0=1,
             E_k=0.1,
@@ -421,8 +552,10 @@ empty_traps = F.ImplicitSpecies(n=1, others=[spe4], name="implicit_species")
 
 my_model.species = [spe1, spe2, spe3, spe4, spe5]
 
-reac1 = F.Reaction(reactant=[empty_traps, spe1], product=[], k_0=1, E_k=0, volume=vol1)
-reac2 = F.Reaction(
+reac1 = F.ArrheniusReaction(
+    reactant=[empty_traps, spe1], product=[], k_0=1, E_k=0, volume=vol1
+)
+reac2 = F.ArrheniusReaction(
     reactant=[empty_traps, spe2], product=[spe5], k_0=1, E_k=0, volume=vol2
 )
 

@@ -406,6 +406,28 @@ def test_as_mapped_function_uses_subdomain_solution_when_concentration_is_none()
     assert np.allclose(result.x.array, 8.0)
 
 
+def test_as_mapped_function_ignores_species_the_callable_does_not_declare():
+    """Test that a species_dependent_value entry whose name is not an argument of
+    the callable is ignored (as done for t/x/T), rather than passed and raising."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    used = F.Species("c1")
+    used.solution = fem.Function(V)
+    used.solution.x.array[:] = 3.0
+    unused = F.Species("c2")  # not an argument of the callable below
+
+    # the callable only declares c1; c2 must be silently dropped
+    mapped = F.as_mapped_function(
+        value=lambda c1: 2 * c1,
+        function_space=V,
+        species_dependent_value={"c1": used, "c2": unused},
+    )
+
+    result = fem.Function(V)
+    result.interpolate(fem.Expression(mapped, V.element.interpolation_points))
+    assert np.allclose(result.x.array, 6.0)
+
+
 def test_convert_input_value_species_dependent_up_to_ufl_expr():
     """Test that convert_input_value threads species_dependent_value through to the
     mapped ufl expression when up_to_ufl_expr is True."""

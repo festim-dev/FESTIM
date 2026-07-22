@@ -268,7 +268,7 @@ def test_multispecies_with_immobile():
     my_model.subdomains = [vol]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[H, trapping_site],
             k_0=1,
             E_k=0,
@@ -312,7 +312,7 @@ def test_implicit_species_bug_reaction():
     my_model.species = [trapped_T, Deuterium]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[empty_traps, Deuterium],
             product=[],
             k_0=1,

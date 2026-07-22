@@ -111,7 +111,7 @@ def test_run(tmpdir):
         species.subdomains = [left_domain, middle_domain, right_domain]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[H, empty_trap],
             product=[trapped_H],
             k_0=2,
