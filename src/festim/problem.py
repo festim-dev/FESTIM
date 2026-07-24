@@ -129,14 +129,6 @@ class ProblemBase:
                 if not bc.enforce_weakly:
                     self.bc_forms.append(form)
 
-    def create_dirichletbc_value_ufl(self, bc):
-        """Creates the ``value_fenics`` of a Dirichlet BC as a pure ufl expression.
-
-        Args:
-            bc: the dirichlet BC
-        """
-        bc.create_value_ufl(temperature=self.temperature_fenics)
-
     def get_petsc_options(self) -> dict[str, Any]:
         """Gets the PETSc options to pass to the NewtonProblem solver. Default options
         are updated with user-provided options, if any.
