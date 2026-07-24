@@ -11,6 +11,18 @@ import festim as F
 my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
 
 
+def convert_rates(reaction, function_space, temperature):
+    """Convert a reaction's rate coefficients to fenics objects, as the
+    HydrogenTransportProblem does before building the reaction term."""
+    for rate in (reaction.forward_rate, reaction.backward_rate):
+        if rate.input_value is not None:
+            rate.convert_input_value(
+                function_space=function_space,
+                temperature=temperature,
+                up_to_ufl_expr=True,
+            )
+
+
 def test_reaction_is_deprecated_alias():
     """Test that F.Reaction emits a DeprecationWarning pointing at
     ArrheniusReaction."""
@@ -235,7 +247,8 @@ def test_reaction_reaction_term(temperature):
         k * (species1.solution * species2.solution) - p * product.solution
     )
 
-    assert reaction.reaction_term(temperature) == expected_reaction_term
+    convert_rates(reaction, V, temperature)
+    assert reaction.reaction_term() == expected_reaction_term
 
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
@@ -265,7 +278,8 @@ def test_reaction_reaction_term_no_products(temperature):
 
     expected_reaction_term = k * (species1.solution * species2.solution)
 
-    assert reaction.reaction_term(temperature) == expected_reaction_term
+    convert_rates(reaction, V, temperature)
+    assert reaction.reaction_term() == expected_reaction_term
 
 
 @pytest.mark.parametrize("temperature", [300.0, 350, 370, 500.0])
@@ -310,7 +324,8 @@ def test_reaction_reaction_term_2_products(temperature):
     expected_reaction_term = (
         k * (species1.solution * species2.solution) - p * product_of_products
     )
-    assert reaction.reaction_term(temperature) == expected_reaction_term
+    convert_rates(reaction, V, temperature)
+    assert reaction.reaction_term() == expected_reaction_term
 
 
 def test_reactant_setter_raises_error_with_zero_length_list():
@@ -471,27 +486,28 @@ def test_arg_to_species_raises_error_with_orphan_mapping():
         )
 
 
-def test_product_setter_raise_error_p_0_no_product():
+def test_p_0_setter_raises_error_with_no_product():
+    """Test p_0 must be None when there is no product."""
     with pytest.raises(
         ValueError,
         match=r"p_0 must be None, not 2 when no products are present.",
     ):
-        reaction = F.ArrheniusReaction(
+        F.ArrheniusReaction(
             reactant=[F.Species("A")],
             k_0=1,
             E_k=0.1,
             p_0=2,
             volume=my_vol,
         )
-        reaction.reaction_term(temperature=500)
 
 
-def test_no_E_p_with_product():
+def test_E_p_setter_raises_error_when_none_with_product():
+    """Test E_p cannot be None when there is a product."""
     with pytest.raises(
         ValueError,
         match=r"E_p cannot be None when reaction products are present.",
     ):
-        reaction = F.ArrheniusReaction(
+        F.ArrheniusReaction(
             reactant=[F.Species("A")],
             product=[F.Species("C")],
             k_0=1,
@@ -499,15 +515,15 @@ def test_no_E_p_with_product():
             p_0=0.1,
             volume=my_vol,
         )
-        reaction.reaction_term(temperature=500)
 
 
-def test_no_p_0_with_product():
+def test_p_0_setter_raises_error_when_none_with_product():
+    """Test p_0 cannot be None when there is a product."""
     with pytest.raises(
         ValueError,
         match=r"p_0 cannot be None when reaction products are present.",
     ):
-        reaction = F.ArrheniusReaction(
+        F.ArrheniusReaction(
             reactant=[F.Species("A")],
             product=[F.Species("C")],
             k_0=1,
@@ -515,22 +531,21 @@ def test_no_p_0_with_product():
             E_p=1,
             volume=my_vol,
         )
-        reaction.reaction_term(temperature=500)
 
 
-def test_product_setter_raise_error_E_p_no_product():
+def test_E_p_setter_raises_error_with_no_product():
+    """Test E_p must be None when there is no product."""
     with pytest.raises(
         ValueError,
         match=r"E_p must be None, not 2 when no products are present.",
     ):
-        reaction = F.ArrheniusReaction(
+        F.ArrheniusReaction(
             reactant=[F.Species("A")],
             k_0=1,
             E_k=0.1,
             E_p=2,
             volume=my_vol,
         )
-        reaction.reaction_term(temperature=500)
 
 
 # BUILD
@@ -556,7 +571,13 @@ reac1 = F.ArrheniusReaction(
     reactant=[empty_traps, spe1], product=[], k_0=1, E_k=0, volume=vol1
 )
 reac2 = F.ArrheniusReaction(
-    reactant=[empty_traps, spe2], product=[spe5], k_0=1, E_k=0, volume=vol2
+    reactant=[empty_traps, spe2],
+    product=[spe5],
+    k_0=1,
+    E_k=0,
+    p_0=1,
+    E_p=0,
+    volume=vol2,
 )
 
 my_model.define_meshtags_and_measures()

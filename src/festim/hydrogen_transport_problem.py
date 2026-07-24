@@ -335,6 +335,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
         self.define_temperature()
         self.define_boundary_conditions()
+        self.convert_reaction_rates_to_fenics_objects()
         self.create_sources_from_reactions()
         self.convert_source_input_values_to_fenics_objects()
         self.convert_advection_term_to_fenics_objects()
@@ -812,15 +813,23 @@ class HydrogenTransportProblem(problem.ProblemBase):
                     up_to_ufl_expr=True,
                 )
 
+    def convert_reaction_rates_to_fenics_objects(self):
+        """For each reaction convert its rate coefficients to fenics objects."""
+        for reaction in self.reactions:
+            for rate in (reaction.forward_rate, reaction.backward_rate):
+                if rate.input_value is not None:
+                    rate.convert_input_value(
+                        function_space=getattr(self, "function_space", None),
+                        temperature=self.temperature_fenics,
+                        subdomain=reaction.volume,
+                        up_to_ufl_expr=True,
+                    )
+
     def create_sources_from_reactions(self):
         """Expand each reaction into one volumetric particle source per
         participating species and add them to the sources."""
         for reaction in self.reactions:
-            self.sources += reaction.create_sources(
-                temperature=self.temperature_fenics,
-                function_space=getattr(self, "function_space", None),
-                subdomain=reaction.volume,
-            )
+            self.sources += reaction.create_sources()
 
     def convert_advection_term_to_fenics_objects(self):
         """For each advection term convert the input value."""
@@ -1340,6 +1349,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         self.define_temperature()
         self.convert_enclosure_input_values_to_fenics_objects()
+        self.convert_reaction_rates_to_fenics_objects()
         self.create_sources_from_reactions()
         self.convert_source_input_values_to_fenics_objects()
         self.convert_advection_term_to_fenics_objects()
@@ -2446,7 +2456,6 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
 
         # get the reaction term from the reaction
         reaction_term = reaction.reaction_term(
-            temperature=self.temperature_fenics,
             reactant_concentrations=reactant_concentrations,
             product_concentrations=product_concentrations,
         )

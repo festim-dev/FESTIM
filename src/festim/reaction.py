@@ -1,4 +1,6 @@
 import warnings
+from functools import reduce
+from operator import mul
 
 from ufl import exp
 from ufl.core.expr import Expr
@@ -228,132 +230,74 @@ class GenericReaction:
         products = " + ".join([str(product) for product in self.product])
         return f"{reactants} <--> {products}"
 
-    def _evaluate_rate(self, rate: Value, temperature, function_space, subdomain):
-        """Convert a rate coefficient festim.Value to a fenics object at the given
-        temperature. Returns 0 for an absent (irreversible) backward rate."""
-        if rate.input_value is None:
-            return 0
-        rate.convert_input_value(
-            function_space=function_space,
-            temperature=temperature,
-            subdomain=subdomain,
-            up_to_ufl_expr=True,
+    @property
+    def _mixed_domain(self) -> bool:
+        """True in the discontinuous case, where each species has one solution per
+        subdomain rather than a single concentration attribute."""
+        return any(
+            isinstance(spe, Species) and spe.subdomain_to_solution != {}
+            for spe in self.reactant + self.product
         )
-        return rate.fenics_object
+
+    def _concentrations(self, species: list, overrides: list | None) -> list:
+        """The concentration of each species. Where a (non-None) override is given
+        for a species it is used in place of the species' own concentration."""
+        overrides = overrides or [None] * len(species)
+        concentrations = []
+        for spe, override in zip(species, overrides, strict=True):
+            if override is not None:
+                concentrations.append(override)
+            elif self._mixed_domain:
+                concentrations.append(spe.concentration_submesh(self.volume))
+            else:
+                concentrations.append(spe.concentration)
+        return concentrations
 
     def reaction_term(
         self,
-        temperature,
-        function_space=None,
-        subdomain: VolumeSubdomain | None = None,
         reactant_concentrations: list | None = None,
         product_concentrations: list | None = None,
     ) -> Expr:
         """Compute the net reaction rate ``R`` as a ufl expression.
 
+        The rate coefficients must already be converted to fenics objects (done by
+        ``HydrogenTransportProblem.convert_reaction_rates_to_fenics_objects``).
+
         Arguments:
-            temperature: The temperature at which the rate is computed.
-            function_space: The function space used to convert the rate
-                coefficients, needed when a coefficient is a float or depends on
-                the spatial coordinate.
-            subdomain: The volume subdomain on which concentrations are
-                evaluated, needed in the discontinuous case.
-            reactant_concentrations: The concentrations of the reactants. Must
-                be the same length as the reactants. If None, the
-                ``concentration`` attribute of each reactant is used. If an
-                element is None, the ``concentration`` attribute of that
-                reactant is used.
-            product_concentrations: The concentrations of the products, with the
-                same rules as ``reactant_concentrations``.
+            reactant_concentrations: The concentration to use for each reactant,
+                same length as the reactants. Where an entry is None the reactant's
+                own concentration is used. If None, all reactant concentrations
+                are used.
+            product_concentrations: The concentrations of the products, following
+                the same rules as ``reactant_concentrations``.
 
         Returns:
             The net reaction rate to be used in a formulation.
         """
-        products = self.product
+        reactants = self._concentrations(self.reactant, reactant_concentrations)
+        forward = self.forward_rate.fenics_object * reduce(mul, reactants)
 
-        # detect if mixed_domain
-        mixed_domain = any(
-            isinstance(reactant, Species) and reactant.subdomain_to_solution != {}
-            for reactant in self.reactant
-        ) or any(
-            isinstance(product, Species) and product.subdomain_to_solution != {}
-            for product in products
-        )
+        # no backward term for an irreversible reaction or one with no products
+        if self.backward_rate.input_value is None or not self.product:
+            return forward
 
-        def get_concentration(species):
-            if mixed_domain:
-                return species.concentration_submesh(self.volume)
-            return species.concentration
+        products = self._concentrations(self.product, product_concentrations)
+        backward = self.backward_rate.fenics_object * reduce(mul, products)
+        return forward - backward
 
-        # reaction rate coefficients
-        k = self._evaluate_rate(
-            self.forward_rate, temperature, function_space, subdomain
-        )
-        p = self._evaluate_rate(
-            self.backward_rate, temperature, function_space, subdomain
-        )
-
-        # if reactant_concentrations is provided, use these concentrations
-        reactants = self.reactant
-        if reactant_concentrations is not None:
-            assert len(reactant_concentrations) == len(reactants)
-            for i, reactant in enumerate(reactants):
-                if reactant_concentrations[i] is None:
-                    reactant_concentrations[i] = get_concentration(reactant)
-        else:
-            reactant_concentrations = [
-                get_concentration(reactant) for reactant in reactants
-            ]
-
-        # if product_concentrations is provided, use these concentrations
-        if product_concentrations is not None:
-            assert len(product_concentrations) == len(products)
-            for i, product in enumerate(products):
-                if product_concentrations[i] is None:
-                    product_concentrations[i] = get_concentration(product)
-        else:
-            product_concentrations = [
-                get_concentration(product) for product in products
-            ]
-
-        # multiply all concentrations to be used in the term
-        product_of_reactants = reactant_concentrations[0]
-        for reactant_conc in reactant_concentrations[1:]:
-            product_of_reactants *= reactant_conc
-
-        if products:
-            product_of_products = product_concentrations[0]
-            for product_conc in product_concentrations[1:]:
-                product_of_products *= product_conc
-        else:
-            product_of_products = 0
-
-        return (k * product_of_reactants) - (p * product_of_products)
-
-    def create_sources(
-        self,
-        temperature,
-        function_space=None,
-        subdomain: VolumeSubdomain | None = None,
-    ) -> list[ParticleSource]:
+    def create_sources(self) -> list[ParticleSource]:
         """Express the reaction as a list of volumetric particle sources, one per
         participating :class:`~festim.species.Species`.
 
         Each reactant is consumed (source value ``-R``) and each product is
         produced (source value ``+R``), where ``R`` is :meth:`reaction_term`.
-        Implicit species (which have no governing equation) are skipped.
-
-        Arguments:
-            temperature: The temperature at which the rate is computed.
-            function_space: The function space used to convert the rate
-                coefficients.
-            subdomain: The volume subdomain on which concentrations are
-                evaluated, needed in the discontinuous case.
+        Implicit species (which have no governing equation) are skipped. The rate
+        coefficients must already be converted to fenics objects.
 
         Returns:
             A list of festim.ParticleSource objects.
         """
-        rate = self.reaction_term(temperature, function_space, subdomain)
+        rate = self.reaction_term()
 
         sources = [
             ParticleSource(value=-rate, volume=self.volume, species=reactant)
@@ -438,70 +382,53 @@ class ArrheniusReaction(GenericReaction):
     ) -> None:
         self.k_0 = k_0
         self.E_k = E_k
-        self.p_0 = p_0
-        self.E_p = E_p
 
         def forward_rate(T):
             return self.k_0 * exp(-self.E_k / (_k_B * T))
 
-        backward_rate = None
-        if self.p_0 is not None:
-
-            def backward_rate(T):
-                if self.p_0 and self.E_p:
-                    return self.p_0 * exp(-self.E_p / (_k_B * T))
-                elif self.p_0:
-                    return self.p_0
-                else:
-                    return 0
+        def backward_rate(T):
+            if self.E_p:
+                return self.p_0 * exp(-self.E_p / (_k_B * T))
+            return self.p_0
 
         super().__init__(
             reactant=reactant,
             product=product,
             forward_rate=forward_rate,
-            backward_rate=backward_rate,
+            backward_rate=backward_rate if p_0 is not None else None,
             volume=volume,
         )
+        # set after product so the setters can check the two are consistent
+        self.p_0 = p_0
+        self.E_p = E_p
 
-    def reaction_term(
-        self,
-        temperature,
-        function_space=None,
-        subdomain: VolumeSubdomain | None = None,
-        reactant_concentrations: list | None = None,
-        product_concentrations: list | None = None,
-    ) -> Expr:
-        # validate that p_0/E_p are consistent with the presence of products
-        # only at this point (not at __init__) so that Reaction objects can be
-        # built ahead of time even if p_0/E_p aren't set yet
-        if not self.product:
-            if self.p_0 is not None:
-                raise ValueError(
-                    f"p_0 must be None, not {self.p_0}"
-                    + " when no products are present."
-                )
-            if self.E_p is not None:
-                raise ValueError(
-                    f"E_p must be None, not {self.E_p}"
-                    + " when no products are present."
-                )
-        else:
-            if self.p_0 is None:
-                raise ValueError(
-                    "p_0 cannot be None when reaction products are present."
-                )
-            elif self.E_p is None:
-                raise ValueError(
-                    "E_p cannot be None when reaction products are present."
-                )
+    @property
+    def p_0(self):
+        return self._p_0
 
-        return super().reaction_term(
-            temperature,
-            function_space,
-            subdomain,
-            reactant_concentrations,
-            product_concentrations,
-        )
+    @p_0.setter
+    def p_0(self, value):
+        if not self.product and value is not None:
+            raise ValueError(
+                f"p_0 must be None, not {value} when no products are present."
+            )
+        if self.product and value is None:
+            raise ValueError("p_0 cannot be None when reaction products are present.")
+        self._p_0 = value
+
+    @property
+    def E_p(self):
+        return self._E_p
+
+    @E_p.setter
+    def E_p(self, value):
+        if not self.product and value is not None:
+            raise ValueError(
+                f"E_p must be None, not {value} when no products are present."
+            )
+        if self.product and value is None:
+            raise ValueError("E_p cannot be None when reaction products are present.")
+        self._E_p = value
 
     def __repr__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])
