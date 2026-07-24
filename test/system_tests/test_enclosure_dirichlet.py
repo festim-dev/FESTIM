@@ -263,6 +263,69 @@ def test_tmap_verification_decay_rate():
     assert errors_vs_continuous[1] < 0.5 * errors_vs_continuous[0]
 
 
+def test_time_dependent_temperature_leaves_coupled_bc_untouched():
+    """A time-dependent temperature must not break an enclosure-coupled Dirichlet BC.
+
+    The value of such a BC is a pure ufl expression built on live coefficients (the
+    temperature constant and the enclosure pressure), so it already tracks their current
+    values and must never be re-interpolated. A time-dependent temperature is the one
+    thing that would otherwise route the BC through ``update()``: because the coupled
+    value depends on ``T``, the temperature loop of ``update_time_dependent_values``
+    calls ``bc.update(t)`` every step. That call has to return early -- trying to
+    interpolate a bare ufl expression into a ``fem.Function`` would raise -- which is
+    what this test exercises.
+    """
+    mesh = dolfinx.mesh.create_interval(MPI.COMM_WORLD, 20, [0.0, 1.0])
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(mesh=mesh)
+
+    material = F.Material(name="mat", D_0=1e-1, E_D=0.0)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0.0, 1.0], material=material)
+    left = F.SurfaceSubdomain1D(id=1, x=0.0)
+    right = F.SurfaceSubdomain1D(id=2, x=1.0)
+    my_model.subdomains = [vol, left, right]
+
+    H = F.Species("H", subdomains=[vol])
+    my_model.species = [H]
+    # a constant value, but given as a callable of t so it is flagged time-dependent
+    my_model.temperature = lambda t: 500.0
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=1e5)
+    my_model.enclosures = [
+        F.Enclosure(volume=1e-6, species=[H2], temperature=500.0, surfaces={left: 1.0})
+    ]
+    coupling_bc = F.HenrysBC(
+        subdomain=left,
+        H_0=1e15,
+        E_H=0.0,
+        pressure=H2,
+        species=H,
+        enforce_weakly=True,
+        penalty=100,
+    )
+    my_model.boundary_conditions = [coupling_bc]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=0.0, species=H, volume=vol)
+    ]
+    my_model.settings = F.Settings(
+        atol=1e8, rtol=1e-8, transient=True, final_time=20.0, stepsize=F.Stepsize(10.0)
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    # the value stays a pure ufl expression, not a Function/Constant, before and after
+    # a step through the time loop
+    assert isinstance(coupling_bc.value_fenics, ufl.core.expr.Expr)
+    assert not isinstance(
+        coupling_bc.value_fenics, (dolfinx.fem.Function, dolfinx.fem.Constant)
+    )
+    my_model.iterate()
+    assert isinstance(coupling_bc.value_fenics, ufl.core.expr.Expr)
+    assert not isinstance(
+        coupling_bc.value_fenics, (dolfinx.fem.Function, dolfinx.fem.Constant)
+    )
+
+
 def test_dirichlet_coupling_agrees_with_surface_reaction():
     """The Dirichlet path and the trusted surface-reaction path must agree.
 
