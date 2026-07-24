@@ -1,9 +1,12 @@
 import warnings
+from collections.abc import Callable
 from functools import reduce
 from operator import mul
 
+import numpy as np
+import ufl.core.expr
+from dolfinx import fem
 from ufl import exp
-from ufl.core.expr import Expr
 
 from festim import k_B as _k_B
 from festim.helpers import Value
@@ -89,8 +92,28 @@ class GenericReaction:
     volume: VolumeSubdomain
     reactant: list[Species | ImplicitSpecies]
     product: list[Species]
-    forward_rate: Value
-    backward_rate: Value
+    forward_rate: (
+        float
+        | int
+        | np.ndarray
+        | Callable
+        | fem.Constant
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+        | Value
+    )
+    backward_rate: (
+        float
+        | int
+        | np.ndarray
+        | Callable
+        | fem.Constant
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+        | Value
+    )
     arg_to_species: dict[str, Species]
 
     def __init__(
@@ -98,8 +121,25 @@ class GenericReaction:
         volume: VolumeSubdomain,
         reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
         product: Species | list[Species] | None,
-        forward_rate: Value,
-        backward_rate=None,
+        forward_rate: float
+        | int
+        | np.ndarray
+        | Callable
+        | fem.Constant
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+        | Value,
+        backward_rate: float
+        | int
+        | np.ndarray
+        | Callable
+        | fem.Constant
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+        | Value
+        | None = None,
         arg_to_species: dict[str, Species] | None = None,
     ) -> None:
         self.volume = volume
@@ -154,7 +194,7 @@ class GenericReaction:
 
     @forward_rate.setter
     def forward_rate(self, value):
-        self._forward_rate = Value(input_value=value)
+        self._forward_rate = value if isinstance(value, Value) else Value(value)
 
     @property
     def backward_rate(self):
@@ -162,7 +202,7 @@ class GenericReaction:
 
     @backward_rate.setter
     def backward_rate(self, value):
-        self._backward_rate = Value(input_value=value)
+        self._backward_rate = value if isinstance(value, Value) else Value(value)
 
     @property
     def arg_to_species(self):
@@ -233,7 +273,10 @@ class GenericReaction:
     @property
     def _mixed_domain(self) -> bool:
         """True in the discontinuous case, where each species has one solution per
-        subdomain rather than a single concentration attribute."""
+        subdomain rather than a single concentration attribute.
+
+        NOTE: becomes always True once the discontinuous formulation is the only
+        problem path; this property (and the branch on it below) can be dropped."""
         return any(
             isinstance(spe, Species) and spe.subdomain_to_solution != {}
             for spe in self.reactant + self.product
@@ -242,6 +285,10 @@ class GenericReaction:
     def _concentrations(self, species: list, overrides: list | None) -> list:
         """The concentration of each species. Where a (non-None) override is given
         for a species it is used in place of the species' own concentration."""
+        # NOTE: `overrides` exists only for the change-of-variable problem
+        # (HydrogenTransportProblemDiscontinuousChangeVar, its u*K_S substitution)
+        # and can be removed together with the reaction_term arguments feeding it
+        # once that class is dropped
         overrides = overrides or [None] * len(species)
         concentrations = []
         for spe, override in zip(species, overrides, strict=True):
@@ -255,9 +302,11 @@ class GenericReaction:
 
     def reaction_term(
         self,
+        # NOTE: reactant_concentrations/product_concentrations exist only for the
+        # change-of-variable problem and can be removed with it (see _concentrations)
         reactant_concentrations: list | None = None,
         product_concentrations: list | None = None,
-    ) -> Expr:
+    ) -> ufl.core.expr.Expr:
         """Compute the net reaction rate ``R`` as a ufl expression.
 
         The rate coefficients must already be converted to fenics objects (done by
@@ -307,7 +356,6 @@ class GenericReaction:
         sources += [
             ParticleSource(value=rate, volume=self.volume, species=product)
             for product in self.product
-            if isinstance(product, Species)
         ]
         return sources
 
@@ -317,27 +365,26 @@ class ArrheniusReaction(GenericReaction):
     built from Arrhenius laws. This is typically used to model
     trapping/detrapping.
 
-    Args:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
-            F.ImplicitSpecies]]): The reactant.
-        product (Optional[Union[F.Species, List[F.Species]]]): The product.
-        k_0 (float): The forward rate constant pre-exponential factor.
-        E_k (float): The forward rate constant activation energy.
-        p_0 (float): The backward rate constant pre-exponential factor.
-        E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain): The volume subdomain where the reaction
-            takes place.
+    Arguments:
+        reactant: The reactant(s).
+        product: The product(s). None for an irreversible reaction with no
+            product.
+        k_0: The forward rate constant pre-exponential factor.
+        E_k: The forward rate constant activation energy.
+        volume: The volume subdomain where the reaction takes place.
+        p_0: The backward rate constant pre-exponential factor. Must be None when
+            there is no product.
+        E_p: The backward rate constant activation energy. Must be None when there
+            is no product.
 
     Attributes:
-        reactant (Union[F.Species, F.ImplicitSpecies], List[Union[F.Species,
-            F.ImplicitSpecies]]): The reactant.
-        product (Optional[Union[F.Species, List[F.Species]]]): The product.
-        k_0 (float): The forward rate constant pre-exponential factor.
-        E_k (float): The forward rate constant activation energy.
-        p_0 (float): The backward rate constant pre-exponential factor.
-        E_p (float): The backward rate constant activation energy.
-        volume (F.VolumeSubdomain): The volume subdomain where the reaction
-            takes place.
+        reactant: The reactant(s).
+        product: The product(s), as a list (empty for an irreversible reaction).
+        k_0: The forward rate constant pre-exponential factor.
+        E_k: The forward rate constant activation energy.
+        p_0: The backward rate constant pre-exponential factor.
+        E_p: The backward rate constant activation energy.
+        volume: The volume subdomain where the reaction takes place.
 
     Examples:
 
