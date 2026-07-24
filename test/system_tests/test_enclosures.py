@@ -496,6 +496,108 @@ def test_enclosure_in_contact_with_two_materials():
     assert H2.value < P0
 
 
+def test_enclosure_couples_two_disconnected_meshes():
+    """Two slabs separated by a physical gap, meshed as two disconnected blocks of a
+    single ``Mesh1D``, with the gap filled by an enclosure.
+
+    There is no ``Interface`` between the slabs and no cell spans the gap, so the only
+    path from one slab to the other is through the gas. Hydrogen starts in the left slab
+    only: it must desorb into the enclosure and be absorbed by the right slab, with the
+    total atom count conserved throughout.
+    """
+    area = 0.25
+    V_enc, T = 1e-3, 500.0
+    c_0 = 1e18
+    k_d0, k_r0 = 1e17, 1e-21
+    dt, final_time = 5.0, 200.0
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh1D([np.linspace(0, 0.5, 30), np.linspace(1.0, 1.5, 30)])
+
+    material = F.Material(D_0=1e-6, E_D=0.0, K_S_0=1, E_K_S=0)
+    vol_left = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=material)
+    vol_right = F.VolumeSubdomain1D(id=2, borders=[1.0, 1.5], material=material)
+    # the two surfaces facing the gap
+    inner_left = F.SurfaceSubdomain1D(id=1, x=0.5)
+    inner_right = F.SurfaceSubdomain1D(id=2, x=1.0)
+    outer_left = F.SurfaceSubdomain1D(id=3, x=0.0)
+    outer_right = F.SurfaceSubdomain1D(id=4, x=1.5)
+    my_model.subdomains = [
+        vol_left,
+        vol_right,
+        inner_left,
+        inner_right,
+        outer_left,
+        outer_right,
+    ]
+    my_model.interfaces = []
+
+    H = F.Species("H", subdomains=[vol_left, vol_right])
+    my_model.species = [H]
+    my_model.temperature = T
+
+    H2 = F.GasSpecies(name="H2", initial_pressure=0.0)
+    my_model.enclosures = [
+        F.Enclosure(
+            volume=V_enc,
+            species=[H2],
+            temperature=T,
+            surfaces={inner_left: area, inner_right: area},
+        )
+    ]
+    my_model.boundary_conditions = [
+        F.SurfaceReactionBC(
+            reactant=[H, H],
+            gas_pressure=H2,
+            k_r0=k_r0,
+            E_kr=0.0,
+            k_d0=k_d0,
+            E_kd=0.0,
+            subdomain=surface,
+        )
+        for surface in (inner_left, inner_right)
+    ]
+    my_model.initial_conditions = [
+        F.InitialConcentration(value=c_0, species=H, volume=vol_left),
+        F.InitialConcentration(value=0.0, species=H, volume=vol_right),
+    ]
+    my_model.settings = F.Settings(
+        atol=1e-8,
+        rtol=1e-10,
+        transient=True,
+        final_time=final_time,
+        stepsize=F.Stepsize(dt),
+    )
+    my_model.show_progress_bar = False
+    my_model.initialise()
+
+    def inventory(volume, previous=False):
+        u = volume.u_n if previous else volume.u
+        return my_model.mesh.mesh.comm.allreduce(
+            dolfinx.fem.assemble_scalar(
+                dolfinx.fem.form(u.sub(0) * ufl.dx(domain=volume.submesh))
+            ),
+            op=MPI.SUM,
+        )
+
+    def total_hydrogen_atoms(previous=False):
+        in_solid = sum(inventory(volume, previous) for volume in (vol_left, vol_right))
+        pressure = H2.prev_solution.x.array[0] if previous else H2.value
+        return area * in_solid + 2.0 * pressure * V_enc / (F.k_B_SI * T)
+
+    # before the first solve the state lives in the previous solution
+    initial_inventory = total_hydrogen_atoms(previous=True)
+    assert initial_inventory == pytest.approx(area * c_0 * 0.5)
+
+    while my_model.t.value < final_time:
+        my_model.iterate()
+        assert total_hydrogen_atoms() == pytest.approx(initial_inventory, rel=1e-12)
+
+    # hydrogen made it across the gap even though the meshes are disconnected
+    assert inventory(vol_right) > 0.01 * inventory(vol_left)
+    assert H2.value > 0
+
+
 def test_gas_pressure_export():
     """The GasPressure export records the pressure over time."""
     P0, S, V = 1e5, 1e-4, 1e-3

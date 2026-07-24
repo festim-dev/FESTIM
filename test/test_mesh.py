@@ -167,6 +167,77 @@ def test_mesh_vertices_from_list(vertices):
     my_mesh = F.Mesh1D(vertices=vertices)
 
     assert isinstance(my_mesh.vertices, np.ndarray)
+    assert len(my_mesh.vertex_blocks) == 1
+
+
+@pytest.mark.parametrize(
+    "vertices",
+    [
+        [[0, 0.1, 0.2], [1, 1.1, 1.2]],
+        [np.linspace(0, 0.2, 3), np.linspace(1, 1.2, 3)],
+        # blocks given in non-ascending order
+        [[1, 1.1, 1.2], [0, 0.1, 0.2]],
+    ],
+)
+def test_mesh_vertices_from_list_of_lists(vertices):
+    """Check that giving vertices as a list of lists creates one disconnected block
+    of cells per sublist."""
+    my_mesh = F.Mesh1D(vertices=vertices)
+
+    assert len(my_mesh.vertex_blocks) == 2
+    assert np.allclose(my_mesh.vertices, [0, 0.1, 0.2, 1, 1.1, 1.2])
+
+    # 2 cells per block, and none spanning the gap
+    num_cells = my_mesh.mesh.topology.index_map(1).size_local
+    assert num_cells == 4
+    midpoints = fenics_mesh.compute_midpoints(
+        my_mesh.mesh, 1, np.arange(num_cells, dtype=np.int32)
+    )[:, 0]
+    assert not np.any((midpoints > 0.2) & (midpoints < 1))
+
+
+def test_disconnected_blocks_have_two_boundaries_each():
+    """Check that each block of a discontinuous 1D mesh has its own two exterior
+    facets."""
+    my_mesh = F.Mesh1D(vertices=[np.linspace(0, 1, 11), np.linspace(2, 3, 11)])
+
+    my_mesh.mesh.topology.create_connectivity(0, 1)
+    facets = fenics_mesh.exterior_facet_indices(my_mesh.mesh.topology)
+    coords = np.sort(my_mesh.mesh.geometry.x[facets][:, 0])
+
+    assert np.allclose(coords, [0, 1, 2, 3])
+
+
+def test_error_raised_when_blocks_overlap():
+    """Test that a ValueError is raised when two blocks of vertices overlap."""
+    with pytest.raises(ValueError, match="Blocks of vertices must not overlap"):
+        F.Mesh1D(vertices=[[0, 0.5, 1], [0.5, 1.5, 2]])
+
+
+def test_error_raised_when_block_too_small():
+    """Test that a ValueError is raised when a block has less than 2 vertices."""
+    with pytest.raises(ValueError, match="at least 2 vertices"):
+        F.Mesh1D(vertices=[[0, 0.5, 1], [2]])
+
+
+def test_check_borders_with_blocks():
+    """Test that subdomains are checked block per block."""
+    my_mesh = F.Mesh1D(vertices=[np.linspace(0, 1, 11), np.linspace(2, 3, 11)])
+
+    vol_1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=None)
+    vol_2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=None)
+    vol_3 = F.VolumeSubdomain1D(id=3, borders=[2, 3], material=None)
+
+    my_mesh.check_borders([vol_1, vol_2, vol_3])
+
+    # a block left uncovered
+    with pytest.raises(ValueError, match="borders dont match domain borders"):
+        my_mesh.check_borders([vol_1, vol_2])
+
+    # a subdomain spanning the gap between two blocks
+    spanning = F.VolumeSubdomain1D(id=4, borders=[1, 2], material=None)
+    with pytest.raises(ValueError, match="borders dont match domain borders"):
+        my_mesh.check_borders([vol_1, vol_2, spanning, vol_3])
 
 
 def test_error_raised_when_mesh_is_wrong_type():
