@@ -1573,6 +1573,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         super().define_boundary_conditions()
 
+    def create_dirichletbc_value_ufl(self, bc):
+        # as in create_dirichletbc_form, a temperature given as a function lives on the
+        # submesh of the volume the surface belongs to (see issue #1007)
+        volume_subdomain = self.surface_to_volume[bc.subdomain]
+        if isinstance(self.temperature_fenics, fem.Function):
+            temperature = volume_subdomain.sub_T
+        else:
+            temperature = self.temperature_fenics
+
+        bc.create_value_ufl(temperature=temperature)
+
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """Creates the variational formulation for each subdomain and stores it in
         ``subdomain.F``
@@ -1775,8 +1786,22 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         f"{bc} is coupled to {pressure}, which does not belong to any "
                         "enclosure of the model"
                     )
-                # NOTE: is this still needed?
                 bc._gas_species = pressure
+
+                if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                    # A Dirichlet value that depends on the pressure cannot be
+                    # interpolated into a fem.Function, so it can only be enforced
+                    # weakly. Enabling that silently would change the discretisation
+                    # behind the user's back, and there is no defensible default
+                    # penalty, so ask for both explicitly.
+                    if not bc.enforce_weakly or bc.penalty is None:
+                        raise ValueError(
+                            f"{type(bc).__name__} on surface {bc.subdomain.id} is "
+                            f"coupled to {pressure}, whose pressure is an unknown of "
+                            "the problem. Such a boundary condition can only be "
+                            "enforced weakly: pass enforce_weakly=True and a penalty "
+                            "(a dimensionless value of order 10-100)."
+                        )
 
     def define_enclosure_function_spaces(self):
         """Creates a real function space, a solution and a previous solution for each
@@ -1854,6 +1879,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # partials share the same expression and differ only in which species
                 # of the solid they apply to.
                 yield -bc.flux_bcs[0].value_fenics
+
+            if (
+                isinstance(bc, boundary_conditions.FixedConcentrationBC)
+                and getattr(bc, "_gas_species", None) is gas_species
+            ):
+                # A weakly enforced Dirichlet BC only satisfies u = value up to O(h^p),
+                # so the raw -D grad(u).n is not what the discrete scheme conserves.
+                # Using the numerical flux instead makes what the solid loses equal what
+                # the gas gains exactly, rather than to within the Nitsche consistency
+                # error, which would otherwise accumulate in the pressure.
+                volume_subdomain = self.surface_to_volume[surface]
+                u = bc.species.subdomain_to_solution[volume_subdomain]
+                D = volume_subdomain.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature_fenics, bc.species
+                )
+                # the flux is in particles of the solid species per second per m2;
+                # the stoichiometry converts it to molecules of the gas species
+                yield bc.numerical_flux(u, D, self.mesh.mesh) / bc.stoichiometry
 
     def create_enclosure_formulation(self, gas_species: _GasSpecies):
         """Creates the variational formulation of the pressure balance of a gas species
