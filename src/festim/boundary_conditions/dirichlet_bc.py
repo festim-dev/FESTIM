@@ -72,14 +72,22 @@ class DirichletBCBase:
         return self._value_fenics
 
     @value_fenics.setter
-    def value_fenics(self, value: None | fem.Function | fem.Constant | np.ndarray):
+    def value_fenics(
+        self,
+        value: None | fem.Function | fem.Constant | np.ndarray | ufl.core.expr.Expr,
+    ):
         if value is None:
             self._value_fenics = value
             return
-        if not isinstance(value, (fem.Function, fem.Constant, np.ndarray)):
+        # a ufl expression is allowed for weakly enforced BCs only: it cannot be
+        # interpolated into a fem.Function, which is what a strong BC needs. This is
+        # how a coupling to an enclosure pressure (a real-space unknown) gets in.
+        if not isinstance(
+            value, (fem.Function, fem.Constant, np.ndarray, ufl.core.expr.Expr)
+        ):
             # FIXME: Should we allow sending in a callable here?
             raise TypeError(
-                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, or a np.ndarray not"  # noqa: E501
+                "Value must be a dolfinx.fem.Function, dolfinx.fem.Constant, a np.ndarray or a ufl expression, not"  # noqa: E501
                 + f"{type(value)}"
             )
         self._value_fenics = value
@@ -144,6 +152,12 @@ class DirichletBCBase:
         Args:
             t: the time
         """
+        if isinstance(self.value_fenics, ufl.core.expr.Expr) and not isinstance(
+            self.value_fenics, (fem.Function, fem.Constant)
+        ):
+            # a pure ufl value is built on live coefficients (the temperature, an
+            # enclosure pressure), so it already reflects their current values
+            return
         if callable(self.value):
             arguments = self.value.__code__.co_varnames
             if isinstance(self.value_fenics, fem.Constant) and "t" in arguments:
@@ -272,6 +286,17 @@ class FixedConcentrationBC(DirichletBCBase):
 
     species: Species
 
+    #: number of particles of ``species`` in the solid per particle of the gas species
+    #: the BC is coupled to. 1 by default (Henry's law, where the gas molecule
+    #: dissolves as such); 2 for Sieverts' law, where a diatomic molecule dissolves as
+    #: two atoms. Only used when the BC is coupled to a
+    #: :py:class:`festim.GasSpecies`.
+    stoichiometry: float = 1
+
+    #: the gas species this BC is coupled to, set by the problem when the ``pressure``
+    #: of the BC is a :py:class:`festim.GasSpecies`
+    _gas_species = None
+
     def __init__(
         self,
         subdomain: _subdomain.SurfaceSubdomain,
@@ -284,6 +309,38 @@ class FixedConcentrationBC(DirichletBCBase):
         super().__init__(
             subdomain, value, enforce_weakly=enforce_weakly, penalty=penalty
         )
+
+    def create_value_ufl(self, temperature: float | fem.Constant | fem.Function):
+        """Creates the value of the boundary condition as a pure ufl expression and
+        sets it to ``self.value_fenics``.
+
+        Unlike :py:meth:`create_value`, this never interpolates the value into a
+        ``dolfinx.fem.Function``. It is required when the value depends on an unknown of
+        the problem, such as the pressure of a :py:class:`festim.Enclosure`, which lives
+        in a real function space and cannot be interpolated. Such a BC can therefore
+        only be enforced weakly.
+
+        Args:
+            temperature: the temperature
+
+        Raises:
+            ValueError: if the value is not a callable of the temperature only
+        """
+        if not callable(self.value):
+            raise ValueError(
+                f"The value of {self} is not callable, so it does not need "
+                "create_value_ufl. Use create_value instead."
+            )
+
+        arguments = self.value.__code__.co_varnames
+        if "x" in arguments or "t" in arguments:
+            raise ValueError(
+                "A boundary condition coupled to an enclosure pressure cannot also "
+                "depend on space or time, because its value cannot be interpolated. "
+                f"The value of {self} depends on {sorted(set(arguments) & {'x', 't'})}."
+            )
+
+        self.value_fenics = self.value(T=temperature)
 
     @property
     def temperature_dependent(self):
