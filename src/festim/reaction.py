@@ -51,6 +51,10 @@ class GenericReaction:
             of the forward and backward coefficients other than the reserved
             ``t``/``x``/``T``: every such argument must appear as a key, and every
             key must be such an argument. Every value must be a festim.Species.
+            Alternatively the mapping may be attached directly to a rate
+            coefficient passed as a festim.Value (its ``species_dependent_value``),
+            but the two ways are mutually exclusive: giving a mapping both here and
+            on a rate Value raises a ValueError.
 
     Attributes:
         reactant: The reactant(s).
@@ -147,6 +151,13 @@ class GenericReaction:
         self.product = product
         self.forward_rate = forward_rate
         self.backward_rate = backward_rate
+        # a species mapping may be attached directly to a rate coefficient Value
+        # (its species_dependent_value); remember that so the arg_to_species setter
+        # can refuse to receive the same information twice
+        self._rate_has_own_species_map = bool(
+            self.forward_rate.species_dependent_value
+            or self.backward_rate.species_dependent_value
+        )
         self.arg_to_species = arg_to_species
 
     @property
@@ -211,6 +222,21 @@ class GenericReaction:
     @arg_to_species.setter
     def arg_to_species(self, value):
         value = value or {}
+        # the species mapping must be given in exactly one place
+        if getattr(self, "_rate_has_own_species_map", False):
+            if value:
+                raise ValueError(
+                    "a species mapping was given both to a rate coefficient (via the "
+                    "species_dependent_value of a festim.Value) and to arg_to_species; "
+                    "provide it in only one place"
+                )
+            # the rate Values already carry their own mapping; just expose the
+            # combined mapping for introspection
+            self._arg_to_species = {
+                **self.forward_rate.species_dependent_value,
+                **self.backward_rate.species_dependent_value,
+            }
+            return
         for name, spe in value.items():
             if not isinstance(spe, Species):
                 raise TypeError(
