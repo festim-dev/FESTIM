@@ -820,6 +820,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if rate.input_value is not None:
                     rate.convert_input_value(
                         function_space=getattr(self, "function_space", None),
+                        t=self.t,
                         temperature=self.temperature_fenics,
                         subdomain=reaction.volume,
                         up_to_ufl_expr=True,
@@ -999,6 +1000,14 @@ class HydrogenTransportProblem(problem.ProblemBase):
             for reactant in reaction.reactant:
                 if isinstance(reactant, _species.ImplicitSpecies):
                     reactant.update_density(t=t)
+            # the sources built from a reaction only wrap a ufl expression
+            # referencing these rate Values, so the rates must be updated here
+            # directly. Temperature-dependent rates are ufl expressions
+            # referencing temperature_fenics (updated in place below), so only
+            # explicitly time-dependent rates need a value update.
+            for rate in (reaction.forward_rate, reaction.backward_rate):
+                if rate.explicit_time_dependent:
+                    rate.update(t=t)
 
         if (
             isinstance(self.temperature, fem.Function)
