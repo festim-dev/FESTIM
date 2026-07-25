@@ -486,6 +486,69 @@ def test_arg_to_species_raises_error_with_orphan_mapping():
         )
 
 
+def test_generic_reaction_term():
+    """Test that GenericReaction.reaction_term returns the net mass-action rate
+    directly (i.e. without going through the ArrheniusReaction subclass)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 5, 5, 5)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B, C = F.Species("A"), F.Species("B"), F.Species("C")
+    for spe in (A, B, C):
+        spe.solution = Function(V)
+
+    reaction = F.GenericReaction(
+        reactant=[A, B],
+        product=C,
+        forward_rate=2.0,
+        backward_rate=3.0,
+        volume=my_vol,
+    )
+
+    # RUN
+    convert_rates(reaction, V, temperature=500.0)
+
+    # TEST
+    k1 = reaction.forward_rate.fenics_object
+    k2 = reaction.backward_rate.fenics_object
+    expected = k1 * (A.solution * B.solution) - k2 * C.solution
+    assert reaction.reaction_term() == expected
+
+
+def test_rate_value_species_mapping_is_honored():
+    """Test that a species mapping given directly on a rate coefficient Value is
+    honored (exposed through arg_to_species) without also passing arg_to_species."""
+    # BUILD
+    A, C = F.Species("A"), F.Species("C")
+
+    # RUN
+    reaction = F.GenericReaction(
+        reactant=A,
+        product=C,
+        forward_rate=F.Value(lambda c_C: c_C, species_dependent_value={"c_C": C}),
+        volume=my_vol,
+    )
+
+    # TEST
+    assert reaction.arg_to_species == {"c_C": C}
+
+
+def test_arg_to_species_raises_error_when_mapping_given_twice():
+    """Test a value error is raised when a species mapping is given both on a rate
+    coefficient Value and via arg_to_species."""
+    A, C = F.Species("A"), F.Species("C")
+    with pytest.raises(
+        ValueError,
+        match=r"provide it in only one place",
+    ):
+        F.GenericReaction(
+            reactant=A,
+            product=C,
+            forward_rate=F.Value(lambda c_C: c_C, species_dependent_value={"c_C": C}),
+            arg_to_species={"c_C": C},
+            volume=my_vol,
+        )
+
+
 def test_p_0_setter_raises_error_with_no_product():
     """Test p_0 must be None when there is no product."""
     with pytest.raises(

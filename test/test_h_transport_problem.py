@@ -702,6 +702,46 @@ def test_update_time_dependent_values_source(source_value, expected_values):
 
 
 @pytest.mark.parametrize(
+    "forward_rate, expected_values",
+    [
+        (lambda t: t, [1.0, 2.0, 3.0]),
+        (lambda t: 1.0 + t, [2.0, 3.0, 4.0]),
+    ],
+)
+def test_update_time_dependent_reaction_rate(forward_rate, expected_values):
+    """Test that an explicitly time-dependent reaction rate coefficient is updated
+    at each time step."""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    A, B = F.Species("A"), F.Species("B")
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh, temperature=10, subdomains=[my_vol], species=[A, B]
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    dt = fem.Constant(test_mesh.mesh, 1.0)
+
+    reaction = F.GenericReaction(
+        reactant=A, product=B, forward_rate=forward_rate, volume=my_vol
+    )
+    my_model.reactions = [reaction]
+
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+    my_model.convert_reaction_rates_to_fenics_objects()
+
+    for i in range(3):
+        # RUN
+        my_model.t.value += dt.value
+        my_model.update_time_dependent_values()
+
+        # TEST
+        computed_value = float(reaction.forward_rate.fenics_object)
+        assert np.isclose(computed_value, expected_values[i])
+
+
+@pytest.mark.parametrize(
     "temperature_value, source_value, expected_values",
     [
         (5, 1.0, [1.0, 1.0, 1.0]),
