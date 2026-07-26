@@ -442,6 +442,14 @@ class ArrheniusReaction(GenericReaction):
             A + B <--> C
     """
 
+    volume: VolumeSubdomain
+    reactant: list[Species | ImplicitSpecies]
+    product: list[Species]
+    k_0: float
+    E_k: float
+    p_0: float | None
+    E_p: float | None
+
     def __init__(
         self,
         reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
@@ -562,6 +570,11 @@ class DecayReaction(GenericReaction):
             T --> He
     """
 
+    volume: VolumeSubdomain
+    reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies]
+    product: Species | list[Species] | None
+    half_life: float
+
     def __init__(
         self,
         reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
@@ -569,7 +582,6 @@ class DecayReaction(GenericReaction):
         volume: VolumeSubdomain,
         product: Species | list[Species] | None = None,
     ) -> None:
-
         super().__init__(
             reactant=reactant,
             product=product,
