@@ -4,9 +4,8 @@ from functools import reduce
 from operator import mul
 
 import numpy as np
-import ufl.core.expr
+import ufl
 from dolfinx import fem
-from ufl import exp
 
 from festim import k_B as _k_B
 from festim.helpers import Value
@@ -457,11 +456,11 @@ class ArrheniusReaction(GenericReaction):
         self.E_k = E_k
 
         def forward_rate(T):
-            return self.k_0 * exp(-self.E_k / (_k_B * T))
+            return self.k_0 * ufl.exp(-self.E_k / (_k_B * T))
 
         def backward_rate(T):
             if self.E_p:
-                return self.p_0 * exp(-self.E_p / (_k_B * T))
+                return self.p_0 * ufl.exp(-self.E_p / (_k_B * T))
             return self.p_0
 
         super().__init__(
@@ -520,18 +519,20 @@ class DecayReaction(GenericReaction):
         R = \\lambda \\prod_i c_i
 
     where the decay constant :math:`\\lambda = \\ln(2) / t_{1/2}` is built from the
-    ``half_life`` :math:`t_{1/2}`. The reaction is irreversible: it has no product
-    and no backward rate, and each reactant is consumed at rate ``R`` (a sink).
+    ``half_life`` :math:`t_{1/2}`. The reaction is irreversible (no backward rate):
+    each reactant is consumed at rate ``R`` and each product, if any, is produced at
+    rate ``R`` (e.g. helium from the decay of tritium).
 
     Arguments:
         reactant: The decaying reactant species.
-        half_life: The decay half-life, in the same time unit as the simulation.
-            Must be a positive float.
+        half_life: The decay half-life in seconds. Must be a positive float.
         volume: The volume subdomain where the decay takes place.
+        product: The decay product(s). ``None`` if the products are not tracked.
 
     Attributes:
         reactant: The reactant(s).
         half_life: The decay half-life.
+        product: The product(s), as a list (empty if none are tracked).
         forward_rate: The decay constant :math:`\\lambda`, as a festim.Value.
         volume: The volume subdomain where the decay takes place.
 
@@ -545,18 +546,20 @@ class DecayReaction(GenericReaction):
             volume = F.VolumeSubdomain(id=1, material=material)
 
             T = F.Species("T")  # tritium
+            He = F.Species("He")  # helium-3 produced by the decay
 
-            # tritium decays with a half-life of ~12.3 years (in seconds)
+            # tritium decays into helium with a half-life of ~12.3 years (in seconds)
             reaction = F.DecayReaction(
                 reactant=T,
                 half_life=3.888e8,
                 volume=volume,
+                product=He,
             )
             print(reaction)
 
         .. testoutput:: DecayReaction
 
-            T -->
+            T --> He
     """
 
     def __init__(
@@ -564,13 +567,12 @@ class DecayReaction(GenericReaction):
         reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
         half_life: float,
         volume: VolumeSubdomain,
+        product: Species | list[Species] | None = None,
     ) -> None:
-        # forward_rate is a placeholder here: the half_life setter (called below)
-        # derives the decay constant and assigns it. Radioactive decay is
-        # irreversible, hence no product and no backward rate.
+
         super().__init__(
             reactant=reactant,
-            product=None,
+            product=product,
             forward_rate=0.0,
             backward_rate=None,
             volume=volume,
@@ -589,7 +591,7 @@ class DecayReaction(GenericReaction):
             raise ValueError(f"half_life must be positive, not {value}")
         self._half_life = value
         # decay constant lambda = ln(2) / t_1/2, kept in sync with half_life
-        self.forward_rate = np.log(2) / value
+        self.forward_rate = ufl.ln(2) / value
 
     def __repr__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])
@@ -597,7 +599,8 @@ class DecayReaction(GenericReaction):
 
     def __str__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        return f"{reactants} -->"
+        products = " + ".join([str(product) for product in self.product])
+        return f"{reactants} --> {products}" if products else f"{reactants} -->"
 
 
 class Reaction(ArrheniusReaction):
