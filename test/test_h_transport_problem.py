@@ -688,6 +688,7 @@ def test_update_time_dependent_values_source(source_value, expected_values):
     my_model.define_meshtags_and_measures()
     my_model.assign_functions_to_species()
     my_model.define_temperature()
+    my_model.create_sources_from_reactions()
     my_model.convert_source_input_values_to_fenics_objects()
 
     for i in range(3):
@@ -741,6 +742,82 @@ def test_update_time_dependent_reaction_rate(forward_rate, expected_values):
         assert np.isclose(computed_value, expected_values[i])
 
 
+def test_unpacked_sources_initialises_as_empty_list():
+    """Test that _unpacked_sources initialises as an empty list before reactions
+    are expanded (create_sources_from_reactions not called)."""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    H = F.Species("H")
+    source = F.ParticleSource(value=1.0, volume=my_vol, species=H)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh, subdomains=[my_vol], species=[H], sources=[source]
+    )
+
+    # TEST
+    assert my_model._unpacked_sources == []
+
+
+def test_create_sources_from_reactions_leaves_sources_unchanged():
+    """Test that expanding reactions into sources does not mutate the user-provided
+    sources attribute."""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    A, B = F.Species("A"), F.Species("B")
+    source = F.ParticleSource(value=1.0, volume=my_vol, species=A)
+    reaction = F.GenericReaction(reactant=A, product=B, forward_rate=1.0, volume=my_vol)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol],
+        species=[A, B],
+        sources=[source],
+        reactions=[reaction],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+    my_model.convert_reaction_rates_to_fenics_objects()
+
+    # RUN
+    my_model.create_sources_from_reactions()
+
+    # TEST
+    assert my_model.sources == [source]
+
+
+def test_create_sources_from_reactions_populates_unpacked_sources():
+    """Test that _unpacked_sources holds the user sources plus one source per
+    species participating in each reaction."""
+    # BUILD
+    my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 4], material=dummy_mat)
+    A, B = F.Species("A"), F.Species("B")
+    source = F.ParticleSource(value=1.0, volume=my_vol, species=A)
+    reaction = F.GenericReaction(reactant=A, product=B, forward_rate=1.0, volume=my_vol)
+    my_model = F.HydrogenTransportProblem(
+        mesh=test_mesh,
+        temperature=10,
+        subdomains=[my_vol],
+        species=[A, B],
+        sources=[source],
+        reactions=[reaction],
+    )
+    my_model.t = fem.Constant(my_model.mesh.mesh, 0.0)
+    my_model.define_function_spaces()
+    my_model.define_meshtags_and_measures()
+    my_model.assign_functions_to_species()
+    my_model.define_temperature()
+    my_model.convert_reaction_rates_to_fenics_objects()
+
+    # RUN
+    my_model.create_sources_from_reactions()
+
+    # TEST
+    # 1 user source + 1 reactant (A) + 1 product (B) = 3 sources
+    assert len(my_model._unpacked_sources) == 3
+
+
 @pytest.mark.parametrize(
     "temperature_value, source_value, expected_values",
     [
@@ -782,6 +859,7 @@ def test_update_sources_with_time_dependent_temperature(
     my_model.define_function_spaces()
     my_model.assign_functions_to_species()
     my_model.define_meshtags_and_measures()
+    my_model.create_sources_from_reactions()
     my_model.convert_source_input_values_to_fenics_objects()
 
     for i in range(3):
@@ -819,6 +897,7 @@ def test_convert_source_input_values_to_fenics_objects_multispecies():
     my_model.define_temperature()
 
     # RUN
+    my_model.create_sources_from_reactions()
     my_model.convert_source_input_values_to_fenics_objects()
 
     # TEST
@@ -855,6 +934,7 @@ def test_species_dependent_source_continuous():
     my_model.define_temperature()
 
     # RUN
+    my_model.create_sources_from_reactions()
     my_model.convert_source_input_values_to_fenics_objects()
 
     # TEST
