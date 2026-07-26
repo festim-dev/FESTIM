@@ -7,7 +7,7 @@ import numpy as np
 import ufl
 from dolfinx import fem
 
-from festim import k_B as _k_B
+from festim import k_B
 from festim.helpers import Value
 from festim.source import ParticleSource
 from festim.species import ImplicitSpecies, Species
@@ -456,11 +456,11 @@ class ArrheniusReaction(GenericReaction):
         self.E_k = E_k
 
         def forward_rate(T):
-            return self.k_0 * ufl.exp(-self.E_k / (_k_B * T))
+            return self.k_0 * ufl.exp(-self.E_k / (k_B * T))
 
         def backward_rate(T):
             if self.E_p:
-                return self.p_0 * ufl.exp(-self.E_p / (_k_B * T))
+                return self.p_0 * ufl.exp(-self.E_p / (k_B * T))
             return self.p_0
 
         super().__init__(
