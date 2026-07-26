@@ -650,3 +650,174 @@ for subdomain in my_model.volume_subdomains:
 
 for subdomain in my_model.volume_subdomains:
     my_model.define_function_spaces(subdomain)
+
+
+def test_decay_reaction_str():
+    """Test __str__ shows a one-way decay arrow to the product."""
+    # BUILD
+    T, He = F.Species("T"), F.Species("He")
+    reaction = F.DecayReaction(reactant=T, half_life=10.0, volume=my_vol, product=He)
+
+    # RUN / TEST
+    assert str(reaction) == "T --> He"
+
+
+def test_decay_reaction_str_no_product():
+    """Test __str__ shows a one-way decay arrow when no product is tracked."""
+    # BUILD
+    reaction = F.DecayReaction(reactant=F.Species("T"), half_life=10.0, volume=my_vol)
+
+    # RUN / TEST
+    assert str(reaction) == "T -->"
+
+
+def test_decay_reaction_repr():
+    """Test __repr__ includes the half_life."""
+    # BUILD
+    reaction = F.DecayReaction(reactant=F.Species("T"), half_life=10.0, volume=my_vol)
+
+    # RUN / TEST
+    assert repr(reaction) == "DecayReaction(T, half_life=10.0)"
+
+
+@pytest.mark.parametrize("half_life", [1.0, 10.0, 3.888e8, 12])
+def test_decay_reaction_forward_rate_is_decay_constant(half_life):
+    """Test the forward rate is the decay constant lambda = ln(2) / half_life."""
+    # BUILD
+    reaction = F.DecayReaction(
+        reactant=F.Species("T"), half_life=half_life, volume=my_vol
+    )
+
+    # RUN / TEST
+    expected = np.log(2) / half_life
+    assert np.isclose(float(reaction.forward_rate.input_value), expected)
+
+
+def test_decay_reaction_forward_rate_updates_with_half_life():
+    """Test that reassigning half_life keeps the forward rate (decay constant) in
+    sync."""
+    # BUILD
+    reaction = F.DecayReaction(reactant=F.Species("T"), half_life=10.0, volume=my_vol)
+
+    # RUN
+    reaction.half_life = 20.0
+
+    # TEST
+    assert np.isclose(float(reaction.forward_rate.input_value), np.log(2) / 20.0)
+
+
+def test_decay_reaction_has_no_backward_rate():
+    """Test that a decay reaction is irreversible (no backward rate)."""
+    # BUILD
+    reaction = F.DecayReaction(reactant=F.Species("T"), half_life=10.0, volume=my_vol)
+
+    # RUN / TEST
+    assert reaction.backward_rate.input_value is None
+
+
+def test_decay_reaction_product_is_stored():
+    """Test that a given product is stored as a list."""
+    # BUILD
+    He = F.Species("He")
+    reaction = F.DecayReaction(
+        reactant=F.Species("T"), half_life=10.0, volume=my_vol, product=He
+    )
+
+    # RUN / TEST
+    assert reaction.product == [He]
+
+
+def test_decay_reaction_product_empty_when_none():
+    """Test that the product list is empty when no product is given."""
+    # BUILD
+    reaction = F.DecayReaction(reactant=F.Species("T"), half_life=10.0, volume=my_vol)
+
+    # RUN / TEST
+    assert reaction.product == []
+
+
+@pytest.mark.parametrize("value", ["abc", lambda t: t, None, True, [1.0]])
+def test_half_life_setter_raises_type_error(value):
+    """Test that half_life must be a float."""
+    # BUILD / RUN / TEST
+    with pytest.raises(TypeError, match="half_life must be a float"):
+        F.DecayReaction(reactant=F.Species("T"), half_life=value, volume=my_vol)
+
+
+@pytest.mark.parametrize("value", [0, -1.0, -5])
+def test_half_life_setter_raises_value_error(value):
+    """Test that half_life must be positive."""
+    # BUILD / RUN / TEST
+    with pytest.raises(ValueError, match="half_life must be positive"):
+        F.DecayReaction(reactant=F.Species("T"), half_life=value, volume=my_vol)
+
+
+def test_decay_reaction_term():
+    """Test the net rate of a decay reaction is lambda * c (no backward term)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 5, 5, 5)
+    V = functionspace(mesh, ("Lagrange", 1))
+    T = F.Species("T")
+    T.solution = Function(V)
+    reaction = F.DecayReaction(reactant=T, half_life=10.0, volume=my_vol)
+
+    # RUN
+    convert_rates(reaction, V, temperature=500.0)
+
+    # TEST
+    expected = reaction.forward_rate.fenics_object * T.solution
+    assert reaction.reaction_term() == expected
+
+
+def test_decay_reaction_create_sources_count_with_product():
+    """Test that a decay with a product expands into two sources (sink + source)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    T, He = F.Species("T"), F.Species("He")
+    T.solution = Function(V)
+    He.solution = Function(V)
+    reaction = F.DecayReaction(reactant=T, half_life=10.0, volume=my_vol, product=He)
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    sources = reaction.create_sources()
+
+    # TEST
+    assert len(sources) == 2
+
+
+def test_decay_reaction_reactant_is_consumed():
+    """Test that the decaying reactant is a sink (source value -R)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    T, He = F.Species("T"), F.Species("He")
+    T.solution = Function(V)
+    He.solution = Function(V)
+    reaction = F.DecayReaction(reactant=T, half_life=10.0, volume=my_vol, product=He)
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    sink = next(s for s in reaction.create_sources() if s.species is T)
+
+    # TEST
+    assert sink.value.input_value == -reaction.reaction_term()
+
+
+def test_decay_reaction_product_is_produced():
+    """Test that the decay product is a source (source value +R)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    T, He = F.Species("T"), F.Species("He")
+    T.solution = Function(V)
+    He.solution = Function(V)
+    reaction = F.DecayReaction(reactant=T, half_life=10.0, volume=my_vol, product=He)
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    source = next(s for s in reaction.create_sources() if s.species is He)
+
+    # TEST
+    assert source.value.input_value == reaction.reaction_term()
