@@ -509,6 +509,97 @@ class ArrheniusReaction(GenericReaction):
         return f"{type(self).__name__}({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"  # noqa: E501
 
 
+class DecayReaction(GenericReaction):
+    """A first-order radioactive decay reaction, consuming one or more reactant
+    species at a rate set by their decay half-life.
+
+    The net rate follows the mass-action form of :class:`GenericReaction`
+
+    .. math::
+
+        R = \\lambda \\prod_i c_i
+
+    where the decay constant :math:`\\lambda = \\ln(2) / t_{1/2}` is built from the
+    ``half_life`` :math:`t_{1/2}`. The reaction is irreversible: it has no product
+    and no backward rate, and each reactant is consumed at rate ``R`` (a sink).
+
+    Arguments:
+        reactant: The decaying reactant species.
+        half_life: The decay half-life, in the same time unit as the simulation.
+            Must be a positive float.
+        volume: The volume subdomain where the decay takes place.
+
+    Attributes:
+        reactant: The reactant(s).
+        half_life: The decay half-life.
+        forward_rate: The decay constant :math:`\\lambda`, as a festim.Value.
+        volume: The volume subdomain where the decay takes place.
+
+    Examples:
+
+        .. testcode:: DecayReaction
+
+            import festim as F
+
+            material = F.Material(D_0=1, E_D=0)
+            volume = F.VolumeSubdomain(id=1, material=material)
+
+            T = F.Species("T")  # tritium
+
+            # tritium decays with a half-life of ~12.3 years (in seconds)
+            reaction = F.DecayReaction(
+                reactant=T,
+                half_life=3.888e8,
+                volume=volume,
+            )
+            print(reaction)
+
+        .. testoutput:: DecayReaction
+
+            T -->
+    """
+
+    def __init__(
+        self,
+        reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
+        half_life: float,
+        volume: VolumeSubdomain,
+    ) -> None:
+        # forward_rate is a placeholder here: the half_life setter (called below)
+        # derives the decay constant and assigns it. Radioactive decay is
+        # irreversible, hence no product and no backward rate.
+        super().__init__(
+            reactant=reactant,
+            product=None,
+            forward_rate=0.0,
+            backward_rate=None,
+            volume=volume,
+        )
+        self.half_life = half_life
+
+    @property
+    def half_life(self):
+        return self._half_life
+
+    @half_life.setter
+    def half_life(self, value):
+        if not isinstance(value, float | int) or isinstance(value, bool):
+            raise TypeError(f"half_life must be a float, not {type(value).__name__}")
+        if value <= 0:
+            raise ValueError(f"half_life must be positive, not {value}")
+        self._half_life = value
+        # decay constant lambda = ln(2) / t_1/2, kept in sync with half_life
+        self.forward_rate = np.log(2) / value
+
+    def __repr__(self) -> str:
+        reactants = " + ".join([str(reactant) for reactant in self.reactant])
+        return f"{type(self).__name__}({reactants}, half_life={self.half_life})"
+
+    def __str__(self) -> str:
+        reactants = " + ".join([str(reactant) for reactant in self.reactant])
+        return f"{reactants} -->"
+
+
 class Reaction(ArrheniusReaction):
     """Deprecated alias for :class:`ArrheniusReaction`."""
 
