@@ -623,7 +623,10 @@ def test_weak_dirichlet_penalty_is_dimensionless(
 
 
 def test_custom_quantity_with_immobile_species():
-    """Test that a CustomQuantity can be defined on an immobile species."""
+    """
+    Test that a CustomQuantity can be defined on an immobile species.
+    See issue #1211
+    """
     my_model = F.HydrogenTransportProblem()
     my_model.mesh = F.Mesh1D([1, 2, 3])
 
