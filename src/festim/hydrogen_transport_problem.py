@@ -553,12 +553,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
                 # NOTE we need to change our D_global approach
                 D_kwargs = {
-                    f"D_{sp.name}": self._species_to_D_global[sp] for sp in self.species
+                    f"D_{sp.name}": self._species_to_D_global[sp]
+                    for sp in self.species
+                    if sp.mobile  # immobile species don't have a D_global
                 }
                 kwargs.update(D_kwargs)
-                kwargs["D"] = {sp.name: D_kwargs[f"D_{sp.name}"] for sp in self.species}
+                kwargs["D"] = {
+                    sp.name: D_kwargs[f"D_{sp.name}"]
+                    for sp in self.species
+                    if sp.mobile
+                }
                 if len(self.species) == 1:
-                    kwargs["D"] = kwargs[f"D_{self.species[0].name}"]
+                    if self.species[0].mobile:
+                        kwargs["D"] = kwargs[f"D_{self.species[0].name}"]
                 kwargs["x"] = ufl.SpatialCoordinate(self.mesh.mesh)
                 export.ufl_expr = export.expr(**kwargs)
 
