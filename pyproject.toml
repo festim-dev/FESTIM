@@ -31,7 +31,7 @@ classifiers = [
 
 [project.optional-dependencies]
 plot = ["pyvista"]
-test = ["pytest >= 5.4.3", "pytest-cov", "sympy", "ipyparallel"]
+test = ["pytest >= 5.4.3", "pytest-cov", "sympy", "scipy", "ipyparallel"]
 lint = ["ruff", "mypy"]
 docs = ["sphinx", "sphinx-book-theme", "sphinx-design", "matplotlib"]
 

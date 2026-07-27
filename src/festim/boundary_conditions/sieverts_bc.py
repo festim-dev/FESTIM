@@ -2,6 +2,7 @@ import ufl
 
 from festim import k_B
 from festim.boundary_conditions import FixedConcentrationBC
+from festim.enclosure.gas_species import GasSpecies
 
 
 def sieverts_law(T, S_0, E_S, pressure):
@@ -56,7 +57,12 @@ class SievertsBC(FixedConcentrationBC):
             pressure=lambda x, t: 1e5 + x[0] + t, species="H")
     """
 
-    def __init__(self, subdomain, S_0, E_S, pressure, species) -> None:
+    #: a diatomic gas molecule dissolves as two particles of the solid species
+    stoichiometry = 2
+
+    def __init__(
+        self, subdomain, S_0, E_S, pressure, species, enforce_weakly=False, penalty=None
+    ) -> None:
         # TODO find a way to have S_0 and E_S as fem.Constant
         # maybe in create_value()
         self.S_0 = S_0
@@ -65,7 +71,13 @@ class SievertsBC(FixedConcentrationBC):
 
         value = self.create_new_value_function()
 
-        super().__init__(value=value, species=species, subdomain=subdomain)
+        super().__init__(
+            value=value,
+            species=species,
+            subdomain=subdomain,
+            enforce_weakly=enforce_weakly,
+            penalty=penalty,
+        )
 
     def create_new_value_function(self):
         """Creates a new value function based on the pressure attribute.
@@ -76,6 +88,12 @@ class SievertsBC(FixedConcentrationBC):
         Returns:
             callable: the value function
         """
+        if isinstance(self.pressure, GasSpecies):
+            # the pressure is an unknown of the problem. Its fenics object does not
+            # exist yet, so it is looked up when the value function is called, which
+            # happens after the enclosure function spaces have been created.
+            return lambda T: sieverts_law(T, self.S_0, self.E_S, self.pressure.solution)
+
         if callable(self.pressure):
             arg_combinations = {
                 ("x",): lambda T, x=None: sieverts_law(

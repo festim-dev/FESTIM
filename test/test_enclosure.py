@@ -375,6 +375,99 @@ class TestGasPressureExport:
         assert F.GasPressure(field=H2).title == "H2 pressure (Pa)"
 
 
+class TestDirichletCoupling:
+    """Henry's and Sieverts' laws coupled to an enclosure pressure."""
+
+    def make_coupled_model(self, bc_class, enforce_weakly=True, penalty=100, **kwargs):
+        H2 = make_gas_species(name="H2", initial_pressure=1e5)
+        my_model, _, left, _ = make_model()
+        enclosure = F.Enclosure(
+            volume=1e-3, species=[H2], temperature=500.0, surfaces={left: 1.0}
+        )
+        my_model.enclosures = [enclosure]
+        key = "H_0" if bc_class is F.HenrysBC else "S_0"
+        energy = "E_H" if bc_class is F.HenrysBC else "E_S"
+        my_model.boundary_conditions = [
+            bc_class(
+                subdomain=left,
+                pressure=H2,
+                species=my_model.species[0],
+                enforce_weakly=enforce_weakly,
+                penalty=penalty,
+                **{key: 1e15, energy: 0.0},
+                **kwargs,
+            )
+        ]
+        return my_model, H2
+
+    @requires_dolfinx_011
+    @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
+    def test_strong_enforcement_raises(self, bc_class):
+        """The value depends on a real-space unknown, so it cannot be interpolated into
+        a fem.Function. Enabling weak enforcement silently would change the
+        discretisation behind the user's back, so it has to be asked for."""
+        my_model, _ = self.make_coupled_model(bc_class, enforce_weakly=False)
+        with pytest.raises(ValueError, match="can only be enforced weakly"):
+            my_model.initialise()
+
+    @requires_dolfinx_011
+    @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
+    def test_missing_penalty_raises(self, bc_class):
+        """There is no defensible default penalty, so it must be given explicitly."""
+        my_model, _ = self.make_coupled_model(bc_class, penalty=None)
+        with pytest.raises(ValueError, match="can only be enforced weakly"):
+            my_model.initialise()
+
+    @pytest.mark.parametrize("bc_class, expected", [(F.HenrysBC, 1), (F.SievertsBC, 2)])
+    def test_stoichiometry(self, bc_class, expected):
+        """Sieverts' law dissolves a diatomic molecule as two atoms, Henry's law
+        dissolves the molecule as such."""
+        assert bc_class.stoichiometry == expected
+
+    @requires_dolfinx_011
+    @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
+    def test_value_is_a_ufl_expression_of_the_pressure(self, bc_class):
+        """The value must stay a ufl expression carrying the pressure unknown, rather
+        than being interpolated, so that Newton sees the coupling."""
+        my_model, H2 = self.make_coupled_model(bc_class)
+        my_model.initialise()
+        bc = my_model.boundary_conditions[0]
+        assert not isinstance(bc.value_fenics, dolfinx.fem.Function)
+        assert H2.solution in ufl.algorithms.extract_coefficients(bc.value_fenics)
+
+    @requires_dolfinx_011
+    @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
+    def test_pressure_appears_in_its_own_balance(self, bc_class):
+        """The flux through the coupled surface must reach the pressure balance,
+        otherwise the pressure would be undetermined."""
+        my_model, H2 = self.make_coupled_model(bc_class)
+        my_model.initialise()
+        assert H2.solution in ufl.algorithms.extract_coefficients(H2.F)
+
+    @requires_dolfinx_011
+    @pytest.mark.parametrize("bc_class", [F.HenrysBC, F.SievertsBC])
+    def test_solid_solution_appears_in_the_pressure_balance(self, bc_class):
+        """The pressure balance is driven by the numerical flux, which depends on the
+        concentration in the solid."""
+        my_model, H2 = self.make_coupled_model(bc_class)
+        my_model.initialise()
+        volume = my_model.volume_subdomains[0]
+        assert volume.u in ufl.algorithms.extract_coefficients(H2.F)
+
+    def test_space_or_time_dependent_value_raises(self):
+        """A value that also depends on x or t would need interpolating, which is
+        exactly what a real-space coefficient forbids."""
+        bc = F.HenrysBC(
+            subdomain=F.SurfaceSubdomain(id=1),
+            H_0=1e15,
+            E_H=0.0,
+            pressure=lambda t: 1e5 + t,
+            species=F.Species("H"),
+        )
+        with pytest.raises(ValueError, match="cannot also"):
+            bc.create_value_ufl(temperature=500.0)
+
+
 @requires_dolfinx_010
 def test_enclosures_rejected_on_old_dolfinx():
     """On dolfinx < 0.11 the feature must fail early with a helpful message."""
