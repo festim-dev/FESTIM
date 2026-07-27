@@ -622,12 +622,15 @@ def test_weak_dirichlet_penalty_is_dimensionless(
     )
 
 
-def test_custom_quantity_with_immobile_species():
+@pytest.mark.parametrize(
+    "model_class", [F.HydrogenTransportProblem, F.HydrogenTransportProblemDiscontinuous]
+)
+def test_custom_quantity_with_immobile_species(model_class):
     """
     Test that a CustomQuantity can be defined on an immobile species.
     See issue #1211
     """
-    my_model = F.HydrogenTransportProblem()
+    my_model = model_class()
     my_model.mesh = F.Mesh1D([1, 2, 3])
 
     mat = F.Material(D_0=1.0, E_D=0.0)
@@ -641,8 +644,12 @@ def test_custom_quantity_with_immobile_species():
     my_model.subdomains = [vol]
 
     T = F.Species(name="T", mobile=False)
+    T_mobile = F.Species(name="T_mobile", mobile=True)
+    if isinstance(my_model, F.HydrogenTransportProblemDiscontinuous):
+        T.subdomains = [vol]
+        T_mobile.subdomains = [vol]
 
-    my_model.species = [T]
+    my_model.species = [T, T_mobile]
 
     my_model.temperature = 300
 
