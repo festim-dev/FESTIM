@@ -620,3 +620,46 @@ def test_weak_dirichlet_penalty_is_dimensionless(
     assert np.allclose(errors, errors[0], rtol=1e-8), (
         f"errors {errors} depend on the diffusion coefficient"
     )
+
+
+def test_custom_quantity_with_immobile_species():
+    """Test that a CustomQuantity can be defined on an immobile species."""
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = F.Mesh1D([1, 2, 3])
+
+    mat = F.Material(D_0=1.0, E_D=0.0)
+
+    vol = F.VolumeSubdomain1D(
+        borders=[1, 3],
+        id=1,
+        material=mat,
+    )
+
+    my_model.subdomains = [vol]
+
+    T = F.Species(name="T", mobile=False)
+
+    my_model.species = [T]
+
+    my_model.temperature = 300
+
+    def quantity_expr(**kwargs):
+        return 1
+
+    outlet_total = F.CustomQuantity(
+        expr=quantity_expr,
+        subdomain=vol,
+        title="Total T outlet rate",
+    )
+
+    my_model.exports = [outlet_total]
+
+    my_model.settings = F.Settings(
+        atol=1e8,
+        rtol=1e-8,
+        max_iterations=30,
+        transient=False,
+    )
+
+    my_model.initialise()
+    my_model.run()
