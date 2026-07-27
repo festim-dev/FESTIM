@@ -463,24 +463,48 @@ class ArrheniusReaction(GenericReaction):
         self.k_0 = k_0
         self.E_k = E_k
 
-        def forward_rate(T):
-            return self.k_0 * ufl.exp(-self.E_k / (k_B * T))
-
-        def backward_rate(T):
-            if self.E_p:
-                return self.p_0 * ufl.exp(-self.E_p / (k_B * T))
-            return self.p_0
-
         super().__init__(
             reactant=reactant,
             product=product,
-            forward_rate=forward_rate,
-            backward_rate=backward_rate if p_0 is not None else None,
+            forward_rate=None,
+            backward_rate=None,
             volume=volume,
         )
-        # set after product so the setters can check the two are consistent
         self.p_0 = p_0
         self.E_p = E_p
+
+    @property
+    def forward_rate(self):
+        if self._forward_rate is None:
+            self._forward_rate = Value(
+                lambda T: self.k_0 * ufl.exp(-self.E_k / (k_B * T))
+            )
+        return self._forward_rate
+
+    @forward_rate.setter
+    def forward_rate(self, value):
+        self._forward_rate = None
+
+    @property
+    def backward_rate(self):
+        if self._backward_rate is None:
+            if self.product:
+                self._backward_rate = Value(
+                    lambda T: (
+                        self.p_0 * ufl.exp(-self.E_p / (k_B * T))
+                        if self.E_p
+                        else self.p_0
+                    )
+                )
+            else:
+                # no product means no backward rate (a Value wrapping None)
+                self._backward_rate = Value(None)
+        return self._backward_rate
+
+    @backward_rate.setter
+    def backward_rate(self, value):
+        # derived from p_0/E_p; assignment only invalidates the cached Value
+        self._backward_rate = None
 
     @property
     def p_0(self):
@@ -533,7 +557,8 @@ class DecayReaction(GenericReaction):
 
     Arguments:
         reactant: The decaying reactant species.
-        half_life: The decay half-life in seconds. Must be a positive float.
+        half_life: The decay half-life, in the simulation's time unit. Must be a
+            positive float.
         volume: The volume subdomain where the decay takes place.
         product: The decay product(s). ``None`` if the products are not tracked.
 
@@ -582,14 +607,26 @@ class DecayReaction(GenericReaction):
         volume: VolumeSubdomain,
         product: Species | list[Species] | None = None,
     ) -> None:
+
+        self.half_life = half_life
+
         super().__init__(
             reactant=reactant,
             product=product,
-            forward_rate=0.0,
+            forward_rate=None,
             backward_rate=None,
             volume=volume,
         )
-        self.half_life = half_life
+
+    @property
+    def forward_rate(self):
+        if self._forward_rate is None:
+            self._forward_rate = Value(ufl.ln(2) / self.half_life)
+        return self._forward_rate
+
+    @forward_rate.setter
+    def forward_rate(self, value):
+        self._forward_rate = None
 
     @property
     def half_life(self):
@@ -602,8 +639,7 @@ class DecayReaction(GenericReaction):
         if value <= 0:
             raise ValueError(f"half_life must be positive, not {value}")
         self._half_life = value
-        # decay constant lambda = ln(2) / t_1/2, kept in sync with half_life
-        self.forward_rate = ufl.ln(2) / value
+        self._forward_rate = None
 
     def __repr__(self) -> str:
         reactants = " + ".join([str(reactant) for reactant in self.reactant])
