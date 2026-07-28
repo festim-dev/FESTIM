@@ -150,13 +150,6 @@ class GenericReaction:
         self.product = product
         self.forward_rate = forward_rate
         self.backward_rate = backward_rate
-        # a species mapping may be attached directly to a rate coefficient Value
-        # (its species_dependent_value); remember that so the arg_to_species setter
-        # can refuse to receive the same information twice
-        self._rate_has_own_species_map = bool(
-            self.forward_rate.species_dependent_value
-            or self.backward_rate.species_dependent_value
-        )
         self.arg_to_species = arg_to_species
 
     @property
@@ -215,6 +208,16 @@ class GenericReaction:
         self._backward_rate = value if isinstance(value, Value) else Value(value)
 
     @property
+    def _rate_has_own_species_map(self) -> bool:
+        """True if a species mapping is attached directly to a rate coefficient
+        Value (its species_dependent_value). Computed live from the rates so it
+        can never desync from them."""
+        return bool(
+            self.forward_rate.species_dependent_value
+            or self.backward_rate.species_dependent_value
+        )
+
+    @property
     def arg_to_species(self):
         return self._arg_to_species
 
@@ -222,7 +225,7 @@ class GenericReaction:
     def arg_to_species(self, value):
         value = value or {}
         # the species mapping must be given in exactly one place
-        if getattr(self, "_rate_has_own_species_map", False):
+        if self._rate_has_own_species_map:
             if value:
                 raise ValueError(
                     "a species mapping was given both to a rate coefficient (via the "
