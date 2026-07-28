@@ -163,13 +163,7 @@ class Value:
     """
 
     input_value: (
-        float
-        | int
-        | fem.Constant
-        | np.ndarray
-        | fem.Expression
-        | ufl.core.expr.Expr
-        | fem.Function
+        float | int | fem.Constant | fem.Expression | ufl.core.expr.Expr | fem.Function
     )
     species_dependent_value: dict[str, "Species"] | None
 
@@ -206,7 +200,6 @@ class Value:
             float
             | int
             | fem.Constant
-            | np.ndarray
             | fem.Expression
             | ufl.core.expr.Expr
             | fem.Function,
@@ -216,7 +209,7 @@ class Value:
             self._input_value = value
         else:
             raise TypeError(
-                "Value must be a float, int, fem.Constant, np.ndarray, fem.Expression,"
+                "Value must be a float, int, fem.Constant, fem.Expression,"
                 f" ufl.core.expr.Expr, fem.Function, or callable not {value}"
             )
 
