@@ -122,7 +122,7 @@ def test_error_raised_wehn_input_value_is_not_accepted():
     with pytest.raises(
         TypeError,
         match=(
-            r"Value must be a float, int, fem.Constant, np.ndarray, fem.Expression, "
+            r"Value must be a float, int, fem.Constant, fem.Expression, "
             r"ufl.core.expr.Expr, fem.Function, or callable not coucou"
         ),
     ):
@@ -246,7 +246,6 @@ def test_ValueError_raised_when_callable_returns_wrong_type():
     [
         1,
         1.0,
-        np.array([1.0, 2.0, 3.0]),
         lambda t: t,
         lambda T: 1.0 + T,
         lambda x: 1.0 + x[0],

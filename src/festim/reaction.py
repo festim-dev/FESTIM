@@ -3,7 +3,6 @@ from collections.abc import Callable
 from functools import reduce
 from operator import mul
 
-import numpy as np
 import ufl
 from dolfinx import fem
 
