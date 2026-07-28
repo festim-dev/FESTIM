@@ -155,7 +155,8 @@ for i, f in enumerate(F_2):
 du = ufl.TrialFunctions(W)
 
 
-# This is a somewhat hacky workaround
+# This is a somewhat hacky workaround but it runs and gives the same result
+# as the original mwe (see inteface_trapping.py)
 def prune_zero_blocks(J):
     """Replace structurally zero Jacobian blocks by None.
 
@@ -180,8 +181,8 @@ J_2 = prune_zero_blocks(
     ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
 )
 
-# NOTE Using these instead and commenting out the prune_zero_blocks() setup above
-# leads to the RuntimeError: Incompatible mesh. argument entity_maps must be provided.
+# NOTE Using th two liens below insteead of the prune_zero_blocks() setup above
+# leads to "RuntimeError: Incompatible mesh. argument entity_maps must be provided.""
 
 # J_1 = ufl.extract_blocks(ufl.derivative(F, (c_Be, c_BeO, c_int), du))
 # J_2 = ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
