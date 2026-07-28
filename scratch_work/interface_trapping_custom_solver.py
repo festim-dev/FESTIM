@@ -4,6 +4,10 @@ import dolfinx
 import dolfinx.fem.petsc
 import numpy as np
 import ufl
+from petsc_solver_for_manifold_derivatives import (
+    custom_assemble_jacobian,
+    custom_assemble_residual,
+)
 
 # Parameters
 L = 10.0
@@ -11,11 +15,12 @@ x_int = 5.0
 D_Be = 1.0
 D_BeO = 1.0
 k1 = 1.0
-k2 = 1
+k2 = 1.0
 k3 = 1.0
-k4 = 1
+k4 = 1.0
 lam = 1.0
-c_int_max = 1
+c_int_max = 1.0
+D_int = 1.0  # diffusivity along the interface
 
 dt = 0.1
 T = 10.0
@@ -60,7 +65,7 @@ mesh_int, int_emap, _, _ = dolfinx.mesh.create_submesh(
     mesh, fdim, facet_tags.find(INT_TAG)
 )
 
-# build interface integration entities ordered so "+" = Be, "-" = BeO
+# ----- build interface integration entities ordered so "+" = Be, "-" = BeO -----
 imap = mesh.topology.index_map(vdim)
 n_cells = imap.size_local + imap.num_ghosts
 cell_marker = np.zeros(n_cells, dtype=np.int32)
@@ -106,44 +111,85 @@ dS = ufl.Measure("dS", domain=mesh, subdomain_data=facet_tags)
 
 # Residual (backward Euler)
 P, M = "+", "-"  # P = Be side, M = BeO side
-F = 0
 
 theta_P = c_int(P) / c_int_max
 theta_M = c_int(M) / c_int_max
 
-# Be bulk:  dc/dt = div(D grad c)  + interface flux  -D grad c . n = k1 cA - k2 ci
+# --- group 1: integration domain = parent mesh ---------------------
+F = 0
 F += ((c_Be - c_Be_n) / dt) * v_Be * dx_Be
 F += D_Be * ufl.inner(ufl.grad(c_Be), ufl.grad(v_Be)) * dx_Be
 F += (k1 * c_Be(P) * (1 - theta_P) - k2 * c_int(P)) * v_Be(P) * dS(INT_TAG)
 
-# BeO bulk:  -D grad c . n = k3 cB - k4 ci
 F += ((c_BeO - c_BeO_n) / dt) * v_BeO * dx_BeO
 F += D_BeO * ufl.inner(ufl.grad(c_BeO), ufl.grad(v_BeO)) * dx_BeO
-F += (k3 * c_BeO(M) * (1 - theta_M) - k4 * c_int(P)) * v_BeO(M) * dS(INT_TAG)
+F += (k3 * c_BeO(M) * (1 - theta_M) - k4 * c_int(M)) * v_BeO(M) * dS(INT_TAG)
 
-# Interface:  lambda dci/dt = (k1 cA - k2 ci) + (k3 cB - k4 ci)
-F += lam * ((c_int(P) - c_int_n(P)) / dt) * v_int(P) * dS(INT_TAG)
-F += (
+# --- group 2: integration domain = mesh_int ------------------------
+F += lam * ((c_int - c_int_n) / dt) * v_int * dx_int  # trapping
+F += D_int * ufl.inner(ufl.grad(c_int), ufl.grad(v_int)) * dx_int  # diffusion
+
+# interface coupling: stays on dS
+F_coupling = (
     -(
         k1 * c_Be(P) * (1 - theta_P)
         - k2 * c_int(P)
         + k3 * c_BeO(M) * (1 - theta_M)
-        - k4 * c_int(P)
+        - k4 * c_int(M)
     )
     * v_int(P)
     * dS(INT_TAG)
 )
 
-# Blocks + Jacobian
-residual = ufl.extract_blocks(F)
+emaps = [Be_emap, BeO_emap, int_emap]
+
+residual_1 = ufl.extract_blocks(F)
+residual_2 = ufl.extract_blocks(F_coupling)
+
+F_1 = dolfinx.fem.form(residual_1, entity_maps=emaps)
+F_2 = dolfinx.fem.form(residual_2, entity_maps=emaps)
+for i, f in enumerate(F_2):
+    if f is None:
+        F_2[i] = dolfinx.fem.form(ufl.ZeroBaseForm((vh[i],)))
 
 du = ufl.TrialFunctions(W)
-J = ufl.extract_blocks(ufl.derivative(F, (c_Be, c_BeO, c_int), du))
 
-for i in range(len(J)):
-    for j in range(len(J)):
-        if J[i][j] is None:
-            J[i][j] = ufl.ZeroBaseForm((du[j], vh[i]))
+
+# This is a somewhat hacky workaround
+def prune_zero_blocks(J):
+    """Replace structurally zero Jacobian blocks by None.
+
+    ``ufl.extract_blocks`` returns (zero) derivative forms for every block.
+    Blocks like dJ(interface)/dc_Be couple two *sibling* submeshes with no
+    entity map relating them, so they cannot be compiled; since they are
+    identically zero they are dropped instead.
+    """
+    J = [list(row) for row in J]
+    for i in range(len(J)):
+        for j in range(len(J[i])):
+            if (
+                J[i][j] is not None
+                and ufl.algorithms.expand_derivatives(J[i][j]).empty()
+            ):
+                J[i][j] = None
+    return J
+
+
+J_1 = prune_zero_blocks(ufl.extract_blocks(ufl.derivative(F, (c_Be, c_BeO, c_int), du)))
+J_2 = prune_zero_blocks(
+    ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
+)
+
+
+# J_1 = ufl.extract_blocks(ufl.derivative(F, (c_Be, c_BeO, c_int), du))
+# J_2 = ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
+
+jacobian_1 = dolfinx.fem.form(J_1, entity_maps=emaps)
+jacobian_2 = dolfinx.fem.form(J_2, entity_maps=emaps)
+for i in range(len(jacobian_2)):
+    if jacobian_2[i][i] is None:
+        jacobian_2[i][i] = dolfinx.fem.form(ufl.ZeroBaseForm((du[i], vh[i])))
+
 
 # Dirichlet BCs:  left (Be, x=0) c=1   ;   right (BeO, x=L) c=0
 left_dofs = dolfinx.fem.locate_dofs_geometrical(V_Be, lambda x: np.isclose(x[0], 0.0))
@@ -152,14 +198,37 @@ bc_left = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(1.0), left_dofs, V
 right_dofs = dolfinx.fem.locate_dofs_geometrical(V_BeO, lambda x: np.isclose(x[0], L))
 bc_right = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0), right_dofs, V_BeO)
 
-# Nonlinear problem (entity maps relate all submeshes through the parent)
 problem = dolfinx.fem.petsc.NonlinearProblem(
-    residual,
+    residual_1,
     [c_Be, c_BeO, c_int],
-    J=J,
+    J=J_1,
     bcs=[bc_left, bc_right],
     petsc_options_prefix="be_beo_",
-    entity_maps=[Be_emap, BeO_emap, int_emap],
+    entity_maps=emaps,
+)
+
+_blocks = problem.b.getAttr("_blocks")
+problem.solver.setFunction(
+    custom_assemble_residual,
+    problem.b,
+    kargs={
+        "u": (c_Be, c_BeO, c_int),
+        "residual": [F_1, F_2],
+        "jacobian": [jacobian_1, jacobian_2],
+        "bcs": [bc_left, bc_right],
+        "_blocks": _blocks,
+    },
+)
+problem.solver.setJacobian(
+    custom_assemble_jacobian,
+    problem.A,
+    problem.P_mat,
+    kargs={
+        "u": (c_Be, c_BeO, c_int),
+        "jacobian": [jacobian_1, jacobian_2],
+        "preconditioner": None,
+        "bcs": [bc_left, bc_right],
+    },
 )
 
 # Time loop

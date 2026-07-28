@@ -11,11 +11,11 @@ x_int = 5.0
 D_Be = 1.0
 D_BeO = 1.0
 k1 = 1.0
-k2 = 1
+k2 = 1.0
 k3 = 1.0
-k4 = 1
+k4 = 1.0
 lam = 1.0
-c_int_max = 1
+c_int_max = 1.0
 
 dt = 0.1
 T = 10.0
@@ -60,7 +60,7 @@ mesh_int, int_emap, _, _ = dolfinx.mesh.create_submesh(
     mesh, fdim, facet_tags.find(INT_TAG)
 )
 
-# ----- build interface integration entities ordered so "+" = Be, "-" = BeO -----
+# build interface integration entities ordered so "+" = Be, "-" = BeO
 imap = mesh.topology.index_map(vdim)
 n_cells = imap.size_local + imap.num_ghosts
 cell_marker = np.zeros(n_cells, dtype=np.int32)
@@ -101,9 +101,8 @@ v_Be, v_BeO, v_int = vh
 # Measures
 dx_Be = ufl.Measure("dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=BE_TAG)
 dx_BeO = ufl.Measure("dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=BEO_TAG)
-ds = ufl.ds(domain=mesh, subdomain_data=facet_tags)
-
 dx_int = ufl.Measure("dx", domain=mesh_int)
+dS = ufl.Measure("dS", domain=mesh, subdomain_data=facet_tags)
 
 # Residual (backward Euler)
 P, M = "+", "-"  # P = Be side, M = BeO side
@@ -115,16 +114,15 @@ theta_M = c_int(M) / c_int_max
 # Be bulk:  dc/dt = div(D grad c)  + interface flux  -D grad c . n = k1 cA - k2 ci
 F += ((c_Be - c_Be_n) / dt) * v_Be * dx_Be
 F += D_Be * ufl.inner(ufl.grad(c_Be), ufl.grad(v_Be)) * dx_Be
-F += (k1 * c_Be(P) * (1 - theta_P) - k2 * c_int(P)) * v_Be(P) * ds(INT_TAG)
+F += (k1 * c_Be(P) * (1 - theta_P) - k2 * c_int(P)) * v_Be(P) * dS(INT_TAG)
 
 # BeO bulk:  -D grad c . n = k3 cB - k4 ci
 F += ((c_BeO - c_BeO_n) / dt) * v_BeO * dx_BeO
 F += D_BeO * ufl.inner(ufl.grad(c_BeO), ufl.grad(v_BeO)) * dx_BeO
-F += (k3 * c_BeO(M) * (1 - theta_M) - k4 * c_int(P)) * v_BeO(M) * ds(INT_TAG)
+F += (k3 * c_BeO(M) * (1 - theta_M) - k4 * c_int(P)) * v_BeO(M) * dS(INT_TAG)
 
 # Interface:  lambda dci/dt = (k1 cA - k2 ci) + (k3 cB - k4 ci)
-# NOTE: @jorgensd I'm not happy about using dS here but it works!
-F += lam * ((c_int(P) - c_int_n(P)) / dt) * v_int(P) * ds(INT_TAG)
+F += lam * ((c_int(P) - c_int_n(P)) / dt) * v_int(P) * dS(INT_TAG)
 F += (
     -(
         k1 * c_Be(P) * (1 - theta_P)
@@ -133,7 +131,7 @@ F += (
         - k4 * c_int(P)
     )
     * v_int(P)
-    * ds(INT_TAG)
+    * dS(INT_TAG)
 )
 
 # Blocks + Jacobian
