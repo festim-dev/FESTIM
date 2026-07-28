@@ -46,10 +46,10 @@ class GenericReaction:
             None, the reaction is irreversible.
         arg_to_species: A dictionary mapping argument names in a callable rate
             coefficient to festim.Species objects, allowing a coefficient to
-            depend on species concentrations. It must map exactly the arguments
-            of the forward and backward coefficients other than the reserved
-            ``t``/``x``/``T``: every such argument must appear as a key, and every
-            key must be such an argument. Every value must be a festim.Species.
+            depend on species concentrations. Every argument of the forward and
+            backward coefficients other than the reserved ``t``/``x``/``T`` must
+            appear as a key; extra keys that no coefficient uses are ignored with a
+            warning. Every value must be a festim.Species.
             Alternatively the mapping may be attached directly to a rate
             coefficient passed as a festim.Value (its ``species_dependent_value``),
             but the two ways are mutually exclusive: giving a mapping both here and
@@ -242,14 +242,14 @@ class GenericReaction:
                     "arg_to_species values must be a festim.Species, not "
                     + f"{type(spe).__name__} (for key {name!r})"
                 )
-        # the species-dependent arguments of the rate coefficients are their
-        # callable arguments other than the reserved t/x/T handled by festim.Value
+
         reserved = {"t", "x", "T"}
         species_args = set()
         for rate in (self.forward_rate, self.backward_rate):
             if callable(rate.input_value):
                 code = rate.input_value.__code__
                 species_args |= set(code.co_varnames[: code.co_argcount]) - reserved
+
         # 1. a rate coefficient must not depend on a species missing from the mapping
         unmapped = species_args - set(value)
         if unmapped:
@@ -257,16 +257,18 @@ class GenericReaction:
                 f"the reaction rate coefficients depend on {sorted(unmapped)}, "
                 "which must be given in arg_to_species"
             )
-        # 2. the mapping must not contain a key used by no rate coefficient
+
+        # 2. a key used by no rate coefficient is harmless (festim.Value ignores
+        # arguments its callable does not declare), so only warn about it
         unused = set(value) - species_args
         if unused:
-            raise ValueError(
+            warnings.warn(
                 f"arg_to_species contains {sorted(unused)}, which is not an "
-                "argument of any reaction rate coefficient"
+                "argument of any reaction rate coefficient; it will be ignored",
+                stacklevel=2,
             )
         self._arg_to_species = value
-        # hand the same mapping to each coefficient; each festim.Value ignores the
-        # keys its own callable does not declare (see helpers.as_mapped_function)
+
         self.forward_rate.species_dependent_value = value
         self.backward_rate.species_dependent_value = value
 

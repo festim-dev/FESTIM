@@ -470,11 +470,11 @@ def test_arg_to_species_raises_error_when_rate_depends_on_unmapped_species():
         )
 
 
-def test_arg_to_species_raises_error_with_orphan_mapping():
-    """Test a value error is raised when an arg_to_species key is not a species
-    argument of any rate coefficient."""
-    with pytest.raises(
-        ValueError,
+def test_arg_to_species_warns_with_orphan_mapping():
+    """Test a warning is raised when an arg_to_species key is not a species
+    argument of any rate coefficient (the extra key is harmless and ignored)."""
+    with pytest.warns(
+        UserWarning,
         match=r"arg_to_species contains \['c_C'\], which is not an argument",
     ):
         F.GenericReaction(
