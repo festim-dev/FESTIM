@@ -180,6 +180,8 @@ J_2 = prune_zero_blocks(
     ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
 )
 
+# NOTE Using these instead and commenting out the prune_zero_blocks() setup above
+# leads to the RuntimeError: Incompatible mesh. argument entity_maps must be provided.
 
 # J_1 = ufl.extract_blocks(ufl.derivative(F, (c_Be, c_BeO, c_int), du))
 # J_2 = ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
