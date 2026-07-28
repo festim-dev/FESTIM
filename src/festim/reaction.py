@@ -98,7 +98,6 @@ class GenericReaction:
     forward_rate: (
         float
         | int
-        | np.ndarray
         | Callable
         | fem.Constant
         | fem.Expression
@@ -109,7 +108,6 @@ class GenericReaction:
     backward_rate: (
         float
         | int
-        | np.ndarray
         | Callable
         | fem.Constant
         | fem.Expression
@@ -126,7 +124,6 @@ class GenericReaction:
         product: Species | list[Species] | None,
         forward_rate: float
         | int
-        | np.ndarray
         | Callable
         | fem.Constant
         | fem.Expression
@@ -135,7 +132,6 @@ class GenericReaction:
         | Value,
         backward_rate: float
         | int
-        | np.ndarray
         | Callable
         | fem.Constant
         | fem.Expression
