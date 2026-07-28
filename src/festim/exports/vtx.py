@@ -9,7 +9,7 @@ import numpy as np
 import ufl
 from dolfinx import fem, io
 
-from festim import k_B as _k_B
+from festim import k_B
 from festim.reaction import Reaction
 from festim.species import ImplicitSpecies, Species
 from festim.subdomain.interface import Interface, interface_condition_term
@@ -518,7 +518,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
 
         # Compute f_i = (c_i / K_S_i) ^ {1, 2} on the interface submesh
         K_S_0 = subdomain_0.material.get_K_S_0(self.field) * ufl.exp(
-            -subdomain_0.material.get_E_K_S(self.field) / (_k_B * T)
+            -subdomain_0.material.get_E_K_S(self.field) / (k_B * T)
         )
         f0 = interface_condition_term(
             self._c_0_interface,
@@ -528,7 +528,7 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         )
 
         K_S_1 = subdomain_1.material.get_K_S_0(self.field) * ufl.exp(
-            -subdomain_1.material.get_E_K_S(self.field) / (_k_B * T)
+            -subdomain_1.material.get_E_K_S(self.field) / (k_B * T)
         )
         f1 = interface_condition_term(
             self._c_1_interface,
@@ -538,15 +538,14 @@ class VTXInterfaceResidualExport(ExportBaseClass):
         )
 
         self.f_0_expr = fem.Expression(
-            f0, get_interpolation_points(self.function.function_space.element)
+            f0, self.function.function_space.element.interpolation_points
         )
         self.f_1_expr = fem.Expression(
-            f1, get_interpolation_points(self.function.function_space.element)
+            f1, self.function.function_space.element.interpolation_points
         )
 
         self.residual_expr = fem.Expression(
-            abs(f1 - f0),
-            get_interpolation_points(self.function.function_space.element),
+            abs(f1 - f0), self.function.function_space.element.interpolation_points
         )
 
 
@@ -584,9 +583,9 @@ class ReactionRateExport(CustomFieldExport):
         def expression(T, **kwargs):
             _reactant_names = [kwargs[name] for name in reactant_names]
             _product_names = [kwargs[name] for name in product_names]
-            k = reaction.k_0 * ufl.exp(-reaction.E_k / (_k_B * T))
+            k = reaction.k_0 * ufl.exp(-reaction.E_k / (k_B * T))
             if reaction.p_0 and reaction.E_p:
-                p = reaction.p_0 * ufl.exp(-reaction.E_p / (_k_B * T))
+                p = reaction.p_0 * ufl.exp(-reaction.E_p / (k_B * T))
             elif reaction.p_0:
                 p = reaction.p_0
             else:
