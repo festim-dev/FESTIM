@@ -149,19 +149,28 @@ for i in range(len(J)):
         if J[i][j] is None:
             J[i][j] = ufl.ZeroBaseForm((du[j], vh[i]))
 
-# Dirichlet BCs:  left (Be, x=0) c=1   ;   right (BeO, x=L) c=0
+# Dirichlet BCs: left (Be, x=0) c=1 ; right (BeO, x=L) c=0 ; int (int, x=L/2, y=0) c=0
 left_dofs = dolfinx.fem.locate_dofs_geometrical(V_Be, lambda x: np.isclose(x[0], 0.0))
 bc_left = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(1.0), left_dofs, V_Be)
 
 right_dofs = dolfinx.fem.locate_dofs_geometrical(V_BeO, lambda x: np.isclose(x[0], L))
 bc_right = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0), right_dofs, V_BeO)
 
+mesh_int.topology.create_connectivity(0, mesh_int.topology.dim)
+bottom_vertex = dolfinx.mesh.locate_entities_boundary(
+    mesh_int, 0, lambda x: np.isclose(x[1], 0.0)
+)
+int_dofs = dolfinx.fem.locate_dofs_topological(V_int, 0, bottom_vertex)
+bc_int = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0), int_dofs, V_int)
+
+bcs = [bc_left, bc_right, bc_int]
+
 # Nonlinear problem (entity maps relate all submeshes through the parent)
 problem = dolfinx.fem.petsc.NonlinearProblem(
     residual,
     [c_Be, c_BeO, c_int],
     J=J,
-    bcs=[bc_left, bc_right],
+    bcs=bcs,
     petsc_options_prefix="be_beo_",
     entity_maps=[Be_emap, BeO_emap, int_emap],
 )

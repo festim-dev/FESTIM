@@ -190,8 +190,6 @@ bottom_vertex = dolfinx.mesh.locate_entities_boundary(
 )
 int_dofs = dolfinx.fem.locate_dofs_topological(V_int, 0, bottom_vertex)
 bc_int = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0), int_dofs, V_int)
-print(int_dofs, V_int.tabulate_dof_coordinates()[int_dofs])
-# expect exactly one dof at [5., 0., 0.]
 
 bcs = [bc_left, bc_right, bc_int]
 
