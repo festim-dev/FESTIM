@@ -199,6 +199,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
         self._temperature_as_function = None
         self._species_to_D_global = None
         self._species_to_D_global_expr = None
+        self._surface_to_volume = None
 
     @property
     def temperature(self):
@@ -552,12 +553,19 @@ class HydrogenTransportProblem(problem.ProblemBase):
 
                 # NOTE we need to change our D_global approach
                 D_kwargs = {
-                    f"D_{sp.name}": self._species_to_D_global[sp] for sp in self.species
+                    f"D_{sp.name}": self._species_to_D_global[sp]
+                    for sp in self.species
+                    if sp.mobile  # immobile species don't have a D_global
                 }
                 kwargs.update(D_kwargs)
-                kwargs["D"] = {sp.name: D_kwargs[f"D_{sp.name}"] for sp in self.species}
+                kwargs["D"] = {
+                    sp.name: D_kwargs[f"D_{sp.name}"]
+                    for sp in self.species
+                    if sp.mobile
+                }
                 if len(self.species) == 1:
-                    kwargs["D"] = kwargs[f"D_{self.species[0].name}"]
+                    if self.species[0].mobile:
+                        kwargs["D"] = kwargs[f"D_{self.species[0].name}"]
                 kwargs["x"] = ufl.SpatialCoordinate(self.mesh.mesh)
                 export.ufl_expr = export.expr(**kwargs)
 
@@ -583,6 +591,43 @@ class HydrogenTransportProblem(problem.ProblemBase):
             )
             temperature_field.interpolate(temperature_expr)
             return temperature_field
+
+    def volume_subdomain_of_surface(
+        self, surface: _subdomain.SurfaceSubdomain
+    ) -> _subdomain.VolumeSubdomain:
+        """Returns the volume subdomain a surface subdomain belongs to.
+
+        The mapping is deduced from the mesh connectivity and the meshtags, and is
+        computed once then cached.
+
+        Args:
+            surface: the surface subdomain
+
+        Returns:
+            the volume subdomain the surface belongs to
+
+        Raises:
+            ValueError: if the surface cannot be mapped to a volume subdomain
+        """
+        if self._surface_to_volume is None:
+            mesh = self.mesh.mesh
+            tdim = mesh.topology.dim
+            mesh.topology.create_connectivity(tdim - 1, tdim)
+            self._surface_to_volume = _subdomain.map_surface_to_volume_subdomains(
+                ft=self.facet_meshtags,
+                ct=self.volume_meshtags,
+                facet_to_cell=mesh.topology.connectivity(tdim - 1, tdim),
+                volume_subdomains=self.volume_subdomains,
+                surface_subdomains=self.surface_subdomains,
+                comm=mesh.comm,
+            )
+
+        if surface not in self._surface_to_volume:
+            raise ValueError(
+                f"Surface subdomain {surface.id} could not be mapped to a volume "
+                "subdomain. Check that its id matches a tagged facet of the mesh."
+            )
+        return self._surface_to_volume[surface]
 
     def define_D_global(self, species):
         """Defines the global diffusion coefficient for a given species.
@@ -913,7 +958,12 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 if bc.enforce_weakly:
                     u = bc.species.solution
                     v = bc.species.test_function
-                    self.formulation += bc.weak_formulation(u, v, self.ds)
+                    # D is set by the material of the volume the surface belongs to
+                    vol = self.volume_subdomain_of_surface(bc.subdomain)
+                    D = vol.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                    self.formulation += bc.weak_formulation(u, v, self.ds, D)
         for adv_term in self.advection_terms:
             # create vector functionspace based on the elements in the mesh
 
@@ -1504,15 +1554,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                for subdomain in source.species.subdomains:
-                    V = source.species.subdomain_to_function_space[subdomain]
+                V = source.species.subdomain_to_function_space[source.volume]
 
-                    source.value.convert_input_value(
-                        function_space=V,
-                        t=self.t,
-                        temperature=self.temperature_fenics,
-                        up_to_ufl_expr=True,
-                    )
+                source.value.convert_input_value(
+                    function_space=V,
+                    t=self.t,
+                    temperature=self.temperature_fenics,
+                    up_to_ufl_expr=True,
+                    subdomain=source.volume,
+                )
 
     def convert_advection_term_to_fenics_objects(self):
         """For each advection term convert the input value."""
@@ -1529,6 +1579,17 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 bc._volume_subdomain = self.surface_to_volume[bc.subdomain]
 
         super().define_boundary_conditions()
+
+    def create_dirichletbc_value_ufl(self, bc):
+        # as in create_dirichletbc_form, a temperature given as a function lives on the
+        # submesh of the volume the surface belongs to (see issue #1007)
+        volume_subdomain = self.surface_to_volume[bc.subdomain]
+        if isinstance(self.temperature_fenics, fem.Function):
+            temperature = volume_subdomain.sub_T
+        else:
+            temperature = self.temperature_fenics
+
+        bc.create_value_ufl(temperature=temperature)
 
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """Creates the variational formulation for each subdomain and stores it in
@@ -1612,10 +1673,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     v = bc.species.subdomain_to_test_function[subdomain]
                     form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
             if isinstance(bc, boundary_conditions.FixedConcentrationBC):
-                if bc.enforce_weakly:
+                # as for fluxes, only the subdomain owning the surface gets the term,
+                # and its material is the one setting D there
+                if (
+                    bc.enforce_weakly
+                    and subdomain == self.surface_to_volume[bc.subdomain]
+                ):
                     u = bc.species.subdomain_to_solution[subdomain]
                     v = bc.species.subdomain_to_test_function[subdomain]
-                    form += bc.weak_formulation(u, v, self.ds)
+                    D = subdomain.material.get_diffusion_coefficient(
+                        self.mesh.mesh, self.temperature_fenics, bc.species
+                    )
+                    form += bc.weak_formulation(u, v, self.ds, D)
 
         # add volumetric sources
         for source in self.sources:
@@ -1724,8 +1793,22 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         f"{bc} is coupled to {pressure}, which does not belong to any "
                         "enclosure of the model"
                     )
-                # NOTE: is this still needed?
                 bc._gas_species = pressure
+
+                if isinstance(bc, boundary_conditions.FixedConcentrationBC):
+                    # A Dirichlet value that depends on the pressure cannot be
+                    # interpolated into a fem.Function, so it can only be enforced
+                    # weakly. Enabling that silently would change the discretisation
+                    # behind the user's back, and there is no defensible default
+                    # penalty, so ask for both explicitly.
+                    if not bc.enforce_weakly or bc.penalty is None:
+                        raise ValueError(
+                            f"{type(bc).__name__} on surface {bc.subdomain.id} is "
+                            f"coupled to {pressure}, whose pressure is an unknown of "
+                            "the problem. Such a boundary condition can only be "
+                            "enforced weakly: pass enforce_weakly=True and a penalty "
+                            "(a dimensionless value of order 10-100)."
+                        )
 
     def define_enclosure_function_spaces(self):
         """Creates a real function space, a solution and a previous solution for each
@@ -1803,6 +1886,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 # partials share the same expression and differ only in which species
                 # of the solid they apply to.
                 yield -bc.flux_bcs[0].value_fenics
+
+            if (
+                isinstance(bc, boundary_conditions.FixedConcentrationBC)
+                and getattr(bc, "_gas_species", None) is gas_species
+            ):
+                # A weakly enforced Dirichlet BC only satisfies u = value up to O(h^p),
+                # so the raw -D grad(u).n is not what the discrete scheme conserves.
+                # Using the numerical flux instead makes what the solid loses equal what
+                # the gas gains exactly, rather than to within the Nitsche consistency
+                # error, which would otherwise accumulate in the pressure.
+                volume_subdomain = self.surface_to_volume[surface]
+                u = bc.species.subdomain_to_solution[volume_subdomain]
+                D = volume_subdomain.material.get_diffusion_coefficient(
+                    self.mesh.mesh, self.temperature_fenics, bc.species
+                )
+                # the flux is in particles of the solid species per second per m2;
+                # the stoichiometry converts it to molecules of the gas species
+                yield bc.numerical_flux(u, D, self.mesh.mesh) / bc.stoichiometry
 
     def create_enclosure_formulation(self, gas_species: _GasSpecies):
         """Creates the variational formulation of the pressure balance of a gas species
@@ -2292,10 +2393,21 @@ class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
                     f"{type(bc)} not implemented for "
                     f"HydrogenTransportProblemDiscontinuousChangeVar"
                 )
+            # with the change of variable, the solution of a mobile species is the
+            # chemical potential and not the concentration, so a species-dependent
+            # value would silently be given the wrong quantity
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
                 if bc.species_dependent_value:
                     raise ValueError(
                         f"{type(bc)} concentration-dependent not implemented for "
+                        f"HydrogenTransportProblemDiscontinuousChangeVar"
+                    )
+
+        for source in self.sources:
+            if isinstance(source, _source.ParticleSource):
+                if source.value.species_dependent:
+                    raise ValueError(
+                        f"{type(source)} concentration-dependent not implemented for "
                         f"HydrogenTransportProblemDiscontinuousChangeVar"
                     )
 

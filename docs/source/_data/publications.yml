@@ -52,4 +52,11 @@
 
 
 - doi: "10.1080/15361055.2026.2686572"
-- doi: "10.1103/lnnc-h1yy"
+- doi: "10.5281/zenodo.21509833"
+- type: thesis
+  title: "Component-Level Tritium Transport Modelling of a Stellarator Ceramic Breeder Blanket"
+  authors: ["Christopher Soika"]
+  year: 2026
+  institution: "Karlsruhe Institute of Technology"
+  degree: "MSc thesis"
+  url: "https://doi.org/10.5281/zenodo.21509833"
