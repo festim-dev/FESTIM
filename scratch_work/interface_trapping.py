@@ -10,8 +10,8 @@ import numpy as np
 import ufl
 
 # Parameters
-L = 10.0  # Total length of domain
-x_int = 5.0  # Horizontal position of interface
+L = 4.0  # Total length of domain
+x_int = L / 2  # Horizontal position of interface
 D_Be = 2.0  # diffusion coefficient of left domain
 D_BeO = 1.5  # diffusion coefficient of right domain
 k1 = 1.0

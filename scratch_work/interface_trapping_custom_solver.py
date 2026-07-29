@@ -11,8 +11,8 @@ from petsc_solver_for_manifold_derivatives import (
 from ufl.algorithms import expand_derivatives
 
 # Parameters
-L = 10.0  # Total length of domain
-x_int = 5.0  # Horizontal position of interface
+L = 4.0  # Total length of domain
+x_int = L / 2  # Horizontal position of interface
 D_left = 2.0  # diffusion coefficient of left domain
 D_right = 1.5  # diffusion coefficient of right domain
 k1 = 1.0
