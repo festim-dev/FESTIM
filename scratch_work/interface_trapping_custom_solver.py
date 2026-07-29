@@ -41,12 +41,12 @@ mesh.topology.create_connectivity(fdim, vdim)
 
 # Create mesh tags for the left and right subdomains
 eps = 1e-10
-LEFT_TAG, RIGHT_TAG = 1, 2
+LEFT_VOL_TAG, RIGHT_VOL_TAG = 1, 2
 left_cells = dolfinx.mesh.locate_entities(mesh, vdim, lambda x: x[0] <= x_int + eps)
 right_cells = dolfinx.mesh.locate_entities(mesh, vdim, lambda x: x[0] >= x_int - eps)
 cell_indices = np.concatenate([left_cells, right_cells])
 cell_values = np.concatenate(
-    [np.full_like(left_cells, LEFT_TAG), np.full_like(right_cells, RIGHT_TAG)]
+    [np.full_like(left_cells, LEFT_VOL_TAG), np.full_like(right_cells, RIGHT_VOL_TAG)]
 ).astype(np.int32)
 sort = np.argsort(cell_indices)
 cell_tags = dolfinx.mesh.meshtags(mesh, vdim, cell_indices[sort], cell_values[sort])
@@ -54,20 +54,32 @@ cell_tags = dolfinx.mesh.meshtags(mesh, vdim, cell_indices[sort], cell_values[so
 # Create mesh tag for the interface
 INT_TAG = 3
 int_facets = dolfinx.mesh.locate_entities(mesh, fdim, lambda x: np.isclose(x[0], x_int))
-facet_tags = dolfinx.mesh.meshtags(
+int_facet_tags = dolfinx.mesh.meshtags(
     mesh, fdim, int_facets, np.full_like(int_facets, INT_TAG, dtype=np.int32)
+)
+
+# Create mesh tag for the left boundary (for a assigning a flux condition)
+LEFT_BNDRY_TAG = 4
+left_facets = dolfinx.mesh.locate_entities_boundary(
+    mesh, fdim, lambda x: np.isclose(x[0], 0.0)
+)
+left_facet_tags = dolfinx.mesh.meshtags(
+    mesh,
+    fdim,
+    left_facets,
+    np.full_like(left_facets, LEFT_BNDRY_TAG, dtype=np.int32),
 )
 
 
 # Submeshes (two bulk + one interface) and their entity maps to parent
 left_cells, left_emap, _, _ = dolfinx.mesh.create_submesh(
-    mesh, vdim, cell_tags.find(LEFT_TAG)
+    mesh, vdim, cell_tags.find(LEFT_VOL_TAG)
 )
 right_cells, right_emap, _, _ = dolfinx.mesh.create_submesh(
-    mesh, vdim, cell_tags.find(RIGHT_TAG)
+    mesh, vdim, cell_tags.find(RIGHT_VOL_TAG)
 )
 mesh_int, int_emap, _, _ = dolfinx.mesh.create_submesh(
-    mesh, fdim, facet_tags.find(INT_TAG)
+    mesh, fdim, int_facet_tags.find(INT_TAG)
 )
 
 # build interface integration entities ordered so "+" = left, "-" = right
@@ -79,9 +91,9 @@ cell_marker[cell_tags.indices] = cell_tags.values
 f2c = mesh.topology.connectivity(fdim, vdim)
 c2f = mesh.topology.connectivity(vdim, fdim)
 ints = []
-for f in facet_tags.find(INT_TAG):
+for f in int_facet_tags.find(INT_TAG):
     c0, c1 = f2c.links(f)
-    if cell_marker[c0] == RIGHT_TAG:  # ensure left cell first
+    if cell_marker[c0] == RIGHT_VOL_TAG:  # ensure left cell first
         c0, c1 = c1, c0
     lf0 = np.where(c2f.links(c0) == f)[0][0]
     lf1 = np.where(c2f.links(c1) == f)[0][0]
@@ -110,13 +122,14 @@ v_left, v_right, v_int = vh
 
 # Measures
 dx_left = ufl.Measure(
-    "dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=LEFT_TAG
+    "dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=LEFT_VOL_TAG
 )
 dx_right = ufl.Measure(
-    "dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=RIGHT_TAG
+    "dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=RIGHT_VOL_TAG
 )
 dx_int = ufl.Measure("dx", domain=mesh_int)
-dS = ufl.Measure("dS", domain=mesh, subdomain_data=facet_tags)  # internal facets
+dS = ufl.Measure("dS", domain=mesh, subdomain_data=int_facet_tags)  # internal facets
+ds = ufl.Measure("ds", domain=mesh, subdomain_data=left_facet_tags)  # external facets
 
 # Residual (backward Euler)
 P, M = "+", "-"  # P = left side, M = right side
@@ -138,7 +151,11 @@ F += (k3 * c_right(M) * (1 - theta_M) - k4 * c_int(M)) * v_right(M) * dS(INT_TAG
 F += lam * ((c_int - c_int_n) / dt) * v_int * dx_int  # trapping
 F += D_int * ufl.inner(ufl.grad(c_int), ufl.grad(v_int)) * dx_int  # diffusion
 
-# interface coupling: stays on dS
+# --- group 3: flux boundary condition -------------------------
+J_in = dolfinx.fem.Constant(mesh, dolfinx.default_scalar_type(0.5))
+F += -J_in * v_left * ds(LEFT_BNDRY_TAG)
+
+# --- group 4: interface coupling: stays on dS ----------------------
 ci = c_int(P)
 theta = ci / c_int_max
 J_left = k1 * c_left(P) * (1 - theta) - k2 * ci
@@ -173,11 +190,7 @@ for i in range(len(jacobian_2)):
     if jacobian_2[i][i] is None:
         jacobian_2[i][i] = dolfinx.fem.form(ufl.ZeroBaseForm((du[i], vh[i])))
 
-
-# Dirichlet BCs:  left (x=0) c=1; right (x=L) c=0
-left_dofs = dolfinx.fem.locate_dofs_geometrical(V_left, lambda x: np.isclose(x[0], 0.0))
-bc_left = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(1.0), left_dofs, V_left)
-
+# Dirichlet BCs: right (BeO, x=L) c=0 ; int (int, x=L/2, y=0) c=0
 right_dofs = dolfinx.fem.locate_dofs_geometrical(V_right, lambda x: np.isclose(x[0], L))
 bc_right = dolfinx.fem.dirichletbc(
     dolfinx.default_scalar_type(0.0), right_dofs, V_right
@@ -191,7 +204,7 @@ bottom_vertex = dolfinx.mesh.locate_entities_boundary(
 int_dofs = dolfinx.fem.locate_dofs_topological(V_int, 0, bottom_vertex)
 bc_int = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0), int_dofs, V_int)
 
-bcs = [bc_left, bc_right, bc_int]
+bcs = [bc_right, bc_int]
 
 problem = dolfinx.fem.petsc.NonlinearProblem(
     residual_1,
