@@ -1,3 +1,7 @@
+"""
+Copied over from https://gist.github.com/jorgensd/af848dd9ab825721ec6696eb84c06b43
+"""
+
 import typing
 
 from petsc4py import PETSc

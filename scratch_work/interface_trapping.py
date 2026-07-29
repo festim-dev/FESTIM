@@ -1,3 +1,7 @@
+"""
+Copied from https://gist.github.com/RemDelaporteMathurin/d1a678b6b7439e339c8471e97cd31a39
+"""
+
 from mpi4py import MPI
 
 import dolfinx
