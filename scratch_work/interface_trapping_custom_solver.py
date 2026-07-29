@@ -8,6 +8,7 @@ from petsc_solver_for_manifold_derivatives import (
     custom_assemble_jacobian,
     custom_assemble_residual,
 )
+from ufl.algorithms import expand_derivatives
 
 # Parameters
 L = 10.0
@@ -155,37 +156,12 @@ for i, f in enumerate(F_2):
 du = ufl.TrialFunctions(W)
 
 
-# This is a somewhat hacky workaround but it runs and gives the same result
-# as the original mwe (see inteface_trapping.py)
-def prune_zero_blocks(J):
-    """Replace structurally zero Jacobian blocks by None.
-
-    ``ufl.extract_blocks`` returns (zero) derivative forms for every block.
-    Blocks like dJ(interface)/dc_Be couple two *sibling* submeshes with no
-    entity map relating them, so they cannot be compiled; since they are
-    identically zero they are dropped instead.
-    """
-    J = [list(row) for row in J]
-    for i in range(len(J)):
-        for j in range(len(J[i])):
-            if (
-                J[i][j] is not None
-                and ufl.algorithms.expand_derivatives(J[i][j]).empty()
-            ):
-                J[i][j] = None
-    return J
-
-
-J_1 = prune_zero_blocks(ufl.extract_blocks(ufl.derivative(F, (c_Be, c_BeO, c_int), du)))
-J_2 = prune_zero_blocks(
-    ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
+J_1 = ufl.extract_blocks(  # expand_derivative avoids fem.form assembly conflicts
+    expand_derivatives(ufl.derivative(F, (c_Be, c_BeO, c_int), du))
 )
-
-# NOTE Using th two liens below insteead of the prune_zero_blocks() setup above
-# leads to "RuntimeError: Incompatible mesh. argument entity_maps must be provided.""
-
-# J_1 = ufl.extract_blocks(ufl.derivative(F, (c_Be, c_BeO, c_int), du))
-# J_2 = ufl.extract_blocks(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
+J_2 = ufl.extract_blocks(
+    expand_derivatives(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
+)
 
 jacobian_1 = dolfinx.fem.form(J_1, entity_maps=emaps)
 jacobian_2 = dolfinx.fem.form(J_2, entity_maps=emaps)
