@@ -11,10 +11,10 @@ from petsc_solver_for_manifold_derivatives import (
 from ufl.algorithms import expand_derivatives
 
 # Parameters
-L = 10.0
-x_int = 5.0
-D_Be = 1.0
-D_BeO = 1.0
+L = 10.0  # Total length of domain
+x_int = 5.0  # Horizontal position of interface
+D_left = 2.0  # diffusion coefficient of left domain
+D_right = 1.5  # diffusion coefficient of right domain
 k1 = 1.0
 k2 = 1.0
 k3 = 1.0
@@ -23,10 +23,10 @@ lam = 1.0
 c_int_max = 1.0
 D_int = 1.0  # diffusivity along the interface
 
-dt = 0.1
-T = 10.0
+dt = 0.1  # stepsize
+T = 10.0  # final time
 
-# Mesh, cell tags (Be / BeO) and facet tags (interface)
+# Mesh, cell tags (left / right) and facet tags (interface)
 mesh = dolfinx.mesh.create_rectangle(
     MPI.COMM_WORLD,
     [np.array([0.0, 0.0]), np.array([L, 1.0])],
@@ -39,17 +39,19 @@ vdim = mesh.topology.dim
 fdim = vdim - 1
 mesh.topology.create_connectivity(fdim, vdim)
 
+# Create mesh tags for the left and right subdomains
 eps = 1e-10
-BE_TAG, BEO_TAG = 1, 2
-be_cells = dolfinx.mesh.locate_entities(mesh, vdim, lambda x: x[0] <= x_int + eps)
-beo_cells = dolfinx.mesh.locate_entities(mesh, vdim, lambda x: x[0] >= x_int - eps)
-cell_indices = np.concatenate([be_cells, beo_cells])
+LEFT_TAG, RIGHT_TAG = 1, 2
+left_cells = dolfinx.mesh.locate_entities(mesh, vdim, lambda x: x[0] <= x_int + eps)
+right_cells = dolfinx.mesh.locate_entities(mesh, vdim, lambda x: x[0] >= x_int - eps)
+cell_indices = np.concatenate([left_cells, right_cells])
 cell_values = np.concatenate(
-    [np.full_like(be_cells, BE_TAG), np.full_like(beo_cells, BEO_TAG)]
+    [np.full_like(left_cells, LEFT_TAG), np.full_like(right_cells, RIGHT_TAG)]
 ).astype(np.int32)
 sort = np.argsort(cell_indices)
 cell_tags = dolfinx.mesh.meshtags(mesh, vdim, cell_indices[sort], cell_values[sort])
 
+# Create mesh tag for the interface
 INT_TAG = 3
 int_facets = dolfinx.mesh.locate_entities(mesh, fdim, lambda x: np.isclose(x[0], x_int))
 facet_tags = dolfinx.mesh.meshtags(
@@ -58,15 +60,17 @@ facet_tags = dolfinx.mesh.meshtags(
 
 
 # Submeshes (two bulk + one interface) and their entity maps to parent
-mesh_Be, Be_emap, _, _ = dolfinx.mesh.create_submesh(mesh, vdim, cell_tags.find(BE_TAG))
-mesh_BeO, BeO_emap, _, _ = dolfinx.mesh.create_submesh(
-    mesh, vdim, cell_tags.find(BEO_TAG)
+left_cells, left_emap, _, _ = dolfinx.mesh.create_submesh(
+    mesh, vdim, cell_tags.find(LEFT_TAG)
+)
+right_cells, right_emap, _, _ = dolfinx.mesh.create_submesh(
+    mesh, vdim, cell_tags.find(RIGHT_TAG)
 )
 mesh_int, int_emap, _, _ = dolfinx.mesh.create_submesh(
     mesh, fdim, facet_tags.find(INT_TAG)
 )
 
-# ----- build interface integration entities ordered so "+" = Be, "-" = BeO -----
+# build interface integration entities ordered so "+" = left, "-" = right
 imap = mesh.topology.index_map(vdim)
 n_cells = imap.size_local + imap.num_ghosts
 cell_marker = np.zeros(n_cells, dtype=np.int32)
@@ -77,7 +81,7 @@ c2f = mesh.topology.connectivity(vdim, fdim)
 ints = []
 for f in facet_tags.find(INT_TAG):
     c0, c1 = f2c.links(f)
-    if cell_marker[c0] == BEO_TAG:  # ensure Be cell first
+    if cell_marker[c0] == RIGHT_TAG:  # ensure left cell first
         c0, c1 = c1, c0
     lf0 = np.where(c2f.links(c0) == f)[0][0]
     lf1 = np.where(c2f.links(c1) == f)[0][0]
@@ -86,63 +90,63 @@ ints = np.array(ints, dtype=np.int32)
 
 
 # Function spaces / functions
-V_Be = dolfinx.fem.functionspace(mesh_Be, ("CG", 1))
-V_BeO = dolfinx.fem.functionspace(mesh_BeO, ("CG", 1))
+V_left = dolfinx.fem.functionspace(left_cells, ("CG", 1))
+V_right = dolfinx.fem.functionspace(right_cells, ("CG", 1))
 V_int = dolfinx.fem.functionspace(mesh_int, ("CG", 1))
 
-W = ufl.MixedFunctionSpace(V_Be, V_BeO, V_int)
+W = ufl.MixedFunctionSpace(V_left, V_right, V_int)
 
-c_Be = dolfinx.fem.Function(V_Be, name="c_Be")
-c_BeO = dolfinx.fem.Function(V_BeO, name="c_BeO")
+c_left = dolfinx.fem.Function(V_left, name="c_left")
+c_right = dolfinx.fem.Function(V_right, name="c_right")
 c_int = dolfinx.fem.Function(V_int, name="c_int")
 
 # previous time step (initial condition = 0)
-c_Be_n = dolfinx.fem.Function(V_Be)
-c_BeO_n = dolfinx.fem.Function(V_BeO)
+c_left_n = dolfinx.fem.Function(V_left)
+c_right_n = dolfinx.fem.Function(V_right)
 c_int_n = dolfinx.fem.Function(V_int)
 
 vh = ufl.TestFunctions(W)
-v_Be, v_BeO, v_int = vh
+v_left, v_right, v_int = vh
 
 # Measures
-dx_Be = ufl.Measure("dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=BE_TAG)
-dx_BeO = ufl.Measure("dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=BEO_TAG)
+dx_left = ufl.Measure(
+    "dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=LEFT_TAG
+)
+dx_right = ufl.Measure(
+    "dx", domain=mesh, subdomain_data=cell_tags, subdomain_id=RIGHT_TAG
+)
 dx_int = ufl.Measure("dx", domain=mesh_int)
-dS = ufl.Measure("dS", domain=mesh, subdomain_data=facet_tags)
+dS = ufl.Measure("dS", domain=mesh, subdomain_data=facet_tags)  # internal facets
 
 # Residual (backward Euler)
-P, M = "+", "-"  # P = Be side, M = BeO side
+P, M = "+", "-"  # P = left side, M = right side
 
 theta_P = c_int(P) / c_int_max
 theta_M = c_int(M) / c_int_max
 
 # --- group 1: integration domain = parent mesh ---------------------
 F = 0
-F += ((c_Be - c_Be_n) / dt) * v_Be * dx_Be
-F += D_Be * ufl.inner(ufl.grad(c_Be), ufl.grad(v_Be)) * dx_Be
-F += (k1 * c_Be(P) * (1 - theta_P) - k2 * c_int(P)) * v_Be(P) * dS(INT_TAG)
+F += ((c_left - c_left_n) / dt) * v_left * dx_left
+F += D_left * ufl.inner(ufl.grad(c_left), ufl.grad(v_left)) * dx_left
+F += (k1 * c_left(P) * (1 - theta_P) - k2 * c_int(P)) * v_left(P) * dS(INT_TAG)
 
-F += ((c_BeO - c_BeO_n) / dt) * v_BeO * dx_BeO
-F += D_BeO * ufl.inner(ufl.grad(c_BeO), ufl.grad(v_BeO)) * dx_BeO
-F += (k3 * c_BeO(M) * (1 - theta_M) - k4 * c_int(M)) * v_BeO(M) * dS(INT_TAG)
+F += ((c_right - c_right_n) / dt) * v_right * dx_right
+F += D_right * ufl.inner(ufl.grad(c_right), ufl.grad(v_right)) * dx_right
+F += (k3 * c_right(M) * (1 - theta_M) - k4 * c_int(M)) * v_right(M) * dS(INT_TAG)
 
 # --- group 2: integration domain = mesh_int ------------------------
 F += lam * ((c_int - c_int_n) / dt) * v_int * dx_int  # trapping
 F += D_int * ufl.inner(ufl.grad(c_int), ufl.grad(v_int)) * dx_int  # diffusion
 
 # interface coupling: stays on dS
-F_coupling = (
-    -(
-        k1 * c_Be(P) * (1 - theta_P)
-        - k2 * c_int(P)
-        + k3 * c_BeO(M) * (1 - theta_M)
-        - k4 * c_int(M)
-    )
-    * v_int(P)
-    * dS(INT_TAG)
-)
+ci = c_int(P)
+theta = ci / c_int_max
+J_left = k1 * c_left(P) * (1 - theta) - k2 * ci
+J_right = k3 * c_right(M) * (1 - theta) - k4 * ci
 
-emaps = [Be_emap, BeO_emap, int_emap]
+F_coupling = -(J_left + J_right) * v_int(P) * dS(INT_TAG)
+
+emaps = [left_emap, right_emap, int_emap]
 
 residual_1 = ufl.extract_blocks(F)
 residual_2 = ufl.extract_blocks(F_coupling)
@@ -157,10 +161,10 @@ du = ufl.TrialFunctions(W)
 
 
 J_1 = ufl.extract_blocks(  # expand_derivative avoids fem.form assembly conflicts
-    expand_derivatives(ufl.derivative(F, (c_Be, c_BeO, c_int), du))
+    expand_derivatives(ufl.derivative(F, (c_left, c_right, c_int), du))
 )
 J_2 = ufl.extract_blocks(
-    expand_derivatives(ufl.derivative(F_coupling, (c_Be, c_BeO, c_int), du))
+    expand_derivatives(ufl.derivative(F_coupling, (c_left, c_right, c_int), du))
 )
 
 jacobian_1 = dolfinx.fem.form(J_1, entity_maps=emaps)
@@ -170,19 +174,21 @@ for i in range(len(jacobian_2)):
         jacobian_2[i][i] = dolfinx.fem.form(ufl.ZeroBaseForm((du[i], vh[i])))
 
 
-# Dirichlet BCs:  left (Be, x=0) c=1   ;   right (BeO, x=L) c=0
-left_dofs = dolfinx.fem.locate_dofs_geometrical(V_Be, lambda x: np.isclose(x[0], 0.0))
-bc_left = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(1.0), left_dofs, V_Be)
+# Dirichlet BCs:  left (x=0) c=1; right (x=L) c=0
+left_dofs = dolfinx.fem.locate_dofs_geometrical(V_left, lambda x: np.isclose(x[0], 0.0))
+bc_left = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(1.0), left_dofs, V_left)
 
-right_dofs = dolfinx.fem.locate_dofs_geometrical(V_BeO, lambda x: np.isclose(x[0], L))
-bc_right = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0), right_dofs, V_BeO)
+right_dofs = dolfinx.fem.locate_dofs_geometrical(V_right, lambda x: np.isclose(x[0], L))
+bc_right = dolfinx.fem.dirichletbc(
+    dolfinx.default_scalar_type(0.0), right_dofs, V_right
+)
 
 problem = dolfinx.fem.petsc.NonlinearProblem(
     residual_1,
-    [c_Be, c_BeO, c_int],
+    [c_left, c_right, c_int],
     J=J_1,
     bcs=[bc_left, bc_right],
-    petsc_options_prefix="be_beo_",
+    petsc_options_prefix="interface_coupling",
     entity_maps=emaps,
 )
 
@@ -191,7 +197,7 @@ problem.solver.setFunction(
     custom_assemble_residual,
     problem.b,
     kargs={
-        "u": (c_Be, c_BeO, c_int),
+        "u": (c_left, c_right, c_int),
         "residual": [F_1, F_2],
         "jacobian": [jacobian_1, jacobian_2],
         "bcs": [bc_left, bc_right],
@@ -203,7 +209,7 @@ problem.solver.setJacobian(
     problem.A,
     problem.P_mat,
     kargs={
-        "u": (c_Be, c_BeO, c_int),
+        "u": (c_left, c_right, c_int),
         "jacobian": [jacobian_1, jacobian_2],
         "preconditioner": None,
         "bcs": [bc_left, bc_right],
@@ -211,13 +217,13 @@ problem.solver.setJacobian(
 )
 
 # Time loop
-writer_Be = dolfinx.io.VTXWriter(mesh_Be.comm, "results/c_Be.bp", [c_Be])
-writer_BeO = dolfinx.io.VTXWriter(mesh_BeO.comm, "results/c_BeO.bp", [c_BeO])
+writer_left = dolfinx.io.VTXWriter(left_cells.comm, "results/c_left.bp", [c_left])
+writer_right = dolfinx.io.VTXWriter(right_cells.comm, "results/c_right.bp", [c_right])
 writer_int = dolfinx.io.VTXWriter(mesh_int.comm, "results/c_int.bp", [c_int])
 
 t = 0.0
-writer_Be.write(t)
-writer_BeO.write(t)
+writer_left.write(t)
+writer_right.write(t)
 writer_int.write(t)
 
 n_steps = round(T / dt)
@@ -225,18 +231,18 @@ for step in range(n_steps):
     t += dt
     problem.solve()
 
-    c_Be_n.x.array[:] = c_Be.x.array
-    c_BeO_n.x.array[:] = c_BeO.x.array
+    c_left_n.x.array[:] = c_left.x.array
+    c_right_n.x.array[:] = c_right.x.array
     c_int_n.x.array[:] = c_int.x.array
 
-    writer_Be.write(t)
-    writer_BeO.write(t)
+    writer_left.write(t)
+    writer_right.write(t)
     writer_int.write(t)
 
     if mesh.comm.rank == 0:
         print(f"t = {t:.2f}")
 
-writer_Be.close()
-writer_BeO.close()
+writer_left.close()
+writer_right.close()
 writer_int.close()
 print(c_int.x.array)

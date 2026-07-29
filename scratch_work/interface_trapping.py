@@ -6,10 +6,10 @@ import numpy as np
 import ufl
 
 # Parameters
-L = 10.0
-x_int = 5.0
-D_Be = 1.0
-D_BeO = 1.0
+L = 10.0  # Total length of domain
+x_int = 5.0  # Horizontal position of interface
+D_Be = 2.0  # diffusion coefficient of left domain
+D_BeO = 1.5  # diffusion coefficient of right domain
 k1 = 1.0
 k2 = 1.0
 k3 = 1.0
@@ -17,8 +17,8 @@ k4 = 1.0
 lam = 1.0
 c_int_max = 1.0
 
-dt = 0.1
-T = 10.0
+dt = 0.1  # stepsize
+T = 10.0  # final time
 
 # Mesh, cell tags (Be / BeO) and facet tags (interface)
 mesh = dolfinx.mesh.create_rectangle(
