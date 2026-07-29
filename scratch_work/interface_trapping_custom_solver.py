@@ -183,11 +183,23 @@ bc_right = dolfinx.fem.dirichletbc(
     dolfinx.default_scalar_type(0.0), right_dofs, V_right
 )
 
+# Interface field: c_int = 0 at the bottom endpoint of the interface (x = x_int, y = 0)
+mesh_int.topology.create_connectivity(0, mesh_int.topology.dim)
+bottom_vertex = dolfinx.mesh.locate_entities_boundary(
+    mesh_int, 0, lambda x: np.isclose(x[1], 0.0)
+)
+int_dofs = dolfinx.fem.locate_dofs_topological(V_int, 0, bottom_vertex)
+bc_int = dolfinx.fem.dirichletbc(dolfinx.default_scalar_type(0.0), int_dofs, V_int)
+print(int_dofs, V_int.tabulate_dof_coordinates()[int_dofs])
+# expect exactly one dof at [5., 0., 0.]
+
+bcs = [bc_left, bc_right, bc_int]
+
 problem = dolfinx.fem.petsc.NonlinearProblem(
     residual_1,
     [c_left, c_right, c_int],
     J=J_1,
-    bcs=[bc_left, bc_right],
+    bcs=bcs,
     petsc_options_prefix="interface_coupling",
     entity_maps=emaps,
 )
@@ -200,7 +212,7 @@ problem.solver.setFunction(
         "u": (c_left, c_right, c_int),
         "residual": [F_1, F_2],
         "jacobian": [jacobian_1, jacobian_2],
-        "bcs": [bc_left, bc_right],
+        "bcs": bcs,
         "_blocks": _blocks,
     },
 )
@@ -212,7 +224,7 @@ problem.solver.setJacobian(
         "u": (c_left, c_right, c_int),
         "jacobian": [jacobian_1, jacobian_2],
         "preconditioner": None,
-        "bcs": [bc_left, bc_right],
+        "bcs": bcs,
     },
 )
 
