@@ -172,13 +172,23 @@ class Mesh:
 
                 tags_facets[rentities] = surf.id
 
-        for vol in volume_subdomains:
+        # codim-1 volume subdomains are manifolds embedded in the mesh: they carry a
+        # transport equation like any other volume subdomain, but their entities are
+        # facets, so they are tagged in the facet meshtags alongside the surfaces
+        bulk_subdomains = [v for v in volume_subdomains if v.codim(self.vdim) == 0]
+        manifold_subdomains = [v for v in volume_subdomains if v.codim(self.vdim) == 1]
+
+        for vol in manifold_subdomains:
+            entities = vol.locate_subdomain_entities(self._mesh)
+            tags_facets[entities] = vol.id
+
+        for vol in bulk_subdomains:
             try:
                 # find all cells in subdomain and mark them as vol.id
                 entities = vol.locate_subdomain_entities(self._mesh)
                 tags_volumes[entities] = vol.id
             except ValueError:
-                if len(volume_subdomains) > 1:
+                if len(bulk_subdomains) > 1:
                     raise ValueError(
                         "Volume subdomain must have a locator if"
                         " several subdomains are defined"

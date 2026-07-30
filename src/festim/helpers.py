@@ -83,9 +83,41 @@ def as_mapped_function(
         if species.concentration is not None:
             kwargs[name] = species.concentration
         else:  # discontinuous case: the species has one solution per subdomain
-            kwargs[name] = species.subdomain_to_solution[subdomain]
+            kwargs[name] = solution_on(species, subdomain)
 
     return value(**kwargs)
+
+
+def solution_on(species: "Species", subdomain: "VolumeSubdomain"):
+    """The solution of ``species`` to use in an expression assembled for ``subdomain``.
+
+    Usually the species lives on ``subdomain`` and this is just a dictionary lookup.
+    In a codimensional coupling the expression deliberately reaches across meshes -- a
+    source on a manifold subdomain depending on the bulk concentration, say -- and the
+    species then has a single solution elsewhere, which is the one to use.
+
+    Args:
+        species: the species whose solution is needed
+        subdomain: the volume subdomain the expression is assembled for
+
+    Returns:
+        The ufl expression of the species solution
+
+    Raises:
+        ValueError: if the species lives on several subdomains, none of which is
+            ``subdomain``, so the choice would be arbitrary
+    """
+    solutions = species.subdomain_to_solution
+    if subdomain in solutions:
+        return solutions[subdomain]
+    if len(solutions) == 1:
+        return next(iter(solutions.values()))
+    others = [s.id for s in solutions]
+    raise ValueError(
+        f"species {species.name} is not defined on volume subdomain {subdomain.id} and "
+        f"has a solution on several other subdomains ({others}), so it is ambiguous "
+        "which one this expression should use."
+    )
 
 
 def as_fenics_interp_expr_and_function(
