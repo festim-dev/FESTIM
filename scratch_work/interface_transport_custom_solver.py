@@ -1,3 +1,9 @@
+"""
+Modified version of from https://gist.github.com/RemDelaporteMathurin/d1a678b6b7439e339c8471e97cd31a39
+Includes diffusion along an internal interface
+
+"""
+
 from mpi4py import MPI
 
 import dolfinx
@@ -33,7 +39,6 @@ mesh = dolfinx.mesh.create_rectangle(
     [20, 10],
     cell_type=dolfinx.mesh.CellType.quadrilateral,
 )
-
 
 vdim = mesh.topology.dim
 fdim = vdim - 1
