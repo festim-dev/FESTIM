@@ -76,6 +76,10 @@ my_model = F.HydrogenTransportProblemDiscontinuous(
     sources=[source_in_gamma, coupling_source_gamma, source_omega],
     boundary_conditions=[coupling_flux_omega, exact_omega],
     temperature=500,
+    exports=[
+        F.VTXSpeciesExport(filename="H_om.bp", field=H_om, subdomain=omega),
+        F.VTXSpeciesExport(filename="H_gam.bp", field=H_gam, subdomain=gamma),
+    ],
 )
 my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
 my_model.initialise()
