@@ -81,6 +81,94 @@ For 1D domains, use the :class:`festim.VolumeSubdomain1D` class, which requires 
     my_material = Material(D_0=1, E_D=1)
     my_1D_volume = VolumeSubdomain1D(id=1, material=my_material, borders=[0, 1])
 
+Codimensional (manifold) Subdomains
+====================================
+
+A volume subdomain can be a *manifold* embedded in the mesh: a line in a 2D mesh, or a
+surface in a 3D mesh. Such a subdomain carries its own transport equation, with
+diffusion and advection **along** the manifold, and is coupled to the bulk by a flux.
+This is the way to model transport in a grain boundary, along a crack, or in a thin
+surface layer you do not want to resolve with cells.
+
+Pass ``dim`` one less than the dimension of the mesh:
+
+.. testcode::
+
+    import numpy as np
+    from festim import VolumeSubdomain, Material
+
+    gamma = VolumeSubdomain(
+        id=2,
+        material=Material(D_0=1e-6, E_D=0.0),
+        dim=1,  # a line inside a 2D mesh
+        locator=lambda x: np.isclose(x[0], 0.0),
+    )
+
+A manifold subdomain is tagged in the **facet** meshtags rather than the cell meshtags,
+so its ``id`` must be unique among the surface subdomains as well. It can be used
+directly wherever a surface is expected, for instance as the ``subdomain`` of a
+:class:`festim.ParticleFluxBC` — there is no need to declare a separate
+:class:`festim.SurfaceSubdomain` on the same facets.
+
+Coupling to the bulk
+--------------------
+
+The exchange is written twice: once as a flux leaving the bulk, and once as a source
+entering the manifold. Use ``species_dependent_value`` to let each half see both
+concentrations, even though they live on different meshes::
+
+    k = 0.1
+    J = lambda c_bulk, c_man: k * (c_bulk - c_man)
+
+    # the bulk loses J through gamma
+    flux = F.ParticleFluxBC(
+        subdomain=gamma,
+        value=lambda c_man, c_bulk: -J(c_bulk, c_man),
+        species=H_bulk,
+        species_dependent_value={"c_bulk": H_bulk, "c_man": H_manifold},
+    )
+
+    # ... and the manifold gains it
+    source = F.ParticleSource(
+        volume=gamma,
+        value=lambda c_man, c_bulk: J(c_bulk, c_man),
+        species=H_manifold,
+        species_dependent_value={"c_bulk": H_bulk, "c_man": H_manifold},
+    )
+
+.. warning::
+
+    **Mind the units.** A :class:`festim.ParticleFluxBC` value is a *flux* (H/m²/s for a
+    3D bulk) whereas a :class:`festim.ParticleSource` value is a *volumetric rate*
+    (H/m³/s). Writing the same expression on both sides is therefore not generally
+    dimensionally consistent, and the manifold-side source usually needs a conversion
+    factor.
+
+    FESTIM does not impose a unit convention on a manifold species: depending on what
+    you are modelling it may be a volumetric concentration H/m³ (a layer of thickness
+    :math:`\lambda`, in which case the source is :math:`J/\lambda`), an areal density
+    H/m² (an adsorbed layer, source :math:`J`), or a line density H/m (a grain
+    boundary). Keeping the problem dimensionally consistent is up to you.
+
+Advection along a manifold
+--------------------------
+
+An :class:`festim.AdvectionTerm` on a manifold subdomain takes an ordinary ambient
+velocity vector — 2 components in a 2D mesh, 3 in a 3D mesh. There is no need to
+project it onto the manifold: the tangential gradient is orthogonal to the normal, so
+:math:`v \cdot \nabla_\Gamma c` automatically ignores the normal component of
+:math:`v`.
+
+Limitations
+-----------
+
+* Only codimension 1 is supported (``dim`` must be the mesh dimension minus one).
+* The manifold must lie on the outer boundary of the domain; an interface between two
+  bulk subdomains is not supported yet.
+* Strong (Dirichlet) boundary conditions cannot be applied at the ends of a manifold
+  subdomain; only the natural zero-flux condition is available there.
+* Cartesian coordinates only.
+
 ----------
 Materials
 ----------
