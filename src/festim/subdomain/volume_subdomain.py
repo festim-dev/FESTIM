@@ -3,7 +3,7 @@ from collections.abc import Callable
 import dolfinx
 import numpy as np
 from dolfinx import fem
-from dolfinx.mesh import EntityMap, Mesh, locate_entities
+from dolfinx.mesh import EntityMap, Mesh
 from numpy import typing as npt
 
 try:
@@ -20,15 +20,32 @@ entity_map_type = EntityMap
 class VolumeSubdomain:
     """Volume subdomain class.
 
+    A subdomain normally has the same topological dimension as the parent mesh
+    (codimension 0). Passing ``dim = mesh.topology.dim - 1`` instead declares a
+    *codimension 1* subdomain: a manifold embedded in the parent mesh, on which
+    transport is solved on a facet submesh and coupled to the surrounding bulk.
+
     Args:
         id: the id of the volume subdomain (> 0)
-        dim: the dimension of a coupled subdomain (<= mesh.topology.dim)
+        material: the material assigned to the subdomain
+        locator: a callable that locates the entities of the subdomain
+        name: an optional name for the subdomain
+        dim: the topological dimension of the subdomain's entities. ``None``
+            (the default) means the same dimension as the parent mesh, i.e.
+            codimension 0. Keyword-only. Only codimensions 0 and 1 are
+            supported; see :meth:`codim`.
+
+    Attributes:
+        id: the id of the volume subdomain (> 0)
+        dim: the topological dimension of the subdomain's entities, or ``None``
+            for codimension 0
         submesh: the submesh of the volume subdomain
         cell_map: the cell map of the volume subdomain
         parent_mesh: the parent mesh of the volume subdomain
         v_map: the vertex map of the volume subdomain
         n_map: the normal map of the volume subdomain
-        ft: the facet meshtags of the volume subdomain
+        ft: the facet meshtags of the volume subdomain. ``None`` for
+            codimension 1 subdomains, see :meth:`transfer_meshtag`
         u: the solution function of the subdomain
         u_n: the previous solution function of the subdomain
         material: the material assigned to the subdomain
@@ -36,13 +53,12 @@ class VolumeSubdomain:
     """
 
     id: int
-    dim: int
     submesh: dolfinx.mesh.Mesh
     cell_map: "entity_map_type"
     parent_mesh: dolfinx.mesh.Mesh
     v_map: "entity_map_type"
     n_map: np.ndarray
-    ft: dolfinx.mesh.MeshTags
+    ft: dolfinx.mesh.MeshTags | None
     u: dolfinx.fem.Function
     u_n: dolfinx.fem.Function
     material: Material
@@ -52,16 +68,17 @@ class VolumeSubdomain:
         self,
         id,
         material,
-        dim: int | None = None,
         locator: Callable | None = None,
         name: str | None = None,
+        *,
+        dim: int | None = None,
     ):
         assert id != 0, "Volume subdomain id cannot be 0"
         self.id = id
-        self.dim = dim
         self.material = material
         self.locator = locator
         self.name = name
+        self.dim = dim
 
     @property
     def name(self):
@@ -77,34 +94,63 @@ class VolumeSubdomain:
             raise TypeError("Name must be a string")
 
     @property
-    def dim(self):
-        """
-        Topological dimension of the subdomain's entities. ``None`` means
-        it is the same as the parent mesh and is filled in by :meth:`set_subdomain_dim`.
+    def dim(self) -> int | None:
+        """Topological dimension of the subdomain's entities.
+
+        ``None`` is same as the parent mesh. Use :meth:`entity_dim` to get
+        a concrete integer once a mesh is available.
         """
         return self._dim
 
     @dim.setter
     def dim(self, value):
         if value is None:
-            self._dim = value
-        elif isinstance(value, int):
-            self._dim = value
-        else:
-            raise TypeError("Subdomain dimension must be an integer")
-
-    def set_subdomain_dim(self, mesh: dolfinx.mesh.Mesh):
-        if self._dim is None:
-            self._dim = mesh.topology.dim
-        elif self._dim > mesh.topology.dim:
-            raise ValueError(
-                f"Subdomain {self.id} has dim={self._dim} which is greater than "
-                f"mesh.topology.dim={mesh.topology.dim}"
+            self._dim = None
+            return
+        # bool is a subclass of int; np.int32/int64 are not
+        if isinstance(value, bool) or not isinstance(value, int | np.integer):
+            raise TypeError(
+                f"Subdomain dimension must be an integer or None, got {type(value)}"
             )
-        elif self._dim < 0:
-            # The user could technically create a co-dim problem on a single mesh vertex
-            # hence allowing zero here
-            raise ValueError(f"Subdomain {self.id} has dim less than zero")
+        if value < 0:
+            raise ValueError(f"Subdomain {self.id} has dim={value}, must be >= 0")
+        self._dim = int(value)
+
+    def codim(self, mesh_dim: int) -> int:
+        """Codimension of the subdomain with respect to the parent mesh.
+
+        Args:
+            mesh_dim: the topological dimension of the parent mesh
+
+        Returns:
+            0 if the subdomain fills cells of the parent mesh, 1 if it lives on
+            facets of the parent mesh
+
+        Raises:
+            ValueError: if the resulting codimension is not 0 or 1
+        """
+        if self._dim is None:
+            return 0
+
+        codim = mesh_dim - self._dim
+        if codim not in (0, 1):
+            raise ValueError(
+                f"Subdomain {self.id} has dim={self._dim} in a mesh of "
+                f"topological dimension {mesh_dim}, giving codimension {codim}. "
+                "Only codimensions 0 (cells) and 1 (facets) are supported."
+            )
+        return codim
+
+    def entity_dim(self, mesh_dim: int) -> int:
+        """Resolved topological dimension of the subdomain's entities.
+
+        Unlike :attr:`dim` this is never ``None``, and it validates the
+        codimension on the way through.
+
+        Args:
+            mesh_dim: the topological dimension of the parent mesh
+        """
+        return mesh_dim - self.codim(mesh_dim)
 
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
@@ -114,18 +160,40 @@ class VolumeSubdomain:
         Only used in ``festim.HydrogenTransportProblemDiscontinuous``
 
         Args:
-            mesh (dolfinx.mesh.Mesh): the parent mesh
-            marker (dolfinx.mesh.MeshTags): the parent volume markers
+            mesh: the parent mesh
+            marker: the parent markers. Cell meshtags for a codimension 0
+                subdomain, facet meshtags for a codimension 1 subdomain.
         """
+        dim = self.entity_dim(mesh.topology.dim)
+        assert marker.dim == dim, (
+            f"Subdomain {self.id} has dim={dim} but was given markers of "
+            f"dimension {marker.dim}. Codimension 1 subdomains must be created "
+            "from the facet meshtags, not the volume meshtags."
+        )
         self.parent_mesh = mesh
         entities = marker.find(self.id)
         self.submesh, self.cell_map, self.v_map, self.n_map = (
-            dolfinx.mesh.create_submesh(mesh, self.dim, entities)
+            dolfinx.mesh.create_submesh(mesh, dim, entities)
         )
 
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
-        # Transfer meshtags to submesh
+        """Transfers parent facet meshtags onto the submesh and stores them in ``.ft``.
+
+        For a codimension 1 subdomain the submesh's *cells* are parent facets, so
+        parent facet tags are of the wrong dimension to transfer. ``.ft`` is set
+        to ``None`` instead: it is only consumed by ``create_dirichletbc_form``,
+        which is unreachable without a strong BC on the manifold.
+
+        Args:
+            mesh: the parent mesh
+            tag: the parent facet meshtags
+        """
         assert self.submesh is not None, "Need to call create_subdomain first"
+
+        if self.codim(mesh.topology.dim) == 1:
+            self.ft = None
+            return
+
         sub_tag = transfer_meshtags_to_submesh(
             tag, self.submesh, self.v_map, self.cell_map
         )
@@ -135,7 +203,10 @@ class VolumeSubdomain:
             self.ft, _ = sub_tag
 
     def locate_subdomain_entities(self, mesh: Mesh) -> npt.NDArray[np.int32]:
-        """Locates all cells in subdomain borders within domain.
+        """Locates all entities of the subdomain within the parent mesh.
+
+        For a codimension 0 subdomain these are cells; for a codimension 1
+        subdomain they are facets.
 
         Args:
             mesh: the mesh of the model
@@ -145,9 +216,6 @@ class VolumeSubdomain:
         """
         if self.locator is None:
             raise ValueError("No locator function provided for locating cells.")
-
-        entities = locate_entities(mesh, self.dim, self.locator)
-        return entities
 
 
 class VolumeSubdomain1D(VolumeSubdomain):
@@ -204,6 +272,7 @@ def find_volume_from_id(id: int, volumes: list):
     raise ValueError(f"id {id} not found in list of volumes")
 
 
+# NOTE this still needs to be updated for this case
 def map_surface_to_volume_subdomains(
     ft: dolfinx.mesh.MeshTags,
     ct: dolfinx.mesh.MeshTags,

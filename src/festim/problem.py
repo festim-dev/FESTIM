@@ -85,10 +85,6 @@ class ProblemBase:
         """Defines the facet and volume meshtags of the model which are used to define
         the measures fo the model, dx and ds."""
 
-        # Initialize the new dim argument before any meshtags or measures are defined
-        for vol in self.volume_subdomains:
-            vol.set_subdomain_dim(self.mesh.mesh)
-
         if isinstance(self.mesh, F.MeshFromXDMF):
             # TODO: fix naming inconsistency between facet and surface meshtags
             self.facet_meshtags = self.mesh.define_surface_meshtags()

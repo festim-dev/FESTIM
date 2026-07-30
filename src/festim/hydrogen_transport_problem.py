@@ -2382,9 +2382,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.writer.close()
 
 
-class HydrogenTransportProblemDiscontinuousCodim(HydrogenTransportProblemDiscontinuous):
-    # Placeholder for later
-    super.__init__()
+# TODO placeholder for the new class
+# class HydrogenTransportProblemDiscontinuousCodim(HydrogenTransportProblemDiscontinuous):
+#     # Placeholder for later
+#     super.__init__()
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
