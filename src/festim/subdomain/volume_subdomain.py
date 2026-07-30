@@ -80,7 +80,7 @@ class VolumeSubdomain:
     def dim(self):
         """
         Topological dimension of the subdomain's entities. ``None`` means
-        it is the same as the parent mesh and is filled in by :meth:`set_dim`.
+        it is the same as the parent mesh and is filled in by :meth:`set_subdomain_dim`.
         """
         return self._dim
 
@@ -117,7 +117,6 @@ class VolumeSubdomain:
             mesh (dolfinx.mesh.Mesh): the parent mesh
             marker (dolfinx.mesh.MeshTags): the parent volume markers
         """
-        self.set_subdomain_dim(mesh)
         self.parent_mesh = mesh
         entities = marker.find(self.id)
         self.submesh, self.cell_map, self.v_map, self.n_map = (
@@ -147,7 +146,7 @@ class VolumeSubdomain:
         if self.locator is None:
             raise ValueError("No locator function provided for locating cells.")
 
-        entities = locate_entities(mesh, mesh.topology.dim, self.locator)
+        entities = locate_entities(mesh, self.dim, self.locator)
         return entities
 
 
