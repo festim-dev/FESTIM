@@ -47,13 +47,19 @@ class VolumeSubdomain:
     sub_T: fem.Function | float
 
     def __init__(
-        self, id, material, locator: Callable | None = None, name: str | None = None
+        self,
+        id,
+        material,
+        locator: Callable | None = None,
+        name: str | None = None,
+        dim=None,
     ):
         assert id != 0, "Volume subdomain id cannot be 0"
         self.id = id
         self.material = material
         self.locator = locator
         self.name = name
+        self.dim = dim
 
     @property
     def name(self):
@@ -79,7 +85,7 @@ class VolumeSubdomain:
             mesh (dolfinx.mesh.Mesh): the parent mesh
             marker (dolfinx.mesh.MeshTags): the parent volume markers
         """
-        assert marker.dim == mesh.topology.dim
+        # assert marker.dim == mesh.topology.dim
         self.parent_mesh = (
             mesh  # NOTE: it doesn't seem like we use this attribute anywhere
         )
