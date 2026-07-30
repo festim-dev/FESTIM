@@ -1312,6 +1312,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # create submeshes and transfer meshtags to subdomains
         for subdomain in self.volume_subdomains:
+            if subdomain.dim:
+                if subdomain.dim < self.mesh.mesh.topology.dim:
+                    subdomain.create_subdomain(self.mesh.mesh, self.facet_meshtags)
+                    subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
+                continue
+
             subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
             subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
@@ -1535,6 +1541,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         us = list(ufl.split(u))
         u_ns = list(ufl.split(u_n))
         vs = list(ufl.TestFunctions(V))
+
         for i, species in enumerate(unique_species):
             species.subdomain_to_solution[subdomain] = us[i]
             species.subdomain_to_prev_solution[subdomain] = u_ns[i]
@@ -1688,6 +1695,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # add volumetric sources
         for source in self.sources:
+            if source.volume != subdomain:
+                continue
+            breakpoint()
             v = source.species.subdomain_to_test_function[subdomain]
             if source.volume == subdomain:
                 form -= source.value.fenics_object * v * self.dx(subdomain.id)
