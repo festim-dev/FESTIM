@@ -2382,6 +2382,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.writer.close()
 
 
+class HydrogenTransportProblemDiscontinuousCodim(HydrogenTransportProblemDiscontinuous):
+    # Placeholder for later
+    super.__init__()
+
+
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
     species: list[_species.Species]
 
