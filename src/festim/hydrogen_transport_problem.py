@@ -46,6 +46,12 @@ from festim.helpers import (
     is_it_time_to_export,
     nmm_interpolate,
 )
+from festim.mixed_dimensional_assembly import (
+    custom_assemble_jacobian,
+    custom_assemble_residual,
+    make_index_sets,
+    prune_empty_blocks,
+)
 
 from .mesh import CoordinateSystem, Mesh
 
@@ -1189,6 +1195,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         settings=None,
         exports=None,
         traps=None,
+        advection_terms=None,
         interfaces: list[_subdomain.Interface] | None = None,
         enclosures: list[_Enclosure] | None = None,
         petsc_options: dict | None = None,
@@ -1227,6 +1234,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             settings,
             exports,
             traps,
+            advection_terms,
             petsc_options=petsc_options,
         )
         self.interfaces = interfaces or []
@@ -1318,19 +1326,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 ct=self.volume_meshtags,
                 facet_to_cell=facet_to_cell,
                 volume_subdomains=self.volume_subdomains,
-                surface_subdomains=self.surface_subdomains,
+                # manifold subdomains are tagged in the facet meshtags, so they are
+                # also surfaces as far as the connectivity is concerned: this is what
+                # lets a ParticleFluxBC be applied on one
+                surface_subdomains=self.surface_subdomains + self.manifold_subdomains,
                 comm=self.mesh.mesh.comm,
             )
 
         # create submeshes and transfer meshtags to subdomains
         for subdomain in self.volume_subdomains:
-            if subdomain.dim:
-                if subdomain.dim < self.mesh.mesh.topology.dim:
-                    subdomain.create_subdomain(self.mesh.mesh, self.facet_meshtags)
-                    subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
-                continue
-
-            subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
+            if subdomain.codim(self.mesh.vdim) == 1:
+                subdomain.create_subdomain(self.mesh.mesh, self.facet_meshtags)
+            else:
+                subdomain.create_subdomain(self.mesh.mesh, self.volume_meshtags)
             subdomain.transfer_meshtag(self.mesh.mesh, self.facet_meshtags)
 
         for interface in self.interfaces:
@@ -1418,6 +1426,13 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 nmm_interpolate(f_out=sub_T, f_in=self.temperature_fenics)
 
                 subdomain.sub_T = sub_T
+        else:
+            # a manifold subdomain integrates its gradient terms on its own submesh,
+            # and a fem.Constant bound to the parent mesh cannot appear there
+            for subdomain in self.manifold_subdomains:
+                subdomain.sub_T = as_fenics_constant(
+                    float(self.temperature_fenics), subdomain.submesh
+                )
 
     def create_dirichletbc_form(self, bc: boundary_conditions.FixedConcentrationBC):
         """Creates the ``value_fenics`` attribute for a given
@@ -1475,7 +1490,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         previous solution of the condition's species."""
 
         for condition in self.initial_conditions:
-            idx = self.species.index(condition.species)
+            # the index within the subdomain's mixed element, which is not the index of
+            # the species in the global list unless every species lives on every
+            # subdomain
+            idx = condition.species.subdomain_to_index[condition.volume]
 
             # if the value given is a function, then directly interpolate it on the
             # previous solution of the species
@@ -1491,11 +1509,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     function_space=V,
                 )
 
-                # assign to previous solution of species
-                entities = self.volume_meshtags.find(condition.volume.id)
-                condition.volume.u_n.sub(idx).interpolate(
-                    condition.expr_fenics, cells1=entities
-                )
+                # assign to previous solution of species. The expression already lives
+                # on the subdomain's submesh, so the whole submesh is interpolated into
+                condition.volume.u_n.sub(idx).interpolate(condition.expr_fenics)
 
         for gas_species in self.gas_species:
             gas_species.prev_solution.x.array[:] = gas_species.initial_pressure
@@ -1561,6 +1577,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             species.subdomain_to_prev_solution[subdomain] = u_ns[i]
             species.subdomain_to_test_function[subdomain] = vs[i]
             species.subdomain_to_function_space[subdomain] = V.sub(i)
+            species.subdomain_to_index[subdomain] = i
             species.subdomain_to_post_processing_solution[subdomain] = u.sub(
                 i
             ).collapse()
@@ -1612,14 +1629,68 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         bc.create_value_ufl(temperature=temperature)
 
+    def subdomain_measure(self, subdomain: _subdomain.VolumeSubdomain):
+        """The measure the derivative-free terms of ``subdomain`` are integrated over.
+
+        Always a parent-mesh measure: cells for a regular volume subdomain, facets for
+        a manifold (codim-1) one. Integrating ``f * v`` over the tagged facets of the
+        parent mesh and over the cells of the corresponding submesh gives numerically
+        identical results, and the parent measure is the one that can also see the bulk
+        fields a codimensional coupling depends on.
+        """
+        if subdomain.codim(self.mesh.vdim) == 1:
+            return self.ds(subdomain.id)
+        return self.dx(subdomain.id)
+
+    def gradient_measure(self, subdomain: _subdomain.VolumeSubdomain):
+        """The measure the gradient terms of ``subdomain`` are integrated over.
+
+        For a manifold subdomain this *must* be a measure whose domain is its submesh:
+        only then does ``ufl.grad`` of the manifold field mean the tangential gradient.
+        Under the parent facet measure it silently evaluates to something else (see
+        ``docs`` and issue #1208).
+        """
+        if subdomain.codim(self.mesh.vdim) == 1:
+            return ufl.Measure("dx", domain=subdomain.submesh)
+        return self.dx(subdomain.id)
+
+    def diffusion_coefficient(self, subdomain: _subdomain.VolumeSubdomain, species):
+        """The diffusion coefficient of ``species`` for the gradient terms of
+        ``subdomain``, defined on the mesh those terms are integrated over."""
+        if subdomain.codim(self.mesh.vdim) == 1:
+            # coefficients in a submesh integral must live on that submesh
+            return subdomain.material.get_diffusion_coefficient(
+                subdomain.submesh, subdomain.sub_T, species
+            )
+        return subdomain.material.get_diffusion_coefficient(
+            self.mesh.mesh, self.temperature_fenics, species
+        )
+
     def create_subdomain_formulation(self, subdomain: _subdomain.VolumeSubdomain):
         """Creates the variational formulation for each subdomain and stores it in
-        ``subdomain.F``
+        ``subdomain.F`` and, for a manifold subdomain, ``subdomain.F_submesh``.
+
+        Gradient terms are integrated over :meth:`gradient_measure` and everything else
+        over :meth:`subdomain_measure`. For a regular volume subdomain these are the
+        same measure and the whole formulation ends up in ``subdomain.F``. For a
+        manifold subdomain they are measures on two different meshes, which DOLFINx
+        cannot compile into a single form, so the gradient terms are kept apart in
+        ``subdomain.F_submesh`` and assembled as a separate group.
 
         Args:
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
         """
+        is_manifold = subdomain.codim(self.mesh.vdim) == 1
+        if is_manifold and self.mesh.coordinate_system != CoordinateSystem.CARTESIAN:
+            raise NotImplementedError(
+                "codimensional subdomains are only supported in cartesian coordinates, "
+                f"not {self.mesh.coordinate_system}"
+            )
+        dx = self.subdomain_measure(subdomain)
+        dx_grad = self.gradient_measure(subdomain)
+
         form = 0
+        form_grad = 0
         # add diffusion and time derivative for each species
         for spe in self.species:
             if subdomain not in spe.subdomains:
@@ -1629,30 +1700,24 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             v = spe.subdomain_to_test_function[subdomain]
 
             if self.settings.transient:
-                form += ((u - u_n) / self.dt) * v * self.dx(subdomain.id)
+                form += ((u - u_n) / self.dt) * v * dx
 
             if spe.mobile:
-                D = subdomain.material.get_diffusion_coefficient(
-                    self.mesh.mesh, self.temperature_fenics, spe
-                )
+                D = self.diffusion_coefficient(subdomain, spe)
                 match self.mesh.coordinate_system:
                     case CoordinateSystem.CARTESIAN:
-                        form += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * self.dx(
-                            subdomain.id
-                        )
+                        form_grad += ufl.dot(D * ufl.grad(u), ufl.grad(v)) * dx_grad
                     case CoordinateSystem.CYLINDRICAL:
                         r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                        form += (
-                            r
-                            * ufl.dot(D * ufl.grad(u), ufl.grad(v / r))
-                            * self.dx(subdomain.id)
+                        form_grad += (
+                            r * ufl.dot(D * ufl.grad(u), ufl.grad(v / r)) * dx_grad
                         )
                     case CoordinateSystem.SPHERICAL:
                         r = ufl.SpatialCoordinate(self.mesh.mesh)[0]
-                        form += (
+                        form_grad += (
                             r**2
                             * ufl.dot(D * ufl.grad(u), ufl.grad(v / r**2))
-                            * self.dx(subdomain.id)
+                            * dx_grad
                         )
                     case _:
                         raise ValueError(
@@ -1661,6 +1726,30 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         # reactions are expanded into particle sources (_unpacked_sources, see
         # create_sources_from_reactions), so they are handled by the source loop
+        for reaction in self.reactions:
+            if reaction.volume != subdomain:
+                continue
+
+            # reactant
+            for reactant in reaction.reactant:
+                if isinstance(reactant, _species.Species):
+                    form += (
+                        reaction.reaction_term(self.temperature_fenics)
+                        * reactant.subdomain_to_test_function[subdomain]
+                        * dx
+                    )
+
+            # product
+            if isinstance(reaction.product, list):
+                products = reaction.product
+            else:
+                products = [reaction.product]
+            for product in products:
+                form += (
+                    -reaction.reaction_term(self.temperature_fenics)
+                    * product.subdomain_to_test_function[subdomain]
+                    * dx
+                )
 
         # add fluxes
         for bc in self._unpacked_bcs:
@@ -1688,11 +1777,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self._unpacked_sources:
             if source.volume != subdomain:
                 continue
-            breakpoint()
             v = source.species.subdomain_to_test_function[subdomain]
-            if source.volume == subdomain:
-                v = source.species.subdomain_to_test_function[subdomain]
-                form -= source.value.fenics_object * v * self.dx(subdomain.id)
+            form -= source.value.fenics_object * v * self.dx(subdomain.id)
 
         # add advection
         for adv_term in self.advection_terms:
@@ -1704,13 +1790,20 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 conc = spe.subdomain_to_solution[subdomain]
 
                 vel = adv_term.velocity.fenics_object
-                # print(vel.x.array)
-                form += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * self.dx(
-                    subdomain.id
-                )
+                # on a manifold the tangential gradient is orthogonal to the normal, so
+                # dot(grad(c), vel) already picks out the tangential part of vel
+                form_grad += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * dx_grad
 
-        # store the form in the subdomain object
-        subdomain.F = form
+        # store the form(s) in the subdomain object
+        if is_manifold:
+            subdomain.F = form
+            # form_grad is still the integer 0 if the subdomain has no gradient term
+            # (no mobile species, no advection), in which case there is nothing to
+            # assemble over the submesh
+            subdomain.F_submesh = form_grad if isinstance(form_grad, ufl.Form) else None
+        else:
+            subdomain.F = form + form_grad
+            subdomain.F_submesh = None
 
     def link_enclosures(self):
         """Validates the enclosures and resolves the links between them, their surfaces
@@ -2012,34 +2105,50 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             gas_species.solution for gas_species in self.gas_species
         ]
 
-        J = []
+        # a manifold subdomain contributes a second residual, integrated over its own
+        # submesh; DOLFINx compiles one integration domain per form, so it is kept as a
+        # separate group and summed into the residual and Jacobian at assembly time
+        submesh_forms = [
+            getattr(subdomain, "F_submesh", None)
+            for subdomain in self.volume_subdomains
+        ] + [None for _ in self.gas_species]
+        groups = [all_forms]
+        if any(form is not None for form in submesh_forms):
+            groups.append(submesh_forms)
+
         # this is the symbolic differentiation of the Jacobian
-        for form in all_forms:
-            jac = []
-            for unknown in all_unknowns:
-                jac.append(
-                    ufl.derivative(form, unknown),
-                )
-            J.append(jac)
+        J_groups = []
+        for group in groups:
+            J = []
+            for form in group:
+                if form is None:
+                    J.append([None] * len(all_unknowns))
+                    continue
+                J.append([ufl.derivative(form, unknown) for unknown in all_unknowns])
+            J_groups.append(J)
+        if len(groups) > 1:
+            # a block differentiated with respect to an unknown it does not depend on
+            # would otherwise send DOLFINx looking for an entity map between two
+            # sibling submeshes, which does not exist
+            J_groups = [prune_empty_blocks(J) for J in J_groups]
+
         # compile jacobian (J) and residual (F)
         entity_maps = [sd.cell_map for sd in self.volume_subdomains]
+        jit_options = {
+            "cffi_extra_compile_args": ["-O3", "-march=native"],
+            "cffi_libraries": ["m"],
+        }
 
-        self.forms = dolfinx.fem.form(
-            all_forms,
-            entity_maps=entity_maps,
-            jit_options={
-                "cffi_extra_compile_args": ["-O3", "-march=native"],
-                "cffi_libraries": ["m"],
-            },
-        )
-        self.J = dolfinx.fem.form(
-            J,
-            entity_maps=entity_maps,
-            jit_options={
-                "cffi_extra_compile_args": ["-O3", "-march=native"],
-                "cffi_libraries": ["m"],
-            },
-        )
+        self.form_groups = [
+            dolfinx.fem.form(g, entity_maps=entity_maps, jit_options=jit_options)
+            for g in groups
+        ]
+        self.J_groups = [
+            dolfinx.fem.form(g, entity_maps=entity_maps, jit_options=jit_options)
+            for g in J_groups
+        ]
+        self.forms = self.form_groups[0]
+        self.J = self.J_groups[0]
 
     def create_solver(self):
 
@@ -2056,6 +2165,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             kind="mpi",
         )
 
+        if len(self.form_groups) > 1:
+            self._setup_mixed_dimensional_assembly()
+
         self.solver.solver.setMonitor(SnesMonitor)
         self.solver.solver.getKSP().setMonitor(KSPMonitor)
         self.solver.solver.setConvergenceTest(convergenceTest)
@@ -2067,6 +2179,46 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         opts = PETSc.Options()
         for k in petsc_options.keys():
             del opts[f"{prefix}{k}"]
+
+    def _setup_mixed_dimensional_assembly(self):
+        """Make the solver sum the residual and Jacobian over all form groups.
+
+        ``NonlinearProblem`` assembles a single group; with a manifold subdomain the
+        formulation spans two integration domains and therefore two groups, so the SNES
+        callbacks are replaced by ones that accumulate both. The problem was built from
+        the first (parent-mesh) group, which sets the block layout and the sparsity
+        pattern.
+        """
+        snes = self.solver.solver
+        unknowns = [subdomain.u for subdomain in self.volume_subdomains] + [
+            gas_species.solution for gas_species in self.gas_species
+        ]
+        # the sparsity pattern comes from the first group alone, so allow the manifold
+        # blocks to add nonzeros the bulk blocks did not need
+        self.solver.A.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
+
+        snes.setJacobian(
+            custom_assemble_jacobian,
+            self.solver.A,
+            self.solver.P_mat,
+            kargs={
+                "u": unknowns,
+                "jacobian_groups": self.J_groups,
+                "preconditioner": None,
+                "bcs": self.bc_forms,
+                "index_sets": make_index_sets(self.J_groups[0]),
+            },
+        )
+
+        residual_kargs = {
+            "u": unknowns,
+            "residual_groups": self.form_groups,
+            "jacobian_groups": self.J_groups,
+            "bcs": self.bc_forms,
+        }
+        if (blocks := self.solver.b.getAttr("_blocks")) is not None:
+            residual_kargs["_blocks"] = blocks
+        snes.setFunction(custom_assemble_residual, self.solver.b, kargs=residual_kargs)
 
     def create_flux_values_fenics(self):
         """For each particle flux create the ``value_fenics`` attribute."""

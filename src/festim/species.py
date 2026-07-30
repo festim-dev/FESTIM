@@ -72,6 +72,7 @@ class Species:
     subdomain_to_post_processing_solution: dict
     subdomain_to_collapsed_function_space: dict
     subdomain_to_function_space: dict
+    subdomain_to_index: dict
 
     def __init__(
         self,
@@ -97,6 +98,8 @@ class Species:
         self.subdomain_to_post_processing_solution = {}
         self.subdomain_to_collapsed_function_space = {}
         self.subdomain_to_function_space = {}
+        # index of this species within the subdomain's mixed element
+        self.subdomain_to_index = {}
 
     def __repr__(self) -> str:
         return f"Species({self.name})"
