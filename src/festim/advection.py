@@ -149,11 +149,14 @@ class VelocityField(Value):
                 )
 
         # create vector function space and function
+        # NOTE: the shape is the *geometric* dimension, not the topological one: on a
+        # codim-1 subdomain the mesh is a manifold (eg. a line in 2D) whose cells are
+        # 1D but whose points, and therefore velocities and gradients, are ambient
         v_cg = basix.ufl.element(
             "Lagrange",
             function_space.mesh.topology.cell_name(),
             1,
-            shape=(function_space.mesh.topology.dim,),
+            shape=(function_space.mesh.geometry.dim,),
         )
         self.vector_function_space = fem.functionspace(function_space.mesh, v_cg)
         self.fenics_object = fem.Function(self.vector_function_space)

@@ -74,6 +74,15 @@ class ProblemBase:
         return [s for s in self.subdomains if isinstance(s, F.SurfaceSubdomain)]
 
     @property
+    def manifold_subdomains(self):
+        """The codim-1 volume subdomains: manifolds embedded in the mesh carrying their
+        own transport equation. They are tagged in the facet meshtags and may be used
+        wherever a surface subdomain is expected."""
+        if self.mesh is None or self.mesh.mesh is None:
+            return []
+        return [s for s in self.volume_subdomains if s.codim(self.mesh.vdim) == 1]
+
+    @property
     def dt(self):
         return self._dt
 
@@ -106,6 +115,18 @@ class ProblemBase:
         vol_ids = [vol.id for vol in self.volume_subdomains]
         if len(vol_ids) != len(np.unique(vol_ids)):
             raise ValueError("Volume ids are not unique")
+
+        # manifold subdomains live in the facet meshtags, so their ids must not clash
+        # with a surface subdomain's: the facets carrying the tag would then be a mix
+        # of the two, and neither would integrate over what it claims to
+        manifold_ids = [s.id for s in self.manifold_subdomains]
+        clashing = set(manifold_ids) & {s.id for s in self.surface_subdomains}
+        if clashing or len(manifold_ids) != len(np.unique(manifold_ids)):
+            raise ValueError(
+                f"Surface ids {sorted(clashing) or manifold_ids} are not unique. "
+                "Codim-1 volume subdomains are tagged in the facet meshtags and "
+                "therefore share their ids with the surface subdomains."
+            )
 
         # define measures
         self.ds = ufl.Measure(
