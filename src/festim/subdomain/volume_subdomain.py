@@ -22,6 +22,7 @@ class VolumeSubdomain:
 
     Args:
         id: the id of the volume subdomain (> 0)
+        dim: the dimension of a coupled subdomain (<= mesh.topology.dim)
         submesh: the submesh of the volume subdomain
         cell_map: the cell map of the volume subdomain
         parent_mesh: the parent mesh of the volume subdomain
@@ -35,6 +36,7 @@ class VolumeSubdomain:
     """
 
     id: int
+    dim: int
     submesh: dolfinx.mesh.Mesh
     cell_map: "entity_map_type"
     parent_mesh: dolfinx.mesh.Mesh
@@ -47,10 +49,16 @@ class VolumeSubdomain:
     sub_T: fem.Function | float
 
     def __init__(
-        self, id, material, locator: Callable | None = None, name: str | None = None
+        self,
+        id,
+        material,
+        dim: int | None = None,
+        locator: Callable | None = None,
+        name: str | None = None,
     ):
         assert id != 0, "Volume subdomain id cannot be 0"
         self.id = id
+        self.dim = dim
         self.material = material
         self.locator = locator
         self.name = name
@@ -68,6 +76,36 @@ class VolumeSubdomain:
         else:
             raise TypeError("Name must be a string")
 
+    @property
+    def dim(self):
+        """
+        Topological dimension of the subdomain's entities. ``None`` means
+        it is the same as the parent mesh and is filled in by :meth:`set_dim`.
+        """
+        return self._dim
+
+    @dim.setter
+    def dim(self, value):
+        if value is None:
+            self._dim = value
+        elif isinstance(value, int):
+            self._dim = value
+        else:
+            raise TypeError("Subdomain dimension must be an integer")
+
+    def set_subdomain_dim(self, mesh: dolfinx.mesh.Mesh):
+        if self._dim is None:
+            self._dim = mesh.topology.dim
+        elif self._dim > mesh.topology.dim:
+            raise ValueError(
+                f"Subdomain {self.id} has dim={self._dim} which is greater than "
+                f"mesh.topology.dim={mesh.topology.dim}"
+            )
+        elif self._dim < 0:
+            # The user could technically create a co-dim problem on a single mesh vertex
+            # hence allowing zero here
+            raise ValueError(f"Subdomain {self.id} has dim less than zero")
+
     def create_subdomain(self, mesh: dolfinx.mesh.Mesh, marker: dolfinx.mesh.MeshTags):
         """
         Creates the following attributes: ``.parent_mesh``, ``.submesh``, ``.cell_map``,
@@ -79,13 +117,11 @@ class VolumeSubdomain:
             mesh (dolfinx.mesh.Mesh): the parent mesh
             marker (dolfinx.mesh.MeshTags): the parent volume markers
         """
-        assert marker.dim == mesh.topology.dim
-        self.parent_mesh = (
-            mesh  # NOTE: it doesn't seem like we use this attribute anywhere
-        )
+        self.set_subdomain_dim(mesh)
+        self.parent_mesh = mesh
         entities = marker.find(self.id)
         self.submesh, self.cell_map, self.v_map, self.n_map = (
-            dolfinx.mesh.create_submesh(mesh, marker.dim, entities)
+            dolfinx.mesh.create_submesh(mesh, self.dim, entities)
         )
 
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
