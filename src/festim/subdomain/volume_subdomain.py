@@ -32,6 +32,11 @@ class VolumeSubdomain:
         u_n: the previous solution function of the subdomain
         material: the material assigned to the subdomain
         sub_T: the sub temperature field in the subdomain
+        dim: the topological dimension of the subdomain. Defaults to ``None``, meaning
+            the dimension of the mesh. Set it to ``mesh_dim - 1`` to solve a transport
+            equation on a manifold embedded in the mesh (a line in a 2D mesh, a surface
+            in a 3D mesh). Such a subdomain is tagged in the *facet* meshtags, and can
+            be used wherever a surface is expected (eg. ``ParticleFluxBC``).
     """
 
     id: int
@@ -62,6 +67,38 @@ class VolumeSubdomain:
         self.dim = dim
 
     @property
+    def dim(self):
+        return self._dim
+
+    @dim.setter
+    def dim(self, value):
+        if value is not None and not isinstance(value, int | np.integer):
+            raise TypeError(f"dim must be an integer or None, not {type(value)}")
+        if value is not None and value < 1:
+            raise ValueError(f"dim must be strictly positive, got {value}")
+        self._dim = None if value is None else int(value)
+
+    def codim(self, mesh_dim: int) -> int:
+        """The codimension of the subdomain in a mesh of dimension ``mesh_dim``.
+
+        Args:
+            mesh_dim: the topological dimension of the parent mesh
+
+        Returns:
+            0 for a regular volume subdomain, 1 for a manifold subdomain
+
+        Raises:
+            ValueError: if the resulting codimension is not 0 or 1
+        """
+        codim = 0 if self.dim is None else mesh_dim - self.dim
+        if codim not in (0, 1):
+            raise ValueError(
+                f"volume subdomain {self.id} has dim={self.dim} in a mesh of dimension "
+                f"{mesh_dim}, ie. codimension {codim}. Only 0 and 1 are supported."
+            )
+        return codim
+
+    @property
     def name(self):
         return self._name
 
@@ -83,9 +120,11 @@ class VolumeSubdomain:
 
         Args:
             mesh (dolfinx.mesh.Mesh): the parent mesh
-            marker (dolfinx.mesh.MeshTags): the parent volume markers
+            marker (dolfinx.mesh.MeshTags): the markers the subdomain is tagged in: the
+                volume markers for a codim-0 subdomain, the facet markers for a codim-1
+                one
         """
-        # assert marker.dim == mesh.topology.dim
+        assert marker.dim == (mesh.topology.dim if self.dim is None else self.dim)
         self.parent_mesh = (
             mesh  # NOTE: it doesn't seem like we use this attribute anywhere
         )
@@ -97,6 +136,12 @@ class VolumeSubdomain:
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
         # Transfer meshtags to submesh
         assert self.submesh is not None, "Need to call create_subdomain first"
+        if self.codim(mesh.topology.dim) == 1:
+            # the parent facet tags are the *cell* tags of a codim-1 submesh, so there
+            # is nothing meaningful to transfer. ``ft`` is only read to apply strong
+            # Dirichlet BCs, which are not supported on a manifold subdomain yet.
+            self.ft = None
+            return
         sub_tag = transfer_meshtags_to_submesh(
             tag, self.submesh, self.v_map, self.cell_map
         )
@@ -106,7 +151,10 @@ class VolumeSubdomain:
             self.ft, _ = sub_tag
 
     def locate_subdomain_entities(self, mesh: Mesh) -> npt.NDArray[np.int32]:
-        """Locates all cells in subdomain borders within domain.
+        """Locates all entities of the subdomain within the domain.
+
+        These are the cells of the mesh for a regular volume subdomain, and the facets
+        for a codim-1 (manifold) one.
 
         Args:
             mesh: the mesh of the model
@@ -117,7 +165,8 @@ class VolumeSubdomain:
         if self.locator is None:
             raise ValueError("No locator function provided for locating cells.")
 
-        entities = locate_entities(mesh, mesh.topology.dim, self.locator)
+        dim = mesh.topology.dim if self.dim is None else self.dim
+        entities = locate_entities(mesh, dim, self.locator)
         return entities
 
 
