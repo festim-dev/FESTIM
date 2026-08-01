@@ -110,6 +110,10 @@ directly wherever a surface is expected, for instance as the ``subdomain`` of a
 :class:`festim.ParticleFluxBC` — there is no need to declare a separate
 :class:`festim.SurfaceSubdomain` on the same facets.
 
+A manifold may sit on the outer boundary of the domain, or *between* two volume
+subdomains — a grain boundary, or an interface layer with its own trapping — in which
+case it exchanges with both sides.
+
 Coupling to the bulk
 --------------------
 
@@ -150,6 +154,35 @@ concentrations, even though they live on different meshes::
     H/m² (an adsorbed layer, source :math:`J`), or a line density H/m (a grain
     boundary). Keeping the problem dimensionally consistent is up to you.
 
+Manifolds between two subdomains
+--------------------------------
+
+When a manifold separates two volume subdomains, declare **one exchange per side** —
+one :class:`festim.ParticleFluxBC` and one :class:`festim.ParticleSource` each. Both
+name the same manifold as their subdomain; FESTIM works out which side each belongs to
+from the bulk species it reads, so nothing else has to be specified::
+
+    for bulk_species, k in ((H_left, k_left), (H_right, k_right)):
+        J = lambda c_man, c_bulk: k * (c_bulk - c_man)
+        bcs.append(F.ParticleFluxBC(
+            subdomain=gamma, species=bulk_species,
+            value=lambda c_man, c_bulk: -J(c_man, c_bulk),
+            species_dependent_value={"c_bulk": bulk_species, "c_man": H_manifold}))
+        sources.append(F.ParticleSource(
+            volume=gamma, species=H_manifold, value=J,
+            species_dependent_value={"c_bulk": bulk_species, "c_man": H_manifold}))
+
+A single source may not read the bulk concentrations of *both* sides at once: an
+interior manifold is integrated over interior facets, where each term has to be
+restricted to one side. Split such a source in two, as above.
+
+.. note::
+
+    A pair of volume subdomains may be separated either by a
+    :class:`festim.Interface` -- imposing a jump in concentration across a shared
+    boundary -- or by a codim-1 subdomain carrying its own transport equation, but not
+    both. FESTIM raises if an interface and a manifold cover the same facets.
+
 Advection along a manifold
 --------------------------
 
@@ -162,9 +195,9 @@ project it onto the manifold: the tangential gradient is orthogonal to the norma
 Limitations
 -----------
 
-* Only codimension 1 is supported (``dim`` must be the mesh dimension minus one).
-* The manifold must lie on the outer boundary of the domain; an interface between two
-  bulk subdomains is not supported yet.
+* Only codimension 1 is supported (``dim`` must be the mesh dimension minus one), and a
+  manifold must be adjacent to one volume subdomain (on the boundary of the domain) or
+  two (on an interface).
 * Strong (Dirichlet) boundary conditions cannot be applied at the ends of a manifold
   subdomain; only the natural zero-flux condition is available there.
 * Cartesian coordinates only.

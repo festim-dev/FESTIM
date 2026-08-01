@@ -1326,12 +1326,25 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 ct=self.volume_meshtags,
                 facet_to_cell=facet_to_cell,
                 volume_subdomains=self.volume_subdomains,
-                # manifold subdomains are tagged in the facet meshtags, so they are
-                # also surfaces as far as the connectivity is concerned: this is what
-                # lets a ParticleFluxBC be applied on one
-                surface_subdomains=self.surface_subdomains + self.manifold_subdomains,
+                surface_subdomains=self.surface_subdomains,
                 comm=self.mesh.mesh.comm,
             )
+
+        # a manifold may sit on the boundary of the domain (one adjacent volume) or on
+        # an interface (two), so it needs a multi-valued mapping of its own rather than
+        # the one-to-one surface_to_volume
+        facet_to_cell = self.mesh.mesh.topology.connectivity(
+            self.mesh.mesh.topology.dim - 1, self.mesh.mesh.topology.dim
+        )
+        self._coupling_measures = {}
+        self.manifold_to_volumes = _subdomain.map_manifold_to_volume_subdomains(
+            ft=self.facet_meshtags,
+            ct=self.volume_meshtags,
+            facet_to_cell=facet_to_cell,
+            volume_subdomains=self.volume_subdomains,
+            manifold_subdomains=self.manifold_subdomains,
+            comm=self.mesh.mesh.comm,
+        )
 
         # create submeshes and transfer meshtags to subdomains
         for subdomain in self.volume_subdomains:
@@ -1614,7 +1627,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def define_boundary_conditions(self):
         for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                bc._volume_subdomain = self.surface_to_volume[bc.subdomain]
+                bc._volume_subdomain = self.flux_bc_target(bc)[0]
 
         super().define_boundary_conditions()
 
@@ -1630,29 +1643,138 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         bc.create_value_ufl(temperature=temperature)
 
     def subdomain_measure(self, subdomain: _subdomain.VolumeSubdomain):
-        """The measure the derivative-free terms of ``subdomain`` are integrated over.
+        """The measure the *self* terms of ``subdomain`` are integrated over.
 
-        Always a parent-mesh measure: cells for a regular volume subdomain, facets for
-        a manifold (codim-1) one. Integrating ``f * v`` over the tagged facets of the
-        parent mesh and over the cells of the corresponding submesh gives numerically
-        identical results, and the parent measure is the one that can also see the bulk
-        fields a codimensional coupling depends on.
-        """
-        if subdomain.codim(self.mesh.vdim) == 1:
-            return self.ds(subdomain.id)
-        return self.dx(subdomain.id)
+        Self terms are the ones that only involve fields living on ``subdomain``: the
+        time derivative, diffusion, advection, reactions and sources that do not reach
+        across meshes. For a manifold (codim-1) subdomain they are integrated over its
+        own submesh, which is what makes ``ufl.grad`` mean the tangential gradient (see
+        the docs and issue #1208) and what makes the formulation identical whether the
+        manifold sits on the boundary of the domain or between two volume subdomains.
 
-    def gradient_measure(self, subdomain: _subdomain.VolumeSubdomain):
-        """The measure the gradient terms of ``subdomain`` are integrated over.
-
-        For a manifold subdomain this *must* be a measure whose domain is its submesh:
-        only then does ``ufl.grad`` of the manifold field mean the tangential gradient.
-        Under the parent facet measure it silently evaluates to something else (see
-        ``docs`` and issue #1208).
+        Terms coupling a manifold to the bulk cannot use this measure -- a bulk field
+        cannot be resolved inside a codim-1 integral -- and use
+        :meth:`coupling_measure` instead.
         """
         if subdomain.codim(self.mesh.vdim) == 1:
             return ufl.Measure("dx", domain=subdomain.submesh)
         return self.dx(subdomain.id)
+
+    def coupling_measure(self, manifold: _subdomain.VolumeSubdomain):
+        """The parent-mesh measure the terms coupling ``manifold`` to the bulk are
+        integrated over.
+
+        Exterior facets (a manifold on the boundary of the domain) use ``ds``; interior
+        facets use ``dS``, with the integration entities ordered so that ``"+"`` is the
+        first of the manifold's adjacent volume subdomains -- see
+        :meth:`restriction_of`.
+        """
+        volumes = self.manifold_to_volumes[manifold]
+        if len(volumes) == 1:
+            return self.ds(manifold.id)
+
+        # memoised: DOLFINx requires every integral of a compiled form to share the
+        # *same* subdomain_data object, not merely an equal one
+        if manifold not in self._coupling_measures:
+            integral_data = _subdomain.compute_ordered_interior_facet_data(
+                self.mesh.mesh, self.facet_meshtags, manifold.id, volumes[0], volumes[1]
+            )
+            self._coupling_measures[manifold] = ufl.Measure(
+                "dS", domain=self.mesh.mesh, subdomain_data=[integral_data]
+            )
+        return self._coupling_measures[manifold](manifold.id)
+
+    def restriction_of(
+        self, manifold: _subdomain.VolumeSubdomain, volume: _subdomain.VolumeSubdomain
+    ) -> str | None:
+        """Which side of an interior ``manifold`` the subdomain ``volume`` is on.
+
+        ``None`` when the manifold is on the boundary of the domain, where the coupling
+        is an exterior-facet integral and nothing needs restricting.
+        """
+        volumes = self.manifold_to_volumes[manifold]
+        if len(volumes) == 1:
+            return None
+        return "+" if volume is volumes[0] else "-"
+
+    def restrict(self, expression, restriction: str | None):
+        """Apply ``restriction`` to a whole expression, or return it unchanged when the
+        coupling is on exterior facets."""
+        if restriction is None:
+            return expression
+        return expression(restriction)
+
+    def coupling_side(
+        self, manifold: _subdomain.VolumeSubdomain, species: _species.Species
+    ) -> _subdomain.VolumeSubdomain:
+        """The volume subdomain on the side of ``manifold`` that ``species`` lives on.
+
+        This is how a coupling term declares which side of an interface it applies to:
+        a flux boundary condition or a source names a bulk species, and that species
+        identifies the side. Nothing else has to be specified by the user.
+
+        Raises:
+            ValueError: if the species does not live on exactly one of the manifold's
+                adjacent volume subdomains
+        """
+        candidates = [
+            v for v in self.manifold_to_volumes[manifold] if v in species.subdomains
+        ]
+        if len(candidates) != 1:
+            raise ValueError(
+                f"cannot tell which side of codim-1 subdomain {manifold.id} species "
+                f"{species.name} is on: it lives on volume subdomains "
+                f"{[s.id for s in species.subdomains]} while {manifold.id} is adjacent "
+                f"to {[v.id for v in self.manifold_to_volumes[manifold]]}. Declare one "
+                "term per side, each naming the species of that side."
+            )
+        return candidates[0]
+
+    def flux_bc_target(self, bc):
+        """Where a ``ParticleFluxBC`` contributes: ``(volume subdomain, measure,
+        restriction)``.
+
+        On an ordinary surface this is the single volume the surface belongs to. On a
+        manifold subdomain it is the side ``bc.species`` lives on, which is how a user
+        declares one flux per side of an interface without naming the side explicitly.
+        """
+        if bc.subdomain in self.manifold_to_volumes:
+            target = self.coupling_side(bc.subdomain, bc.species)
+            return (
+                target,
+                self.coupling_measure(bc.subdomain),
+                self.restriction_of(bc.subdomain, target),
+            )
+        return self.surface_to_volume[bc.subdomain], self.ds(bc.subdomain.id), None
+
+    def foreign_species(
+        self, source, manifold: _subdomain.VolumeSubdomain
+    ) -> list[_species.Species]:
+        """The species a source on ``manifold`` reads that do not live on it.
+
+        A non-empty result means the source is one half of a codimensional coupling
+        rather than a source of the manifold's own equation, and must therefore be
+        integrated on the parent mesh.
+
+        Raises:
+            ValueError: if the source reads species from more than one side of the
+                manifold, which cannot be expressed as a single restricted integral
+        """
+        dependencies = getattr(source.value, "species_dependent_value", None) or {}
+        foreign = [
+            species
+            for species in dependencies.values()
+            if manifold not in species.subdomains
+        ]
+        sides = {self.coupling_side(manifold, species) for species in foreign}
+        if len(sides) > 1:
+            raise ValueError(
+                f"the source on codim-1 subdomain {manifold.id} depends on species "
+                "from "
+                f"both of its sides ({sorted(v.id for v in sides)}), which cannot be "
+                "integrated as one term. Declare one source per side."
+            )
+        return foreign
 
     def diffusion_coefficient(self, subdomain: _subdomain.VolumeSubdomain, species):
         """The diffusion coefficient of ``species`` for the gradient terms of
@@ -1670,12 +1792,18 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         """Creates the variational formulation for each subdomain and stores it in
         ``subdomain.F`` and, for a manifold subdomain, ``subdomain.F_submesh``.
 
-        Gradient terms are integrated over :meth:`gradient_measure` and everything else
-        over :meth:`subdomain_measure`. For a regular volume subdomain these are the
-        same measure and the whole formulation ends up in ``subdomain.F``. For a
-        manifold subdomain they are measures on two different meshes, which DOLFINx
-        cannot compile into a single form, so the gradient terms are kept apart in
-        ``subdomain.F_submesh`` and assembled as a separate group.
+        Terms are split by whether they reach across meshes. *Self* terms -- the time
+        derivative, diffusion, advection, reactions and sources involving only fields of
+        ``subdomain`` -- are integrated over :meth:`subdomain_measure`, which for a
+        manifold subdomain is its own submesh. *Coupling* terms, which mix a manifold
+        field with a bulk field, cannot live there (a bulk function cannot be resolved
+        inside a codim-1 integral) and use :meth:`coupling_measure` on the parent mesh.
+
+        For a regular volume subdomain both measures are on the parent mesh and the
+        whole formulation ends up in ``subdomain.F``. For a manifold subdomain they are
+        measures on two different meshes, which DOLFINx cannot compile into a single
+        form, so the self terms are kept apart in ``subdomain.F_submesh`` and assembled
+        as a separate group.
 
         Args:
             subdomain (F.VolumeSubdomain): a subdomain of the geometry
@@ -1687,10 +1815,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 f"not {self.mesh.coordinate_system}"
             )
         dx = self.subdomain_measure(subdomain)
-        dx_grad = self.gradient_measure(subdomain)
+        dx_grad = dx
 
         form = 0
         form_grad = 0
+        form_coupling = 0
         # add diffusion and time derivative for each species
         for spe in self.species:
             if subdomain not in spe.subdomains:
@@ -1751,34 +1880,51 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     * dx
                 )
 
-        # add fluxes
+        # add fluxes. These are always parent-mesh integrals: a flux on a manifold
+        # subdomain mixes the bulk and manifold fields, so it goes into form_coupling
         for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                # check that the bc is applied on a surface
-                # belonging to this subdomain
-                if subdomain == self.surface_to_volume[bc.subdomain]:
+                # check that the bc is applied on a surface belonging to this subdomain
+                target, measure, restriction = self.flux_bc_target(bc)
+                if subdomain == target:
                     v = bc.species.subdomain_to_test_function[subdomain]
-                    form -= bc.value_fenics * v * self.ds(bc.subdomain.id)
+                    form_coupling -= (
+                        self.restrict(bc.value_fenics, restriction)
+                        * self.restrict(v, restriction)
+                        * measure
+                    )
             if isinstance(bc, boundary_conditions.FixedConcentrationBC):
                 # as for fluxes, only the subdomain owning the surface gets the term,
                 # and its material is the one setting D there
-                if (
-                    bc.enforce_weakly
-                    and subdomain == self.surface_to_volume[bc.subdomain]
+                if bc.enforce_weakly and subdomain == self.surface_to_volume.get(
+                    bc.subdomain
                 ):
                     u = bc.species.subdomain_to_solution[subdomain]
                     v = bc.species.subdomain_to_test_function[subdomain]
                     D = subdomain.material.get_diffusion_coefficient(
                         self.mesh.mesh, self.temperature_fenics, bc.species
                     )
-                    form += bc.weak_formulation(u, v, self.ds, D)
+                    form_coupling += bc.weak_formulation(u, v, self.ds, D)
 
         # add volumetric sources
         for source in self._unpacked_sources:
             if source.volume != subdomain:
                 continue
             v = source.species.subdomain_to_test_function[subdomain]
-            form -= source.value.fenics_object * v * self.dx(subdomain.id)
+            foreign = self.foreign_species(source, subdomain) if is_manifold else []
+            if foreign:
+                # a source on a manifold that reads a bulk concentration: the exchange
+                # half that feeds the manifold. It must be integrated on the parent
+                # mesh, and restricted to the side the bulk species lives on
+                bulk = self.coupling_side(subdomain, foreign[0])
+                restriction = self.restriction_of(subdomain, bulk)
+                form_coupling -= (
+                    self.restrict(source.value.fenics_object, restriction)
+                    * self.restrict(v, restriction)
+                    * self.coupling_measure(subdomain)
+                )
+            else:
+                form -= source.value.fenics_object * v * self.dx(subdomain.id)
 
         # add advection
         for adv_term in self.advection_terms:
@@ -1795,14 +1941,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 form_grad += ufl.inner(ufl.dot(ufl.grad(conc), vel), v) * dx_grad
 
         # store the form(s) in the subdomain object
+        self_form = form + form_grad
         if is_manifold:
-            subdomain.F = form
-            # form_grad is still the integer 0 if the subdomain has no gradient term
-            # (no mobile species, no advection), in which case there is nothing to
-            # assemble over the submesh
-            subdomain.F_submesh = form_grad if isinstance(form_grad, ufl.Form) else None
+            subdomain.F = form_coupling
+            # self_form is still the integer 0 if the manifold carries no equation of
+            # its own, in which case there is nothing to assemble over the submesh
+            subdomain.F_submesh = self_form if isinstance(self_form, ufl.Form) else None
         else:
-            subdomain.F = form + form_grad
+            subdomain.F = self_form + form_coupling
             subdomain.F_submesh = None
 
     def link_enclosures(self):
@@ -2116,6 +2262,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         if any(form is not None for form in submesh_forms):
             groups.append(submesh_forms)
 
+            # the first group sets the block layout of the solver, so every block of it
+            # must have a test space. A manifold with no coupling term contributes
+            # nothing to it, and DOLFINx would then fail with "Could not deduce all
+            # block test spaces"
+            blocks = zip(all_forms, all_unknowns, strict=True)
+            for i, (form, unknown) in enumerate(blocks):
+                if not isinstance(form, ufl.Form):
+                    v = ufl.TestFunction(unknown.function_space)
+                    all_forms[i] = ufl.ZeroBaseForm((v,))
+
         # this is the symbolic differentiation of the Jacobian
         J_groups = []
         for group in groups:
@@ -2224,7 +2380,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         """For each particle flux create the ``value_fenics`` attribute."""
         for bc in self._unpacked_bcs:
             if isinstance(bc, boundary_conditions.ParticleFluxBC):
-                volume_subdomain = self.surface_to_volume[bc.subdomain]
+                volume_subdomain = self.flux_bc_target(bc)[0]
                 bc.create_value_fenics(
                     mesh=volume_subdomain.submesh,
                     temperature=self.temperature_fenics,
