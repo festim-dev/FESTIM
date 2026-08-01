@@ -224,35 +224,14 @@ def find_volume_from_id(id: int, volumes: list):
     raise ValueError(f"id {id} not found in list of volumes")
 
 
-def map_surface_to_volume_subdomains(
+def _facet_cell_tag_pairs(
     ft: dolfinx.mesh.MeshTags,
     ct: dolfinx.mesh.MeshTags,
     facet_to_cell: dolfinx.cpp.graph.AdjacencyList_int32,
-    volume_subdomains: list[VolumeSubdomain],
-    surface_subdomains: list[SurfaceSubdomain],
     comm=None,
-) -> dict[SurfaceSubdomain, VolumeSubdomain]:
-    """Maps surface subdomains to volume subdomains based on the facet and cell meshtags
-    and the facet to cell connectivity.
-
-
-    Raises:
-        AssertionError: if a surface subdomain is connected to multiple volume
-            subdomains
-
-    Args:
-        ft: the facet meshtags of the parent mesh
-        ct: the cell meshtags of the parent mesh
-        facet_to_cell: the facet to cell connectivity of the parent mesh
-        volume_subdomains: the list of volume subdomains
-        surface_subdomains: the list of surface subdomains
-        comm: MPI communicator (required for parallel runs)
-
-    Returns:
-        dict[SurfaceSubdomain, VolumeSubdomain]: a dictionary mapping surface subdomains
-            to volume subdomains
-    """
-
+):
+    """The unique ``(facet tag, cell tag)`` pairs present on the mesh, gathered across
+    all ranks."""
     # get connected cells for tagged facets
     start_indices = facet_to_cell.offsets[ft.indices]
     end_indices = facet_to_cell.offsets[ft.indices + 1]
@@ -286,12 +265,79 @@ def map_surface_to_volume_subdomains(
         non_empty = [p for p in all_pairs if len(p) > 0]
         if non_empty:
             unique_pairs = np.unique(np.vstack(non_empty), axis=0)
+    return unique_pairs
+
+
+def map_surface_to_volume_subdomains(
+    ft: dolfinx.mesh.MeshTags,
+    ct: dolfinx.mesh.MeshTags,
+    facet_to_cell: dolfinx.cpp.graph.AdjacencyList_int32,
+    volume_subdomains: list[VolumeSubdomain],
+    surface_subdomains: list[SurfaceSubdomain],
+    comm=None,
+) -> dict[SurfaceSubdomain, VolumeSubdomain]:
+    """Maps surface subdomains to volume subdomains based on the facet and cell meshtags
+    and the facet to cell connectivity.
+
+
+    Raises:
+        AssertionError: if a surface subdomain is connected to multiple volume
+            subdomains
+
+    Args:
+        ft: the facet meshtags of the parent mesh
+        ct: the cell meshtags of the parent mesh
+        facet_to_cell: the facet to cell connectivity of the parent mesh
+        volume_subdomains: the list of volume subdomains
+        surface_subdomains: the list of surface subdomains
+        comm: MPI communicator (required for parallel runs)
+
+    Returns:
+        dict[SurfaceSubdomain, VolumeSubdomain]: a dictionary mapping surface subdomains
+            to volume subdomains
+    """
+
+    unique_pairs = _facet_cell_tag_pairs(ft, ct, facet_to_cell, comm)
 
     surface_tag_to_subdomain = {s.id: s for s in surface_subdomains}
     volume_tag_to_subdomain = {v.id: v for v in volume_subdomains}
 
-    surface_to_subdomain = {}
+    adjacency = map_facet_tags_to_volume_subdomains(
+        unique_pairs, surface_tag_to_subdomain, volume_tag_to_subdomain
+    )
 
+    surface_to_subdomain = {}
+    for s_subdomain, volumes in adjacency.items():
+        assert len(volumes) == 1, (
+            f"Surface subdomain {s_subdomain.id} is connected "
+            f"to multiple volume subdomains: "
+            f"{' and '.join(str(v.id) for v in volumes)}"
+        )
+        surface_to_subdomain[s_subdomain] = volumes[0]
+    return surface_to_subdomain
+
+
+def map_facet_tags_to_volume_subdomains(
+    unique_pairs, surface_tag_to_subdomain: dict, volume_tag_to_subdomain: dict
+) -> dict:
+    """Group the ``(facet tag, cell tag)`` pairs into a facet-subdomain to
+    volume-subdomains mapping.
+
+    Unlike :func:`map_surface_to_volume_subdomains` this keeps *every* adjacent volume,
+    which is what a manifold subdomain sitting between two volumes needs. The volumes of
+    each entry are sorted by id so that the ordering does not depend on how the mesh
+    happens to be partitioned.
+
+    Args:
+        unique_pairs: the ``(facet tag, cell tag)`` pairs found on the mesh
+        surface_tag_to_subdomain: facet tag -> subdomain to report on
+        volume_tag_to_subdomain: cell tag -> volume subdomain
+
+    Returns:
+        a dictionary mapping each facet subdomain to the list of volume subdomains it
+        is adjacent to
+    """
+    adjacency = {}
     for s_tag, v_tag in unique_pairs:
         dolfinx.log.log(
             dolfinx.log.LogLevel.INFO,
@@ -300,13 +346,55 @@ def map_surface_to_volume_subdomains(
         s_subdomain = surface_tag_to_subdomain.get(s_tag)
         v_subdomain = volume_tag_to_subdomain.get(v_tag)
 
-        if s_subdomain and v_subdomain:
-            if s_subdomain in surface_to_subdomain:
-                assert surface_to_subdomain[s_subdomain] == v_subdomain, (
-                    f"Surface subdomain {s_subdomain.id} is connected "
-                    f"to multiple volume subdomains: "
-                    f"{surface_to_subdomain[s_subdomain].id} and {v_subdomain.id}"
-                )
-            else:
-                surface_to_subdomain[s_subdomain] = v_subdomain
-    return surface_to_subdomain
+        if s_subdomain is not None and v_subdomain is not None:
+            adjacency.setdefault(s_subdomain, [])
+            if v_subdomain not in adjacency[s_subdomain]:
+                adjacency[s_subdomain].append(v_subdomain)
+
+    for volumes in adjacency.values():
+        volumes.sort(key=lambda v: v.id)
+    return adjacency
+
+
+def map_manifold_to_volume_subdomains(
+    ft: dolfinx.mesh.MeshTags,
+    ct: dolfinx.mesh.MeshTags,
+    facet_to_cell: dolfinx.cpp.graph.AdjacencyList_int32,
+    volume_subdomains: list[VolumeSubdomain],
+    manifold_subdomains: list[VolumeSubdomain],
+    comm=None,
+) -> dict[VolumeSubdomain, list[VolumeSubdomain]]:
+    """Maps each codim-1 (manifold) volume subdomain to the volume subdomains it is
+    adjacent to: one for a manifold on the boundary of the domain, two for one sitting
+    on an interior interface.
+
+    Args:
+        ft: the facet meshtags of the parent mesh
+        ct: the cell meshtags of the parent mesh
+        facet_to_cell: the facet to cell connectivity of the parent mesh
+        volume_subdomains: the list of volume subdomains
+        manifold_subdomains: the codim-1 volume subdomains
+        comm: MPI communicator (required for parallel runs)
+
+    Returns:
+        a dictionary mapping each manifold subdomain to its adjacent volume subdomains,
+        sorted by id
+
+    Raises:
+        ValueError: if a manifold is adjacent to no volume, or to more than two
+    """
+    unique_pairs = _facet_cell_tag_pairs(ft, ct, facet_to_cell, comm)
+    bulk = [v for v in volume_subdomains if v not in manifold_subdomains]
+    adjacency = map_facet_tags_to_volume_subdomains(
+        unique_pairs, {m.id: m for m in manifold_subdomains}, {v.id: v for v in bulk}
+    )
+
+    for manifold in manifold_subdomains:
+        volumes = adjacency.get(manifold, [])
+        if not 1 <= len(volumes) <= 2:
+            raise ValueError(
+                f"codim-1 volume subdomain {manifold.id} is adjacent to "
+                f"{len(volumes)} volume subdomains; expected 1 (on the boundary of the "
+                "domain) or 2 (on an interface)"
+            )
+    return adjacency
