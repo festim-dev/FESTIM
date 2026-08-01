@@ -14,6 +14,76 @@ if TYPE_CHECKING:
 from abc import ABC, abstractmethod
 
 
+def compute_ordered_interior_facet_data(
+    mesh,
+    facet_tags: "dolfinx.mesh.MeshTags",
+    tag: int,
+    subdomain_plus: VolumeSubdomain,
+    subdomain_minus: VolumeSubdomain,
+):
+    """Integration data for an interior-facet (``dS``) integral, with the restrictions
+    ordered so that ``"+"`` is always ``subdomain_plus``.
+
+    DOLFINx's own ordering of the two cells of an interior facet is arbitrary, so
+    without this any expression that treats the two sides differently -- a solubility
+    jump, or a codimensional coupling with different exchange rates on either side --
+    would silently get its sides swapped.
+
+    Args:
+        mesh: the parent mesh
+        facet_tags: the facet meshtags of the parent mesh
+        tag: the value identifying the facets to integrate over
+        subdomain_plus: the volume subdomain to place on the ``"+"`` restriction
+        subdomain_minus: the volume subdomain to place on the ``"-"`` restriction
+
+    Returns:
+        ``(tag, integration_data)``, the pair accepted by ``ufl.Measure("dS",
+        subdomain_data=...)``. ``integration_data`` is a flat array of
+        ``(cell_plus, local_facet_plus, cell_minus, local_facet_minus)`` quadruples.
+
+    Raises:
+        ValueError: if a tagged facet does not separate the two subdomains
+    """
+    mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
+
+    integration_data = compute_integration_domains(
+        dolfinx.fem.IntegralType.interior_facet,
+        mesh.topology._cpp_object,
+        facet_tags.find(tag),
+    )
+    ordered_integration_data = integration_data.reshape(-1, 4).copy()
+
+    # sub_topology_to_topology(..., inverse=True) returns -1 for a parent cell that is
+    # not in the submesh, so exactly one of these is >= 0 on a genuine interface facet
+    mapped_cell_0 = subdomain_plus.cell_map.sub_topology_to_topology(
+        integration_data[0::4], inverse=True
+    )
+    mapped_cell_1 = subdomain_plus.cell_map.sub_topology_to_topology(
+        integration_data[2::4], inverse=True
+    )
+
+    switch = mapped_cell_1 > mapped_cell_0
+    # Order restriction on one side
+    if True in switch:
+        ordered_integration_data[switch, :] = ordered_integration_data[switch][
+            :, [2, 3, 0, 1]
+        ]
+
+    # Check that the other restriction really lies in the other subdomain. A bare
+    # assert would vanish under ``python -O``, and a wrong ordering is silent.
+    domain1_cell = subdomain_minus.cell_map.sub_topology_to_topology(
+        ordered_integration_data[:, 2], inverse=True
+    )
+    if not (domain1_cell >= 0).all():
+        raise ValueError(
+            f"facets tagged {tag} do not all separate volume subdomain "
+            f"{subdomain_plus.id} from volume subdomain {subdomain_minus.id}; the "
+            '"+"/"-" restrictions cannot be ordered consistently'
+        )
+
+    return (tag, ordered_integration_data.reshape(-1))
+
+
 class InterfaceMethod(Enum):
     """Methods for enforcing interface continuity in discontinuous problems.
 
@@ -84,39 +154,9 @@ class InterfaceBase(ABC):
             tuple: A tuple of (interface_id, flattened_integration_data) where
                 integration_data contains the mapped cell and facet indices.
         """
-        mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
-
-        args = (
-            dolfinx.fem.IntegralType.interior_facet,
-            mesh.topology._cpp_object,
-            self.mt.find(self.id),
+        return compute_ordered_interior_facet_data(
+            mesh, self.mt, self.id, self.subdomains[0], self.subdomains[1]
         )
-
-        integration_data = compute_integration_domains(*args)
-
-        ordered_integration_data = integration_data.reshape(-1, 4).copy()
-
-        mapped_cell_0 = self.subdomains[0].cell_map.sub_topology_to_topology(
-            integration_data[0::4], inverse=True
-        )
-        mapped_cell_1 = self.subdomains[0].cell_map.sub_topology_to_topology(
-            integration_data[2::4], inverse=True
-        )
-
-        switch = mapped_cell_1 > mapped_cell_0
-        # Order restriction on one side
-        if True in switch:
-            ordered_integration_data[switch, :] = ordered_integration_data[switch][
-                :, [2, 3, 0, 1]
-            ]
-
-        # Check that other restriction lies in other interface
-        domain1_cell = self.subdomains[1].cell_map.sub_topology_to_topology(
-            ordered_integration_data[:, 2], inverse=True
-        )
-        assert (domain1_cell >= 0).all()
-
-        return (self.id, ordered_integration_data.reshape(-1))
 
     def us(self, species: "Species"):
         """Get solution fields restricted to each side of the interface.
