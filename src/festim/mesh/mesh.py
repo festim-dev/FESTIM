@@ -174,8 +174,10 @@ class Mesh:
         bulk_subdomains = [v for v in volume_subdomains if v.codim(self.vdim) == 0]
         manifold_subdomains = [v for v in volume_subdomains if v.codim(self.vdim) == 1]
 
+        manifold_entities = {}
         for vol in manifold_subdomains:
             entities = vol.locate_subdomain_entities(self._mesh)
+            manifold_entities[vol] = entities
             tags_facets[entities] = vol.id
 
         for vol in bulk_subdomains:
@@ -220,6 +222,22 @@ class Mesh:
                 self.fdim,
             )
             interface_entities = np.intersect1d(all_0_facets, all_1_facets)
+
+            # an Interface and a codim-1 volume subdomain both describe what happens
+            # across the same facets, in mutually exclusive ways: a jump in
+            # concentration, or a transport equation on the manifold. Tagging is
+            # last-writer-wins, so without this the interface would silently steal the
+            # manifold's facets
+            for vol, entities in manifold_entities.items():
+                overlap = np.intersect1d(interface_entities, entities)
+                if overlap.size:
+                    raise ValueError(
+                        f"interface {interface.id} and codim-1 volume subdomain "
+                        f"{vol.id} share {overlap.size} facets. A pair of volume "
+                        "subdomains may either have an interface condition or be "
+                        "separated by a codim-1 subdomain, not both."
+                    )
+
             tags_facets[interface_entities] = interface.id
 
         facet_meshtags = meshtags(
