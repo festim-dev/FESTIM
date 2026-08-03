@@ -216,6 +216,172 @@ def test_codim1_coupling_with_advection():
     assert all(r > 1.8 for r in rates_gam), rates_gam
 
 
+def uncoupled(stepsize, final_time, source_value, reactions=None, extra_species=()):
+    """A manifold carrying its own equation and nothing else.
+
+    Omega is inert (a single Dirichlet BC and no coupling to Gamma), which makes the
+    manifold field a pure ODE with a closed-form backward-Euler solution. It also
+    exercises the padding of Gamma's empty parent-mesh block.
+    """
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 8, 8)
+
+    omega = F.VolumeSubdomain(
+        id=OMEGA_ID,
+        material=F.Material(D_0=D_O, E_D=0.0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    gamma = F.VolumeSubdomain(
+        id=GAMMA_ID,
+        material=F.Material(D_0=D_G, E_D=0.0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 0.0),
+    )
+    right = F.SurfaceSubdomain(id=RIGHT_ID, locator=lambda x: np.isclose(x[0], 1.0))
+
+    H_om = F.Species("H_om", subdomains=[omega])
+    H_gam = F.Species("H_gam", subdomains=[gamma])
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_om, H_gam, *extra_species],
+        subdomains=[omega, gamma, right],
+        sources=[F.ParticleSource(value=source_value, species=H_gam, volume=gamma)],
+        reactions=list(reactions or []),
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=right, value=0.0, species=H_om),
+        ],
+        temperature=500,
+        settings=F.Settings(
+            atol=1e-12,
+            rtol=1e-12,
+            transient=True,
+            final_time=final_time,
+            stepsize=stepsize,
+        ),
+    )
+    return model, gamma, H_gam
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_transient_manifold_integrates_dt_exactly():
+    """A transient manifold must use a timestep living on its own submesh.
+
+    The self terms of a manifold are integrated over its submesh, and a parent-mesh
+    ``fem.Constant`` there does not even compile (FFCx raises an undiagnosable
+    ``UnboundLocalError``). Getting it to compile is not enough though: the mirror has
+    to carry the current value, which a stepsize that keeps growing is what checks.
+
+    With a spatially uniform source ``S`` and no coupling, the manifold field is
+    ``c = S t`` and backward Euler integrates it exactly, so the solution reads back
+    the sum of the timesteps actually used.
+    """
+    source_value = 3.0
+    stepsize = F.Stepsize(
+        initial_value=0.05,
+        growth_factor=1.2,
+        cutback_factor=0.8,
+        target_nb_iterations=4,
+    )
+    model, gamma, H_gam = uncoupled(stepsize, 1.0, source_value)
+    model.initialise()
+
+    # the mirror is a constant of the submesh, not of the parent mesh
+    assert gamma.sub_dt.ufl_domain() is gamma.submesh.ufl_domain()
+
+    model.run()
+
+    c_gam = H_gam.subdomain_to_post_processing_solution[gamma].x.array
+    assert np.allclose(c_gam, source_value * float(model.t), rtol=1e-10)
+    # the stepsize did grow, so a mirror stuck at the initial value would be caught
+    assert float(model.dt) > 0.05
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_time_dependent_source_on_manifold():
+    """An explicitly time-dependent source on a manifold needs a submesh-resident ``t``.
+
+    Same trap as the timestep: the source expression is built once and integrated over
+    the submesh, so the time it closes over cannot be the parent-mesh constant.
+
+    ``S = t (1 + x)`` is written in terms of ``x`` deliberately -- naming ``x`` is what
+    sends FESTIM down the mapped-expression path, where the time constant is baked into
+    the form rather than re-interpolated. Gamma is the plane ``x = 0``, so the source is
+    uniform along it and there is nothing for diffusion to flatten: backward Euler then
+    gives exactly ``c = dt sum(t_n)``.
+    """
+    dt = 0.1
+    model, gamma, H_gam = uncoupled(
+        F.Stepsize(initial_value=dt),
+        0.5,
+        lambda x, t: t * (1 + x[0]),
+    )
+    model.initialise()
+    assert gamma.sub_t.ufl_domain() is gamma.submesh.ufl_domain()
+    model.run()
+
+    n_steps = round(float(model.t) / dt)
+    expected = dt**2 * n_steps * (n_steps + 1) / 2
+
+    c_gam = H_gam.subdomain_to_post_processing_solution[gamma].x.array
+    assert np.allclose(c_gam, expected, rtol=1e-10)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_reaction_on_manifold():
+    """A reaction on a manifold reads the temperature inside a submesh integral.
+
+    The parent-mesh temperature is the third coefficient that cannot appear there, so
+    a manifold carrying a trap is the case that exercises it.
+
+    A uniform source ``S`` feeding a first-order trapping reaction gives
+    ``c_t' = k (S t - c_t) - p c_t``, whose transient decays like ``exp(-(k + p) t)``
+    and leaves ``c_t = k S / (k + p) (t - 1 / (k + p))``. That asymptote is linear in
+    ``t``, which backward Euler integrates exactly, so it can be asserted tightly.
+
+    The activation energies are non-zero on purpose: with ``E = 0`` the Arrhenius factor
+    folds to 1 and the temperature drops out of the form altogether, which would leave
+    the coefficient under test unexercised.
+    """
+    temperature, source_value, final_time = 500.0, 1.0, 4.0
+    k, p, E_k, E_p = 2.0, 5.0, 0.2, 0.3
+    # the pre-exponential factors that put the Arrhenius rates at k and p
+    k_0 = k * np.exp(E_k / (F.k_B * temperature))
+    p_0 = p * np.exp(E_p / (F.k_B * temperature))
+
+    trapped = F.Species("trapped", mobile=False)
+    model, gamma, H_gam = uncoupled(
+        F.Stepsize(initial_value=0.05),
+        final_time,
+        source_value,
+        extra_species=[trapped],
+    )
+    model.temperature = temperature
+    trapped.subdomains = [gamma]
+    model.reactions = [
+        F.Reaction(
+            reactant=H_gam,
+            product=trapped,
+            k_0=k_0,
+            E_k=E_k,
+            p_0=p_0,
+            E_p=E_p,
+            volume=gamma,
+        )
+    ]
+    model.initialise()
+    model.run()
+
+    c_mobile = H_gam.subdomain_to_post_processing_solution[gamma].x.array
+    c_trapped = trapped.subdomain_to_post_processing_solution[gamma].x.array
+
+    t = float(model.t)
+    # everything the source put in is still on the manifold, split between the two
+    assert np.allclose(c_mobile + c_trapped, source_value * t, rtol=1e-8)
+    # and the reaction has split it in the proportion its rates dictate
+    expected_trapped = k * source_value / (k + p) * (t - 1 / (k + p))
+    assert np.allclose(c_trapped, expected_trapped, rtol=1e-6)
+
+
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_advection_velocity_is_self_projecting():
     """The normal component of an advection velocity on a manifold does nothing.
