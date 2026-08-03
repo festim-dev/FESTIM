@@ -125,6 +125,157 @@ def test_solution_on_ambiguous_raises():
         solution_on(species, other)
 
 
+@pytest.mark.parametrize(
+    "dim, mesh_dim, expected",
+    [(None, 2, 1), (1, 2, 1), (0, 2, 2), (1, 3, 2), (2, 3, 1)],
+)
+def test_surface_codim(dim, mesh_dim, expected):
+    """A surface subdomain bounds a volume subdomain: codim 1 for an ordinary one,
+    codim 2 for the boundary of a manifold."""
+    assert F.SurfaceSubdomain(id=1, dim=dim).codim(mesh_dim) == expected
+
+
+@pytest.mark.parametrize("dim, mesh_dim", [(0, 3), (3, 2)])
+def test_surface_codim_out_of_range_raises(dim, mesh_dim):
+    with pytest.raises(ValueError, match="codimension"):
+        F.SurfaceSubdomain(id=1, dim=dim).codim(mesh_dim)
+
+
+@pytest.mark.parametrize("dim", [1.5, "1", [1]])
+def test_surface_dim_type_validation(dim):
+    with pytest.raises(TypeError, match="dim must be an integer"):
+        F.SurfaceSubdomain(id=1, dim=dim)
+
+
+def test_surface_dim_must_not_be_negative():
+    with pytest.raises(ValueError, match="positive"):
+        F.SurfaceSubdomain(id=1, dim=-1)
+
+
+def build_manifold_model(surfaces, species_on=None):
+    """A bulk plus a manifold on its top edge, with the given surface subdomains."""
+    mesh = unit_square()
+    omega = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=1, E_D=0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    gamma = F.VolumeSubdomain(
+        id=2,
+        material=F.Material(D_0=1, E_D=0),
+        dim=1,
+        locator=lambda x: np.isclose(x[1], 1.0),
+    )
+    bottom = F.SurfaceSubdomain(id=9, locator=lambda x: np.isclose(x[1], 0.0))
+    H_om = F.Species("H_om", subdomains=[omega])
+    H_gam = F.Species("H_gam", subdomains=species_on or [gamma])
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_om, H_gam],
+        subdomains=[omega, gamma, bottom, *surfaces],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=bottom, value=0.0, species=H_om)
+        ],
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
+    )
+    return model, omega, gamma, H_gam
+
+
+def test_manifold_boundary_is_not_tagged_and_shares_no_id_namespace():
+    """A codim-2 surface carries no facet tag, so its id cannot clash with a manifold's
+    and it must not appear in the facet meshtags."""
+    # id 2 is deliberately the same as the manifold's: legal, because they live in
+    # different namespaces
+    end = F.SurfaceSubdomain(id=2, dim=0, locator=lambda x: np.isclose(x[0], 0.0))
+    model, _, gamma, H_gam = build_manifold_model([end])
+    model.boundary_conditions.append(
+        F.FixedConcentrationBC(subdomain=end, value=1.0, species=H_gam)
+    )
+    model.initialise()
+
+    assert model.manifold_boundary_subdomains == [end]
+    assert end not in model.facet_surface_subdomains
+    # the facets tagged 2 are the manifold's, and nothing else claims them
+    assert len(model.facet_meshtags.find(gamma.id)) > 0
+    assert end not in model.surface_to_volume
+
+
+def test_manifold_boundary_without_a_manifold_raises():
+    """A codim-2 surface with nothing to bound would otherwise be silently ignored."""
+    end = F.SurfaceSubdomain(id=3, dim=0, locator=lambda x: np.isclose(x[0], 0.0))
+    mesh = F.Mesh(unit_square())
+    omega = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=1, E_D=0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=mesh,
+        species=[F.Species("H", subdomains=[omega])],
+        subdomains=[omega, end],
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
+    )
+    with pytest.raises(ValueError, match="no such subdomain was declared"):
+        model.initialise()
+
+
+def test_manifold_boundary_locator_matching_nothing_raises():
+    """A locator selecting a point inside the manifold, or none at all, is an error --
+    the boundary condition would otherwise silently do nothing."""
+    end = F.SurfaceSubdomain(id=3, dim=0, locator=lambda x: np.isclose(x[0], 0.5))
+    model, _, _, H_gam = build_manifold_model([end])
+    model.boundary_conditions.append(
+        F.FixedConcentrationBC(subdomain=end, value=1.0, species=H_gam)
+    )
+    with pytest.raises(ValueError, match="matched no boundary entity"):
+        model.initialise()
+
+
+def test_manifold_boundary_with_ambiguous_species_raises():
+    """The manifold a codim-2 surface bounds comes from the species of its bc, so that
+    species must live on exactly one manifold."""
+    mesh = unit_square()
+    omega = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=1, E_D=0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    gamma_top = F.VolumeSubdomain(
+        id=2,
+        material=F.Material(D_0=1, E_D=0),
+        dim=1,
+        locator=lambda x: np.isclose(x[1], 1.0),
+    )
+    gamma_left = F.VolumeSubdomain(
+        id=3,
+        material=F.Material(D_0=1, E_D=0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 0.0),
+    )
+    bottom = F.SurfaceSubdomain(id=9, locator=lambda x: np.isclose(x[1], 0.0))
+    end = F.SurfaceSubdomain(id=4, dim=0, locator=lambda x: np.isclose(x[0], 0.0))
+
+    H_om = F.Species("H_om", subdomains=[omega])
+    # lives on *both* manifolds, so the surface cannot be resolved
+    H_gam = F.Species("H_gam", subdomains=[gamma_top, gamma_left])
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_om, H_gam],
+        subdomains=[omega, gamma_top, gamma_left, bottom, end],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=bottom, value=0.0, species=H_om),
+            F.FixedConcentrationBC(subdomain=end, value=1.0, species=H_gam),
+        ],
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
+    )
+    with pytest.raises(ValueError, match="cannot tell which manifold"):
+        model.initialise()
+
+
 def test_manifold_time_constants_live_on_the_submesh_and_track():
     """``t``, ``dt`` and a constant ``T`` are mirrored onto a manifold's submesh.
 
