@@ -1347,6 +1347,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 self.settings.stepsize.initial_value, self.mesh.mesh
             )
 
+        self.create_submesh_time_constants()
+
         self.create_implicit_species_value_fenics()
 
         for subdomain in self.volume_subdomains:
@@ -1590,10 +1592,20 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if isinstance(source, _source.ParticleSource):
                 V = source.species.subdomain_to_function_space[source.volume]
 
+                # a self source on a manifold is integrated over its submesh, so its
+                # time and temperature must live there; a coupling source is integrated
+                # on the parent mesh and keeps the parent-mesh ones
+                if self.is_manifold_self_source(source):
+                    t = self.subdomain_time(source.volume)
+                    temperature = self.subdomain_temperature(source.volume)
+                else:
+                    t = self.t
+                    temperature = self.temperature_fenics
+
                 source.value.convert_input_value(
                     function_space=V,
-                    t=self.t,
-                    temperature=self.temperature_fenics,
+                    t=t,
+                    temperature=temperature,
                     up_to_ufl_expr=True,
                     subdomain=source.volume,
                 )
@@ -1759,6 +1771,56 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
         return foreign
 
+    def create_submesh_time_constants(self):
+        """Mirrors ``t`` and ``dt`` onto the submesh of every manifold subdomain.
+
+        The self terms of a manifold are integrated over its own submesh (see
+        :meth:`subdomain_measure`) and every coefficient of such an integral must live
+        on that submesh: a ``fem.Constant`` bound to the parent mesh makes the integral
+        mixed-dimensional and fails inside FFCx with an undiagnosable
+        ``UnboundLocalError``. The mirrors are kept in sync by
+        :meth:`update_submesh_time_constants`.
+        """
+        for subdomain in self.manifold_subdomains:
+            subdomain.sub_t = as_fenics_constant(float(self.t), subdomain.submesh)
+            if self.settings.transient:
+                subdomain.sub_dt = as_fenics_constant(float(self.dt), subdomain.submesh)
+
+    def update_submesh_time_constants(self):
+        """Copies the current ``t`` and ``dt`` into the submesh mirrors created by
+        :meth:`create_submesh_time_constants`, so that an adaptive stepsize and
+        explicitly time-dependent values on a manifold see the same values as the
+        rest of the problem."""
+        for subdomain in self.manifold_subdomains:
+            subdomain.sub_t.value = float(self.t)
+            if self.settings.transient:
+                subdomain.sub_dt.value = float(self.dt)
+
+    def subdomain_time(self, subdomain: _subdomain.VolumeSubdomain):
+        """The time constant to use in the self terms of ``subdomain``."""
+        if subdomain.codim(self.mesh.vdim) == 1:
+            return subdomain.sub_t
+        return self.t
+
+    def subdomain_dt(self, subdomain: _subdomain.VolumeSubdomain):
+        """The timestep constant to use in the self terms of ``subdomain``."""
+        if subdomain.codim(self.mesh.vdim) == 1:
+            return subdomain.sub_dt
+        return self.dt
+
+    def subdomain_temperature(self, subdomain: _subdomain.VolumeSubdomain):
+        """The temperature to use in the self terms of ``subdomain``."""
+        if subdomain.codim(self.mesh.vdim) == 1:
+            return subdomain.sub_T
+        return self.temperature_fenics
+
+    def is_manifold_self_source(self, source) -> bool:
+        """Whether ``source`` belongs to a manifold's own equation, as opposed to being
+        one half of a codimensional coupling or an ordinary volumetric source."""
+        if source.volume not in self.manifold_to_volumes:
+            return False
+        return not self.foreign_species(source, source.volume)
+
     def diffusion_coefficient(self, subdomain: _subdomain.VolumeSubdomain, species):
         """The diffusion coefficient of ``species`` for the gradient terms of
         ``subdomain``, defined on the mesh those terms are integrated over."""
@@ -1799,6 +1861,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
         dx = self.subdomain_measure(subdomain)
         dx_grad = dx
+        # the self terms are integrated over subdomain's own mesh, so their coefficients
+        # must live there too -- for a manifold that is its submesh, not the parent mesh
+        dt = self.subdomain_dt(subdomain) if self.settings.transient else None
+        temperature = self.subdomain_temperature(subdomain)
 
         form = 0
         form_grad = 0
@@ -1812,7 +1878,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             v = spe.subdomain_to_test_function[subdomain]
 
             if self.settings.transient:
-                form += ((u - u_n) / self.dt) * v * dx
+                form += ((u - u_n) / dt) * v * dx
 
             if spe.mobile:
                 D = self.diffusion_coefficient(subdomain, spe)
@@ -1846,7 +1912,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             for reactant in reaction.reactant:
                 if isinstance(reactant, _species.Species):
                     form += (
-                        reaction.reaction_term(self.temperature_fenics)
+                        reaction.reaction_term(temperature)
                         * reactant.subdomain_to_test_function[subdomain]
                         * dx
                     )
@@ -1858,7 +1924,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 products = [reaction.product]
             for product in products:
                 form += (
-                    -reaction.reaction_term(self.temperature_fenics)
+                    -reaction.reaction_term(temperature)
                     * product.subdomain_to_test_function[subdomain]
                     * dx
                 )
@@ -2242,6 +2308,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             for subdomain in self.volume_subdomains
         ] + [None for _ in self.gas_species]
         groups = [all_forms]
+        padded = set()
         if any(form is not None for form in submesh_forms):
             groups.append(submesh_forms)
 
@@ -2254,13 +2321,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 if not isinstance(form, ufl.Form):
                     v = ufl.TestFunction(unknown.function_space)
                     all_forms[i] = ufl.ZeroBaseForm((v,))
+                    padded.add(i)
 
         # this is the symbolic differentiation of the Jacobian
         J_groups = []
         for group in groups:
             J = []
-            for form in group:
-                if form is None:
+            for i, form in enumerate(group):
+                # a padded row is zero by construction, and ufl.derivative of a
+                # ZeroBaseForm cannot be expanded ("Rule not set for ZeroBaseForm")
+                if form is None or (group is all_forms and i in padded):
                     J.append([None] * len(all_unknowns))
                     continue
                 J.append([ufl.derivative(form, unknown) for unknown in all_unknowns])
@@ -2270,6 +2340,15 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             # would otherwise send DOLFINx looking for an entity map between two
             # sibling submeshes, which does not exist
             J_groups = [prune_empty_blocks(J) for J in J_groups]
+
+            # the padded rows must still carry their function spaces: the blocked
+            # matrix and the PETSc index sets are both built from this group alone, and
+            # an all-None row leaves them with nothing to deduce the block from
+            for i in padded:
+                V = all_unknowns[i].function_space
+                J_groups[0][i][i] = ufl.ZeroBaseForm(
+                    (ufl.TestFunction(V), ufl.TrialFunction(V))
+                )
 
         # compile jacobian (J) and residual (F)
         entity_maps = [sd.cell_map for sd in self.volume_subdomains]
@@ -2602,6 +2681,8 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     def update_time_dependent_values(self):
         super().update_time_dependent_values()
 
+        self.update_submesh_time_constants()
+
         for enclosure in self.enclosures:
             enclosure.update_time_dependent_values(t=float(self.t))
 
@@ -2614,6 +2695,11 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     from festim.helpers import nmm_interpolate
 
                     nmm_interpolate(f_out=sub_T, f_in=temp)
+            else:
+                # a manifold mirrors a constant temperature onto its own submesh, and
+                # that mirror has to follow the parent constant
+                for subdomain in self.manifold_subdomains:
+                    subdomain.sub_T.value = float(self.temperature_fenics)
 
     def iterate(self):
         """Iterates the model for a given time step."""
