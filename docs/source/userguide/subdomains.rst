@@ -192,14 +192,54 @@ project it onto the manifold: the tangential gradient is orthogonal to the norma
 :math:`v \cdot \nabla_\Gamma c` automatically ignores the normal component of
 :math:`v`.
 
+Boundary conditions on a manifold
+---------------------------------
+
+A manifold has a boundary of its own — the endpoints of a line in a 2D mesh, the rim of
+a surface in a 3D mesh — and boundary conditions can be applied there. Declare it as a
+:class:`festim.SurfaceSubdomain` with ``dim`` set to the mesh dimension minus **two**,
+just as a manifold is a :class:`festim.VolumeSubdomain` with ``dim`` set to the mesh
+dimension minus one:
+
+.. code-block:: python
+
+    # a 1D fluid running along a 2D pipe wall
+    fluid = F.VolumeSubdomain(id=2, material=..., dim=1,
+                              locator=lambda x: np.isclose(x[1], H))
+
+    # the inlet: one end of that 1D domain
+    inlet = F.SurfaceSubdomain(id=3, dim=0,
+                               locator=lambda x: np.isclose(x[0], 0.0))
+
+    ...
+    boundary_conditions=[
+        F.FixedConcentrationBC(subdomain=inlet, value=c_in, species=c_fluid),
+    ]
+
+The locator is evaluated on the manifold, not on the parent mesh, and must select a
+point on its boundary — a locator matching only interior points raises rather than
+silently doing nothing.
+
+Such a surface carries no meshtag, so its ``id`` does not have to differ from a manifold
+or interface id. Which manifold it bounds is taken from the ``species`` of the boundary
+condition using it, so that species must live on exactly one manifold; the same surface
+object can be reused on several manifolds, one species each.
+
+Without a condition of this kind, the ends of a manifold carry the natural zero-flux
+condition.
+
 Limitations
 -----------
 
 * Only codimension 1 is supported (``dim`` must be the mesh dimension minus one), and a
   manifold must be adjacent to one volume subdomain (on the boundary of the domain) or
-  two (on an interface).
-* Strong (Dirichlet) boundary conditions cannot be applied at the ends of a manifold
-  subdomain; only the natural zero-flux condition is available there.
+  two (on an interface). A codimension-2 subdomain carrying its own equation is not
+  supported: a bulk field has no well-defined trace on a line in 3D or a point in 2D,
+  so the exchange with it would not be well posed.
+* Boundary conditions on the boundary of a manifold are limited to
+  :class:`festim.FixedConcentrationBC`.
+* Dedicated exports on a manifold or on its boundary are not available;
+  :class:`festim.VTXSpeciesExport` on a manifold works.
 * Cartesian coordinates only.
 
 ----------
