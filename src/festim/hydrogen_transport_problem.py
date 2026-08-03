@@ -150,7 +150,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
             list[_subdomain.VolumeSubdomain | _subdomain.SurfaceSubdomain] | None
         ) = None,
         species: list[_species.Species] | None = None,
-        reactions: list[_reaction.GenericReaction] | None = None,
+        reactions: list[_reaction.ReactionBase] | None = None,
         temperature: (
             float
             | int
@@ -350,9 +350,9 @@ class HydrogenTransportProblem(problem.ProblemBase):
     def create_implicit_species_value_fenics(self):
         """For each implicit species, create the value_fenics."""
         for reaction in self.reactions:
-            for reactant in reaction.reactant:
-                if isinstance(reactant, _species.ImplicitSpecies):
-                    reactant.create_value_fenics(
+            for spe in reaction.species:
+                if isinstance(spe, _species.ImplicitSpecies):
+                    spe.create_value_fenics(
                         mesh=self.mesh.mesh,
                         t=self.t,
                     )
@@ -818,7 +818,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
     def convert_reaction_rates_to_fenics_objects(self):
         """For each reaction convert its rate coefficients to fenics objects."""
         for reaction in self.reactions:
-            for rate in (reaction.forward_rate, reaction.backward_rate):
+            for rate in reaction.rate_coefficients:
                 if rate.input_value is not None:
                     rate.convert_input_value(
                         function_space=getattr(self, "function_space", None),
@@ -999,15 +999,15 @@ class HydrogenTransportProblem(problem.ProblemBase):
         t = float(self.t)
 
         for reaction in self.reactions:
-            for reactant in reaction.reactant:
-                if isinstance(reactant, _species.ImplicitSpecies):
-                    reactant.update_density(t=t)
+            for spe in reaction.species:
+                if isinstance(spe, _species.ImplicitSpecies):
+                    spe.update_density(t=t)
             # the sources built from a reaction only wrap a ufl expression
             # referencing these rate Values, so the rates must be updated here
             # directly. Temperature-dependent rates are ufl expressions
             # referencing temperature_fenics (updated in place below), so only
             # explicitly time-dependent rates need a value update.
-            for rate in (reaction.forward_rate, reaction.backward_rate):
+            for rate in reaction.rate_coefficients:
                 if rate.explicit_time_dependent:
                     rate.update(t=t)
 

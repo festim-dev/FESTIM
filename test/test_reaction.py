@@ -14,7 +14,7 @@ my_vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=None)
 def convert_rates(reaction, function_space, temperature):
     """Convert a reaction's rate coefficients to fenics objects, as the
     HydrogenTransportProblem does before building the reaction term."""
-    for rate in (reaction.forward_rate, reaction.backward_rate):
+    for rate in reaction.rate_coefficients:
         if rate.input_value is not None:
             rate.convert_input_value(
                 function_space=function_space,
@@ -30,6 +30,221 @@ def test_reaction_is_deprecated_alias():
     with pytest.warns(DeprecationWarning, match="ArrheniusReaction"):
         reaction = F.Reaction(reactant=F.Species("A"), k_0=1.0, E_k=0.2, volume=my_vol)
     assert isinstance(reaction, F.ArrheniusReaction)
+
+
+def test_generic_reaction_is_a_reaction_base():
+    """Test that GenericReaction is a subclass of ReactionBase."""
+    assert issubclass(F.GenericReaction, F.ReactionBase)
+
+
+def test_reaction_base_str():
+    """Test __str__ shows consumed species on the left and produced on the right."""
+    # BUILD
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=1.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
+    )
+
+    # RUN / TEST
+    assert str(reaction) == "A --> B"
+
+
+def test_reaction_base_str_no_produced_species():
+    """Test __str__ shows a one-way arrow with no produced species."""
+    # BUILD
+    reaction = F.ReactionBase(
+        reaction_rate=1.0, species_to_stoichiometry={F.Species("A"): -1}, volume=my_vol
+    )
+
+    # RUN / TEST
+    assert str(reaction) == "A -->"
+
+
+def test_reaction_base_str_with_stoichiometric_coefficients():
+    """Test __str__ shows the stoichiometric coefficient when it is not one."""
+    # BUILD
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=1.0, species_to_stoichiometry={A: -2, B: 3}, volume=my_vol
+    )
+
+    # RUN / TEST
+    assert str(reaction) == "2 A --> 3 B"
+
+
+def test_reaction_base_repr():
+    """Test __repr__ shows the reaction and its reaction rate."""
+    # BUILD
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=2.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
+    )
+
+    # RUN / TEST
+    assert repr(reaction) == "ReactionBase(A --> B, 2.0)"
+
+
+def test_reaction_base_rate_coefficients():
+    """Test that a ReactionBase exposes its single reaction_rate as its rate
+    coefficient."""
+    # BUILD
+    reaction = F.ReactionBase(
+        reaction_rate=1.0, species_to_stoichiometry={F.Species("A"): -1}, volume=my_vol
+    )
+
+    # RUN / TEST
+    assert reaction.rate_coefficients == [reaction.reaction_rate]
+
+
+def test_reaction_base_species_lists_involved_species():
+    """Test that the species property lists the stoichiometry species and the rate's
+    concentration-dependence species."""
+    # BUILD
+    A, B, C = F.Species("A"), F.Species("B"), F.Species("C")
+    reaction = F.ReactionBase(
+        reaction_rate=lambda c_C: c_C,
+        species_to_stoichiometry={A: -1, B: 1},
+        volume=my_vol,
+        arg_to_species={"c_C": C},
+    )
+
+    # RUN / TEST
+    assert reaction.species == [A, B, C]
+
+
+def test_reaction_base_reaction_term_is_the_rate():
+    """Test that reaction_term returns the reaction rate itself (not multiplied by
+    any concentration)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 5, 5, 5)
+    V = functionspace(mesh, ("Lagrange", 1))
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, species_to_stoichiometry={F.Species("A"): -1}, volume=my_vol
+    )
+
+    # RUN
+    convert_rates(reaction, V, temperature=500.0)
+
+    # TEST
+    assert reaction.reaction_term() is reaction.reaction_rate.fenics_object
+
+
+def test_reaction_base_arbitrary_rate_depends_on_concentrations():
+    """Test that a ReactionBase rate can be an arbitrary function of species
+    concentrations, e.g. R = k * (c_A - c_B)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 5, 5, 5)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B = F.Species("A"), F.Species("B")
+    A.solution = Function(V)
+    B.solution = Function(V)
+    reaction = F.ReactionBase(
+        reaction_rate=lambda c_A, c_B: 2.0 * (c_A - c_B),
+        species_to_stoichiometry={A: -1, B: 1},
+        volume=my_vol,
+        arg_to_species={"c_A": A, "c_B": B},
+    )
+
+    # RUN
+    convert_rates(reaction, V, temperature=500.0)
+
+    # TEST
+    expected = 2.0 * (A.concentration - B.concentration)
+    assert reaction.reaction_term() == expected
+
+
+def test_reaction_base_create_sources_count():
+    """Test a ReactionBase expands into one source per involved species."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
+    )
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    sources = reaction.create_sources()
+
+    # TEST
+    assert len(sources) == 2
+
+
+def test_reaction_base_consumed_species_source():
+    """Test that a species with a negative coefficient gets a sink (source -R)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
+    )
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    sink = next(s for s in reaction.create_sources() if s.species is A)
+
+    # TEST
+    assert sink.value.input_value == -reaction.reaction_term()
+
+
+def test_reaction_base_produced_species_source():
+    """Test that a species with a positive coefficient gets a source (+R)."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
+    )
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    source = next(s for s in reaction.create_sources() if s.species is B)
+
+    # TEST
+    assert source.value.input_value == reaction.reaction_term()
+
+
+def test_reaction_base_stoichiometric_coefficient_scales_source():
+    """Test that a stoichiometric coefficient scales the species source term."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 2}, volume=my_vol
+    )
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    source = next(s for s in reaction.create_sources() if s.species is B)
+
+    # TEST
+    assert source.value.input_value == 2 * reaction.reaction_term()
+
+
+@pytest.mark.parametrize("bad_key", ["not_a_species", 1.0])
+def test_species_to_stoichiometry_raises_error_with_non_species_key(bad_key):
+    """Test a type error is raised when a stoichiometry key is not a species."""
+    with pytest.raises(TypeError, match="species_to_stoichiometry keys must be"):
+        F.ReactionBase(
+            reaction_rate=1.0,
+            species_to_stoichiometry={bad_key: -1},
+            volume=my_vol,
+        )
+
+
+@pytest.mark.parametrize("bad_coeff", ["one", None, True])
+def test_species_to_stoichiometry_raises_error_with_non_numeric_value(bad_coeff):
+    """Test a type error is raised when a stoichiometry value is not numeric."""
+    with pytest.raises(TypeError, match="species_to_stoichiometry values must be"):
+        F.ReactionBase(
+            reaction_rate=1.0,
+            species_to_stoichiometry={F.Species("A"): bad_coeff},
+            volume=my_vol,
+        )
 
 
 def test_reaction_init():

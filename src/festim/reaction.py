@@ -13,11 +13,285 @@ from festim.species import ImplicitSpecies, Species
 from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
-class GenericReaction:
-    """A generic reaction between one or more reactant species and zero or more
-    product species, taking place within a volume.
+class ReactionBase:
+    """A reaction that produces or consumes species at an arbitrary net rate,
+    taking place within a volume.
 
-    The reaction follows a mass-action net rate
+    The net rate is a single coefficient
+
+    .. math::
+
+        R = f(c_i, x, T, t)
+
+    given by ``reaction_rate``, a festim.Value that can be a float, a ufl
+    expression, or a callable of the temperature (argument ``T``), the spatial
+    coordinate (``x``), the time (``t``) and/or other species concentrations
+    (referenced by name through ``arg_to_species``). ``R`` is whatever
+    ``reaction_rate`` returns, so rates such as :math:`R = k (c_1 - c_2)` are
+    expressible.
+
+    A reaction does not enter the formulation directly: it is expanded into one
+    volumetric :class:`~festim.source.ParticleSource` per involved
+    :class:`~festim.species.Species` (see :meth:`create_sources`). Each species is
+    given a source ``nu * R``, where ``nu`` is its (signed) stoichiometric
+    coefficient in ``species_to_stoichiometry`` — negative for a species consumed
+    by the reaction, positive for one produced.
+
+    Arguments:
+        reaction_rate: The net reaction rate coefficient :math:`R`.
+        volume: The volume subdomain where the reaction takes place.
+        species_to_stoichiometry: A dictionary mapping each involved species to its
+            signed stoichiometric coefficient. A negative coefficient means the
+            species is consumed at rate ``|nu| * R``, a positive one that it is
+            produced at rate ``nu * R``. Implicit species have no governing
+            equation and receive no source.
+        arg_to_species: A dictionary mapping argument names in a callable
+            ``reaction_rate`` to festim.Species objects, allowing the rate to
+            depend on species concentrations. Every argument of ``reaction_rate``
+            other than the reserved ``t``/``x``/``T`` must appear as a key; extra
+            keys that the rate does not use are ignored with a warning. Every value
+            must be a festim.Species. Alternatively the mapping may be attached
+            directly to a ``reaction_rate`` passed as a festim.Value (its
+            ``species_dependent_value``), but the two ways are mutually exclusive:
+            giving a mapping both here and on the rate Value raises a ValueError.
+
+    Attributes:
+        reaction_rate: The net reaction rate coefficient, as a festim.Value.
+        volume: The volume subdomain where the reaction takes place.
+        species_to_stoichiometry: The species-to-stoichiometric-coefficient mapping.
+        arg_to_species: The mapping used to resolve concentration arguments in a
+            callable reaction rate.
+
+    Examples:
+
+        .. testcode:: ReactionBase
+
+            import festim as F
+
+            material = F.Material(D_0=1, E_D=0)
+            volume = F.VolumeSubdomain(id=1, material=material)
+
+            A = F.Species("A")
+            B = F.Species("B")
+
+            # an arbitrary rate R = 2 * (c_A - c_B): A is consumed and B produced
+            reaction = F.ReactionBase(
+                reaction_rate=lambda c_A, c_B: 2.0 * (c_A - c_B),
+                volume=volume,
+                species_to_stoichiometry={A: -1, B: 1},
+                arg_to_species={"c_A": A, "c_B": B},
+            )
+            print(reaction)
+
+        .. testoutput:: ReactionBase
+
+            A --> B
+    """
+
+    volume: VolumeSubdomain
+    species_to_stoichiometry: dict[Species | ImplicitSpecies, int | float]
+    reaction_rate: (
+        float
+        | int
+        | Callable
+        | fem.Constant
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+        | Value
+    )
+    arg_to_species: dict[str, Species]
+
+    def __init__(
+        self,
+        reaction_rate: float
+        | int
+        | Callable
+        | fem.Constant
+        | fem.Expression
+        | ufl.core.expr.Expr
+        | fem.Function
+        | Value,
+        volume: VolumeSubdomain,
+        species_to_stoichiometry: dict[Species | ImplicitSpecies, int | float],
+        arg_to_species: dict[str, Species] | None = None,
+    ) -> None:
+        self.volume = volume
+        self.species_to_stoichiometry = species_to_stoichiometry
+        self.reaction_rate = reaction_rate
+        self.arg_to_species = arg_to_species
+
+    @property
+    def species_to_stoichiometry(self):
+        return self._species_to_stoichiometry
+
+    @species_to_stoichiometry.setter
+    def species_to_stoichiometry(self, value):
+        value = value or {}
+        for spe, coeff in value.items():
+            if not isinstance(spe, (Species, ImplicitSpecies)):
+                raise TypeError(
+                    "species_to_stoichiometry keys must be a festim.Species or "
+                    f"festim.ImplicitSpecies, not {type(spe).__name__}"
+                )
+            if isinstance(coeff, bool) or not isinstance(coeff, int | float):
+                raise TypeError(
+                    "species_to_stoichiometry values must be an int or float, not "
+                    f"{type(coeff).__name__} (for species {spe})"
+                )
+        self._species_to_stoichiometry = value
+
+    @property
+    def reaction_rate(self):
+        return self._reaction_rate
+
+    @reaction_rate.setter
+    def reaction_rate(self, value):
+        self._reaction_rate = value if isinstance(value, Value) else Value(value)
+
+    @property
+    def rate_coefficients(self) -> list[Value]:
+        """The festim.Value rate coefficients that must be converted to fenics
+        objects and updated in time. Subclasses with a different rate structure
+        (e.g. :class:`GenericReaction`) override this."""
+        return [self.reaction_rate]
+
+    @property
+    def species(self) -> list[Species | ImplicitSpecies]:
+        """All species involved in the reaction: those receiving a source term and
+        those the rate depends on. Used e.g. to update implicit-species densities."""
+        involved = list(self.species_to_stoichiometry)
+        for spe in self.arg_to_species.values():
+            if spe not in involved:
+                involved.append(spe)
+        return involved
+
+    @property
+    def _rate_has_own_species_map(self) -> bool:
+        """True if a species mapping is attached directly to a rate coefficient
+        Value (its species_dependent_value). Computed live from the rates so it
+        can never desync from them."""
+        return any(rate.species_dependent_value for rate in self.rate_coefficients)
+
+    @property
+    def arg_to_species(self):
+        return self._arg_to_species
+
+    @arg_to_species.setter
+    def arg_to_species(self, value):
+        value = value or {}
+        # the species mapping must be given in exactly one place
+        if self._rate_has_own_species_map:
+            if value:
+                raise ValueError(
+                    "a species mapping was given both to a rate coefficient (via the "
+                    "species_dependent_value of a festim.Value) and to arg_to_species; "
+                    "provide it in only one place"
+                )
+            # the rate Values already carry their own mapping; just expose the
+            # combined mapping for introspection
+            combined = {}
+            for rate in self.rate_coefficients:
+                combined.update(rate.species_dependent_value)
+            self._arg_to_species = combined
+            return
+        for name, spe in value.items():
+            if not isinstance(spe, Species):
+                raise TypeError(
+                    "arg_to_species values must be a festim.Species, not "
+                    + f"{type(spe).__name__} (for key {name!r})"
+                )
+        # the species-dependent arguments of the rate coefficients are their
+        # callable arguments other than the reserved t/x/T handled by festim.Value
+        reserved = {"t", "x", "T"}
+        species_args = set()
+        for rate in self.rate_coefficients:
+            if callable(rate.input_value):
+                code = rate.input_value.__code__
+                species_args |= set(code.co_varnames[: code.co_argcount]) - reserved
+        # 1. a rate coefficient must not depend on a species missing from the mapping
+        unmapped = species_args - set(value)
+        if unmapped:
+            raise ValueError(
+                f"the reaction rate coefficients depend on {sorted(unmapped)}, "
+                "which must be given in arg_to_species"
+            )
+
+        # 2. a key used by no rate coefficient is harmless (festim.Value ignores
+        # arguments its callable does not declare), so only warn about it
+        unused = set(value) - species_args
+        if unused:
+            warnings.warn(
+                f"arg_to_species contains {sorted(unused)}, which is not an "
+                "argument of any reaction rate coefficient; it will be ignored",
+                stacklevel=2,
+            )
+        self._arg_to_species = value
+
+        for rate in self.rate_coefficients:
+            rate.species_dependent_value = value
+
+    @property
+    def volume(self):
+        return self._volume
+
+    @volume.setter
+    def volume(self, value):
+        if not isinstance(value, VolumeSubdomain):
+            raise TypeError(
+                f"volume must be a festim.VolumeSubdomain, not {type(value).__name__}"
+            )
+        self._volume = value
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self}, {self.reaction_rate})"
+
+    def __str__(self) -> str:
+        def side(pairs):
+            return " + ".join(
+                str(spe) if abs(coeff) == 1 else f"{abs(coeff)} {spe}"
+                for spe, coeff in pairs
+            )
+
+        consumed = [(s, c) for s, c in self.species_to_stoichiometry.items() if c < 0]
+        produced = [(s, c) for s, c in self.species_to_stoichiometry.items() if c > 0]
+        lhs, rhs = side(consumed), side(produced)
+        return f"{lhs} --> {rhs}" if rhs else f"{lhs} -->"
+
+    def reaction_term(self) -> ufl.core.expr.Expr:
+        """The net reaction rate ``R`` as a ufl expression.
+
+        ``reaction_rate`` must already be converted to a fenics object (done by
+        ``HydrogenTransportProblem.convert_reaction_rates_to_fenics_objects``).
+
+        Returns:
+            The net reaction rate to be unpacked into particle sources.
+        """
+        return self.reaction_rate.fenics_object
+
+    def create_sources(self) -> list[ParticleSource]:
+        """Express the reaction as a list of volumetric particle sources, one per
+        involved :class:`~festim.species.Species`.
+
+        Each species is given a source ``nu * R``, where ``nu`` is its
+        stoichiometric coefficient and ``R`` is :meth:`reaction_term`. Implicit
+        species (which have no governing equation) are skipped. The rate
+        coefficients must already be converted to fenics objects.
+
+        Returns:
+            A list of festim.ParticleSource objects.
+        """
+        rate = self.reaction_term()
+        return [
+            ParticleSource(value=coefficient * rate, volume=self.volume, species=spe)
+            for spe, coefficient in self.species_to_stoichiometry.items()
+            if isinstance(spe, Species)
+        ]
+
+
+class GenericReaction(ReactionBase):
+    """A reaction between one or more reactant species and zero or more product
+    species, following a mass-action net rate
 
     .. math::
 
@@ -140,12 +414,20 @@ class GenericReaction:
         | None = None,
         arg_to_species: dict[str, Species] | None = None,
     ) -> None:
-        self.volume = volume
         self.reactant = reactant
         self.product = product
         self.forward_rate = forward_rate
         self.backward_rate = backward_rate
-        self.arg_to_species = arg_to_species
+        # the net rate is derived from forward/backward and the participating
+        # concentrations (see reaction_term), so the base reaction_rate slot is
+        # unused; rate_coefficients and species_to_stoichiometry below point
+        # conversion and source-unpacking at the reactants/products instead
+        super().__init__(
+            reaction_rate=None,
+            volume=volume,
+            species_to_stoichiometry=None,
+            arg_to_species=arg_to_species,
+        )
 
     @property
     def reactant(self):
@@ -203,97 +485,16 @@ class GenericReaction:
         self._backward_rate = value if isinstance(value, Value) else Value(value)
 
     @property
-    def _rate_has_own_species_map(self) -> bool:
-        """True if a species mapping is attached directly to a rate coefficient
-        Value (its species_dependent_value). Computed live from the rates so it
-        can never desync from them."""
-        return bool(
-            self.forward_rate.species_dependent_value
-            or self.backward_rate.species_dependent_value
-        )
+    def rate_coefficients(self) -> list[Value]:
+        return [self.forward_rate, self.backward_rate]
 
-    @property
-    def arg_to_species(self):
-        return self._arg_to_species
-
-    @arg_to_species.setter
-    def arg_to_species(self, value):
-        value = value or {}
-        # the species mapping must be given in exactly one place
-        if self._rate_has_own_species_map:
-            if value:
-                raise ValueError(
-                    "a species mapping was given both to a rate coefficient (via the "
-                    "species_dependent_value of a festim.Value) and to arg_to_species; "
-                    "provide it in only one place"
-                )
-            # the rate Values already carry their own mapping; just expose the
-            # combined mapping for introspection
-            self._arg_to_species = {
-                **self.forward_rate.species_dependent_value,
-                **self.backward_rate.species_dependent_value,
-            }
-            return
-        for name, spe in value.items():
-            if not isinstance(spe, Species):
-                raise TypeError(
-                    "arg_to_species values must be a festim.Species, not "
-                    + f"{type(spe).__name__} (for key {name!r})"
-                )
-
-        reserved = {"t", "x", "T"}
-        species_args = set()
-        for rate in (self.forward_rate, self.backward_rate):
-            if callable(rate.input_value):
-                code = rate.input_value.__code__
-                species_args |= set(code.co_varnames[: code.co_argcount]) - reserved
-
-        # 1. a rate coefficient must not depend on a species missing from the mapping
-        unmapped = species_args - set(value)
-        if unmapped:
-            raise ValueError(
-                f"the reaction rate coefficients depend on {sorted(unmapped)}, "
-                "which must be given in arg_to_species"
-            )
-
-        # 2. a key used by no rate coefficient is harmless (festim.Value ignores
-        # arguments its callable does not declare), so only warn about it
-        unused = set(value) - species_args
-        if unused:
-            warnings.warn(
-                f"arg_to_species contains {sorted(unused)}, which is not an "
-                "argument of any reaction rate coefficient; it will be ignored",
-                stacklevel=2,
-            )
-        self._arg_to_species = value
-
-        self.forward_rate.species_dependent_value = value
-        self.backward_rate.species_dependent_value = value
-
-    @property
-    def volume(self):
-        return self._volume
-
-    @volume.setter
-    def volume(self, value):
-        if not isinstance(value, VolumeSubdomain):
-            raise TypeError(
-                f"volume must be a festim.VolumeSubdomain, not {type(value).__name__}"
-            )
-        self._volume = value
-
-    def __repr__(self) -> str:
-        reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        products = " + ".join([str(product) for product in self.product])
-        return (
-            f"{type(self).__name__}({reactants} <--> {products}, "
-            f"{self.forward_rate}, {self.backward_rate})"
-        )
-
-    def __str__(self) -> str:
-        reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        products = " + ".join([str(product) for product in self.product])
-        return f"{reactants} <--> {products}"
+    @ReactionBase.species_to_stoichiometry.getter
+    def species_to_stoichiometry(self):
+        # each reactant is consumed (nu = -1) and each product produced (nu = +1);
+        # derived live from reactant/product so it never desyncs from them
+        stoichiometry = {reactant: -1 for reactant in self.reactant}
+        stoichiometry.update({product: 1 for product in self.product})
+        return stoichiometry
 
     @property
     def _mixed_domain(self) -> bool:
@@ -359,30 +560,18 @@ class GenericReaction:
         backward = self.backward_rate.fenics_object * reduce(mul, products)
         return forward - backward
 
-    def create_sources(self) -> list[ParticleSource]:
-        """Express the reaction as a list of volumetric particle sources, one per
-        participating :class:`~festim.species.Species`.
+    def __repr__(self) -> str:
+        reactants = " + ".join([str(reactant) for reactant in self.reactant])
+        products = " + ".join([str(product) for product in self.product])
+        return (
+            f"{type(self).__name__}({reactants} <--> {products}, "
+            f"{self.forward_rate}, {self.backward_rate})"
+        )
 
-        Each reactant is consumed (source value ``-R``) and each product is
-        produced (source value ``+R``), where ``R`` is :meth:`reaction_term`.
-        Implicit species (which have no governing equation) are skipped. The rate
-        coefficients must already be converted to fenics objects.
-
-        Returns:
-            A list of festim.ParticleSource objects.
-        """
-        rate = self.reaction_term()
-
-        sources = [
-            ParticleSource(value=-rate, volume=self.volume, species=reactant)
-            for reactant in self.reactant
-            if isinstance(reactant, Species)
-        ]
-        sources += [
-            ParticleSource(value=rate, volume=self.volume, species=product)
-            for product in self.product
-        ]
-        return sources
+    def __str__(self) -> str:
+        reactants = " + ".join([str(reactant) for reactant in self.reactant])
+        products = " + ".join([str(product) for product in self.product])
+        return f"{reactants} <--> {products}"
 
 
 class ArrheniusReaction(GenericReaction):
@@ -607,7 +796,6 @@ class DecayReaction(GenericReaction):
         volume: VolumeSubdomain,
         product: Species | list[Species] | None = None,
     ) -> None:
-
         self.half_life = half_life
 
         super().__init__(
