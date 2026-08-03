@@ -125,6 +125,61 @@ def test_solution_on_ambiguous_raises():
         solution_on(species, other)
 
 
+def test_manifold_time_constants_live_on_the_submesh_and_track():
+    """``t``, ``dt`` and a constant ``T`` are mirrored onto a manifold's submesh.
+
+    A manifold's self terms are integrated over its submesh, and a ``fem.Constant``
+    bound to the parent mesh cannot appear in such an integral -- FFCx fails with an
+    ``UnboundLocalError`` that says nothing about the cause. The mirrors are only
+    correct if they follow the values they mirror, which is what one step checks.
+    """
+    mesh = unit_square()
+    omega = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=1, E_D=0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    gamma = F.VolumeSubdomain(
+        id=2,
+        material=F.Material(D_0=1, E_D=0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 0.0),
+    )
+    right = F.SurfaceSubdomain(id=3, locator=lambda x: np.isclose(x[0], 1.0))
+    H_om = F.Species("H_om", subdomains=[omega])
+    H_gam = F.Species("H_gam", subdomains=[gamma])
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_om, H_gam],
+        subdomains=[omega, gamma, right],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=right, value=0.0, species=H_om)
+        ],
+        temperature=lambda t: 500.0 + 10.0 * t,
+        settings=F.Settings(
+            atol=1e-10,
+            rtol=1e-10,
+            transient=True,
+            final_time=1.0,
+            stepsize=F.Stepsize(initial_value=0.25),
+        ),
+    )
+    model.show_progress_bar = False
+    model.initialise()
+
+    for mirror in (gamma.sub_t, gamma.sub_dt, gamma.sub_T):
+        assert mirror.ufl_domain() is gamma.submesh.ufl_domain()
+    # a codim-0 subdomain has no mirror to keep: it uses the parent-mesh constants
+    assert omega.sub_t is None and omega.sub_dt is None
+
+    model.iterate()
+
+    assert float(gamma.sub_t) == float(model.t)
+    assert float(gamma.sub_dt) == float(model.dt)
+    assert float(gamma.sub_T) == float(model.temperature_fenics)
+
+
 def test_manifold_gradient_uses_the_submesh_measure():
     """The measure chosen for gradient terms must give the tangential gradient.
 
