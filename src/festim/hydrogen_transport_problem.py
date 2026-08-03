@@ -625,7 +625,7 @@ class HydrogenTransportProblem(problem.ProblemBase):
                 ct=self.volume_meshtags,
                 facet_to_cell=mesh.topology.connectivity(tdim - 1, tdim),
                 volume_subdomains=self.volume_subdomains,
-                surface_subdomains=self.surface_subdomains,
+                surface_subdomains=self.facet_surface_subdomains,
                 comm=mesh.comm,
             )
 
@@ -1315,7 +1315,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 ct=self.volume_meshtags,
                 facet_to_cell=facet_to_cell,
                 volume_subdomains=self.volume_subdomains,
-                surface_subdomains=self.surface_subdomains,
+                # a codim-2 surface bounds a manifold and is not in the facet tags; the
+                # manifold it belongs to comes from the species of the bc using it
+                surface_subdomains=self.facet_surface_subdomains,
                 comm=self.mesh.mesh.comm,
             )
 
@@ -1453,23 +1455,38 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             dolfinx.fem.DirichletBC: the appropriate dolfinx representation
                 generated from ``dolfinx.fem.dirichletbc()``
         """
-        fdim = self.mesh.mesh.topology.dim - 1
-        volume_subdomain = self.surface_to_volume[bc.subdomain]
+        on_manifold = bc.subdomain.codim(self.mesh.vdim) == 2
+        if on_manifold:
+            # the boundary of a manifold carries no meshtag: which manifold it bounds
+            # follows from the species, exactly as a flux on an interior manifold picks
+            # its side from bc.species
+            volume_subdomain = self.manifold_of(bc.subdomain, bc.species)
+            fdim = volume_subdomain.submesh.topology.dim - 1
+        else:
+            volume_subdomain = self.surface_to_volume[bc.subdomain]
+            fdim = self.mesh.mesh.topology.dim - 1
         sub_V = bc.species.subdomain_to_function_space[volume_subdomain]
         collapsed_V, _ = sub_V.collapse()
 
         # in the discontinuous case, if the temperature is given as a function
         # then we can't use the temperature on the parent mesh
         # see issue #1007
-        if isinstance(self.temperature_fenics, fem.Function):
+        if on_manifold:
+            # the value is interpolated onto the manifold's submesh, so the coefficients
+            # it is built from have to live there too
             temp = volume_subdomain.sub_T
+            time = volume_subdomain.sub_t
+        elif isinstance(self.temperature_fenics, fem.Function):
+            temp = volume_subdomain.sub_T
+            time = self.t
         else:
             temp = self.temperature_fenics
+            time = self.t
 
         bc.create_value(
             temperature=temp,
             function_space=collapsed_V,
-            t=self.t,
+            t=time,
         )
 
         volume_subdomain.submesh.topology.create_connectivity(
@@ -1484,13 +1501,57 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         else:
             function_space_dofs = sub_V
 
+        if on_manifold:
+            # located directly on the manifold's submesh -- no tag to look up, and no
+            # codim-2 entity of the parent mesh is ever needed
+            entities = bc.subdomain.locate_boundary_facet_indices(
+                volume_subdomain.submesh
+            )
+            # a locator that matches nothing, or matches only points interior to the
+            # manifold, would otherwise leave the bc silently doing nothing
+            if self.mesh.mesh.comm.allreduce(len(entities), op=MPI.SUM) == 0:
+                raise ValueError(
+                    f"the locator of surface subdomain {bc.subdomain.id} matched no "
+                    f"boundary entity of codim-1 volume subdomain "
+                    f"{volume_subdomain.id}. It must select a point on the boundary of "
+                    "that subdomain, not one inside it."
+                )
+        else:
+            entities = volume_subdomain.ft.find(bc.subdomain.id)
+
         bc_dofs = dolfinx.fem.locate_dofs_topological(
             function_space_dofs,
             fdim,
-            volume_subdomain.ft.find(bc.subdomain.id),
+            entities,
         )
         form = dolfinx.fem.dirichletbc(bc.value_fenics, bc_dofs, sub_V)
         return form
+
+    def manifold_of(
+        self, surface: _subdomain.SurfaceSubdomain, species: _species.Species
+    ) -> _subdomain.VolumeSubdomain:
+        """The manifold subdomain that a codim-2 ``surface`` bounds.
+
+        A codim-2 surface is not in any meshtag, so it cannot be mapped to its volume
+        topologically the way an ordinary surface is. It is instead resolved from the
+        species of the term using it -- the same rule that gives a flux on an interior
+        manifold its side. That also means one surface object may be reused on several
+        manifolds, one species each.
+
+        Raises:
+            ValueError: if the species does not live on exactly one manifold subdomain
+        """
+        candidates = [s for s in self.manifold_subdomains if s in species.subdomains]
+        if len(candidates) != 1:
+            raise ValueError(
+                f"cannot tell which manifold surface subdomain {surface.id} bounds: "
+                f"species {species.name} lives on volume subdomains "
+                f"{[s.id for s in species.subdomains]}, of which "
+                f"{[s.id for s in candidates]} are manifolds. A codim-2 surface "
+                "subdomain is resolved through the species of the boundary condition "
+                "using it, so that species must live on exactly one manifold."
+            )
+        return candidates[0]
 
     def create_initial_conditions(self):
         """For each intial condition, create the value_fenics and assign it to the
