@@ -191,6 +191,32 @@ def test_interior_manifold_conserves_particles():
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_interior_manifold_transient_reaches_steady_state():
+    """The same interface, run in time from a zero initial condition.
+
+    A manifold's time derivative is integrated over its submesh and so needs a
+    submesh-resident ``dt``; with the parent-mesh one the form does not compile at all
+    (see ``test_transient_manifold_integrates_dt_exactly``). Left long enough the
+    transient must land on the closed-form steady state of
+    ``test_interior_manifold_matches_analytical_solution``.
+    """
+    model, (left, right, gamma), (H_l, H_r, H_g) = build()
+    model.settings.transient = True
+    model.settings.final_time = 8.0
+    model.settings.stepsize = F.Stepsize(initial_value=0.05)
+    model.initialise()
+    model.run()
+
+    c_l = H_l.subdomain_to_post_processing_solution[left].x.array
+    c_r = H_r.subdomain_to_post_processing_solution[right].x.array
+    c_g = H_g.subdomain_to_post_processing_solution[gamma].x.array
+
+    assert np.isclose(c_l.min(), 14 / 9, atol=1e-5)
+    assert np.isclose(c_r.max(), 4 / 9, atol=1e-5)
+    assert np.allclose(c_g, 8 / 9, atol=1e-5)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_source_spanning_both_sides_raises():
     """A single manifold source cannot read both sides: it has no single restriction."""
     model, (_, _, gamma), (H_l, H_r, H_g) = build()

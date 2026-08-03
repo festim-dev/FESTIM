@@ -32,6 +32,11 @@ class VolumeSubdomain:
         u_n: the previous solution function of the subdomain
         material: the material assigned to the subdomain
         sub_T: the sub temperature field in the subdomain
+        sub_t: for a manifold (codim-1) subdomain, the current time as a constant living
+            on its submesh. ``None`` for a codim-0 subdomain, which uses the parent-mesh
+            constant
+        sub_dt: for a manifold (codim-1) subdomain, the timestep as a constant living on
+            its submesh. ``None`` for a codim-0 subdomain
         dim: the topological dimension of the subdomain. Defaults to ``None``, meaning
             the dimension of the mesh. Set it to ``mesh_dim - 1`` to solve a transport
             equation on a manifold embedded in the mesh (a line in a 2D mesh, a surface
@@ -50,6 +55,8 @@ class VolumeSubdomain:
     u_n: dolfinx.fem.Function
     material: Material
     sub_T: fem.Function | float
+    sub_t: fem.Constant | None
+    sub_dt: fem.Constant | None
 
     def __init__(
         self,
@@ -61,6 +68,8 @@ class VolumeSubdomain:
     ):
         assert id != 0, "Volume subdomain id cannot be 0"
         self.id = id
+        self.sub_t = None
+        self.sub_dt = None
         self.material = material
         self.locator = locator
         self.name = name
