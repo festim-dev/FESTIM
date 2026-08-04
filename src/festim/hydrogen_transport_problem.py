@@ -13,6 +13,7 @@ import scifem
 import tqdm.auto
 import ufl
 from dolfinx import fem
+from dolfinx.cpp.fem import compute_integration_domains
 from dolfinx.fem.petsc import NonlinearProblem
 from packaging.version import Version
 
@@ -1325,6 +1326,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             self.mesh.mesh.topology.dim - 1, self.mesh.mesh.topology.dim
         )
         self._coupling_measures = {}
+        self._manifold_is_interior = {}
         self.manifold_to_volumes = _subdomain.map_manifold_to_volume_subdomains(
             ft=self.facet_meshtags,
             ct=self.volume_meshtags,
@@ -1333,6 +1335,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             manifold_subdomains=self.manifold_subdomains,
             comm=self.mesh.mesh.comm,
         )
+        # eagerly, so that a manifold straddling the boundary of the mesh is rejected
+        # when it is declared rather than only if something happens to couple to it
+        for manifold in self.manifold_subdomains:
+            self.manifold_is_interior(manifold)
 
         # create submeshes and transfer meshtags to subdomains
         for subdomain in self.volume_subdomains:
@@ -1658,25 +1664,77 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return ufl.Measure("dx", domain=subdomain.submesh)
         return self.dx(subdomain.id)
 
+    def manifold_is_interior(self, manifold: _subdomain.VolumeSubdomain) -> bool:
+        """Whether ``manifold`` sits on interior facets of the mesh.
+
+        This is a question about the *mesh*, not about how many volume subdomains the
+        manifold happens to separate: a grain boundary network inside a single-phase
+        polycrystal is interior even though the same subdomain lies on both sides of it.
+        Deciding from the subdomain count instead would pick ``ds`` for such a manifold,
+        and ``ds`` integrates to exactly zero over interior facets -- a coupling that
+        silently does nothing.
+
+        Raises:
+            ValueError: if the manifold mixes interior and exterior facets, which would
+                need two measures at once
+        """
+        if manifold not in self._manifold_is_interior:
+            mesh = self.mesh.mesh
+            tdim = mesh.topology.dim
+            mesh.topology.create_connectivity(tdim - 1, tdim)
+            facet_to_cell = mesh.topology.connectivity(tdim - 1, tdim)
+            facets = self.facet_meshtags.find(manifold.id)
+            n_interior = sum(len(facet_to_cell.links(f)) == 2 for f in facets)
+
+            comm = mesh.comm
+            total = comm.allreduce(len(facets), op=MPI.SUM)
+            interior = comm.allreduce(n_interior, op=MPI.SUM)
+            if 0 < interior < total:
+                raise ValueError(
+                    f"codim-1 volume subdomain {manifold.id} has {interior} interior "
+                    f"and {total - interior} exterior facets. A manifold must lie "
+                    "wholly inside the mesh or wholly on its boundary; split it into "
+                    "two subdomains."
+                )
+            self._manifold_is_interior[manifold] = interior > 0
+        return self._manifold_is_interior[manifold]
+
     def coupling_measure(self, manifold: _subdomain.VolumeSubdomain):
         """The parent-mesh measure the terms coupling ``manifold`` to the bulk are
         integrated over.
 
-        Exterior facets (a manifold on the boundary of the domain) use ``ds``; interior
-        facets use ``dS``, with the integration entities ordered so that ``"+"`` is the
-        first of the manifold's adjacent volume subdomains -- see
-        :meth:`restriction_of`.
+        A manifold on the boundary of the mesh uses ``ds``; one inside the mesh uses
+        ``dS``. When it separates two different volume subdomains the integration
+        entities are ordered so that ``"+"`` is the first of them (see
+        :meth:`restriction_of`); when the same subdomain lies on both sides there is
+        nothing to order, because the bulk field is single-valued across the facet.
         """
-        volumes = self.manifold_to_volumes[manifold]
-        if len(volumes) == 1:
+        if not self.manifold_is_interior(manifold):
             return self.ds(manifold.id)
 
         # memoised: DOLFINx requires every integral of a compiled form to share the
         # *same* subdomain_data object, not merely an equal one
         if manifold not in self._coupling_measures:
-            integral_data = _subdomain.compute_ordered_interior_facet_data(
-                self.mesh.mesh, self.facet_meshtags, manifold.id, volumes[0], volumes[1]
-            )
+            volumes = self.manifold_to_volumes[manifold]
+            if len(volumes) == 2:
+                integral_data = _subdomain.compute_ordered_interior_facet_data(
+                    self.mesh.mesh,
+                    self.facet_meshtags,
+                    manifold.id,
+                    volumes[0],
+                    volumes[1],
+                )
+            else:
+                # one subdomain on both sides: either restriction reads the same value,
+                # so the entities are taken in whatever order DOLFINx gives them
+                integral_data = (
+                    manifold.id,
+                    compute_integration_domains(
+                        dolfinx.fem.IntegralType.interior_facet,
+                        self.mesh.mesh.topology._cpp_object,
+                        self.facet_meshtags.find(manifold.id),
+                    ),
+                )
             self._coupling_measures[manifold] = ufl.Measure(
                 "dS", domain=self.mesh.mesh, subdomain_data=[integral_data]
             )
@@ -1687,12 +1745,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
     ) -> str | None:
         """Which side of an interior ``manifold`` the subdomain ``volume`` is on.
 
-        ``None`` when the manifold is on the boundary of the domain, where the coupling
-        is an exterior-facet integral and nothing needs restricting.
+        ``None`` when the manifold is on the boundary of the mesh, where the coupling is
+        an exterior-facet integral and nothing needs restricting. ``"+"`` when the same
+        subdomain lies on both sides: the bulk field is continuous across the facet, so
+        both restrictions read the same value and the exchange is applied once.
         """
+        if not self.manifold_is_interior(manifold):
+            return None
         volumes = self.manifold_to_volumes[manifold]
         if len(volumes) == 1:
-            return None
+            return "+"
         return "+" if volume is volumes[0] else "-"
 
     def restrict(self, expression, restriction: str | None):
