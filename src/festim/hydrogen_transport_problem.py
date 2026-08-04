@@ -1507,6 +1507,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             function_space_dofs = sub_V
 
         if on_manifold:
+            # NOTE: this means that the only way to apply a DirichletBC on a manifold is
+            # to be able to describe it geometrically. This is limiting and it would
+            # be desirable to have a "meshtag route" for this.
+
             # located directly on the manifold's submesh -- no tag to look up, and no
             # codim-2 entity of the parent mesh is ever needed
             entities = bc.subdomain.locate_boundary_facet_indices(
