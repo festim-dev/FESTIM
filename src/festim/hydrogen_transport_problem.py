@@ -1431,11 +1431,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             # a manifold subdomain integrates its gradient terms on its own submesh,
             # and a fem.Constant bound to the parent mesh cannot appear there
             for subdomain in self.manifold_subdomains:
-                if not isinstance(subdomain.sub_T, fem.Constant):
-                    raise TypeError(
-                        f"subdomain.sub_T must be a fem.Constant for manifold subdomains, "
-                        f"but got {type(subdomain.sub_T)}"
-                    )
                 subdomain.sub_T = as_fenics_constant(
                     float(self.temperature_fenics), subdomain.submesh
                 )
