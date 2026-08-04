@@ -191,6 +191,106 @@ def test_interior_manifold_conserves_particles():
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_interior_manifold_inside_a_single_subdomain():
+    """A manifold can sit inside one volume subdomain rather than between two.
+
+    That is the grain-boundary network of a single-phase polycrystal: every grain is the
+    same material, so one bulk subdomain lies on *both* sides of the manifold. Whether
+    the coupling is an interior-facet integral is a property of the mesh, not of how
+    many subdomains the manifold separates -- deciding it from the subdomain count picks
+    ``ds``, which integrates to exactly zero over interior facets and leaves the
+    coupling silently doing nothing.
+    """
+    n, plane = 16, 0.5
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, n, n)
+    bulk = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=D_BULK, E_D=0.0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    gamma = F.VolumeSubdomain(
+        id=GAMMA_ID,
+        material=F.Material(D_0=D_GAMMA, E_D=0.0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], plane),
+    )
+    outer = F.SurfaceSubdomain(id=OUTER_L_ID, locator=lambda x: np.isclose(x[0], 0.0))
+
+    H_b = F.Species("H_b", subdomains=[bulk])
+    H_g = F.Species("H_g", subdomains=[gamma])
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_b, H_g],
+        subdomains=[bulk, gamma, outer],
+        sources=[
+            F.ParticleSource(
+                value=lambda c_g, c_b: K_LEFT * (c_b - c_g),
+                species=H_g,
+                volume=gamma,
+                species_dependent_value={"c_b": H_b, "c_g": H_g},
+            )
+        ],
+        boundary_conditions=[
+            F.ParticleFluxBC(
+                subdomain=gamma,
+                species=H_b,
+                value=lambda c_g, c_b: K_LEFT * (c_g - c_b),
+                species_dependent_value={"c_b": H_b, "c_g": H_g},
+            ),
+            F.FixedConcentrationBC(subdomain=outer, value=2.0, species=H_b),
+        ],
+        temperature=500,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
+    )
+    model.initialise()
+
+    assert model.manifold_is_interior(gamma)
+    assert model.coupling_measure(gamma).integral_type() == "interior_facet"
+
+    model.run()
+
+    # nothing drives a gradient, so the bulk sits at its boundary value and the manifold
+    # is pulled all the way to it. With the coupling silently dropped the manifold would
+    # keep its initial value of zero instead.
+    c_b = H_b.subdomain_to_post_processing_solution[bulk].x.array
+    c_g = H_g.subdomain_to_post_processing_solution[gamma].x.array
+    assert np.allclose(c_b, 2.0, atol=1e-10)
+    assert np.allclose(c_g, 2.0, atol=1e-8)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_manifold_mixing_interior_and_exterior_facets_raises():
+    """A manifold has to be wholly inside the mesh or wholly on its boundary: the two
+    need different measures, and one of them would be silently dropped."""
+    mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 8, 8)
+    bulk = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=D_BULK, E_D=0.0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    # the line x=0.5 is interior, the line x=0 is on the boundary
+    gamma = F.VolumeSubdomain(
+        id=GAMMA_ID,
+        material=F.Material(D_0=D_GAMMA, E_D=0.0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 0.5) | np.isclose(x[0], 0.0),
+    )
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[
+            F.Species("H_b", subdomains=[bulk]),
+            F.Species("H_g", subdomains=[gamma]),
+        ],
+        subdomains=[bulk, gamma],
+        temperature=500,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
+    )
+    with pytest.raises(ValueError, match=r"interior and \d+ exterior facets"):
+        model.initialise()
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_interior_manifold_transient_reaches_steady_state():
     """The same interface, run in time from a zero initial condition.
 
