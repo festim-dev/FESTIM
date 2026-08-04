@@ -1940,6 +1940,53 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             return subdomain.sub_T
         return self.temperature_fenics
 
+    def create_implicit_species_value_fenics(self):
+        """For each implicit species, create the value_fenics.
+
+        The density of an implicit species consumed by a reaction on a manifold
+        subdomain appears in an integral over that manifold's submesh, so like every
+        other coefficient of such an integral it has to be built there rather than on
+        the parent mesh (see :meth:`create_submesh_time_constants`).
+        """
+        species_to_mesh = {}
+        for reaction in self.reactions:
+            volume = reaction.volume
+            if volume is not None and volume.codim(self.mesh.vdim) == 1:
+                mesh, t = volume.submesh, self.subdomain_time(volume)
+            else:
+                mesh, t = self.mesh.mesh, self.t
+
+            for reactant in reaction.reactant:
+                if not isinstance(reactant, _species.ImplicitSpecies):
+                    continue
+
+                # an implicit species shared by reactions on different meshes would be
+                # built twice and keep only the last one, silently leaving a foreign
+                # terminal/"entity" in one of the two integrals
+                previous = species_to_mesh.setdefault(id(reactant), mesh)
+                if previous is not mesh:
+                    raise NotImplementedError(
+                        f"implicit species {reactant.name} is used by reactions on a "
+                        "codim-1 subdomain and on another subdomain, which are "
+                        "integrated over different meshes. Declare one implicit "
+                        "species per subdomain."
+                    )
+
+                reactant.create_value_fenics(mesh=mesh, t=t)
+
+                # a density given as a ready-made fenics object is passed through
+                # untouched, so it is the one case building on the submesh cannot fix;
+                # catch it here rather than let FFCx fail undiagnosably
+                domain = ufl.domain.extract_unique_domain(reactant.value_fenics)
+                if domain is not None and domain is not mesh.ufl_domain():
+                    raise NotImplementedError(
+                        f"the density of implicit species {reactant.name} is defined on "
+                        "another mesh than the codim-1 subdomain "
+                        f"{reaction.volume.id} its reaction is integrated over. Give it "
+                        "as a float or as a callable of x and t instead of as a "
+                        "ready-made fenics object."
+                    )
+
     def is_manifold_self_source(self, source) -> bool:
         """Whether ``source`` belongs to a manifold's own equation, as opposed to being
         one half of a codimensional coupling or an ordinary volumetric source."""

@@ -228,6 +228,33 @@ object can be reused on several manifolds, one species each.
 Without a condition of this kind, the ends of a manifold carry the natural zero-flux
 condition.
 
+Reactions and trapping on a manifold
+------------------------------------
+
+A :class:`festim.Reaction` runs on a manifold like on any other volume subdomain: give
+it ``volume=gamma`` and species that live on ``gamma``. Trapping is written as a
+reaction against :class:`festim.ImplicitSpecies` empty sites:
+
+.. code-block:: python
+
+    trapped = F.Species("trapped", mobile=False, subdomains=[gamma])
+    empty_sites = F.ImplicitSpecies(n=n_trap, others=[trapped])
+
+    trapping = F.Reaction(
+        reactant=[H_manifold, empty_sites], product=trapped,
+        k_0=k_0, E_k=E_k, p_0=p_0, E_p=E_p, volume=gamma,
+    )
+
+Note that the trapped species is declared with its own ``subdomains``, and that
+:class:`festim.Trap` is not a shortcut for this — it builds a species without one.
+
+The density ``n`` of an implicit species consumed on a manifold is a coefficient of an
+integral over that manifold, so FESTIM builds it there. Two consequences: give ``n`` as
+a float or as a callable of ``x`` and ``t`` rather than as a ready-made
+``dolfinx.fem.Function``, which cannot be moved; and declare one implicit species per
+subdomain rather than sharing one between a reaction on a manifold and a reaction
+elsewhere. Both are raised rather than silently mis-assembled.
+
 Limitations
 -----------
 
