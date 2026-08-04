@@ -83,6 +83,27 @@ class ProblemBase:
         return [s for s in self.volume_subdomains if s.codim(self.mesh.vdim) == 1]
 
     @property
+    def facet_surface_subdomains(self):
+        """The surface subdomains that bound an ordinary volume subdomain, ie. the ones
+        living in the facet meshtags. These are all of them unless a surface bounds a
+        manifold."""
+        if self.mesh is None or self.mesh.mesh is None:
+            return self.surface_subdomains
+        return [s for s in self.surface_subdomains if s.codim(self.mesh.vdim) == 1]
+
+    @property
+    def manifold_boundary_subdomains(self):
+        """The codim-2 surface subdomains: the boundary of a manifold subdomain (the
+        endpoints of a line, the rim of a surface).
+
+        They carry no meshtag -- their entities are located on the manifold's submesh
+        when the boundary condition using them is created -- so they take no part in the
+        facet-tag id namespace and in ``surface_to_volume``."""
+        if self.mesh is None or self.mesh.mesh is None:
+            return []
+        return [s for s in self.surface_subdomains if s.codim(self.mesh.vdim) == 2]
+
+    @property
     def dt(self):
         return self._dt
 
@@ -105,7 +126,9 @@ class ProblemBase:
             and self.volume_meshtags is None
         ):
             self.facet_meshtags, self.volume_meshtags = self.mesh.define_meshtags(
-                surface_subdomains=self.surface_subdomains,
+                # a codim-2 surface bounds a manifold, not the mesh: it has no facet to
+                # tag and is resolved on the manifold's submesh instead
+                surface_subdomains=self.facet_surface_subdomains,
                 volume_subdomains=self.volume_subdomains,
                 # if self has attribute interfaces pass it
                 interfaces=getattr(self, "interfaces", None),
@@ -120,7 +143,7 @@ class ProblemBase:
         # must not clash with a surface subdomain's: the facets carrying the tag would
         # then be a mix of the two, and neither would integrate over what it claims to
         manifold_ids = [s.id for s in self.manifold_subdomains]
-        others = {s.id for s in self.surface_subdomains} | {
+        others = {s.id for s in self.facet_surface_subdomains} | {
             i.id for i in getattr(self, "interfaces", None) or []
         }
         clashing = set(manifold_ids) & others
@@ -129,6 +152,16 @@ class ProblemBase:
                 f"Surface ids {sorted(clashing) or manifold_ids} are not unique. "
                 "Codim-1 volume subdomains and interfaces are tagged in the facet "
                 "meshtags and therefore share their ids with the surface subdomains."
+            )
+
+        # a codim-2 surface has nothing to bound without a manifold, and since it is
+        # never tagged it would otherwise just be ignored
+        if self.manifold_boundary_subdomains and not self.manifold_subdomains:
+            ids = [s.id for s in self.manifold_boundary_subdomains]
+            raise ValueError(
+                f"Surface subdomains {ids} have dim={self.mesh.vdim - 2}, which bounds "
+                f"a manifold volume subdomain (one declared with "
+                f"dim={self.mesh.vdim - 1}), but no such subdomain was declared."
             )
 
         # define measures
