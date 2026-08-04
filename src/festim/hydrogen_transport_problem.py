@@ -1994,10 +1994,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 domain = ufl.domain.extract_unique_domain(reactant.value_fenics)
                 if domain is not None and domain is not mesh.ufl_domain():
                     raise NotImplementedError(
-                        f"the density of implicit species {reactant.name} is defined on "
-                        "another mesh than the codim-1 subdomain "
-                        f"{reaction.volume.id} its reaction is integrated over. Give it "
-                        "as a float or as a callable of x and t instead of as a "
+                        f"the density of implicit species {reactant.name} is defined"
+                        " on another mesh than the codim-1 subdomain "
+                        f"{reaction.volume.id} its reaction is integrated over. Give "
+                        "it as a float or as a callable of x and t instead of as a "
                         "ready-made fenics object."
                     )
 
