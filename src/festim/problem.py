@@ -32,7 +32,7 @@ class ProblemBase:
     exports: list[Any]
     subdomains: list[_VolumeSubdomain]
     show_progress_bar: bool
-    progress_bar: None | tqdm.auto.tqdm
+    progress_bar: tqdm.auto.tqdm | None
     timesteps: list[float]
 
     def __init__(
