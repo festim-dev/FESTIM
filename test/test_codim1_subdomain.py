@@ -94,6 +94,55 @@ def test_codim1_subdomain_id_clashing_with_a_surface_raises():
         problem.define_meshtags_and_measures()
 
 
+def test_codim1_subdomain_not_overlapping_a_surface_is_fine():
+    """An interior manifold and an exterior surface both keep their facets."""
+    mesh = F.Mesh(unit_square())
+    omega = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=1, E_D=0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    gamma = F.VolumeSubdomain(
+        id=2,
+        material=F.Material(D_0=1, E_D=0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 0.5),
+    )
+    left = F.SurfaceSubdomain(id=5, locator=lambda x: np.isclose(x[0], 0.0))
+
+    ft, _ = mesh.define_meshtags(
+        surface_subdomains=[left], volume_subdomains=[omega, gamma]
+    )
+
+    assert len(ft.find(gamma.id)) == 8
+    assert len(ft.find(left.id)) == 8
+
+
+def test_codim2_subdomain_tags_no_facet_of_the_parent_mesh():
+    """A codim-2 surface is resolved on the manifold's submesh, not in the facet tags,
+    so its locator must not claim facets it does not own."""
+    mesh = F.Mesh(unit_square())
+    omega = F.VolumeSubdomain(
+        id=1,
+        material=F.Material(D_0=1, E_D=0),
+        locator=lambda x: np.full_like(x[0], True, dtype=bool),
+    )
+    gamma = F.VolumeSubdomain(
+        id=2,
+        material=F.Material(D_0=1, E_D=0),
+        dim=1,
+        locator=lambda x: np.isclose(x[0], 0.5),
+    )
+    # the bottom end of gamma, located with a locator that also matches a whole edge
+    tip = F.SurfaceSubdomain(id=7, dim=0, locator=lambda x: np.isclose(x[1], 0.0))
+
+    ft, _ = mesh.define_meshtags(
+        surface_subdomains=[tip], volume_subdomains=[omega, gamma]
+    )
+
+    assert len(ft.find(tip.id)) == 0
+
+
 def test_solution_on_prefers_the_requested_subdomain():
     a = F.VolumeSubdomain(id=1, material=F.Material(D_0=1, E_D=0))
     b = F.VolumeSubdomain(id=2, material=F.Material(D_0=1, E_D=0))
