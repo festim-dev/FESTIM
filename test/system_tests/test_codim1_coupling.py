@@ -383,6 +383,158 @@ def test_reaction_on_manifold():
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_implicit_species_on_manifold():
+    """The density of an implicit species must live on the manifold's submesh.
+
+    It is the fourth coefficient of a manifold self term, after ``dt``, ``t`` and the
+    temperature, and it is reached by the usual way of writing trapping: a reaction
+    consuming ``F.ImplicitSpecies`` empty sites. Built on the parent mesh it does not
+    compile (the same FFCx ``UnboundLocalError``).
+
+    Compiling is not the whole test though -- the density has to carry the right value
+    too. With a uniform source ``S`` and saturable trapping, the two fields obey::
+
+        c_m' = S - R,   c_t' = R,   R = k c_m (n - c_t) - p c_t
+
+    Summing them removes ``R``, so ``c_m + c_t = S t`` exactly under backward Euler,
+    and substituting ``c_m = S t - c_t`` leaves a scalar quadratic per step. Solving
+    that quadratic here reproduces what the solver must return to machine precision,
+    and ``n`` enters its coefficients directly, so a stale or wrong density shows up.
+    """
+    temperature, source_value, final_time, dt = 500.0, 1.0, 2.0, 0.1
+    n_trap, k, p, E_k, E_p = 0.5, 2.0, 5.0, 0.2, 0.3
+    k_0 = k * np.exp(E_k / (F.k_B * temperature))
+    p_0 = p * np.exp(E_p / (F.k_B * temperature))
+
+    trapped = F.Species("trapped", mobile=False)
+    empty_sites = F.ImplicitSpecies(n=n_trap, others=[trapped], name="empty_sites")
+    model, gamma, H_gam = uncoupled(
+        F.Stepsize(initial_value=dt),
+        final_time,
+        source_value,
+        extra_species=[trapped],
+    )
+    model.temperature = temperature
+    trapped.subdomains = [gamma]
+    model.reactions = [
+        F.Reaction(
+            reactant=[H_gam, empty_sites],
+            product=trapped,
+            k_0=k_0,
+            E_k=E_k,
+            p_0=p_0,
+            E_p=E_p,
+            volume=gamma,
+        )
+    ]
+    model.initialise()
+
+    # the density is a coefficient of the submesh integral, so it must live there
+    assert empty_sites.value_fenics.ufl_domain() is gamma.submesh.ufl_domain()
+
+    model.run()
+
+    c_mobile = H_gam.subdomain_to_post_processing_solution[gamma].x.array
+    c_trapped = trapped.subdomain_to_post_processing_solution[gamma].x.array
+
+    # step the reference quadratic  a y**2 - (a b + a n + p dt + 1) y + (a b n + y_n)
+    # with a = k dt and b = S t, taking the root below n
+    expected_trapped, a = 0.0, k * dt
+    for step in range(round(final_time / dt)):
+        b = source_value * (step + 1) * dt
+        beta = a * b + a * n_trap + p * dt + 1
+        expected_trapped = (
+            beta - np.sqrt(beta**2 - 4 * a * (a * b * n_trap + expected_trapped))
+        ) / (2 * a)
+
+    t = float(model.t)
+    assert np.allclose(c_mobile + c_trapped, source_value * t, rtol=1e-8)
+    assert np.allclose(c_trapped, expected_trapped, rtol=1e-8)
+    # a good fraction of the sites are occupied, so the density is load-bearing:
+    # the saturation term k c_m (n - c_t) is nowhere near its unsaturated limit
+    assert 0.3 * n_trap < expected_trapped < 0.9 * n_trap
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_implicit_species_shared_across_meshes_raises():
+    """One implicit species cannot serve reactions integrated over different meshes.
+
+    Its density is a single fenics object built on one mesh; used by a reaction on a
+    manifold and by one on a bulk subdomain, it would silently be rebuilt on whichever
+    mesh came last and leave a foreign terminal in the other integral.
+    """
+    trapped_om = F.Species("trapped_om", mobile=False)
+    trapped_gam = F.Species("trapped_gam", mobile=False)
+    shared = F.ImplicitSpecies(n=0.5, others=[trapped_om, trapped_gam], name="shared")
+    model, gamma, H_gam = uncoupled(
+        F.Stepsize(initial_value=0.1),
+        0.1,
+        1.0,
+        extra_species=[trapped_om, trapped_gam],
+    )
+    omega = next(s for s in model.volume_subdomains if s.id == OMEGA_ID)
+    H_om = next(s for s in model.species if s.name == "H_om")
+    trapped_om.subdomains = [omega]
+    trapped_gam.subdomains = [gamma]
+    model.reactions = [
+        F.Reaction(
+            reactant=[H_gam, shared],
+            product=trapped_gam,
+            k_0=1.0,
+            E_k=0.0,
+            p_0=1.0,
+            E_p=0.0,
+            volume=gamma,
+        ),
+        F.Reaction(
+            reactant=[H_om, shared],
+            product=trapped_om,
+            k_0=1.0,
+            E_k=0.0,
+            p_0=1.0,
+            E_p=0.0,
+            volume=omega,
+        ),
+    ]
+
+    with pytest.raises(NotImplementedError, match="one implicit species per subdomain"):
+        model.initialise()
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_implicit_species_density_on_the_wrong_mesh_raises():
+    """A density given as a ready-made fenics object cannot be moved to the submesh.
+
+    Floats and callables are built on whatever mesh FESTIM asks for, but a
+    ``fem.Function`` is passed through as it is, so one defined on the parent mesh
+    reaches the submesh integral and dies inside FFCx. That has to be said plainly.
+    """
+    trapped = F.Species("trapped", mobile=False)
+    model, gamma, H_gam = uncoupled(
+        F.Stepsize(initial_value=0.1), 0.1, 1.0, extra_species=[trapped]
+    )
+    V = dolfinx.fem.functionspace(model.mesh.mesh, ("Lagrange", 1))
+    parent_density = dolfinx.fem.Function(V)
+    parent_density.x.array[:] = 0.5
+
+    trapped.subdomains = [gamma]
+    model.reactions = [
+        F.Reaction(
+            reactant=[H_gam, F.ImplicitSpecies(n=parent_density, others=[trapped])],
+            product=trapped,
+            k_0=1.0,
+            E_k=0.0,
+            p_0=1.0,
+            E_p=0.0,
+            volume=gamma,
+        )
+    ]
+
+    with pytest.raises(NotImplementedError, match="defined on another mesh"):
+        model.initialise()
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_advection_velocity_is_self_projecting():
     """The normal component of an advection velocity on a manifold does nothing.
 
