@@ -49,7 +49,7 @@ class DirichletBCBase:
         | Callable[[np.ndarray, float], np.ndarray]
         | Callable[[float], float]
     )
-    value_fenics: None | fem.Function | fem.Constant | np.ndarray | float
+    value_fenics: fem.Function | fem.Constant | np.ndarray | float | None
     bc_expr: fem.Expression
 
     def __init__(
@@ -74,7 +74,7 @@ class DirichletBCBase:
     @value_fenics.setter
     def value_fenics(
         self,
-        value: None | fem.Function | fem.Constant | np.ndarray | ufl.core.expr.Expr,
+        value: fem.Function | fem.Constant | np.ndarray | ufl.core.expr.Expr | None,
     ):
         if value is None:
             self._value_fenics = value
