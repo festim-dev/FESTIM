@@ -113,6 +113,8 @@ venv.bak/
 *.xdmf
 *.h5
 *.txt
+*.zip
+*.png
 
 # Docs files
 docs/source/_build/

@@ -69,16 +69,22 @@ class SurfaceSubdomain:
 
         Returns:
             1 for the boundary of an ordinary volume subdomain, 2 for the boundary of a
-            manifold volume subdomain
+            manifold (codim-1) volume subdomain, 3 for the boundary of a nested
+            (codim-2) one
+
+        A surface always bounds a volume subdomain of one codimension less, and is
+        always located on that subdomain's own mesh. Codim 3 is therefore the ends of a
+        curve nested in a surface of a 3D mesh -- a set of points, which is fine for a
+        strong boundary condition even though it would not be for a transport equation.
 
         Raises:
-            ValueError: if the resulting codimension is not 1 or 2
+            ValueError: if the resulting codimension is not 1, 2 or 3
         """
         codim = 1 if self.dim is None else mesh_dim - self.dim
-        if codim not in (1, 2):
+        if codim not in (1, 2, 3):
             raise ValueError(
                 f"surface subdomain {self.id} has dim={self.dim} in a mesh of "
-                f"dimension {mesh_dim}, ie. codimension {codim}. Only 1 and 2 are "
+                f"dimension {mesh_dim}, ie. codimension {codim}. Only 1, 2 and 3 are "
                 "supported."
             )
         return codim
@@ -87,8 +93,9 @@ class SurfaceSubdomain:
         """Locate the boundary entities of the subdomain in ``mesh``.
 
         ``mesh`` is the parent mesh for an ordinary surface, and the submesh of the
-        manifold it bounds for a codim-2 one -- in both cases the entities searched are
-        the facets of the mesh they are located in.
+        codimensional volume subdomain it bounds for a codim-2 or codim-3 one -- in
+        every case the entities searched are the facets of the mesh they are located
+        in, which is what makes the same code work at every level.
 
         Args:
             mesh: a dolfinx mesh object
