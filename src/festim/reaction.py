@@ -418,10 +418,7 @@ class GenericReaction(ReactionBase):
         self.product = product
         self.forward_rate = forward_rate
         self.backward_rate = backward_rate
-        # the net rate is derived from forward/backward and the participating
-        # concentrations (see reaction_term), so the base reaction_rate slot is
-        # unused; rate_coefficients and species_to_stoichiometry below point
-        # conversion and source-unpacking at the reactants/products instead
+
         super().__init__(
             reaction_rate=None,
             volume=volume,
