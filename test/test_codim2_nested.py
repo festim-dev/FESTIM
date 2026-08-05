@@ -27,7 +27,7 @@ import ufl
 
 import festim as F
 
-OMEGA_ID, GAMMA_ID, LAMBDA_ID, OUTER_ID = 1, 2, 3, 4
+OMEGA_ID, GAMMA_ID, LAMBDA_ID, OUTER_ID, END_ID = 1, 2, 3, 4, 5
 
 
 def cube(n):
@@ -243,7 +243,93 @@ def test_diffusion_along_nested_subdomain():
 
 
 # ---------------------------------------------------------------------------
-# 3. validation
+# 3. a strong boundary condition at the end of Lambda
+# ---------------------------------------------------------------------------
+
+
+def run_dirichlet_end_of_lambda(n=8, D=0.7, source=3.0):
+    """A zero Dirichlet condition at one end of Lambda, with a uniform source.
+
+    The end of Lambda is a point in a 3D mesh, ie. codimension 3: a ``SurfaceSubdomain``
+    with ``dim=mesh_dim - 3``. It is located on Lambda's submesh and resolved to Lambda
+    through the species of the boundary condition, exactly as a codim-2 surface is
+    resolved to the manifold it bounds.
+
+    Omega and Gamma are driven to zero and there is no exchange, so Lambda solves::
+
+        -D c'' = source,  c(0) = 0,  c'(1) = 0   =>   c(x) = source/D * (x - x^2/2)
+
+    The natural condition at the far end holds by construction. In 1D with constant
+    coefficients the P1 Galerkin solution is nodally exact, so this is checked to solver
+    tolerance rather than to a discretisation error.
+    """
+    mesh = cube(n)
+    omega, gamma, lam = geometry(mesh, D_lambda=D)
+    outer = F.SurfaceSubdomain(id=OUTER_ID, locator=lambda x: np.full(x.shape[1], True))
+    # codim 3: Lambda is the line y = z = 1/2, so it runs along x and its ends are the
+    # points x = 0 and x = 1 of its own submesh
+    lam_start = F.SurfaceSubdomain(
+        id=END_ID, dim=0, locator=lambda x: np.isclose(x[0], 0.0)
+    )
+
+    H_omega = F.Species("c_omega", subdomains=[omega])
+    H_gamma = F.Species("c_gamma", subdomains=[gamma])
+    H_lambda = F.Species("c_lambda", subdomains=[lam])
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[H_omega, H_gamma, H_lambda],
+        subdomains=[omega, gamma, lam, outer, lam_start],
+        reactions=[F.Reaction(reactant=[H_gamma], k_0=1.0, E_k=0.0, volume=gamma)],
+        sources=[F.ParticleSource(value=source, species=H_lambda, volume=lam)],
+        boundary_conditions=[
+            F.FixedConcentrationBC(subdomain=outer, value=0.0, species=H_omega),
+            F.FixedConcentrationBC(subdomain=lam_start, value=0.0, species=H_lambda),
+        ],
+        temperature=500,
+        settings=F.Settings(atol=1e-12, rtol=1e-12, transient=False),
+    )
+
+    model.initialise()
+    model.run()
+
+    c = H_lambda.subdomain_to_post_processing_solution[lam]
+    x = c.function_space.tabulate_dof_coordinates()[:, 0]
+    return c.x.array, source / D * (x - 0.5 * x**2)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_dirichlet_at_the_end_of_a_nested_subdomain():
+    """A codim-3 surface pins the value at one end of Lambda and nowhere else."""
+    computed, exact = run_dirichlet_end_of_lambda()
+    assert np.allclose(computed, exact, atol=1e-8), np.abs(computed - exact).max()
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_codim3_surface_needs_a_nested_subdomain():
+    """A codim-3 surface with nothing to bound is rejected, not silently ignored."""
+    mesh = cube(4)
+    omega, gamma, _ = geometry(mesh)
+    stray = F.SurfaceSubdomain(
+        id=END_ID, dim=0, locator=lambda x: np.isclose(x[0], 0.0)
+    )
+
+    model = F.HydrogenTransportProblemDiscontinuous(
+        mesh=F.Mesh(mesh),
+        species=[
+            F.Species("c_omega", subdomains=[omega]),
+            F.Species("c_gamma", subdomains=[gamma]),
+        ],
+        subdomains=[omega, gamma, stray],
+        temperature=500,
+        settings=F.Settings(atol=1e-10, rtol=1e-10, transient=False),
+    )
+    with pytest.raises(ValueError, match="no such subdomain was declared"):
+        model.initialise()
+
+
+# ---------------------------------------------------------------------------
+# 4. validation
 # ---------------------------------------------------------------------------
 
 
