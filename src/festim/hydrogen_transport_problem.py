@@ -1409,81 +1409,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.create_solver()
         self.initialise_exports()
 
-    def localised_constant(
-        self, subdomain: _subdomain.VolumeSubdomain, constant: fem.Constant
-    ) -> fem.Constant:
-        """A copy of ``constant`` bound to the mesh the *self* terms of ``subdomain``
-        are integrated over.
-
-        The self terms of a manifold (codim-1) subdomain are integrated over its own
-        submesh (see :meth:`subdomain_measure`), and a terminal carrying the parent
-        domain cannot appear in such an integral: FFCx classifies the integral as
-        mixed-dimensional and then looks for a permuted table that it never builds for
-        a cell integral, failing with ``UnboundLocalError`` in
-        ``build_optimized_tables``. Manifolds therefore get their own mirror of every
-        parent-mesh constant, kept up to date by :meth:`_sync_localised_constants`.
-
-        For a subdomain of codimension 0 the self terms are parent-mesh integrals and
-        the constant is returned unchanged.
-
-        Args:
-            subdomain: the subdomain the term belongs to
-            constant: the parent-mesh constant
-
-        Returns:
-            the constant to use in the self terms of ``subdomain``
-        """
-        if subdomain.codim(self.mesh.vdim) != 1:
-            return constant
-        mirrors = subdomain.__dict__.setdefault("_local_constants", {})
-        if constant not in mirrors:
-            mirrors[constant] = fem.Constant(
-                subdomain.submesh, np.asarray(constant.value).copy()
-            )
-        return mirrors[constant]
-
-    def _sync_localised_constants(self):
-        """Copies the value of every mirrored parent-mesh constant onto its submesh
-        mirror. Called once the parent-mesh values of a timestep are final."""
-        for subdomain in self.manifold_subdomains:
-            for parent, local in getattr(subdomain, "_local_constants", {}).items():
-                local.value = parent.value
-
-    def create_implicit_species_value_fenics(self):
-        """For each implicit species, create the value_fenics.
-
-        As for any other term, the density of an implicit species consumed by a
-        reaction on a manifold subdomain ends up in an integral over that manifold's
-        submesh, so it has to be built there rather than on the parent mesh (see
-        :meth:`localised_constant`).
-        """
-        species_to_mesh = {}
-        for reaction in self.reactions:
-            volume = reaction.volume
-            is_manifold = volume is not None and volume.codim(self.mesh.vdim) == 1
-            for reactant in reaction.reactant:
-                if not isinstance(reactant, _species.ImplicitSpecies):
-                    continue
-
-                if is_manifold:
-                    mesh, t = volume.submesh, self.localised_constant(volume, self.t)
-                else:
-                    mesh, t = self.mesh.mesh, self.t
-
-                # the same implicit species used on both sides would be built twice
-                # and keep only the last mesh, silently putting a foreign terminal in
-                # one of the two integrals
-                previous = species_to_mesh.setdefault(id(reactant), mesh)
-                if previous is not mesh:
-                    raise NotImplementedError(
-                        f"implicit species {reactant.name} is used by reactions on "
-                        "both a codim-1 subdomain and another subdomain, which are "
-                        "integrated over different meshes. Declare one implicit "
-                        "species per subdomain."
-                    )
-
-                reactant.create_value_fenics(mesh=mesh, t=t)
-
     def define_temperature(self):
         super().define_temperature()
 
@@ -1739,22 +1664,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         for source in self.sources:
             # create value_fenics for all F.ParticleSource objects
             if isinstance(source, _source.ParticleSource):
-                volume = source.volume
-                V = source.species.subdomain_to_function_space[volume]
-
-                # which measure the source will be integrated over decides which mesh
-                # its terminals must live on: the coupling half of a codimensional
-                # exchange is a parent-mesh integral, everything else is integrated
-                # over the subdomain's own mesh
-                if self.coupling_species_of_source(source):
-                    t, temperature = self.t, self.temperature_fenics
-                else:
-                    t = self.localised_constant(volume, self.t)
-                    temperature = (
-                        volume.sub_T
-                        if volume.codim(self.mesh.vdim) == 1
-                        else self.temperature_fenics
-                    )
+                V = source.species.subdomain_to_function_space[source.volume]
 
                 # a self source on a manifold is integrated over its submesh, so its
                 # time and temperature must live there; a coupling source is integrated
@@ -1771,7 +1681,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     t=t,
                     temperature=temperature,
                     up_to_ufl_expr=True,
-                    subdomain=volume,
+                    subdomain=source.volume,
                 )
 
     def convert_advection_term_to_fenics_objects(self):
@@ -1779,12 +1689,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
         for advec_term in self.advection_terms:
             if isinstance(advec_term, AdvectionTerm):
-                # advection is always a self term, integrated over the subdomain's own
-                # mesh, so on a manifold the time must be the localised one
-                t = self.localised_constant(advec_term.subdomain, self.t)
                 for spe in advec_term.species:
                     V = spe.subdomain_to_function_space[advec_term.subdomain]
-                    advec_term.velocity.convert_input_value(function_space=V, t=t)
+                    advec_term.velocity.convert_input_value(function_space=V, t=self.t)
 
     def define_boundary_conditions(self):
         for bc in self._unpacked_bcs:
@@ -2269,40 +2176,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             subdomain.F = self_form + form_coupling
             subdomain.F_submesh = None
 
-    def _check_submesh_form(self, subdomain: _subdomain.VolumeSubdomain, form):
-        """Checks that the self terms of a manifold subdomain only involve its own
-        submesh.
-
-        This is the same predicate FFCx uses to decide that an integral is
-        mixed-dimensional (``ffcx.ir.integral``). A cell integral that trips it fails
-        deep inside the form compiler with an ``UnboundLocalError`` about a variable
-        ``t``, which says nothing about the model, so it is caught here instead.
-
-        Args:
-            subdomain: the manifold subdomain
-            form: its self terms, or the integer 0 if it carries no equation of its own
-
-        Raises:
-            ValueError: if the form involves a domain other than the submesh
-        """
-        if not isinstance(form, ufl.Form):
-            return
-
-        vdim = subdomain.submesh.topology.dim
-        stray = [
-            domain
-            for domain in ufl.domain.extract_domains(form)
-            if domain.topological_dimension != vdim
-        ]
-        if stray:
-            name = subdomain.name or subdomain.id
-            raise ValueError(
-                f"the formulation of codim-1 subdomain {name} is integrated over its "
-                f"own submesh but involves a {stray[0].topological_dimension}D domain. "
-                "Constants and functions appearing in it must be bound to the submesh: "
-                "see localised_constant for constants and sub_T for the temperature."
-            )
-
     def link_enclosures(self):
         """Validates the enclosures and resolves the links between them, their surfaces
         and the boundary conditions coupled to them.
@@ -2672,6 +2545,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         self.J = self.J_groups[0]
 
     def create_solver(self):
+
         petsc_options = self.get_petsc_options()
 
         self.solver = NonlinearProblem(
@@ -3003,11 +2877,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 for subdomain in self.manifold_subdomains:
                     subdomain.sub_T.value = float(self.temperature_fenics)
 
-        # runs after the time has been advanced and the parent-mesh values updated, and
-        # after the stepsize was adapted at the end of the previous iteration, so every
-        # mirrored constant is refreshed before the solve
-        self._sync_localised_constants()
-
     def iterate(self):
         """Iterates the model for a given time step."""
         if self.show_progress_bar:
@@ -3066,12 +2935,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             if isinstance(export, exports.ExportBaseClass):
                 if hasattr(export, "writer") and export.writer is not None:
                     export.writer.close()
-
-
-# TODO placeholder for the new class
-# class HydrogenTransportProblemDiscontinuousCodim(HydrogenTransportProblemDiscontinuous):
-#     # Placeholder for later
-#     super.__init__()
 
 
 class HydrogenTransportProblemDiscontinuousChangeVar(HydrogenTransportProblem):
