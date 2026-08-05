@@ -280,3 +280,68 @@ def test_1_mobile_MMS_3D():
     L2_error = error_L2(H_computed, H_analytical_np)
 
     assert L2_error < 1e-2
+
+
+def test_species_dependent_source_MMS_steady_state():
+    """MMS test that a species-dependent source works: species A has a source that
+    depends on the concentration of species B (value=lambda B: B**2). B has a linear
+    manufactured solution, which P1 elements represent exactly, so the species-dependent
+    source is exact and A must converge to its own manufactured solution."""
+
+    def A_exact(mod):
+        return lambda x: 1 + mod.sin(2 * mod.pi * x[0])
+
+    # linear -> represented exactly by P1, so the B**2 source is evaluated exactly
+    def B_exact(x):
+        return 1 + x[0]
+
+    A_analytical_ufl = A_exact(ufl)
+    A_analytical_np = A_exact(np)
+
+    D_0 = 1
+    E_D = 0  # -> constant diffusivity D = D_0
+
+    my_model = F.HydrogenTransportProblem()
+    my_model.mesh = test_mesh_1d
+    my_mat = F.Material(name="mat", D_0=D_0, E_D=E_D)
+    vol = F.VolumeSubdomain1D(id=1, borders=[0, 1], material=my_mat)
+    left = F.SurfaceSubdomain1D(id=1, x=0)
+    right = F.SurfaceSubdomain1D(id=2, x=1)
+    my_model.subdomains = [vol, left, right]
+
+    A = F.Species("A")
+    B = F.Species("B")
+    my_model.species = [A, B]
+
+    my_model.temperature = 500
+
+    my_model.boundary_conditions = [
+        F.DirichletBC(subdomain=left, value=A_analytical_ufl, species=A),
+        F.DirichletBC(subdomain=right, value=A_analytical_ufl, species=A),
+        F.DirichletBC(subdomain=left, value=B_exact, species=B),
+        F.DirichletBC(subdomain=right, value=B_exact, species=B),
+    ]
+
+    # source on A that depends on the concentration of B
+    species_dependent_source = F.ParticleSource(
+        value=lambda B: B**2,
+        volume=vol,
+        species=A,
+        species_dependent_value={"B": B},
+    )
+    # manufactured source so that, together with the B**2 source, A satisfies A_exact
+    f = -ufl.div(D_0 * ufl.grad(A_analytical_ufl(x_1d))) - B_exact(x_1d) ** 2
+    manufactured_source = F.ParticleSource(value=f, volume=vol, species=A)
+
+    my_model.sources = [species_dependent_source, manufactured_source]
+
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    my_model.initialise()
+    my_model.run()
+
+    A_computed = A.post_processing_solution
+
+    L2_error = error_L2(A_computed, A_analytical_np)
+
+    assert L2_error < 1e-3

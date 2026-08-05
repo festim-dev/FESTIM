@@ -4,11 +4,11 @@ on: [pull_request, push]
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    container: dolfinx/dolfinx:v0.10.0
+    container: dolfinx/dolfinx:v0.11.0
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Configure git safe directory
         run: |
@@ -16,7 +16,7 @@ jobs:
 
       - name: Install local package and dependencies
         run: |
-          pip install .[test]
+          python3 -m pip install .[test] --no-build-isolation
 
       - name: Run benchmark
         run: |

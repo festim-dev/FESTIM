@@ -208,7 +208,7 @@ def test_input_values_of_expressions_are_accepted():
 
     test_expression = fem.Expression(
         mapped_func,
-        F.get_interpolation_points(test_function_space.element),
+        test_function_space.element.interpolation_points,
     )
     test_value = F.Value(input_value=test_expression)
 
@@ -329,3 +329,165 @@ def test_is_it_time_to_export(input, expected_output):
 def test_is_it_time_to_export_when_times_not_given():
     times = None
     assert F.helpers.is_it_time_to_export(current_time=1.0, times=times)
+
+
+@pytest.mark.parametrize(
+    "input_dict, expected",
+    [
+        (None, {}),
+        ({}, {}),
+        ({"c1": F.Species("c1")}, None),  # None here means "same as input_dict"
+    ],
+)
+def test_value_stores_species_dependent_value(input_dict, expected):
+    """Test that the species_dependent_value passed to Value is stored, and that a
+    None input is normalised to an empty dict."""
+
+    test_value = F.Value(1.0, species_dependent_value=input_dict)
+
+    assert test_value.species_dependent_value == (
+        input_dict if expected is None else expected
+    )
+
+
+def test_value_species_dependent_value_defaults_to_empty_dict():
+    """Test that species_dependent_value defaults to an empty dict when not given."""
+
+    test_value = F.Value(1.0)
+
+    assert test_value.species_dependent_value == {}
+
+
+def test_as_mapped_function_uses_species_concentration():
+    """Test that as_mapped_function injects the species concentration (continuous case,
+    where species.concentration is set) as the matching callable argument."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    species = F.Species("c1")
+    species.solution = fem.Function(V)  # concentration is not None
+    species.solution.x.array[:] = 3.0
+
+    mapped = F.as_mapped_function(
+        value=lambda c1: 2 * c1,
+        function_space=V,
+        species_dependent_value={"c1": species},
+    )
+
+    # the mapped expression should evaluate to 2 * concentration = 6.0 everywhere
+    result = fem.Function(V)
+    result.interpolate(fem.Expression(mapped, V.element.interpolation_points))
+    assert np.allclose(result.x.array, 6.0)
+
+
+def test_as_mapped_function_uses_subdomain_solution_when_concentration_is_none():
+    """Test that as_mapped_function falls back to
+    species.subdomain_to_solution[subdomain] (discontinuous case, where
+    species.concentration is None) for the matching argument."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    subdomain = F.VolumeSubdomain1D(
+        id=1, borders=[0, 1], material=F.Material(D_0=1, E_D=1)
+    )
+
+    species = F.Species("c1")  # solution is None -> concentration is None
+    sub_solution = fem.Function(V)
+    sub_solution.x.array[:] = 4.0
+    species.subdomain_to_solution = {subdomain: sub_solution}
+
+    mapped = F.as_mapped_function(
+        value=lambda c1: 2 * c1,
+        function_space=V,
+        species_dependent_value={"c1": species},
+        subdomain=subdomain,
+    )
+
+    result = fem.Function(V)
+    result.interpolate(fem.Expression(mapped, V.element.interpolation_points))
+    assert np.allclose(result.x.array, 8.0)
+
+
+def test_convert_input_value_species_dependent_up_to_ufl_expr():
+    """Test that convert_input_value threads species_dependent_value through to the
+    mapped ufl expression when up_to_ufl_expr is True."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    species = F.Species("c1")
+    species.solution = fem.Function(V)
+    species.solution.x.array[:] = 5.0
+
+    test_value = F.Value(lambda c1: 2 * c1, species_dependent_value={"c1": species})
+    test_value.convert_input_value(function_space=V, up_to_ufl_expr=True)
+
+    result = fem.Function(V)
+    result.interpolate(
+        fem.Expression(test_value.fenics_object, V.element.interpolation_points)
+    )
+    assert np.allclose(result.x.array, 10.0)
+
+
+def test_convert_input_value_species_dependent_interpolated_function():
+    """Test that convert_input_value uses species_dependent_value in the interpolation
+    path (callable of x and a species) and produces the expected fenics Function."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    species = F.Species("c1")
+    species.solution = fem.Function(V)
+    species.solution.x.array[:] = 2.0
+
+    test_value = F.Value(
+        lambda x, c1: c1 + x[0], species_dependent_value={"c1": species}
+    )
+    test_value.convert_input_value(function_space=V)
+
+    assert isinstance(test_value.fenics_object, fem.Function)
+    # fenics_object should equal concentration + x = 2.0 + x
+    x_coords = V.tabulate_dof_coordinates()[:, 0]
+    assert np.allclose(test_value.fenics_object.x.array, 2.0 + x_coords)
+
+
+@pytest.mark.parametrize(
+    "input_value, species_dependent_value, expected",
+    [
+        (lambda c1: 2 * c1, {"c1": F.Species("c1")}, True),
+        (lambda t: 2 * t, {}, False),
+        (lambda t: 2 * t, None, False),
+        # a non-callable value cannot depend on a species
+        (1.0, {"c1": F.Species("c1")}, False),
+    ],
+)
+def test_value_species_dependent(input_value, species_dependent_value, expected):
+    """Test the species_dependent property of Value."""
+
+    test_value = F.Value(input_value, species_dependent_value=species_dependent_value)
+
+    assert test_value.species_dependent is expected
+
+
+def test_convert_input_value_time_and_species_dependent():
+    """Regression test: a value depending on both time and a species must not take the
+    t-only constant fast path (which would call the callable without the species
+    argument). It should map to a UFL expression that tracks both the time and the
+    species concentration as they change."""
+
+    V = fem.functionspace(test_mesh.mesh, ("Lagrange", 1))
+    species = F.Species("B")
+    species.solution = fem.Function(V)  # continuous case: concentration is set
+    species.solution.x.array[:] = 2.0
+
+    t = fem.Constant(test_mesh.mesh, 3.0)
+
+    test_value = F.Value(lambda t, B: t * B, species_dependent_value={"B": species})
+    # up_to_ufl_expr=True is the path used for sources
+    test_value.convert_input_value(function_space=V, t=t, up_to_ufl_expr=True)
+
+    # the result is a UFL expression; evaluate it by interpolating into V
+    result = fem.Function(V)
+    expr = fem.Expression(test_value.fenics_object, V.element.interpolation_points)
+    result.interpolate(expr)
+    assert np.allclose(result.x.array, 3.0 * 2.0)  # t * B
+
+    # the expression tracks later changes to both the time and the concentration
+    t.value = 5.0
+    species.solution.x.array[:] = 4.0
+    result.interpolate(expr)
+    assert np.allclose(result.x.array, 5.0 * 4.0)

@@ -183,6 +183,8 @@
        <img src="_static/logos/University_of_Minnesota_Twin_Cities.png" alt="UMN" title="University of Minnesota Twin Cities">
        <img src="_static/logos/Esteyco.png" alt="Esteyco" title="Esteyco">
        <img src="_static/logos/Forschungszentrum_J_lich_GmbH.jpg" alt="FZJ" title="Forschungszentrum Jülich GmbH">
+       <img src="_static/logos/SHINE_Technologies.png" alt="SHINE Technologies" title="SHINE Technologies">
+       <img src="_static/logos/Gauss_Fusion.png" alt="GFG" title="Gauss Fusion">
        <!-- Duplicate for seamless loop -->
        <img src="_static/logos/Oak_Ridge_National_Laboratory.png" alt="Oak Ridge National Laboratory" title="Oak Ridge National Laboratory">
        <img src="_static/logos/IRFM_cadarache_France.png" alt="IRFM" title="IRFM (CEA Cadarache)">
@@ -202,6 +204,8 @@
        <img src="_static/logos/University_of_Minnesota_Twin_Cities.png" alt="UMN" title="University of Minnesota Twin Cities">
        <img src="_static/logos/Esteyco.png" alt="Esteyco" title="Esteyco">
        <img src="_static/logos/Forschungszentrum_J_lich_GmbH.jpg" alt="FZJ" title="Forschungszentrum Jülich GmbH">
+       <img src="_static/logos/SHINE_Technologies.png" alt="SHINE Technologies" title="SHINE Technologies">
+       <img src="_static/logos/Gauss_Fusion.png" alt="GFG" title="Gauss Fusion">
      </div>
 
      <div class="festim-ribbon-track festim-ribbon-right">

@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from mpi4py import MPI
 
@@ -6,7 +7,10 @@ import dolfinx
 import numpy as np
 import ufl
 from dolfinx import fem
-from packaging import version
+
+if TYPE_CHECKING:
+    from festim.species import Species
+    from festim.subdomain.volume_subdomain import VolumeSubdomain
 
 
 def as_fenics_constant(
@@ -34,21 +38,26 @@ def as_fenics_constant(
         )
 
 
-# TODO change this to accept species dependent values
 def as_mapped_function(
     value: Callable,
     function_space: fem.FunctionSpace | None = None,
     t: fem.Constant | None = None,
     temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
+    species_dependent_value: dict[str, "Species"] | None = None,
+    subdomain: "VolumeSubdomain | None" = None,
 ) -> ufl.core.expr.Expr:
-    """Maps a user given callable function to the mesh, time or temperature within
-    festim as needed.
+    """Maps a user given callable function to the mesh, time, temperature or the
+    concentration of other species within festim as needed.
 
     Args:
         value: the callable to convert
         function_space: the function space of the domain, optional
         t: the time, optional
         temperature: the temperature, optional
+        species_dependent_value: a dictionary mapping the argument names in the callable
+            ``value`` to festim.Species objects, optional
+        subdomain: the volume subdomain on which the value is evaluated. Only needed in
+            the discontinuous case to select the correct species solution, optional
 
     Returns:
         The mapped function
@@ -66,37 +75,53 @@ def as_mapped_function(
     if "T" in arguments:
         kwargs["T"] = temperature
 
+    for name, species in (species_dependent_value or {}).items():
+        if species.concentration is not None:
+            kwargs[name] = species.concentration
+        else:  # discontinuous case: the species has one solution per subdomain
+            kwargs[name] = species.subdomain_to_solution[subdomain]
+
     return value(**kwargs)
 
 
-# TODO change this to accept species dependent values
 def as_fenics_interp_expr_and_function(
     value: Callable,
     function_space: dolfinx.fem.function.FunctionSpace,
     t: fem.Constant | None = None,
     temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
+    species_dependent_value: dict[str, "Species"] | None = None,
+    subdomain: "VolumeSubdomain | None" = None,
 ) -> tuple[fem.Expression, fem.Function]:
-    """Takes a user given callable function, maps the function to the mesh, time or
-    temperature within festim as needed. Then creates the fenics interpolation
-    expression and function objects.
+    """Takes a user given callable function, maps the function to the mesh, time,
+    temperature or the concentration of other species within festim as needed. Then
+    creates the fenics interpolation expression and function objects.
 
     Args:
         value: the callable to convert
         function_space: The function space to interpolate function over
         t: the time, optional
         temperature: the temperature, optional
+        species_dependent_value: a dictionary mapping the argument names in the callable
+            ``value`` to festim.Species objects, optional
+        subdomain: the volume subdomain on which the value is evaluated. Only needed in
+            the discontinuous case to select the correct species solution, optional
 
     Returns:
         fenics interpolation expression, fenics function
     """
 
     mapped_function = as_mapped_function(
-        value=value, function_space=function_space, t=t, temperature=temperature
+        value=value,
+        function_space=function_space,
+        t=t,
+        temperature=temperature,
+        species_dependent_value=species_dependent_value,
+        subdomain=subdomain,
     )
 
     fenics_interpolation_expression = fem.Expression(
         mapped_function,
-        get_interpolation_points(function_space.element),
+        function_space.element.interpolation_points,
     )
 
     fenics_object = fem.Function(function_space)
@@ -111,15 +136,26 @@ class Value:
 
     Args:
         input_value: The value of the user input
+        species_dependent_value: A dictionary mapping the argument names in a callable
+            ``input_value`` to festim.Species objects. This allows the value to depend
+            on the concentration of other species. Example: ``{"c1": species1}`` where
+            ``"c1"`` is the argument name in the callable ``input_value`` and
+            ``species1`` is a festim.Species object. Ignored if ``input_value`` is not
+            callable. Defaults to None.
 
     Attributes:
         input_value : The value of the user input
+        species_dependent_value : A dictionary mapping the argument names in a callable
+            ``input_value`` to festim.Species objects. An empty dict if the value does
+            not depend on other species
         fenics_interpolation_expression : The expression of the user input that is used
             to update the `fenics_object`
         fenics_object : The value of the user input in fenics format
         explicit_time_dependent : True if the user input value is explicitly time
             dependent
         temperature_dependent : True if the user input value is temperature dependent
+        species_dependent : True if the user input value depends on the concentration of
+            other species
     """
 
     input_value: (
@@ -131,15 +167,20 @@ class Value:
         | ufl.core.expr.Expr
         | fem.Function
     )
+    species_dependent_value: dict[str, "Species"] | None
 
     ufl_expression: ufl.core.expr.Expr
     fenics_interpolation_expression: fem.Expression
     fenics_object: fem.Function | fem.Constant | ufl.core.expr.Expr
     explicit_time_dependent: bool
     temperature_dependent: bool
+    species_dependent: bool
 
-    def __init__(self, input_value):
+    def __init__(
+        self, input_value, species_dependent_value: dict[str, "Species"] | None = None
+    ):
         self.input_value = input_value
+        self.species_dependent_value = species_dependent_value or {}
 
         self.ufl_expression = None
         self.fenics_interpolation_expression = None
@@ -189,6 +230,14 @@ class Value:
             return False
 
     @property
+    def species_dependent(self) -> bool:
+        """Returns true if the value given depends on the concentration of other
+        species."""
+        if not callable(self.input_value):
+            return False
+        return bool(self.species_dependent_value)
+
+    @property
     def temperature_dependent(self) -> bool:
         """Returns true if the value given is temperature dependent."""
         if self.input_value is None:
@@ -207,6 +256,7 @@ class Value:
         t: fem.Constant | None = None,
         temperature: fem.Function | fem.Constant | ufl.core.expr.Expr | None = None,
         up_to_ufl_expr: bool | None = False,
+        subdomain: "VolumeSubdomain | None" = None,
     ):
         """Converts a user given value to a relevent fenics object depending on the type
         of the value provided.
@@ -217,6 +267,9 @@ class Value:
             temperature: the temperature, optional
             up_to_ufl_expr: if True, the value is only mapped to a function if the input
                 is callable, not interpolated or converted to a function, optional
+            subdomain: the volume subdomain on which the value is evaluated. Only needed
+                in the discontinuous case to select the correct species solution,
+                optional
         """
         if isinstance(
             self.input_value, fem.Constant | fem.Function | ufl.core.expr.Expr
@@ -234,7 +287,12 @@ class Value:
         elif callable(self.input_value):
             args = self.input_value.__code__.co_varnames
             # if only t is an argument, create constant object
-            if "t" in args and "x" not in args and "T" not in args:
+            if (
+                "t" in args
+                and "x" not in args
+                and "T" not in args
+                and not self.species_dependent_value
+            ):
                 if not isinstance(self.input_value(t=float(t)), float | int):
                     raise ValueError(
                         "self.value should return a float or an int, not "
@@ -251,6 +309,8 @@ class Value:
                     function_space=function_space,
                     t=t,
                     temperature=temperature,
+                    species_dependent_value=self.species_dependent_value,
+                    subdomain=subdomain,
                 )
 
             else:
@@ -260,6 +320,8 @@ class Value:
                         function_space=function_space,
                         t=t,
                         temperature=temperature,
+                        species_dependent_value=self.species_dependent_value,
+                        subdomain=subdomain,
                     )
                 )
 
@@ -278,20 +340,6 @@ class Value:
             elif isinstance(self.fenics_object, fem.Function):
                 if self.fenics_interpolation_expression is not None:
                     self.fenics_object.interpolate(self.fenics_interpolation_expression)
-
-
-# Check the version of dolfinx
-dolfinx_version = dolfinx.__version__
-
-# Define the appropriate method based on the version
-if version.parse(dolfinx_version) > version.parse("0.9.0"):
-
-    def get_interpolation_points(element):
-        return element.interpolation_points
-else:
-
-    def get_interpolation_points(element):
-        return element.interpolation_points()
 
 
 def nmm_interpolate(
