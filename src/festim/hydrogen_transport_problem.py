@@ -1439,11 +1439,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             # a manifold subdomain integrates its gradient terms on its own submesh,
             # and a fem.Constant bound to the parent mesh cannot appear there
             for subdomain in self.manifold_subdomains:
-                if not isinstance(subdomain.sub_T, fem.Constant):
-                    raise TypeError(
-                        f"subdomain.sub_T must be a fem.Constant for manifold subdomains, "
-                        f"but got {type(subdomain.sub_T)}"
-                    )
                 subdomain.sub_T = as_fenics_constant(
                     float(self.temperature_fenics), subdomain.submesh
                 )
@@ -1507,6 +1502,10 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             function_space_dofs = sub_V
 
         if on_manifold:
+            # NOTE: this means that the only way to apply a DirichletBC on a manifold is
+            # to be able to describe it geometrically. This is limiting and it would
+            # be desirable to have a "meshtag route" for this.
+
             # located directly on the manifold's submesh -- no tag to look up, and no
             # codim-2 entity of the parent mesh is ever needed
             entities = bc.subdomain.locate_boundary_facet_indices(
