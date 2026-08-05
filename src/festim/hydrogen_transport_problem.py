@@ -1786,7 +1786,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             volumes = self.manifold_to_volumes[manifold]
             if len(volumes) == 2:
                 integral_data = _subdomain.compute_ordered_interior_facet_data(
-                    self.mesh.mesh,
+                    self.volume_meshtags,
                     self.facet_meshtags,
                     manifold.id,
                     volumes[0],
@@ -2441,7 +2441,7 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             interface.mt = mt
 
         integral_data = [
-            interface.compute_mapped_interior_facet_data(mesh)
+            interface.compute_mapped_interior_facet_data(self.volume_meshtags)
             for interface in self.interfaces
         ]
         dInterface = ufl.Measure("dS", domain=mesh, subdomain_data=integral_data)
