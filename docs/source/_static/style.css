@@ -135,6 +135,17 @@ h3 {
 
 
 /* =============================================================
+   FELLOWS PAGE
+   ============================================================= */
+
+/* Fellow names sit under the global h3 hotfix above, which is too small for
+   them to read as names. Matches the "Meet the FESTIM Fellows" card title. */
+.festim-fellow-profiles h3 {
+    font-size: calc(1.3rem + 0.6vw);
+    font-weight: 600;
+}
+
+/* =============================================================
    FESTIM LANDING PAGE STYLES
    ============================================================= */
 
