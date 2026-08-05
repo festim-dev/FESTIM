@@ -1,7 +1,7 @@
 .. _festim-fellowship-tez:
 
 FESTIM Fellowship — Tez Orr
-========================
+===========================
 
 .. rubric:: UKAEA · First FESTIM Fellow · 2026
 
@@ -210,4 +210,4 @@ code you like to do what you want.
 .. seealso::
 
    Interested in the FESTIM Fellowship? Learn more on the
-   :doc:`FESTIM Fellowship page <fellowship>`.
+   :doc:`FESTIM Fellowship page </fellowship>`.

@@ -2,34 +2,11 @@
 FESTIM Fellowship Programme
 ====================================
 
-----------------
-Previous Fellows
-----------------
+.. toctree::
+   :hidden:
 
-.. grid:: 1
-
-   .. grid-item::
-      :columns: 12 10 8 8
-
-      .. card:: Tez Orr — UKAEA (2026)
-         :link: fellowship_tez
-         :link-type: doc
-
-         .. grid:: 2
-            :gutter: 4
-
-            .. grid-item::
-               :columns: 4
-
-               .. image:: /_static/fellowship/tez2.jpg
-                  :alt: Tez, FESTIM Fellow
-                  :width: 100%
-
-            .. grid-item::
-               :columns: 8
-               :margin: auto
-
-               Read our interview with **Tez**, our very first FESTIM Fellow, to learn about her experience mastering FESTIM v2 at MIT.
+   fellowship/fellows
+   fellowship/fellowship_tez
 
 A selective, project-based programme for experienced FESTIM users to develop advanced simulation expertise through direct collaboration with the FESTIM development team.
 
@@ -48,6 +25,29 @@ A selective, project-based programme for experienced FESTIM users to develop adv
          Apply here
       </a>
    </div>
+
+------------------------------------
+FESTIM Fellows: Current and previous
+------------------------------------
+
+**Three Fellows** are currently working with the FESTIM development team, from Oak Ridge
+National Laboratory, the University of Minnesota, and Type One Energy. **One Fellow** has
+completed the programme to date.
+
+.. grid:: 1
+
+   .. grid-item::
+      :columns: 12 10 8 8
+      :margin: auto
+
+      .. card:: Meet the FESTIM Fellows
+         :link: fellowship/fellows
+         :link-type: doc
+         :text-align: center
+         :class-title: sd-fs-3
+
+         Read about our current Fellows and the projects they brought to the programme,
+         and catch up with our previous Fellows.
 
 -----------------------
 What the programme is
@@ -141,11 +141,11 @@ The programme is organised in cohorts throughout the year:
 
 **Fall cohort**:
 ^^^^^^^^^^^^^^^^^
-- April - Applications open  
-- August - Application deadline  
-- August - Decisions released  
-- October* - Programme starts  
-- December* - Programme ends  
+- 1st April - Applications open  
+- 31st August - Application deadline  
+- 6th September - Decisions released  
+- 5th October* - Programme starts  
+- 11th December* - Programme ends  
 
 *\*Programme dates are flexible*
 
