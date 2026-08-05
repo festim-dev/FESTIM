@@ -91,18 +91,16 @@ Emre Yildirim
    .. grid-item::
       :columns: 12 4 4 4
 
-      .. TODO: replace with Emre's photo once available.
-
-      .. image:: /_static/fellowship/placeholder_fellow.svg
+      .. image:: /_static/fellowship/Emre_Yildirim_profile.jpg
          :alt: Emre Yildirim, FESTIM Fellow, Type One Energy
          :width: 100%
 
    .. grid-item::
       :columns: 12 8 8 8
 
-      .. TODO: paste bio here.
-
-      *Bio to come.*
+      I am a Tritium Scientist at Type One Energy developing the tritium extraction system for the Infinity 2 Fusion Power Plant.
+      From receiving my PhD from the University of Manchester in Nuclear Materials working on plasma material interaction and irradiation material science, I have been lucky enough to work across the fusion device from the plasma facing components, breeder blankets, tritium plant and power generation system.
+      I am using FESTIM to develop out our tritium modelling for the blanket system and its behaviour downstream in the extraction system and heat exchangers.
 
 **Project:** Macro2Micro: Taking FESTIM through the length scales
 
