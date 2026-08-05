@@ -23,7 +23,7 @@ k4 = 1.0
 c_int_max = 1.0
 
 # Transient settings
-dt = 1e-3
+dt = 1e-2
 T = 10.0
 
 mesh = dolfinx.mesh.create_rectangle(

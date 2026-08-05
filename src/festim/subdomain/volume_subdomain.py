@@ -1,9 +1,11 @@
 from collections.abc import Callable
 
+from mpi4py import MPI
+
 import dolfinx
 import numpy as np
 from dolfinx import fem
-from dolfinx.mesh import EntityMap, Mesh, locate_entities
+from dolfinx.mesh import EntityMap, Mesh, locate_entities, meshtags
 from numpy import typing as npt
 
 try:
@@ -42,6 +44,18 @@ class VolumeSubdomain:
             equation on a manifold embedded in the mesh (a line in a 2D mesh, a surface
             in a 3D mesh). Such a subdomain is tagged in the *facet* meshtags, and can
             be used wherever a surface is expected (eg. ``ParticleFluxBC``).
+            Set it to ``mesh_dim - 2``, together with ``parent``, to solve a transport
+            equation on a manifold *of a manifold* (a line inside a surface in a 3D
+            mesh, a point inside a line in a 2D mesh).
+        parent: the codim-1 subdomain a codim-2 subdomain is nested in. Required for,
+            and only allowed on, a codim-2 subdomain. A codim-2 subdomain is codim-1
+            *relative to its parent*: it is located on the parent's submesh, it carries
+            no meshtag of the parent mesh, and it exchanges with the parent rather than
+            with the bulk. This is what keeps the coupling well posed -- a trace on a
+            set of codimension 2 of the parent mesh is not defined for an H1 function,
+            whereas a trace on a set of codimension 1 of the parent's submesh is.
+        host_tags: for a codim-2 subdomain, meshtags on the parent's submesh marking
+            its entities with ``id``. ``None`` otherwise.
     """
 
     id: int
@@ -65,6 +79,7 @@ class VolumeSubdomain:
         locator: Callable | None = None,
         name: str | None = None,
         dim=None,
+        parent: "VolumeSubdomain | None" = None,
     ):
         assert id != 0, "Volume subdomain id cannot be 0"
         self.id = id
@@ -74,6 +89,8 @@ class VolumeSubdomain:
         self.locator = locator
         self.name = name
         self.dim = dim
+        self.parent = parent
+        self.host_tags = None
 
     @property
     def dim(self):
@@ -83,8 +100,9 @@ class VolumeSubdomain:
     def dim(self, value):
         if value is not None and not isinstance(value, int | np.integer):
             raise TypeError(f"dim must be an integer or None, not {type(value)}")
-        if value is not None and value < 1:
-            raise ValueError(f"dim must be strictly positive, got {value}")
+        # 0 is allowed: a codim-2 subdomain of a 2D mesh is a set of points
+        if value is not None and value < 0:
+            raise ValueError(f"dim must be positive, got {value}")
         self._dim = None if value is None else int(value)
 
     def codim(self, mesh_dim: int) -> int:
@@ -94,18 +112,46 @@ class VolumeSubdomain:
             mesh_dim: the topological dimension of the parent mesh
 
         Returns:
-            0 for a regular volume subdomain, 1 for a manifold subdomain
+            0 for a regular volume subdomain, 1 for a manifold subdomain, 2 for a
+            subdomain nested in a manifold
 
         Raises:
-            ValueError: if the resulting codimension is not 0 or 1
+            ValueError: if the resulting codimension is not 0, 1 or 2, or if ``parent``
+                is inconsistent with it
         """
         codim = 0 if self.dim is None else mesh_dim - self.dim
-        if codim not in (0, 1):
+        if codim not in (0, 1, 2):
             raise ValueError(
                 f"volume subdomain {self.id} has dim={self.dim} in a mesh of dimension "
-                f"{mesh_dim}, ie. codimension {codim}. Only 0 and 1 are supported."
+                f"{mesh_dim}, ie. codimension {codim}. Only 0, 1 and 2 are supported."
+            )
+        if codim == 2 and self.parent is None:
+            raise ValueError(
+                f"volume subdomain {self.id} has dim={self.dim} in a mesh of dimension "
+                f"{mesh_dim}, ie. codimension 2. Such a subdomain is nested in a "
+                "manifold and exchanges with it, not with the bulk: pass "
+                "parent=<the codim-1 VolumeSubdomain it lies in>."
+            )
+        if codim < 2 and self.parent is not None:
+            raise ValueError(
+                f"volume subdomain {self.id} has a parent but codimension {codim}. "
+                "parent is only meaningful for a codim-2 (nested) subdomain, ie. one "
+                f"declared with dim={mesh_dim - 2}."
             )
         return codim
+
+    def host_mesh(self, mesh: dolfinx.mesh.Mesh) -> dolfinx.mesh.Mesh:
+        """The mesh this subdomain's entities are located in.
+
+        The parent mesh for a codim-0 or codim-1 subdomain, and the parent manifold's
+        submesh for a nested (codim-2) one.
+
+        Args:
+            mesh: the parent mesh of the model
+        """
+        if self.parent is None:
+            return mesh
+        return self.parent.submesh
 
     @property
     def name(self):
@@ -142,13 +188,65 @@ class VolumeSubdomain:
             dolfinx.mesh.create_submesh(mesh, marker.dim, entities)
         )
 
+    def create_nested_subdomain(self, mesh: dolfinx.mesh.Mesh):
+        """Creates the submesh of a codim-2 subdomain from its parent's submesh.
+
+        A nested subdomain is codim-1 *relative to its parent*, so its entities are the
+        facets of the parent's submesh and are located there directly -- it takes no
+        part in the meshtags of the parent mesh, exactly like the codim-2 surface
+        subdomains that bound a manifold. ``cell_map`` therefore relates this submesh to
+        the *parent's submesh*, which is the integration domain of every term coupling
+        the two, so no composition of entity maps is ever needed.
+
+        Sets ``.parent_mesh``, ``.submesh``, ``.cell_map``, ``.v_map``, ``.n_map`` and
+        ``.host_tags``.
+
+        Args:
+            mesh: the parent mesh of the model, used only for its communicator
+
+        Raises:
+            ValueError: if no locator was given, or if it matches no entity of the
+                parent's submesh
+        """
+        if self.locator is None:
+            raise ValueError(
+                f"volume subdomain {self.id} is nested in volume subdomain "
+                f"{self.parent.id} and must have a locator to be found on it."
+            )
+        assert getattr(self.parent, "submesh", None) is not None, (
+            "the parent's submesh must be created before the nested subdomain's"
+        )
+        host = self.parent.submesh
+        fdim = host.topology.dim - 1
+        host.topology.create_entities(fdim)
+        entities = np.unique(locate_entities(host, fdim, self.locator)).astype(np.int32)
+
+        if mesh.comm.allreduce(entities.size, op=MPI.SUM) == 0:
+            raise ValueError(
+                f"the locator of volume subdomain {self.id} matched no entity of "
+                f"volume subdomain {self.parent.id} it is nested in. It must select a "
+                "set of entities lying inside that subdomain."
+            )
+
+        self.parent_mesh = host
+        self.submesh, self.cell_map, self.v_map, self.n_map = (
+            dolfinx.mesh.create_submesh(host, fdim, entities)
+        )
+        # the measure of the terms coupling this subdomain to its parent is an integral
+        # over the parent's submesh, so it needs its own tags there
+        self.host_tags = meshtags(
+            host, fdim, entities, np.full(entities.size, self.id, dtype=np.int32)
+        )
+        self.ft = None
+
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):
         # Transfer meshtags to submesh
         assert self.submesh is not None, "Need to call create_subdomain first"
-        if self.codim(mesh.topology.dim) == 1:
+        if self.codim(mesh.topology.dim) >= 1:
             # the parent facet tags are the *cell* tags of a codim-1 submesh, so there
-            # is nothing meaningful to transfer. ``ft`` is only read to apply strong
-            # Dirichlet BCs, which are not supported on a manifold subdomain yet.
+            # is nothing meaningful to transfer, and a codim-2 subdomain does not
+            # appear in them at all. ``ft`` is only read to apply strong Dirichlet BCs,
+            # which are not supported on a codimensional subdomain yet.
             self.ft = None
             return
         sub_tag = transfer_meshtags_to_submesh(
@@ -362,6 +460,41 @@ def map_facet_tags_to_volume_subdomains(
 
     for volumes in adjacency.values():
         volumes.sort(key=lambda v: v.id)
+    return adjacency
+
+
+def map_nested_to_manifold_subdomains(
+    nested_subdomains: list[VolumeSubdomain],
+    manifold_subdomains: list[VolumeSubdomain],
+) -> dict[VolumeSubdomain, list[VolumeSubdomain]]:
+    """Maps each codim-2 (nested) volume subdomain to the manifold it lies in.
+
+    Unlike a manifold, whose neighbours are read off the mesh connectivity, a nested
+    subdomain declares its host explicitly through ``parent``: it is located on that
+    host's submesh, so there is nothing to infer and nothing to be ambiguous about.
+    The result has the same shape as :func:`map_manifold_to_volume_subdomains` (a list
+    of one) so that the coupling machinery can treat both uniformly.
+
+    Args:
+        nested_subdomains: the codim-2 volume subdomains
+        manifold_subdomains: the codim-1 volume subdomains of the model
+
+    Returns:
+        a dictionary mapping each nested subdomain to ``[its parent]``
+
+    Raises:
+        ValueError: if the declared parent is not a manifold subdomain of the model
+    """
+    adjacency = {}
+    for nested in nested_subdomains:
+        if nested.parent not in manifold_subdomains:
+            raise ValueError(
+                f"volume subdomain {nested.id} is nested in volume subdomain "
+                f"{nested.parent.id}, which is not a codim-1 subdomain of the model. "
+                "The parent of a nested subdomain must be declared with "
+                "dim=mesh_dim - 1 and be passed in the subdomains of the model."
+            )
+        adjacency[nested] = [nested.parent]
     return adjacency
 
 

@@ -83,6 +83,31 @@ class ProblemBase:
         return [s for s in self.volume_subdomains if s.codim(self.mesh.vdim) == 1]
 
     @property
+    def nested_subdomains(self):
+        """The codim-2 volume subdomains: subdomains nested in a manifold subdomain,
+        carrying their own transport equation and exchanging with the manifold they lie
+        in rather than with the bulk.
+
+        They carry no meshtag of the parent mesh -- their entities are located on their
+        parent's submesh -- so, like the codim-2 surface subdomains, they take no part
+        in the facet-tag id namespace."""
+        if self.mesh is None or self.mesh.mesh is None:
+            return []
+        return [s for s in self.volume_subdomains if s.codim(self.mesh.vdim) == 2]
+
+    @property
+    def tagged_volume_subdomains(self):
+        """The volume subdomains that appear in the meshtags of the parent mesh: the
+        codim-0 ones in the volume tags and the codim-1 ones in the facet tags.
+
+        A nested (codim-2) subdomain is excluded: it is tagged on its parent's submesh,
+        so its id shares no namespace with the parent-mesh tags and it must not be
+        looked up in them."""
+        if self.mesh is None or self.mesh.mesh is None:
+            return self.volume_subdomains
+        return [s for s in self.volume_subdomains if s.codim(self.mesh.vdim) < 2]
+
+    @property
     def facet_surface_subdomains(self):
         """The surface subdomains that bound an ordinary volume subdomain, ie. the ones
         living in the facet meshtags. These are all of them unless a surface bounds a
@@ -93,15 +118,17 @@ class ProblemBase:
 
     @property
     def manifold_boundary_subdomains(self):
-        """The codim-2 surface subdomains: the boundary of a manifold subdomain (the
-        endpoints of a line, the rim of a surface).
+        """The surface subdomains that bound a codimensional volume subdomain: codim 2
+        for the boundary of a manifold (the endpoints of a line, the rim of a surface),
+        codim 3 for the boundary of a subdomain nested in one (the ends of a curve
+        lying inside a surface).
 
-        They carry no meshtag -- their entities are located on the manifold's submesh
-        when the boundary condition using them is created -- so they take no part in the
-        facet-tag id namespace and in ``surface_to_volume``."""
+        They carry no meshtag -- their entities are located on the bounded subdomain's
+        submesh when the boundary condition using them is created -- so they take no
+        part in the facet-tag id namespace and in ``surface_to_volume``."""
         if self.mesh is None or self.mesh.mesh is None:
             return []
-        return [s for s in self.surface_subdomains if s.codim(self.mesh.vdim) == 2]
+        return [s for s in self.surface_subdomains if s.codim(self.mesh.vdim) >= 2]
 
     @property
     def dt(self):
@@ -154,15 +181,37 @@ class ProblemBase:
                 "meshtags and therefore share their ids with the surface subdomains."
             )
 
-        # a codim-2 surface has nothing to bound without a manifold, and since it is
-        # never tagged it would otherwise just be ignored
-        if self.manifold_boundary_subdomains and not self.manifold_subdomains:
-            ids = [s.id for s in self.manifold_boundary_subdomains]
-            raise ValueError(
-                f"Surface subdomains {ids} have dim={self.mesh.vdim - 2}, which bounds "
-                f"a manifold volume subdomain (one declared with "
-                f"dim={self.mesh.vdim - 1}), but no such subdomain was declared."
-            )
+        # a nested subdomain lives on its parent's submesh, so the parent has to be
+        # part of the model for that submesh to exist at all
+        for nested in self.nested_subdomains:
+            if nested.parent not in self.manifold_subdomains:
+                raise ValueError(
+                    f"Volume subdomain {nested.id} is nested in volume subdomain "
+                    f"{nested.parent.id}, which is not a codim-1 subdomain of this "
+                    f"model. Declare the parent with dim={self.mesh.vdim - 1} and pass "
+                    "it in the subdomains of the model."
+                )
+
+        # a codimensional surface has nothing to bound without the volume subdomain
+        # one codimension below it, and since it is never tagged it would otherwise
+        # just be ignored
+        hosts_by_codim = (
+            (2, self.manifold_subdomains),
+            (3, self.nested_subdomains),
+        )
+        for codim, hosts in hosts_by_codim:
+            ids = [
+                s.id
+                for s in self.manifold_boundary_subdomains
+                if s.codim(self.mesh.vdim) == codim
+            ]
+            if ids and not hosts:
+                raise ValueError(
+                    f"Surface subdomains {ids} have dim={self.mesh.vdim - codim}, "
+                    f"which bounds a volume subdomain declared with "
+                    f"dim={self.mesh.vdim - codim + 1}, but no such subdomain was "
+                    "declared."
+                )
 
         # define measures
         self.ds = ufl.Measure(
