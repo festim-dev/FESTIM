@@ -152,29 +152,52 @@ class Mesh:
         mesh_facet_indices = np.arange(num_facets, dtype=np.int32)
         tags_facets = np.full(num_facets, 0, dtype=np.int32)
 
-        for surf in surface_subdomains:
+        # a codim-2 surface subdomain bounds a manifold, not the mesh: its entities are
+        # located on the manifold's submesh when the boundary condition using them is
+        # created, and it has no facet of the parent mesh to tag. Locating it here would
+        # tag whatever facets its locator happens to match, which are not its entities
+        facet_surface_subdomains = [
+            s for s in surface_subdomains if s.codim(self.vdim) == 1
+        ]
+
+        for surf in facet_surface_subdomains:
             try:
                 # find all facets in subdomain and mark them as surf.id
                 entities = surf.locate_boundary_facet_indices(self._mesh)
-                tags_facets[entities] = surf.id
             except ValueError:
-                if len(surface_subdomains) > 1:
+                if len(facet_surface_subdomains) > 1:
                     raise ValueError(
                         "Surface subdomain must have a locator attribute if"
                         " several subdomains are defined"
                     )
                 self.mesh.topology.create_connectivity(self.fdim, self.fdim + 1)
-                rentities = dolfinx.mesh.exterior_facet_indices(self.mesh.topology)
+                entities = dolfinx.mesh.exterior_facet_indices(self.mesh.topology)
 
-                tags_facets[rentities] = surf.id
+            tags_facets[entities] = surf.id
 
-        for vol in volume_subdomains:
+        # codim-1 volume subdomains are manifolds embedded in the mesh: they carry a
+        # transport equation like any other volume subdomain, but their entities are
+        # facets, so they are tagged in the facet meshtags alongside the surfaces
+        bulk_subdomains = [v for v in volume_subdomains if v.codim(self.vdim) == 0]
+        manifold_subdomains = [v for v in volume_subdomains if v.codim(self.vdim) == 1]
+
+        manifold_entities = {}
+        for vol in manifold_subdomains:
+            entities = vol.locate_subdomain_entities(self._mesh)
+            manifold_entities[vol] = entities
+            # NOTE: a manifold lying on the exterior boundary shares its facets with
+            # any surface subdomain covering the same location. Tagging is
+            # last-writer-wins and the manifold comes second, so the surface loses
+            # those facets and every ds() on it integrates to zero
+            tags_facets[entities] = vol.id
+
+        for vol in bulk_subdomains:
             try:
                 # find all cells in subdomain and mark them as vol.id
                 entities = vol.locate_subdomain_entities(self._mesh)
                 tags_volumes[entities] = vol.id
             except ValueError:
-                if len(volume_subdomains) > 1:
+                if len(bulk_subdomains) > 1:
                     raise ValueError(
                         "Volume subdomain must have a locator if"
                         " several subdomains are defined"
@@ -210,6 +233,22 @@ class Mesh:
                 self.fdim,
             )
             interface_entities = np.intersect1d(all_0_facets, all_1_facets)
+
+            # an Interface and a codim-1 volume subdomain both describe what happens
+            # across the same facets, in mutually exclusive ways: a jump in
+            # concentration, or a transport equation on the manifold. Tagging is
+            # last-writer-wins, so without this the interface would silently steal the
+            # manifold's facets
+            for vol, entities in manifold_entities.items():
+                overlap = np.intersect1d(interface_entities, entities)
+                if overlap.size:
+                    raise ValueError(
+                        f"interface {interface.id} and codim-1 volume subdomain "
+                        f"{vol.id} share {overlap.size} facets. A pair of volume "
+                        "subdomains may either have an interface condition or be "
+                        "separated by a codim-1 subdomain, not both."
+                    )
+
             tags_facets[interface_entities] = interface.id
 
         facet_meshtags = meshtags(
