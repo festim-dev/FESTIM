@@ -119,6 +119,12 @@ class ProblemBase:
         """Defines the dirichlet boundary conditions of the model."""
         for bc in self.boundary_conditions:
             if isinstance(bc, F.DirichletBCBase):
+                if getattr(bc, "_gas_species", None) is not None:
+                    # the value depends on an enclosure pressure, which is an unknown
+                    # living in a real function space and cannot be interpolated, so
+                    # the value stays a ufl expression and the BC is weak-only
+                    self.create_dirichletbc_value_ufl(bc)
+                    continue
                 form = self.create_dirichletbc_form(bc)
                 if not bc.enforce_weakly:
                     self.bc_forms.append(form)
