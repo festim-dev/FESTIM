@@ -432,3 +432,63 @@ def test_manifold_gradient_uses_the_submesh_measure():
         )
     )
     assert not np.isclose(wrong, reference, rtol=1e-3)
+
+
+def _three_strips(n=12):
+    """A unit square cut into three vertical strips tagged 1, 2, 3, with the facets at
+    ``x = 1/3`` (between strips 1 and 2) and ``x = 2/3`` tagged 7 and 8."""
+    mesh = unit_square(n)
+    tdim = mesh.topology.dim
+    cells = np.arange(mesh.topology.index_map(tdim).size_local, dtype=np.int32)
+    midpoints = dolfinx.mesh.compute_midpoints(mesh, tdim, cells)
+    values = (np.digitize(midpoints[:, 0], [1 / 3, 2 / 3]) + 1).astype(np.int32)
+    ct = dolfinx.mesh.meshtags(mesh, tdim, cells, values)
+
+    facets, tags = [], []
+    for tag, x0 in ((7, 1 / 3), (8, 2 / 3)):
+        found = dolfinx.mesh.locate_entities(
+            mesh, tdim - 1, lambda x, x0=x0: np.isclose(x[0], x0)
+        )
+        facets.append(found)
+        tags.append(np.full(len(found), tag, dtype=np.int32))
+    order = np.argsort(np.concatenate(facets))
+    ft = dolfinx.mesh.meshtags(
+        mesh,
+        tdim - 1,
+        np.concatenate(facets)[order].astype(np.int32),
+        np.concatenate(tags)[order],
+    )
+    return ct, ft
+
+
+@pytest.mark.parametrize("plus, minus", [(1, 2), (2, 1)])
+def test_ordered_interior_facet_data_puts_requested_subdomain_on_plus(plus, minus):
+    """The "+" restriction is the subdomain asked for, whichever way DOLFINx (or the
+    cell tag values) happens to order the two cells of the facet."""
+    ct, ft = _three_strips()
+    material = F.Material(D_0=1, E_D=0)
+    tag, data = F.subdomain.compute_ordered_interior_facet_data(
+        ct,
+        ft,
+        7,
+        F.VolumeSubdomain(id=plus, material=material),
+        F.VolumeSubdomain(id=minus, material=material),
+    )
+    assert tag == 7
+    quadruples = data.reshape(-1, 4)
+    assert (ct.values[quadruples[:, 0]] == plus).all()
+    assert (ct.values[quadruples[:, 2]] == minus).all()
+
+
+def test_ordered_interior_facet_data_rejects_facets_elsewhere():
+    """Facets that do not all separate the two given subdomains cannot be ordered."""
+    ct, ft = _three_strips()
+    material = F.Material(D_0=1, E_D=0)
+    with pytest.raises(ValueError, match="do not all separate volume subdomain"):
+        F.subdomain.compute_ordered_interior_facet_data(
+            ct,
+            ft,
+            8,  # between strips 2 and 3
+            F.VolumeSubdomain(id=1, material=material),
+            F.VolumeSubdomain(id=2, material=material),
+        )

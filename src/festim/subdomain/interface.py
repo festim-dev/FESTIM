@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import dolfinx
 import ufl
-from dolfinx.cpp.fem import compute_integration_domains
+from scifem.mesh import compute_interface_data
 
 from festim.material import SolubilityLaw
 from festim.subdomain.volume_subdomain import VolumeSubdomain
@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 
 
 def compute_ordered_interior_facet_data(
-    mesh,
+    cell_tags: "dolfinx.mesh.MeshTags",
     facet_tags: "dolfinx.mesh.MeshTags",
     tag: int,
     subdomain_plus: VolumeSubdomain,
@@ -30,7 +30,8 @@ def compute_ordered_interior_facet_data(
     would silently get its sides swapped.
 
     Args:
-        mesh: the parent mesh
+        cell_tags: the cell meshtags of the parent mesh, marking every cell adjacent
+            to the tagged facets with the id of the volume subdomain it belongs to
         facet_tags: the facet meshtags of the parent mesh
         tag: the value identifying the facets to integrate over
         subdomain_plus: the volume subdomain to place on the ``"+"`` restriction
@@ -44,44 +45,26 @@ def compute_ordered_interior_facet_data(
     Raises:
         ValueError: if a tagged facet does not separate the two subdomains
     """
-    mesh.topology.create_connectivity(mesh.topology.dim - 1, mesh.topology.dim)
+    topology = cell_tags.topology
+    topology.create_connectivity(topology.dim - 1, topology.dim)
 
-    integration_data = compute_integration_domains(
-        dolfinx.fem.IntegralType.interior_facet,
-        mesh.topology._cpp_object,
-        facet_tags.find(tag),
-    )
-    ordered_integration_data = integration_data.reshape(-1, 4).copy()
+    # scifem orders the two cells of a facet by their cell tag, lowest one on "+"
+    integration_data = compute_interface_data(cell_tags, facet_tags.find(tag))
+    if subdomain_plus.id > subdomain_minus.id:
+        integration_data = integration_data[:, [2, 3, 0, 1]]
 
-    # sub_topology_to_topology(..., inverse=True) returns -1 for a parent cell that is
-    # not in the submesh, so exactly one of these is >= 0 on a genuine interface facet
-    mapped_cell_0 = subdomain_plus.cell_map.sub_topology_to_topology(
-        integration_data[0::4], inverse=True
-    )
-    mapped_cell_1 = subdomain_plus.cell_map.sub_topology_to_topology(
-        integration_data[2::4], inverse=True
-    )
-
-    switch = mapped_cell_1 > mapped_cell_0
-    # Order restriction on one side
-    if True in switch:
-        ordered_integration_data[switch, :] = ordered_integration_data[switch][
-            :, [2, 3, 0, 1]
-        ]
-
-    # Check that the other restriction really lies in the other subdomain. A bare
-    # assert would vanish under ``python -O``, and a wrong ordering is silent.
-    domain1_cell = subdomain_minus.cell_map.sub_topology_to_topology(
-        ordered_integration_data[:, 2], inverse=True
-    )
-    if not (domain1_cell >= 0).all():
+    # A wrong ordering is silent, so rather than trust the tags, check that the two
+    # cells of every facet really do lie one in each subdomain. A bare assert would
+    # vanish under ``python -O``.
+    sides = cell_tags.values[integration_data[:, [0, 2]]]
+    if not (sides == [subdomain_plus.id, subdomain_minus.id]).all():
         raise ValueError(
             f"facets tagged {tag} do not all separate volume subdomain "
             f"{subdomain_plus.id} from volume subdomain {subdomain_minus.id}; the "
             '"+"/"-" restrictions cannot be ordered consistently'
         )
 
-    return (tag, ordered_integration_data.reshape(-1))
+    return (tag, integration_data.reshape(-1))
 
 
 class InterfaceMethod(Enum):
@@ -140,7 +123,7 @@ class InterfaceBase(ABC):
         self.id = id
         self.subdomains = tuple(subdomains)
 
-    def compute_mapped_interior_facet_data(self, mesh):
+    def compute_mapped_interior_facet_data(self, cell_tags):
         """Compute integration data for interface integrals.
 
         This method computes the mapping between physical facets on the interface
@@ -148,14 +131,14 @@ class InterfaceBase(ABC):
         are ordered consistently with the first subdomain on the "+" side.
 
         Args:
-            mesh: The parent mesh.
+            cell_tags: The cell meshtags of the parent mesh.
 
         Returns:
             tuple: A tuple of (interface_id, flattened_integration_data) where
                 integration_data contains the mapped cell and facet indices.
         """
         return compute_ordered_interior_facet_data(
-            mesh, self.mt, self.id, self.subdomains[0], self.subdomains[1]
+            cell_tags, self.mt, self.id, self.subdomains[0], self.subdomains[1]
         )
 
     def us(self, species: "Species"):
