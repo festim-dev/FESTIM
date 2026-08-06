@@ -69,8 +69,9 @@ def prune_empty_blocks(blocks):
     return out
 
 
-def get_dofmap(V):
+def _get_dofmap(V):
     try:
+        # dolfinx >= 0.11
         return V.dofmaps[0]
     except TypeError:
         return V.dofmaps(0)
@@ -92,13 +93,13 @@ def make_index_sets(a):
     """
     is0 = _cpp_la_petsc.create_index_sets(
         [
-            (get_dofmap(V).index_map, get_dofmap(V).index_map_bs)
+            (_get_dofmap(V).index_map, _get_dofmap(V).index_map_bs)
             for V in _extract_function_spaces(a, 0)
         ]
     )
     is1 = _cpp_la_petsc.create_index_sets(
         [
-            (get_dofmap(V).index_map, get_dofmap(V).index_map_bs)
+            (_get_dofmap(V).index_map, _get_dofmap(V).index_map_bs)
             for V in _extract_function_spaces(a, 1)
         ]
     )
