@@ -286,6 +286,11 @@ class ReactionBase:
         Returns:
             The net reaction rate to be unpacked into particle sources.
         """
+
+        assert self.reaction_rate.fenics_object is not None, (
+            "fenics_object has not been defined"
+        )
+
         return self.reaction_rate.fenics_object
 
     def create_sources(self) -> list[ParticleSource]:

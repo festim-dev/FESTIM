@@ -120,6 +120,17 @@ def test_reaction_base_reaction_term_is_the_rate():
     assert reaction.reaction_term() is reaction.reaction_rate.fenics_object
 
 
+def test_reaction_base_reaction_term_before_conversion_raises_error():
+    """Test that reaction_term fails clearly when the rate has not been converted to
+    a fenics object yet."""
+    # BUILD
+    reaction = F.ReactionBase(reaction_rate=3.0, reactant=F.Species("A"), volume=my_vol)
+
+    # RUN / TEST
+    with pytest.raises(AssertionError, match="fenics_object has not been defined"):
+        reaction.reaction_term()
+
+
 def test_reaction_base_arbitrary_rate_depends_on_concentrations():
     """Test that a ReactionBase rate can be an arbitrary function of species
     concentrations, e.g. R = k * (c_A - c_B)."""
