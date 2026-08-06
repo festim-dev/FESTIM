@@ -171,7 +171,8 @@ class Enclosure:
             function_space: a function space on the parent mesh
             t: the time, as a fenics Constant
         """
-        # NOTE could we have so guards to make sure temperature cannot be a function of space or temperature?
+        # NOTE could we have so guards to make sure temperature cannot be a function of
+        # space or temperature?
         self.temperature.convert_input_value(function_space=function_space, t=t)
         for opening in self.openings:
             opening.convert_input_values_to_fenics_objects(
