@@ -30,21 +30,20 @@ class ReactionBase:
     ``reaction_rate`` returns, so rates such as :math:`R = k (c_1 - c_2)` are
     expressible.
 
-    A reaction does not enter the formulation directly: it is expanded into one
-    volumetric :class:`~festim.source.ParticleSource` per involved
-    :class:`~festim.species.Species` (see :meth:`create_sources`). Each species is
-    given a source ``nu * R``, where ``nu`` is its (signed) stoichiometric
-    coefficient in ``species_to_stoichiometry`` — negative for a species consumed
-    by the reaction, positive for one produced.
+    A reaction does not enter the formulation directly: it is expanded into
+    volumetric :class:`~festim.source.ParticleSource` objects (see
+    :meth:`create_sources`), each reactant getting a sink ``-R`` and each product
+    a source ``+R``. The stoichiometry is carried by the ``reactant`` and
+    ``product`` lists themselves: a species listed twice as a reactant is
+    consumed at rate ``2 R``.
 
     Arguments:
         reaction_rate: The net reaction rate coefficient :math:`R`.
         volume: The volume subdomain where the reaction takes place.
-        species_to_stoichiometry: A dictionary mapping each involved species to its
-            signed stoichiometric coefficient. A negative coefficient means the
-            species is consumed at rate ``|nu| * R``, a positive one that it is
-            produced at rate ``nu * R``. Implicit species have no governing
-            equation and receive no source.
+        reactant: The reactant(s), consumed at rate ``R`` each. Implicit species
+            have no governing equation and receive no source.
+        product: The product(s), produced at rate ``R`` each. ``None`` for a
+            reaction with no product.
         arg_to_species: A dictionary mapping argument names in a callable
             ``reaction_rate`` to festim.Species objects, allowing the rate to
             depend on species concentrations. Every argument of ``reaction_rate``
@@ -58,7 +57,8 @@ class ReactionBase:
     Attributes:
         reaction_rate: The net reaction rate coefficient, as a festim.Value.
         volume: The volume subdomain where the reaction takes place.
-        species_to_stoichiometry: The species-to-stoichiometric-coefficient mapping.
+        reactant: The reactant(s), as a list.
+        product: The product(s), as a list (empty for a reaction with no product).
         arg_to_species: The mapping used to resolve concentration arguments in a
             callable reaction rate.
 
@@ -78,7 +78,8 @@ class ReactionBase:
             reaction = F.ReactionBase(
                 reaction_rate=lambda c_A, c_B: 2.0 * (c_A - c_B),
                 volume=volume,
-                species_to_stoichiometry={A: -1, B: 1},
+                reactant=A,
+                product=B,
                 arg_to_species={"c_A": A, "c_B": B},
             )
             print(reaction)
@@ -89,7 +90,8 @@ class ReactionBase:
     """
 
     volume: VolumeSubdomain
-    species_to_stoichiometry: dict[Species | ImplicitSpecies, int | float]
+    reactant: list[Species | ImplicitSpecies]
+    product: list[Species]
     reaction_rate: (
         float
         | int
@@ -113,33 +115,54 @@ class ReactionBase:
         | fem.Function
         | Value,
         volume: VolumeSubdomain,
-        species_to_stoichiometry: dict[Species | ImplicitSpecies, int | float],
+        reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
+        product: Species | list[Species] | None = None,
         arg_to_species: dict[str, Species] | None = None,
     ) -> None:
         self.volume = volume
-        self.species_to_stoichiometry = species_to_stoichiometry
+        self.reactant = reactant
+        self.product = product
         self.reaction_rate = reaction_rate
         self.arg_to_species = arg_to_species
 
     @property
-    def species_to_stoichiometry(self):
-        return self._species_to_stoichiometry
+    def reactant(self):
+        return self._reactant
 
-    @species_to_stoichiometry.setter
-    def species_to_stoichiometry(self, value):
-        value = value or {}
-        for spe, coeff in value.items():
-            if not isinstance(spe, (Species, ImplicitSpecies)):
+    @reactant.setter
+    def reactant(self, value):
+        if not isinstance(value, list):
+            value = [value]
+        if len(value) == 0:
+            raise ValueError(
+                "reactant must be an entry of one or more species objects, not an empty list."  # noqa: E501
+            )
+        for i in value:
+            if not isinstance(i, (Species, ImplicitSpecies)):
                 raise TypeError(
-                    "species_to_stoichiometry keys must be a festim.Species or "
-                    f"festim.ImplicitSpecies, not {type(spe).__name__}"
+                    "reactant must be an F.Species or F.ImplicitSpecies, not "
+                    + f"{type(i)}"
                 )
-            if isinstance(coeff, bool) or not isinstance(coeff, int | float):
+        self._reactant = value
+
+    @property
+    def product(self):
+        return self._product
+
+    @product.setter
+    def product(self, value):
+        # stored as a list (empty for a reaction with no product)
+        if value is None:
+            value = []
+        elif not isinstance(value, list):
+            value = [value]
+        for i in value:
+            if not isinstance(i, Species):
                 raise TypeError(
-                    "species_to_stoichiometry values must be an int or float, not "
-                    f"{type(coeff).__name__} (for species {spe})"
+                    "product must be an F.Species, a list of F.Species, or None, "
+                    + f"not {type(i).__name__}"
                 )
-        self._species_to_stoichiometry = value
+        self._product = value
 
     @property
     def reaction_rate(self):
@@ -160,7 +183,10 @@ class ReactionBase:
     def species(self) -> list[Species | ImplicitSpecies]:
         """All species involved in the reaction: those receiving a source term and
         those the rate depends on. Used e.g. to update implicit-species densities."""
-        involved = list(self.species_to_stoichiometry)
+        involved = []
+        for spe in self.reactant + self.product:
+            if spe not in involved:
+                involved.append(spe)
         for spe in self.arg_to_species.values():
             if spe not in involved:
                 involved.append(spe)
@@ -247,16 +273,9 @@ class ReactionBase:
         return f"{type(self).__name__}({self}, {self.reaction_rate})"
 
     def __str__(self) -> str:
-        def side(pairs):
-            return " + ".join(
-                str(spe) if abs(coeff) == 1 else f"{abs(coeff)} {spe}"
-                for spe, coeff in pairs
-            )
-
-        consumed = [(s, c) for s, c in self.species_to_stoichiometry.items() if c < 0]
-        produced = [(s, c) for s, c in self.species_to_stoichiometry.items() if c > 0]
-        lhs, rhs = side(consumed), side(produced)
-        return f"{lhs} --> {rhs}" if rhs else f"{lhs} -->"
+        reactants = " + ".join(str(spe) for spe in self.reactant)
+        products = " + ".join(str(spe) for spe in self.product)
+        return f"{reactants} --> {products}".rstrip()
 
     def reaction_term(self) -> ufl.core.expr.Expr:
         """The net reaction rate ``R`` as a ufl expression.
@@ -271,22 +290,30 @@ class ReactionBase:
 
     def create_sources(self) -> list[ParticleSource]:
         """Express the reaction as a list of volumetric particle sources, one per
-        involved :class:`~festim.species.Species`.
+        appearance of a :class:`~festim.species.Species` in ``reactant`` or
+        ``product``.
 
-        Each species is given a source ``nu * R``, where ``nu`` is its
-        stoichiometric coefficient and ``R`` is :meth:`reaction_term`. Implicit
-        species (which have no governing equation) are skipped. The rate
-        coefficients must already be converted to fenics objects.
+        Each reactant is given a sink ``-R`` and each product a source ``+R``,
+        where ``R`` is :meth:`reaction_term`. The stoichiometry therefore comes
+        from the lists themselves: a species listed twice gets two terms, which
+        add up in the formulation. Implicit species (which have no governing
+        equation) are skipped. The rate coefficients must already be converted to
+        fenics objects.
 
         Returns:
             A list of festim.ParticleSource objects.
         """
         rate = self.reaction_term()
-        return [
-            ParticleSource(value=coefficient * rate, volume=self.volume, species=spe)
-            for spe, coefficient in self.species_to_stoichiometry.items()
+        sources = [
+            ParticleSource(value=-rate, volume=self.volume, species=spe)
+            for spe in self.reactant
             if isinstance(spe, Species)
         ]
+        sources += [
+            ParticleSource(value=rate, volume=self.volume, species=spe)
+            for spe in self.product
+        ]
+        return sources
 
 
 class GenericReaction(ReactionBase):
@@ -306,13 +333,15 @@ class GenericReaction(ReactionBase):
 
     A reaction does not enter the formulation directly: it is expanded into one
     volumetric :class:`~festim.source.ParticleSource` per participating
-    :class:`~festim.species.Species` (see :meth:`create_sources`), each reactant
-    being consumed at rate ``R`` and each product produced at rate ``R``.
+    :class:`~festim.species.Species` (see :meth:`create_sources`), each
+    appearance in ``reactant`` consuming the species at rate ``R`` and each
+    appearance in ``product`` producing it at rate ``R``.
 
     Arguments:
-        reactant: The reactant(s).
-        product: The product(s). ``None`` for an irreversible reaction with no
-            product.
+        reactant: The reactant(s). A species listed twice appears squared in the
+            mass-action rate and is consumed at rate ``2 R`` (eg. ``2 A --> B``).
+        product: The product(s), following the same rule. ``None`` for an
+            irreversible reaction with no product.
         forward_rate: The forward reaction rate coefficient :math:`k_1`.
         volume: The volume subdomain where the reaction takes place.
         backward_rate: The backward reaction rate coefficient :math:`k_2`. If
@@ -414,56 +443,18 @@ class GenericReaction(ReactionBase):
         | None = None,
         arg_to_species: dict[str, Species] | None = None,
     ) -> None:
-        self.reactant = reactant
-        self.product = product
+        # the rates are set before the base __init__ because arg_to_species
+        # validation inspects them
         self.forward_rate = forward_rate
         self.backward_rate = backward_rate
 
         super().__init__(
             reaction_rate=None,
             volume=volume,
-            species_to_stoichiometry=None,
+            reactant=reactant,
+            product=product,
             arg_to_species=arg_to_species,
         )
-
-    @property
-    def reactant(self):
-        return self._reactant
-
-    @reactant.setter
-    def reactant(self, value):
-        if not isinstance(value, list):
-            value = [value]
-        if len(value) == 0:
-            raise ValueError(
-                "reactant must be an entry of one or more species objects, not an empty list."  # noqa: E501
-            )
-        for i in value:
-            if not isinstance(i, (Species, ImplicitSpecies)):
-                raise TypeError(
-                    "reactant must be an F.Species or F.ImplicitSpecies, not "
-                    + f"{type(i)}"
-                )
-        self._reactant = value
-
-    @property
-    def product(self):
-        return self._product
-
-    @product.setter
-    def product(self, value):
-        # stored as a list (empty for an irreversible reaction with no product)
-        if value is None:
-            value = []
-        elif not isinstance(value, list):
-            value = [value]
-        for i in value:
-            if not isinstance(i, Species):
-                raise TypeError(
-                    "product must be an F.Species, a list of F.Species, or None, "
-                    + f"not {type(i).__name__}"
-                )
-        self._product = value
 
     @property
     def forward_rate(self):
@@ -484,14 +475,6 @@ class GenericReaction(ReactionBase):
     @property
     def rate_coefficients(self) -> list[Value]:
         return [self.forward_rate, self.backward_rate]
-
-    @ReactionBase.species_to_stoichiometry.getter
-    def species_to_stoichiometry(self):
-        # each reactant is consumed (nu = -1) and each product produced (nu = +1);
-        # derived live from reactant/product so it never desyncs from them
-        stoichiometry = {reactant: -1 for reactant in self.reactant}
-        stoichiometry.update({product: 1 for product in self.product})
-        return stoichiometry
 
     @property
     def _mixed_domain(self) -> bool:
@@ -558,16 +541,16 @@ class GenericReaction(ReactionBase):
         return forward - backward
 
     def __repr__(self) -> str:
-        reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        products = " + ".join([str(product) for product in self.product])
         return (
-            f"{type(self).__name__}({reactants} <--> {products}, "
-            f"{self.forward_rate}, {self.backward_rate})"
+            f"{type(self).__name__}({self}, {self.forward_rate}, {self.backward_rate})"
         )
 
     def __str__(self) -> str:
-        reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        products = " + ".join([str(product) for product in self.product])
+        # a double arrow when the backward term is actually there
+        if self.backward_rate.input_value is None or not self.product:
+            return super().__str__()
+        reactants = " + ".join(str(spe) for spe in self.reactant)
+        products = " + ".join(str(spe) for spe in self.product)
         return f"{reactants} <--> {products}"
 
 
@@ -721,9 +704,7 @@ class ArrheniusReaction(GenericReaction):
         self._E_p = value
 
     def __repr__(self) -> str:
-        reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        products = " + ".join([str(product) for product in self.product])
-        return f"{type(self).__name__}({reactants} <--> {products}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"  # noqa: E501
+        return f"{type(self).__name__}({self}, {self.k_0}, {self.E_k}, {self.p_0}, {self.E_p})"  # noqa: E501
 
 
 class DecayReaction(GenericReaction):
@@ -827,13 +808,8 @@ class DecayReaction(GenericReaction):
         self._forward_rate = None
 
     def __repr__(self) -> str:
-        reactants = " + ".join([str(reactant) for reactant in self.reactant])
+        reactants = " + ".join(str(spe) for spe in self.reactant)
         return f"{type(self).__name__}({reactants}, half_life={self.half_life})"
-
-    def __str__(self) -> str:
-        reactants = " + ".join([str(reactant) for reactant in self.reactant])
-        products = " + ".join([str(product) for product in self.product])
-        return f"{reactants} --> {products}" if products else f"{reactants} -->"
 
 
 class Reaction(ArrheniusReaction):

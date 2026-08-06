@@ -41,9 +41,7 @@ def test_reaction_base_str():
     """Test __str__ shows consumed species on the left and produced on the right."""
     # BUILD
     A, B = F.Species("A"), F.Species("B")
-    reaction = F.ReactionBase(
-        reaction_rate=1.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=1.0, reactant=A, product=B, volume=my_vol)
 
     # RUN / TEST
     assert str(reaction) == "A --> B"
@@ -52,33 +50,29 @@ def test_reaction_base_str():
 def test_reaction_base_str_no_produced_species():
     """Test __str__ shows a one-way arrow with no produced species."""
     # BUILD
-    reaction = F.ReactionBase(
-        reaction_rate=1.0, species_to_stoichiometry={F.Species("A"): -1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=1.0, reactant=F.Species("A"), volume=my_vol)
 
     # RUN / TEST
     assert str(reaction) == "A -->"
 
 
-def test_reaction_base_str_with_stoichiometric_coefficients():
-    """Test __str__ shows the stoichiometric coefficient when it is not one."""
+def test_reaction_base_str_with_repeated_species():
+    """Test __str__ lists a repeated species once per appearance."""
     # BUILD
     A, B = F.Species("A"), F.Species("B")
     reaction = F.ReactionBase(
-        reaction_rate=1.0, species_to_stoichiometry={A: -2, B: 3}, volume=my_vol
+        reaction_rate=1.0, reactant=[A, A], product=[B, B, B], volume=my_vol
     )
 
     # RUN / TEST
-    assert str(reaction) == "2 A --> 3 B"
+    assert str(reaction) == "A + A --> B + B + B"
 
 
 def test_reaction_base_repr():
     """Test __repr__ shows the reaction and its reaction rate."""
     # BUILD
     A, B = F.Species("A"), F.Species("B")
-    reaction = F.ReactionBase(
-        reaction_rate=2.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=2.0, reactant=A, product=B, volume=my_vol)
 
     # RUN / TEST
     assert repr(reaction) == "ReactionBase(A --> B, 2.0)"
@@ -88,9 +82,7 @@ def test_reaction_base_rate_coefficients():
     """Test that a ReactionBase exposes its single reaction_rate as its rate
     coefficient."""
     # BUILD
-    reaction = F.ReactionBase(
-        reaction_rate=1.0, species_to_stoichiometry={F.Species("A"): -1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=1.0, reactant=F.Species("A"), volume=my_vol)
 
     # RUN / TEST
     assert reaction.rate_coefficients == [reaction.reaction_rate]
@@ -103,7 +95,8 @@ def test_reaction_base_species_lists_involved_species():
     A, B, C = F.Species("A"), F.Species("B"), F.Species("C")
     reaction = F.ReactionBase(
         reaction_rate=lambda c_C: c_C,
-        species_to_stoichiometry={A: -1, B: 1},
+        reactant=A,
+        product=B,
         volume=my_vol,
         arg_to_species={"c_C": C},
     )
@@ -118,9 +111,7 @@ def test_reaction_base_reaction_term_is_the_rate():
     # BUILD
     mesh = create_unit_cube(MPI.COMM_WORLD, 5, 5, 5)
     V = functionspace(mesh, ("Lagrange", 1))
-    reaction = F.ReactionBase(
-        reaction_rate=3.0, species_to_stoichiometry={F.Species("A"): -1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=3.0, reactant=F.Species("A"), volume=my_vol)
 
     # RUN
     convert_rates(reaction, V, temperature=500.0)
@@ -140,7 +131,8 @@ def test_reaction_base_arbitrary_rate_depends_on_concentrations():
     B.solution = Function(V)
     reaction = F.ReactionBase(
         reaction_rate=lambda c_A, c_B: 2.0 * (c_A - c_B),
-        species_to_stoichiometry={A: -1, B: 1},
+        reactant=A,
+        product=B,
         volume=my_vol,
         arg_to_species={"c_A": A, "c_B": B},
     )
@@ -159,9 +151,7 @@ def test_reaction_base_create_sources_count():
     mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
     V = functionspace(mesh, ("Lagrange", 1))
     A, B = F.Species("A"), F.Species("B")
-    reaction = F.ReactionBase(
-        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=3.0, reactant=A, product=B, volume=my_vol)
     convert_rates(reaction, V, temperature=500.0)
 
     # RUN
@@ -177,9 +167,7 @@ def test_reaction_base_consumed_species_source():
     mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
     V = functionspace(mesh, ("Lagrange", 1))
     A, B = F.Species("A"), F.Species("B")
-    reaction = F.ReactionBase(
-        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=3.0, reactant=A, product=B, volume=my_vol)
     convert_rates(reaction, V, temperature=500.0)
 
     # RUN
@@ -195,9 +183,7 @@ def test_reaction_base_produced_species_source():
     mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
     V = functionspace(mesh, ("Lagrange", 1))
     A, B = F.Species("A"), F.Species("B")
-    reaction = F.ReactionBase(
-        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 1}, volume=my_vol
-    )
+    reaction = F.ReactionBase(reaction_rate=3.0, reactant=A, product=B, volume=my_vol)
     convert_rates(reaction, V, temperature=500.0)
 
     # RUN
@@ -207,44 +193,87 @@ def test_reaction_base_produced_species_source():
     assert source.value.input_value == reaction.reaction_term()
 
 
-def test_reaction_base_stoichiometric_coefficient_scales_source():
-    """Test that a stoichiometric coefficient scales the species source term."""
+@pytest.mark.parametrize("nb_occurences", [2, 3])
+def test_reaction_base_repeated_reactant_gets_one_sink_per_appearance(nb_occurences):
+    """Test that a species listed several times as a reactant gets as many sinks,
+    which add up to a consumption of nb_occurences * R."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A = F.Species("A")
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, reactant=[A] * nb_occurences, volume=my_vol
+    )
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    sinks = [s for s in reaction.create_sources() if s.species is A]
+
+    # TEST
+    assert [s.value.input_value for s in sinks] == [-reaction.reaction_term()] * (
+        nb_occurences
+    )
+
+
+@pytest.mark.parametrize("nb_occurences", [2, 3])
+def test_reaction_base_repeated_product_gets_one_source_per_appearance(nb_occurences):
+    """Test that a species listed several times as a product gets as many sources,
+    which add up to a production of nb_occurences * R."""
     # BUILD
     mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
     V = functionspace(mesh, ("Lagrange", 1))
     A, B = F.Species("A"), F.Species("B")
     reaction = F.ReactionBase(
-        reaction_rate=3.0, species_to_stoichiometry={A: -1, B: 2}, volume=my_vol
+        reaction_rate=3.0, reactant=A, product=[B] * nb_occurences, volume=my_vol
     )
     convert_rates(reaction, V, temperature=500.0)
 
     # RUN
-    source = next(s for s in reaction.create_sources() if s.species is B)
+    sources = [s for s in reaction.create_sources() if s.species is B]
 
     # TEST
-    assert source.value.input_value == 2 * reaction.reaction_term()
+    assert [s.value.input_value for s in sources] == [reaction.reaction_term()] * (
+        nb_occurences
+    )
 
 
-@pytest.mark.parametrize("bad_key", ["not_a_species", 1.0])
-def test_species_to_stoichiometry_raises_error_with_non_species_key(bad_key):
-    """Test a type error is raised when a stoichiometry key is not a species."""
-    with pytest.raises(TypeError, match="species_to_stoichiometry keys must be"):
-        F.ReactionBase(
-            reaction_rate=1.0,
-            species_to_stoichiometry={bad_key: -1},
-            volume=my_vol,
-        )
+def test_reaction_base_species_on_both_sides_gets_a_sink_and_a_source():
+    """Test that a species that is both reactant and product gets both terms, which
+    cancel out."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B = F.Species("A"), F.Species("B")
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, reactant=[A, B], product=A, volume=my_vol
+    )
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    terms = [s.value.input_value for s in reaction.create_sources() if s.species is A]
+
+    # TEST
+    assert terms == [-reaction.reaction_term(), reaction.reaction_term()]
 
 
-@pytest.mark.parametrize("bad_coeff", ["one", None, True])
-def test_species_to_stoichiometry_raises_error_with_non_numeric_value(bad_coeff):
-    """Test a type error is raised when a stoichiometry value is not numeric."""
-    with pytest.raises(TypeError, match="species_to_stoichiometry values must be"):
-        F.ReactionBase(
-            reaction_rate=1.0,
-            species_to_stoichiometry={F.Species("A"): bad_coeff},
-            volume=my_vol,
-        )
+def test_reaction_base_implicit_species_gets_no_source():
+    """Test that an implicit reactant, which has no governing equation, is skipped
+    by create_sources."""
+    # BUILD
+    mesh = create_unit_cube(MPI.COMM_WORLD, 4, 4, 4)
+    V = functionspace(mesh, ("Lagrange", 1))
+    A, B = F.Species("A"), F.Species("B")
+    empty = F.ImplicitSpecies(n=1.0, others=[A], name="empty")
+    reaction = F.ReactionBase(
+        reaction_rate=3.0, reactant=[A, empty], product=B, volume=my_vol
+    )
+    convert_rates(reaction, V, temperature=500.0)
+
+    # RUN
+    sources = reaction.create_sources()
+
+    # TEST
+    assert [source.species for source in sources] == [A, B]
 
 
 def test_reaction_init():
@@ -344,7 +373,7 @@ def test_reaction_repr_0_products():
     )
 
     # check that the __repr__ method returns the expected string
-    expected_repr = "ArrheniusReaction(A <--> , 1.0, 0.2, None, None)"
+    expected_repr = "ArrheniusReaction(A -->, 1.0, 0.2, None, None)"
     assert repr(reaction) == expected_repr
 
 
@@ -418,7 +447,7 @@ def test_reaction_str_no_products():
     )
 
     # check that the __str__ method returns the expected string
-    expected_str = "A <--> "
+    expected_str = "A -->"
     assert str(reaction) == expected_str
 
 
