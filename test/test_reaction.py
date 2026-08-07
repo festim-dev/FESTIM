@@ -991,6 +991,31 @@ def test_decay_reaction_product_empty_when_none():
     assert reaction.product == []
 
 
+@pytest.mark.parametrize("nb_reactants", [2, 3])
+def test_decay_reaction_raises_error_with_several_reactants(nb_reactants):
+    """Test that a decay reaction accepts a single reactant only."""
+    # BUILD
+    reactants = [F.Species(f"A{i}") for i in range(nb_reactants)]
+
+    # RUN / TEST
+    with pytest.raises(
+        ValueError, match="reactant must be a single species for a DecayReaction"
+    ):
+        F.DecayReaction(reactant=reactants, half_life=10.0, volume=my_vol)
+
+
+def test_decay_reaction_accepts_a_list_of_one_reactant():
+    """Test that a single reactant given as a list is accepted."""
+    # BUILD
+    T = F.Species("T")
+
+    # RUN
+    reaction = F.DecayReaction(reactant=[T], half_life=10.0, volume=my_vol)
+
+    # TEST
+    assert reaction.reactant == [T]
+
+
 @pytest.mark.parametrize("value", ["abc", lambda t: t, None, True, [1.0]])
 def test_half_life_setter_raises_type_error(value):
     """Test that half_life must be a float."""

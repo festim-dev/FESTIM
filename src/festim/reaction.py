@@ -713,29 +713,30 @@ class ArrheniusReaction(GenericReaction):
 
 
 class DecayReaction(GenericReaction):
-    """A first-order radioactive decay reaction, consuming one or more reactant
-    species at a rate set by their decay half-life.
+    """A first-order radioactive decay reaction, consuming a single reactant species
+    at a rate set by its decay half-life.
 
     The net rate follows the mass-action form of :class:`GenericReaction`
 
     .. math::
 
-        R = \\lambda \\prod_i c_i
+        R = \\lambda c
 
     where the decay constant :math:`\\lambda = \\ln(2) / t_{1/2}` is built from the
     ``half_life`` :math:`t_{1/2}`. The reaction is irreversible (no backward rate):
-    each reactant is consumed at rate ``R`` and each product, if any, is produced at
+    the reactant is consumed at rate ``R`` and each product, if any, is produced at
     rate ``R`` (e.g. helium from the decay of tritium).
 
     Arguments:
-        reactant: The decaying reactant species.
+        reactant: The decaying reactant species. Exactly one species decays: a decay
+            is first order, so a list of more than one reactant is rejected.
         half_life: The decay half-life, in the simulation's time unit. Must be a
             positive float.
         volume: The volume subdomain where the decay takes place.
         product: The decay product(s). ``None`` if the products are not tracked.
 
     Attributes:
-        reactant: The reactant(s).
+        reactant: The reactant, as a list of one species.
         half_life: The decay half-life.
         product: The product(s), as a list (empty if none are tracked).
         forward_rate: The decay constant :math:`\\lambda`, as a festim.Value.
@@ -768,13 +769,13 @@ class DecayReaction(GenericReaction):
     """
 
     volume: VolumeSubdomain
-    reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies]
+    reactant: list[Species | ImplicitSpecies]
     product: Species | list[Species] | None
     half_life: float
 
     def __init__(
         self,
-        reactant: Species | ImplicitSpecies | list[Species | ImplicitSpecies],
+        reactant: Species | ImplicitSpecies,
         half_life: float,
         volume: VolumeSubdomain,
         product: Species | list[Species] | None = None,
@@ -788,6 +789,17 @@ class DecayReaction(GenericReaction):
             backward_rate=None,
             volume=volume,
         )
+
+    # only the setter differs from the base class, the getter is inherited
+    @GenericReaction.reactant.setter
+    def reactant(self, value):
+        # a decay is first order: a single species decays at rate lambda * c
+        if isinstance(value, list) and len(value) > 1:
+            raise ValueError(
+                "reactant must be a single species for a DecayReaction, not "
+                f"{len(value)}; a decay is first order in the decaying species"
+            )
+        ReactionBase.reactant.fset(self, value)
 
     @property
     def forward_rate(self):
