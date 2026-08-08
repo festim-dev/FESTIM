@@ -2136,21 +2136,26 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.D = D
 
             # the extrema exports read the solution on the submesh of the volume
-            # subdomain, check that the species is actually defined there
-            if isinstance(
+            # subdomain, so check that the species is actually defined there.
+            # a field that is not a Species with a list of subdomains (a bare name,
+            # or a species generated from a trap) is skipped: it fails earlier, for
+            # unrelated reasons
+            is_extremum = isinstance(
                 export,
                 exports.MaximumVolume
                 | exports.MinimumVolume
                 | exports.MaximumSurface
                 | exports.MinimumSurface,
-            ) and isinstance(export.field, _species.Species):
+            )
+            if is_extremum and isinstance(export.field, _species.Species):
                 if isinstance(export, exports.SurfaceQuantity):
                     volume = self.surface_to_volume[export.surface]
                     location = f"surface {export.surface.id}"
                 else:
                     volume = export.volume
                     location = f"volume {volume.id}"
-                if volume not in export.field.subdomains:
+                subdomains = export.field.subdomains
+                if isinstance(subdomains, list) and volume not in subdomains:
                     raise ValueError(
                         f"Cannot compute {export.title}: species "
                         f"{export.field.name} is not defined in the volume subdomain "

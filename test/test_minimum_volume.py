@@ -63,5 +63,6 @@ def test_minimum_volume_no_meshtags():
     # RUN: no volume_meshtags attribute set, the function is passed explicitly
     my_export.compute(u=c)
 
-    # TEST
-    assert np.isclose(my_export.value, 2.0, rtol=1e-2)
+    # TEST: (x - 1)**2 + 2 is minimum at x = 1
+    expected_value = 2.0
+    assert np.isclose(my_export.value, expected_value, rtol=1e-2)

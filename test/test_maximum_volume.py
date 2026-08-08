@@ -63,5 +63,6 @@ def test_maximum_volume_no_meshtags():
     # RUN: no volume_meshtags attribute set, the function is passed explicitly
     my_export.compute(u=c)
 
-    # TEST
-    assert np.isclose(my_export.value, 27.0, rtol=1e-2)
+    # TEST: (x - 1)**2 + 2 is maximum at x = L
+    expected_value = (L - 1) ** 2 + 2
+    assert np.isclose(my_export.value, expected_value, rtol=1e-2)
