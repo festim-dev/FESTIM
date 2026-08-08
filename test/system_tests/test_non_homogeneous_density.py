@@ -49,7 +49,7 @@ def test_non_homogeneous_density(density_func, expected_value, tmpdir):
     my_model.species = [H, trapped_H]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[H, empty],
             product=trapped_H,
             k_0=1,
@@ -113,7 +113,7 @@ def test_density_as_function(tmpdir):
     my_model.species = [H, trapped_H]
 
     my_model.reactions = [
-        F.Reaction(
+        F.ArrheniusReaction(
             reactant=[H, empty],
             product=trapped_H,
             k_0=1,

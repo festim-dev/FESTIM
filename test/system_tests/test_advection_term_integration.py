@@ -104,7 +104,7 @@ def test_MMS_1_species_1_trap_with_advection():
         species=[test_mobile, test_trapped],
         temperature=T,
         reactions=[
-            F.Reaction(
+            F.ArrheniusReaction(
                 reactant=[test_mobile, empty_trap],
                 product=test_trapped,
                 k_0=k_0,
