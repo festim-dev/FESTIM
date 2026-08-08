@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from dolfinx import fem
 
 import festim as F
@@ -42,3 +43,14 @@ def test_minimum_surface_export_compute_1D():
     computed_value = my_export.value
 
     assert np.isclose(computed_value, expected_value, rtol=1e-2)
+
+
+def test_minimum_surface_raises_error_when_no_facet_meshtags():
+    """A ValueError is raised when no facet meshtags are available."""
+
+    my_export = F.MinimumSurface(
+        field=F.Species("H"), surface=F.SurfaceSubdomain1D(id=1, x=0)
+    )
+
+    with pytest.raises(ValueError, match="facet meshtags are required"):
+        my_export.compute()

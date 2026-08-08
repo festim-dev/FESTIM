@@ -425,3 +425,118 @@ def test_all_cells_are_not_tagged():
         AssertionError, match="All cells must be tagged with a non-zero value"
     ):
         my_model.initialise()
+
+
+def test_extrema_exports_discontinuous(tmpdir):
+    """MinimumVolume, MaximumVolume, MinimumSurface and MaximumSurface work with
+    HydrogenTransportProblemDiscontinuous.
+
+    The steady state concentration is piecewise linear in y. Continuity of the flux
+    and of the chemical potential (c/K_S) at the interface give c = 3/8 on the bottom
+    side of the interface and c = 1/4 on its top side.
+    """
+
+    fenics_mesh = dolfinx.mesh.create_unit_square(MPI.COMM_WORLD, 10, 10)
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+    my_model.mesh = F.Mesh(fenics_mesh)
+
+    material_top = F.Material(name="Material_A", D_0=1, E_D=0, K_S_0=2, E_K_S=0)
+    material_bottom = F.Material(name="Material_B", D_0=2, E_D=0, K_S_0=3, E_K_S=0)
+
+    top_volume = F.VolumeSubdomain(
+        id=3, material=material_top, locator=lambda x: x[1] >= 0.5
+    )
+    bottom_volume = F.VolumeSubdomain(
+        id=4, material=material_bottom, locator=lambda x: x[1] <= 0.5
+    )
+    top_surface = F.SurfaceSubdomain(id=1, locator=lambda x: np.isclose(x[1], 1.0))
+    bottom_surface = F.SurfaceSubdomain(id=2, locator=lambda x: np.isclose(x[1], 0.0))
+
+    my_model.subdomains = [top_surface, bottom_surface, top_volume, bottom_volume]
+    my_model.interfaces = [
+        F.Interface(5, (bottom_volume, top_volume), penalty_term=1000)
+    ]
+
+    H = F.Species("H", subdomains=[bottom_volume, top_volume])
+    my_model.species = [H]
+    my_model.temperature = 400
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(subdomain=top_surface, value=1.0, species=H),
+        F.FixedConcentrationBC(subdomain=bottom_surface, value=0.0, species=H),
+    ]
+    my_model.settings = F.Settings(atol=1e-10, rtol=1e-10, transient=False)
+
+    bot_min = F.MinimumVolume(
+        field=H, volume=bottom_volume, filename=f"{tmpdir}/bot_min.csv"
+    )
+    bot_max = F.MaximumVolume(field=H, volume=bottom_volume)
+    top_min = F.MinimumVolume(field=H, volume=top_volume)
+    top_max = F.MaximumVolume(field=H, volume=top_volume)
+    bot_surf_min = F.MinimumSurface(
+        field=H, surface=bottom_surface, filename=f"{tmpdir}/bot_surf_min.csv"
+    )
+    bot_surf_max = F.MaximumSurface(field=H, surface=bottom_surface)
+    top_surf_min = F.MinimumSurface(field=H, surface=top_surface)
+    top_surf_max = F.MaximumSurface(field=H, surface=top_surface)
+
+    my_model.exports = [
+        bot_min,
+        bot_max,
+        top_min,
+        top_max,
+        bot_surf_min,
+        bot_surf_max,
+        top_surf_min,
+        top_surf_max,
+    ]
+
+    my_model.initialise()
+    my_model.run()
+
+    # extrema within each volume subdomain
+    assert np.isclose(bot_min.value, 0.0, atol=1e-8)
+    assert np.isclose(bot_max.value, 3 / 8, rtol=2e-2)
+    assert np.isclose(top_min.value, 1 / 4, rtol=2e-2)
+    assert np.isclose(top_max.value, 1.0, atol=1e-8)
+
+    # extrema on the surfaces where the concentration is imposed
+    assert np.isclose(bot_surf_min.value, 0.0, atol=1e-8)
+    assert np.isclose(bot_surf_max.value, 0.0, atol=1e-8)
+    assert np.isclose(top_surf_min.value, 1.0, atol=1e-8)
+    assert np.isclose(top_surf_max.value, 1.0, atol=1e-8)
+
+
+def test_extrema_export_species_not_in_volume():
+    """A clear error is raised when an extremum export refers to a volume where the
+    species is not defined."""
+
+    my_model = F.HydrogenTransportProblemDiscontinuous()
+
+    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
+
+    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
+    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
+
+    surf1 = F.SurfaceSubdomain1D(id=1, x=0)
+    surf2 = F.SurfaceSubdomain1D(id=2, x=1)
+
+    my_model.subdomains = [vol1, vol2, surf1, surf2]
+    my_model.interfaces = [F.Interface(id=3, subdomains=[vol1, vol2])]
+    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 10))
+
+    # H is only defined in vol1
+    H = F.Species("H", subdomains=[vol1])
+    my_model.species = [H]
+
+    my_model.boundary_conditions = [
+        F.FixedConcentrationBC(species=H, subdomain=surf1, value=1),
+    ]
+    my_model.temperature = 300
+    my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
+
+    my_model.exports = [F.MaximumVolume(field=H, volume=vol2)]
+
+    with pytest.raises(ValueError, match="is not defined in the volume subdomain 2"):
+        my_model.initialise()

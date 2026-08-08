@@ -17,29 +17,56 @@ class MinimumVolume(VolumeQuantity):
 
     Attributes:
         see `festim.VolumeQuantity`
+        volume_meshtags: the cell meshtags of the mesh the field is defined on. Is
+            ``None`` when the field is defined on a submesh that already coincides
+            with the volume subdomain (``festim.HydrogenTransportProblemDiscontinuous``)
     """
 
-    volume_meshtags: dolfinx.mesh.MeshTags
+    volume_meshtags: dolfinx.mesh.MeshTags | None = None
 
     @property
     def title(self):
         return f"Minimum {self.field.name} volume {self.volume.id}"
 
-    def compute(self):
+    def compute(
+        self,
+        u: dolfinx.fem.Function | None = None,
+        volume_meshtags: dolfinx.mesh.MeshTags | None = None,
+    ):
         """Computes the minimum value of solution function within the defined volume
-        subdomain, and appends it to the data list."""
-        solution = self.field.post_processing_solution
-        entities = self.volume_meshtags.find(self.volume.id)
+        subdomain, and appends it to the data list.
+
+        Args:
+            u: the field the minimum is computed from. Defaults to
+                ``self.field.post_processing_solution``
+            volume_meshtags: the cell meshtags used to locate the cells of the volume
+                subdomain. Defaults to ``self.volume_meshtags``. If neither is
+                available, the minimum is computed over the whole mesh ``u`` is
+                defined on. This is the expected behaviour for the discontinuous
+                problem, where each volume subdomain owns its own submesh.
+        """
+        solution = self.field.post_processing_solution if u is None else u
+        meshtags = self.volume_meshtags if volume_meshtags is None else volume_meshtags
 
         if isinstance(solution, dolfinx.fem.Function):
             V = solution.function_space
         else:
             V = self.field.sub_function_space
         mesh = V.mesh
-        mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim)
-        dofs = dolfinx.fem.locate_dofs_topological(
-            V=V, entity_dim=mesh.topology.dim, entities=entities
-        )
 
-        self.value = mesh.comm.allreduce(np.min(solution.x.array[dofs]), op=MPI.MIN)
+        if meshtags is None:
+            # the mesh of the field is the volume subdomain itself (submesh case)
+            values = solution.x.array
+        else:
+            entities = meshtags.find(self.volume.id)
+            mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim)
+            dofs = dolfinx.fem.locate_dofs_topological(
+                V=V, entity_dim=mesh.topology.dim, entities=entities
+            )
+            values = solution.x.array[dofs]
+
+        # a process may hold no dof of the volume at all, np.min would then raise
+        local_min = np.min(values) if values.size > 0 else np.inf
+
+        self.value = mesh.comm.allreduce(local_min, op=MPI.MIN)
         self.data.append(self.value)

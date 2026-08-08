@@ -2135,6 +2135,28 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
                 export.D = D
 
+            # the extrema exports read the solution on the submesh of the volume
+            # subdomain, check that the species is actually defined there
+            if isinstance(
+                export,
+                exports.MaximumVolume
+                | exports.MinimumVolume
+                | exports.MaximumSurface
+                | exports.MinimumSurface,
+            ) and isinstance(export.field, _species.Species):
+                if isinstance(export, exports.SurfaceQuantity):
+                    volume = self.surface_to_volume[export.surface]
+                    location = f"surface {export.surface.id}"
+                else:
+                    volume = export.volume
+                    location = f"volume {volume.id}"
+                if volume not in export.field.subdomains:
+                    raise ValueError(
+                        f"Cannot compute {export.title}: species "
+                        f"{export.field.name} is not defined in the volume subdomain "
+                        f"{volume.id} that {location} belongs to"
+                    )
+
             # reset the data and time for SurfaceQuantity and VolumeQuantity
             if isinstance(export, exports.DerivedQuantity):
                 export.t = []
@@ -2246,6 +2268,19 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.compute(
                         u=submesh_function, ds=self.ds, entity_maps=entity_maps
                     )
+                elif isinstance(
+                    export, exports.MaximumSurface | exports.MinimumSurface
+                ):
+                    # the field lives on the submesh of the volume the surface
+                    # belongs to, so the extremum is computed there using the
+                    # facet meshtags transferred to that submesh
+                    export_vol = self.surface_to_volume[export.surface]
+                    export.compute(
+                        u=export.field.subdomain_to_post_processing_solution[
+                            export_vol
+                        ],
+                        facet_meshtags=export_vol.ft,
+                    )
                 else:
                     export.compute()
 
@@ -2259,6 +2294,14 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                         ],
                         dx=self.dx,
                         entity_maps=entity_maps,
+                    )
+                elif isinstance(export, exports.MaximumVolume | exports.MinimumVolume):
+                    # the submesh of the volume subdomain contains exactly the cells
+                    # of that volume, so no cell meshtags are needed
+                    export.compute(
+                        u=export.field.subdomain_to_post_processing_solution[
+                            export.volume
+                        ],
                     )
                 else:
                     export.compute()
