@@ -1217,6 +1217,16 @@ class HydrogenTransportProblem(problem.ProblemBase):
         """
         return self.ds if isinstance(domain, _subdomain.SurfaceSubdomain) else self.dx
 
+    def integration_mesh_for(self, domain) -> dolfinx.mesh.Mesh:
+        """The mesh that :meth:`measure_for` integrates over.
+
+        Anything built for an integrand rather than looked up -- a spatial coordinate,
+        a facet normal, a constant -- has to be built on this mesh, because UFL admits
+        one integration domain per form and a ``fem.Constant`` carries the mesh it was
+        made on.
+        """
+        return self.mesh.mesh
+
     def entities_for(self, domain) -> tuple[dolfinx.mesh.MeshTags, int]:
         """The meshtags in which ``domain`` is tagged, and the dimension of its
         entities.
@@ -1987,6 +1997,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
         return super().measure_for(domain)
 
+    def integration_mesh_for(self, domain) -> dolfinx.mesh.Mesh:
+        """The mesh :meth:`measure_for` integrates over: the submesh of a manifold, the
+        parent mesh otherwise."""
+        if (
+            isinstance(domain, _subdomain.VolumeSubdomain)
+            and domain.codim(self.mesh.vdim) == 1
+        ):
+            return domain.submesh
+        return super().integration_mesh_for(domain)
+
     def entities_for(self, domain) -> tuple[dolfinx.mesh.MeshTags, int]:
         """The meshtags in which ``domain`` is tagged, and the dimension of its
         entities -- on the *submesh*, because that is where the fields live.
@@ -2014,6 +2034,52 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
 
     def entity_maps_for(self, domain):
         return [sd.cell_map for sd in self.volume_subdomains]
+
+    def custom_quantity_kwargs(self, domain) -> dict:
+        """The keyword arguments handed to a ``CustomQuantity``'s ``expr``, built for
+        the mesh its integral will be assembled on.
+
+        A ``CustomQuantity`` differs from the other derived quantities in that the
+        problem does not know its integrand: it hands over the ingredients and gets
+        back a ufl expression it must be able to integrate. So every ingredient has to
+        be built on :meth:`integration_mesh_for`, not just looked up on the parent
+        mesh.
+
+        For a codim-0 subdomain the integration mesh *is* the parent mesh, and the
+        species solutions -- which live on submeshes either way -- are related to it by
+        :meth:`entity_maps_for`. For a manifold the integral is assembled on the
+        manifold's own submesh, and a coefficient bound to the parent mesh cannot
+        appear there: ``x``, ``n``, ``t``, ``T`` and the diffusion coefficients all
+        have to be the submesh mirrors. Those mirrors already exist, because the
+        manifold's own residual has the same constraint -- this reuses
+        :meth:`subdomain_time`, :meth:`subdomain_temperature` and
+        :meth:`diffusion_coefficient` rather than rebuilding them.
+        """
+        volume = self.volume_of(domain)
+        mesh = self.integration_mesh_for(domain)
+
+        # only the species that actually live on this subdomain: indexing every species
+        # raises a KeyError naming a VolumeSubdomain object, which says nothing about
+        # which species is missing or why
+        kwargs = {
+            species.name: species.subdomain_to_post_processing_solution[volume]
+            for species in self.species
+            if volume in species.subdomain_to_post_processing_solution
+        }
+        kwargs["x"] = ufl.SpatialCoordinate(mesh)
+        kwargs["n"] = ufl.FacetNormal(mesh)
+        kwargs["t"] = self.subdomain_time(volume)
+        kwargs["T"] = self.subdomain_temperature(volume)
+
+        present = [sp for sp in self.species if sp.name in kwargs]
+        D_kwargs = {
+            f"D_{sp.name}": self.diffusion_coefficient(volume, sp) for sp in present
+        }
+        kwargs.update(D_kwargs)
+        kwargs["D"] = {sp.name: D_kwargs[f"D_{sp.name}"] for sp in present}
+        if len(present) == 1:
+            kwargs["D"] = D_kwargs[f"D_{present[0].name}"]
+        return kwargs
 
     def manifold_is_interior(self, manifold: _subdomain.VolumeSubdomain) -> bool:
         """Whether ``manifold`` sits on interior facets of the mesh.
@@ -3112,12 +3178,12 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
         """Rejects the derived quantities that cannot yet be computed on a
         codimensional subdomain.
 
-        The extrema no longer need a check: they resolve their entities through
-        :meth:`entities_for`, which handles every codimension. What is left is the
-        ``CustomQuantity``, whose integrand is not built here and so cannot be moved
-        onto a submesh, and the codim-2 surfaces, which no ``surface_to_volume`` entry
-        maps to. Without this they fail far from their cause -- inside the form
-        compiler, or as a bare ``KeyError``.
+        Only the codim-2 surfaces are left: they bound a manifold, and no
+        ``surface_to_volume`` entry maps to them. The extrema resolve their entities
+        through :meth:`entities_for` and a ``CustomQuantity`` builds its integrand on
+        :meth:`integration_mesh_for`, so both handle every codimension on their own.
+        Without this check a codim-2 domain fails far from its cause, as a bare
+        ``KeyError``.
         """
         for export in self.exports:
             # `domain` on the new quantities, `surface` on SurfaceFlux, `subdomain`
@@ -3136,18 +3202,6 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
             )
             if domain is None:
                 continue
-
-            if (
-                isinstance(export, exports.CustomQuantity)
-                and isinstance(domain, _subdomain.VolumeSubdomain)
-                and domain.codim(self.mesh.vdim) == 1
-            ):
-                raise NotImplementedError(
-                    f"CustomQuantity {export.title!r} is defined on codim-1 volume "
-                    f"subdomain {domain.id}. Its integrand is built from "
-                    "parent-mesh objects, which cannot be assembled on the "
-                    "manifold's submesh."
-                )
 
             if (
                 isinstance(domain, _subdomain.SurfaceSubdomain)
@@ -3240,40 +3294,9 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                 export.data = []
 
             if isinstance(export, exports.CustomQuantity):
-                volume = (
-                    export.subdomain
-                    if not isinstance(export.subdomain, _subdomain.SurfaceSubdomain)
-                    else self.surface_to_volume[
-                        export.subdomain
-                        if isinstance(export.subdomain, _subdomain.SurfaceSubdomain)
-                        else next(
-                            s
-                            for s in self.surface_subdomains
-                            if s.id == export.subdomain
-                        )
-                    ]
+                export.ufl_expr = export.expr(
+                    **self.custom_quantity_kwargs(export.subdomain)
                 )
-
-                kwargs = {
-                    species.name: species.subdomain_to_post_processing_solution[volume]
-                    for species in self.species
-                }
-                kwargs["n"] = ufl.FacetNormal(self.mesh.mesh)
-                kwargs["t"] = self.t
-                kwargs["T"] = self.temperature_fenics
-
-                D_kwargs = {
-                    f"D_{sp.name}": volume.material.get_diffusion_coefficient(
-                        self.mesh.mesh, self.temperature_fenics, sp
-                    )
-                    for sp in self.species
-                }
-                kwargs.update(D_kwargs)
-                kwargs["D"] = {sp.name: D_kwargs[f"D_{sp.name}"] for sp in self.species}
-                if len(self.species) == 1:
-                    kwargs["D"] = kwargs[f"D_{self.species[0].name}"]
-                kwargs["x"] = ufl.SpatialCoordinate(self.mesh.mesh)
-                export.ufl_expr = export.expr(**kwargs)
 
     def post_processing(self):
         # update post-processing solutions (for each species in each subdomain)

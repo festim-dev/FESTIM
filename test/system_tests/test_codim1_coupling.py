@@ -627,27 +627,6 @@ def test_volume_quantities_on_bulk_still_use_the_parent_measure():
 
 
 @pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
-def test_custom_quantity_on_manifold_raises():
-    """A CustomQuantity integrand is built from parent-mesh objects (the spatial
-    coordinate, the facet normal, the temperature field, the diffusion coefficient),
-    none of which can be assembled on the manifold's submesh. Swapping the measure
-    alone is not enough, so the combination is rejected up front."""
-
-    def build(gamma, H_gam):
-        return [
-            F.CustomQuantity(
-                expr=lambda **kwargs: kwargs["H_gam"],
-                subdomain=gamma,
-                title="total on gamma",
-            )
-        ]
-
-    model, _, _ = uncoupled_with_exports(build)
-    with pytest.raises(NotImplementedError, match="codim-1 volume subdomain"):
-        model.initialise()
-
-
-@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
 def test_new_quantity_api_on_manifold_and_bulk():
     """``Total``/``Average``/``Minimum``/``Maximum`` take a domain and do not care
     whether it is a volume, a surface or a manifold.
@@ -714,3 +693,96 @@ def test_legacy_names_still_work_and_warn():
     model.run()
 
     assert np.isclose(legacy.data[-1], model.exports[1].data[-1], rtol=1e-12)
+
+
+def _custom(expr, subdomain, title):
+    return F.CustomQuantity(expr=expr, subdomain=subdomain, title=title)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_custom_quantity_on_manifold():
+    """A CustomQuantity on a manifold is assembled on the manifold's submesh, so every
+    ingredient of its integrand has to be built there.
+
+    ``x``, ``n``, ``t``, ``T`` and the diffusion coefficients were all taken from the
+    parent mesh, which put two integration domains in one form and failed inside FFCx
+    with an ``UnboundLocalError``. Each kwarg is exercised separately here so that a
+    regression names the one that broke.
+
+    With a uniform source and no coupling the manifold field is ``c = 3 t``, exact
+    under backward Euler, and Gamma has unit length, so every integral below is a
+    closed form.
+    """
+    model, gamma, _H_gam = uncoupled(F.Stepsize(0.25), 1.0, 3.0)
+    model.exports = [
+        _custom(lambda **kw: kw["H_gam"], gamma, "c"),
+        # int_0^1 y dy, a spatially varying integrand: catches a coordinate taken from
+        # the wrong mesh, which a constant integrand would not
+        _custom(lambda **kw: kw["x"][1], gamma, "x"),
+        _custom(lambda **kw: kw["t"] * kw["H_gam"], gamma, "t"),
+        _custom(lambda **kw: kw["T"] / 500.0, gamma, "T"),
+        _custom(lambda **kw: kw["D_H_gam"], gamma, "D_named"),
+        _custom(lambda **kw: kw["D"], gamma, "D"),
+        # c is uniform along Gamma, so its tangential gradient vanishes
+        _custom(
+            lambda **kw: ufl.dot(ufl.grad(kw["H_gam"]), ufl.grad(kw["H_gam"])),
+            gamma,
+            "grad",
+        ),
+    ]
+    model.initialise()
+    model.run()
+
+    c = 3.0 * float(model.t)
+    expected = {
+        "c": c,
+        "x": 0.5,
+        "t": float(model.t) * c,
+        "T": 1.0,
+        "D_named": D_G,
+        "D": D_G,
+        "grad": 0.0,
+    }
+    for export in model.exports:
+        assert np.isclose(export.data[-1], expected[export.title], atol=1e-9), (
+            f"{export.title}: {export.data[-1]} != {expected[export.title]}"
+        )
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_custom_quantity_time_constant_advances_on_manifold():
+    """The manifold's ``t`` is a mirror of the problem's on its own submesh, not the
+    problem's constant itself. A mirror that is never updated would still give the
+    right answer at the final step, so the whole history is checked."""
+    model, gamma, _ = uncoupled(F.Stepsize(0.25), 1.0, 3.0)
+    # Gamma has unit length, so the integral of t over it is t
+    model.exports = [_custom(lambda **kw: kw["t"], gamma, "t")]
+    model.initialise()
+    model.run()
+
+    export = model.exports[0]
+    assert export.t == [0.25, 0.5, 0.75, 1.0]
+    assert np.allclose(export.data, export.t)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_custom_quantity_kwargs_only_hold_species_of_the_domain():
+    """A species absent from the subdomain is absent from the kwargs.
+
+    Previously every species was indexed on the subdomain, so a problem whose species
+    do not all span every subdomain raised a ``KeyError`` naming a ``VolumeSubdomain``
+    object -- which says neither which species was missing nor why.
+    """
+    model, gamma, _H_gam = uncoupled(F.Stepsize(0.5), 1.0, 3.0)
+    omega = next(v for v in model.volume_subdomains if v is not gamma)
+    model.exports = [_custom(lambda **kw: kw["H_gam"], gamma, "c")]
+    model.initialise()
+
+    gamma_kwargs = model.custom_quantity_kwargs(gamma)
+    omega_kwargs = model.custom_quantity_kwargs(omega)
+
+    assert "H_gam" in gamma_kwargs and "H_om" not in gamma_kwargs
+    assert "H_om" in omega_kwargs and "H_gam" not in omega_kwargs
+    # `D` collapses to the bare coefficient when the domain carries one species
+    assert "D_H_gam" in gamma_kwargs and "D_H_om" not in gamma_kwargs
+    assert gamma_kwargs["D"] is gamma_kwargs["D_H_gam"]
