@@ -113,10 +113,14 @@ venv.bak/
 *.xdmf
 *.h5
 *.txt
+*.png
 
 # Docs files
 docs/source/_build/
 # docs/source/_static/
+
+# patch files
+*.patch
 
 # Visual Studio Code settings
 .vscode/
