@@ -3,7 +3,7 @@ from collections.abc import Callable
 import dolfinx
 import numpy as np
 from dolfinx import fem
-from dolfinx.mesh import EntityMap, Mesh, locate_entities
+from dolfinx.mesh import EntityMap, Mesh, locate_entities, meshtags
 from numpy import typing as npt
 
 try:
@@ -140,6 +140,16 @@ class VolumeSubdomain:
         entities = marker.find(self.id)
         self.submesh, self.cell_map, self.v_map, self.n_map = (
             dolfinx.mesh.create_submesh(mesh, marker.dim, entities)
+        )
+
+        tdim = self.submesh.topology.dim
+        imap = self.submesh.topology.index_map(tdim)
+        n = imap.size_local + imap.num_ghosts
+        self.submesh_cell_tag = meshtags(
+            self.submesh,
+            tdim,
+            np.arange(n, dtype=np.int32),
+            np.full(n, self.id, dtype=np.int32),
         )
 
     def transfer_meshtag(self, mesh: dolfinx.mesh.Mesh, tag: dolfinx.mesh.MeshTags):

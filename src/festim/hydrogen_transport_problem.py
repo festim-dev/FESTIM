@@ -3185,8 +3185,16 @@ class HydrogenTransportProblemDiscontinuous(HydrogenTransportProblem):
                     export.compute()
 
             elif isinstance(export, exports.CustomQuantity):
+                v = export.volume
                 is_surface = isinstance(export.subdomain, _subdomain.SurfaceSubdomain)
-                measure = self.ds if is_surface else self.dx
+                dx = (
+                    ufl.Measure(
+                        "dx", domain=v.submesh, subdomain_data=v.submesh_cell_tag
+                    )
+                    if v.codim(self.mesh.vdim) >= 1
+                    else self.dx
+                )
+                measure = self.ds if is_surface else dx
 
                 # getting entity_maps
                 entity_maps = [sd.cell_map for sd in self.volume_subdomains]
