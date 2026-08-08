@@ -39,3 +39,29 @@ def test_maximum_volume_compute_1D():
     computed_value = my_export.value
 
     assert np.isclose(computed_value, expected_value, rtol=1e-2)
+
+
+def test_maximum_volume_no_meshtags():
+    """The extremum is computed over the whole mesh when no cell meshtags are
+    available. This is the case in the discontinuous problem, where the volume
+    subdomain owns its own submesh."""
+
+    # BUILD
+    L = 6
+    dummy_material = F.Material(D_0=1.5, E_D=1, name="dummy")
+    my_mesh = F.Mesh1D(np.linspace(0, L, 10000))
+    dummy_volume = F.VolumeSubdomain1D(id=1, borders=[0, L], material=dummy_material)
+
+    V = fem.functionspace(my_mesh.mesh, ("Lagrange", 1))
+    c = fem.Function(V)
+    c.interpolate(lambda x: (x[0] - 1) ** 2 + 2)
+
+    my_species = F.Species("H")
+
+    my_export = F.MaximumVolume(field=my_species, volume=dummy_volume)
+
+    # RUN: no volume_meshtags attribute set, the function is passed explicitly
+    my_export.compute(u=c)
+
+    # TEST
+    assert np.isclose(my_export.value, 27.0, rtol=1e-2)

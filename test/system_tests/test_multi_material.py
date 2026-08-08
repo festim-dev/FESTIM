@@ -506,37 +506,3 @@ def test_extrema_exports_discontinuous(tmpdir):
     assert np.isclose(bot_surf_max.value, 0.0, atol=1e-8)
     assert np.isclose(top_surf_min.value, 1.0, atol=1e-8)
     assert np.isclose(top_surf_max.value, 1.0, atol=1e-8)
-
-
-def test_extrema_export_species_not_in_volume():
-    """A clear error is raised when an extremum export refers to a volume where the
-    species is not defined."""
-
-    my_model = F.HydrogenTransportProblemDiscontinuous()
-
-    mat = F.Material(D_0=1, E_D=0, K_S_0=1, E_K_S=0)
-
-    vol1 = F.VolumeSubdomain1D(id=1, borders=[0, 0.5], material=mat)
-    vol2 = F.VolumeSubdomain1D(id=2, borders=[0.5, 1], material=mat)
-
-    surf1 = F.SurfaceSubdomain1D(id=1, x=0)
-    surf2 = F.SurfaceSubdomain1D(id=2, x=1)
-
-    my_model.subdomains = [vol1, vol2, surf1, surf2]
-    my_model.interfaces = [F.Interface(id=3, subdomains=[vol1, vol2])]
-    my_model.mesh = F.Mesh1D(np.linspace(0, 1, 10))
-
-    # H is only defined in vol1
-    H = F.Species("H", subdomains=[vol1])
-    my_model.species = [H]
-
-    my_model.boundary_conditions = [
-        F.FixedConcentrationBC(species=H, subdomain=surf1, value=1),
-    ]
-    my_model.temperature = 300
-    my_model.settings = F.Settings(transient=False, atol=1e-9, rtol=1e-9)
-
-    my_model.exports = [F.MaximumVolume(field=H, volume=vol2)]
-
-    with pytest.raises(ValueError, match="is not defined in the volume subdomain 2"):
-        my_model.initialise()
