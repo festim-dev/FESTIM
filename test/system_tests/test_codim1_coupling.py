@@ -561,3 +561,101 @@ def test_advection_velocity_is_self_projecting():
     tangential = run(8, dim=3, velocity=projected)
 
     assert np.allclose(raw, tangential, rtol=1e-8, atol=0)
+
+
+def uncoupled_with_exports(exports, half=False):
+    """``uncoupled`` with a uniform source of 3 and the given derived quantities.
+
+    ``half`` shortens Gamma to the lower half of the left edge (``y <= 0.5``, a node
+    line of the 8x8 mesh) so that its length is 0.5 rather than 1. A total and an
+    average then differ, which is what tells a correct measure apart from one that
+    merely happens to be self-consistent.
+    """
+    model, gamma, H_gam = uncoupled(F.Stepsize(0.25), 1.0, 3.0)
+    if half:
+        gamma.locator = lambda x: np.logical_and(
+            np.isclose(x[0], 0.0), x[1] <= 0.5 + 1e-12
+        )
+    model.exports = list(exports(gamma, H_gam))
+    return model, gamma, H_gam
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+@pytest.mark.parametrize("half, length", [(False, 1.0), (True, 0.5)])
+def test_volume_quantities_on_manifold(half, length):
+    """A total or an average over a manifold is assembled on the manifold's submesh.
+
+    The parent ``dx`` carries the *volume* meshtags, in which a manifold is not tagged
+    at all -- it lives in the facet meshtags -- so ``dx(gamma.id)`` selects nothing and
+    the form does not even compile (FFCx raises an ``UnboundLocalError`` from deep
+    inside ``build_optimized_tables``).
+
+    With a uniform source and no coupling the field is ``c = 3 t``, exact under
+    backward Euler, so the total reads back ``3 * length(Gamma)`` and the average ``3``.
+    A measure of the wrong extent shows up in the total but not in the average, hence
+    both are checked, on a Gamma that does not span the whole edge.
+    """
+
+    def build(gamma, H_gam):
+        return [
+            F.TotalVolume(field=H_gam, volume=gamma),
+            F.AverageVolume(field=H_gam, volume=gamma),
+        ]
+
+    model, gamma, _ = uncoupled_with_exports(build, half=half)
+    model.initialise()
+
+    # the integral is assembled on the manifold's own submesh, not the parent mesh
+    measure = model.unrestricted_subdomain_measure(gamma)
+    assert measure.ufl_domain() is gamma.submesh.ufl_domain()
+
+    model.run()
+
+    total, average = model.exports
+    assert np.isclose(total.data[-1], 3.0 * float(model.t) * length, rtol=1e-9)
+    assert np.isclose(average.data[-1], 3.0 * float(model.t), rtol=1e-9)
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_volume_quantities_on_bulk_still_use_the_parent_measure():
+    """A codim-0 subdomain keeps the parent-mesh measure it always used."""
+    model, gamma, _ = uncoupled(F.Stepsize(0.25), 1.0, 3.0)
+    omega = next(v for v in model.volume_subdomains if v is not gamma)
+    model.initialise()
+
+    assert model.unrestricted_subdomain_measure(omega) is model.dx
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+def test_custom_quantity_on_manifold_raises():
+    """A CustomQuantity integrand is built from parent-mesh objects (the spatial
+    coordinate, the facet normal, the temperature field, the diffusion coefficient),
+    none of which can be assembled on the manifold's submesh. Swapping the measure
+    alone is not enough, so the combination is rejected up front."""
+
+    def build(gamma, H_gam):
+        return [
+            F.CustomQuantity(
+                expr=lambda **kwargs: kwargs["H_gam"],
+                subdomain=gamma,
+                title="total on gamma",
+            )
+        ]
+
+    model, _, _ = uncoupled_with_exports(build)
+    with pytest.raises(NotImplementedError, match="codim-1 volume subdomain"):
+        model.initialise()
+
+
+@pytest.mark.skipif(MPI.COMM_WORLD.size > 1, reason="serial only for now")
+@pytest.mark.parametrize("cls", [F.MaximumVolume, F.MinimumVolume])
+def test_extremum_volume_quantities_raise(cls):
+    """These read ``volume_meshtags`` and the single ``post_processing_solution`` of
+    the parent mesh, neither of which a subdomain-wise problem sets."""
+
+    def build(gamma, H_gam):
+        return [cls(field=H_gam, volume=gamma)]
+
+    model, _, _ = uncoupled_with_exports(build)
+    with pytest.raises(NotImplementedError, match="not supported"):
+        model.initialise()

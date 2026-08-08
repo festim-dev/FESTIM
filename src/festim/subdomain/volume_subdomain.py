@@ -3,7 +3,7 @@ from collections.abc import Callable
 import dolfinx
 import numpy as np
 from dolfinx import fem
-from dolfinx.mesh import EntityMap, Mesh, locate_entities, meshtags
+from dolfinx.mesh import EntityMap, Mesh, locate_entities
 from numpy import typing as npt
 
 try:
@@ -37,6 +37,11 @@ class VolumeSubdomain:
             constant
         sub_dt: for a manifold (codim-1) subdomain, the timestep as a constant living on
             its submesh. ``None`` for a codim-0 subdomain
+        submesh_cell_tag: cell tags of the submesh, every cell marked with ``id``. They
+            let a ``dx`` measure be built on the submesh that responds to ``dx(id)``
+            just like the parent-mesh measure does. A manifold is tagged in the *facet*
+            meshtags of the parent mesh, so the parent ``dx(id)`` selects nothing and
+            an integral over a manifold has to be assembled on its own submesh
         dim: the topological dimension of the subdomain. Defaults to ``None``, meaning
             the dimension of the mesh. Set it to ``mesh_dim - 1`` to solve a transport
             equation on a manifold embedded in the mesh (a line in a 2D mesh, a surface
@@ -51,6 +56,7 @@ class VolumeSubdomain:
     v_map: "entity_map_type"
     n_map: np.ndarray
     ft: dolfinx.mesh.MeshTags
+    submesh_cell_tag: dolfinx.mesh.MeshTags
     u: dolfinx.fem.Function
     u_n: dolfinx.fem.Function
     material: Material
@@ -142,10 +148,14 @@ class VolumeSubdomain:
             dolfinx.mesh.create_submesh(mesh, marker.dim, entities)
         )
 
+        # mark every cell of the submesh with the subdomain id so that a measure built
+        # on the submesh can be restricted with ``dx(id)``. Ghost cells are included:
+        # DOLFINx drops them when it builds the cell integration domains, so they do
+        # not double count, and the tags stay usable for interpolation
         tdim = self.submesh.topology.dim
         imap = self.submesh.topology.index_map(tdim)
         n = imap.size_local + imap.num_ghosts
-        self.submesh_cell_tag = meshtags(
+        self.submesh_cell_tag = dolfinx.mesh.meshtags(
             self.submesh,
             tdim,
             np.arange(n, dtype=np.int32),
